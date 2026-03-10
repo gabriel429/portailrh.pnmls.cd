@@ -1,0 +1,40 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Department extends Model
+{
+    protected $fillable = [
+        'code',
+        'nom',
+        'description',
+        'province_id',
+    ];
+
+    // Relations BelongsTo
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    // Relations HasMany
+    public function agents(): HasMany
+    {
+        return $this->hasMany(Agent::class, 'departement_id');
+    }
+
+    // Scopes
+    public function scopeByCode($query, $code)
+    {
+        return $query->where('code', $code);
+    }
+
+    public function scopeByProvince($query, $provinceId)
+    {
+        return $query->where('province_id', $provinceId);
+    }
+}
