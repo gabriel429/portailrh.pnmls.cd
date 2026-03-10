@@ -48,6 +48,11 @@ Route::middleware('auth')->group(function () {
     Route::resource('signalements', SignalementController::class)->names('signalements');
     Route::post('signalements/{signalement}/resolve', [SignalementController::class, 'resolve'])->name('signalements.resolve');
 
+    // RH JSON API for Modal (returns agent details as JSON)
+    Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial'])->group(function () {
+        Route::get('api/agents/{agent}', [AgentController::class, 'apiShow'])->name('api.agents.show');
+    });
+
     // Routes admin/RH
     Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial'])->prefix('rh')->name('rh.')->group(function () {
         // Gestion des agents
@@ -56,18 +61,13 @@ Route::middleware('auth')->group(function () {
 
         // Pointages
         Route::resource('pointages', PointageController::class);
+        Route::get('pointages/daily/view', [PointageController::class, 'daily'])->name('pointages.daily');
+        Route::get('pointages/daily/export', [PointageController::class, 'exportDailyExcel'])->name('pointages.daily-export');
+        Route::get('pointages/monthly/report', [PointageController::class, 'monthlyReport'])->name('pointages.monthly-report');
+        Route::get('pointages/monthly/export', [PointageController::class, 'exportMonthlyExcel'])->name('pointages.monthly-export');
         Route::post('pointages/import', [PointageController::class, 'import'])->name('pointages.import');
 
         // Tableau de bord RH
         Route::get('/dashboard', [AgentController::class, 'dashboard'])->name('dashboard');
-    });
-});
-
-// API routes (future use)
-Route::prefix('api')->middleware('api')->group(function () {
-    Route::post('/login', [AuthController::class, 'apiLogin']);
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/profile', [ProfileController::class, 'apiShow']);
-        Route::get('/agents', [AgentController::class, 'index']);
     });
 });

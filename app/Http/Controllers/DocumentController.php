@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Document;
+use App\Models\Agent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -21,9 +22,16 @@ class DocumentController extends Controller
     /**
      * Show upload form
      */
-    public function create()
+    public function create(Request $request)
     {
-        return view('documents.create');
+        $agent_id = $request->query('agent_id');
+        $agent = null;
+
+        if ($agent_id) {
+            $agent = Agent::find($agent_id);
+        }
+
+        return view('documents.create', compact('agent'));
     }
 
     /**
@@ -32,25 +40,31 @@ class DocumentController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nom_fichier' => 'required|string|max:255',
-            'categorie' => 'required|in:identite,parcours,carriere,mission',
+            'nom_document' => 'required|string|max:255',
+            'type' => 'required|in:identite,parcours,carriere,mission',
             'description' => 'nullable|string',
+            'agent_id' => 'nullable|exists:agents,id',
             'fichier' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ]);
+
+        // Determine which agent the document belongs to
+        $agent_id = $validated['agent_id'] ?? auth()->user()->id;
+
+        // Only allow RH staff or the agent themselves to upload
+        if ($agent_id !== auth()->user()->id && !auth()->user()->hasRole('Chef Section RH')) {
+            abort(403, 'Vous n\'avez pas les droits pour créer ce document');
+        }
 
         if ($request->hasFile('fichier')) {
             $file = $request->file('fichier');
             $path = $file->store('documents', 'public');
 
             $document = Document::create([
-                'agent_id' => auth()->user()->id,
-                'nom_fichier' => $validated['nom_fichier'],
-                'categorie' => $validated['categorie'],
-                'description' => $validated['description'] ?? null,
-                'chemin_fichier' => $path,
-                'type_fichier' => $file->extension(),
-                'taille' => $file->getSize(),
-                'uploaded_by' => auth()->user()->id,
+                'agent_id' => $agent_id,
+                'type' => $validated['type'],
+                'fichier' => $path,
+                'description' => ($validated['nom_document'] ?? '') . (!empty($validated['description']) ? ' | ' . $validated['description'] : ''),
+                'statut' => 'valide',
             ]);
 
             return redirect()->route('documents.index')
@@ -83,7 +97,7 @@ class DocumentController extends Controller
             abort(403);
         }
 
-        return Storage::disk('public')->download($document->chemin_fichier, $document->nom_fichier . '.' . $document->type_fichier);
+        return Storage::disk('public')->download($document->fichier);
     }
 
     /**
@@ -96,7 +110,7 @@ class DocumentController extends Controller
             abort(403);
         }
 
-        Storage::disk('public')->delete($document->chemin_fichier);
+        Storage::disk('public')->delete($document->fichier);
         $document->delete();
 
         return redirect()->route('documents.index')

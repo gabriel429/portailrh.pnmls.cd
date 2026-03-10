@@ -68,7 +68,7 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <p class="text-muted mb-1">Absences</p>
-                                <h4 class="mb-0">{{ auth()->user()->pointages()->where('heure_arrivee', null)->count() }}</h4>
+                                <h4 class="mb-0">{{ auth()->user()->pointages()->whereNull('heure_entree')->count() }}</h4>
                             </div>
                             <i class="fas fa-calendar-times fa-3x text-danger opacity-25"></i>
                         </div>

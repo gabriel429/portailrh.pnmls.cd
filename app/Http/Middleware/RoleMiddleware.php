@@ -13,8 +13,27 @@ class RoleMiddleware
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
+        $user = $request->user();
+
+        if (!$user || empty($roles)) {
+            return $next($request);
+        }
+
+        // Check if user has any of the required roles
+        $hasRole = false;
+        foreach ($roles as $role) {
+            if ($user->role && $user->role->nom_role === $role) {
+                $hasRole = true;
+                break;
+            }
+        }
+
+        if (!$hasRole) {
+            abort(403, 'Accès refusé. Vous n\'avez pas les permissions nécessaires.');
+        }
+
         return $next($request);
     }
 }

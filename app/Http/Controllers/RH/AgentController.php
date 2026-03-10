@@ -4,6 +4,11 @@ namespace App\Http\Controllers\RH;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\Role;
+use App\Models\Department;
+use App\Models\Province;
+use App\Models\Request as RequestModel;
+use App\Models\Pointage;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -26,7 +31,11 @@ class AgentController extends Controller
      */
     public function create(): View
     {
-        return view('rh.agents.create');
+        $roles = Role::all();
+        $departments = Department::all();
+        $provinces = Province::all();
+
+        return view('rh.agents.create', compact('roles', 'departments', 'provinces'));
     }
 
     /**
@@ -52,7 +61,7 @@ class AgentController extends Controller
 
         Agent::create($validated);
 
-        return redirect()->route('agents.index')
+        return redirect()->route('rh.agents.index')
             ->with('success', 'Agent créé avec succès');
     }
 
@@ -71,7 +80,11 @@ class AgentController extends Controller
      */
     public function edit(Agent $agent): View
     {
-        return view('rh.agents.edit', compact('agent'));
+        $roles = Role::all();
+        $departments = Department::all();
+        $provinces = Province::all();
+
+        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces'));
     }
 
     /**
@@ -94,7 +107,7 @@ class AgentController extends Controller
 
         $agent->update($validated);
 
-        return redirect()->route('agents.show', $agent)
+        return redirect()->route('rh.agents.show', $agent)
             ->with('success', 'Agent modifié avec succès');
     }
 
@@ -105,7 +118,80 @@ class AgentController extends Controller
     {
         $agent->delete();
 
-        return redirect()->route('agents.index')
+        return redirect()->route('rh.agents.index')
             ->with('success', 'Agent supprimé avec succès');
+    }
+
+    /**
+     * Display the RH dashboard with statistics
+     */
+    public function dashboard(): View
+    {
+        // Agent statistics
+        $totalAgents = Agent::count();
+        $activeAgents = Agent::where('statut', 'actif')->count();
+        $suspendedAgents = Agent::where('statut', 'suspendu')->count();
+        $formerAgents = Agent::where('statut', 'ancien')->count();
+
+        // Request statistics
+        $totalRequests = RequestModel::count();
+        $pendingRequests = RequestModel::where('statut', 'en attente')->count();
+        $approvedRequests = RequestModel::where('statut', 'approuvé')->count();
+        $rejectedRequests = RequestModel::where('statut', 'rejeté')->count();
+
+        // Attendance statistics
+        $totalAttendance = Pointage::count();
+        $recentAttendance = Pointage::with('agent')
+            ->orderBy('date_pointage', 'desc')
+            ->limit(10)
+            ->get();
+
+        // Recent requests
+        $recentRequests = RequestModel::with('agent')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('rh.dashboard', compact(
+            'totalAgents',
+            'activeAgents',
+            'suspendedAgents',
+            'formerAgents',
+            'totalRequests',
+            'pendingRequests',
+            'approvedRequests',
+            'rejectedRequests',
+            'totalAttendance',
+            'recentAttendance',
+            'recentRequests'
+        ));
+    }
+
+    /**
+     * Get agent details as JSON for modal
+     */
+    public function apiShow(Agent $agent)
+    {
+        $agent->load(['role', 'province', 'departement']);
+
+        return response()->json([
+            'agent' => [
+                'id' => $agent->id,
+                'matricule_pnmls' => $agent->matricule_pnmls,
+                'prenom' => $agent->prenom,
+                'nom' => $agent->nom,
+                'email' => $agent->email,
+                'telephone' => $agent->telephone,
+                'poste_actuel' => $agent->poste_actuel,
+                'role' => $agent->role,
+                'departement' => $agent->departement,
+                'province' => $agent->province,
+                'date_naissance' => $agent->date_naissance?->format('d/m/Y'),
+                'lieu_naissance' => $agent->lieu_naissance,
+                'date_embauche' => $agent->date_embauche?->format('d/m/Y'),
+                'adresse' => $agent->adresse,
+                'statut' => $agent->statut,
+            ]
+        ]);
     }
 }
