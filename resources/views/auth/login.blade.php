@@ -8,7 +8,7 @@
         <!-- Section gauche: promo -->
         <div class="col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center pb-5">
             <div class="text-center">
-                <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS Logo" style="max-height: 150px; width: auto; object-fit: contain; margin-bottom: 30px;">
+                <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS Logo" style="max-height: 250px; width: auto; object-fit: contain; margin-bottom: 20px;">
                 <h1 class="mt-4 mb-3">Portail RH PNMLS</h1>
                 <p class="lead text-muted mb-4">
                     Gestion Intégrée des Ressources Humaines<br>
