@@ -6,9 +6,18 @@
 <div class="container-fluid py-5">
     <!-- En-tête -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-user-circle me-2"></i> Profil Agent</h2>
-            <p class="text-muted mb-0">{{ $agent->matricule_pnmls }}</p>
+        <div class="d-flex align-items-center gap-3">
+            @if($agent->photo)
+                <img src="{{ asset($agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle" style="width: 80px; height: 80px; object-fit: cover;">
+            @else
+                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                    <i class="fas fa-user fa-2x text-muted"></i>
+                </div>
+            @endif
+            <div>
+                <h2 class="mb-0">{{ $agent->prenom }} {{ $agent->nom }}</h2>
+                <p class="text-muted mb-0">{{ $agent->matricule_pnmls }}</p>
+            </div>
         </div>
         <div class="d-flex gap-2">
             <a href="{{ route('rh.agents.edit', $agent) }}" class="btn btn-warning">
