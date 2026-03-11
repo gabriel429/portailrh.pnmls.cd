@@ -57,12 +57,13 @@ class DocumentController extends Controller
 
         if ($request->hasFile('fichier')) {
             $file = $request->file('fichier');
-            $path = $file->store('documents', 'public');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/documents'), $filename);
 
             $document = Document::create([
                 'agent_id' => $agent_id,
                 'type' => $validated['type'],
-                'fichier' => $path,
+                'fichier' => 'uploads/documents/' . $filename,
                 'description' => ($validated['nom_document'] ?? '') . (!empty($validated['description']) ? ' | ' . $validated['description'] : ''),
                 'statut' => 'valide',
             ]);
@@ -97,7 +98,11 @@ class DocumentController extends Controller
             abort(403);
         }
 
-        return Storage::disk('public')->download($document->fichier);
+        $filePath = public_path($document->fichier);
+        if (file_exists($filePath)) {
+            return response()->download($filePath);
+        }
+        return back()->with('error', 'Fichier introuvable');
     }
 
     /**
@@ -110,7 +115,10 @@ class DocumentController extends Controller
             abort(403);
         }
 
-        Storage::disk('public')->delete($document->fichier);
+        $filePath = public_path($document->fichier);
+        if (file_exists($filePath)) {
+            unlink($filePath);
+        }
         $document->delete();
 
         return redirect()->route('documents.index')
