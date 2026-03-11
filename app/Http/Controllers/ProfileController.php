@@ -59,8 +59,10 @@ class ProfileController extends Controller
         ]);
 
         if ($request->hasFile('photo')) {
-            $path = $request->file('photo')->store('profiles', 'public');
-            $validated['photo'] = $path;
+            $file = $request->file('photo');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/profiles'), $filename);
+            $validated['photo'] = 'uploads/profiles/' . $filename;
         }
 
         $agent->update($validated);

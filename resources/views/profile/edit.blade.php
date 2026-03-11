@@ -28,7 +28,7 @@
                         <h5 class="card-title mb-3"><i class="fas fa-camera me-2"></i> Photo de profil</h5>
 
                         @if($agent->photo)
-                            <img src="{{ asset('storage/' . $agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
+                            <img src="{{ asset($agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;">
                         @else
                             <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 120px; height: 120px;">
                                 <i class="fas fa-user fa-4x text-muted"></i>

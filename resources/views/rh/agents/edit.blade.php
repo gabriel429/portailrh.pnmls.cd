@@ -38,7 +38,7 @@
                     <div class="row g-3 align-items-center">
                         <div class="col-auto">
                             @if($agent->photo)
-                                <img src="{{ asset('storage/' . $agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                                <img src="{{ asset($agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
                             @else
                                 <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
                                     <i class="fas fa-user fa-3x text-muted"></i>

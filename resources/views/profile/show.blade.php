@@ -8,7 +8,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-body text-center">
                     @if($agent->photo)
-                        <img src="{{ asset('storage/' . $agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
+                        <img src="{{ asset($agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle mb-3" style="width: 150px; height: 150px; object-fit: cover;">
                     @else
                         <div class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 150px; height: 150px;">
                             <i class="fas fa-user fa-5x text-muted"></i>
