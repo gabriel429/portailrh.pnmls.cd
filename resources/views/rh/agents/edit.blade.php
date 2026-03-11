@@ -28,9 +28,34 @@
                 </div>
             @endif
 
-            <form action="{{ route('rh.agents.update', $agent) }}" method="POST">
+            <form action="{{ route('rh.agents.update', $agent) }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+
+                <!-- Photo de profil -->
+                <section class="mb-4">
+                    <h5 class="mb-3"><i class="fas fa-camera me-2 text-primary"></i>Photo de profil</h5>
+                    <div class="row g-3 align-items-center">
+                        <div class="col-auto">
+                            @if($agent->photo)
+                                <img src="{{ asset('storage/' . $agent->photo) }}" alt="{{ $agent->prenom }}" class="rounded-circle" style="width: 100px; height: 100px; object-fit: cover;">
+                            @else
+                                <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 100px; height: 100px;">
+                                    <i class="fas fa-user fa-3x text-muted"></i>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="col">
+                            <input type="file" class="form-control @error('photo') is-invalid @enderror" id="photo" name="photo" accept="image/*">
+                            @error('photo')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                            <small class="form-text text-muted">Max 2 Mo. Formats: JPG, PNG, GIF</small>
+                        </div>
+                    </div>
+                </section>
+
+                <hr class="my-4">
 
                 <!-- Informations personnelles -->
                 <section class="mb-4">

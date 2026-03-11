@@ -103,7 +103,13 @@ class AgentController extends Controller
             'province_id' => 'nullable|exists:provinces,id',
             'role_id' => 'nullable|exists:roles,id',
             'statut' => 'required|in:actif,suspendu,ancien',
+            'photo' => 'nullable|image|max:2048',
         ]);
+
+        if ($request->hasFile('photo')) {
+            $path = $request->file('photo')->store('profiles', 'public');
+            $validated['photo'] = $path;
+        }
 
         $agent->update($validated);
 
