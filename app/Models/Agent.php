@@ -122,7 +122,28 @@ class Agent extends Authenticatable
             $roles = [$roles];
         }
 
-        return $this->role && in_array($this->role->nom_role, $roles);
+        if (!$this->role || !$this->role->nom_role) {
+            return false;
+        }
+
+        $userRole = strtolower(trim((string) $this->role->nom_role));
+        $normalizedRoles = array_map(static fn($role) => strtolower(trim((string) $role)), $roles);
+
+        return in_array($userRole, $normalizedRoles, true);
+    }
+
+    /**
+     * Check if user has full admin access to RH settings.
+     */
+    public function hasAdminAccess(): bool
+    {
+        return $this->hasRole([
+            'Chef Section RH',
+            'RH National',
+            'RH Provincial',
+            'Chef Section Nouvelle Technologie',
+            'Chef de Section Nouvelle Technologie',
+        ]);
     }
 
     /**

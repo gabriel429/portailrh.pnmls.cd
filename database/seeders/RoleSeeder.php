@@ -34,6 +34,10 @@ class RoleSeeder extends Seeder
                 'description' => 'Chef de Section RH',
             ],
             [
+                'nom_role' => 'Chef Section Nouvelle Technologie',
+                'description' => 'Chef de Section Nouvelle Technologie',
+            ],
+            [
                 'nom_role' => 'SEP',
                 'description' => 'Secrétaire Exécutif Provincial',
             ],

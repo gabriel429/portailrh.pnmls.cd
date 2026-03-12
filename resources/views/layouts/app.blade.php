@@ -239,7 +239,7 @@
                         </a>
                     </li>
 
-                    @if(auth()->user()->hasRole(['Chef Section RH', 'RH National', 'RH Provincial']))
+                    @if(auth()->user()->hasAdminAccess())
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-cog"></i> Admin
@@ -247,6 +247,7 @@
                         <ul class="dropdown-menu">
                             <li><a class="dropdown-item" href="{{ route('rh.agents.index') }}">Gestion Agents</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.pointages.index') }}">Pointages</a></li>
+                            <li><a class="dropdown-item" href="{{ route('signalements.index') }}">Signalements</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.dashboard') }}">Tableau de Bord</a></li>
                         </ul>
                     </li>

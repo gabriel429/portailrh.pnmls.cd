@@ -1,47 +1,49 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="container-fluid py-5">
-    <!-- En-tête -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-calendar-alt me-2"></i> Pointages par Jour</h2>
-            <p class="text-muted mb-0">Affichage des présences et absences par jour</p>
-        </div>
-        <div class="d-flex gap-2">
-            <div class="btn-group">
-                <a href="{{ route('rh.pointages.index') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-list me-2"></i> Liste
-                </a>
-                <a href="{{ route('rh.pointages.daily') }}" class="btn btn-primary">
-                    <i class="fas fa-calendar-alt me-2"></i> Par Jour
-                </a>
-                <a href="{{ route('rh.pointages.monthly-report') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-chart-bar me-2"></i> Rapport Mensuel
-                </a>
-            </div>
-            <a href="{{ route('rh.pointages.daily-export', ['date_debut' => $dateDebut, 'date_fin' => $dateFin, 'agent_id' => $agent_id]) }}" class="btn btn-success">
-                <i class="fas fa-download me-2"></i> Excel
-            </a>
-        </div>
-    </div>
+@section('title', 'Pointages Par Jour - Portail RH PNMLS')
 
-    <!-- Filtres -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
+@section('css')
+<link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+@endsection
+
+@section('content')
+@php /** @var \Illuminate\Support\Collection $agents */ @endphp
+<div class="rh-modern">
+    <div class="rh-list-shell">
+        <section class="rh-hero">
+            <div class="row g-2 align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="rh-title"><i class="fas fa-calendar-alt me-2"></i>Pointages par jour</h1>
+                    <p class="rh-sub">Analyse quotidienne des presences sur une periode donnee.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hero-tools">
+                        <a href="{{ route('rh.pointages.daily-export', ['date_debut' => $dateDebut, 'date_fin' => $dateFin, 'agent_id' => $agent_id]) }}" class="btn-rh main"><i class="fas fa-download me-1"></i> Export Excel</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+            <a href="{{ route('rh.pointages.index') }}" class="btn btn-outline-secondary"><i class="fas fa-list me-2"></i>Liste</a>
+            <a href="{{ route('rh.pointages.daily') }}" class="btn btn-primary"><i class="fas fa-calendar-alt me-2"></i>Par jour</a>
+            <a href="{{ route('rh.pointages.monthly-report') }}" class="btn btn-outline-secondary"><i class="fas fa-chart-bar me-2"></i>Rapport mensuel</a>
+        </div>
+
+        <div class="rh-filters mb-3">
             <form method="GET" class="row g-3">
                 <div class="col-md-3">
-                    <label for="date_debut" class="form-label">Date de début</label>
+                    <label for="date_debut" class="form-label">Date debut</label>
                     <input type="date" name="date_debut" id="date_debut" class="form-control" value="{{ $dateDebut }}">
                 </div>
                 <div class="col-md-3">
-                    <label for="date_fin" class="form-label">Date de fin</label>
+                    <label for="date_fin" class="form-label">Date fin</label>
                     <input type="date" name="date_fin" id="date_fin" class="form-control" value="{{ $dateFin }}">
                 </div>
                 <div class="col-md-4">
                     <label for="agent_id" class="form-label">Agent</label>
                     <select name="agent_id" id="agent_id" class="form-select">
-                        <option value="">-- Tous les agents --</option>
+                        <option value="">Tous les agents</option>
                         @foreach($agents as $agent)
                             <option value="{{ $agent->id }}" {{ $agent_id == $agent->id ? 'selected' : '' }}>
                                 {{ $agent->prenom }} {{ $agent->nom }} ({{ $agent->matricule_pnmls }})
@@ -50,45 +52,33 @@
                     </select>
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-filter me-2"></i> Filtrer
-                    </button>
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-filter me-2"></i>Filtrer</button>
                 </div>
             </form>
         </div>
-    </div>
 
-    <!-- Pointages par jour -->
-    @if($pointagesByDate->count() > 0)
-        @foreach($pointagesByDate as $date => $dayPointages)
-            @php
-                $stats = $dailyStats[$date];
-                $dateObj = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
-            @endphp
-            <div class="card border-0 shadow-sm mb-3">
-                <div class="card-header bg-light border-bottom">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h5 class="mb-0">
-                                <i class="fas fa-calendar-check me-2"></i>
-                                {{ $dateObj->format('l d F Y') }}
-                            </h5>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <span class="badge bg-info me-2">{{ $stats['count'] }} agents</span>
-                            <span class="badge bg-success me-2">{{ $stats['present'] }} présents</span>
-                            <span class="badge bg-danger">{{ $stats['absent'] }} absents</span>
+        @if($pointagesByDate->count() > 0)
+            @foreach($pointagesByDate as $date => $dayPointages)
+                @php
+                    $stats = $dailyStats[$date];
+                    $dateObj = \Carbon\Carbon::createFromFormat('Y-m-d', $date);
+                @endphp
+                <div class="rh-list-card p-3 p-lg-4 mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>{{ $dateObj->translatedFormat('l d F Y') }}</h5>
+                        <div class="d-flex gap-2">
+                            <span class="rh-pill st-neutral">{{ $stats['count'] }} agents</span>
+                            <span class="rh-pill st-ok">{{ $stats['present'] }} presents</span>
+                            <span class="rh-pill st-bad">{{ $stats['absent'] }} absents</span>
                         </div>
                     </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-sm table-hover">
-                            <thead class="table-light">
+                    <div class="rh-table-wrap">
+                        <table class="rh-table">
+                            <thead>
                                 <tr>
                                     <th>Agent</th>
                                     <th>Matricule</th>
-                                    <th>Entrée</th>
+                                    <th>Entree</th>
                                     <th>Sortie</th>
                                     <th>Heures</th>
                                     <th>Statut</th>
@@ -97,36 +87,16 @@
                             <tbody>
                                 @foreach($dayPointages as $pointage)
                                     <tr>
-                                        <td>
-                                            <strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong>
-                                        </td>
+                                        <td><strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong></td>
                                         <td>{{ $pointage->agent->matricule_pnmls }}</td>
+                                        <td>{{ $pointage->heure_entree ? $pointage->heure_entree : '-' }}</td>
+                                        <td>{{ $pointage->heure_sortie ? $pointage->heure_sortie : '-' }}</td>
+                                        <td>{{ $pointage->heures_travaillees ? $pointage->heures_travaillees . 'h' : '-' }}</td>
                                         <td>
                                             @if($pointage->heure_entree)
-                                                <span class="badge bg-success">{{ $pointage->heure_entree }}</span>
+                                                <span class="status-chip st-ok">Present</span>
                                             @else
-                                                <span class="badge bg-secondary">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($pointage->heure_sortie)
-                                                <span class="badge bg-info">{{ $pointage->heure_sortie }}</span>
-                                            @else
-                                                <span class="badge bg-secondary">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($pointage->heures_travaillees)
-                                                <strong>{{ $pointage->heures_travaillees }}h</strong>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($pointage->heure_entree)
-                                                <span class="badge bg-success-light text-success">Présent</span>
-                                            @else
-                                                <span class="badge bg-danger-light text-danger">Absent</span>
+                                                <span class="status-chip st-bad">Absent</span>
                                             @endif
                                         </td>
                                     </tr>
@@ -135,38 +105,17 @@
                         </table>
                     </div>
                     @if($stats['total_hours'] > 0)
-                        <div class="text-end text-muted small mt-2">
-                            <strong>Total heures du jour :</strong> {{ $stats['total_hours'] }}h
-                        </div>
+                        <div class="text-end text-muted small mt-2"><strong>Total heures:</strong> {{ $stats['total_hours'] }}h</div>
                     @endif
                 </div>
+            @endforeach
+        @else
+            <div class="rh-list-card p-5 text-center">
+                <i class="fas fa-calendar-alt fa-4x text-muted mb-3 d-block"></i>
+                <h5 class="text-muted">Aucun pointage</h5>
+                <p class="text-muted">Aucune donnee pour la periode selectionnee.</p>
             </div>
-        @endforeach
-    @else
-        <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <div class="text-center py-5">
-                    <i class="fas fa-calendar-alt fa-5x text-muted mb-3 d-block"></i>
-                    <h5 class="text-muted">Aucun pointage</h5>
-                    <p class="text-muted">Il n'y a aucun pointage enregistré pour la période sélectionnée</p>
-                </div>
-            </div>
-        </div>
-    @endif
+        @endif
+    </div>
 </div>
-
-<style>
-    .bg-success-light {
-        background-color: #d4edda;
-    }
-    .bg-danger-light {
-        background-color: #f8d7da;
-    }
-    .text-success {
-        color: #155724 !important;
-    }
-    .text-danger {
-        color: #721c24 !important;
-    }
-</style>
 @endsection

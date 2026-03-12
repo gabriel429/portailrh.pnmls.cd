@@ -1,32 +1,41 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="container-fluid py-5">
-    <!-- En-tête -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-users me-2"></i> Gestion des Agents</h2>
-            <p class="text-muted mb-0">Administrez les agents du PNMLS</p>
-        </div>
-        <a href="{{ route('rh.agents.create') }}" class="btn btn-primary">
-            <i class="fas fa-plus me-2"></i> Ajouter un agent
-        </a>
-    </div>
+@section('title', 'Agents RH - Portail RH PNMLS')
 
-    <!-- Tableau des agents -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
+@section('css')
+<link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+@endsection
+
+@section('content')
+@php /** @var \Illuminate\Pagination\LengthAwarePaginator $agents */ @endphp
+<div class="rh-modern">
+    <div class="rh-list-shell">
+        <section class="rh-hero">
+            <div class="row g-2 align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="rh-title"><i class="fas fa-users me-2"></i>Gestion des agents</h1>
+                    <p class="rh-sub">Administrez les profils PNMLS, roles, statuts et informations administratives.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hero-tools">
+                        <a href="{{ route('rh.agents.create') }}" class="btn-rh main"><i class="fas fa-user-plus me-1"></i> Ajouter un agent</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="rh-list-card p-3 p-lg-4">
             @if($agents->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                <div class="rh-table-wrap">
+                    <table class="rh-table">
+                        <thead>
                             <tr>
                                 <th>Matricule</th>
-                                <th>Nom & Prénom</th>
+                                <th>Nom et Prenom</th>
                                 <th>Email</th>
                                 <th>Poste</th>
-                                <th>Rôle</th>
-                                <th>Département</th>
+                                <th>Role</th>
+                                <th>Departement</th>
                                 <th>Statut</th>
                                 <th>Actions</th>
                             </tr>
@@ -37,20 +46,22 @@
                                     <td><strong>{{ $agent->matricule_pnmls }}</strong></td>
                                     <td>{{ $agent->prenom }} {{ $agent->nom }}</td>
                                     <td>{{ $agent->email }}</td>
-                                    <td>{{ $agent->poste_actuel }}</td>
+                                    <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
                                     <td>
                                         @if($agent->role)
-                                            <span class="badge bg-info">{{ $agent->role->nom_role }}</span>
+                                            <span class="rh-pill st-mid">{{ $agent->role->nom_role }}</span>
                                         @else
-                                            <span class="badge bg-secondary">Non assigné</span>
+                                            <span class="rh-pill st-neutral">Non assigne</span>
                                         @endif
                                     </td>
                                     <td>{{ $agent->departement?->nom_dept ?? 'N/A' }}</td>
                                     <td>
                                         @if($agent->statut === 'actif')
-                                            <span class="badge bg-success">Actif</span>
+                                            <span class="rh-pill st-ok">Actif</span>
+                                        @elseif($agent->statut === 'suspendu')
+                                            <span class="rh-pill st-mid">Suspendu</span>
                                         @else
-                                            <span class="badge bg-secondary">{{ ucfirst($agent->statut) }}</span>
+                                            <span class="rh-pill st-neutral">{{ ucfirst($agent->statut) }}</span>
                                         @endif
                                     </td>
                                     <td onclick="event.stopPropagation();">
@@ -76,19 +87,17 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <div class="text-muted">
-                        Affichage {{ $agents->firstItem() ?? 0 }} à {{ $agents->lastItem() ?? 0 }}
-                        sur {{ $agents->total() }} agents
+                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Affichage {{ $agents->firstItem() ?? 0 }} a {{ $agents->lastItem() ?? 0 }} sur {{ $agents->total() }} agents
                     </div>
                     {{ $agents->links() }}
                 </div>
             @else
                 <div class="text-center py-5">
-                    <i class="fas fa-users fa-5x text-muted mb-3 d-block"></i>
+                    <i class="fas fa-users fa-4x text-muted mb-3 d-block"></i>
                     <h5 class="text-muted">Aucun agent</h5>
-                    <p class="text-muted">Il n'y a aucun agent enregistré</p>
+                    <p class="text-muted">Il n'y a aucun agent enregistre.</p>
                     <a href="{{ route('rh.agents.create') }}" class="btn btn-primary mt-2">
                         <i class="fas fa-plus me-2"></i> Ajouter un agent
                     </a>
@@ -98,11 +107,10 @@
     </div>
 </div>
 
-<!-- Modal de détails de l'agent -->
 <div class="modal fade" id="agentDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content border-0">
-            <div class="modal-header bg-primary text-white border-0">
+            <div class="modal-header rh-modal-header border-0">
                 <div>
                     <h5 class="modal-title mb-0" id="modalAgentName"></h5>
                     <small id="modalAgentMatricule"></small>
@@ -121,25 +129,13 @@
                     <i class="fas fa-edit me-2"></i> Modifier
                 </a>
                 <a href="#" id="modalViewFullBtn" class="btn btn-primary">
-                    <i class="fas fa-external-link-alt me-2"></i> Vue complète
+                    <i class="fas fa-external-link-alt me-2"></i> Vue complete
                 </a>
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
             </div>
         </div>
     </div>
 </div>
-
-<style>
-    .agent-row:hover {
-        background-color: #f8f9fa !important;
-        box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-    }
-
-    .badge-status {
-        font-size: 0.75rem;
-        padding: 0.35rem 0.6rem;
-    }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -155,7 +151,6 @@ document.addEventListener('DOMContentLoaded', function() {
     function showAgentDetails(agentId) {
         const modal = new bootstrap.Modal(document.getElementById('agentDetailsModal'));
 
-        // Afficher le spinner
         document.getElementById('agentDetailsBody').innerHTML = `
             <div class="text-center py-5">
                 <div class="spinner-border" role="status">
@@ -166,112 +161,71 @@ document.addEventListener('DOMContentLoaded', function() {
 
         modal.show();
 
-        // Charger les détails de l'agent
         fetch(`{{ url('/api/agents') }}/${agentId}`)
             .then(response => response.json())
             .then(data => {
                 displayAgentDetails(data.agent);
             })
-            .catch(error => {
-                console.error('Erreur:', error);
+            .catch(() => {
                 document.getElementById('agentDetailsBody').innerHTML = `
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-circle me-2"></i>
-                        Erreur lors du chargement des détails
+                        Erreur lors du chargement des details
                     </div>
                 `;
             });
     }
 
     function displayAgentDetails(agent) {
-        // Mettre à jour le header
         document.getElementById('modalAgentName').textContent = `${agent.prenom} ${agent.nom}`;
         document.getElementById('modalAgentMatricule').innerHTML = `
             <span class="badge bg-light text-dark">${agent.matricule_pnmls}</span>
         `;
 
-        // Mettre à jour les boutons
         document.getElementById('modalEditBtn').href = `/rh/agents/${agent.id}/edit`;
         document.getElementById('modalViewFullBtn').href = `/rh/agents/${agent.id}`;
 
-        // Déterminer le badge statut
         let badgeStatut = '';
         if (agent.statut === 'actif') {
-            badgeStatut = '<span class="badge bg-success">Actif</span>';
+            badgeStatut = '<span class="rh-pill st-ok">Actif</span>';
+        } else if (agent.statut === 'suspendu') {
+            badgeStatut = '<span class="rh-pill st-mid">Suspendu</span>';
         } else {
-            badgeStatut = `<span class="badge bg-secondary">${agent.statut.charAt(0).toUpperCase() + agent.statut.slice(1)}</span>`;
+            badgeStatut = `<span class="rh-pill st-neutral">${agent.statut ? (agent.statut.charAt(0).toUpperCase() + agent.statut.slice(1)) : 'N/A'}</span>`;
         }
 
-        // Déterminer le badge rôle
-        let badgeRole = agent.role ?
-            `<span class="badge bg-info">${agent.role.nom_role}</span>` :
-            '<span class="badge bg-secondary">Non assigné</span>';
+        let badgeRole = agent.role
+            ? `<span class="rh-pill st-mid">${agent.role.nom_role}</span>`
+            : '<span class="rh-pill st-neutral">Non assigne</span>';
 
-        // Construire le contenu
         const html = `
             <div class="row">
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Informations personnelles</h6>
-                    <p class="mb-2">
-                        <strong class="text-muted">Prénom:</strong><br>
-                        ${agent.prenom}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Nom:</strong><br>
-                        ${agent.nom}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Email:</strong><br>
-                        <a href="mailto:${agent.email}">${agent.email}</a>
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Téléphone:</strong><br>
-                        ${agent.telephone || 'N/A'}
-                    </p>
+                    <p class="mb-2"><strong class="text-muted">Prenom:</strong><br>${agent.prenom || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Nom:</strong><br>${agent.nom || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Email:</strong><br><a href="mailto:${agent.email}">${agent.email || 'N/A'}</a></p>
+                    <p class="mb-2"><strong class="text-muted">Telephone:</strong><br>${agent.telephone || 'N/A'}</p>
                 </div>
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Informations professionnelles</h6>
-                    <p class="mb-2">
-                        <strong class="text-muted">Poste:</strong><br>
-                        ${agent.poste_actuel || 'N/A'}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Rôle:</strong><br>
-                        ${badgeRole}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Département:</strong><br>
-                        ${agent.departement?.nom_dept || 'N/A'}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Statut:</strong><br>
-                        ${badgeStatut}
-                    </p>
+                    <p class="mb-2"><strong class="text-muted">Poste:</strong><br>${agent.poste_actuel || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Role:</strong><br>${badgeRole}</p>
+                    <p class="mb-2"><strong class="text-muted">Departement:</strong><br>${agent.departement?.nom_dept || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Statut:</strong><br>${badgeStatut}</p>
                 </div>
             </div>
             <hr>
             <div class="row">
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Dates importantes</h6>
-                    <p class="mb-2">
-                        <strong class="text-muted">Date de naissance:</strong><br>
-                        ${agent.date_naissance || 'N/A'}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Lieu de naissance:</strong><br>
-                        ${agent.lieu_naissance || 'N/A'}
-                    </p>
+                    <p class="mb-2"><strong class="text-muted">Date de naissance:</strong><br>${agent.date_naissance || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Lieu de naissance:</strong><br>${agent.lieu_naissance || 'N/A'}</p>
                 </div>
                 <div class="col-md-6">
-                    <h6 class="text-muted mb-3">Détails supplémentaires</h6>
-                    <p class="mb-2">
-                        <strong class="text-muted">Date d'embauche:</strong><br>
-                        ${agent.date_embauche || 'N/A'}
-                    </p>
-                    <p class="mb-2">
-                        <strong class="text-muted">Adresse:</strong><br>
-                        ${agent.adresse || 'N/A'}
-                    </p>
+                    <h6 class="text-muted mb-3">Details supplementaires</h6>
+                    <p class="mb-2"><strong class="text-muted">Date d'embauche:</strong><br>${agent.date_embauche || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Adresse:</strong><br>${agent.adresse || 'N/A'}</p>
                 </div>
             </div>
         `;
@@ -280,3 +234,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+@endsection

@@ -51,7 +51,7 @@ class DocumentController extends Controller
         $agent_id = $validated['agent_id'] ?? auth()->user()->id;
 
         // Only allow RH staff or the agent themselves to upload
-        if ($agent_id !== auth()->user()->id && !auth()->user()->hasRole('Chef Section RH')) {
+        if ($agent_id !== auth()->user()->id && !auth()->user()->hasAdminAccess()) {
             abort(403, 'Vous n\'avez pas les droits pour créer ce document');
         }
 
@@ -81,7 +81,7 @@ class DocumentController extends Controller
     public function show(Document $document)
     {
         // Vérifier les droits d'accès
-        if ($document->agent_id !== auth()->user()->id && !auth()->user()->hasRole('Chef Section RH')) {
+        if ($document->agent_id !== auth()->user()->id && !auth()->user()->hasAdminAccess()) {
             abort(403);
         }
 
@@ -94,7 +94,7 @@ class DocumentController extends Controller
     public function download(Document $document)
     {
         // Vérifier les droits d'accès
-        if ($document->agent_id !== auth()->user()->id && !auth()->user()->hasRole('Chef Section RH')) {
+        if ($document->agent_id !== auth()->user()->id && !auth()->user()->hasAdminAccess()) {
             abort(403);
         }
 
@@ -110,8 +110,8 @@ class DocumentController extends Controller
      */
     public function destroy(Document $document)
     {
-        // Seulement Chef Section RH peut supprimer
-        if (!auth()->user()->hasRole('Chef Section RH')) {
+        // Seulement les profils admin RH peuvent supprimer
+        if (!auth()->user()->hasAdminAccess()) {
             abort(403);
         }
 

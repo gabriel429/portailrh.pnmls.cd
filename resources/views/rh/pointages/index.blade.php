@@ -1,43 +1,45 @@
 @extends('layouts.app')
 
-@section('content')
-<div class="container-fluid py-5">
-    <!-- En-tête -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-clock me-2"></i> Gestion des Pointages</h2>
-            <p class="text-muted mb-0">Enregistrement des présences et absences</p>
-        </div>
-        <div class="d-flex gap-2">
-            <div class="btn-group">
-                <a href="{{ route('rh.pointages.index') }}" class="btn btn-primary">
-                    <i class="fas fa-list me-2"></i> Liste
-                </a>
-                <a href="{{ route('rh.pointages.daily') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-calendar-alt me-2"></i> Par Jour
-                </a>
-                <a href="{{ route('rh.pointages.monthly-report') }}" class="btn btn-outline-secondary">
-                    <i class="fas fa-chart-bar me-2"></i> Rapport Mensuel
-                </a>
-            </div>
-            <a href="{{ route('rh.pointages.create') }}" class="btn btn-success">
-                <i class="fas fa-plus me-2"></i> Nouveau pointage
-            </a>
-        </div>
-    </div>
+@section('title', 'Pointages RH - Portail RH PNMLS')
 
-    <!-- Tableau des pointages -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
+@section('css')
+<link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+@endsection
+
+@section('content')
+@php /** @var \Illuminate\Pagination\LengthAwarePaginator $pointages */ @endphp
+<div class="rh-modern">
+    <div class="rh-list-shell">
+        <section class="rh-hero">
+            <div class="row g-2 align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="rh-title"><i class="fas fa-clock me-2"></i>Gestion des pointages</h1>
+                    <p class="rh-sub">Suivi des presences, absences et heures travaillees.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hero-tools">
+                        <a href="{{ route('rh.pointages.create') }}" class="btn-rh main"><i class="fas fa-plus me-1"></i> Nouveau pointage</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <div class="d-flex gap-2 mb-3 flex-wrap">
+            <a href="{{ route('rh.pointages.index') }}" class="btn btn-primary"><i class="fas fa-list me-2"></i>Liste</a>
+            <a href="{{ route('rh.pointages.daily') }}" class="btn btn-outline-secondary"><i class="fas fa-calendar-alt me-2"></i>Par jour</a>
+            <a href="{{ route('rh.pointages.monthly-report') }}" class="btn btn-outline-secondary"><i class="fas fa-chart-bar me-2"></i>Rapport mensuel</a>
+        </div>
+
+        <div class="rh-list-card p-3 p-lg-4">
             @if($pointages->count() > 0)
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-light">
+                <div class="rh-table-wrap">
+                    <table class="rh-table">
+                        <thead>
                             <tr>
                                 <th>Agent</th>
                                 <th>Matricule</th>
                                 <th>Date</th>
-                                <th>Entrée</th>
+                                <th>Entree</th>
                                 <th>Sortie</th>
                                 <th>Heures</th>
                                 <th>Actions</th>
@@ -46,23 +48,21 @@
                         <tbody>
                             @foreach($pointages as $pointage)
                                 <tr>
-                                    <td>
-                                        <strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong>
-                                    </td>
+                                    <td><strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong></td>
                                     <td>{{ $pointage->agent->matricule_pnmls }}</td>
                                     <td>{{ $pointage->date_pointage?->format('d/m/Y') ?? 'N/A' }}</td>
                                     <td>
                                         @if($pointage->heure_entree)
-                                            <span class="badge bg-success">{{ $pointage->heure_entree }}</span>
+                                            <span class="status-chip st-ok">{{ $pointage->heure_entree }}</span>
                                         @else
-                                            <span class="badge bg-secondary">-</span>
+                                            <span class="status-chip st-neutral">-</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($pointage->heure_sortie)
-                                            <span class="badge bg-info">{{ $pointage->heure_sortie }}</span>
+                                            <span class="status-chip st-mid">{{ $pointage->heure_sortie }}</span>
                                         @else
-                                            <span class="badge bg-secondary">-</span>
+                                            <span class="status-chip st-neutral">-</span>
                                         @endif
                                     </td>
                                     <td>
@@ -74,18 +74,12 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{{ route('rh.pointages.show', $pointage) }}" class="btn btn-outline-primary" title="Détails">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <a href="{{ route('rh.pointages.edit', $pointage) }}" class="btn btn-outline-warning" title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form method="POST" action="{{ route('rh.pointages.destroy', $pointage) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr ?');>
+                                            <a href="{{ route('rh.pointages.show', $pointage) }}" class="btn btn-outline-primary" title="Details"><i class="fas fa-eye"></i></a>
+                                            <a href="{{ route('rh.pointages.edit', $pointage) }}" class="btn btn-outline-warning" title="Modifier"><i class="fas fa-edit"></i></a>
+                                            <form method="POST" action="{{ route('rh.pointages.destroy', $pointage) }}" style="display:inline;" onsubmit="return confirm('Etes-vous sur ?');">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
+                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer"><i class="fas fa-trash"></i></button>
                                             </form>
                                         </div>
                                     </td>
@@ -95,22 +89,18 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <div class="text-muted">
-                        Affichage {{ $pointages->firstItem() ?? 0 }} à {{ $pointages->lastItem() ?? 0 }}
-                        sur {{ $pointages->total() }} pointages
+                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                    <div class="text-muted small">
+                        Affichage {{ $pointages->firstItem() ?? 0 }} a {{ $pointages->lastItem() ?? 0 }} sur {{ $pointages->total() }} pointages
                     </div>
                     {{ $pointages->links() }}
                 </div>
             @else
                 <div class="text-center py-5">
-                    <i class="fas fa-clock fa-5x text-muted mb-3 d-block"></i>
+                    <i class="fas fa-clock fa-4x text-muted mb-3 d-block"></i>
                     <h5 class="text-muted">Aucun pointage</h5>
-                    <p class="text-muted">Il n'y a aucun pointage enregistré</p>
-                    <a href="{{ route('rh.pointages.create') }}" class="btn btn-primary mt-2">
-                        <i class="fas fa-plus me-2"></i> Créer un pointage
-                    </a>
+                    <p class="text-muted">Il n'y a aucun pointage enregistre.</p>
+                    <a href="{{ route('rh.pointages.create') }}" class="btn btn-primary mt-2"><i class="fas fa-plus me-2"></i>Creer un pointage</a>
                 </div>
             @endif
         </div>

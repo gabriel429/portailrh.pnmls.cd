@@ -24,7 +24,11 @@ class RoleMiddleware
         // Check if user has any of the required roles
         $hasRole = false;
         foreach ($roles as $role) {
-            if ($user->role && $user->role->nom_role === $role) {
+            if (
+                $user->role
+                && $user->role->nom_role
+                && strtolower(trim((string) $user->role->nom_role)) === strtolower(trim((string) $role))
+            ) {
                 $hasRole = true;
                 break;
             }

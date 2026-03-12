@@ -1,161 +1,72 @@
 @extends('layouts.app')
 
+@section('title', 'Dashboard RH - Portail RH PNMLS')
+
+@section('css')
+<link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+@endsection
+
 @section('content')
-<div class="container-fluid py-5">
-    <!-- En-tête -->
-    <div class="mb-4">
-        <h2><i class="fas fa-chart-line me-2"></i> Tableau de Bord RH</h2>
-        <p class="text-muted mb-0">Vue d'ensemble des ressources humaines</p>
-    </div>
+@php
+    $activeRate = $totalAgents > 0 ? round(($activeAgents / $totalAgents) * 100) : 0;
+    $pendingRate = $totalRequests > 0 ? round(($pendingRequests / $totalRequests) * 100) : 0;
+    $approvalRate = $totalRequests > 0 ? round(($approvedRequests / $totalRequests) * 100) : 0;
+@endphp
 
-    <!-- Statistiques Agents -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Agents Totaux</p>
-                            <h3 class="mb-0 text-primary">{{ $totalAgents }}</h3>
-                        </div>
-                        <i class="fas fa-users fa-2x text-light"></i>
+<div class="rh-modern">
+    <div class="rh-shell">
+        <section class="rh-hero">
+            <div class="row g-2 align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="rh-title">Tableau de bord RH strategique</h1>
+                    <p class="rh-sub">Pilotage des effectifs, demandes et pointages en temps reel.</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hero-tools">
+                        <a href="{{ route('rh.agents.create') }}" class="btn-rh main"><i class="fas fa-user-plus me-1"></i> Nouvel agent</a>
+                        <a href="{{ route('rh.pointages.create') }}" class="btn-rh alt"><i class="fas fa-clock me-1"></i> Nouveau pointage</a>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Agents Actifs</p>
-                            <h3 class="mb-0 text-success">{{ $activeAgents }}</h3>
-                        </div>
-                        <i class="fas fa-check-circle fa-2x text-light"></i>
+        <section class="kpi-grid">
+            <article class="kpi">
+                <p class="label">Agents totaux</p>
+                <h2 class="value">{{ $totalAgents }}</h2>
+                <span class="trend trend-info"><i class="fas fa-users"></i> Effectif global</span>
+            </article>
+            <article class="kpi">
+                <p class="label">Agents actifs</p>
+                <h2 class="value">{{ $activeAgents }}</h2>
+                <span class="trend {{ $activeRate >= 70 ? 'trend-ok' : 'trend-mid' }}"><i class="fas fa-chart-line"></i> {{ $activeRate }}% du total</span>
+            </article>
+            <article class="kpi">
+                <p class="label">Demandes en attente</p>
+                <h2 class="value">{{ $pendingRequests }}</h2>
+                <span class="trend {{ $pendingRate <= 30 ? 'trend-ok' : 'trend-mid' }}"><i class="fas fa-hourglass-half"></i> {{ $pendingRate }}% a traiter</span>
+            </article>
+            <article class="kpi">
+                <p class="label">Pointages enregistres</p>
+                <h2 class="value">{{ $totalAttendance }}</h2>
+                <span class="trend trend-info"><i class="fas fa-stopwatch"></i> Trafic global</span>
+            </article>
+        </section>
+
+        <section class="overview">
+            <div class="panel">
+                <header class="panel-head">
+                    <div>
+                        <h3 class="panel-title"><i class="fas fa-file-signature me-2 text-info"></i>Demandes recentes</h3>
+                        <p class="panel-sub">Les 5 dernieres demandes soumises.</p>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Suspendus</p>
-                            <h3 class="mb-0 text-warning">{{ $suspendedAgents }}</h3>
-                        </div>
-                        <i class="fas fa-pause-circle fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Anciens</p>
-                            <h3 class="mb-0 text-secondary">{{ $formerAgents }}</h3>
-                        </div>
-                        <i class="fas fa-user-times fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistiques Demandes -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Demandes Totales</p>
-                            <h3 class="mb-0 text-primary">{{ $totalRequests }}</h3>
-                        </div>
-                        <i class="fas fa-file-alt fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">En Attente</p>
-                            <h3 class="mb-0 text-warning">{{ $pendingRequests }}</h3>
-                        </div>
-                        <i class="fas fa-hourglass-half fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Approuvées</p>
-                            <h3 class="mb-0 text-success">{{ $approvedRequests }}</h3>
-                        </div>
-                        <i class="fas fa-check fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Rejetées</p>
-                            <h3 class="mb-0 text-danger">{{ $rejectedRequests }}</h3>
-                        </div>
-                        <i class="fas fa-times fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Pointages totaux -->
-    <div class="row mb-4">
-        <div class="col-md-12 mb-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div>
-                            <p class="text-muted small mb-1">Pointages Enregistrés</p>
-                            <h3 class="mb-0 text-primary">{{ $totalAttendance }}</h3>
-                        </div>
-                        <i class="fas fa-clock fa-2x text-light"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Activités récentes -->
-    <div class="row">
-        <!-- Demandes récentes -->
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light border-bottom">
-                    <h5 class="mb-0"><i class="fas fa-list me-2 text-primary"></i>Demandes Récentes</h5>
-                </div>
-                <div class="card-body p-0">
+                    <a href="{{ route('requests.index') }}" class="btn btn-sm btn-outline-primary">Voir plus</a>
+                </header>
+                <div class="table-wrap">
                     @if($recentRequests->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
+                            <table class="rh-table">
+                                <thead>
                                     <tr>
                                         <th>Agent</th>
                                         <th>Type</th>
@@ -165,86 +76,94 @@
                                 </thead>
                                 <tbody>
                                     @foreach($recentRequests as $request)
+                                        @php
+                                            $statusValue = strtolower((string) $request->statut);
+                                            $statusClass = str_contains($statusValue, 'approuv')
+                                                ? 'st-ok'
+                                                : (str_contains($statusValue, 'rejet') ? 'st-bad' : 'st-mid');
+                                        @endphp
                                         <tr>
-                                            <td>
-                                                <strong>{{ $request->agent->prenom }} {{ $request->agent->nom }}</strong>
-                                            </td>
-                                            <td>{{ $request->type ?? 'N/A' }}</td>
-                                            <td>
-                                                @if($request->statut === 'en attente')
-                                                    <span class="badge bg-warning">Attente</span>
-                                                @elseif($request->statut === 'approuvé')
-                                                    <span class="badge bg-success">Approuvé</span>
-                                                @elseif($request->statut === 'rejeté')
-                                                    <span class="badge bg-danger">Rejeté</span>
-                                                @else
-                                                    <span class="badge bg-secondary">{{ ucfirst($request->statut) }}</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <small class="text-muted">{{ $request->created_at?->format('d/m/Y') }}</small>
-                                            </td>
+                                            <td>{{ $request->agent->prenom ?? '' }} {{ $request->agent->nom ?? '' }}</td>
+                                            <td>{{ $request->type_demande ?? $request->type ?? 'N/A' }}</td>
+                                            <td><span class="status-chip {{ $statusClass }}">{{ ucfirst($request->statut) }}</span></td>
+                                            <td>{{ $request->created_at?->format('d/m/Y') }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
                         </div>
                     @else
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-inbox fa-3x mb-2 d-block opacity-50"></i>
-                            <p class="mb-0">Aucune demande récente</p>
-                        </div>
+                        <div class="text-center py-4 text-muted">Aucune demande recente.</div>
                     @endif
                 </div>
-                @if($recentRequests->count() > 0)
-                    <div class="card-footer bg-light">
-                        <a href="{{ route('requests.index') }}" class="text-decoration-none">
-                            Voir toutes les demandes <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                @endif
             </div>
-        </div>
 
-        <!-- Pointages récents -->
-        <div class="col-lg-6 mb-4">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light border-bottom">
-                    <h5 class="mb-0"><i class="fas fa-clock me-2 text-primary"></i>Pointages Récents</h5>
+            <div class="panel">
+                <header class="panel-head">
+                    <div>
+                        <h3 class="panel-title"><i class="fas fa-sliders-h me-2 text-success"></i>Indicateurs RH</h3>
+                        <p class="panel-sub">Lecture immediate de la performance.</p>
+                    </div>
+                </header>
+                <div class="gauge-wrap">
+                    <div class="gauge-item">
+                        <div class="gauge-meta"><span>Taux d'agents actifs</span><span>{{ $activeRate }}%</span></div>
+                        <div class="gauge-bar"><div class="gauge-fill" style="width: {{ $activeRate }}%; background: linear-gradient(90deg, #10b981, #059669);"></div></div>
+                    </div>
+                    <div class="gauge-item">
+                        <div class="gauge-meta"><span>Taux d'approbation</span><span>{{ $approvalRate }}%</span></div>
+                        <div class="gauge-bar"><div class="gauge-fill" style="width: {{ $approvalRate }}%; background: linear-gradient(90deg, #0891b2, #0e7490);"></div></div>
+                    </div>
+                    <div class="gauge-item">
+                        <div class="gauge-meta"><span>Tickets en attente</span><span>{{ $pendingRate }}%</span></div>
+                        <div class="gauge-bar"><div class="gauge-fill" style="width: {{ $pendingRate }}%; background: linear-gradient(90deg, #f59e0b, #d97706);"></div></div>
+                    </div>
+                    <div class="gauge-item">
+                        <div class="gauge-meta"><span>Agents suspendus</span><span>{{ $suspendedAgents }}</span></div>
+                        <div class="gauge-bar"><div class="gauge-fill" style="width: {{ $totalAgents > 0 ? round(($suspendedAgents / $totalAgents) * 100) : 0 }}%; background: linear-gradient(90deg, #ef4444, #dc2626);"></div></div>
+                    </div>
                 </div>
-                <div class="card-body p-0">
+            </div>
+        </section>
+
+        <section class="overview" style="grid-template-columns: 1fr 1fr;">
+            <div class="panel">
+                <header class="panel-head">
+                    <div>
+                        <h3 class="panel-title"><i class="fas fa-clock me-2 text-primary"></i>Pointages recents</h3>
+                        <p class="panel-sub">Les 10 derniers enregistrements.</p>
+                    </div>
+                    <a href="{{ route('rh.pointages.index') }}" class="btn btn-sm btn-outline-primary">Voir plus</a>
+                </header>
+                <div class="table-wrap">
                     @if($recentAttendance->count() > 0)
                         <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead class="table-light">
+                            <table class="rh-table">
+                                <thead>
                                     <tr>
                                         <th>Agent</th>
                                         <th>Date</th>
-                                        <th>Entrée</th>
+                                        <th>Entree</th>
                                         <th>Sortie</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($recentAttendance as $pointage)
                                         <tr>
-                                            <td>
-                                                <strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong>
-                                            </td>
-                                            <td>
-                                                <small>{{ $pointage->date_pointage?->format('d/m/Y') }}</small>
-                                            </td>
+                                            <td>{{ $pointage->agent->prenom ?? '' }} {{ $pointage->agent->nom ?? '' }}</td>
+                                            <td>{{ $pointage->date_pointage?->format('d/m/Y') }}</td>
                                             <td>
                                                 @if($pointage->heure_entree)
-                                                    <span class="badge bg-success">{{ $pointage->heure_entree }}</span>
+                                                    <span class="status-chip st-ok">{{ $pointage->heure_entree }}</span>
                                                 @else
-                                                    <span class="badge bg-secondary">-</span>
+                                                    <span class="status-chip st-neutral">-</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 @if($pointage->heure_sortie)
-                                                    <span class="badge bg-info">{{ $pointage->heure_sortie }}</span>
+                                                    <span class="status-chip st-mid">{{ $pointage->heure_sortie }}</span>
                                                 @else
-                                                    <span class="badge bg-secondary">-</span>
+                                                    <span class="status-chip st-neutral">-</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -253,48 +172,44 @@
                             </table>
                         </div>
                     @else
-                        <div class="text-center py-4 text-muted">
-                            <i class="fas fa-inbox fa-3x mb-2 d-block opacity-50"></i>
-                            <p class="mb-0">Aucun pointage récent</p>
-                        </div>
+                        <div class="text-center py-4 text-muted">Aucun pointage recent.</div>
                     @endif
                 </div>
-                @if($recentAttendance->count() > 0)
-                    <div class="card-footer bg-light">
-                        <a href="{{ route('rh.pointages.index') }}" class="text-decoration-none">
-                            Voir tous les pointages <i class="fas fa-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                @endif
             </div>
-        </div>
-    </div>
 
-    <!-- Actions rapides -->
-    <div class="row">
-        <div class="col-md-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-light border-bottom">
-                    <h5 class="mb-0"><i class="fas fa-bolt me-2 text-primary"></i>Actions Rapides</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex gap-2 flex-wrap">
-                        <a href="{{ route('rh.agents.create') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-user-plus me-1"></i> Ajouter Agent
+            <div class="panel">
+                <header class="panel-head">
+                    <div>
+                        <h3 class="panel-title"><i class="fas fa-bolt me-2 text-warning"></i>Actions rapides</h3>
+                        <p class="panel-sub">Acces direct aux fonctions RH.</p>
+                    </div>
+                </header>
+                <div class="table-wrap">
+                    <div class="actions-grid">
+                        <a href="{{ route('rh.agents.create') }}" class="action-card">
+                            <div class="action-icon"><i class="fas fa-user-plus"></i></div>
+                            <p class="action-title">Ajouter un agent</p>
+                            <p class="action-desc">Creer une nouvelle fiche agent.</p>
                         </a>
-                        <a href="{{ route('rh.pointages.create') }}" class="btn btn-info btn-sm">
-                            <i class="fas fa-clock me-1"></i> Enregistrer Pointage
+                        <a href="{{ route('rh.agents.index') }}" class="action-card">
+                            <div class="action-icon"><i class="fas fa-address-book"></i></div>
+                            <p class="action-title">Gestion agents</p>
+                            <p class="action-desc">Consulter et modifier les profils.</p>
                         </a>
-                        <a href="{{ route('rh.agents.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-list me-1"></i> Gestion Agents
+                        <a href="{{ route('requests.index') }}" class="action-card">
+                            <div class="action-icon"><i class="fas fa-tasks"></i></div>
+                            <p class="action-title">Traiter demandes</p>
+                            <p class="action-desc">Valider ou rejeter les requetes.</p>
                         </a>
-                        <a href="{{ route('requests.index') }}" class="btn btn-secondary btn-sm">
-                            <i class="fas fa-file-alt me-1"></i> Demandes
+                        <a href="{{ route('rh.pointages.daily') }}" class="action-card">
+                            <div class="action-icon"><i class="fas fa-calendar-day"></i></div>
+                            <p class="action-title">Pointage journalier</p>
+                            <p class="action-desc">Suivi quotidien des presences.</p>
                         </a>
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     </div>
 </div>
 @endsection

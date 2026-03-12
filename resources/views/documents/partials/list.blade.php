@@ -67,7 +67,7 @@
                             <a href="{{ route('documents.download', $document) }}" class="btn btn-outline-success" title="Télécharger">
                                 <i class="fas fa-download"></i>
                             </a>
-                            @if(auth()->user()->id === $document->agent_id || auth()->user()->hasRole('Chef Section RH'))
+                            @if(auth()->user()->id === $document->agent_id || auth()->user()->hasAdminAccess())
                                 <form method="POST" action="{{ route('documents.destroy', $document) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr ?');">
                                     @csrf
                                     @method('DELETE')

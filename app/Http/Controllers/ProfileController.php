@@ -33,7 +33,7 @@ class ProfileController extends Controller
     public function edit(Agent $agent): View
     {
         // Vérifier que l'agent édite son propre profil
-        if (auth()->user()->id !== $agent->id && !auth()->user()->hasRole('Chef Section RH')) {
+        if (auth()->user()->id !== $agent->id && !auth()->user()->hasAdminAccess()) {
             abort(403);
         }
         return view('profile.edit', compact('agent'));
@@ -45,7 +45,7 @@ class ProfileController extends Controller
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         // Vérifier que l'agent édite son propre profil
-        if (auth()->user()->id !== $agent->id && !auth()->user()->hasRole('Chef Section RH')) {
+        if (auth()->user()->id !== $agent->id && !auth()->user()->hasAdminAccess()) {
             abort(403);
         }
 
