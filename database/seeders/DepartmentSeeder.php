@@ -62,7 +62,10 @@ class DepartmentSeeder extends Seeder
 
         foreach ($departments as $department) {
             if ($department['province_id']) {
-                Department::create($department);
+                Department::firstOrCreate(
+                    ['code' => $department['code']],
+                    $department
+                );
             }
         }
     }

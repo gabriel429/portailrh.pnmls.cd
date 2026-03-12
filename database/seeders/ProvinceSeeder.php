@@ -66,7 +66,10 @@ class ProvinceSeeder extends Seeder
         ];
 
         foreach ($provinces as $province) {
-            Province::create($province);
+            Province::firstOrCreate(
+                ['code' => $province['code']],
+                $province
+            );
         }
     }
 }

@@ -78,7 +78,10 @@ class AgentSeeder extends Seeder
         ];
 
         foreach ($agents as $agent) {
-            Agent::create($agent);
+            Agent::firstOrCreate(
+                ['matricule_pnmls' => $agent['matricule_pnmls']],
+                $agent
+            );
         }
     }
 }
