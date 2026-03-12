@@ -11,6 +11,12 @@ use App\Models\Grade;
 
 class Agent extends Authenticatable
 {
+    const ORGANES = [
+        'Secrétariat Exécutif National',
+        'Secrétariat Exécutif Provincial',
+        'Secrétariat Exécutif Local',
+    ];
+
     protected $fillable = [
         'matricule_pnmls',
         'matricule_etat',
