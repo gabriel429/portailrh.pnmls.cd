@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Paramètres') – Portail RH PNMLS</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary: #0077B5;
+            --sidebar-bg: #1a2448;
+            --sidebar-hover: #243060;
+            --sidebar-active: #0077B5;
+            --sidebar-width: 260px;
+        }
+
+        body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+
+        /* ── Sidebar ── */
+        #admin-sidebar {
+            width: var(--sidebar-width);
+            min-height: 100vh;
+            background: var(--sidebar-bg);
+            position: fixed;
+            top: 0; left: 0;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #admin-sidebar .sidebar-brand {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        #admin-sidebar .sidebar-brand h5 {
+            color: #fff;
+            font-weight: 700;
+            margin: 0;
+            font-size: 1rem;
+        }
+
+        #admin-sidebar .sidebar-brand small {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.75rem;
+        }
+
+        #admin-sidebar .nav-section {
+            padding: 14px 16px 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: rgba(255,255,255,0.35);
+        }
+
+        #admin-sidebar .nav-link {
+            color: rgba(255,255,255,0.75);
+            padding: 10px 24px;
+            border-radius: 0;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        #admin-sidebar .nav-link:hover {
+            background: var(--sidebar-hover);
+            color: #fff;
+        }
+
+        #admin-sidebar .nav-link.active {
+            background: var(--sidebar-active);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        #admin-sidebar .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+            text-align: center;
+        }
+
+        /* ── Main content ── */
+        #admin-main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── Topbar ── */
+        #admin-topbar {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        #admin-topbar .page-title {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: #1a2448;
+            margin: 0;
+        }
+
+        /* ── Cards ── */
+        .stat-card {
+            background: #fff;
+            border-radius: 10px;
+            padding: 22px 20px;
+            border: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .stat-card .stat-icon {
+            width: 50px; height: 50px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.4rem;
+            flex-shrink: 0;
+        }
+
+        .stat-card .stat-value { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+        .stat-card .stat-label { font-size: 0.8rem; color: #6b7280; margin-top: 2px; }
+
+        /* ── Tables ── */
+        .admin-table { background: #fff; border-radius: 10px; border: 1px solid #e5e7eb; overflow: hidden; }
+        .admin-table thead th { background: #f8fafc; font-weight: 600; font-size: 0.85rem; color: #374151; border-bottom: 2px solid #e5e7eb; }
+        .admin-table tbody tr:hover { background: #f8fafc; }
+
+        /* ── Logs ── */
+        #log-output {
+            background: #0d1117;
+            color: #c9d1d9;
+            font-family: 'Courier New', monospace;
+            font-size: 0.78rem;
+            padding: 16px;
+            border-radius: 8px;
+            max-height: 600px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-error   { color: #ff7b72; }
+        .log-warning { color: #e3b341; }
+        .log-info    { color: #58a6ff; }
+    </style>
+
+    @yield('css')
+</head>
+<body>
+
+{{-- Sidebar --}}
+<nav id="admin-sidebar">
+    <div class="sidebar-brand">
+        <h5><i class="fas fa-shield-alt me-2 text-primary"></i> Admin NT</h5>
+        <small>Paramètres système</small>
+    </div>
+
+    <div class="flex-grow-1 overflow-auto py-2">
+        <div class="nav-section">Navigation</div>
+        <a href="{{ route('admin.dashboard') }}"
+           class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
+            <i class="fas fa-tachometer-alt"></i> Tableau de bord
+        </a>
+        <a href="{{ route('dashboard') }}" class="nav-link">
+            <i class="fas fa-home"></i> Portail RH
+        </a>
+
+        <div class="nav-section mt-2">Tables de référence</div>
+        <a href="{{ route('admin.provinces.index') }}"
+           class="nav-link {{ request()->routeIs('admin.provinces.*') ? 'active' : '' }}">
+            <i class="fas fa-map-marked-alt"></i> Provinces
+        </a>
+        <a href="{{ route('admin.departments.index') }}"
+           class="nav-link {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}">
+            <i class="fas fa-building"></i> Départements
+        </a>
+        <a href="{{ route('admin.grades.index') }}"
+           class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}">
+            <i class="fas fa-layer-group"></i> Grades
+        </a>
+        <a href="{{ route('admin.roles.index') }}"
+           class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
+            <i class="fas fa-user-tag"></i> Rôles
+        </a>
+
+        <div class="nav-section mt-2">Système</div>
+        <a href="{{ route('admin.logs') }}"
+           class="nav-link {{ request()->routeIs('admin.logs') ? 'active' : '' }}">
+            <i class="fas fa-scroll"></i> Journaux (Logs)
+        </a>
+        <a href="{{ route('rh.agents.index') }}" class="nav-link">
+            <i class="fas fa-users"></i> Gestion Agents
+        </a>
+    </div>
+
+    <div class="p-3 border-top" style="border-color: rgba(255,255,255,0.1)!important">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center"
+                 style="width:34px;height:34px;flex-shrink:0">
+                <i class="fas fa-user text-white" style="font-size:.8rem"></i>
+            </div>
+            <div>
+                <div class="text-white" style="font-size:.82rem;font-weight:600">
+                    {{ auth()->user()->prenom }} {{ auth()->user()->nom }}
+                </div>
+                <div style="font-size:.7rem;color:rgba(255,255,255,.4)">
+                    {{ auth()->user()->role?->nom_role }}
+                </div>
+            </div>
+        </div>
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button class="btn btn-sm btn-outline-light w-100">
+                <i class="fas fa-sign-out-alt me-1"></i> Déconnexion
+            </button>
+        </form>
+    </div>
+</nav>
+
+{{-- Main --}}
+<div id="admin-main">
+    <div id="admin-topbar">
+        <h1 class="page-title">@yield('page-title', 'Paramètres')</h1>
+        <div class="d-flex gap-2">
+            @yield('topbar-actions')
+        </div>
+    </div>
+
+    <div class="p-4 flex-grow-1">
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle me-2"></i> {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle me-2"></i> {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+        @if($errors->any())
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    @foreach($errors->all() as $e) <li>{{ $e }}</li> @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @yield('content')
+    </div>
+
+    <footer class="text-center py-3 text-muted" style="font-size:.8rem;border-top:1px solid #e5e7eb">
+        &copy; {{ date('Y') }} Portail RH PNMLS – Section Nouvelle Technologie
+    </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+@yield('js')
+</body>
+</html>

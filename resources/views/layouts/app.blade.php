@@ -249,6 +249,14 @@
                             <li><a class="dropdown-item" href="{{ route('rh.pointages.index') }}">Pointages</a></li>
                             <li><a class="dropdown-item" href="{{ route('signalements.index') }}">Signalements</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.dashboard') }}">Tableau de Bord</a></li>
+                            @if(auth()->user()->isAdminNT())
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
+                                    <i class="fas fa-sliders-h me-1"></i> Paramètres système
+                                </a>
+                            </li>
+                            @endif
                         </ul>
                     </li>
                     @endif

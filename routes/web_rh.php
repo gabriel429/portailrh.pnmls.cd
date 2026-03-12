@@ -13,6 +13,7 @@ use App\Http\Controllers\RH\RoleController;
 use App\Http\Controllers\RH\PermissionController;
 use App\Http\Controllers\RH\ProvinceController;
 use App\Http\Controllers\RH\DepartmentController;
+use App\Http\Controllers\Admin\ParametresController;
 
 // Routes publiques
 Route::get('/', function () {
@@ -65,5 +66,48 @@ Route::middleware('auth')->group(function () {
         // Provinces et Départements
         Route::resource('provinces', ProvinceController::class);
         Route::resource('departments', DepartmentController::class);
+    });
+
+    // ─── Section Paramètres – Chef NT uniquement ────────────────────────────────
+    Route::middleware('admin.nt')->prefix('admin')->name('admin.')->group(function () {
+
+        // Dashboard paramètres
+        Route::get('/parametres', [ParametresController::class, 'dashboard'])->name('dashboard');
+
+        // Provinces
+        Route::get('/provinces',              [ParametresController::class, 'provincesIndex'])->name('provinces.index');
+        Route::get('/provinces/create',       [ParametresController::class, 'provincesCreate'])->name('provinces.create');
+        Route::post('/provinces',             [ParametresController::class, 'provincesStore'])->name('provinces.store');
+        Route::get('/provinces/{province}/edit', [ParametresController::class, 'provincesEdit'])->name('provinces.edit');
+        Route::put('/provinces/{province}',   [ParametresController::class, 'provincesUpdate'])->name('provinces.update');
+        Route::delete('/provinces/{province}',[ParametresController::class, 'provincesDestroy'])->name('provinces.destroy');
+
+        // Grades
+        Route::get('/grades',              [ParametresController::class, 'gradesIndex'])->name('grades.index');
+        Route::get('/grades/create',       [ParametresController::class, 'gradesCreate'])->name('grades.create');
+        Route::post('/grades',             [ParametresController::class, 'gradesStore'])->name('grades.store');
+        Route::get('/grades/{grade}/edit', [ParametresController::class, 'gradesEdit'])->name('grades.edit');
+        Route::put('/grades/{grade}',      [ParametresController::class, 'gradesUpdate'])->name('grades.update');
+        Route::delete('/grades/{grade}',   [ParametresController::class, 'gradesDestroy'])->name('grades.destroy');
+
+        // Rôles
+        Route::get('/roles',              [ParametresController::class, 'rolesIndex'])->name('roles.index');
+        Route::get('/roles/create',       [ParametresController::class, 'rolesCreate'])->name('roles.create');
+        Route::post('/roles',             [ParametresController::class, 'rolesStore'])->name('roles.store');
+        Route::get('/roles/{role}/edit',  [ParametresController::class, 'rolesEdit'])->name('roles.edit');
+        Route::put('/roles/{role}',       [ParametresController::class, 'rolesUpdate'])->name('roles.update');
+        Route::delete('/roles/{role}',    [ParametresController::class, 'rolesDestroy'])->name('roles.destroy');
+
+        // Départements
+        Route::get('/departments',                   [ParametresController::class, 'departmentsIndex'])->name('departments.index');
+        Route::get('/departments/create',            [ParametresController::class, 'departmentsCreate'])->name('departments.create');
+        Route::post('/departments',                  [ParametresController::class, 'departmentsStore'])->name('departments.store');
+        Route::get('/departments/{department}/edit', [ParametresController::class, 'departmentsEdit'])->name('departments.edit');
+        Route::put('/departments/{department}',      [ParametresController::class, 'departmentsUpdate'])->name('departments.update');
+        Route::delete('/departments/{department}',   [ParametresController::class, 'departmentsDestroy'])->name('departments.destroy');
+
+        // Logs
+        Route::get('/logs',        [ParametresController::class, 'logs'])->name('logs');
+        Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');
     });
 });

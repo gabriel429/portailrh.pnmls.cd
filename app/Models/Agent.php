@@ -173,6 +173,17 @@ class Agent extends Authenticatable
     }
 
     /**
+     * Check if user is Chef de Section Nouvelle Technologie (admin panel access).
+     */
+    public function isAdminNT(): bool
+    {
+        return $this->hasRole([
+            'Chef Section Nouvelle Technologie',
+            'Chef de Section Nouvelle Technologie',
+        ]);
+    }
+
+    /**
      * Assign role to user
      */
     public function assignRole($roleName)
