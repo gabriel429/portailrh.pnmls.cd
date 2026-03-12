@@ -12,7 +12,10 @@ chdir($root);
 $php = PHP_BINARY; // chemin PHP courant du serveur
 
 echo '<pre>';
-echo "=== migrate --force ===\n";
+echo "=== git pull origin main ===\n";
+echo shell_exec('git pull origin main 2>&1');
+
+echo "\n=== migrate --force ===\n";
 echo shell_exec($php . ' artisan migrate --force 2>&1');
 
 echo "\n=== db:seed GradeSeeder --force ===\n";
