@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use App\Models\Grade;
 
 class Agent extends Authenticatable
 {
@@ -39,6 +40,7 @@ class Agent extends Authenticatable
         'departement_id',
         'province_id',
         'role_id',
+        'grade_id',
         'date_embauche',
         'statut',
     ];
@@ -60,6 +62,11 @@ class Agent extends Authenticatable
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
+    }
+
+    public function grade(): BelongsTo
+    {
+        return $this->belongsTo(Grade::class);
     }
 
     public function province(): BelongsTo

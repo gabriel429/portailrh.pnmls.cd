@@ -11,6 +11,12 @@ class Province extends Model
         'code',
         'nom',
         'description',
+        'ville_secretariat',
+        'adresse',
+        'nom_gouverneur',
+        'nom_secretariat_executif',
+        'email_officiel',
+        'telephone_officiel',
     ];
 
     // Relations HasMany
