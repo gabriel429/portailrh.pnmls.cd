@@ -35,14 +35,20 @@ class ProvinceController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'code' => 'required|unique:provinces',
-            'nom' => 'required|unique:provinces',
-            'description' => 'nullable|string',
+            'code'                    => 'required|unique:provinces',
+            'nom'                     => 'required|unique:provinces',
+            'description'             => 'nullable|string',
+            'ville_secretariat'       => 'nullable|string|max:255',
+            'adresse'                 => 'nullable|string|max:500',
+            'nom_gouverneur'          => 'nullable|string|max:255',
+            'nom_secretariat_executif'=> 'nullable|string|max:255',
+            'email_officiel'          => 'nullable|email|max:255',
+            'telephone_officiel'      => 'nullable|string|max:50',
         ]);
 
         Province::create($validated);
 
-        return redirect()->route('provinces.index')
+        return redirect()->route('rh.provinces.index')
             ->with('success', 'Province créée avec succès');
     }
 
@@ -70,14 +76,20 @@ class ProvinceController extends Controller
     public function update(Request $request, Province $province): RedirectResponse
     {
         $validated = $request->validate([
-            'code' => 'required|unique:provinces,code,' . $province->id,
-            'nom' => 'required|unique:provinces,nom,' . $province->id,
-            'description' => 'nullable|string',
+            'code'                    => 'required|unique:provinces,code,' . $province->id,
+            'nom'                     => 'required|unique:provinces,nom,' . $province->id,
+            'description'             => 'nullable|string',
+            'ville_secretariat'       => 'nullable|string|max:255',
+            'adresse'                 => 'nullable|string|max:500',
+            'nom_gouverneur'          => 'nullable|string|max:255',
+            'nom_secretariat_executif'=> 'nullable|string|max:255',
+            'email_officiel'          => 'nullable|email|max:255',
+            'telephone_officiel'      => 'nullable|string|max:50',
         ]);
 
         $province->update($validated);
 
-        return redirect()->route('provinces.show', $province)
+        return redirect()->route('rh.provinces.show', $province)
             ->with('success', 'Province modifiée avec succès');
     }
 

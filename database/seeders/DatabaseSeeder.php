@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             PermissionSeeder::class,
             GradeSeeder::class,
             AgentSeeder::class,
+            AdminNTSeeder::class,
         ]);
     }
 }
