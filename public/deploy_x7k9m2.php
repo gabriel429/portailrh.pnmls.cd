@@ -7,7 +7,20 @@ if (!isset($_GET['token']) || $_GET['token'] !== 'MON_TOKEN_SECRET_2026') {
 
 $root = dirname(__DIR__);
 chdir($root);
+
+// lsphp est le handler LiteSpeed web, pas le CLI — on force le vrai PHP CLI
 $php = PHP_BINARY;
+foreach ([
+    '/opt/alt/php83/usr/bin/php',
+    '/opt/alt/php82/usr/bin/php',
+    '/opt/alt/php81/usr/bin/php',
+    '/usr/bin/php83',
+    '/usr/bin/php82',
+    '/usr/bin/php81',
+    '/usr/bin/php',
+] as $c) {
+    if (file_exists($c) && is_executable($c)) { $php = $c; break; }
+}
 
 echo '<pre>';
 
