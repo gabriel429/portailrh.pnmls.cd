@@ -140,6 +140,9 @@ class AgentController extends Controller
         if (in_array($organe, ['secrétariat exécutif provincial', 'secrétariat exécutif local'], true)) {
             $validated['departement_id'] = null;
         }
+        if ($organe === 'secrétariat exécutif national') {
+            $validated['province_id'] = null;
+        }
 
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
             $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
@@ -219,6 +222,9 @@ class AgentController extends Controller
         $organe = strtolower(trim((string) $validated['organe']));
         if (in_array($organe, ['secrétariat exécutif provincial', 'secrétariat exécutif local'], true)) {
             $validated['departement_id'] = null;
+        }
+        if ($organe === 'secrétariat exécutif national') {
+            $validated['province_id'] = null;
         }
 
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {

@@ -302,7 +302,7 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-6" id="province-wrapper">
                             <label for="province_id" class="form-label">Province</label>
                             <select class="form-select @error('province_id') is-invalid @enderror"
                                 id="province_id" name="province_id">
@@ -372,25 +372,38 @@
 @section('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const organeInput = document.getElementById('organe');
+    const organeInput     = document.getElementById('organe');
     const departementSelect = document.getElementById('departement_id');
+    const provinceWrapper = document.getElementById('province-wrapper');
+    const provinceSelect  = document.getElementById('province_id');
+
+    const isNational = (value) =>
+        (value || '').trim().toLowerCase() === 'secrétariat exécutif national';
 
     const shouldDisableDepartment = (value) => {
         const normalized = (value || '').trim().toLowerCase();
         return normalized === 'secrétariat exécutif provincial' || normalized === 'secrétariat exécutif local';
     };
 
-    const syncDepartmentState = () => {
-        const disabled = shouldDisableDepartment(organeInput.value);
-        departementSelect.disabled = disabled;
-
-        if (disabled) {
-            departementSelect.value = '';
+    const syncFields = () => {
+        // Province : masquée si organe national
+        if (isNational(organeInput.value)) {
+            provinceWrapper.style.display = 'none';
+            provinceSelect.value = '';
+            provinceSelect.disabled = true;
+        } else {
+            provinceWrapper.style.display = '';
+            provinceSelect.disabled = false;
         }
+
+        // Département : désactivé si provincial ou local
+        const disableDept = shouldDisableDepartment(organeInput.value);
+        departementSelect.disabled = disableDept;
+        if (disableDept) departementSelect.value = '';
     };
 
-    organeInput.addEventListener('change', syncDepartmentState);
-    syncDepartmentState();
+    organeInput.addEventListener('change', syncFields);
+    syncFields();
 });
 </script>
 @endsection
