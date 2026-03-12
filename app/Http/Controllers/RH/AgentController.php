@@ -16,6 +16,69 @@ use Illuminate\Http\RedirectResponse;
 class AgentController extends Controller
 {
     /**
+     * Organes disponibles selon la nomenclature PNMLS.
+     */
+    private function getOrganeOptions(): array
+    {
+        return [
+            'Secrétariat Exécutif National',
+            'Secrétariat Exécutif National Adjoint',
+            'Services rattachés au SEN / SENA',
+            'Département',
+            'Secrétariat Exécutif Provincial',
+            'Secrétariat Exécutif Local',
+        ];
+    }
+
+    /**
+     * Fonctions PNMLS structurées par catégorie.
+     */
+    private function getFonctionOptions(): array
+    {
+        return [
+            'Secrétariat Exécutif National' => [
+                'Secrétaire Exécutif National (SEN)',
+                'Secrétaire Exécutif National Adjoint (SENA)',
+            ],
+            'Secrétariat de Direction' => [
+                'Assistant(e) de Direction (ADIR)',
+                'Secrétaire de Direction',
+                'Chef de cellule chargé du protocole, courriers et relations publiques',
+                'Chef d’équipe chargé des relations publiques',
+                'Chef d’équipe chargé de la réception',
+            ],
+            'Section Juridique' => [
+                'Chef de Section Juridique',
+            ],
+            'Section Communication' => [
+                'Chef de Section Communication',
+                'Chef de Cellule Communication',
+                'Chef d’équipe Communication',
+            ],
+            'Section Audit Interne' => [
+                'Chef de Section chargé de l’Audit Interne',
+                'Chef de Cellule chargé de l’Audit Interne',
+            ],
+            'Organisation des Départements' => [
+                'Directeur - Chef de Département',
+                'Chef de Section',
+                'Chef de Cellule',
+                'Assistant de Section',
+                'Assistant ou Secrétaire de Département',
+            ],
+            'Département Administration et Finances' => [
+                'Caissier / Caissière',
+                'Chargé de fonction spécifique',
+                'Mécanicien en chef',
+                'Commis logistique',
+                'Commis magasin',
+                'Chauffeur',
+                'Technicien de surface',
+            ],
+        ];
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(): View
@@ -34,8 +97,10 @@ class AgentController extends Controller
         $roles = Role::all();
         $departments = Department::all();
         $provinces = Province::all();
+        $organeOptions = $this->getOrganeOptions();
+        $fonctionOptions = $this->getFonctionOptions();
 
-        return view('rh.agents.create', compact('roles', 'departments', 'provinces'));
+        return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions'));
     }
 
     /**
@@ -45,19 +110,46 @@ class AgentController extends Controller
     {
         $validated = $request->validate([
             'matricule_pnmls' => 'required|unique:agents',
+            'matricule_etat' => 'required|unique:agents,matricule_etat',
+            'provenance_matricule' => 'required|string|max:255',
             'nom' => 'required|string',
+            'postnom' => 'required|string',
             'prenom' => 'required|string',
             'email' => 'required|email|unique:agents',
-            'date_naissance' => 'required|date',
+            'email_prive' => 'nullable|email',
+            'email_professionnel' => 'nullable|email',
+            'annee_naissance' => 'required|integer|min:1950|max:2100',
+            'date_naissance' => 'nullable|date',
             'lieu_naissance' => 'required|string',
+            'sexe' => 'required|in:M,F',
             'telephone' => 'nullable|string',
             'adresse' => 'nullable|string',
+            'organe' => 'required|string|max:255',
+            'fonction' => 'required|string|max:255',
+            'grade_etat' => 'required|string|max:255',
+            'niveau_etudes' => 'required|string|max:255',
+            'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
-            'departement_id' => 'nullable|exists:departments,id',
+            'departement_id' => 'required_unless:organe,Secrétariat Exécutif Provincial,Secrétariat Exécutif Local|nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
             'role_id' => 'nullable|exists:roles,id',
-            'date_embauche' => 'required|date',
+            'date_embauche' => 'nullable|date',
         ]);
+
+        $organe = strtolower(trim((string) $validated['organe']));
+        if (in_array($organe, ['secrétariat exécutif provincial', 'secrétariat exécutif local'], true)) {
+            $validated['departement_id'] = null;
+        }
+
+        if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
+            $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
+        }
+
+        if (empty($validated['date_embauche']) && !empty($validated['annee_engagement_programme'])) {
+            $validated['date_embauche'] = $validated['annee_engagement_programme'] . '-01-01';
+        }
+
+        $validated['poste_actuel'] = $validated['fonction'];
 
         Agent::create($validated);
 
@@ -83,8 +175,10 @@ class AgentController extends Controller
         $roles = Role::all();
         $departments = Department::all();
         $provinces = Province::all();
+        $organeOptions = $this->getOrganeOptions();
+        $fonctionOptions = $this->getFonctionOptions();
 
-        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces'));
+        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions'));
     }
 
     /**
@@ -93,18 +187,49 @@ class AgentController extends Controller
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         $validated = $request->validate([
+            'matricule_pnmls' => 'required|unique:agents,matricule_pnmls,' . $agent->id,
+            'matricule_etat' => 'required|unique:agents,matricule_etat,' . $agent->id,
+            'provenance_matricule' => 'required|string|max:255',
             'nom' => 'required|string',
+            'postnom' => 'required|string',
             'prenom' => 'required|string',
             'email' => 'required|email|unique:agents,email,' . $agent->id,
+            'email_prive' => 'nullable|email',
+            'email_professionnel' => 'nullable|email',
+            'annee_naissance' => 'required|integer|min:1950|max:2100',
+            'date_naissance' => 'nullable|date',
+            'lieu_naissance' => 'required|string',
+            'sexe' => 'required|in:M,F',
             'telephone' => 'nullable|string',
             'adresse' => 'nullable|string',
+            'organe' => 'required|string|max:255',
+            'fonction' => 'required|string|max:255',
+            'grade_etat' => 'required|string|max:255',
+            'niveau_etudes' => 'required|string|max:255',
+            'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
-            'departement_id' => 'nullable|exists:departments,id',
+            'departement_id' => 'required_unless:organe,Secrétariat Exécutif Provincial,Secrétariat Exécutif Local|nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
             'role_id' => 'nullable|exists:roles,id',
+            'date_embauche' => 'nullable|date',
             'statut' => 'required|in:actif,suspendu,ancien',
             'photo' => 'nullable|image|max:2048',
         ]);
+
+        $organe = strtolower(trim((string) $validated['organe']));
+        if (in_array($organe, ['secrétariat exécutif provincial', 'secrétariat exécutif local'], true)) {
+            $validated['departement_id'] = null;
+        }
+
+        if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
+            $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
+        }
+
+        if (empty($validated['date_embauche']) && !empty($validated['annee_engagement_programme'])) {
+            $validated['date_embauche'] = $validated['annee_engagement_programme'] . '-01-01';
+        }
+
+        $validated['poste_actuel'] = $validated['fonction'];
 
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
@@ -188,15 +313,27 @@ class AgentController extends Controller
                 'matricule_pnmls' => $agent->matricule_pnmls,
                 'prenom' => $agent->prenom,
                 'nom' => $agent->nom,
+                'postnom' => $agent->postnom,
                 'email' => $agent->email,
+                'email_prive' => $agent->email_prive,
+                'email_professionnel' => $agent->email_professionnel,
                 'telephone' => $agent->telephone,
                 'poste_actuel' => $agent->poste_actuel,
+                'organe' => $agent->organe,
+                'fonction' => $agent->fonction,
+                'grade_etat' => $agent->grade_etat,
+                'sexe' => $agent->sexe,
+                'matricule_etat' => $agent->matricule_etat,
+                'provenance_matricule' => $agent->provenance_matricule,
+                'niveau_etudes' => $agent->niveau_etudes,
+                'annee_engagement_programme' => $agent->annee_engagement_programme,
+                'annee_naissance' => $agent->annee_naissance,
                 'role' => $agent->role,
                 'departement' => $agent->departement,
                 'province' => $agent->province,
-                'date_naissance' => $agent->date_naissance?->format('d/m/Y'),
+                'date_naissance' => optional($agent->date_naissance)->format('d/m/Y'),
                 'lieu_naissance' => $agent->lieu_naissance,
-                'date_embauche' => $agent->date_embauche?->format('d/m/Y'),
+                'date_embauche' => optional($agent->date_embauche)->format('d/m/Y'),
                 'adresse' => $agent->adresse,
                 'statut' => $agent->statut,
             ]

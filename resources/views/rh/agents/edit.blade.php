@@ -1,5 +1,13 @@
 @extends('layouts.app')
 
+@php
+/** @var \Illuminate\Support\Collection $roles */
+/** @var \Illuminate\Support\Collection $departments */
+/** @var \Illuminate\Support\Collection $provinces */
+/** @var array $organeOptions */
+/** @var array $fonctionOptions */
+@endphp
+
 @section('content')
 <div class="container-fluid py-5">
     <!-- En-tête -->
@@ -97,10 +105,93 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label for="postnom" class="form-label">Post nom <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('postnom') is-invalid @enderror"
+                                id="postnom" name="postnom" value="{{ old('postnom', $agent->postnom) }}" required>
+                            @error('postnom')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="matricule_etat" class="form-label">Matricule de l'État <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('matricule_etat') is-invalid @enderror"
+                                id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat) }}" required>
+                            @error('matricule_etat')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="provenance_matricule" class="form-label">Provenance matricule <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('provenance_matricule') is-invalid @enderror"
+                                id="provenance_matricule" name="provenance_matricule" value="{{ old('provenance_matricule', $agent->provenance_matricule) }}" required>
+                            @error('provenance_matricule')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="telephone" class="form-label">Téléphone</label>
                             <input type="tel" class="form-control @error('telephone') is-invalid @enderror"
                                 id="telephone" name="telephone" value="{{ old('telephone', $agent->telephone) }}">
                             @error('telephone')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="email_prive" class="form-label">E-mail privé</label>
+                            <input type="email" class="form-control @error('email_prive') is-invalid @enderror"
+                                id="email_prive" name="email_prive" value="{{ old('email_prive', $agent->email_prive) }}">
+                            @error('email_prive')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="email_professionnel" class="form-label">E-mail professionnel</label>
+                            <input type="email" class="form-control @error('email_professionnel') is-invalid @enderror"
+                                id="email_professionnel" name="email_professionnel" value="{{ old('email_professionnel', $agent->email_professionnel) }}">
+                            @error('email_professionnel')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="annee_naissance" class="form-label">Année de naissance <span class="text-danger">*</span></label>
+                            <input type="number" min="1950" max="2100" class="form-control @error('annee_naissance') is-invalid @enderror"
+                                id="annee_naissance" name="annee_naissance" value="{{ old('annee_naissance', $agent->annee_naissance) }}" required>
+                            @error('annee_naissance')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="date_naissance" class="form-label">Date de naissance (optionnel)</label>
+                            <input type="date" class="form-control @error('date_naissance') is-invalid @enderror"
+                                id="date_naissance" name="date_naissance" value="{{ old('date_naissance', $agent->date_naissance?->format('Y-m-d')) }}">
+                            @error('date_naissance')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="lieu_naissance" class="form-label">Lieu de naissance <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('lieu_naissance') is-invalid @enderror"
+                                id="lieu_naissance" name="lieu_naissance" value="{{ old('lieu_naissance', $agent->lieu_naissance) }}" required>
+                            @error('lieu_naissance')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="sexe" class="form-label">Sexe <span class="text-danger">*</span></label>
+                            <select class="form-select @error('sexe') is-invalid @enderror" id="sexe" name="sexe" required>
+                                <option value="M" @selected(old('sexe', $agent->sexe) === 'M')>Masculin</option>
+                                <option value="F" @selected(old('sexe', $agent->sexe) === 'F')>Féminin</option>
+                            </select>
+                            @error('sexe')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -128,6 +219,72 @@
                             <input type="text" class="form-control @error('poste_actuel') is-invalid @enderror"
                                 id="poste_actuel" name="poste_actuel" value="{{ old('poste_actuel', $agent->poste_actuel) }}">
                             @error('poste_actuel')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="organe" class="form-label">Organe <span class="text-danger">*</span></label>
+                            <select class="form-select @error('organe') is-invalid @enderror" id="organe" name="organe" required>
+                                <option value="">-- Sélectionner un organe --</option>
+                                @foreach ($organeOptions as $organe)
+                                    <option value="{{ $organe }}" @selected(old('organe', $agent->organe) === $organe)>{{ $organe }}</option>
+                                @endforeach
+                            </select>
+                            @error('organe')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="fonction" class="form-label">Fonction <span class="text-danger">*</span></label>
+                            <select class="form-select @error('fonction') is-invalid @enderror" id="fonction" name="fonction" required>
+                                <option value="">-- Sélectionner une fonction --</option>
+                                @foreach ($fonctionOptions as $groupe => $fonctions)
+                                    <optgroup label="{{ $groupe }}">
+                                        @foreach ($fonctions as $fonction)
+                                            <option value="{{ $fonction }}" @selected(old('fonction', $agent->fonction) === $fonction)>{{ $fonction }}</option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            @error('fonction')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="grade_etat" class="form-label">Grade de l'État <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('grade_etat') is-invalid @enderror"
+                                id="grade_etat" name="grade_etat" value="{{ old('grade_etat', $agent->grade_etat) }}" required>
+                            @error('grade_etat')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="niveau_etudes" class="form-label">Niveau d'études <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('niveau_etudes') is-invalid @enderror"
+                                id="niveau_etudes" name="niveau_etudes" value="{{ old('niveau_etudes', $agent->niveau_etudes) }}" required>
+                            @error('niveau_etudes')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="annee_engagement_programme" class="form-label">Année d'engagement au programme <span class="text-danger">*</span></label>
+                            <input type="number" min="1950" max="2100" class="form-control @error('annee_engagement_programme') is-invalid @enderror"
+                                id="annee_engagement_programme" name="annee_engagement_programme" value="{{ old('annee_engagement_programme', $agent->annee_engagement_programme) }}" required>
+                            @error('annee_engagement_programme')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="date_embauche" class="form-label">Date d'embauche (optionnel)</label>
+                            <input type="date" class="form-control @error('date_embauche') is-invalid @enderror"
+                                id="date_embauche" name="date_embauche" value="{{ old('date_embauche', $agent->date_embauche?->format('Y-m-d')) }}">
+                            @error('date_embauche')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -210,4 +367,30 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('js')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const organeInput = document.getElementById('organe');
+    const departementSelect = document.getElementById('departement_id');
+
+    const shouldDisableDepartment = (value) => {
+        const normalized = (value || '').trim().toLowerCase();
+        return normalized === 'secrétariat exécutif provincial' || normalized === 'secrétariat exécutif local';
+    };
+
+    const syncDepartmentState = () => {
+        const disabled = shouldDisableDepartment(organeInput.value);
+        departementSelect.disabled = disabled;
+
+        if (disabled) {
+            departementSelect.value = '';
+        }
+    };
+
+    organeInput.addEventListener('change', syncDepartmentState);
+    syncDepartmentState();
+});
+</script>
 @endsection

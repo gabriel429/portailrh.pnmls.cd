@@ -48,6 +48,10 @@
                             <p class="mb-0">{{ $agent->nom }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Post nom</label>
+                            <p class="mb-0">{{ $agent->postnom ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="text-muted small">Email</label>
                             <p class="mb-0"><a href="mailto:{{ $agent->email }}">{{ $agent->email }}</a></p>
                         </div>
@@ -60,12 +64,28 @@
                             <p class="mb-0">{{ $agent->date_naissance?->format('d/m/Y') ?? 'N/A' }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Année de naissance</label>
+                            <p class="mb-0">{{ $agent->annee_naissance ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label class="text-muted small">Lieu de Naissance</label>
                             <p class="mb-0">{{ $agent->lieu_naissance ?? 'N/A' }}</p>
                         </div>
                         <div class="col-md-12 mb-3">
                             <label class="text-muted small">Adresse</label>
                             <p class="mb-0">{{ $agent->adresse ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Sexe</label>
+                            <p class="mb-0">{{ $agent->sexe ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">E-mail privé</label>
+                            <p class="mb-0">{{ $agent->email_prive ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">E-mail professionnel</label>
+                            <p class="mb-0">{{ $agent->email_professionnel ?? 'N/A' }}</p>
                         </div>
                     </div>
                 </div>
@@ -85,6 +105,34 @@
                         <div class="col-md-6 mb-3">
                             <label class="text-muted small">Poste Actuel</label>
                             <p class="mb-0">{{ $agent->poste_actuel ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Organe</label>
+                            <p class="mb-0">{{ $agent->organe ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Fonction</label>
+                            <p class="mb-0">{{ $agent->fonction ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Grade de l'État</label>
+                            <p class="mb-0">{{ $agent->grade_etat ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Matricule de l'État</label>
+                            <p class="mb-0">{{ $agent->matricule_etat ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Provenance matricule</label>
+                            <p class="mb-0">{{ $agent->provenance_matricule ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Niveau d'études</label>
+                            <p class="mb-0">{{ $agent->niveau_etudes ?? 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="text-muted small">Année d'engagement au programme</label>
+                            <p class="mb-0">{{ $agent->annee_engagement_programme ?? 'N/A' }}</p>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="text-muted small">Province</label>
