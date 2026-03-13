@@ -10,10 +10,13 @@ class Affectation extends Model
     protected $fillable = [
         'agent_id',
         'fonction_id',
-        'niveau',
+        'niveau_administratif', // SEN | SEP | SEL
+        'niveau',               // direction | service_rattache | département | section | cellule | province | local
         'department_id',
         'section_id',
         'cellule_id',
+        'province_id',
+        'localite_id',
         'date_debut',
         'date_fin',
         'actif',
@@ -25,6 +28,17 @@ class Affectation extends Model
         'date_fin'   => 'date',
         'actif'      => 'boolean',
     ];
+
+    /** Label lisible du niveau administratif */
+    public function getNiveauAdministratifLabelAttribute(): string
+    {
+        return match($this->niveau_administratif) {
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
+            default => $this->niveau_administratif,
+        };
+    }
 
     public function agent(): BelongsTo
     {
@@ -50,4 +64,15 @@ class Affectation extends Model
     {
         return $this->belongsTo(Cellule::class);
     }
+
+    public function province(): BelongsTo
+    {
+        return $this->belongsTo(Province::class);
+    }
+
+    public function localite(): BelongsTo
+    {
+        return $this->belongsTo(Localite::class);
+    }
 }
+

@@ -203,6 +203,10 @@
            class="nav-link {{ request()->routeIs('admin.affectations.*') ? 'active' : '' }}">
             <i class="fas fa-user-tie"></i> Affectations
         </a>
+        <a href="{{ route('admin.localites.index') }}"
+           class="nav-link {{ request()->routeIs('admin.localites.*') ? 'active' : '' }}">
+            <i class="fas fa-map-pin"></i> Localités SEL
+        </a>
         <a href="{{ route('admin.grades.index') }}"
            class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}">
             <i class="fas fa-layer-group"></i> Grades

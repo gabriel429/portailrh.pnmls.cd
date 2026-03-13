@@ -12,6 +12,7 @@ use App\Models\Section;
 use App\Models\Cellule;
 use App\Models\Fonction;
 use App\Models\Affectation;
+use App\Models\Localite;
 use App\Models\Permission;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
@@ -29,6 +30,7 @@ class ParametresController extends Controller
             'sections'    => Section::count(),
             'cellules'    => Cellule::count(),
             'fonctions'   => Fonction::count(),
+            'localites'   => Localite::count(),
             'grades'      => Grade::count(),
             'roles'       => Role::count(),
             'permissions' => Permission::count(),
@@ -275,7 +277,10 @@ class ParametresController extends Controller
 
     public function fonctionsIndex()
     {
-        $fonctions = Fonction::orderBy('niveau')->orderBy('nom')->paginate(20);
+        $fonctions = Fonction::orderBy('niveau_administratif')
+            ->orderBy('type_poste')
+            ->orderBy('nom')
+            ->paginate(30);
         return view('admin.fonctions.index', compact('fonctions'));
     }
 
@@ -287,10 +292,11 @@ class ParametresController extends Controller
     public function fonctionsStore(Request $request)
     {
         $validated = $request->validate([
-            'nom'         => 'required|string|max:255|unique:fonctions',
-            'niveau'      => 'required|in:département,section,cellule,transversal',
-            'est_chef'    => 'boolean',
-            'description' => 'nullable|string',
+            'nom'                  => 'required|string|max:255|unique:fonctions',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL,TOUS',
+            'type_poste'           => 'required|in:direction,service_rattache,département,section,cellule,appui,province,local',
+            'est_chef'             => 'boolean',
+            'description'          => 'nullable|string',
         ]);
         $validated['est_chef'] = $request->boolean('est_chef');
 
@@ -308,10 +314,11 @@ class ParametresController extends Controller
     public function fonctionsUpdate(Request $request, Fonction $fonction)
     {
         $validated = $request->validate([
-            'nom'         => 'required|string|max:255|unique:fonctions,nom,' . $fonction->id,
-            'niveau'      => 'required|in:département,section,cellule,transversal',
-            'est_chef'    => 'boolean',
-            'description' => 'nullable|string',
+            'nom'                  => 'required|string|max:255|unique:fonctions,nom,' . $fonction->id,
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL,TOUS',
+            'type_poste'           => 'required|in:direction,service_rattache,département,section,cellule,appui,province,local',
+            'est_chef'             => 'boolean',
+            'description'          => 'nullable|string',
         ]);
         $validated['est_chef'] = $request->boolean('est_chef');
 
@@ -336,7 +343,12 @@ class ParametresController extends Controller
 
     public function sectionsIndex()
     {
-        $sections = Section::with('department')->withCount('cellules')->orderBy('department_id')->orderBy('nom')->paginate(25);
+        $sections = Section::with('department')
+            ->withCount('cellules')
+            ->orderBy('type')
+            ->orderBy('department_id')
+            ->orderBy('nom')
+            ->paginate(25);
         return view('admin.sections.index', compact('sections'));
     }
 
@@ -348,11 +360,13 @@ class ParametresController extends Controller
 
     public function sectionsStore(Request $request)
     {
+        $type = $request->input('type', 'section');
         $validated = $request->validate([
             'code'          => 'required|string|max:20|unique:sections',
             'nom'           => 'required|string|max:255',
             'description'   => 'nullable|string',
-            'department_id' => 'required|exists:departments,id',
+            'type'          => 'required|in:section,service_rattache',
+            'department_id' => $type === 'section' ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
         ]);
 
         Section::create($validated);
@@ -369,11 +383,13 @@ class ParametresController extends Controller
 
     public function sectionsUpdate(Request $request, Section $section)
     {
+        $type = $request->input('type', 'section');
         $validated = $request->validate([
             'code'          => 'required|string|max:20|unique:sections,code,' . $section->id,
             'nom'           => 'required|string|max:255',
             'description'   => 'nullable|string',
-            'department_id' => 'required|exists:departments,id',
+            'type'          => 'required|in:section,service_rattache',
+            'department_id' => $type === 'section' ? 'required|exists:departments,id' : 'nullable|exists:departments,id',
         ]);
 
         $section->update($validated);
@@ -450,65 +466,89 @@ class ParametresController extends Controller
 
     public function affectationsIndex()
     {
-        $affectations = Affectation::with(['agent', 'fonction', 'department', 'section', 'cellule'])
-            ->orderBy('niveau')->orderBy('department_id')->paginate(25);
+        $affectations = Affectation::with([
+            'agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite',
+        ])
+        ->orderBy('niveau_administratif')
+        ->orderBy('niveau')
+        ->paginate(25);
         return view('admin.affectations.index', compact('affectations'));
+    }
+
+    private function affectationsFormData(): array
+    {
+        return [
+            'agents'      => Agent::orderBy('nom')->get(),
+            'fonctions'   => Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get(),
+            'departments' => Department::orderBy('nom')->get(),
+            'sections'    => Section::with('department')->orderBy('type')->orderBy('nom')->get(),
+            'cellules'    => Cellule::with('section')->orderBy('nom')->get(),
+            'provinces'   => Province::orderBy('nom')->get(),
+            'localites'   => Localite::with('province')->orderBy('nom')->get(),
+        ];
     }
 
     public function affectationsCreate()
     {
-        $agents      = Agent::orderBy('nom')->get();
-        $fonctions   = Fonction::orderBy('niveau')->orderBy('nom')->get();
-        $departments = Department::orderBy('nom')->get();
-        $sections    = Section::with('department')->orderBy('nom')->get();
-        $cellules    = Cellule::with('section')->orderBy('nom')->get();
-        return view('admin.affectations.create', compact('agents', 'fonctions', 'departments', 'sections', 'cellules'));
+        return view('admin.affectations.create', $this->affectationsFormData());
     }
 
     public function affectationsStore(Request $request)
     {
+        $niveauAdmin = $request->input('niveau_administratif');
+        $niveau      = $request->input('niveau');
+
         $validated = $request->validate([
-            'agent_id'      => 'required|exists:agents,id',
-            'fonction_id'   => 'required|exists:fonctions,id',
-            'niveau'        => 'required|in:département,section,cellule',
-            'department_id' => 'nullable|exists:departments,id',
-            'section_id'    => 'nullable|exists:sections,id',
-            'cellule_id'    => 'nullable|exists:cellules,id',
-            'date_debut'    => 'nullable|date',
-            'date_fin'      => 'nullable|date|after_or_equal:date_debut',
-            'remarque'      => 'nullable|string',
+            'agent_id'             => 'required|exists:agents,id',
+            'fonction_id'          => 'required|exists:fonctions,id',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'niveau'               => 'required|in:direction,service_rattache,département,section,cellule,province,local',
+            'department_id'        => 'nullable|exists:departments,id',
+            'section_id'           => 'nullable|exists:sections,id',
+            'cellule_id'           => 'nullable|exists:cellules,id',
+            'province_id'          => 'nullable|exists:provinces,id',
+            'localite_id'          => 'nullable|exists:localites,id',
+            'date_debut'           => 'nullable|date',
+            'date_fin'             => 'nullable|date|after_or_equal:date_debut',
+            'remarque'             => 'nullable|string',
         ]);
         $validated['actif'] = true;
 
-        $fonction = Fonction::find($validated['fonction_id']);
-
-        // Unicité chef : 1 seul chef actif par entité
-        if ($fonction && $fonction->est_chef) {
-            $exists = Affectation::where('actif', true)
-                ->where('niveau', $validated['niveau'])
-                ->whereHas('fonction', fn($q) => $q->where('est_chef', true))
-                ->when($validated['niveau'] === 'département', fn($q) => $q->where('department_id', $validated['department_id']))
-                ->when($validated['niveau'] === 'section',     fn($q) => $q->where('section_id', $validated['section_id']))
-                ->when($validated['niveau'] === 'cellule',     fn($q) => $q->where('cellule_id', $validated['cellule_id']))
-                ->exists();
-
-            if ($exists) {
-                return back()->withInput()
-                    ->with('error', 'Un chef est déjà affecté à cette entité. Désactivez d\'abord l\'affectation existante.');
-            }
+        // Effacer les FKs non pertinentes selon le niveau
+        if ($niveauAdmin === 'SEP') {
+            $validated['department_id'] = null;
+            $validated['section_id']    = null;
+            $validated['cellule_id']    = null;
+            $validated['localite_id']   = null;
+        } elseif ($niveauAdmin === 'SEL') {
+            $validated['department_id'] = null;
+            $validated['section_id']    = null;
+            $validated['cellule_id']    = null;
+            $validated['province_id']   = null;
+        } else { // SEN
+            $validated['province_id']   = null;
+            $validated['localite_id']   = null;
         }
 
-        // Unicité assistant/secrétaire au niveau département
-        if ($fonction && !$fonction->est_chef && $validated['niveau'] === 'département') {
+        // Unicité chef actif par entité
+        $fonction = Fonction::find($validated['fonction_id']);
+        if ($fonction?->est_chef) {
             $exists = Affectation::where('actif', true)
-                ->where('niveau', 'département')
-                ->where('department_id', $validated['department_id'])
-                ->whereHas('fonction', fn($q) => $q->where('est_chef', false))
+                ->where('niveau_administratif', $niveauAdmin)
+                ->where('niveau', $niveau)
+                ->whereHas('fonction', fn($q) => $q->where('est_chef', true))
+                ->when($niveau === 'département',      fn($q) => $q->where('department_id', $validated['department_id']))
+                ->when($niveau === 'section',          fn($q) => $q->where('section_id', $validated['section_id']))
+                ->when($niveau === 'cellule',          fn($q) => $q->where('cellule_id', $validated['cellule_id']))
+                ->when($niveau === 'province',         fn($q) => $q->where('province_id', $validated['province_id']))
+                ->when($niveau === 'local',            fn($q) => $q->where('localite_id', $validated['localite_id']))
+                ->when($niveau === 'direction',        fn($q) => $q->where('niveau_administratif', 'SEN'))
+                ->when($niveau === 'service_rattache', fn($q) => $q->where('section_id', $validated['section_id']))
                 ->exists();
 
             if ($exists) {
                 return back()->withInput()
-                    ->with('error', 'Un assistant/secrétaire est déjà affecté à ce département. Désactivez d\'abord l\'affectation existante.');
+                    ->with('error', 'Un responsable est déjà affecté à cette entité. Désactivez d\'abord l\'affectation existante.');
             }
         }
 
@@ -520,27 +560,28 @@ class ParametresController extends Controller
 
     public function affectationsEdit(Affectation $affectation)
     {
-        $agents      = Agent::orderBy('nom')->get();
-        $fonctions   = Fonction::orderBy('niveau')->orderBy('nom')->get();
-        $departments = Department::orderBy('nom')->get();
-        $sections    = Section::with('department')->orderBy('nom')->get();
-        $cellules    = Cellule::with('section')->orderBy('nom')->get();
-        return view('admin.affectations.edit', compact('affectation', 'agents', 'fonctions', 'departments', 'sections', 'cellules'));
+        return view('admin.affectations.edit', array_merge(
+            $this->affectationsFormData(),
+            ['affectation' => $affectation]
+        ));
     }
 
     public function affectationsUpdate(Request $request, Affectation $affectation)
     {
         $validated = $request->validate([
-            'agent_id'      => 'required|exists:agents,id',
-            'fonction_id'   => 'required|exists:fonctions,id',
-            'niveau'        => 'required|in:département,section,cellule',
-            'department_id' => 'nullable|exists:departments,id',
-            'section_id'    => 'nullable|exists:sections,id',
-            'cellule_id'    => 'nullable|exists:cellules,id',
-            'date_debut'    => 'nullable|date',
-            'date_fin'      => 'nullable|date|after_or_equal:date_debut',
-            'actif'         => 'boolean',
-            'remarque'      => 'nullable|string',
+            'agent_id'             => 'required|exists:agents,id',
+            'fonction_id'          => 'required|exists:fonctions,id',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'niveau'               => 'required|in:direction,service_rattache,département,section,cellule,province,local',
+            'department_id'        => 'nullable|exists:departments,id',
+            'section_id'           => 'nullable|exists:sections,id',
+            'cellule_id'           => 'nullable|exists:cellules,id',
+            'province_id'          => 'nullable|exists:provinces,id',
+            'localite_id'          => 'nullable|exists:localites,id',
+            'date_debut'           => 'nullable|date',
+            'date_fin'             => 'nullable|date|after_or_equal:date_debut',
+            'actif'                => 'boolean',
+            'remarque'             => 'nullable|string',
         ]);
         $validated['actif'] = $request->boolean('actif');
 
@@ -555,6 +596,69 @@ class ParametresController extends Controller
         $affectation->delete();
         return redirect()->route('admin.affectations.index')
             ->with('success', 'Affectation supprimée.');
+    }
+
+    // ─── LOCALITÉS (SEL) ──────────────────────────────────────────
+
+    public function localitesIndex()
+    {
+        $localites = Localite::with('province')
+            ->withCount('affectations')
+            ->orderBy('province_id')
+            ->orderBy('nom')
+            ->paginate(25);
+        return view('admin.localites.index', compact('localites'));
+    }
+
+    public function localitesCreate()
+    {
+        $provinces = Province::orderBy('nom')->get();
+        return view('admin.localites.create', compact('provinces'));
+    }
+
+    public function localitesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code'        => 'required|string|max:30|unique:localites',
+            'nom'         => 'required|string|max:255',
+            'type'        => 'required|in:territoire,zone_de_sante,commune,ville,autre',
+            'description' => 'nullable|string',
+            'province_id' => 'required|exists:provinces,id',
+        ]);
+
+        Localite::create($validated);
+
+        return redirect()->route('admin.localites.index')
+            ->with('success', 'Localité créée avec succès.');
+    }
+
+    public function localitesEdit(Localite $localite)
+    {
+        $provinces = Province::orderBy('nom')->get();
+        return view('admin.localites.edit', compact('localite', 'provinces'));
+    }
+
+    public function localitesUpdate(Request $request, Localite $localite)
+    {
+        $validated = $request->validate([
+            'code'        => 'required|string|max:30|unique:localites,code,' . $localite->id,
+            'nom'         => 'required|string|max:255',
+            'type'        => 'required|in:territoire,zone_de_sante,commune,ville,autre',
+            'description' => 'nullable|string',
+            'province_id' => 'required|exists:provinces,id',
+        ]);
+
+        $localite->update($validated);
+
+        return redirect()->route('admin.localites.index')
+            ->with('success', 'Localité mise à jour.');
+    }
+
+    public function localitesDestroy(Localite $localite)
+    {
+        $localite->delete();
+        return redirect()->route('admin.localites.index')
+            ->with('success', 'Localité supprimée.');
     }
 
     // ─── LOGS ────────────────────────────────────────────────────

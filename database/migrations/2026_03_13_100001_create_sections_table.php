@@ -13,7 +13,11 @@ return new class extends Migration
             $table->string('code')->unique();
             $table->string('nom');
             $table->text('description')->nullable();
-            $table->foreignId('department_id')->constrained()->onDelete('cascade');
+            // nullable : les services rattachés (type=service_rattache) n'appartiennent pas à un département
+            $table->foreignId('department_id')->nullable()->constrained()->onDelete('cascade');
+            $table->enum('type', ['section', 'service_rattache'])
+                  ->default('section')
+                  ->comment('section = dans un département | service_rattache = directement sous SEN/SENA');
             $table->timestamps();
         });
     }

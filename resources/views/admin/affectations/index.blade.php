@@ -21,6 +21,7 @@
             <tr>
                 <th>Agent</th>
                 <th>Fonction</th>
+                <th>Niv. admin.</th>
                 <th>Niveau</th>
                 <th>Entité rattachée</th>
                 <th>Début</th>
@@ -34,16 +35,26 @@
                 <td class="fw-semibold">{{ $aff->agent?->nom }} {{ $aff->agent?->postnom }}</td>
                 <td>{{ $aff->fonction?->nom ?? '–' }}</td>
                 <td>
-                    @php $niveauClass = match($aff->niveau) { 'département' => 'primary', 'section' => 'info', 'cellule' => 'secondary', default => 'light' }; @endphp
-                    <span class="badge bg-{{ $niveauClass }}">{{ ucfirst($aff->niveau) }}</span>
+                    @php $naColor = match($aff->niveau_administratif ?? '') { 'SEN' => 'primary', 'SEP' => 'success', 'SEL' => 'info', default => 'secondary' }; @endphp
+                    <span class="badge bg-{{ $naColor }}">{{ $aff->niveau_administratif ?? '–' }}</span>
                 </td>
                 <td>
-                    @if($aff->niveau === 'cellule')
+                    @php $niveauClass = match($aff->niveau ?? '') { 'direction' => 'dark', 'service_rattache' => 'warning', 'département' => 'primary', 'section' => 'info', 'cellule' => 'secondary', 'province' => 'success', 'local' => 'teal', default => 'light' }; @endphp
+                    <span class="badge bg-{{ $niveauClass }} text-{{ in_array($aff->niveau, ['warning','light']) ? 'dark' : 'white' }}">{{ $aff->niveau ?? '–' }}</span>
+                </td>
+                <td>
+                    @if(in_array($aff->niveau_administratif, ['SEP']))
+                        {{ $aff->province?->nom ?? '–' }}
+                    @elseif($aff->niveau_administratif === 'SEL')
+                        {{ $aff->localite?->nom ?? '–' }}
+                    @elseif($aff->niveau === 'cellule')
                         {{ $aff->cellule?->nom ?? '–' }}
-                    @elseif($aff->niveau === 'section')
+                    @elseif(in_array($aff->niveau, ['section','service_rattache']))
                         {{ $aff->section?->nom ?? '–' }}
-                    @else
+                    @elseif($aff->niveau === 'département')
                         {{ $aff->department?->nom ?? '–' }}
+                    @else
+                        –
                     @endif
                 </td>
                 <td>{{ $aff->date_debut ? \Carbon\Carbon::parse($aff->date_debut)->format('d/m/Y') : '–' }}</td>
@@ -68,7 +79,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="7" class="text-center text-muted py-4">Aucune affectation enregistrée.</td></tr>
+            <tr><td colspan="8" class="text-center text-muted py-4">Aucune affectation enregistrée.</td></tr>
             @endforelse
         </tbody>
     </table>

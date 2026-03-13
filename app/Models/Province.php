@@ -30,6 +30,17 @@ class Province extends Model
         return $this->hasMany(Agent::class);
     }
 
+    public function localites(): HasMany
+    {
+        return $this->hasMany(Localite::class);
+    }
+
+    /** Affectations SEP liées à cette province */
+    public function affectationsSep(): HasMany
+    {
+        return $this->hasMany(Affectation::class)->where('niveau_administratif', 'SEP');
+    }
+
     // Scopes
     public function scopeByCode($query, $code)
     {

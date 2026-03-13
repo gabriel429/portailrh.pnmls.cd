@@ -10,10 +10,22 @@ return new class extends Migration
     {
         Schema::create('fonctions', function (Blueprint $table) {
             $table->id();
-            $table->string('nom')->unique()->comment('Nom de la fonction / poste');
-            $table->string('niveau')->nullable()->comment('département|section|cellule|transversal');
+            $table->string('nom')->unique()->comment('Intitulé du poste / de la fonction');
+            $table->enum('niveau_administratif', ['SEN', 'SEP', 'SEL', 'TOUS'])
+                  ->default('SEN')
+                  ->comment('SEN=National, SEP=Provincial, SEL=Local, TOUS=Tous niveaux');
+            $table->enum('type_poste', [
+                'direction',       // SEN/SENA
+                'service_rattache',// services directement rattachés SEN
+                'département',     // poste de département (SEN)
+                'section',         // poste de section (SEN)
+                'cellule',         // poste de cellule (SEN)
+                'appui',           // poste d'appui/support (chauffeur, commis…)
+                'province',        // poste SEP
+                'local',           // poste SEL
+            ])->default('département')->comment('Catégorie structurelle du poste');
             $table->text('description')->nullable();
-            $table->boolean('est_chef')->default(false)->comment('Poste de responsable unique');
+            $table->boolean('est_chef')->default(false)->comment('Poste de responsable unique par entité');
             $table->timestamps();
         });
     }

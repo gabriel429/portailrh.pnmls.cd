@@ -15,6 +15,7 @@
             <tr>
                 <th>Code</th>
                 <th>Nom</th>
+                <th>Type</th>
                 <th>Département</th>
                 <th>Cellules</th>
                 <th></th>
@@ -25,7 +26,14 @@
             <tr>
                 <td><span class="badge bg-secondary">{{ $section->code }}</span></td>
                 <td class="fw-semibold">{{ $section->nom }}</td>
-                <td>{{ $section->department?->nom ?? '–' }}</td>
+                <td>
+                    @if(($section->type ?? 'section') === 'service_rattache')
+                        <span class="badge bg-warning text-dark"><i class="fas fa-project-diagram me-1"></i>Service rattaché</span>
+                    @else
+                        <span class="badge bg-primary"><i class="fas fa-layer-group me-1"></i>Section</span>
+                    @endif
+                </td>
+                <td>{{ $section->department?->nom ?? '<span class="text-muted fst-italic">SEN/SENA</span>' }}</td>
                 <td><span class="badge bg-info text-dark">{{ $section->cellules_count }}</span></td>
                 <td>
                     <div class="d-flex gap-1">
@@ -41,7 +49,7 @@
                 </td>
             </tr>
             @empty
-            <tr><td colspan="5" class="text-center text-muted py-4">Aucune section enregistrée.</td></tr>
+            <tr><td colspan="6" class="text-center text-muted py-4">Aucune section enregistrée.</td></tr>
             @endforelse
         </tbody>
     </table>

@@ -138,6 +138,14 @@ Route::middleware('auth')->group(function () {
         Route::put('/affectations/{affectation}',      [ParametresController::class, 'affectationsUpdate'])->name('affectations.update');
         Route::delete('/affectations/{affectation}',   [ParametresController::class, 'affectationsDestroy'])->name('affectations.destroy');
 
+        // Localités (SEL — Secrétariats Exécutifs Locaux)
+        Route::get('/localites',                   [ParametresController::class, 'localitesIndex'])->name('localites.index');
+        Route::get('/localites/create',            [ParametresController::class, 'localitesCreate'])->name('localites.create');
+        Route::post('/localites',                  [ParametresController::class, 'localitesStore'])->name('localites.store');
+        Route::get('/localites/{localite}/edit',   [ParametresController::class, 'localitesEdit'])->name('localites.edit');
+        Route::put('/localites/{localite}',        [ParametresController::class, 'localitesUpdate'])->name('localites.update');
+        Route::delete('/localites/{localite}',     [ParametresController::class, 'localitesDestroy'])->name('localites.destroy');
+
         // Logs
         Route::get('/logs',        [ParametresController::class, 'logs'])->name('logs');
         Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');

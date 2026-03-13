@@ -12,6 +12,7 @@
         ['label' => 'Sections',     'value' => $stats['sections'],    'icon' => 'fa-sitemap',        'color' => '#0ea5e9', 'bg' => '#e0f2fe', 'route' => 'admin.sections.index'],
         ['label' => 'Cellules',     'value' => $stats['cellules'],    'icon' => 'fa-cubes',          'color' => '#64748b', 'bg' => '#f1f5f9', 'route' => 'admin.cellules.index'],
         ['label' => 'Fonctions',    'value' => $stats['fonctions'],   'icon' => 'fa-briefcase',      'color' => '#7c3aed', 'bg' => '#ede9fe', 'route' => 'admin.fonctions.index'],
+        ['label' => 'Localités SEL','value' => $stats['localites'] ?? 0, 'icon' => 'fa-map-pin',     'color' => '#0891b2', 'bg' => '#e0f7fa', 'route' => 'admin.localites.index'],
         ['label' => 'Grades',       'value' => $stats['grades'],      'icon' => 'fa-layer-group',    'color' => '#10b981', 'bg' => '#d1fae5', 'route' => 'admin.grades.index'],
         ['label' => 'Rôles',        'value' => $stats['roles'],       'icon' => 'fa-user-tag',       'color' => '#f59e0b', 'bg' => '#fef3c7', 'route' => 'admin.roles.index'],
         ['label' => 'Permissions',  'value' => $stats['permissions'], 'icon' => 'fa-key',            'color' => '#ef4444', 'bg' => '#fee2e2', 'route' => 'admin.roles.index'],

@@ -8,7 +8,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Section extends Model
 {
-    protected $fillable = ['code', 'nom', 'description', 'department_id'];
+    protected $fillable = ['code', 'nom', 'description', 'department_id', 'type'];
+
+    // section | service_rattache
+    const TYPE_SECTION  = 'section';
+    const TYPE_SERVICE  = 'service_rattache';
 
     public function department(): BelongsTo
     {
@@ -25,7 +29,19 @@ class Section extends Model
         return $this->hasMany(Affectation::class);
     }
 
-    /** Chef de section actif */
+    /** Uniquement les sections de département */
+    public function scopeSections($query)
+    {
+        return $query->where('type', self::TYPE_SECTION);
+    }
+
+    /** Uniquement les services rattachés (sous SEN/SENA) */
+    public function scopeServicesRattaches($query)
+    {
+        return $query->where('type', self::TYPE_SERVICE);
+    }
+
+    /** Chef actif de cette section ou service rattaché */
     public function chef()
     {
         return $this->affectations()

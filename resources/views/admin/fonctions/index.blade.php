@@ -13,10 +13,10 @@
     <table class="table table-hover mb-0">
         <thead>
             <tr>
-                <th>Nom</th>
-                <th>Niveau</th>
+                <th>Intitulé</th>
+                <th>Niveau admin.</th>
+                <th>Catégorie</th>
                 <th>Type</th>
-                <th>Description</th>
                 <th></th>
             </tr>
         </thead>
@@ -26,10 +26,28 @@
                 <td class="fw-semibold">{{ $fonction->nom }}</td>
                 <td>
                     @php
-                        $colors = ['département'=>'primary','section'=>'info','cellule'=>'success','transversal'=>'secondary'];
-                        $c = $colors[$fonction->niveau] ?? 'secondary';
+                        $nivColors = ['SEN'=>'primary','SEP'=>'success','SEL'=>'info','TOUS'=>'secondary'];
+                        $c = $nivColors[$fonction->niveau_administratif] ?? 'secondary';
                     @endphp
-                    <span class="badge bg-{{ $c }}">{{ ucfirst($fonction->niveau) }}</span>
+                    <span class="badge bg-{{ $c }}">{{ $fonction->niveau_administratif }}</span>
+                </td>
+                <td>
+                    @php
+                        $typeLabels = [
+                            'direction'        => ['Direction','dark'],
+                            'service_rattache' => ['Service rattaché','purple'],
+                            'département'      => ['Département','primary'],
+                            'section'          => ['Section','info'],
+                            'cellule'          => ['Cellule','success'],
+                            'appui'            => ['Appui','warning'],
+                            'province'         => ['Province (SEP)','teal'],
+                            'local'            => ['Local (SEL)','cyan'],
+                        ];
+                        [$tLabel, $tColor] = $typeLabels[$fonction->type_poste] ?? [$fonction->type_poste, 'secondary'];
+                    @endphp
+                    <span class="badge" style="background:{{ in_array($tColor,['dark','primary','info','success','warning','secondary']) ? '' : 'var(--bs-'.$tColor.',#6c757d)' }}" class="bg-{{ $tColor }}">
+                        {{ $tLabel }}
+                    </span>
                 </td>
                 <td>
                     @if($fonction->est_chef)
@@ -38,7 +56,6 @@
                         <span class="badge bg-light text-dark">Collaborateur</span>
                     @endif
                 </td>
-                <td class="text-muted small">{{ Str::limit($fonction->description, 60) }}</td>
                 <td>
                     <div class="d-flex gap-1">
                         <a href="{{ route('admin.fonctions.edit', $fonction) }}" class="btn btn-sm btn-outline-primary">

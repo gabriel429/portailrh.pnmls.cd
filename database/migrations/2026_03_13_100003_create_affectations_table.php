@@ -21,18 +21,37 @@ return new class extends Migration
             $table->id();
             $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
             $table->foreignId('fonction_id')->constrained('fonctions')->onDelete('restrict');
-            $table->enum('niveau', ['département', 'section', 'cellule']);
+
+            // Niveau administratif : dans quel secrétariat l'agent est affecté
+            $table->enum('niveau_administratif', ['SEN', 'SEP', 'SEL'])
+                  ->default('SEN')
+                  ->comment('SEN=National, SEP=Provincial, SEL=Local');
+
+            // Rattachement structurel précis
+            $table->enum('niveau', [
+                'direction',        // SEN/SENA (hors département)
+                'service_rattache', // Service directement sous SEN/SENA
+                'département',      // Rattaché au département (sans section)
+                'section',          // Rattaché à une section
+                'cellule',          // Rattaché à une cellule
+                'province',         // SEP (rattaché à une province)
+                'local',            // SEL (rattaché à une localité)
+            ])->default('département');
+
+            // FKs structurelles (SEN)
             $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('cascade');
             $table->foreignId('section_id')->nullable()->constrained('sections')->onDelete('cascade');
             $table->foreignId('cellule_id')->nullable()->constrained('cellules')->onDelete('cascade');
+
+            // FKs SEP / SEL
+            $table->foreignId('province_id')->nullable()->constrained('provinces')->onDelete('cascade');
+            $table->foreignId('localite_id')->nullable()->constrained('localites')->onDelete('cascade');
+
             $table->date('date_debut')->nullable();
             $table->date('date_fin')->nullable();
             $table->boolean('actif')->default(true);
             $table->text('remarque')->nullable();
             $table->timestamps();
-
-            // Un agent ne peut occuper la même fonction dans la même entité qu'une fois
-            $table->unique(['agent_id', 'fonction_id', 'department_id', 'section_id', 'cellule_id'], 'affectation_unique');
         });
     }
 
