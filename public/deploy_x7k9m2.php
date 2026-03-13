@@ -216,7 +216,7 @@ echo shell_exec("{$php} artisan view:clear 2>&1");
 echo "\n=== migrate --force ===\n";
 echo shell_exec("{$php} artisan migrate --force 2>&1");
 
-foreach (['GradeSeeder','AdminNTSeeder','ProvinceSeeder','RoleSeeder','DepartmentSeeder','PermissionSeeder','AgentSeeder'] as $seeder) {
+foreach (['GradeSeeder','AdminNTSeeder','ProvinceSeeder','RoleSeeder','DepartmentSeeder','PermissionSeeder','AgentSeeder','FonctionSeeder'] as $seeder) {
     echo "\n=== db:seed {$seeder} ===\n";
     echo shell_exec("{$php} artisan db:seed --class={$seeder} --force 2>&1");
 }

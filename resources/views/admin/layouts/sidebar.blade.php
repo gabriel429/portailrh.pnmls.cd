@@ -187,6 +187,22 @@
            class="nav-link {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}">
             <i class="fas fa-building"></i> Départements
         </a>
+        <a href="{{ route('admin.sections.index') }}"
+           class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}">
+            <i class="fas fa-sitemap"></i> Sections
+        </a>
+        <a href="{{ route('admin.cellules.index') }}"
+           class="nav-link {{ request()->routeIs('admin.cellules.*') ? 'active' : '' }}">
+            <i class="fas fa-cubes"></i> Cellules
+        </a>
+        <a href="{{ route('admin.fonctions.index') }}"
+           class="nav-link {{ request()->routeIs('admin.fonctions.*') ? 'active' : '' }}">
+            <i class="fas fa-briefcase"></i> Fonctions
+        </a>
+        <a href="{{ route('admin.affectations.index') }}"
+           class="nav-link {{ request()->routeIs('admin.affectations.*') ? 'active' : '' }}">
+            <i class="fas fa-user-tie"></i> Affectations
+        </a>
         <a href="{{ route('admin.grades.index') }}"
            class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}">
             <i class="fas fa-layer-group"></i> Grades

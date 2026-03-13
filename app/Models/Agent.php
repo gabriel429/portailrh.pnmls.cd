@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use App\Models\Affectation;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\Grade;
 
@@ -115,6 +116,11 @@ class Agent extends Authenticatable
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class, 'agent_permission')->withTimestamps();
+    }
+
+    public function affectations(): HasMany
+    {
+        return $this->hasMany(Affectation::class);
     }
 
     // Scopes

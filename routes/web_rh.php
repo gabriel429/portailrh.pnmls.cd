@@ -106,6 +106,38 @@ Route::middleware('auth')->group(function () {
         Route::put('/departments/{department}',      [ParametresController::class, 'departmentsUpdate'])->name('departments.update');
         Route::delete('/departments/{department}',   [ParametresController::class, 'departmentsDestroy'])->name('departments.destroy');
 
+        // Fonctions (postes)
+        Route::get('/fonctions',                  [ParametresController::class, 'fonctionsIndex'])->name('fonctions.index');
+        Route::get('/fonctions/create',           [ParametresController::class, 'fonctionsCreate'])->name('fonctions.create');
+        Route::post('/fonctions',                 [ParametresController::class, 'fonctionsStore'])->name('fonctions.store');
+        Route::get('/fonctions/{fonction}/edit',  [ParametresController::class, 'fonctionsEdit'])->name('fonctions.edit');
+        Route::put('/fonctions/{fonction}',       [ParametresController::class, 'fonctionsUpdate'])->name('fonctions.update');
+        Route::delete('/fonctions/{fonction}',    [ParametresController::class, 'fonctionsDestroy'])->name('fonctions.destroy');
+
+        // Sections
+        Route::get('/sections',                  [ParametresController::class, 'sectionsIndex'])->name('sections.index');
+        Route::get('/sections/create',           [ParametresController::class, 'sectionsCreate'])->name('sections.create');
+        Route::post('/sections',                 [ParametresController::class, 'sectionsStore'])->name('sections.store');
+        Route::get('/sections/{section}/edit',   [ParametresController::class, 'sectionsEdit'])->name('sections.edit');
+        Route::put('/sections/{section}',        [ParametresController::class, 'sectionsUpdate'])->name('sections.update');
+        Route::delete('/sections/{section}',     [ParametresController::class, 'sectionsDestroy'])->name('sections.destroy');
+
+        // Cellules
+        Route::get('/cellules',                  [ParametresController::class, 'cellulesIndex'])->name('cellules.index');
+        Route::get('/cellules/create',           [ParametresController::class, 'cellulesCreate'])->name('cellules.create');
+        Route::post('/cellules',                 [ParametresController::class, 'cellulesStore'])->name('cellules.store');
+        Route::get('/cellules/{cellule}/edit',   [ParametresController::class, 'cellulesEdit'])->name('cellules.edit');
+        Route::put('/cellules/{cellule}',        [ParametresController::class, 'cellulesUpdate'])->name('cellules.update');
+        Route::delete('/cellules/{cellule}',     [ParametresController::class, 'cellulesDestroy'])->name('cellules.destroy');
+
+        // Affectations
+        Route::get('/affectations',                    [ParametresController::class, 'affectationsIndex'])->name('affectations.index');
+        Route::get('/affectations/create',             [ParametresController::class, 'affectationsCreate'])->name('affectations.create');
+        Route::post('/affectations',                   [ParametresController::class, 'affectationsStore'])->name('affectations.store');
+        Route::get('/affectations/{affectation}/edit', [ParametresController::class, 'affectationsEdit'])->name('affectations.edit');
+        Route::put('/affectations/{affectation}',      [ParametresController::class, 'affectationsUpdate'])->name('affectations.update');
+        Route::delete('/affectations/{affectation}',   [ParametresController::class, 'affectationsDestroy'])->name('affectations.destroy');
+
         // Logs
         Route::get('/logs',        [ParametresController::class, 'logs'])->name('logs');
         Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');

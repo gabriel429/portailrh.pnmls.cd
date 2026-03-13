@@ -9,6 +9,9 @@
     $cards = [
         ['label' => 'Provinces',    'value' => $stats['provinces'],   'icon' => 'fa-map-marked-alt', 'color' => '#0077B5', 'bg' => '#e8f4fd', 'route' => 'admin.provinces.index'],
         ['label' => 'Départements', 'value' => $stats['departments'], 'icon' => 'fa-building',       'color' => '#6366f1', 'bg' => '#ede9fe', 'route' => 'admin.departments.index'],
+        ['label' => 'Sections',     'value' => $stats['sections'],    'icon' => 'fa-sitemap',        'color' => '#0ea5e9', 'bg' => '#e0f2fe', 'route' => 'admin.sections.index'],
+        ['label' => 'Cellules',     'value' => $stats['cellules'],    'icon' => 'fa-cubes',          'color' => '#64748b', 'bg' => '#f1f5f9', 'route' => 'admin.cellules.index'],
+        ['label' => 'Fonctions',    'value' => $stats['fonctions'],   'icon' => 'fa-briefcase',      'color' => '#7c3aed', 'bg' => '#ede9fe', 'route' => 'admin.fonctions.index'],
         ['label' => 'Grades',       'value' => $stats['grades'],      'icon' => 'fa-layer-group',    'color' => '#10b981', 'bg' => '#d1fae5', 'route' => 'admin.grades.index'],
         ['label' => 'Rôles',        'value' => $stats['roles'],       'icon' => 'fa-user-tag',       'color' => '#f59e0b', 'bg' => '#fef3c7', 'route' => 'admin.roles.index'],
         ['label' => 'Permissions',  'value' => $stats['permissions'], 'icon' => 'fa-key',            'color' => '#ef4444', 'bg' => '#fee2e2', 'route' => 'admin.roles.index'],
@@ -17,7 +20,7 @@
     @endphp
 
     @foreach($cards as $c)
-    <div class="col-6 col-md-4 col-xl-2">
+    <div class="col-6 col-md-4 col-xl-3">
         <a href="{{ route($c['route']) }}" class="text-decoration-none">
             <div class="stat-card h-100">
                 <div class="stat-icon" style="background:{{ $c['bg'] }};color:{{ $c['color'] }}">

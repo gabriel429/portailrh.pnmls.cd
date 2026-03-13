@@ -27,6 +27,27 @@ class Department extends Model
         return $this->hasMany(Agent::class, 'departement_id');
     }
 
+    public function sections(): HasMany
+    {
+        return $this->hasMany(Section::class);
+    }
+
+    public function affectations(): HasMany
+    {
+        return $this->hasMany(Affectation::class);
+    }
+
+    /** Chef de département actif */
+    public function chef()
+    {
+        return $this->affectations()
+            ->where('niveau', 'département')
+            ->whereHas('fonction', fn($q) => $q->where('est_chef', true))
+            ->where('actif', true)
+            ->with('agent')
+            ->first();
+    }
+
     // Scopes
     public function scopeByCode($query, $code)
     {

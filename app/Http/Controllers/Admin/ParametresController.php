@@ -8,6 +8,10 @@ use App\Models\Province;
 use App\Models\Grade;
 use App\Models\Role;
 use App\Models\Department;
+use App\Models\Section;
+use App\Models\Cellule;
+use App\Models\Fonction;
+use App\Models\Affectation;
 use App\Models\Permission;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
@@ -22,6 +26,9 @@ class ParametresController extends Controller
         $stats = [
             'provinces'   => Province::count(),
             'departments' => Department::count(),
+            'sections'    => Section::count(),
+            'cellules'    => Cellule::count(),
+            'fonctions'   => Fonction::count(),
             'grades'      => Grade::count(),
             'roles'       => Role::count(),
             'permissions' => Permission::count(),
@@ -262,6 +269,292 @@ class ParametresController extends Controller
         $department->delete();
         return redirect()->route('admin.departments.index')
             ->with('success', 'Département supprimé.');
+    }
+
+    // ─── FONCTIONS ────────────────────────────────────────────────
+
+    public function fonctionsIndex()
+    {
+        $fonctions = Fonction::orderBy('niveau')->orderBy('nom')->paginate(20);
+        return view('admin.fonctions.index', compact('fonctions'));
+    }
+
+    public function fonctionsCreate()
+    {
+        return view('admin.fonctions.create');
+    }
+
+    public function fonctionsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nom'         => 'required|string|max:255|unique:fonctions',
+            'niveau'      => 'required|in:département,section,cellule,transversal',
+            'est_chef'    => 'boolean',
+            'description' => 'nullable|string',
+        ]);
+        $validated['est_chef'] = $request->boolean('est_chef');
+
+        Fonction::create($validated);
+
+        return redirect()->route('admin.fonctions.index')
+            ->with('success', 'Fonction créée avec succès.');
+    }
+
+    public function fonctionsEdit(Fonction $fonction)
+    {
+        return view('admin.fonctions.edit', compact('fonction'));
+    }
+
+    public function fonctionsUpdate(Request $request, Fonction $fonction)
+    {
+        $validated = $request->validate([
+            'nom'         => 'required|string|max:255|unique:fonctions,nom,' . $fonction->id,
+            'niveau'      => 'required|in:département,section,cellule,transversal',
+            'est_chef'    => 'boolean',
+            'description' => 'nullable|string',
+        ]);
+        $validated['est_chef'] = $request->boolean('est_chef');
+
+        $fonction->update($validated);
+
+        return redirect()->route('admin.fonctions.index')
+            ->with('success', 'Fonction mise à jour.');
+    }
+
+    public function fonctionsDestroy(Fonction $fonction)
+    {
+        if ($fonction->affectations()->count() > 0) {
+            return redirect()->route('admin.fonctions.index')
+                ->with('error', 'Impossible de supprimer : des agents ont cette fonction.');
+        }
+        $fonction->delete();
+        return redirect()->route('admin.fonctions.index')
+            ->with('success', 'Fonction supprimée.');
+    }
+
+    // ─── SECTIONS ─────────────────────────────────────────────────
+
+    public function sectionsIndex()
+    {
+        $sections = Section::with('department')->withCount('cellules')->orderBy('department_id')->orderBy('nom')->paginate(25);
+        return view('admin.sections.index', compact('sections'));
+    }
+
+    public function sectionsCreate()
+    {
+        $departments = Department::orderBy('nom')->get();
+        return view('admin.sections.create', compact('departments'));
+    }
+
+    public function sectionsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code'          => 'required|string|max:20|unique:sections',
+            'nom'           => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'department_id' => 'required|exists:departments,id',
+        ]);
+
+        Section::create($validated);
+
+        return redirect()->route('admin.sections.index')
+            ->with('success', 'Section créée avec succès.');
+    }
+
+    public function sectionsEdit(Section $section)
+    {
+        $departments = Department::orderBy('nom')->get();
+        return view('admin.sections.edit', compact('section', 'departments'));
+    }
+
+    public function sectionsUpdate(Request $request, Section $section)
+    {
+        $validated = $request->validate([
+            'code'          => 'required|string|max:20|unique:sections,code,' . $section->id,
+            'nom'           => 'required|string|max:255',
+            'description'   => 'nullable|string',
+            'department_id' => 'required|exists:departments,id',
+        ]);
+
+        $section->update($validated);
+
+        return redirect()->route('admin.sections.index')
+            ->with('success', 'Section mise à jour.');
+    }
+
+    public function sectionsDestroy(Section $section)
+    {
+        $section->delete();
+        return redirect()->route('admin.sections.index')
+            ->with('success', 'Section supprimée.');
+    }
+
+    // ─── CELLULES ─────────────────────────────────────────────────
+
+    public function cellulesIndex()
+    {
+        $cellules = Cellule::with(['section.department'])->orderBy('section_id')->orderBy('nom')->paginate(25);
+        return view('admin.cellules.index', compact('cellules'));
+    }
+
+    public function cellulesCreate()
+    {
+        $sections = Section::with('department')->orderBy('nom')->get();
+        return view('admin.cellules.create', compact('sections'));
+    }
+
+    public function cellulesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code'       => 'required|string|max:20|unique:cellules',
+            'nom'        => 'required|string|max:255',
+            'description'=> 'nullable|string',
+            'section_id' => 'required|exists:sections,id',
+        ]);
+
+        Cellule::create($validated);
+
+        return redirect()->route('admin.cellules.index')
+            ->with('success', 'Cellule créée avec succès.');
+    }
+
+    public function cellulesEdit(Cellule $cellule)
+    {
+        $sections = Section::with('department')->orderBy('nom')->get();
+        return view('admin.cellules.edit', compact('cellule', 'sections'));
+    }
+
+    public function cellulesUpdate(Request $request, Cellule $cellule)
+    {
+        $validated = $request->validate([
+            'code'       => 'required|string|max:20|unique:cellules,code,' . $cellule->id,
+            'nom'        => 'required|string|max:255',
+            'description'=> 'nullable|string',
+            'section_id' => 'required|exists:sections,id',
+        ]);
+
+        $cellule->update($validated);
+
+        return redirect()->route('admin.cellules.index')
+            ->with('success', 'Cellule mise à jour.');
+    }
+
+    public function cellulesDestroy(Cellule $cellule)
+    {
+        $cellule->delete();
+        return redirect()->route('admin.cellules.index')
+            ->with('success', 'Cellule supprimée.');
+    }
+
+    // ─── AFFECTATIONS ─────────────────────────────────────────────
+
+    public function affectationsIndex()
+    {
+        $affectations = Affectation::with(['agent', 'fonction', 'department', 'section', 'cellule'])
+            ->orderBy('niveau')->orderBy('department_id')->paginate(25);
+        return view('admin.affectations.index', compact('affectations'));
+    }
+
+    public function affectationsCreate()
+    {
+        $agents      = Agent::orderBy('nom')->get();
+        $fonctions   = Fonction::orderBy('niveau')->orderBy('nom')->get();
+        $departments = Department::orderBy('nom')->get();
+        $sections    = Section::with('department')->orderBy('nom')->get();
+        $cellules    = Cellule::with('section')->orderBy('nom')->get();
+        return view('admin.affectations.create', compact('agents', 'fonctions', 'departments', 'sections', 'cellules'));
+    }
+
+    public function affectationsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'agent_id'      => 'required|exists:agents,id',
+            'fonction_id'   => 'required|exists:fonctions,id',
+            'niveau'        => 'required|in:département,section,cellule',
+            'department_id' => 'nullable|exists:departments,id',
+            'section_id'    => 'nullable|exists:sections,id',
+            'cellule_id'    => 'nullable|exists:cellules,id',
+            'date_debut'    => 'nullable|date',
+            'date_fin'      => 'nullable|date|after_or_equal:date_debut',
+            'remarque'      => 'nullable|string',
+        ]);
+        $validated['actif'] = true;
+
+        $fonction = Fonction::find($validated['fonction_id']);
+
+        // Unicité chef : 1 seul chef actif par entité
+        if ($fonction && $fonction->est_chef) {
+            $exists = Affectation::where('actif', true)
+                ->where('niveau', $validated['niveau'])
+                ->whereHas('fonction', fn($q) => $q->where('est_chef', true))
+                ->when($validated['niveau'] === 'département', fn($q) => $q->where('department_id', $validated['department_id']))
+                ->when($validated['niveau'] === 'section',     fn($q) => $q->where('section_id', $validated['section_id']))
+                ->when($validated['niveau'] === 'cellule',     fn($q) => $q->where('cellule_id', $validated['cellule_id']))
+                ->exists();
+
+            if ($exists) {
+                return back()->withInput()
+                    ->with('error', 'Un chef est déjà affecté à cette entité. Désactivez d\'abord l\'affectation existante.');
+            }
+        }
+
+        // Unicité assistant/secrétaire au niveau département
+        if ($fonction && !$fonction->est_chef && $validated['niveau'] === 'département') {
+            $exists = Affectation::where('actif', true)
+                ->where('niveau', 'département')
+                ->where('department_id', $validated['department_id'])
+                ->whereHas('fonction', fn($q) => $q->where('est_chef', false))
+                ->exists();
+
+            if ($exists) {
+                return back()->withInput()
+                    ->with('error', 'Un assistant/secrétaire est déjà affecté à ce département. Désactivez d\'abord l\'affectation existante.');
+            }
+        }
+
+        Affectation::create($validated);
+
+        return redirect()->route('admin.affectations.index')
+            ->with('success', 'Affectation créée avec succès.');
+    }
+
+    public function affectationsEdit(Affectation $affectation)
+    {
+        $agents      = Agent::orderBy('nom')->get();
+        $fonctions   = Fonction::orderBy('niveau')->orderBy('nom')->get();
+        $departments = Department::orderBy('nom')->get();
+        $sections    = Section::with('department')->orderBy('nom')->get();
+        $cellules    = Cellule::with('section')->orderBy('nom')->get();
+        return view('admin.affectations.edit', compact('affectation', 'agents', 'fonctions', 'departments', 'sections', 'cellules'));
+    }
+
+    public function affectationsUpdate(Request $request, Affectation $affectation)
+    {
+        $validated = $request->validate([
+            'agent_id'      => 'required|exists:agents,id',
+            'fonction_id'   => 'required|exists:fonctions,id',
+            'niveau'        => 'required|in:département,section,cellule',
+            'department_id' => 'nullable|exists:departments,id',
+            'section_id'    => 'nullable|exists:sections,id',
+            'cellule_id'    => 'nullable|exists:cellules,id',
+            'date_debut'    => 'nullable|date',
+            'date_fin'      => 'nullable|date|after_or_equal:date_debut',
+            'actif'         => 'boolean',
+            'remarque'      => 'nullable|string',
+        ]);
+        $validated['actif'] = $request->boolean('actif');
+
+        $affectation->update($validated);
+
+        return redirect()->route('admin.affectations.index')
+            ->with('success', 'Affectation mise à jour.');
+    }
+
+    public function affectationsDestroy(Affectation $affectation)
+    {
+        $affectation->delete();
+        return redirect()->route('admin.affectations.index')
+            ->with('success', 'Affectation supprimée.');
     }
 
     // ─── LOGS ────────────────────────────────────────────────────
