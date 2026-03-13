@@ -5,8 +5,8 @@ if (!isset($_GET['token']) || $_GET['token'] !== 'MON_TOKEN_SECRET_2026') {
     die('Acc�s refus�');
 }
 
-// Sur Hostinger, tous les fichiers Laravel sont dans public_html/ lui-meme
-$root = __DIR__;
+// Le script est dans public/ ; Laravel root est le dossier parent
+$root = dirname(__DIR__);
 $php  = '/opt/alt/php83/usr/bin/php';
 
 putenv('COMPOSER_HOME=/tmp/composer_home');
