@@ -26,7 +26,10 @@ class AuthController extends Controller
     {
         $credentials = $request->validate([
             'matricule' => 'required|string',
-            'password' => 'required|string',
+            'password'  => 'required|string',
+        ], [
+            'matricule.required' => 'Le matricule PNMLS est obligatoire.',
+            'password.required'  => 'Le mot de passe est obligatoire.',
         ]);
 
         // Try to authenticate using matricule_pnmls
