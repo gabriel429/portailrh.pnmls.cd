@@ -114,6 +114,8 @@ if (isset($_GET['gitpull'])) {
     echo shell_exec("{$php} {$root}/artisan route:clear 2>&1");
     echo shell_exec("{$php} {$root}/artisan view:clear 2>&1");
     echo shell_exec("{$php} {$root}/artisan migrate --force 2>&1");
+    echo "\n=== db:seed FonctionSeeder ===\n";
+    echo shell_exec("{$php} {$root}/artisan db:seed --class=FonctionSeeder --force 2>&1");
     echo '</pre>'; exit;
 }
 
