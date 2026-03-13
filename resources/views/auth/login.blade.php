@@ -32,7 +32,7 @@
                         <i class="fas fa-sign-in-alt me-2" style="color: #0077B5;"></i> Connexion
                     </h2>
 
-                    <form action="{{ route('login.store') }}" method="POST">
+                    <form action="{{ url('/login') }}" method="POST">
                         @csrf
 
                         <!-- Matricule PNMLS -->
@@ -100,7 +100,7 @@
                     <!-- Liens utiles -->
                     <div class="text-center">
                         <p class="mb-2">
-                            <a href="{{ route('password.request') }}" class="text-decoration-none">
+                            <a href="{{ url('/forgot-password') }}" class="text-decoration-none">
                                 <i class="fas fa-question-circle me-1"></i> Mot de passe oublié ?
                             </a>
                         </p>

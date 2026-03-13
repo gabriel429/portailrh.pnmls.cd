@@ -66,6 +66,14 @@ if (isset($_GET['clone'])) {
     exit;
 }
 
+// -- MODE CLEARCACHE : ?token=...&clearcache --------------------------------
+if (isset($_GET['clearcache'])) {
+    echo "=== optimize:clear ===\n";
+    echo shell_exec("{$php} {$root}/artisan optimize:clear 2>&1");
+    echo "\nCache nettoye avec succes.\n";
+    echo '</pre>'; exit;
+}
+
 // -- MODE SETUP : ?token=...&setup -----------------------------------------
 if (isset($_GET['setup'])) {
     echo "=== storage:link (manuel, sans exec) ===\n";
