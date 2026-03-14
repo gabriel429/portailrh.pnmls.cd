@@ -81,7 +81,6 @@ $secondary = [
     ['label' => 'Sections',     'value' => $stats['sections'],          'icon' => 'fa-sitemap',    'acc' => '#0891b2', 'acc-bg' => '#e0f7fa', 'route' => 'admin.sections.index'],
     ['label' => 'Cellules',     'value' => $stats['cellules'],          'icon' => 'fa-cubes',      'acc' => '#64748b', 'acc-bg' => '#f1f5f9', 'route' => 'admin.cellules.index'],
     ['label' => 'Localités SEL','value' => $stats['localites'] ?? 0,   'icon' => 'fa-map-pin',    'acc' => '#0d9488', 'acc-bg' => '#ccfbf1', 'route' => 'admin.localites.index'],
-    ['label' => 'Organes',      'value' => $stats['organes'] ?? 0,      'icon' => 'fa-layer-group','acc' => '#a78bfa', 'acc-bg' => '#ede9fe', 'route' => 'admin.organes.index'],
     ['label' => 'Grades',       'value' => $stats['grades'],            'icon' => 'fa-layer-group','acc' => '#10b981', 'acc-bg' => '#d1fae5', 'route' => 'admin.grades.index'],
     ['label' => 'Rôles',        'value' => $stats['roles'],             'icon' => 'fa-user-tag',   'acc' => '#f59e0b', 'acc-bg' => '#fef3c7', 'route' => 'admin.roles.index'],
     ['label' => 'Permissions',  'value' => $stats['permissions'],       'icon' => 'fa-key',        'acc' => '#ef4444', 'acc-bg' => '#fee2e2', 'route' => 'admin.roles.index'],
