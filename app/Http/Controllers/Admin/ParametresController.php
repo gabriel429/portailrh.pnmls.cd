@@ -89,7 +89,7 @@ class ParametresController extends Controller
                         default => '#f3f4f6'
                     },
                     'agents' => Agent::where('organe', $niveau)->count(),
-                    'affectations' => Affectation::whereHas('fonction', function($q) use ($niveau) {
+                    'affectations' => Affectation::whereHas('fonction', function($q) use ($organeCode) {
                         $q->where('niveau_administratif', $organeCode)->orWhere('niveau_administratif', 'TOUS');
                     })->count(),
                     'fonctions' => Fonction::where('niveau_administratif', $organeCode)
