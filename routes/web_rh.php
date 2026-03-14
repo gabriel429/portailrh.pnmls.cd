@@ -159,6 +159,14 @@ Route::middleware('auth')->group(function () {
         Route::put('/organes/{organe}',         [ParametresController::class, 'organesUpdate'])->name('organes.update');
         Route::delete('/organes/{organe}',      [ParametresController::class, 'organesDestroy'])->name('organes.destroy');
 
+        // Utilisateurs
+        Route::get('/utilisateurs',             [ParametresController::class, 'utilisateursIndex'])->name('utilisateurs.index');
+        Route::get('/utilisateurs/create',      [ParametresController::class, 'utilisateursCreate'])->name('utilisateurs.create');
+        Route::post('/utilisateurs',            [ParametresController::class, 'utilisateursStore'])->name('utilisateurs.store');
+        Route::get('/utilisateurs/{user}/edit', [ParametresController::class, 'utilisateursEdit'])->name('utilisateurs.edit');
+        Route::put('/utilisateurs/{user}',      [ParametresController::class, 'utilisateursUpdate'])->name('utilisateurs.update');
+        Route::delete('/utilisateurs/{user}',   [ParametresController::class, 'utilisateursDestroy'])->name('utilisateurs.destroy');
+
         // API: Get fonctions by organe
         Route::get('/api/fonctions-by-organe/{code}', [ParametresController::class, 'getAllFonctionsByOrgane'])->name('api.fonctions-by-organe');
 

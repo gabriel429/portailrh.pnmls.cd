@@ -85,6 +85,7 @@ $secondary = [
     ['label' => 'Grades',       'value' => $stats['grades'],            'icon' => 'fa-layer-group','acc' => '#10b981', 'acc-bg' => '#d1fae5', 'route' => 'admin.grades.index'],
     ['label' => 'Rôles',        'value' => $stats['roles'],             'icon' => 'fa-user-tag',   'acc' => '#f59e0b', 'acc-bg' => '#fef3c7', 'route' => 'admin.roles.index'],
     ['label' => 'Permissions',  'value' => $stats['permissions'],       'icon' => 'fa-key',        'acc' => '#ef4444', 'acc-bg' => '#fee2e2', 'route' => 'admin.roles.index'],
+    ['label' => 'Utilisateurs', 'value' => $stats['users'],             'icon' => 'fa-users-cog',  'acc' => '#ec4899', 'acc-bg' => '#fce7f3', 'route' => 'admin.utilisateurs.index'],
 ];
 @endphp
 
@@ -211,6 +212,7 @@ $quickActions = [
         ['label' => 'Rôles',        'value' => $stats['roles'],       'icon' => 'fa-user-tag',       'color' => '#f59e0b', 'bg' => '#fef3c7', 'route' => 'admin.roles.index'],
         ['label' => 'Permissions',  'value' => $stats['permissions'], 'icon' => 'fa-key',            'color' => '#ef4444', 'bg' => '#fee2e2', 'route' => 'admin.roles.index'],
         ['label' => 'Agents total', 'value' => $stats['agents'],      'icon' => 'fa-users',          'color' => '#8b5cf6', 'bg' => '#ede9fe', 'route' => 'rh.agents.index'],
+        ['label' => 'Utilisateurs','value' => $stats['users'],       'icon' => 'fa-users-cog',      'color' => '#ec4899', 'bg' => '#fce7f3', 'route' => 'admin.utilisateurs.index'],
     ];
     @endphp
 

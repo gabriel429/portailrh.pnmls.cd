@@ -7,6 +7,7 @@ use App\Models\Agent;
 use App\Models\Province;
 use App\Models\Grade;
 use App\Models\Role;
+use App\Models\User;
 use App\Models\Department;
 use App\Models\Section;
 use App\Models\Cellule;
@@ -38,6 +39,7 @@ class ParametresController extends Controller
             'permissions' => Permission::count(),
             'organes'     => Schema::hasTable('organes') ? Organe::count() : 0,
             'agents'      => Agent::count(),
+            'users'       => User::count(),
         ];
 
         return view('admin.dashboard', compact('stats'));
@@ -756,6 +758,96 @@ class ParametresController extends Controller
         ->get();
 
         return response()->json($fonctions);
+    }
+
+    // ─── UTILISATEURS ────────────────────────────────────────────────────
+
+    /**
+     * Display list of users
+     */
+    public function utilisateursIndex()
+    {
+        $users = User::paginate(15);
+        return view('admin.utilisateurs.index', compact('users'));
+    }
+
+    /**
+     * Show form to create new user
+     */
+    public function utilisateursCreate()
+    {
+        return view('admin.utilisateurs.create');
+    }
+
+    /**
+     * Store a new user
+     */
+    public function utilisateursStore(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => bcrypt($validated['password']),
+        ]);
+
+        return redirect()->route('admin.utilisateurs.index')
+            ->with('success', 'Utilisateur créé avec succès');
+    }
+
+    /**
+     * Show form to edit user
+     */
+    public function utilisateursEdit(User $user)
+    {
+        return view('admin.utilisateurs.edit', compact('user'));
+    }
+
+    /**
+     * Update user
+     */
+    public function utilisateursUpdate(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email,' . $user->id,
+            'password' => 'nullable|string|min:8|confirmed',
+        ]);
+
+        $user->update([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+        ]);
+
+        // Update password if provided
+        if (!empty($validated['password'])) {
+            $user->update(['password' => bcrypt($validated['password'])]);
+        }
+
+        return redirect()->route('admin.utilisateurs.index')
+            ->with('success', 'Utilisateur modifié avec succès');
+    }
+
+    /**
+     * Delete user
+     */
+    public function utilisateursDestroy(User $user)
+    {
+        // Prevent deleting the current user
+        if ($user->id === auth()->id()) {
+            return redirect()->route('admin.utilisateurs.index')
+                ->with('error', 'Vous ne pouvez pas supprimer votre propre compte');
+        }
+
+        $user->delete();
+
+        return redirect()->route('admin.utilisateurs.index')
+            ->with('success', 'Utilisateur supprimé avec succès');
     }
 
     // ─── LOGS ────────────────────────────────────────────────────

@@ -394,6 +394,10 @@
         </a>
 
         <p class="sb-section">Système</p>
+        <a href="{{ route('admin.utilisateurs.index') }}"
+           class="sb-link {{ request()->routeIs('admin.utilisateurs.*') ? 'active' : '' }}">
+            <i class="fas fa-users-cog ico"></i> Utilisateurs
+        </a>
         <a href="{{ route('admin.deployment.index') }}"
            class="sb-link {{ request()->routeIs('admin.deployment.*') ? 'active' : '' }}">
             <i class="fas fa-rocket ico"></i> Déploiement
