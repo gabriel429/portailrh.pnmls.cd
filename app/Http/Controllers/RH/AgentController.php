@@ -7,6 +7,7 @@ use App\Models\Agent;
 use App\Models\Role;
 use App\Models\Department;
 use App\Models\Province;
+use App\Models\Organe;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
 use Illuminate\Http\Request;
@@ -16,18 +17,14 @@ use Illuminate\Http\RedirectResponse;
 class AgentController extends Controller
 {
     /**
-     * Organes disponibles selon la nomenclature PNMLS.
+     * Organes disponibles depuis la table organes.
      */
     private function getOrganeOptions(): array
     {
-        return [
-            'Secrétariat Exécutif National',
-            'Secrétariat Exécutif National Adjoint',
-            'Services rattachés au SEN / SENA',
-            'Département',
-            'Secrétariat Exécutif Provincial',
-            'Secrétariat Exécutif Local',
-        ];
+        return Organe::where('actif', true)
+            ->orderBy('nom')
+            ->pluck('nom')
+            ->toArray();
     }
 
     /**
@@ -130,19 +127,11 @@ class AgentController extends Controller
             'niveau_etudes' => 'required|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
-            'departement_id' => 'required_unless:organe,Secrétariat Exécutif Provincial,Secrétariat Exécutif Local|nullable|exists:departments,id',
+            'departement_id' => 'nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
             'role_id' => 'nullable|exists:roles,id',
             'date_embauche' => 'nullable|date',
         ]);
-
-        $organe = strtolower(trim((string) $validated['organe']));
-        if (in_array($organe, ['secrétariat exécutif provincial', 'secrétariat exécutif local'], true)) {
-            $validated['departement_id'] = null;
-        }
-        if ($organe === 'secrétariat exécutif national') {
-            $validated['province_id'] = null;
-        }
 
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
             $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
@@ -211,21 +200,13 @@ class AgentController extends Controller
             'niveau_etudes' => 'required|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
-            'departement_id' => 'required_unless:organe,Secrétariat Exécutif Provincial,Secrétariat Exécutif Local|nullable|exists:departments,id',
+            'departement_id' => 'nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
             'role_id' => 'nullable|exists:roles,id',
             'date_embauche' => 'nullable|date',
             'statut' => 'required|in:actif,suspendu,ancien',
             'photo' => 'nullable|image|max:2048',
         ]);
-
-        $organe = strtolower(trim((string) $validated['organe']));
-        if (in_array($organe, ['secrétariat exécutif provincial', 'secrétariat exécutif local'], true)) {
-            $validated['departement_id'] = null;
-        }
-        if ($organe === 'secrétariat exécutif national') {
-            $validated['province_id'] = null;
-        }
 
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
             $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
