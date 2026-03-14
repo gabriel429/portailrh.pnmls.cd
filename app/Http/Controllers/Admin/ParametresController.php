@@ -27,6 +27,13 @@ class ParametresController extends Controller
      */
     public function dashboard()
     {
+        // Get organes for filtering
+        $organes = [];
+        if (Schema::hasTable('organes')) {
+            $organes = Organe::where('actif', true)->get();
+        }
+
+        // Build general stats
         $stats = [
             'provinces'   => Province::count(),
             'departments' => Department::count(),
@@ -42,7 +49,57 @@ class ParametresController extends Controller
             'users'       => User::count(),
         ];
 
-        return view('admin.dashboard', compact('stats'));
+        // Build stats by organes
+        $statsByOrgane = [];
+
+        // If organes table exists, group by organe
+        if (Schema::hasTable('organes') && count($organes) > 0) {
+            foreach ($organes as $organe) {
+                $organeCode = $organe->code; // SEN, SEP, SEL
+
+                // Map organe code to niveau_administratif names/values
+                $niveauMap = [
+                    'SEN' => 'Secrétariat Exécutif National',
+                    'SEP' => 'Secrétariat Exécutif Provincial',
+                    'SEL' => 'Secrétariat Exécutif Local',
+                ];
+
+                $niveau = $niveauMap[$organeCode] ?? $organe->nom;
+
+                $statsByOrgane[$organeCode] = [
+                    'nom' => $organe->nom,
+                    'sigle' => $organe->sigle,
+                    'code' => $organeCode,
+                    'icon' => match($organeCode) {
+                        'SEN' => 'fa-flag',
+                        'SEP' => 'fa-map-marked-alt',
+                        'SEL' => 'fa-map-pin',
+                        default => 'fa-sitemap'
+                    },
+                    'color' => match($organeCode) {
+                        'SEN' => '#0077B5',
+                        'SEP' => '#0ea5e9',
+                        'SEL' => '#0d9488',
+                        default => '#6b7280'
+                    },
+                    'bg-color' => match($organeCode) {
+                        'SEN' => '#eff6ff',
+                        'SEP' => '#e0f2fe',
+                        'SEL' => '#ccfbf1',
+                        default => '#f3f4f6'
+                    },
+                    'agents' => Agent::where('organe', $niveau)->count(),
+                    'affectations' => Affectation::whereHas('fonction', function($q) use ($niveau) {
+                        $q->where('niveau_administratif', $organeCode)->orWhere('niveau_administratif', 'TOUS');
+                    })->count(),
+                    'fonctions' => Fonction::where('niveau_administratif', $organeCode)
+                        ->orWhere('niveau_administratif', 'TOUS')
+                        ->count(),
+                ];
+            }
+        }
+
+        return view('admin.dashboard', compact('stats', 'statsByOrgane', 'organes'));
     }
 
     // ─── PROVINCES ───────────────────────────────────────────────

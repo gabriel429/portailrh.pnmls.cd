@@ -105,6 +105,51 @@ $secondary = [
     @endforeach
 </div>
 
+{{-- ─── Statistiques par Organes ─── --}}
+@if(count($statsByOrgane) > 0)
+<div class="section-title"><span>Gestion par Secrétariats Exécutifs</span></div>
+<div class="row g-4 mb-4">
+    @foreach($statsByOrgane as $organe)
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid {{ $organe['color'] }};">
+            <div class="card-header" style="background-color: {{ $organe['bg-color'] }}; border: none;">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <h6 class="card-title mb-0" style="color: {{ $organe['color'] }};">
+                            <i class="fas {{ $organe['icon'] }} me-2"></i>{{ $organe['nom'] }}
+                        </h6>
+                        <small class="text-muted">{{ $organe['sigle'] }}</small>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-6">
+                        <div class="text-center p-2" style="background-color: {{ $organe['bg-color'] }}; border-radius: 8px;">
+                            <div class="h5 mb-0" style="color: {{ $organe['color'] }};">{{ $organe['agents'] }}</div>
+                            <small class="text-muted">Agents</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-center p-2" style="background-color: {{ $organe['bg-color'] }}; border-radius: 8px;">
+                            <div class="h5 mb-0" style="color: {{ $organe['color'] }};">{{ $organe['fonctions'] }}</div>
+                            <small class="text-muted">Fonctions</small>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="text-center p-2" style="background-color: {{ $organe['bg-color'] }}; border-radius: 8px;">
+                            <div class="h5 mb-0" style="color: {{ $organe['color'] }};">{{ $organe['affectations'] }}</div>
+                            <small class="text-muted">Affectations</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endforeach
+</div>
+@endif
+
 <div class="section-title"><span>Données de référence</span></div>
 <div class="row g-3 mb-4">
     @foreach($secondary as $s)
