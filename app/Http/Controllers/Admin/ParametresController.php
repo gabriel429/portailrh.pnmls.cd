@@ -16,6 +16,7 @@ use App\Models\Localite;
 use App\Models\Organe;
 use App\Models\Permission;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Http\Request;
 
 class ParametresController extends Controller
@@ -35,7 +36,7 @@ class ParametresController extends Controller
             'grades'      => Grade::count(),
             'roles'       => Role::count(),
             'permissions' => Permission::count(),
-            'organes'     => Organe::count(),
+            'organes'     => Schema::hasTable('organes') ? Organe::count() : 0,
             'agents'      => Agent::count(),
         ];
 
