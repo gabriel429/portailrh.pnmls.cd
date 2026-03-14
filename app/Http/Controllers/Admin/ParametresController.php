@@ -673,7 +673,7 @@ class ParametresController extends Controller
                 ->with('error', 'La table organes n\'existe pas encore. Veuillez exécuter les migrations avec: php deploy-organes.php');
         }
 
-        $organes = Organe::withCount('affectations')->orderBy('code')->paginate(20);
+        $organes = Organe::orderBy('code')->paginate(20);
         return view('admin.organes.index', compact('organes'));
     }
 
@@ -733,11 +733,6 @@ class ParametresController extends Controller
 
     public function organesDestroy(Organe $organe)
     {
-        if ($organe->affectations()->count() > 0) {
-            return redirect()->route('admin.organes.index')
-                ->with('error', 'Impossible de supprimer cet organe : des affectations y sont référencées.');
-        }
-
         $organe->delete();
         return redirect()->route('admin.organes.index')
             ->with('success', 'Organe supprimé.');

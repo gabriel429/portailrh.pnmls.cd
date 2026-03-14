@@ -19,7 +19,6 @@
                 <th>Nom</th>
                 <th>Sigle</th>
                 <th>Statut</th>
-                <th>Affectations</th>
                 <th class="text-end">Actions</th>
             </tr>
         </thead>
@@ -36,7 +35,6 @@
                         <span class="badge bg-danger"><i class="fas fa-times-circle me-1"></i> Inactif</span>
                     @endif
                 </td>
-                <td>{{ $o->affectations_count }}</td>
                 <td class="text-end">
                     <a href="{{ route('admin.organes.edit', $o) }}" class="btn btn-sm btn-outline-primary">
                         <i class="fas fa-edit"></i>
@@ -52,7 +50,7 @@
             </tr>
             @empty
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">
+                <td colspan="5" class="text-center text-muted py-4">
                     Aucun organe enregistré.
                 </td>
             </tr>
