@@ -763,11 +763,11 @@ class ParametresController extends Controller
     // ─── UTILISATEURS ────────────────────────────────────────────────────
 
     /**
-     * Display list of users
+     * Display list of users (linked to agents)
      */
     public function utilisateursIndex()
     {
-        $users = User::paginate(15);
+        $users = User::with(['agent', 'role'])->paginate(15);
         return view('admin.utilisateurs.index', compact('users'));
     }
 
@@ -776,28 +776,34 @@ class ParametresController extends Controller
      */
     public function utilisateursCreate()
     {
-        return view('admin.utilisateurs.create');
+        $agents = Agent::whereDoesntHave('user')->orderBy('nom')->get();
+        $roles = Role::all();
+        return view('admin.utilisateurs.create', compact('agents', 'roles'));
     }
 
     /**
-     * Store a new user
+     * Store a new user linked to an agent
      */
     public function utilisateursStore(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
+            'agent_id' => 'required|exists:agents,id|unique:users,agent_id',
+            'role_id' => 'nullable|exists:roles,id',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
+        $agent = Agent::findOrFail($validated['agent_id']);
+
         User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
+            'name' => $agent->nom . ' ' . $agent->prenom,
+            'email' => $agent->email_professionnel,
+            'agent_id' => $validated['agent_id'],
+            'role_id' => $validated['role_id'],
             'password' => bcrypt($validated['password']),
         ]);
 
         return redirect()->route('admin.utilisateurs.index')
-            ->with('success', 'Utilisateur créé avec succès');
+            ->with('success', 'Utilisateur créé avec succès pour ' . $agent->nom);
     }
 
     /**
@@ -805,23 +811,23 @@ class ParametresController extends Controller
      */
     public function utilisateursEdit(User $user)
     {
-        return view('admin.utilisateurs.edit', compact('user'));
+        $user->load(['agent', 'role']);
+        $roles = Role::all();
+        return view('admin.utilisateurs.edit', compact('user', 'roles'));
     }
 
     /**
-     * Update user
+     * Update user (role and password)
      */
     public function utilisateursUpdate(Request $request, User $user)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'role_id' => 'nullable|exists:roles,id',
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $user->update([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
+            'role_id' => $validated['role_id'],
         ]);
 
         // Update password if provided

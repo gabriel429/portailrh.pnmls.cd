@@ -1,7 +1,7 @@
 @extends('admin.layouts.sidebar')
 
 @section('title', 'Créer Utilisateur')
-@section('page-title', 'Nouvel Utilisateur')
+@section('page-title', 'Créer Compte pour un Agent')
 
 @section('content')
 <div class="row">
@@ -9,7 +9,7 @@
         <div class="form-card">
             <h5 class="mb-4">
                 <i class="fas fa-user-plus me-2 text-primary"></i>
-                Créer un Nouvel Utilisateur
+                Créer un Compte Utilisateur
             </h5>
 
             @if ($errors->any())
@@ -28,19 +28,34 @@
                 @csrf
 
                 <div class="mb-3">
-                    <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('name') is-invalid @enderror"
-                           id="name" name="name" value="{{ old('name') }}" required>
-                    @error('name')
+                    <label for="agent_id" class="form-label">Agent <span class="text-danger">*</span></label>
+                    <select class="form-select @error('agent_id') is-invalid @enderror"
+                            id="agent_id" name="agent_id" required>
+                        <option value="">-- Sélectionner un agent --</option>
+                        @foreach ($agents as $agent)
+                            <option value="{{ $agent->id }}" @selected(old('agent_id') == $agent->id)
+                                    data-email="{{ $agent->email_professionnel }}">
+                                {{ $agent->nom }} {{ $agent->prenom }} ({{ $agent->email_professionnel }})
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('agent_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                    <input type="email" class="form-control @error('email') is-invalid @enderror"
-                           id="email" name="email" value="{{ old('email') }}" required>
-                    @error('email')
+                    <label for="role_id" class="form-label">Rôle <span class="text-muted">(optionnel)</span></label>
+                    <select class="form-select @error('role_id') is-invalid @enderror"
+                            id="role_id" name="role_id">
+                        <option value="">-- Aucun rôle --</option>
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->id }}" @selected(old('role_id') == $role->id)>
+                                {{ $role->nom_role }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('role_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
@@ -66,7 +81,7 @@
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save me-2"></i> Créer l'Utilisateur
+                        <i class="fas fa-save me-2"></i> Créer le Compte
                     </button>
                     <a href="{{ route('admin.utilisateurs.index') }}" class="btn btn-secondary">
                         <i class="fas fa-times me-2"></i> Annuler
@@ -83,9 +98,10 @@
                 Informations
             </h6>
             <small class="text-muted">
-                <p><strong>Email:</strong> Doit être unique dans le système</p>
-                <p><strong>Mot de passe:</strong> Minimum 8 caractères. Il doit être confirmé avec précision.</p>
-                <p>L'utilisateur pourra se connecter avec ses identifiants après création.</p>
+                <p><strong>Agent:</strong> L'utilisateur sera lié à un agent existant</p>
+                <p><strong>Email:</strong> Utilisera automatiquement l'email professionnel de l'agent</p>
+                <p><strong>Mot de passe:</strong> Défini par l'administrateur pour accéder à l'application</p>
+                <p><strong>Rôle:</strong> Optionnel. Peut être attribué gratuitement après création.</p>
             </small>
         </div>
     </div>

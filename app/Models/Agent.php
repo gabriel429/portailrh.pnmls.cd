@@ -123,6 +123,11 @@ class Agent extends Authenticatable
         return $this->hasMany(Affectation::class);
     }
 
+    public function user(): HasMany
+    {
+        return $this->hasMany(User::class);
+    }
+
     // Scopes
     public function scopeActifs($query)
     {

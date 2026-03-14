@@ -1,7 +1,7 @@
 @extends('admin.layouts.sidebar')
 
 @section('title', 'Modifier Utilisateur')
-@section('page-title', 'Modifier Utilisateur: ' . $user->name)
+@section('page-title', 'Modifier Utilisateur: ' . $user->agent->nom ?? $user->name)
 
 @section('content')
 <div class="row">
@@ -29,19 +29,31 @@
                 @method('PUT')
 
                 <div class="mb-3">
-                    <label for="name" class="form-label">Nom <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control @error('name') is-invalid @enderror"
-                           id="name" name="name" value="{{ old('name', $user->name) }}" required>
-                    @error('name')
-                        <div class="invalid-feedback">{{ $message }}</div>
-                    @enderror
+                    <label for="agent" class="form-label">Agent</label>
+                    <input type="text" class="form-control" id="agent" disabled
+                           value="{{ $user->agent?->nom }} {{ $user->agent?->prenom }} ({{ $user->agent?->email_professionnel }})">
+                    <small class="form-text text-muted">L'agent ne peut pas être changé</small>
                 </div>
 
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                    <input type="email" class="form-control @error('email') is-invalid @enderror"
-                           id="email" name="email" value="{{ old('email', $user->email) }}" required>
-                    @error('email')
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" disabled
+                           value="{{ $user->email }}">
+                    <small class="form-text text-muted">Email professionnel de l'agent (automatique)</small>
+                </div>
+
+                <div class="mb-3">
+                    <label for="role_id" class="form-label">Rôle</label>
+                    <select class="form-select @error('role_id') is-invalid @enderror"
+                            id="role_id" name="role_id">
+                        <option value="">-- Aucun rôle --</option>
+                        @foreach ($roles as $role)
+                            <option value="{{ $role->id }}" @selected(old('role_id', $user->role_id) == $role->id)>
+                                {{ $role->nom_role }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('role_id')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

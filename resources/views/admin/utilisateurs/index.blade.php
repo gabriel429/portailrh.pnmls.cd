@@ -38,8 +38,9 @@
                     <thead class="table-light">
                         <tr>
                             <th>ID</th>
-                            <th>Nom</th>
-                            <th>Email</th>
+                            <th>Agent</th>
+                            <th>Email Professionnel</th>
+                            <th>Rôle</th>
                             <th>Créé le</th>
                             <th>Actions</th>
                         </tr>
@@ -51,12 +52,19 @@
                                     <span class="badge bg-secondary">{{ $user->id }}</span>
                                 </td>
                                 <td>
-                                    <strong>{{ $user->name }}</strong>
+                                    <strong>{{ $user->agent?->nom }} {{ $user->agent?->prenom }}</strong>
                                     @if ($user->id === auth()->id())
                                         <span class="badge bg-info ms-2">Votre compte</span>
                                     @endif
                                 </td>
                                 <td>{{ $user->email }}</td>
+                                <td>
+                                    @if ($user->role)
+                                        <span class="badge bg-success">{{ $user->role->nom_role }}</span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
                                 <td>{{ $user->created_at?->format('d/m/Y H:i') }}</td>
                                 <td>
                                     <a href="{{ route('admin.utilisateurs.edit', $user) }}"
@@ -82,7 +90,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center text-muted py-4">
+                                <td colspan="6" class="text-center text-muted py-4">
                                     <i class="fas fa-inbox me-2"></i>
                                     Aucun utilisateur trouvé
                                 </td>
