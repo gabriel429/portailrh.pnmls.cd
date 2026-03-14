@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\Department;
 use App\Models\Province;
 use App\Models\Organe;
+use App\Models\Grade;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
 use Illuminate\Http\Request;
@@ -25,6 +26,14 @@ class AgentController extends Controller
             ->orderBy('nom')
             ->pluck('nom')
             ->toArray();
+    }
+
+    /**
+     * Grades disponibles depuis la table grades.
+     */
+    private function getGradeOptions()
+    {
+        return Grade::orderBy('ordre')->get();
     }
 
     /**
@@ -96,8 +105,9 @@ class AgentController extends Controller
         $provinces = Province::all();
         $organeOptions = $this->getOrganeOptions();
         $fonctionOptions = $this->getFonctionOptions();
+        $grades = $this->getGradeOptions();
 
-        return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions'));
+        return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades'));
     }
 
     /**
@@ -123,7 +133,7 @@ class AgentController extends Controller
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
             'fonction' => 'required|string|max:255',
-            'grade_etat' => 'required|string|max:255',
+            'grade_id' => 'required|exists:grades,id',
             'niveau_etudes' => 'required|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
@@ -169,8 +179,9 @@ class AgentController extends Controller
         $provinces = Province::all();
         $organeOptions = $this->getOrganeOptions();
         $fonctionOptions = $this->getFonctionOptions();
+        $grades = $this->getGradeOptions();
 
-        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions'));
+        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades'));
     }
 
     /**
@@ -196,7 +207,7 @@ class AgentController extends Controller
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
             'fonction' => 'required|string|max:255',
-            'grade_etat' => 'required|string|max:255',
+            'grade_id' => 'required|exists:grades,id',
             'niveau_etudes' => 'required|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',

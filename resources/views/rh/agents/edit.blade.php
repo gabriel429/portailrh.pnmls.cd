@@ -6,6 +6,7 @@
 /** @var \Illuminate\Support\Collection $provinces */
 /** @var array $organeOptions */
 /** @var array $fonctionOptions */
+/** @var \Illuminate\Support\Collection $grades */
 @endphp
 
 @section('content')
@@ -254,10 +255,17 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="grade_etat" class="form-label">Grade de l'État <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('grade_etat') is-invalid @enderror"
-                                id="grade_etat" name="grade_etat" value="{{ old('grade_etat', $agent->grade_etat) }}" required>
-                            @error('grade_etat')
+                            <label for="grade_id" class="form-label">Grade de l'État <span class="text-danger">*</span></label>
+                            <select class="form-select @error('grade_id') is-invalid @enderror"
+                                    id="grade_id" name="grade_id" required>
+                                <option value="">-- Sélectionner un grade --</option>
+                                @foreach ($grades as $grade)
+                                    <option value="{{ $grade->id }}" @selected(old('grade_id', $agent->grade_id) == $grade->id)>
+                                        {{ $grade->libelle }} ({{ $grade->nom_categorie }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('grade_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
