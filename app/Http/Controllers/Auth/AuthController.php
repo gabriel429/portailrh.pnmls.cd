@@ -18,15 +18,16 @@ class AuthController extends Controller
     public function login(Request $request): RedirectResponse
     {
         $request->validate([
-            'matricule' => 'required|string',
+            'email' => 'required|email',
             'password'  => 'required|string',
         ], [
-            'matricule.required' => 'Le matricule PNMLS est obligatoire.',
+            'email.required' => 'L\'adresse email est obligatoire.',
+            'email.email' => 'Veuillez entrer une adresse email valide.',
             'password.required'  => 'Le mot de passe est obligatoire.',
         ]);
 
         if (Auth::attempt([
-            'matricule_pnmls' => $request->matricule,
+            'email' => $request->email,
             'password'        => $request->password,
         ], $request->boolean('remember'))) {
             $request->session()->regenerate();
@@ -34,8 +35,8 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'matricule' => 'Matricule ou mot de passe incorrect.',
-        ])->onlyInput('matricule');
+            'email' => 'Email ou mot de passe incorrect.',
+        ])->onlyInput('email');
     }
 
     public function logout(Request $request): RedirectResponse

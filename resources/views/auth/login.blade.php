@@ -35,24 +35,24 @@
                     <form action="{{ url('/login') }}" method="POST">
                         @csrf
 
-                        <!-- Matricule PNMLS -->
+                        <!-- Adresse Email Professionnelle -->
                         <div class="mb-4">
-                            <label for="matricule" class="form-label fw-bold">Matricule PNMLS</label>
+                            <label for="email" class="form-label fw-bold">Adresse Email Professionnelle</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-id-card"></i></span>
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
                                 <input
-                                    type="text"
-                                    class="form-control @error('matricule') is-invalid @enderror"
-                                    id="matricule"
-                                    name="matricule"
-                                    placeholder="Ex: PNM-000123"
-                                    value="{{ old('matricule') }}"
+                                    type="email"
+                                    class="form-control @error('email') is-invalid @enderror"
+                                    id="email"
+                                    name="email"
+                                    placeholder="Ex: patrick.wemba@pnmls.cd"
+                                    value="{{ old('email') }}"
                                     required>
-                                @error('matricule')
+                                @error('email')
                                     <span class="invalid-feedback">{{ $message }}</span>
                                 @enderror
                             </div>
-                            <small class="form-text text-muted">Entrez votre matricule unique PNMLS</small>
+                            <small class="form-text text-muted">Entrez votre adresse email professionnelle</small>
                         </div>
 
                         <!-- Mot de passe -->
