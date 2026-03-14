@@ -131,4 +131,79 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
-}
+
+    /**
+     * Execute Users system upgrade (add agent_id and role_id)
+     */
+    public function deployUsers()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "🚀 Début de la mise à jour du système Utilisateurs...";
+
+            // Step 1: Add columns to users table
+            $output_messages[] = "📦 Étape 1: Vérification de la table users...";
+
+            if (Schema::hasTable('users')) {
+                $output_messages[] = "   Table users trouvée";
+
+                try {
+                    // Check if columns already exist
+                    $hasAgentId = Schema::hasColumn('users', 'agent_id');
+                    $hasRoleId = Schema::hasColumn('users', 'role_id');
+
+                    if (!$hasAgentId || !$hasRoleId) {
+                        $output_messages[] = "   Ajout des colonnes agent_id et role_id...";
+
+                        Schema::table('users', function ($table) use ($hasAgentId, $hasRoleId) {
+                            if (!$hasAgentId) {
+                                $table->foreignId('agent_id')->nullable()->constrained('agents')->onDelete('cascade')->after('id');
+                            }
+                            if (!$hasRoleId) {
+                                $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('set null')->after('agent_id');
+                            }
+                        });
+
+                        $output_messages[] = "✅ Colonnes ajoutées avec succès!";
+                    } else {
+                        $output_messages[] = "✅ Les colonnes existent déjà";
+                    }
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur lors de l'ajout des colonnes: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $error_messages[] = "❌ La table users n'existe pas";
+                return redirect()->route('admin.deployment.index')
+                    ->with('error_messages', $error_messages)
+                    ->with('output_messages', $output_messages);
+            }
+
+            // Step 2: Verify structure
+            $output_messages[] = "✔️  Étape 2: Vérification finale...";
+
+            if (Schema::hasColumn('users', 'agent_id') && Schema::hasColumn('users', 'role_id')) {
+                $output_messages[] = "✅ Colonnes agent_id et role_id présentes";
+                $output_messages[] = "✅ Relations configurées: User → Agent, User → Role";
+                $success = true;
+            } else {
+                $error_messages[] = "❌ Les colonnes n'ont pas pu être vérifiées";
+            }
+
+            $output_messages[] = "✨ Déploiement Utilisateurs terminé!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
+

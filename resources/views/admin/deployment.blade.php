@@ -1,24 +1,25 @@
 @extends('admin.layouts.sidebar')
 
 @section('title', 'Déploiement')
-@section('page-title', 'Déploiement Module Organe')
+@section('page-title', 'Assistant de Déploiement')
 
 @section('content')
 
 <div class="row">
-    <div class="col-lg-8">
+    {{-- Module Organes --}}
+    <div class="col-lg-6 mb-4">
         <div class="form-card">
             <h5 class="mb-3">
-                <i class="fas fa-rocket text-primary me-2"></i>
-                Assistant de Déploiement
+                <i class="fas fa-sitemap text-primary me-2"></i>
+                Déploiement Module Organe
             </h5>
 
-            <p class="text-muted mb-4">
-                Cette page exécute les migrations et le seeding pour activer le module Organe.
+            <p class="text-muted mb-3">
+                Déployer la table des Organes (SEN, SEP, SEL)
             </p>
 
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show mb-4">
+                <div class="alert alert-success alert-dismissible fade show mb-3">
                     <i class="fas fa-check-circle me-2"></i>
                     <strong>Succès!</strong> Le module Organe est maintenant déployé et opérationnel.
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
@@ -26,7 +27,7 @@
             @endif
 
             @if(session('error_messages') && count(session('error_messages')) > 0)
-                <div class="alert alert-danger alert-dismissible fade show mb-4">
+                <div class="alert alert-danger alert-dismissible fade show mb-3">
                     <i class="fas fa-exclamation-circle me-2"></i>
                     <strong>Erreurs detectées:</strong>
                     <ul class="mb-0 ps-3 mt-2">
@@ -39,78 +40,57 @@
             @endif
 
             @if(session('output_messages') && count(session('output_messages')) > 0)
-                <div class="bg-dark rounded p-3 mb-4" style="font-family: 'Courier New', monospace; color: #0f0; font-size: 0.9rem; max-height: 400px; overflow-y: auto;">
+                <div class="bg-dark rounded p-3 mb-3" style="font-family: 'Courier New', monospace; color: #0f0; font-size: 0.85rem; max-height: 300px; overflow-y: auto;">
                     @foreach(session('output_messages') as $line)
                         <div>{{ $line }}</div>
                     @endforeach
                 </div>
             @endif
 
-            <div class="alert alert-info mb-4">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Étapes effectuées:</strong>
-                <ol class="mb-0 ps-3 mt-2">
-                    <li>Exécution des migrations (création de la table organes)</li>
-                    <li>Insertion des données initiales (SEN, SEP, SEL)</li>
-                    <li>Vérification de la cible</li>
-                </ol>
-            </div>
-
             <form action="{{ route('admin.deployment.deploy-organes') }}" method="POST">
                 @csrf
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-play me-2"></i> Lancer le Déploiement
-                    </button>
-                    <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-2"></i> Retour
-                    </a>
-                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i> Lancer Organes
+                </button>
             </form>
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="form-card bg-light">
-            <h6 class="mb-3">
-                <i class="fas fa-question-circle me-2"></i>
-                Informations
-            </h6>
+    {{-- Module Utilisateurs --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-users-cog text-success me-2"></i>
+                Déploiement Système Utilisateurs
+            </h5>
 
-            <div class="small">
-                <p>
-                    <strong>Qu'est-ce que cela fait?</strong><br>
-                    Cette action crée la table de base de données pour les Organes
-                    (Secrétariats Exécutifs) et y insère les 3 enregistrements de base.
-                </p>
+            <p class="text-muted mb-3">
+                Ajouter les colonnes agent_id et role_id à la table users
+            </p>
 
-                <p>
-                    <strong>Est-ce sûr?</strong><br>
-                    Oui, ce script est idempotent et ne causera pas de perte de données
-                    s'il est exécuté plusieurs fois.
-                </p>
-
-                <p>
-                    <strong>Que se passe-t-il après?</strong><br>
-                    Une fois déployé, vous pourrez:
-                </p>
-                <ul class="ps-3">
-                    <li>Accéder au CRUD Organes</li>
-                    <li>Filtrer les fonctions par organe</li>
-                    <li>Voir les statistiques dans le dashboard</li>
-                </ul>
-            </div>
+            <form action="{{ route('admin.deployment.deploy-users') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-play me-2"></i> Lancer Utilisateurs
+                </button>
+            </form>
         </div>
+    </div>
+</div>
 
-        <div class="form-card mt-3 border-warning">
-            <h6 class="mb-2 text-warning">
-                <i class="fas fa-exclamation-triangle me-2"></i>
-                Attention
+<div class="row">
+    <div class="col-lg-12">
+        <div class="form-card">
+            <h6 class="mb-3">
+                <i class="fas fa-info-circle me-2"></i>
+                Information
             </h6>
-            <small class="text-muted">
-                Ne cliquez qu'une seule fois sur "Lancer le Déploiement"
-                et attendez que la page se recharge.
-            </small>
+
+            <div class="small text-muted">
+                <p><strong>Module Organe:</strong> Crée la table organes et insère les données de base (Secrétariat Exécutif National, Provincial, Local)</p>
+                <p><strong>Système Utilisateurs:</strong> Ajoute les relations entre utilisateurs et agents, et entre utilisateurs et rôles</p>
+                <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
+            </div>
         </div>
     </div>
 </div>
