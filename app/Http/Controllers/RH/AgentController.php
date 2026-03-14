@@ -38,26 +38,23 @@ class AgentController extends Controller
     }
 
     /**
-     * Fonctions PNMLS depuis la table fonctions.
-     */
-    private function getFonctionOptions()
-    {
-        return Fonction::orderBy(‘niveau_administratif’)->orderBy(‘nom’)->get();
-    }
-
-    /**
      * Fonctions groupées par niveau_administratif pour affichage.
      */
     private function getFonctionGroupedOptions(): array
     {
-        $fonctions = $this->getFonctionOptions();
+        $fonctions = Fonction::orderBy('niveau_administratif')->orderBy('nom')->get();
         $grouped = [];
 
-        $niveauLabels = Fonction::niveauAdministratifLabel();
+        $niveauLabels = [
+            'SEN'  => 'Secrétariat Exécutif National',
+            'SEP'  => 'Secrétariat Exécutif Provincial',
+            'SEL'  => 'Secrétariat Exécutif Local',
+            'TOUS' => 'Tous niveaux',
+        ];
 
         foreach ($fonctions as $fonction) {
             $niveau = $fonction->niveau_administratif;
-            $label = $niveauLabels[$niveau] ?? $niveau;
+            $label = isset($niveauLabels[$niveau]) ? $niveauLabels[$niveau] : $niveau;
 
             if (!isset($grouped[$label])) {
                 $grouped[$label] = [];
