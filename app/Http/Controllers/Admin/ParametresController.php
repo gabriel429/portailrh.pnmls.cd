@@ -794,9 +794,16 @@ class ParametresController extends Controller
 
         $agent = Agent::findOrFail($validated['agent_id']);
 
+        // Use email_professionnel if available, otherwise generate one
+        $email = $agent->email_professionnel ?? $agent->email;
+        if (!$email) {
+            // Fallback: generate email from name
+            $email = strtolower(str_replace(' ', '.', $agent->nom . '.' . $agent->prenom)) . '@portail-rh.local';
+        }
+
         User::create([
             'name' => $agent->nom . ' ' . $agent->prenom,
-            'email' => $agent->email_professionnel,
+            'email' => $email,
             'agent_id' => $validated['agent_id'],
             'role_id' => $validated['role_id'],
             'password' => bcrypt($validated['password']),
