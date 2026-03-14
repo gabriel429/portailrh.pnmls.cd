@@ -382,10 +382,18 @@
 @section('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const organeInput     = document.getElementById('organe');
+    const organeInput       = document.getElementById('organe');
+    const fonctionSelect    = document.getElementById('fonction');
     const departementSelect = document.getElementById('departement_id');
-    const provinceWrapper = document.getElementById('province-wrapper');
-    const provinceSelect  = document.getElementById('province_id');
+    const provinceWrapper   = document.getElementById('province-wrapper');
+    const provinceSelect    = document.getElementById('province_id');
+
+    // Mapping entre noms d'organe et codes de niveau administratif
+    const organeToNiveauMap = {
+        'secrétariat exécutif national': 'SEN',
+        'secrétariat exécutif provincial': 'SEP',
+        'secrétariat exécutif local': 'SEL',
+    };
 
     const isNational = (value) =>
         (value || '').trim().toLowerCase() === 'secrétariat exécutif national';
@@ -393,6 +401,50 @@ document.addEventListener('DOMContentLoaded', function () {
     const shouldDisableDepartment = (value) => {
         const normalized = (value || '').trim().toLowerCase();
         return normalized === 'secrétariat exécutif provincial' || normalized === 'secrétariat exécutif local';
+    };
+
+    // Fonction pour récupérer et afficher les fonctions filtrées
+    const updateFonctions = async (organe) => {
+        if (!organe) {
+            // Si pas d'organe, réinitialiser le dropdown
+            fonctionSelect.innerHTML = '<option value="">-- Sélectionner une fonction --</option>';
+            return;
+        }
+
+        const niveauCode = organeToNiveauMap[(organe || '').trim().toLowerCase()];
+
+        if (!niveauCode) {
+            // Organe non reconnu
+            fonctionSelect.innerHTML = '<option value="">-- Sélectionner une fonction --</option>';
+            return;
+        }
+
+        try {
+            const response = await fetch(`/admin/api/fonctions-by-organe/${niveauCode}`);
+            const fonctions = await response.json();
+
+            // Grouper les fonctions par type_poste
+            const grouped = {};
+            fonctions.forEach(f => {
+                const type = f.type_poste || 'Autres';
+                if (!grouped[type]) grouped[type] = [];
+                grouped[type].push(f);
+            });
+
+            // Construire le HTML
+            let html = '<option value="">-- Sélectionner une fonction --</option>';
+            for (const [type, items] of Object.entries(grouped)) {
+                html += `<optgroup label="${type}">`;
+                items.forEach(f => {
+                    html += `<option value="${f.nom}">${f.nom}</option>`;
+                });
+                html += '</optgroup>';
+            }
+
+            fonctionSelect.innerHTML = html;
+        } catch (error) {
+            console.error('Erreur lors du chargement des fonctions:', error);
+        }
     };
 
     const syncFields = () => {
@@ -412,7 +464,17 @@ document.addEventListener('DOMContentLoaded', function () {
         if (disableDept) departementSelect.value = '';
     };
 
-    organeInput.addEventListener('change', syncFields);
+    // Écouter les changements d'organe
+    organeInput.addEventListener('change', function () {
+        updateFonctions(this.value);
+        syncFields();
+    });
+
+    // Initialiser les fonctions au chargement
+    if (organeInput.value) {
+        updateFonctions(organeInput.value);
+    }
+
     syncFields();
 });
 </script>
