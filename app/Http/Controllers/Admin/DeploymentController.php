@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 
 class DeploymentController extends Controller
 {
@@ -28,20 +29,26 @@ class DeploymentController extends Controller
         try {
             $output_messages[] = "🚀 Début du déploiement du module Organe...";
 
-            // Step 1: Run migrations (only organes table if it doesn't exist)
+            // Step 1: Create organes table if it doesn't exist
             $output_messages[] = "📦 Étape 1: Vérification de la table organes...";
 
             if (!Schema::hasTable('organes')) {
                 $output_messages[] = "   Table non trouvée, création en cours...";
 
-                ob_start();
-                $exitCode = Artisan::call('migrate', ['--force' => true]);
-                $migrationOutput = ob_get_clean();
+                try {
+                    Schema::create('organes', function ($table) {
+                        $table->id();
+                        $table->string('code', 10)->unique();
+                        $table->string('nom');
+                        $table->string('sigle', 30)->nullable();
+                        $table->text('description')->nullable();
+                        $table->boolean('actif')->default(true);
+                        $table->timestamps();
+                    });
 
-                if ($exitCode === 0 || str_contains($migrationOutput, 'Nothing to migrate')) {
                     $output_messages[] = "✅ Table organes créée!";
-                } else {
-                    $error_messages[] = "❌ Erreur lors de la création de la table. Code: $exitCode";
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur lors de la création de la table: " . $e->getMessage();
                     return redirect()->route('admin.deployment.index')
                         ->with('error_messages', $error_messages)
                         ->with('output_messages', $output_messages);
@@ -57,17 +64,34 @@ class DeploymentController extends Controller
             if ($existingCount === 0) {
                 $output_messages[] = "   Données non trouvées, création en cours...";
 
-                ob_start();
-                $exitCode = Artisan::call('db:seed', [
-                    '--class' => 'OrganeSeeder',
-                    '--force' => true,
-                ]);
-                $seedOutput = ob_get_clean();
+                try {
+                    \App\Models\Organe::create([
+                        'code' => 'SEN',
+                        'nom' => 'Secrétariat Exécutif National',
+                        'sigle' => 'SEN',
+                        'description' => 'Le niveau national du gouvernement',
+                        'actif' => true,
+                    ]);
 
-                if ($exitCode === 0) {
+                    \App\Models\Organe::create([
+                        'code' => 'SEP',
+                        'nom' => 'Secrétariat Exécutif Provincial',
+                        'sigle' => 'SEP',
+                        'description' => 'Le niveau provincial du gouvernement',
+                        'actif' => true,
+                    ]);
+
+                    \App\Models\Organe::create([
+                        'code' => 'SEL',
+                        'nom' => 'Secrétariat Exécutif Local',
+                        'sigle' => 'SEL',
+                        'description' => 'Le niveau local du gouvernement',
+                        'actif' => true,
+                    ]);
+
                     $output_messages[] = "✅ Données insérées avec succès!";
-                } else {
-                    $error_messages[] = "❌ Le seeding a échoué. Code: $exitCode";
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur lors de l'insertion des données: " . $e->getMessage();
                     return redirect()->route('admin.deployment.index')
                         ->with('error_messages', $error_messages)
                         ->with('output_messages', $output_messages);
