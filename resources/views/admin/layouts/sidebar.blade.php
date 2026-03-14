@@ -394,6 +394,10 @@
         </a>
 
         <p class="sb-section">Système</p>
+        <a href="{{ route('admin.deployment.index') }}"
+           class="sb-link {{ request()->routeIs('admin.deployment.*') ? 'active' : '' }}">
+            <i class="fas fa-rocket ico"></i> Déploiement
+        </a>
         <a href="{{ route('admin.logs') }}"
            class="sb-link {{ request()->routeIs('admin.logs') ? 'active' : '' }}">
             <i class="fas fa-scroll ico"></i> Journaux (Logs)
@@ -726,6 +730,10 @@
         </a>
 
         <div class="nav-section mt-2">Système</div>
+        <a href="{{ route('admin.deployment.index') }}"
+           class="nav-link {{ request()->routeIs('admin.deployment.*') ? 'active' : '' }}">
+            <i class="fas fa-rocket"></i> Déploiement
+        </a>
         <a href="{{ route('admin.logs') }}"
            class="nav-link {{ request()->routeIs('admin.logs') ? 'active' : '' }}">
             <i class="fas fa-scroll"></i> Journaux (Logs)

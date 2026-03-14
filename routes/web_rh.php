@@ -14,6 +14,7 @@ use App\Http\Controllers\RH\PermissionController;
 use App\Http\Controllers\RH\ProvinceController;
 use App\Http\Controllers\RH\DepartmentController;
 use App\Http\Controllers\Admin\ParametresController;
+use App\Http\Controllers\Admin\DeploymentController;
 
 // Routes publiques
 Route::get('/', function () {
@@ -73,6 +74,10 @@ Route::middleware('auth')->group(function () {
 
         // Dashboard paramètres
         Route::get('/parametres', [ParametresController::class, 'dashboard'])->name('dashboard');
+
+        // Déploiement du module Organe
+        Route::get('/deployment', [DeploymentController::class, 'index'])->name('deployment.index');
+        Route::post('/deployment/deploy-organes', [DeploymentController::class, 'deployOrganes'])->name('deployment.deploy-organes');
 
         // Provinces
         Route::get('/provinces',              [ParametresController::class, 'provincesIndex'])->name('provinces.index');
