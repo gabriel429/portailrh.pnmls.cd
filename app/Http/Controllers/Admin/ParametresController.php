@@ -13,6 +13,7 @@ use App\Models\Cellule;
 use App\Models\Fonction;
 use App\Models\Affectation;
 use App\Models\Localite;
+use App\Models\Organe;
 use App\Models\Permission;
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\Request;
@@ -34,6 +35,7 @@ class ParametresController extends Controller
             'grades'      => Grade::count(),
             'roles'       => Role::count(),
             'permissions' => Permission::count(),
+            'organes'     => Organe::count(),
             'agents'      => Agent::count(),
         ];
 
@@ -659,6 +661,86 @@ class ParametresController extends Controller
         $localite->delete();
         return redirect()->route('admin.localites.index')
             ->with('success', 'Localité supprimée.');
+    }
+
+    // ─── ORGANES ──────────────────────────────────────────────
+
+    public function organesIndex()
+    {
+        $organes = Organe::withCount('affectations')->orderBy('code')->paginate(20);
+        return view('admin.organes.index', compact('organes'));
+    }
+
+    public function organesCreate()
+    {
+        return view('admin.organes.create');
+    }
+
+    public function organesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code'        => 'required|string|max:10|unique:organes',
+            'nom'         => 'required|string|max:255|unique:organes',
+            'sigle'       => 'nullable|string|max:30',
+            'description' => 'nullable|string',
+            'actif'       => 'boolean',
+        ]);
+        $validated['actif'] = $request->boolean('actif');
+
+        Organe::create($validated);
+
+        return redirect()->route('admin.organes.index')
+            ->with('success', 'Organe créé avec succès.');
+    }
+
+    public function organesEdit(Organe $organe)
+    {
+        return view('admin.organes.edit', compact('organe'));
+    }
+
+    public function organesUpdate(Request $request, Organe $organe)
+    {
+        $validated = $request->validate([
+            'code'        => 'required|string|max:10|unique:organes,code,' . $organe->id,
+            'nom'         => 'required|string|max:255|unique:organes,nom,' . $organe->id,
+            'sigle'       => 'nullable|string|max:30',
+            'description' => 'nullable|string',
+            'actif'       => 'boolean',
+        ]);
+        $validated['actif'] = $request->boolean('actif');
+
+        $organe->update($validated);
+
+        return redirect()->route('admin.organes.index')
+            ->with('success', 'Organe mis à jour.');
+    }
+
+    public function organesDestroy(Organe $organe)
+    {
+        if ($organe->affectations()->count() > 0) {
+            return redirect()->route('admin.organes.index')
+                ->with('error', 'Impossible de supprimer cet organe : des affectations y sont référencées.');
+        }
+
+        $organe->delete();
+        return redirect()->route('admin.organes.index')
+            ->with('success', 'Organe supprimé.');
+    }
+
+    /**
+     * API: Get fonctions filtered by organe code
+     */
+    public function getAllFonctionsByOrgane($organeCode)
+    {
+        $fonctions = Fonction::where(function ($query) use ($organeCode) {
+            $query->where('niveau_administratif', $organeCode)
+                  ->orWhere('niveau_administratif', 'TOUS');
+        })
+        ->orderBy('type_poste')
+        ->orderBy('nom')
+        ->get();
+
+        return response()->json($fonctions);
     }
 
     // ─── LOGS ────────────────────────────────────────────────────

@@ -146,6 +146,17 @@ Route::middleware('auth')->group(function () {
         Route::put('/localites/{localite}',        [ParametresController::class, 'localitesUpdate'])->name('localites.update');
         Route::delete('/localites/{localite}',     [ParametresController::class, 'localitesDestroy'])->name('localites.destroy');
 
+        // Organes (Secrétariats Exécutifs — SEN, SEP, SEL)
+        Route::get('/organes',                  [ParametresController::class, 'organesIndex'])->name('organes.index');
+        Route::get('/organes/create',           [ParametresController::class, 'organesCreate'])->name('organes.create');
+        Route::post('/organes',                 [ParametresController::class, 'organesStore'])->name('organes.store');
+        Route::get('/organes/{organe}/edit',    [ParametresController::class, 'organesEdit'])->name('organes.edit');
+        Route::put('/organes/{organe}',         [ParametresController::class, 'organesUpdate'])->name('organes.update');
+        Route::delete('/organes/{organe}',      [ParametresController::class, 'organesDestroy'])->name('organes.destroy');
+
+        // API: Get fonctions by organe
+        Route::get('/api/fonctions-by-organe/{code}', [ParametresController::class, 'getAllFonctionsByOrgane'])->name('api.fonctions-by-organe');
+
         // Logs
         Route::get('/logs',        [ParametresController::class, 'logs'])->name('logs');
         Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');

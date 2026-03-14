@@ -384,6 +384,10 @@
            class="sb-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}">
             <i class="fas fa-layer-group ico"></i> Grades
         </a>
+        <a href="{{ route('admin.organes.index') }}"
+           class="sb-link {{ request()->routeIs('admin.organes.*') ? 'active' : '' }}">
+            <i class="fas fa-sitemap ico"></i> Organes
+        </a>
         <a href="{{ route('admin.roles.index') }}"
            class="sb-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">
             <i class="fas fa-user-tag ico"></i> Rôles &amp; Permissions
