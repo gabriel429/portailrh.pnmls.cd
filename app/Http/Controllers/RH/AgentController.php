@@ -71,10 +71,61 @@ class AgentController extends Controller
      */
     public function index(): View
     {
-        $agents = Agent::with(['role', 'province', 'departement'])
-            ->paginate(15);
+        // Get all agents with relations
+        $allAgents = Agent::with(['role', 'province', 'departement'])
+            ->orderBy('organe')
+            ->orderBy('nom')
+            ->get();
 
-        return view('rh.agents.index', compact('agents'));
+        // Group agents by organe
+        $agentsByOrgane = [];
+        $organeLabels = [
+            'Secrétariat Exécutif National' => [
+                'code' => 'SEN',
+                'icon' => 'fa-flag',
+                'color' => '#0077B5',
+                'bg' => '#e8f4fd',
+            ],
+            'Secrétariat Exécutif Provincial' => [
+                'code' => 'SEP',
+                'icon' => 'fa-map-marked-alt',
+                'color' => '#0ea5e9',
+                'bg' => '#e0f2fe',
+            ],
+            'Secrétariat Exécutif Local' => [
+                'code' => 'SEL',
+                'icon' => 'fa-map-pin',
+                'color' => '#0d9488',
+                'bg' => '#ccfbf1',
+            ],
+        ];
+
+        foreach ($allAgents as $agent) {
+            $organe = $agent->organe ?? 'Non assigné';
+            if (!isset($agentsByOrgane[$organe])) {
+                $agentsByOrgane[$organe] = [
+                    'label' => $organe,
+                    'agents' => [],
+                    'icon' => $organeLabels[$organe]['icon'] ?? 'fa-sitemap',
+                    'color' => $organeLabels[$organe]['color'] ?? '#6b7280',
+                    'bg' => $organeLabels[$organe]['bg'] ?? '#f3f4f6',
+                ];
+            }
+            $agentsByOrgane[$organe]['agents'][] = $agent;
+        }
+
+        // Reorder to put organes first, then non-assigned
+        $ordered = [];
+        foreach (['Secrétariat Exécutif National', 'Secrétariat Exécutif Provincial', 'Secrétariat Exécutif Local'] as $organe) {
+            if (isset($agentsByOrgane[$organe])) {
+                $ordered[$organe] = $agentsByOrgane[$organe];
+            }
+        }
+        if (isset($agentsByOrgane['Non assigné'])) {
+            $ordered['Non assigné'] = $agentsByOrgane['Non assigné'];
+        }
+
+        return view('rh.agents.index', ['agentsByOrgane' => $ordered, 'totalAgents' => $allAgents->count()]);
     }
 
     /**

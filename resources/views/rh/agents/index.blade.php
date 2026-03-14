@@ -7,7 +7,6 @@
 @endsection
 
 @section('content')
-@php /** @var \Illuminate\Pagination\LengthAwarePaginator $agents */ @endphp
 <div class="rh-modern">
     <div class="rh-list-shell">
         <section class="rh-hero">
@@ -24,80 +23,103 @@
             </div>
         </section>
 
-        <div class="rh-list-card p-3 p-lg-4">
-            @if($agents->count() > 0)
-                <div class="rh-table-wrap">
-                    <table class="rh-table">
-                        <thead>
-                            <tr>
-                                <th>Matricule</th>
-                                <th>Nom et Prenom</th>
-                                <th>Email</th>
-                                <th>Poste</th>
-                                <th>Role</th>
-                                <th>Departement</th>
-                                <th>Statut</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($agents as $agent)
-                                <tr class="agent-row" style="cursor: pointer;" data-agent-id="{{ $agent->id }}">
-                                    <td><strong>{{ $agent->matricule_pnmls }}</strong></td>
-                                    <td>{{ $agent->prenom }} {{ $agent->nom }}</td>
-                                    <td>{{ $agent->email }}</td>
-                                    <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
-                                    <td>
-                                        @if($agent->role)
-                                            <span class="rh-pill st-mid">{{ $agent->role->nom_role }}</span>
-                                        @else
-                                            <span class="rh-pill st-neutral">Non assigne</span>
-                                        @endif
-                                    </td>
-                                    <td>{{ $agent->departement?->nom_dept ?? 'N/A' }}</td>
-                                    <td>
-                                        @if($agent->statut === 'actif')
-                                            <span class="rh-pill st-ok">Actif</span>
-                                        @elseif($agent->statut === 'suspendu')
-                                            <span class="rh-pill st-mid">Suspendu</span>
-                                        @else
-                                            <span class="rh-pill st-neutral">{{ ucfirst($agent->statut) }}</span>
-                                        @endif
-                                    </td>
-                                    <td onclick="event.stopPropagation();">
-                                        <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{{ route('rh.agents.show', $agent) }}" class="btn btn-outline-primary" title="Détails complets">
-                                                <i class="fas fa-external-link-alt"></i>
-                                            </a>
-                                            <a href="{{ route('rh.agents.edit', $agent) }}" class="btn btn-outline-warning" title="Modifier">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form method="POST" action="{{ route('rh.agents.destroy', $agent) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr ?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+        @if($totalAgents > 0)
+            {{-- Total d'agents --}}
+            <div class="alert alert-info mb-4" role="alert">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Total:</strong> {{ $totalAgents }} agent{{ $totalAgents > 1 ? 's' : '' }} enregistré{{ $totalAgents > 1 ? 's' : '' }}
+            </div>
 
-                <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-                    <div class="text-muted small">
-                        Affichage {{ $agents->firstItem() ?? 0 }} a {{ $agents->lastItem() ?? 0 }} sur {{ $agents->total() }} agents
+            {{-- Agents groupés par organe --}}
+            @foreach($agentsByOrgane as $organeKey => $organeData)
+                <div class="card mb-4 border-0 shadow-sm" style="border-top: 4px solid {{ $organeData['color'] }};">
+                    <div class="card-header" style="background-color: {{ $organeData['bg'] }}; border: none;">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h5 class="card-title mb-0" style="color: {{ $organeData['color'] }};">
+                                    <i class="fas {{ $organeData['icon'] }} me-2"></i>{{ $organeData['label'] }}
+                                </h5>
+                                <small class="text-muted">{{ count($organeData['agents']) }} agent{{ count($organeData['agents']) > 1 ? 's' : '' }}</small>
+                            </div>
+                        </div>
                     </div>
-                    {{ $agents->links() }}
+                    <div class="card-body p-0">
+                        <div class="rh-table-wrap">
+                            <table class="rh-table">
+                                <thead>
+                                    <tr>
+                                        <th>Matricule</th>
+                                        <th>Nom et Prenom</th>
+                                        <th>Email</th>
+                                        <th>Poste</th>
+                                        <th>Role</th>
+                                        <th>Departement</th>
+                                        <th>Statut</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($organeData['agents'] as $agent)
+                                        <tr class="agent-row" style="cursor: pointer;" data-agent-id="{{ $agent->id }}">
+                                            <td><strong>{{ $agent->matricule_pnmls }}</strong></td>
+                                            <td>{{ $agent->prenom }} {{ $agent->nom }}</td>
+                                            <td>{{ $agent->email }}</td>
+                                            <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($agent->role)
+                                                    <span class="rh-pill st-mid">{{ $agent->role->nom_role }}</span>
+                                                @else
+                                                    <span class="rh-pill st-neutral">Non assigne</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $agent->departement?->nom_dept ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($agent->statut === 'actif')
+                                                    <span class="rh-pill st-ok">Actif</span>
+                                                @elseif($agent->statut === 'suspendu')
+                                                    <span class="rh-pill st-mid">Suspendu</span>
+                                                @else
+                                                    <span class="rh-pill st-neutral">{{ ucfirst($agent->statut) }}</span>
+                                                @endif
+                                            </td>
+                                            <td onclick="event.stopPropagation();">
+                                                <div class="btn-group btn-group-sm" role="group">
+                                                    <a href="{{ route('rh.agents.show', $agent) }}" class="btn btn-outline-primary" title="Détails complets">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                    </a>
+                                                    <a href="{{ route('rh.agents.edit', $agent) }}" class="btn btn-outline-warning" title="Modifier">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <form method="POST" action="{{ route('rh.agents.destroy', $agent) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr ?');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">
+                                                            <i class="fas fa-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-            @else
-                <div class="text-center py-5">
-                    <i class="fas fa-users fa-4x text-muted mb-3 d-block"></i>
-                    <h5 class="text-muted">Aucun agent</h5>
-                    <p class="text-muted">Il n'y a aucun agent enregistre.</p>
+            @endforeach
+        @else
+            <div class="rh-list-card text-center py-5">
+                <i class="fas fa-users fa-4x text-muted mb-3 d-block"></i>
+                <h5 class="text-muted">Aucun agent</h5>
+                <p class="text-muted">Il n'y a aucun agent enregistre.</p>
+                <a href="{{ route('rh.agents.create') }}" class="btn btn-primary">
+                    <i class="fas fa-user-plus me-1"></i> Ajouter un agent
+                </a>
+            </div>
+        @endif
+    </div>
+</div>
+@endsection
                     <a href="{{ route('rh.agents.create') }}" class="btn btn-primary mt-2">
                         <i class="fas fa-plus me-2"></i> Ajouter un agent
                     </a>
