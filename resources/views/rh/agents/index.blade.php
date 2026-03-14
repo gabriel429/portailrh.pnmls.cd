@@ -119,15 +119,6 @@
         @endif
     </div>
 </div>
-@endsection
-                    <a href="{{ route('rh.agents.create') }}" class="btn btn-primary mt-2">
-                        <i class="fas fa-plus me-2"></i> Ajouter un agent
-                    </a>
-                </div>
-            @endif
-        </div>
-    </div>
-</div>
 
 <div class="modal fade" id="agentDetailsModal" tabindex="-1">
     <div class="modal-dialog modal-lg">
