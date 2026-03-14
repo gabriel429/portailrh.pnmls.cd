@@ -236,8 +236,10 @@
                                 <option value="">-- Sélectionner une fonction --</option>
                                 @foreach ($fonctionOptions as $groupe => $fonctions)
                                     <optgroup label="{{ $groupe }}">
-                                        @foreach ($fonctions as $f)
-                                            <option value="{{ $f }}" @selected(old('fonction') === $f)>{{ $f }}</option>
+                                        @foreach ($fonctions as $fonction)
+                                            <option value="{{ $fonction->nom }}" @selected(old('fonction') === $fonction->nom)>
+                                                {{ $fonction->nom }}
+                                            </option>
                                         @endforeach
                                     </optgroup>
                                 @endforeach

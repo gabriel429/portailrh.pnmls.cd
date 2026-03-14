@@ -244,7 +244,9 @@
                                 @foreach ($fonctionOptions as $groupe => $fonctions)
                                     <optgroup label="{{ $groupe }}">
                                         @foreach ($fonctions as $fonction)
-                                            <option value="{{ $fonction }}" @selected(old('fonction', $agent->fonction) === $fonction)>{{ $fonction }}</option>
+                                            <option value="{{ $fonction->nom }}" @selected(old('fonction', $agent->fonction) === $fonction->nom)>
+                                                {{ $fonction->nom }}
+                                            </option>
                                         @endforeach
                                     </optgroup>
                                 @endforeach

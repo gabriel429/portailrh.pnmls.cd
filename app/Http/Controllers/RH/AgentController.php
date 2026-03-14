@@ -9,6 +9,7 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Organe;
 use App\Models\Grade;
+use App\Models\Fonction;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
 use Illuminate\Http\Request;
@@ -37,52 +38,36 @@ class AgentController extends Controller
     }
 
     /**
-     * Fonctions PNMLS structurées par catégorie.
+     * Fonctions PNMLS depuis la table fonctions.
      */
-    private function getFonctionOptions(): array
+    private function getFonctionOptions()
     {
-        return [
-            'Secrétariat Exécutif National' => [
-                'Secrétaire Exécutif National (SEN)',
-                'Secrétaire Exécutif National Adjoint (SENA)',
-            ],
-            'Secrétariat de Direction' => [
-                'Assistant(e) de Direction (ADIR)',
-                'Secrétaire de Direction',
-                'Chef de cellule chargé du protocole, courriers et relations publiques',
-                'Chef d’équipe chargé des relations publiques',
-                'Chef d’équipe chargé de la réception',
-            ],
-            'Section Juridique' => [
-                'Chef de Section Juridique',
-            ],
-            'Section Communication' => [
-                'Chef de Section Communication',
-                'Chef de Cellule Communication',
-                'Chef d’équipe Communication',
-            ],
-            'Section Audit Interne' => [
-                'Chef de Section chargé de l’Audit Interne',
-                'Chef de Cellule chargé de l’Audit Interne',
-            ],
-            'Organisation des Départements' => [
-                'Directeur - Chef de Département',
-                'Chef de Section',
-                'Chef de Cellule',
-                'Assistant de Section',
-                'Assistant ou Secrétaire de Département',
-            ],
-            'Département Administration et Finances' => [
-                'Caissier / Caissière',
-                'Chargé de fonction spécifique',
-                'Mécanicien en chef',
-                'Commis logistique',
-                'Commis magasin',
-                'Chauffeur',
-                'Technicien de surface',
-            ],
-        ];
+        return Fonction::orderBy(‘niveau_administratif’)->orderBy(‘nom’)->get();
     }
+
+    /**
+     * Fonctions groupées par niveau_administratif pour affichage.
+     */
+    private function getFonctionGroupedOptions(): array
+    {
+        $fonctions = $this->getFonctionOptions();
+        $grouped = [];
+
+        $niveauLabels = Fonction::niveauAdministratifLabel();
+
+        foreach ($fonctions as $fonction) {
+            $niveau = $fonction->niveau_administratif;
+            $label = $niveauLabels[$niveau] ?? $niveau;
+
+            if (!isset($grouped[$label])) {
+                $grouped[$label] = [];
+            }
+            $grouped[$label][] = $fonction;
+        }
+
+        return $grouped;
+    }
+
 
     /**
      * Display a listing of the resource.
@@ -104,7 +89,7 @@ class AgentController extends Controller
         $departments = Department::all();
         $provinces = Province::all();
         $organeOptions = $this->getOrganeOptions();
-        $fonctionOptions = $this->getFonctionOptions();
+        $fonctionOptions = $this->getFonctionGroupedOptions();
         $grades = $this->getGradeOptions();
 
         return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades'));
@@ -132,7 +117,7 @@ class AgentController extends Controller
             'telephone' => 'nullable|string',
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
-            'fonction' => 'required|string|max:255',
+            'fonction' => 'required|exists:fonctions,nom',
             'grade_id' => 'required|exists:grades,id',
             'niveau_etudes' => 'required|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
@@ -178,7 +163,7 @@ class AgentController extends Controller
         $departments = Department::all();
         $provinces = Province::all();
         $organeOptions = $this->getOrganeOptions();
-        $fonctionOptions = $this->getFonctionOptions();
+        $fonctionOptions = $this->getFonctionGroupedOptions();
         $grades = $this->getGradeOptions();
 
         return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades'));
@@ -206,7 +191,7 @@ class AgentController extends Controller
             'telephone' => 'nullable|string',
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
-            'fonction' => 'required|string|max:255',
+            'fonction' => 'required|exists:fonctions,nom',
             'grade_id' => 'required|exists:grades,id',
             'niveau_etudes' => 'required|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
