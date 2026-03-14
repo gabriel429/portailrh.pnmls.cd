@@ -263,10 +263,10 @@
 
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ auth()->user()->prenom }}
+                            <i class="fas fa-user"></i> {{ auth()->user()->agent?->prenom ?? auth()->user()->name }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('profile.show', auth()->user()) }}">Mon Profil</a></li>
+                            <li><a class="dropdown-item" href="{{ route('profile.show', auth()->user()->agent) }}">Mon Profil</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST">

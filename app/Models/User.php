@@ -64,5 +64,49 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class);
     }
+
+    /**
+     * Check if user has a specific role
+     */
+    public function hasRole($roles): bool
+    {
+        if (is_string($roles)) {
+            $roles = [$roles];
+        }
+
+        if (!$this->role || !$this->role->nom_role) {
+            return false;
+        }
+
+        $userRole = strtolower(trim((string) $this->role->nom_role));
+        $normalizedRoles = array_map(static fn($role) => strtolower(trim((string) $role)), $roles);
+
+        return in_array($userRole, $normalizedRoles, true);
+    }
+
+    /**
+     * Check if user has full admin access to RH settings.
+     */
+    public function hasAdminAccess(): bool
+    {
+        return $this->hasRole([
+            'Chef Section RH',
+            'RH National',
+            'RH Provincial',
+            'Chef Section Nouvelle Technologie',
+            'Chef de Section Nouvelle Technologie',
+        ]);
+    }
+
+    /**
+     * Check if user is Chef de Section Nouvelle Technologie (admin panel access).
+     */
+    public function isAdminNT(): bool
+    {
+        return $this->hasRole([
+            'Chef Section Nouvelle Technologie',
+            'Chef de Section Nouvelle Technologie',
+        ]);
+    }
 }
 
