@@ -25,12 +25,12 @@
                 </div>
             @endif
 
-            @if(session('errors') && count(session('errors')) > 0)
+            @if(session('error_messages') && count(session('error_messages')) > 0)
                 <div class="alert alert-danger alert-dismissible fade show mb-4">
                     <i class="fas fa-exclamation-circle me-2"></i>
                     <strong>Erreurs detectées:</strong>
                     <ul class="mb-0 ps-3 mt-2">
-                        @foreach(session('errors') as $error)
+                        @foreach(session('error_messages') as $error)
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
@@ -38,9 +38,9 @@
                 </div>
             @endif
 
-            @if(session('output') && count(session('output')) > 0)
+            @if(session('output_messages') && count(session('output_messages')) > 0)
                 <div class="bg-dark rounded p-3 mb-4" style="font-family: 'Courier New', monospace; color: #0f0; font-size: 0.9rem; max-height: 400px; overflow-y: auto;">
-                    @foreach(session('output') as $line)
+                    @foreach(session('output_messages') as $line)
                         <div>{{ $line }}</div>
                     @endforeach
                 </div>

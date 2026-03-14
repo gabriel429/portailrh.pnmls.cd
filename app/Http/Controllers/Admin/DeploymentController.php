@@ -21,31 +21,31 @@ class DeploymentController extends Controller
      */
     public function deployOrganes()
     {
-        $output = [];
-        $errors = [];
+        $output_messages = [];
+        $error_messages = [];
         $success = false;
 
         try {
-            $output[] = "🚀 Début du déploiement du module Organe...";
+            $output_messages[] = "🚀 Début du déploiement du module Organe...";
 
             // Step 1: Run migrations
-            $output[] = "📦 Étape 1: Exécution des migrations...";
+            $output_messages[] = "📦 Étape 1: Exécution des migrations...";
 
             ob_start();
             $exitCode = Artisan::call('migrate', ['--force' => true]);
             $migrationOutput = ob_get_clean();
 
             if ($exitCode === 0) {
-                $output[] = "✅ Migrations exécutées avec succès!";
+                $output_messages[] = "✅ Migrations exécutées avec succès!";
             } else {
-                $errors[] = "❌ Les migrations ont échoué. Code: $exitCode";
+                $error_messages[] = "❌ Les migrations ont échoué. Code: $exitCode";
                 return redirect()->route('admin.deployment.index')
-                    ->with('errors', $errors)
-                    ->with('output', $output);
+                    ->with('error_messages', $error_messages)
+                    ->with('output_messages', $output_messages);
             }
 
             // Step 2: Seed Organes
-            $output[] = "🌱 Étape 2: Insertion des données (SEN, SEP, SEL)...";
+            $output_messages[] = "🌱 Étape 2: Insertion des données (SEN, SEP, SEL)...";
 
             ob_start();
             $exitCode = Artisan::call('db:seed', [
@@ -55,40 +55,40 @@ class DeploymentController extends Controller
             $seedOutput = ob_get_clean();
 
             if ($exitCode === 0) {
-                $output[] = "✅ Données insérées avec succès!";
+                $output_messages[] = "✅ Données insérées avec succès!";
             } else {
-                $errors[] = "❌ Le seeding a échoué. Code: $exitCode";
+                $error_messages[] = "❌ Le seeding a échoué. Code: $exitCode";
                 return redirect()->route('admin.deployment.index')
-                    ->with('errors', $errors)
-                    ->with('output', $output);
+                    ->with('error_messages', $error_messages)
+                    ->with('output_messages', $output_messages);
             }
 
             // Step 3: Verify
-            $output[] = "✔️  Étape 3: Vérification...";
+            $output_messages[] = "✔️  Étape 3: Vérification...";
 
             if (Schema::hasTable('organes')) {
                 $organeCount = \App\Models\Organe::count();
-                $output[] = "✅ Table organes créée avec $organeCount enregistrements";
+                $output_messages[] = "✅ Table organes créée avec $organeCount enregistrements";
 
                 if ($organeCount === 3) {
-                    $output[] = "✅ Tous les organes créés (SEN, SEP, SEL)!";
+                    $output_messages[] = "✅ Tous les organes créés (SEN, SEP, SEL)!";
                     $success = true;
                 } else {
-                    $errors[] = "⚠️  Attention: Attendu 3 organes, trouvé $organeCount";
+                    $error_messages[] = "⚠️  Attention: Attendu 3 organes, trouvé $organeCount";
                 }
             } else {
-                $errors[] = "❌ La table organes n'a pas été créée";
+                $error_messages[] = "❌ La table organes n'a pas été créée";
             }
 
-            $output[] = "✨ Déploiement terminé!";
+            $output_messages[] = "✨ Déploiement terminé!";
 
         } catch (\Exception $e) {
-            $errors[] = "❌ ERREUR: " . $e->getMessage();
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
         return redirect()->route('admin.deployment.index')
-            ->with('output', $output)
-            ->with('errors', $errors)
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
 }
