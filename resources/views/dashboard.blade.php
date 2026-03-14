@@ -9,10 +9,13 @@
 @section('content')
 @php
     $currentUser = auth()->user();
-    $pendingCount = $currentUser->requests()->where('statut', 'en_attente')->count();
-    $approvedCount = $currentUser->requests()->where('statut', 'approuvé')->count();
-    $absenceCount = $currentUser->pointages()->whereNull('heure_entree')->count();
-    $latestRequests = $currentUser->requests()->latest()->limit(5)->get();
+    $agent = $currentUser->agent;
+
+    // Get pending and approved requests for the agent
+    $pendingCount = $agent ? $agent->requests()->where('statut', 'en_attente')->count() : 0;
+    $approvedCount = $agent ? $agent->requests()->where('statut', 'approuvé')->count() : 0;
+    $absenceCount = $agent ? $agent->pointages()->whereNull('heure_entree')->count() : 0;
+    $latestRequests = $agent ? $agent->requests()->latest()->limit(5)->get() : collect();
 @endphp
 
 <div class="rh-modern">
@@ -20,8 +23,8 @@
         <section class="rh-hero">
             <div class="row g-3 align-items-center">
                 <div class="col-lg-8">
-                    <h1 class="rh-title">Bonjour, {{ $currentUser->prenom }} {{ $currentUser->nom }}</h1>
-                    <p class="rh-sub">Poste: {{ $currentUser->poste_actuel ?? 'Agent' }} | Vue personnelle des demandes, documents et pointages.</p>
+                    <h1 class="rh-title">Bonjour, {{ $agent?->prenom }} {{ $agent?->nom }}</h1>
+                    <p class="rh-sub">Poste: {{ $agent?->poste_actuel ?? 'Agent' }} | Vue personnelle des demandes, documents et pointages.</p>
                 </div>
                 <div class="col-lg-4">
                     <div class="hero-tools">
@@ -35,7 +38,7 @@
         <section class="kpi-grid">
             <article class="kpi">
                 <p class="label">Documents</p>
-                <h2 class="value">{{ $currentUser->documents->count() }}</h2>
+                <h2 class="value">{{ $agent?->documents->count() ?? 0 }}</h2>
                 <span class="trend trend-info"><i class="fas fa-folder-open"></i> Dossier personnel</span>
             </article>
             <article class="kpi">
@@ -104,7 +107,7 @@
                         <a href="{{ route('requests.create') }}" class="quick-link"><span><i class="fas fa-plane-departure"></i> Demander un conge</span><i class="fas fa-chevron-right text-muted"></i></a>
                         <a href="{{ route('documents.create') }}" class="quick-link"><span><i class="fas fa-cloud-upload-alt"></i> Televerser un document</span><i class="fas fa-chevron-right text-muted"></i></a>
                         <a href="{{ route('signalements.create') }}" class="quick-link"><span><i class="fas fa-bullhorn"></i> Faire un signalement</span><i class="fas fa-chevron-right text-muted"></i></a>
-                        <a href="{{ route('profile.show', $currentUser) }}" class="quick-link"><span><i class="fas fa-user-cog"></i> Mettre a jour mon profil</span><i class="fas fa-chevron-right text-muted"></i></a>
+                        <a href="{{ route('profile.show', $agent) }}" class="quick-link"><span><i class="fas fa-user-cog"></i> Mettre a jour mon profil</span><i class="fas fa-chevron-right text-muted"></i></a>
                     </div>
                 </div>
 
@@ -117,18 +120,18 @@
                     </header>
                     <dl class="profile-sheet">
                         <dt>Matricule PNMLS</dt>
-                        <dd>{{ $currentUser->matricule_pnmls ?? 'Non renseigne' }}</dd>
+                        <dd>{{ $agent?->matricule_pnmls ?? 'Non renseigne' }}</dd>
 
                         <dt>Departement</dt>
-                        <dd>{{ $currentUser->departement->nom ?? 'Non assigne' }}</dd>
+                        <dd>{{ $agent?->departement->nom ?? 'Non assigne' }}</dd>
 
                         <dt>Province</dt>
-                        <dd>{{ $currentUser->province->nom ?? 'Non assignee' }}</dd>
+                        <dd>{{ $agent?->province->nom ?? 'Non assignee' }}</dd>
 
                         <dt>Date d'embauche</dt>
-                        <dd>{{ $currentUser->date_embauche?->format('d/m/Y') ?? 'Non renseignee' }}</dd>
+                        <dd>{{ $agent?->date_embauche?->format('d/m/Y') ?? 'Non renseignee' }}</dd>
 
-                        <a href="{{ route('profile.show', $currentUser) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
+                        <a href="{{ route('profile.show', $agent) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
                     </dl>
                 </div>
             </div>
