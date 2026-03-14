@@ -668,17 +668,32 @@ class ParametresController extends Controller
 
     public function organesIndex()
     {
+        if (!Schema::hasTable('organes')) {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'La table organes n\'existe pas encore. Veuillez exécuter les migrations avec: php deploy-organes.php');
+        }
+
         $organes = Organe::withCount('affectations')->orderBy('code')->paginate(20);
         return view('admin.organes.index', compact('organes'));
     }
 
     public function organesCreate()
     {
+        if (!Schema::hasTable('organes')) {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'La table organes n\'existe pas encore. Veuillez exécuter les migrations avec: php deploy-organes.php');
+        }
+
         return view('admin.organes.create');
     }
 
     public function organesStore(Request $request)
     {
+        if (!Schema::hasTable('organes')) {
+            return redirect()->route('admin.dashboard')
+                ->with('error', 'La table organes n\'existe pas encore. Veuillez exécuter les migrations avec: php deploy-organes.php');
+        }
+
         $validated = $request->validate([
             'code'        => 'required|string|max:10|unique:organes',
             'nom'         => 'required|string|max:255|unique:organes',
@@ -733,6 +748,10 @@ class ParametresController extends Controller
      */
     public function getAllFonctionsByOrgane($organeCode)
     {
+        if (!Schema::hasTable('organes')) {
+            return response()->json(['error' => 'Migration non exécutée'], 503);
+        }
+
         $fonctions = Fonction::where(function ($query) use ($organeCode) {
             $query->where('niveau_administratif', $organeCode)
                   ->orWhere('niveau_administratif', 'TOUS');
