@@ -138,7 +138,7 @@
 
             {{-- Colonne droite: Mise a jour rapide --}}
             <div class="col-lg-5">
-                @if($canEdit && $activitePlan->statut !== 'terminee')
+                @if(($canUpdateStatut ?? false) && $activitePlan->statut !== 'terminee')
                 <div class="dash-panel">
                     <header class="panel-head">
                         <div>

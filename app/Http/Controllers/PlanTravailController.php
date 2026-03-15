@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
 class PlanTravailController extends Controller
 {
     /**
-     * Vérifie si l'utilisateur peut gérer le PTA.
+     * Vérifie si l'utilisateur peut gérer le PTA (creation, edition, suppression).
      *
      * - Admin : toujours autorisé
      * - SEN   : Chef de Cellule / Chef de Section Planification
@@ -34,7 +34,114 @@ class PlanTravailController extends Controller
             return false;
         }
 
-        // Vérifier via l'affectation active de l'agent
+        $nomFonction = $this->getNomFonctionAgent($agent);
+        $organe = $agent->organe ?? '';
+
+        // SEN : fonctions contenant "planification"
+        if (str_contains($organe, 'National') && str_contains($nomFonction, 'planification')) {
+            return true;
+        }
+
+        // SEP : Chef de Cellule Planification, Suivi-Évaluation
+        if (str_contains($organe, 'Provincial') && str_contains($nomFonction, 'planification')) {
+            return true;
+        }
+
+        // SEL : Assistant Technique
+        if (str_contains($organe, 'Local') && str_contains($nomFonction, 'assistant technique')) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Vérifie si l'utilisateur peut mettre a jour le statut d'une activite PTA.
+     *
+     * Droits plus larges que canManage() :
+     * - Admin : toujours
+     * - SEN : Directeur (pour son departement), Assistant/Secretaire de Departement (pour son dept),
+     *         Assistant/Secretaire de Direction (pour la direction SEN/SENA)
+     * - SEP : SEP ou Chef de Cellule Planification Suivi et Evaluation
+     * - SEL : Assistant Technique
+     */
+    private function canUpdateStatut(ActivitePlan $activite): bool
+    {
+        $user = auth()->user();
+
+        if ($user->hasAdminAccess()) {
+            return true;
+        }
+
+        // Ceux qui peuvent creer peuvent aussi mettre a jour le statut
+        if ($this->canManage()) {
+            return true;
+        }
+
+        $agent = $user->agent;
+        if (!$agent) {
+            return false;
+        }
+
+        $nomFonction = $this->getNomFonctionAgent($agent);
+        $organe = $agent->organe ?? '';
+
+        // === Niveau SEN (National) ===
+        if (str_contains($organe, 'National') && $activite->niveau_administratif === 'SEN') {
+
+            // Directeur : pour les activites de son departement
+            if (str_contains($nomFonction, 'directeur') || str_contains($nomFonction, 'chef de département')) {
+                if ($agent->departement_id && $activite->departement_id === $agent->departement_id) {
+                    return true;
+                }
+            }
+
+            // Assistant ou Secretaire de Departement : pour les activites de son departement
+            if (str_contains($nomFonction, 'assistant de département') || str_contains($nomFonction, 'secrétaire de département')) {
+                if ($agent->departement_id && $activite->departement_id === $agent->departement_id) {
+                    return true;
+                }
+            }
+
+            // Assistant ou Secretaire de Direction : pour les activites de la direction (sans departement)
+            if (str_contains($nomFonction, 'assistant') && str_contains($nomFonction, 'direction')
+                || str_contains($nomFonction, 'secrétaire de direction')) {
+                if (!$activite->departement_id) {
+                    return true;
+                }
+            }
+        }
+
+        // === Niveau SEP (Provincial) ===
+        if (str_contains($organe, 'Provincial') && $activite->niveau_administratif === 'SEP') {
+            if ($agent->province_id && $activite->province_id === $agent->province_id) {
+                // SEP (Secretaire Executif Provincial)
+                if (str_contains($nomFonction, 'secrétaire exécutif provincial') || str_contains($nomFonction, 'sep')) {
+                    return true;
+                }
+                // Chef de Cellule Planification
+                if (str_contains($nomFonction, 'planification')) {
+                    return true;
+                }
+            }
+        }
+
+        // === Niveau SEL (Local) ===
+        if (str_contains($organe, 'Local') && $activite->niveau_administratif === 'SEL') {
+            if (str_contains($nomFonction, 'assistant technique')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Retourne le nom de fonction de l'agent (via affectation active ou champ texte).
+     */
+    private function getNomFonctionAgent(Agent $agent): string
+    {
+        // D'abord via l'affectation active
         if (Schema::hasTable('affectations') && Schema::hasTable('fonctions')) {
             $affectationActive = Affectation::where('agent_id', $agent->id)
                 ->where('actif', true)
@@ -42,41 +149,12 @@ class PlanTravailController extends Controller
                 ->first();
 
             if ($affectationActive && $affectationActive->fonction) {
-                $nomFonction = mb_strtolower($affectationActive->fonction->nom);
-                $organe = $agent->organe ?? '';
-
-                // SEN : fonctions contenant "planification"
-                if (str_contains($organe, 'National') && str_contains($nomFonction, 'planification')) {
-                    return true;
-                }
-
-                // SEP : Chef de Cellule Planification, Suivi-Évaluation
-                if (str_contains($organe, 'Provincial') && str_contains($nomFonction, 'planification')) {
-                    return true;
-                }
-
-                // SEL : Assistant Technique
-                if (str_contains($organe, 'Local') && str_contains($nomFonction, 'assistant technique')) {
-                    return true;
-                }
+                return mb_strtolower($affectationActive->fonction->nom);
             }
         }
 
-        // Fallback : vérifier le champ texte "fonction" de l'agent
-        $fonctionAgent = mb_strtolower($agent->fonction ?? '');
-        $organe = $agent->organe ?? '';
-
-        if (str_contains($organe, 'National') && str_contains($fonctionAgent, 'planification')) {
-            return true;
-        }
-        if (str_contains($organe, 'Provincial') && str_contains($fonctionAgent, 'planification')) {
-            return true;
-        }
-        if (str_contains($organe, 'Local') && str_contains($fonctionAgent, 'assistant technique')) {
-            return true;
-        }
-
-        return false;
+        // Fallback : champ texte "fonction" de l'agent
+        return mb_strtolower($agent->fonction ?? '');
     }
 
     private function scopeQuery($query, $agent)
@@ -193,8 +271,9 @@ class PlanTravailController extends Controller
     {
         $activitePlan->load('createur', 'departement', 'province', 'localite');
         $canEdit = $this->canManage();
+        $canUpdateStatut = $this->canUpdateStatut($activitePlan);
 
-        return view('plan-travail.show', compact('activitePlan', 'canEdit'));
+        return view('plan-travail.show', compact('activitePlan', 'canEdit', 'canUpdateStatut'));
     }
 
     public function edit(ActivitePlan $activitePlan)
@@ -252,7 +331,7 @@ class PlanTravailController extends Controller
 
     public function updateStatut(Request $request, ActivitePlan $activitePlan)
     {
-        if (!$this->canManage()) {
+        if (!$this->canUpdateStatut($activitePlan)) {
             abort(403);
         }
 
