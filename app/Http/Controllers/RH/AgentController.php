@@ -16,6 +16,8 @@ use App\Models\Pointage;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Schema;
 
 class AgentController extends Controller
 {
@@ -196,7 +198,7 @@ class AgentController extends Controller
             'fonction' => 'required|exists:fonctions,nom',
             'grade_id' => 'nullable|exists:grades,id',
             'institution_id' => 'nullable|exists:institutions,id',
-            'niveau_etudes' => 'required|string|in:' . implode(',', \App\Models\Agent::NIVEAUX_ETUDES),
+            'niveau_etudes' => ['required', 'string', Rule::in(Agent::NIVEAUX_ETUDES)],
             'domaine_etudes' => 'nullable|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
@@ -218,6 +220,11 @@ class AgentController extends Controller
         // Convert empty matricule values to null to avoid unique constraint issues
         if (empty($validated['matricule_etat'])) {
             $validated['matricule_etat'] = null;
+        }
+
+        // Remove domaine_etudes if column doesn't exist yet
+        if (!Schema::hasColumn('agents', 'domaine_etudes')) {
+            unset($validated['domaine_etudes']);
         }
 
         Agent::create($validated);
@@ -314,7 +321,7 @@ class AgentController extends Controller
             'fonction' => 'required|exists:fonctions,nom',
             'grade_id' => 'nullable|exists:grades,id',
             'institution_id' => 'nullable|exists:institutions,id',
-            'niveau_etudes' => 'required|string|in:' . implode(',', \App\Models\Agent::NIVEAUX_ETUDES),
+            'niveau_etudes' => ['required', 'string', Rule::in(Agent::NIVEAUX_ETUDES)],
             'domaine_etudes' => 'nullable|string|max:255',
             'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
             'poste_actuel' => 'nullable|string',
@@ -338,6 +345,11 @@ class AgentController extends Controller
         // Convert empty matricule values to null to avoid unique constraint issues
         if (empty($validated['matricule_etat'])) {
             $validated['matricule_etat'] = null;
+        }
+
+        // Remove domaine_etudes if column doesn't exist yet
+        if (!Schema::hasColumn('agents', 'domaine_etudes')) {
+            unset($validated['domaine_etudes']);
         }
 
         if ($request->hasFile('photo')) {
