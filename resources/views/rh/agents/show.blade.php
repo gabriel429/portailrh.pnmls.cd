@@ -60,6 +60,9 @@
                 </div>
             </div>
             <div class="d-flex gap-2">
+                <a href="{{ route('rh.agents.print', $agent) }}" class="btn btn-light btn-sm" target="_blank">
+                    <i class="fas fa-print me-1"></i> Imprimer
+                </a>
                 <a href="{{ route('rh.agents.edit', $agent) }}" class="btn btn-warning btn-sm">
                     <i class="fas fa-edit me-1"></i> Modifier
                 </a>

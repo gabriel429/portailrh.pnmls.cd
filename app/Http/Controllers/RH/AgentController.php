@@ -259,6 +259,19 @@ class AgentController extends Controller
     }
 
     /**
+     * Print agent fiche.
+     */
+    public function printFiche(Agent $agent): View
+    {
+        $agent->load([
+            'role', 'province', 'departement', 'grade', 'institution',
+            'affectations.fonction', 'affectations.department', 'affectations.province',
+        ]);
+
+        return view('rh.agents.print', compact('agent'));
+    }
+
+    /**
      * Show the form for editing the specified resource.
      */
     public function edit(Agent $agent): View

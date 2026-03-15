@@ -59,6 +59,7 @@ Route::middleware('auth')->group(function () {
         Route::resource('agents', AgentController::class);
         Route::post('agents/{agent}/generate-matricule', [AgentController::class, 'generateMatricule'])->name('agents.generate-matricule');
         Route::post('agents/{agent}/messages', [AgentController::class, 'storeMessage'])->name('agents.messages.store');
+        Route::get('agents/{agent}/print', [AgentController::class, 'printFiche'])->name('agents.print');
 
         // Pointages
         Route::resource('pointages', PointageController::class);
