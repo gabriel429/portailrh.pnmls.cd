@@ -14,7 +14,12 @@ class DocumentController extends Controller
      */
     public function index()
     {
-        $agent = auth()->user();
+        $agent = auth()->user()->agent;
+
+        if (!$agent) {
+            return view('documents.index', ['documents' => collect(), 'agent' => null]);
+        }
+
         $documents = $agent->documents()->paginate(10);
         return view('documents.index', compact('documents', 'agent'));
     }
@@ -48,10 +53,10 @@ class DocumentController extends Controller
         ]);
 
         // Determine which agent the document belongs to
-        $agent_id = $validated['agent_id'] ?? auth()->user()->id;
+        $agent_id = $validated['agent_id'] ?? auth()->user()->agent?->id;
 
         // Only allow RH staff or the agent themselves to upload
-        if ($agent_id !== auth()->user()->id && !auth()->user()->hasAdminAccess()) {
+        if ($agent_id !== auth()->user()->agent?->id && !auth()->user()->hasAdminAccess()) {
             abort(403, 'Vous n\'avez pas les droits pour créer ce document');
         }
 
@@ -81,7 +86,7 @@ class DocumentController extends Controller
     public function show(Document $document)
     {
         // Vérifier les droits d'accès
-        if ($document->agent_id !== auth()->user()->id && !auth()->user()->hasAdminAccess()) {
+        if ($document->agent_id !== auth()->user()->agent?->id && !auth()->user()->hasAdminAccess()) {
             abort(403);
         }
 
@@ -94,7 +99,7 @@ class DocumentController extends Controller
     public function download(Document $document)
     {
         // Vérifier les droits d'accès
-        if ($document->agent_id !== auth()->user()->id && !auth()->user()->hasAdminAccess()) {
+        if ($document->agent_id !== auth()->user()->agent?->id && !auth()->user()->hasAdminAccess()) {
             abort(403);
         }
 
