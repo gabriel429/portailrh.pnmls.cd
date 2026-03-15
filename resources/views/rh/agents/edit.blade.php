@@ -270,16 +270,17 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="grade_id" class="form-label">Grade de l'État <span class="text-danger">*</span></label>
+                            <label for="grade_id" class="form-label">Grade de l'État</label>
                             <select class="form-select @error('grade_id') is-invalid @enderror"
-                                    id="grade_id" name="grade_id" required>
-                                <option value="">-- Sélectionner un grade --</option>
+                                    id="grade_id" name="grade_id">
+                                <option value="">-- Sélectionner un grade (N.U. si vide) --</option>
                                 @foreach ($grades as $grade)
                                     <option value="{{ $grade->id }}" @selected(old('grade_id', $agent->grade_id) == $grade->id)>
                                         {{ $grade->libelle }} ({{ $grade->nom_categorie }})
                                     </option>
                                 @endforeach
                             </select>
+                            <small class="text-muted">Optionnel - N.U. si non sélectionné</small>
                             @error('grade_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
