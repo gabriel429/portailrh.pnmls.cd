@@ -67,7 +67,7 @@
 {{-- Welcome Banner --}}
 <div class="welcome-banner">
     <i class="fas fa-cog wb-icon"></i>
-    <h2>Bienvenue, {{ auth()->user()->prenom }} !</h2>
+    <h2>Bienvenue, {{ auth()->user()->agent?->prenom ?? auth()->user()->name }} !</h2>
     <p>
         <i class="fas fa-calendar-alt me-1"></i>
         {{ now()->translatedFormat('l d F Y') }} &nbsp;&mdash;&nbsp;

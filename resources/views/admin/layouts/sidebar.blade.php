@@ -415,10 +415,10 @@
     <div class="sb-footer">
         <div class="sb-user">
             <div class="sb-avatar">
-                {{ strtoupper(substr(auth()->user()->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr(auth()->user()->nom ?? '', 0, 1)) }}
+                {{ strtoupper(substr(auth()->user()->agent?->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr(auth()->user()->agent?->nom ?? '', 0, 1)) }}
             </div>
             <div>
-                <div class="sb-uname">{{ auth()->user()->prenom }} {{ auth()->user()->nom }}</div>
+                <div class="sb-uname">{{ auth()->user()->agent?->prenom ?? '' }} {{ auth()->user()->agent?->nom ?? auth()->user()->name }}</div>
                 <div class="sb-urole">{{ auth()->user()->role?->nom_role ?? 'Admin' }}</div>
             </div>
         </div>
@@ -456,9 +456,9 @@
             </a>
             <div class="tb-user">
                 <div class="tb-av">
-                    {{ strtoupper(substr(auth()->user()->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr(auth()->user()->nom ?? '', 0, 1)) }}
+                    {{ strtoupper(substr(auth()->user()->agent?->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr(auth()->user()->agent?->nom ?? '', 0, 1)) }}
                 </div>
-                <span class="tb-uname d-none d-md-inline">{{ auth()->user()->prenom }}</span>
+                <span class="tb-uname d-none d-md-inline">{{ auth()->user()->agent?->prenom ?? auth()->user()->name }}</span>
             </div>
         </div>
     </div>
