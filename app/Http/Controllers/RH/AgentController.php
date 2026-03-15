@@ -10,7 +10,6 @@ use App\Models\Province;
 use App\Models\Organe;
 use App\Models\Grade;
 use App\Models\Fonction;
-use App\Models\InstitutionCategorie;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
 use Illuminate\Http\Request;
@@ -140,9 +139,8 @@ class AgentController extends Controller
         $organeOptions = $this->getOrganeOptions();
         $fonctionOptions = $this->getFonctionGroupedOptions();
         $grades = $this->getGradeOptions();
-        $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
 
-        return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
+        return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades'));
     }
 
     /**
@@ -216,9 +214,8 @@ class AgentController extends Controller
         $organeOptions = $this->getOrganeOptions();
         $fonctionOptions = $this->getFonctionGroupedOptions();
         $grades = $this->getGradeOptions();
-        $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
 
-        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
+        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades'));
     }
 
     /**
