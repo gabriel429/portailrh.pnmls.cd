@@ -216,6 +216,14 @@ class AgentController extends Controller
 
         $validated['poste_actuel'] = $validated['fonction'];
 
+        // Convert empty matricule values to null to avoid unique constraint issues
+        if (empty($validated['matricule_etat'])) {
+            $validated['matricule_etat'] = null;
+        }
+        if (empty($validated['matricule_pnmls'])) {
+            $validated['matricule_pnmls'] = null;
+        }
+
         Agent::create($validated);
 
         return redirect()->route('rh.agents.index')
@@ -330,6 +338,14 @@ class AgentController extends Controller
         }
 
         $validated['poste_actuel'] = $validated['fonction'];
+
+        // Convert empty matricule values to null to avoid unique constraint issues
+        if (empty($validated['matricule_etat'])) {
+            $validated['matricule_etat'] = null;
+        }
+        if (empty($validated['matricule_pnmls'])) {
+            $validated['matricule_pnmls'] = null;
+        }
 
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');

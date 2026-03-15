@@ -118,8 +118,8 @@
                         <div class="col-md-6">
                             <label for="matricule_etat" class="form-label">Matricule de l'État</label>
                             <input type="text" class="form-control @error('matricule_etat') is-invalid @enderror"
-                                id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat ?? 'N.U.') }}" placeholder="Optionnel - N.U. si vide">
-                            <small class="text-muted">Laisser vide pour "N.U." (Nouvelle Unité)</small>
+                                id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat) }}" placeholder="Laisser vide si inconnu">
+                            <small class="text-muted">Optionnel</small>
                             @error('matricule_etat')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
