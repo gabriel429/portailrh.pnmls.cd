@@ -374,10 +374,6 @@
            class="sb-link {{ request()->routeIs('admin.fonctions.*') ? 'active' : '' }}">
             <i class="fas fa-briefcase ico"></i> Fonctions
         </a>
-        <a href="{{ route('admin.affectations.index') }}"
-           class="sb-link {{ request()->routeIs('admin.affectations.*') ? 'active' : '' }}">
-            <i class="fas fa-user-tie ico"></i> Affectations
-        </a>
         <a href="{{ route('admin.localites.index') }}"
            class="sb-link {{ request()->routeIs('admin.localites.*') ? 'active' : '' }}">
             <i class="fas fa-map-pin ico"></i> Localités SEL

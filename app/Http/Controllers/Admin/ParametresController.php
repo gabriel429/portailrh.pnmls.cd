@@ -571,7 +571,7 @@ class ParametresController extends Controller
         ->orderBy('niveau_administratif')
         ->orderBy('niveau')
         ->paginate(25);
-        return view('admin.affectations.index', compact('affectations'));
+        return view('rh.affectations.index', compact('affectations'));
     }
 
     private function affectationsFormData(): array
@@ -589,7 +589,7 @@ class ParametresController extends Controller
 
     public function affectationsCreate()
     {
-        return view('admin.affectations.create', $this->affectationsFormData());
+        return view('rh.affectations.create', $this->affectationsFormData());
     }
 
     public function affectationsStore(Request $request)
@@ -653,13 +653,13 @@ class ParametresController extends Controller
 
         Affectation::create($validated);
 
-        return redirect()->route('admin.affectations.index')
+        return redirect()->route('rh.affectations.index')
             ->with('success', 'Affectation créée avec succès.');
     }
 
     public function affectationsEdit(Affectation $affectation)
     {
-        return view('admin.affectations.edit', array_merge(
+        return view('rh.affectations.edit', array_merge(
             $this->affectationsFormData(),
             ['affectation' => $affectation]
         ));
@@ -686,14 +686,14 @@ class ParametresController extends Controller
 
         $affectation->update($validated);
 
-        return redirect()->route('admin.affectations.index')
+        return redirect()->route('rh.affectations.index')
             ->with('success', 'Affectation mise à jour.');
     }
 
     public function affectationsDestroy(Affectation $affectation)
     {
         $affectation->delete();
-        return redirect()->route('admin.affectations.index')
+        return redirect()->route('rh.affectations.index')
             ->with('success', 'Affectation supprimée.');
     }
 

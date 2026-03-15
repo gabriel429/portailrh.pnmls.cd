@@ -264,8 +264,8 @@ $quickActions = [
         'desc'   => 'Affecter des agents à leurs fonctions dans les structures administratives.',
         'icon'   => 'fa-user-tie',
         'acc'    => '#3b5de7', 'acc-bg' => '#eef1fc',
-        'create' => 'admin.affectations.create',
-        'list'   => 'admin.affectations.index',
+        'create' => 'rh.affectations.create',
+        'list'   => 'rh.affectations.index',
     ],[
         'title'  => 'Journaux système',
         'desc'   => 'Diagnostiquer les erreurs et surveiller l\'activité du serveur.',

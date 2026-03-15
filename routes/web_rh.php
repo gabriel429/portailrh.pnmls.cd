@@ -67,6 +67,14 @@ Route::middleware('auth')->group(function () {
         // Provinces et Départements
         Route::resource('provinces', ProvinceController::class);
         Route::resource('departments', DepartmentController::class);
+
+        // Affectations
+        Route::get('affectations',                    [ParametresController::class, 'affectationsIndex'])->name('affectations.index');
+        Route::get('affectations/create',             [ParametresController::class, 'affectationsCreate'])->name('affectations.create');
+        Route::post('affectations',                   [ParametresController::class, 'affectationsStore'])->name('affectations.store');
+        Route::get('affectations/{affectation}/edit', [ParametresController::class, 'affectationsEdit'])->name('affectations.edit');
+        Route::put('affectations/{affectation}',      [ParametresController::class, 'affectationsUpdate'])->name('affectations.update');
+        Route::delete('affectations/{affectation}',   [ParametresController::class, 'affectationsDestroy'])->name('affectations.destroy');
     });
 
     // ─── Section Paramètres – Chef NT uniquement ────────────────────────────────
@@ -143,14 +151,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/cellules/{cellule}/edit',   [ParametresController::class, 'cellulesEdit'])->name('cellules.edit');
         Route::put('/cellules/{cellule}',        [ParametresController::class, 'cellulesUpdate'])->name('cellules.update');
         Route::delete('/cellules/{cellule}',     [ParametresController::class, 'cellulesDestroy'])->name('cellules.destroy');
-
-        // Affectations
-        Route::get('/affectations',                    [ParametresController::class, 'affectationsIndex'])->name('affectations.index');
-        Route::get('/affectations/create',             [ParametresController::class, 'affectationsCreate'])->name('affectations.create');
-        Route::post('/affectations',                   [ParametresController::class, 'affectationsStore'])->name('affectations.store');
-        Route::get('/affectations/{affectation}/edit', [ParametresController::class, 'affectationsEdit'])->name('affectations.edit');
-        Route::put('/affectations/{affectation}',      [ParametresController::class, 'affectationsUpdate'])->name('affectations.update');
-        Route::delete('/affectations/{affectation}',   [ParametresController::class, 'affectationsDestroy'])->name('affectations.destroy');
 
         // Localités (SEL — Secrétariats Exécutifs Locaux)
         Route::get('/localites',                   [ParametresController::class, 'localitesIndex'])->name('localites.index');

@@ -255,6 +255,7 @@
                             <li><a class="dropdown-item" href="{{ route('rh.agents.index') }}">Gestion Agents</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.communiques.index') }}">Communiqués</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.pointages.index') }}">Pointages</a></li>
+                            <li><a class="dropdown-item" href="{{ route('rh.affectations.index') }}">Affectations</a></li>
                             <li><a class="dropdown-item" href="{{ route('signalements.index') }}">Signalements</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.dashboard') }}">Tableau de Bord</a></li>
                             @endif
