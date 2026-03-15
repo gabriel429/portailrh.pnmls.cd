@@ -12,10 +12,20 @@
     $agent = $currentUser->agent;
 
     // Get pending and approved requests for the agent
-    $pendingCount = $agent ? $agent->requests()->where('statut', 'en_attente')->count() : 0;
-    $approvedCount = $agent ? $agent->requests()->where('statut', 'approuvé')->count() : 0;
-    $absenceCount = $agent ? $agent->pointages()->whereNull('heure_entree')->count() : 0;
-    $latestRequests = $agent ? $agent->requests()->latest()->limit(5)->get() : collect();
+    $pendingCount = 0;
+    $approvedCount = 0;
+    $absenceCount = 0;
+    $latestRequests = collect();
+    try {
+        if ($agent && \Illuminate\Support\Facades\Schema::hasTable('requests')) {
+            $pendingCount = $agent->requests()->where('statut', 'en_attente')->count();
+            $approvedCount = $agent->requests()->where('statut', 'approuvé')->count();
+            $latestRequests = $agent->requests()->latest()->limit(5)->get();
+        }
+        if ($agent && \Illuminate\Support\Facades\Schema::hasTable('pointages')) {
+            $absenceCount = $agent->pointages()->whereNull('heure_entree')->count();
+        }
+    } catch (\Exception $e) {}
 
     // Messages du DRH
     $unreadMessages = 0;
@@ -36,11 +46,16 @@
     } catch (\Exception $e) {}
 
     // Affectations de l'agent
-    $affectations = $agent ? $agent->affectations()
-        ->with('fonction', 'department', 'section', 'province')
-        ->orderByDesc('date_debut')
-        ->limit(5)
-        ->get() : collect();
+    $affectations = collect();
+    try {
+        if ($agent && \Illuminate\Support\Facades\Schema::hasTable('affectations')) {
+            $affectations = $agent->affectations()
+                ->with('fonction', 'department', 'section', 'province')
+                ->orderByDesc('date_debut')
+                ->limit(5)
+                ->get();
+        }
+    } catch (\Exception $e) {}
 
     // Taches assignees a l'agent
     $tachesCount = 0;
@@ -66,6 +81,36 @@
     } catch (\Exception $e) {
         // Table taches pas encore deployee
     }
+
+    // Plan de Travail Annuel
+    $planActivitesCount = 0;
+    $planActivitesEnCours = collect();
+    try {
+        if ($agent && \Illuminate\Support\Facades\Schema::hasTable('activite_plans')) {
+            $organe = $agent->organe ?? '';
+            $planQuery = \App\Models\ActivitePlan::where('annee', now()->year);
+
+            if (str_contains($organe, 'National')) {
+                $planQuery->where('niveau_administratif', 'SEN');
+                if ($agent->departement_id) {
+                    $planQuery->where(function($q) use ($agent) {
+                        $q->where('departement_id', $agent->departement_id)
+                          ->orWhereNull('departement_id');
+                    });
+                }
+            } elseif (str_contains($organe, 'Provincial')) {
+                $planQuery->where('niveau_administratif', 'SEP')
+                          ->where('province_id', $agent->province_id);
+            } elseif (str_contains($organe, 'Local')) {
+                $planQuery->where('niveau_administratif', 'SEL')
+                          ->where('province_id', $agent->province_id);
+            }
+
+            $planActivitesCount = (clone $planQuery)->whereIn('statut', ['planifiee', 'en_cours'])->count();
+            $planActivitesEnCours = (clone $planQuery)->with('createur')
+                ->latest()->limit(5)->get();
+        }
+    } catch (\Exception $e) {}
 @endphp
 
 <div class="rh-modern">
@@ -120,6 +165,11 @@
                 <p class="label">Taches actives</p>
                 <h2 class="value">{{ $tachesCount }}</h2>
                 <span class="trend {{ $tachesCount > 0 ? 'trend-mid' : 'trend-ok' }}"><i class="fas fa-tasks"></i> A traiter</span>
+            </a>
+            <a href="{{ route('plan-travail.index') }}" class="kpi text-decoration-none" style="cursor: pointer;">
+                <p class="label">Plan de Travail</p>
+                <h2 class="value">{{ $planActivitesCount }}</h2>
+                <span class="trend {{ $planActivitesCount > 0 ? 'trend-mid' : 'trend-ok' }}"><i class="fas fa-calendar-alt"></i> PTA {{ now()->year }}</span>
             </a>
         </section>
 
@@ -253,6 +303,64 @@
                     </div>
                 </div>
                 @endif
+
+                {{-- Plan de Travail Annuel --}}
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-calendar-alt me-2 text-info"></i>Plan de Travail {{ now()->year }}</h3>
+                            <p class="panel-sub">Activites de votre unite organisationnelle.</p>
+                        </div>
+                        <a href="{{ route('plan-travail.index') }}" class="btn btn-sm btn-outline-primary">Tout voir</a>
+                    </header>
+                    <div class="p-3">
+                        @forelse($planActivitesEnCours as $activite)
+                            <a href="{{ route('plan-travail.show', $activite) }}" class="text-decoration-none d-block">
+                            @php
+                                $pBorder = match($activite->statut) {
+                                    'terminee' => 'border-success',
+                                    'en_cours' => 'border-primary',
+                                    default => 'border-secondary',
+                                };
+                                $pBadge = match($activite->statut) {
+                                    'terminee' => 'bg-success',
+                                    'en_cours' => 'bg-primary',
+                                    default => 'bg-secondary',
+                                };
+                                $pLabel = match($activite->statut) {
+                                    'terminee' => 'Terminee',
+                                    'en_cours' => 'En cours',
+                                    default => 'Planifiee',
+                                };
+                            @endphp
+                            <div class="border-start border-3 {{ $pBorder }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div style="flex: 1;">
+                                        <h6 class="mb-1 text-dark">{{ $activite->titre }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-layer-group me-1"></i>{{ $activite->trimestre ?? 'Annuel' }}
+                                            @if($activite->departement) &bull; {{ $activite->departement->nom }} @endif
+                                            @if($activite->province) &bull; {{ $activite->province->nom }} @endif
+                                        </small>
+                                        <div class="d-flex align-items-center gap-2 mt-1">
+                                            <div class="progress flex-grow-1" style="height: 5px; max-width: 120px;">
+                                                <div class="progress-bar {{ $activite->pourcentage >= 100 ? 'bg-success' : 'bg-primary' }}" style="width: {{ $activite->pourcentage }}%"></div>
+                                            </div>
+                                            <small class="text-muted">{{ $activite->pourcentage }}%</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge {{ $pBadge }}">{{ $pLabel }}</span>
+                                </div>
+                            </div>
+                            </a>
+                        @empty
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-calendar-alt fa-2x mb-2 d-block"></i>
+                                <p class="mb-0">Aucune activite planifiee.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
 
                 {{-- Mon parcours / Affectations --}}
                 <div class="dash-panel">

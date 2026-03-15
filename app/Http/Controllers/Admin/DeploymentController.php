@@ -576,4 +576,71 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    public function deployPlanTravail()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "Debut du deploiement du module Plan de Travail...";
+
+            if (!Schema::hasTable('activite_plans')) {
+                $output_messages[] = "Creation de la table activite_plans...";
+
+                try {
+                    Schema::create('activite_plans', function ($table) {
+                        $table->id();
+                        $table->foreignId('createur_id')->constrained('agents')->onDelete('cascade');
+                        $table->string('titre');
+                        $table->text('description')->nullable();
+                        $table->enum('niveau_administratif', ['SEN', 'SEP', 'SEL']);
+                        $table->foreignId('departement_id')->nullable()->constrained('departments')->onDelete('set null');
+                        $table->foreignId('province_id')->nullable()->constrained('provinces')->onDelete('set null');
+                        $table->foreignId('localite_id')->nullable()->constrained('localites')->onDelete('set null');
+                        $table->unsignedSmallInteger('annee');
+                        $table->enum('trimestre', ['T1', 'T2', 'T3', 'T4'])->nullable();
+                        $table->enum('statut', ['planifiee', 'en_cours', 'terminee'])->default('planifiee');
+                        $table->date('date_debut')->nullable();
+                        $table->date('date_fin')->nullable();
+                        $table->unsignedTinyInteger('pourcentage')->default(0);
+                        $table->text('observations')->nullable();
+                        $table->timestamps();
+                        $table->index('niveau_administratif');
+                        $table->index('annee');
+                        $table->index('statut');
+                        $table->index('departement_id');
+                        $table->index('province_id');
+                    });
+                    $output_messages[] = "Table activite_plans creee!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "Erreur table activite_plans: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "Table activite_plans existe deja";
+            }
+
+            if (Schema::hasTable('activite_plans')) {
+                $count = DB::table('activite_plans')->count();
+                $output_messages[] = "Table activite_plans existe avec $count enregistrements";
+                $success = true;
+            } else {
+                $error_messages[] = "La table activite_plans n'existe pas";
+            }
+
+            $output_messages[] = "Deploiement Plan de Travail termine!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

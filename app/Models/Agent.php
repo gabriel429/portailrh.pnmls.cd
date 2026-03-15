@@ -149,6 +149,11 @@ class Agent extends Authenticatable
         return $this->hasMany(Tache::class, 'agent_id');
     }
 
+    public function activitesPlans(): HasMany
+    {
+        return $this->hasMany(ActivitePlan::class, 'createur_id');
+    }
+
     // Scopes
     public function scopeActifs($query)
     {

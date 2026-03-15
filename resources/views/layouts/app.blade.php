@@ -238,6 +238,11 @@
                             <i class="fas fa-folder"></i> Documents
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ route('plan-travail.index') }}">
+                            <i class="fas fa-calendar-alt"></i> Plan de Travail
+                        </a>
+                    </li>
 
                     @if(auth()->user()->hasAdminAccess())
                     <li class="nav-item dropdown">

@@ -10,6 +10,7 @@ use App\Http\Controllers\RH\AgentController;
 use App\Http\Controllers\RH\PointageController;
 use App\Http\Controllers\RH\CommuniqueController;
 use App\Http\Controllers\TacheController;
+use App\Http\Controllers\PlanTravailController;
 
 // Page d'accueil
 Route::get('/', function () {
@@ -63,6 +64,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/taches/{tache}', [TacheController::class, 'show'])->name('taches.show');
     Route::put('/taches/{tache}/statut', [TacheController::class, 'updateStatut'])->name('taches.update-statut');
     Route::post('/taches/{tache}/commentaire', [TacheController::class, 'addCommentaire'])->name('taches.commentaire');
+
+    // Plan de Travail Annuel
+    Route::get('/plan-travail', [PlanTravailController::class, 'index'])->name('plan-travail.index');
+    Route::get('/plan-travail/create', [PlanTravailController::class, 'create'])->name('plan-travail.create');
+    Route::post('/plan-travail', [PlanTravailController::class, 'store'])->name('plan-travail.store');
+    Route::get('/plan-travail/{activitePlan}', [PlanTravailController::class, 'show'])->name('plan-travail.show');
+    Route::get('/plan-travail/{activitePlan}/edit', [PlanTravailController::class, 'edit'])->name('plan-travail.edit');
+    Route::put('/plan-travail/{activitePlan}', [PlanTravailController::class, 'update'])->name('plan-travail.update');
+    Route::delete('/plan-travail/{activitePlan}', [PlanTravailController::class, 'destroy'])->name('plan-travail.destroy');
+    Route::put('/plan-travail/{activitePlan}/statut', [PlanTravailController::class, 'updateStatut'])->name('plan-travail.update-statut');
 
     // RH JSON API for Modal (returns agent details as JSON)
     Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie'])->group(function () {

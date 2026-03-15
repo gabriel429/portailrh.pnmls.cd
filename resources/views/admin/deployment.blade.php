@@ -160,6 +160,27 @@
             </form>
         </div>
     </div>
+
+    {{-- Module Plan de Travail --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-calendar-check me-2" style="color: #0d6efd;"></i>
+                Deploiement Module Plan de Travail
+            </h5>
+
+            <p class="text-muted mb-3">
+                Cree la table activite_plans (Plan de Travail Annuel par unite organisationnelle)
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-plan-travail') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i> Lancer Plan de Travail
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -177,6 +198,7 @@
                 <p><strong>Module Messages:</strong> Cree la table messages pour la messagerie interne (DRH vers agents) avec sujet, contenu et statut de lecture</p>
                 <p><strong>Module Communiques:</strong> Cree la table communiques pour les annonces officielles broadcast (SEN/SENA vers tous les agents) avec urgence, signataire et expiration</p>
                 <p><strong>Module Taches:</strong> Cree les tables taches et tache_commentaires pour la gestion des taches (Directeur assigne des taches aux agents de son departement, suivi de statut avec commentaires)</p>
+                <p><strong>Module Plan de Travail:</strong> Cree la table activite_plans pour le Plan de Travail Annuel (activites planifiees par unite organisationnelle SEN/SEP/SEL, avec progression et trimestres)</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>
