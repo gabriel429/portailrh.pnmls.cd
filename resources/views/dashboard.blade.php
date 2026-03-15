@@ -23,6 +23,13 @@
 
     // Communiqués officiels
     $allCommuniques = \App\Models\Communique::visibles()->latest()->limit(5)->get();
+
+    // Affectations de l'agent
+    $affectations = $agent ? $agent->affectations()
+        ->with('fonction', 'department', 'section', 'province')
+        ->orderByDesc('date_debut')
+        ->limit(5)
+        ->get() : collect();
 @endphp
 
 <div class="rh-modern">
@@ -197,6 +204,56 @@
 
                         <a href="{{ route('profile.show', $agent) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
                     </dl>
+                </div>
+
+                {{-- Mon parcours / Affectations --}}
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-route me-2 text-info"></i>Mon parcours</h3>
+                            <p class="panel-sub">Affectations au programme.</p>
+                        </div>
+                    </header>
+                    <div class="p-3">
+                        @forelse($affectations as $aff)
+                            <div class="d-flex align-items-start gap-2 mb-3">
+                                <div style="flex-shrink: 0; margin-top: 4px;">
+                                    @if($aff->actif)
+                                        <span class="badge bg-success" style="font-size: 0.6rem;">En cours</span>
+                                    @else
+                                        <span class="badge bg-secondary" style="font-size: 0.6rem;">Terminé</span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 text-dark" style="font-size: 0.9rem;">{{ $aff->fonction?->nom ?? 'Fonction non définie' }}</h6>
+                                    <small class="text-muted">
+                                        {{ $aff->niveau_administratif_label }}
+                                        @if($aff->department) &mdash; {{ $aff->department->nom }} @endif
+                                        @if($aff->section) / {{ $aff->section->nom }} @endif
+                                        @if($aff->province) &mdash; {{ $aff->province->nom }} @endif
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar-alt me-1"></i>
+                                        {{ $aff->date_debut?->format('d/m/Y') ?? '?' }}
+                                        @if($aff->date_fin)
+                                            &rarr; {{ $aff->date_fin->format('d/m/Y') }}
+                                        @elseif($aff->actif)
+                                            &rarr; Aujourd'hui
+                                        @endif
+                                    </small>
+                                    @if($aff->remarque)
+                                        <br><small class="text-muted fst-italic">{{ $aff->remarque }}</small>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-route fa-2x mb-2 d-block"></i>
+                                <p class="mb-0">Aucune affectation enregistrée.</p>
+                            </div>
+                        @endforelse
+                    </div>
                 </div>
 
                 {{-- Communiqués SEN --}}
