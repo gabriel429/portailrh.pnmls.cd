@@ -79,6 +79,7 @@
 
         {{-- En-tete --}}
         <div class="header">
+            <img src="{{ asset('images/logo-pnmls.png') }}" alt="Logo PNMLS" style="height: 70px; margin-bottom: 10px;">
             <h1>PROGRAMME NATIONAL MULTISECTORIEL DE LUTTE CONTRE LE SIDA</h1>
             <h2>Fiche Individuelle de l'Agent</h2>
             <p class="org">Republique Democratique du Congo</p>
