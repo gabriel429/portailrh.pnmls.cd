@@ -312,13 +312,16 @@
 
         /* ═══════════════════════════════════════ MOBILE */
         .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; }
-        @media (max-width: 768px) {
+        @media (max-width: 991px) {
             #admin-sidebar { left: calc(-1 * var(--sidebar-w)); }
             #admin-sidebar.open { left: 0; }
             #admin-main { margin-left: 0 !important; }
             .sb-overlay.show { display: block; }
             .page-content { padding: 14px 16px; }
             .page-header { padding: 14px 16px 0; }
+        }
+        @media (min-width: 992px) {
+            .tb-toggle { display: none; }
         }
     </style>
 
@@ -511,14 +514,18 @@
     const sbSidebar = document.getElementById('admin-sidebar');
     const sbOverlay = document.getElementById('sb-overlay');
     const sbToggle  = document.getElementById('sb-toggle');
-    sbToggle.addEventListener('click', () => {
-        sbSidebar.classList.toggle('open');
-        sbOverlay.classList.toggle('show');
-    });
-    sbOverlay.addEventListener('click', () => {
-        sbSidebar.classList.remove('open');
-        sbOverlay.classList.remove('show');
-    });
+    if (sbToggle && sbSidebar) {
+        sbToggle.addEventListener('click', () => {
+            sbSidebar.classList.toggle('open');
+            if (sbOverlay) sbOverlay.classList.toggle('show');
+        });
+    }
+    if (sbOverlay) {
+        sbOverlay.addEventListener('click', () => {
+            sbSidebar.classList.remove('open');
+            sbOverlay.classList.remove('show');
+        });
+    }
 </script>
 @yield('js')
 </body>
