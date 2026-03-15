@@ -9,6 +9,7 @@ use App\Http\Controllers\RH\SignalementController;
 use App\Http\Controllers\RH\AgentController;
 use App\Http\Controllers\RH\PointageController;
 use App\Http\Controllers\RH\CommuniqueController;
+use App\Http\Controllers\TacheController;
 
 // Page d'accueil
 Route::get('/', function () {
@@ -54,6 +55,14 @@ Route::middleware('auth')->group(function () {
     // Signalements
     Route::resource('signalements', SignalementController::class)->names('signalements');
     Route::post('signalements/{signalement}/resolve', [SignalementController::class, 'resolve'])->name('signalements.resolve');
+
+    // Taches
+    Route::get('/taches', [TacheController::class, 'index'])->name('taches.index');
+    Route::get('/taches/create', [TacheController::class, 'create'])->name('taches.create');
+    Route::post('/taches', [TacheController::class, 'store'])->name('taches.store');
+    Route::get('/taches/{tache}', [TacheController::class, 'show'])->name('taches.show');
+    Route::put('/taches/{tache}/statut', [TacheController::class, 'updateStatut'])->name('taches.update-statut');
+    Route::post('/taches/{tache}/commentaire', [TacheController::class, 'addCommentaire'])->name('taches.commentaire');
 
     // RH JSON API for Modal (returns agent details as JSON)
     Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie'])->group(function () {

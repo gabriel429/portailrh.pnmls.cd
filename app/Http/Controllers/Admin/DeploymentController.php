@@ -490,4 +490,90 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    public function deployTaches()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "Debut du deploiement du module Taches...";
+
+            // Table taches
+            if (!Schema::hasTable('taches')) {
+                $output_messages[] = "Creation de la table taches...";
+
+                try {
+                    Schema::create('taches', function ($table) {
+                        $table->id();
+                        $table->foreignId('createur_id')->constrained('agents')->onDelete('cascade');
+                        $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
+                        $table->string('titre');
+                        $table->text('description')->nullable();
+                        $table->enum('priorite', ['normale', 'haute', 'urgente'])->default('normale');
+                        $table->enum('statut', ['nouvelle', 'en_cours', 'terminee'])->default('nouvelle');
+                        $table->date('date_echeance')->nullable();
+                        $table->timestamps();
+                        $table->index('createur_id');
+                        $table->index('agent_id');
+                        $table->index('statut');
+                    });
+                    $output_messages[] = "Table taches creee!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "Erreur table taches: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "Table taches existe deja";
+            }
+
+            // Table tache_commentaires
+            if (!Schema::hasTable('tache_commentaires')) {
+                $output_messages[] = "Creation de la table tache_commentaires...";
+
+                try {
+                    Schema::create('tache_commentaires', function ($table) {
+                        $table->id();
+                        $table->foreignId('tache_id')->constrained('taches')->onDelete('cascade');
+                        $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
+                        $table->text('contenu');
+                        $table->string('ancien_statut')->nullable();
+                        $table->string('nouveau_statut')->nullable();
+                        $table->timestamps();
+                        $table->index('tache_id');
+                    });
+                    $output_messages[] = "Table tache_commentaires creee!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "Erreur table tache_commentaires: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "Table tache_commentaires existe deja";
+            }
+
+            // Verification
+            if (Schema::hasTable('taches') && Schema::hasTable('tache_commentaires')) {
+                $count = DB::table('taches')->count();
+                $output_messages[] = "Tables taches ($count enregistrements) et tache_commentaires existent";
+                $success = true;
+            } else {
+                $error_messages[] = "Les tables n'existent pas";
+            }
+
+            $output_messages[] = "Deploiement Taches termine!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

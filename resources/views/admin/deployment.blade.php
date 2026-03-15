@@ -139,6 +139,27 @@
             </form>
         </div>
     </div>
+
+    {{-- Module Taches --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-tasks me-2" style="color: #6f42c1;"></i>
+                Deploiement Module Taches
+            </h5>
+
+            <p class="text-muted mb-3">
+                Cree les tables taches et tache_commentaires (gestion Directeur → Agent)
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-taches') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn" style="background-color: #6f42c1; border-color: #6f42c1; color: #fff;">
+                    <i class="fas fa-play me-2"></i> Lancer Taches
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -155,6 +176,7 @@
                 <p><strong>Module Institutions:</strong> Crée les tables institution_categories et institutions avec les 11 catégories (Institutions politiques, Ministères, etc.) et ~70 institutions individuelles</p>
                 <p><strong>Module Messages:</strong> Cree la table messages pour la messagerie interne (DRH vers agents) avec sujet, contenu et statut de lecture</p>
                 <p><strong>Module Communiques:</strong> Cree la table communiques pour les annonces officielles broadcast (SEN/SENA vers tous les agents) avec urgence, signataire et expiration</p>
+                <p><strong>Module Taches:</strong> Cree les tables taches et tache_commentaires pour la gestion des taches (Directeur assigne des taches aux agents de son departement, suivi de statut avec commentaires)</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

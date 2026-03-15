@@ -30,6 +30,23 @@
         ->orderByDesc('date_debut')
         ->limit(5)
         ->get() : collect();
+
+    // Taches assignees a l'agent
+    $tachesCount = $agent ? \App\Models\Tache::where('agent_id', $agent->id)
+        ->whereIn('statut', ['nouvelle', 'en_cours'])->count() : 0;
+    $mesTaches = $agent ? \App\Models\Tache::with('createur')
+        ->where('agent_id', $agent->id)
+        ->whereIn('statut', ['nouvelle', 'en_cours'])
+        ->latest()->limit(5)->get() : collect();
+
+    // Directeur: taches creees
+    $isDirecteur = $currentUser->hasRole('Directeur');
+    $tachesDirecteur = collect();
+    if ($isDirecteur && $agent) {
+        $tachesDirecteur = \App\Models\Tache::with('agent')
+            ->where('createur_id', $agent->id)
+            ->latest()->limit(5)->get();
+    }
 @endphp
 
 <div class="rh-modern">
@@ -80,6 +97,11 @@
                 <h2 class="value">{{ $allCommuniques->count() }}</h2>
                 <span class="trend {{ $allCommuniques->where('urgence', 'urgent')->count() > 0 ? 'trend-bad' : 'trend-info' }}"><i class="fas fa-bullhorn"></i> Annonces SEN</span>
             </a>
+            <a href="{{ route('taches.index') }}" class="kpi text-decoration-none" style="cursor: pointer;">
+                <p class="label">Taches actives</p>
+                <h2 class="value">{{ $tachesCount }}</h2>
+                <span class="trend {{ $tachesCount > 0 ? 'trend-mid' : 'trend-ok' }}"><i class="fas fa-tasks"></i> A traiter</span>
+            </a>
         </section>
 
         <section class="dash-grid">
@@ -120,6 +142,98 @@
                         </div>
                     @endif
                 </div>
+
+                {{-- Mes taches --}}
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-tasks me-2 text-warning"></i>Mes taches</h3>
+                            <p class="panel-sub">Taches qui me sont assignees.</p>
+                        </div>
+                        <a href="{{ route('taches.index') }}" class="btn btn-sm btn-outline-primary">Tout voir</a>
+                    </header>
+                    <div class="p-3">
+                        @forelse($mesTaches as $tache)
+                            <a href="{{ route('taches.show', $tache) }}" class="text-decoration-none d-block">
+                            <div class="border-start border-3 {{ $tache->priorite === 'urgente' ? 'border-danger' : ($tache->priorite === 'haute' ? 'border-warning' : 'border-info') }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1 text-dark">
+                                            @if($tache->priorite === 'urgente')
+                                                <span class="badge bg-danger me-1" style="font-size: 0.65rem;">Urgent</span>
+                                            @elseif($tache->priorite === 'haute')
+                                                <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Haute</span>
+                                            @endif
+                                            {{ $tache->titre }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>{{ $tache->createur?->nom_complet }}
+                                            @if($tache->date_echeance)
+                                                &bull; <i class="fas fa-calendar me-1"></i>{{ $tache->date_echeance->format('d/m/Y') }}
+                                            @endif
+                                        </small>
+                                    </div>
+                                    <span class="badge {{ $tache->statut === 'nouvelle' ? 'bg-secondary' : 'bg-primary' }}">
+                                        {{ $tache->statut === 'nouvelle' ? 'Nouvelle' : 'En cours' }}
+                                    </span>
+                                </div>
+                            </div>
+                            </a>
+                        @empty
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-tasks fa-2x mb-2 d-block"></i>
+                                <p class="mb-0">Aucune tache en cours.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+
+                {{-- Taches assignees par le directeur --}}
+                @if($isDirecteur && $tachesDirecteur->isNotEmpty())
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-clipboard-list me-2 text-success"></i>Taches assignees</h3>
+                            <p class="panel-sub">Taches que vous avez assignees a votre equipe.</p>
+                        </div>
+                        <a href="{{ route('taches.index') }}" class="btn btn-sm btn-outline-primary">Tout voir</a>
+                    </header>
+                    <div class="p-3">
+                        @foreach($tachesDirecteur as $tache)
+                            <a href="{{ route('taches.show', $tache) }}" class="text-decoration-none d-block">
+                            @php
+                                $tBorderClass = match($tache->statut) {
+                                    'terminee' => 'border-success',
+                                    'en_cours' => 'border-primary',
+                                    default => 'border-secondary',
+                                };
+                                $tBadgeClass = match($tache->statut) {
+                                    'terminee' => 'bg-success',
+                                    'en_cours' => 'bg-primary',
+                                    default => 'bg-secondary',
+                                };
+                                $tStatusLabel = match($tache->statut) {
+                                    'terminee' => 'Terminee',
+                                    'en_cours' => 'En cours',
+                                    default => 'Nouvelle',
+                                };
+                            @endphp
+                            <div class="border-start border-3 {{ $tBorderClass }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1 text-dark">{{ $tache->titre }}</h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>{{ $tache->agent?->nom_complet }}
+                                        </small>
+                                    </div>
+                                    <span class="badge {{ $tBadgeClass }}">{{ $tStatusLabel }}</span>
+                                </div>
+                            </div>
+                            </a>
+                        @endforeach
+                    </div>
+                </div>
+                @endif
 
                 {{-- Mon parcours / Affectations --}}
                 <div class="dash-panel">
