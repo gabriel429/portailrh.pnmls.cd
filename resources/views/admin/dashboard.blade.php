@@ -53,6 +53,12 @@
         background: var(--primary);
         border-radius: 2px;
     }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: .3; }
+        100% { opacity: 1; }
+    }
 </style>
 @endsection
 
@@ -68,6 +74,65 @@
         Portail RH PNMLS &ndash; Configuration du système
     </p>
 </div>
+
+{{-- ─── Utilisateurs connectés ─── --}}
+@if(isset($connectedUsers) && $connectedUsers->count() > 0)
+<div class="section-title"><span>Utilisateurs connectes ({{ $connectedUsers->count() }})</span></div>
+<div class="panel mb-4">
+    <div class="panel-header">
+        <div class="d-flex align-items-center">
+            <div class="panel-ico" style="background:#d1fae5;color:#10b981;">
+                <i class="fas fa-circle" style="font-size:.5rem;animation:pulse 2s infinite;"></i>
+            </div>
+            <span>En ligne ces 30 dernières minutes</span>
+        </div>
+        <span class="badge" style="background:#d1fae5;color:#10b981;font-size:.8rem;padding:5px 12px;border-radius:20px;">
+            {{ $connectedUsers->count() }} connecté{{ $connectedUsers->count() > 1 ? 's' : '' }}
+        </span>
+    </div>
+    <div class="table-responsive">
+        <table class="table admin-table mb-0">
+            <thead>
+                <tr>
+                    <th>Agent</th>
+                    <th>Role</th>
+                    <th>Province</th>
+                    <th>Derniere activite</th>
+                    <th>Adresse IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($connectedUsers as $cu)
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b5de7,#0099e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0;">
+                                {{ strtoupper(substr($cu->agent->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr($cu->agent->nom ?? '', 0, 1)) }}
+                            </div>
+                            <div>
+                                <div style="font-weight:600;font-size:.85rem;">{{ $cu->nom_complet }}</div>
+                                <div style="font-size:.72rem;color:#9ca3af;">{{ $cu->agent->matricule_pnmls ?? '' }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge" style="background:#eef1fc;color:#3b5de7;font-size:.72rem;padding:4px 8px;border-radius:6px;">
+                            {{ $cu->role }}
+                        </span>
+                    </td>
+                    <td style="font-size:.85rem;">{{ $cu->province }}</td>
+                    <td>
+                        <div style="font-size:.82rem;font-weight:500;">{{ $cu->last_activity->format('H:i') }}</div>
+                        <div style="font-size:.7rem;color:#9ca3af;">{{ $cu->last_activity->diffForHumans() }}</div>
+                    </td>
+                    <td style="font-size:.8rem;color:#6b7280;">{{ $cu->ip_address ?? '-' }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
 
 {{-- ─── Statistiques principales ─── --}}
 @php

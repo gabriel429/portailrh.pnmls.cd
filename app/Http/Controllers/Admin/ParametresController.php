@@ -18,6 +18,7 @@ use App\Models\Organe;
 use App\Models\Permission;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ParametresController extends Controller
@@ -99,7 +100,43 @@ class ParametresController extends Controller
             }
         }
 
-        return view('admin.dashboard', compact('stats', 'statsByOrgane', 'organes'));
+        // Connected users (active sessions in last 30 minutes)
+        $connectedUsers = collect();
+        if (Schema::hasTable('sessions')) {
+            try {
+                $threshold = now()->subMinutes(30)->timestamp;
+                $sessions = DB::table('sessions')
+                    ->whereNotNull('user_id')
+                    ->where('last_activity', '>=', $threshold)
+                    ->orderByDesc('last_activity')
+                    ->get();
+
+                $userIds = $sessions->pluck('user_id')->unique();
+                $users = User::with(['agent.province', 'role'])
+                    ->whereIn('id', $userIds)
+                    ->get()
+                    ->keyBy('id');
+
+                $connectedUsers = $sessions->map(function ($session) use ($users) {
+                    $user = $users->get($session->user_id);
+                    if (!$user) return null;
+
+                    return (object) [
+                        'user' => $user,
+                        'agent' => $user->agent,
+                        'nom_complet' => trim(($user->agent->prenom ?? '') . ' ' . ($user->agent->nom ?? $user->name)),
+                        'province' => $user->agent?->province?->nom ?? 'Non définie',
+                        'role' => $user->role?->nom_role ?? 'Agent',
+                        'last_activity' => \Carbon\Carbon::createFromTimestamp($session->last_activity),
+                        'ip_address' => $session->ip_address,
+                    ];
+                })->filter()->unique(fn($item) => $item->user->id);
+            } catch (\Exception $e) {
+                // Silently fail if sessions table has different structure
+            }
+        }
+
+        return view('admin.dashboard', compact('stats', 'statsByOrgane', 'organes', 'connectedUsers'));
     }
 
     // ─── PROVINCES ───────────────────────────────────────────────
