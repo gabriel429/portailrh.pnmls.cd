@@ -68,6 +68,11 @@
                 <h2 class="value">{{ $unreadMessages }}</h2>
                 <span class="trend {{ $unreadMessages > 0 ? 'trend-mid' : 'trend-ok' }}"><i class="fas fa-envelope"></i> Messagerie DRH</span>
             </a>
+            <a href="#communiques-sen" class="kpi text-decoration-none" style="cursor: pointer;">
+                <p class="label">Communiqués</p>
+                <h2 class="value">{{ $allCommuniques->count() }}</h2>
+                <span class="trend {{ $allCommuniques->where('urgence', 'urgent')->count() > 0 ? 'trend-bad' : 'trend-info' }}"><i class="fas fa-bullhorn"></i> Annonces SEN</span>
+            </a>
         </section>
 
         <section class="dash-grid">
@@ -195,7 +200,7 @@
                 </div>
 
                 {{-- Communiqués SEN --}}
-                <div class="dash-panel">
+                <div class="dash-panel" id="communiques-sen">
                     <header class="panel-head">
                         <div>
                             <h3 class="panel-title"><i class="fas fa-bullhorn me-2 text-danger"></i>Communiqués officiels</h3>
