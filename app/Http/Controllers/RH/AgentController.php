@@ -70,11 +70,29 @@ class AgentController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index(Request $request): View
     {
+        // Get search query
+        $search = $request->query('search');
+
         // Get all agents with relations
-        $allAgents = Agent::with(['role', 'province', 'departement'])
-            ->orderBy('organe')
+        $query = Agent::with(['role', 'province', 'departement']);
+
+        // Apply search filter if provided
+        if ($search) {
+            $search = '%' . $search . '%';
+            $query->where(function($q) use ($search) {
+                $q->where('nom', 'like', $search)
+                  ->orWhere('prenom', 'like', $search)
+                  ->orWhere('postnom', 'like', $search)
+                  ->orWhere('email', 'like', $search)
+                  ->orWhere('matricule_pnmls', 'like', $search)
+                  ->orWhere('matricule_etat', 'like', $search)
+                  ->orWhere('telephone', 'like', $search);
+            });
+        }
+
+        $allAgents = $query->orderBy('organe')
             ->orderBy('nom')
             ->get();
 
@@ -126,7 +144,7 @@ class AgentController extends Controller
             $ordered['Non assigné'] = $agentsByOrgane['Non assigné'];
         }
 
-        return view('rh.agents.index', ['agentsByOrgane' => $ordered, 'totalAgents' => $allAgents->count()]);
+        return view('rh.agents.index', ['agentsByOrgane' => $ordered, 'totalAgents' => $allAgents->count(), 'searchTerm' => $search]);
     }
 
     /**

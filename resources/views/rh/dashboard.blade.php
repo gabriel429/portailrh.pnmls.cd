@@ -20,6 +20,17 @@
                 <div class="col-lg-8">
                     <h1 class="rh-title">Tableau de bord RH strategique</h1>
                     <p class="rh-sub">Pilotage des effectifs, demandes et pointages en temps reel.</p>
+
+                    {{-- Barre de recherche --}}
+                    <form action="{{ route('rh.agents.index') }}" method="GET" class="mt-3">
+                        <div class="input-group" style="max-width: 400px;">
+                            <input type="text" name="search" class="form-control" placeholder="Rechercher un agent... (nom, email, matricule)"
+                                   value="{{ request('search') }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
                 <div class="col-lg-4">
                     <div class="hero-tools">
