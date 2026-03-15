@@ -111,6 +111,59 @@
                 ->latest()->limit(5)->get();
         }
     } catch (\Exception $e) {}
+
+    // Renforcement des Capacites - Detection du role
+    $isRenforcementCapacites = false;
+    $renforcementRequests = collect();
+    $renforcementDocuments = collect();
+    $renfFormationCount = 0;
+    $renfFormationPendingCount = 0;
+    $renfDocumentsCount = 0;
+    try {
+        if ($agent) {
+            // Detecter via l'affectation active
+            if (\Illuminate\Support\Facades\Schema::hasTable('affectations') && \Illuminate\Support\Facades\Schema::hasTable('fonctions')) {
+                $renfAffectation = \App\Models\Affectation::where('agent_id', $agent->id)
+                    ->where('actif', true)
+                    ->with('fonction', 'section')
+                    ->first();
+
+                if ($renfAffectation) {
+                    $renfFonctionNom = mb_strtolower($renfAffectation->fonction?->nom ?? '');
+                    $renfSectionNom = mb_strtolower($renfAffectation->section?->nom ?? '');
+
+                    if (str_contains($renfFonctionNom, 'renforcement') || str_contains($renfSectionNom, 'renforcement')) {
+                        $isRenforcementCapacites = true;
+                    }
+                }
+            }
+
+            // Fallback : champ texte fonction de l'agent
+            if (!$isRenforcementCapacites) {
+                $agentFonction = mb_strtolower($agent->fonction ?? '');
+                if (str_contains($agentFonction, 'renforcement')) {
+                    $isRenforcementCapacites = true;
+                }
+            }
+
+            // Charger les donnees si autorise
+            if ($isRenforcementCapacites) {
+                if (\Illuminate\Support\Facades\Schema::hasTable('requests')) {
+                    $renfReqQuery = \App\Models\Request::whereIn('type', ['formation', 'renforcement_capacites']);
+                    $renfFormationCount = (clone $renfReqQuery)->count();
+                    $renfFormationPendingCount = (clone $renfReqQuery)->where('statut', 'en_attente')->count();
+                    $renforcementRequests = $renfReqQuery->with('agent')->latest()->limit(20)->get();
+                }
+
+                if (\Illuminate\Support\Facades\Schema::hasTable('documents')) {
+                    $renfDocQuery = \App\Models\Document::where('type', 'parcours');
+                    $renfDocumentsCount = (clone $renfDocQuery)->whereMonth('created_at', now()->month)
+                        ->whereYear('created_at', now()->year)->count();
+                    $renforcementDocuments = $renfDocQuery->with('agent')->latest()->limit(20)->get();
+                }
+            }
+        }
+    } catch (\Exception $e) {}
 @endphp
 
 <div class="rh-modern">
@@ -300,6 +353,133 @@
                             </div>
                             </a>
                         @endforeach
+                    </div>
+                </div>
+                @endif
+
+                {{-- Renforcement des Capacites (conditionnel) --}}
+                @if($isRenforcementCapacites)
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-graduation-cap me-2" style="color: #e91e63;"></i>Renforcement des Capacites</h3>
+                            <p class="panel-sub">Demandes de formation et documents parcours des agents.</p>
+                        </div>
+                    </header>
+
+                    {{-- Mini KPIs --}}
+                    <div class="row g-2 p-3 pb-0">
+                        <div class="col-4">
+                            <div class="p-2 rounded text-center" style="background: #fce4ec;">
+                                <h5 class="mb-0 fw-bold" style="color: #e91e63;">{{ $renfFormationCount }}</h5>
+                                <small class="text-muted" style="font-size: 0.7rem;">Demandes formation</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded text-center" style="background: #fff3e0;">
+                                <h5 class="mb-0 fw-bold text-warning">{{ $renfFormationPendingCount }}</h5>
+                                <small class="text-muted" style="font-size: 0.7rem;">En attente</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="p-2 rounded text-center" style="background: #e8f5e9;">
+                                <h5 class="mb-0 fw-bold text-success">{{ $renfDocumentsCount }}</h5>
+                                <small class="text-muted" style="font-size: 0.7rem;">Docs ce mois</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Demandes de formation / renforcement --}}
+                    <div class="p-3">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-file-signature me-1 text-muted"></i>Demandes de formation</h6>
+                        @if($renforcementRequests->isNotEmpty())
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr class="text-muted small">
+                                            <th>Agent</th>
+                                            <th>Type</th>
+                                            <th>Description</th>
+                                            <th>Statut</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($renforcementRequests as $rReq)
+                                            <tr>
+                                                <td>
+                                                    <small class="fw-bold">{{ $rReq->agent?->nom_complet ?? 'N/A' }}</small>
+                                                </td>
+                                                <td>
+                                                    <span class="badge" style="background: #e91e63; font-size: 0.65rem;">
+                                                        {{ $rReq->type === 'formation' ? 'Formation' : 'Renforcement' }}
+                                                    </span>
+                                                </td>
+                                                <td><small>{{ Str::limit($rReq->description, 40) }}</small></td>
+                                                <td>
+                                                    @php
+                                                        $rBadge = match($rReq->statut) {
+                                                            'approuve' => 'bg-success',
+                                                            'rejete' => 'bg-danger',
+                                                            default => 'bg-warning',
+                                                        };
+                                                        $rLabel = match($rReq->statut) {
+                                                            'approuve' => 'Approuve',
+                                                            'rejete' => 'Rejete',
+                                                            default => 'En attente',
+                                                        };
+                                                    @endphp
+                                                    <span class="badge {{ $rBadge }}" style="font-size: 0.65rem;">{{ $rLabel }}</span>
+                                                </td>
+                                                <td><small class="text-muted">{{ $rReq->created_at->format('d/m/Y') }}</small></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center text-muted py-2">
+                                <small>Aucune demande de formation.</small>
+                            </div>
+                        @endif
+                    </div>
+
+                    {{-- Documents parcours recents --}}
+                    <div class="p-3 pt-0">
+                        <h6 class="fw-bold mb-2"><i class="fas fa-certificate me-1 text-muted"></i>Documents recents (Attestations, Diplomes, Certificats)</h6>
+                        @if($renforcementDocuments->isNotEmpty())
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-0">
+                                    <thead>
+                                        <tr class="text-muted small">
+                                            <th>Agent</th>
+                                            <th>Document</th>
+                                            <th>Date d'ajout</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($renforcementDocuments as $rDoc)
+                                            <tr>
+                                                <td>
+                                                    <small class="fw-bold">{{ $rDoc->agent?->nom_complet ?? 'N/A' }}</small>
+                                                </td>
+                                                <td>
+                                                    <small>
+                                                        <i class="fas fa-file-alt me-1 text-primary"></i>
+                                                        {{ $rDoc->name ?? $rDoc->description ?? 'Document parcours' }}
+                                                    </small>
+                                                </td>
+                                                <td><small class="text-muted">{{ $rDoc->created_at->format('d/m/Y') }}</small></td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center text-muted py-2">
+                                <small>Aucun document parcours enregistre.</small>
+                            </div>
+                        @endif
                     </div>
                 </div>
                 @endif

@@ -60,6 +60,8 @@
                                 <option value="congé" {{ old('type') === 'congé' ? 'selected' : '' }}>Congé</option>
                                 <option value="absence" {{ old('type') === 'absence' ? 'selected' : '' }}>Absence</option>
                                 <option value="permission" {{ old('type') === 'permission' ? 'selected' : '' }}>Permission</option>
+                                <option value="formation" {{ old('type') === 'formation' ? 'selected' : '' }}>Formation</option>
+                                <option value="renforcement_capacites" {{ old('type') === 'renforcement_capacites' ? 'selected' : '' }}>Renforcement des capacités</option>
                             </select>
                             @error('type')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
