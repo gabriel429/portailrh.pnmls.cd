@@ -368,4 +368,67 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Execute Messages deployment (create messages table)
+     */
+    public function deployMessages()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "🚀 Début du déploiement du module Messages...";
+
+            // Step 1: Create messages table if it doesn't exist
+            $output_messages[] = "📦 Étape 1: Vérification de la table messages...";
+
+            if (!Schema::hasTable('messages')) {
+                $output_messages[] = "   Table non trouvée, création en cours...";
+
+                try {
+                    Schema::create('messages', function ($table) {
+                        $table->id();
+                        $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
+                        $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+                        $table->string('sujet');
+                        $table->text('contenu');
+                        $table->boolean('lu')->default(false);
+                        $table->timestamps();
+                    });
+
+                    $output_messages[] = "✅ Table messages créée!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur lors de la création de la table: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "✅ Table messages existe déjà";
+            }
+
+            // Step 2: Verify
+            $output_messages[] = "✔️  Étape 2: Vérification finale...";
+
+            if (Schema::hasTable('messages')) {
+                $msgCount = DB::table('messages')->count();
+                $output_messages[] = "✅ Table messages existe avec $msgCount enregistrements";
+                $success = true;
+            } else {
+                $error_messages[] = "❌ La table messages n'existe pas";
+            }
+
+            $output_messages[] = "✨ Déploiement Messages terminé!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }
