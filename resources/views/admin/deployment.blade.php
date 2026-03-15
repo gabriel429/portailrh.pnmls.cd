@@ -76,6 +76,35 @@
             </form>
         </div>
     </div>
+
+    {{-- Module Institutions --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-building text-info me-2"></i>
+                Déploiement Module Institutions
+            </h5>
+
+            <p class="text-muted mb-3">
+                Crée les tables institutions (11 catégories + ~70 institutions)
+            </p>
+
+            @if(session('success') && request()->get('section') === 'institutions')
+                <div class="alert alert-success alert-dismissible fade show mb-3">
+                    <i class="fas fa-check-circle me-2"></i>
+                    <strong>Succès!</strong> Les institutions sont maintenant déployées!
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            <form action="{{ route('admin.deployment.deploy-institutions') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-info text-white">
+                    <i class="fas fa-play me-2"></i> Lancer Institutions
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -89,6 +118,7 @@
             <div class="small text-muted">
                 <p><strong>Module Organe:</strong> Crée la table organes et insère les données de base (Secrétariat Exécutif National, Provincial, Local)</p>
                 <p><strong>Système Utilisateurs:</strong> Ajoute les relations entre utilisateurs et agents, et entre utilisateurs et rôles</p>
+                <p><strong>Module Institutions:</strong> Crée les tables institution_categories et institutions avec les 11 catégories (Institutions politiques, Ministères, etc.) et ~70 institutions individuelles</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

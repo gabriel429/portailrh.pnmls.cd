@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use App\Models\InstitutionCategorie;
+use App\Models\Institution;
 
 class DeploymentController extends Controller
 {
@@ -196,6 +198,166 @@ class DeploymentController extends Controller
             }
 
             $output_messages[] = "✨ Déploiement Utilisateurs terminé!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
+
+    /**
+     * Execute Institutions deployment (migrations + seeding)
+     */
+    public function deployInstitutions()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "🚀 Début du déploiement du module Institutions...";
+
+            // Step 1: Create institution_categories table
+            $output_messages[] = "📦 Étape 1: Vérification de la table institution_categories...";
+
+            if (!Schema::hasTable('institution_categories')) {
+                $output_messages[] = "   Table non trouvée, création en cours...";
+
+                try {
+                    Schema::create('institution_categories', function ($table) {
+                        $table->id();
+                        $table->string('code')->unique();
+                        $table->string('nom');
+                        $table->tinyInteger('ordre')->default(1);
+                        $table->text('description')->nullable();
+                        $table->timestamps();
+                        $table->index('ordre');
+                    });
+
+                    $output_messages[] = "✅ Table institution_categories créée!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur création institution_categories: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "✅ Table institution_categories existe déjà";
+            }
+
+            // Step 2: Create institutions table
+            $output_messages[] = "📦 Étape 2: Vérification de la table institutions...";
+
+            if (!Schema::hasTable('institutions')) {
+                $output_messages[] = "   Table non trouvée, création en cours...";
+
+                try {
+                    Schema::create('institutions', function ($table) {
+                        $table->id();
+                        $table->string('code')->unique();
+                        $table->string('nom');
+                        $table->foreignId('institution_categorie_id')
+                            ->constrained('institution_categories')
+                            ->onDelete('cascade');
+                        $table->tinyInteger('ordre')->default(1);
+                        $table->text('description')->nullable();
+                        $table->boolean('actif')->default(true);
+                        $table->timestamps();
+                        $table->index('institution_categorie_id');
+                        $table->index('actif');
+                        $table->index('ordre');
+                    });
+
+                    $output_messages[] = "✅ Table institutions créée!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur création institutions: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "✅ Table institutions existe déjà";
+            }
+
+            // Step 3: Add institution_id column to agents table
+            $output_messages[] = "📦 Étape 3: Vérification de la colonne institution_id dans agents...";
+
+            if (Schema::hasTable('agents')) {
+                if (!Schema::hasColumn('agents', 'institution_id')) {
+                    $output_messages[] = "   Colonne non trouvée, création en cours...";
+
+                    try {
+                        Schema::table('agents', function ($table) {
+                            $table->foreignId('institution_id')
+                                ->nullable()
+                                ->constrained('institutions')
+                                ->onDelete('set null')
+                                ->after('province_id');
+                        });
+
+                        $output_messages[] = "✅ Colonne institution_id ajoutée!";
+                    } catch (\Exception $e) {
+                        $error_messages[] = "❌ Erreur ajout institution_id: " . $e->getMessage();
+                        return redirect()->route('admin.deployment.index')
+                            ->with('error_messages', $error_messages)
+                            ->with('output_messages', $output_messages);
+                    }
+                } else {
+                    $output_messages[] = "✅ Colonne institution_id existe déjà";
+                }
+            } else {
+                $error_messages[] = "❌ La table agents n'existe pas";
+                return redirect()->route('admin.deployment.index')
+                    ->with('error_messages', $error_messages)
+                    ->with('output_messages', $output_messages);
+            }
+
+            // Step 4: Seed institutions data
+            $output_messages[] = "🌱 Étape 4: Insertion des données (11 catégories + ~70 institutions)...";
+
+            $existingCatCount = InstitutionCategorie::count();
+            if ($existingCatCount === 0) {
+                $output_messages[] = "   Données non trouvées, création en cours...";
+
+                try {
+                    \Artisan::call('db:seed', ['--class' => 'InstitutionSeeder']);
+                    $output_messages[] = "✅ Données insérées avec succès!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "❌ Erreur lors du seeding: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "✅ Les institutions existent déjà ($existingCatCount catégories)";
+            }
+
+            // Step 5: Verify
+            $output_messages[] = "✔️  Étape 5: Vérification finale...";
+
+            if (Schema::hasTable('institution_categories') && Schema::hasTable('institutions')) {
+                $catCount = InstitutionCategorie::count();
+                $instCount = Institution::count();
+                $output_messages[] = "✅ Tables existent avec $catCount catégories et $instCount institutions";
+
+                if ($catCount === 11 && $instCount > 60) {
+                    $output_messages[] = "✅ Toutes les données présentes!";
+                    $success = true;
+                } elseif ($catCount > 0 && $instCount > 0) {
+                    $output_messages[] = "⚠️  Attention: Trouvé $catCount catégories et $instCount institutions";
+                    $success = true; // Partial success
+                } else {
+                    $error_messages[] = "⚠️  Données manquantes";
+                }
+            } else {
+                $error_messages[] = "❌ Les tables n'existent pas";
+            }
+
+            $output_messages[] = "✨ Déploiement Institutions terminé!";
 
         } catch (\Exception $e) {
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();

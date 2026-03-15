@@ -79,6 +79,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/deployment', [DeploymentController::class, 'index'])->name('deployment.index');
         Route::post('/deployment/deploy-organes', [DeploymentController::class, 'deployOrganes'])->name('deployment.deploy-organes');
         Route::post('/deployment/deploy-users', [DeploymentController::class, 'deployUsers'])->name('deployment.deploy-users');
+        Route::post('/deployment/deploy-institutions', [DeploymentController::class, 'deployInstitutions'])->name('deployment.deploy-institutions');
 
         // Provinces
         Route::get('/provinces',              [ParametresController::class, 'provincesIndex'])->name('provinces.index');
