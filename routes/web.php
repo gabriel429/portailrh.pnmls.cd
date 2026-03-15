@@ -40,6 +40,9 @@ Route::middleware('auth')->group(function () {
     // Messages
     Route::get('/messages/{message}', [ProfileController::class, 'showMessage'])->name('messages.show');
 
+    // Mes absences
+    Route::get('/mes-absences', [ProfileController::class, 'mesAbsences'])->name('mes-absences');
+
     // Communiqués (vue agent)
     Route::get('/communiques/{communique}', [CommuniqueController::class, 'showPublic'])->name('communiques.show-public');
 

@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Agent;
 use App\Models\Message;
+use App\Models\Pointage;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class ProfileController extends Controller
 {
@@ -129,5 +131,36 @@ class ProfileController extends Controller
         $message->load('sender');
 
         return view('messages.show', compact('message', 'agent'));
+    }
+
+    /**
+     * Affiche la liste des jours d'absence de l'agent connecte.
+     */
+    public function mesAbsences(Request $request): View
+    {
+        $agent = auth()->user()->agent;
+        $absences = collect();
+        $totalAbsences = 0;
+
+        if ($agent && Schema::hasTable('pointages')) {
+            $query = Pointage::where('agent_id', $agent->id)
+                ->whereNull('heure_entree');
+
+            // Filtre par mois
+            if ($request->filled('mois')) {
+                $query->whereMonth('date_pointage', $request->input('mois'));
+            }
+
+            // Filtre par annee
+            $annee = $request->input('annee', now()->year);
+            $query->whereYear('date_pointage', $annee);
+
+            $totalAbsences = $query->count();
+            $absences = $query->orderByDesc('date_pointage')->paginate(20);
+        }
+
+        $annee = $request->input('annee', now()->year);
+
+        return view('absences.index', compact('agent', 'absences', 'totalAbsences', 'annee'));
     }
 }

@@ -146,7 +146,7 @@
                 <h2 class="value">{{ $approvedCount }}</h2>
                 <span class="trend trend-ok"><i class="fas fa-check-circle"></i> Historique valide</span>
             </a>
-            <a href="{{ route('profile.show', $agent) }}" class="kpi text-decoration-none" style="cursor: pointer;">
+            <a href="{{ route('mes-absences') }}" class="kpi text-decoration-none" style="cursor: pointer;">
                 <p class="label">Absences detectees</p>
                 <h2 class="value">{{ $absenceCount }}</h2>
                 <span class="trend trend-bad"><i class="fas fa-calendar-times"></i> Controle presence</span>
