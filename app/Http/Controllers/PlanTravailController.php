@@ -4,17 +4,79 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivitePlan;
 use App\Models\Agent;
+use App\Models\Affectation;
 use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class PlanTravailController extends Controller
 {
+    /**
+     * Vérifie si l'utilisateur peut gérer le PTA.
+     *
+     * - Admin : toujours autorisé
+     * - SEN   : Chef de Cellule / Chef de Section Planification
+     * - SEP   : Chef de Cellule Planification, Suivi-Évaluation et Renforcement des Capacités
+     * - SEL   : Assistant Technique
+     */
     private function canManage(): bool
     {
         $user = auth()->user();
-        return $user->hasAdminAccess() || $user->hasRole(['Directeur', 'SEP', 'SEN']);
+
+        if ($user->hasAdminAccess()) {
+            return true;
+        }
+
+        $agent = $user->agent;
+        if (!$agent) {
+            return false;
+        }
+
+        // Vérifier via l'affectation active de l'agent
+        if (Schema::hasTable('affectations') && Schema::hasTable('fonctions')) {
+            $affectationActive = Affectation::where('agent_id', $agent->id)
+                ->where('actif', true)
+                ->with('fonction')
+                ->first();
+
+            if ($affectationActive && $affectationActive->fonction) {
+                $nomFonction = mb_strtolower($affectationActive->fonction->nom);
+                $organe = $agent->organe ?? '';
+
+                // SEN : fonctions contenant "planification"
+                if (str_contains($organe, 'National') && str_contains($nomFonction, 'planification')) {
+                    return true;
+                }
+
+                // SEP : Chef de Cellule Planification, Suivi-Évaluation
+                if (str_contains($organe, 'Provincial') && str_contains($nomFonction, 'planification')) {
+                    return true;
+                }
+
+                // SEL : Assistant Technique
+                if (str_contains($organe, 'Local') && str_contains($nomFonction, 'assistant technique')) {
+                    return true;
+                }
+            }
+        }
+
+        // Fallback : vérifier le champ texte "fonction" de l'agent
+        $fonctionAgent = mb_strtolower($agent->fonction ?? '');
+        $organe = $agent->organe ?? '';
+
+        if (str_contains($organe, 'National') && str_contains($fonctionAgent, 'planification')) {
+            return true;
+        }
+        if (str_contains($organe, 'Provincial') && str_contains($fonctionAgent, 'planification')) {
+            return true;
+        }
+        if (str_contains($organe, 'Local') && str_contains($fonctionAgent, 'assistant technique')) {
+            return true;
+        }
+
+        return false;
     }
 
     private function scopeQuery($query, $agent)
