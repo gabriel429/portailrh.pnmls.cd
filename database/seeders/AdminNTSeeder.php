@@ -10,14 +10,14 @@ use Illuminate\Support\Facades\Hash;
 class AdminNTSeeder extends Seeder
 {
     /**
-     * Crée le compte par défaut du Chef de Section Nouvelle Technologie.
+     * Crée le compte par défaut de la Section Nouvelle Technologie.
      * Identifiants : admin.nt@pnmls.cd / Admin@2026
      */
     public function run(): void
     {
         $role = Role::firstOrCreate(
-            ['nom_role' => 'Chef Section Nouvelle Technologie'],
-            ['description' => 'Chef de Section Nouvelle Technologie – accès paramètres système']
+            ['nom_role' => 'Section Nouvelle Technologie'],
+            ['description' => 'Section Nouvelle Technologie – accès paramètres système']
         );
 
         Agent::updateOrCreate(
@@ -38,8 +38,8 @@ class AdminNTSeeder extends Seeder
                 'telephone'                 => '+243000000000',
                 'adresse'                   => 'Kinshasa, Gombe – Secrétariat Exécutif National',
                 'organe'                    => 'Secrétariat Exécutif National',
-                'poste_actuel'              => 'Chef de Section Nouvelle Technologie',
-                'fonction'                  => 'Chef de Section Nouvelle Technologie',
+                'poste_actuel'              => 'Section Nouvelle Technologie',
+                'fonction'                  => 'Section Nouvelle Technologie',
                 'niveau_etudes'             => 'Licence',
                 'annee_engagement_programme'=> 2024,
                 'date_embauche'             => '2024-01-01',

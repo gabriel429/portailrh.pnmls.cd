@@ -643,4 +643,79 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Rename roles in database
+     */
+    public function deployRenameRoles()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "Debut du renommage des roles...";
+
+            // Rename Chef Section RH -> Section ressources humaines
+            $updated1 = DB::table('roles')
+                ->where('nom_role', 'Chef Section RH')
+                ->update([
+                    'nom_role' => 'Section ressources humaines',
+                    'description' => 'Section ressources humaines',
+                ]);
+
+            if ($updated1 > 0) {
+                $output_messages[] = "Role 'Chef Section RH' renomme en 'Section ressources humaines'";
+            } else {
+                $exists1 = DB::table('roles')->where('nom_role', 'Section ressources humaines')->exists();
+                if ($exists1) {
+                    $output_messages[] = "Role 'Section ressources humaines' existe deja";
+                } else {
+                    $output_messages[] = "Role 'Chef Section RH' non trouve";
+                }
+            }
+
+            // Rename Chef Section Nouvelle Technologie -> Section Nouvelle Technologie
+            $updated2 = DB::table('roles')
+                ->where('nom_role', 'Chef Section Nouvelle Technologie')
+                ->update([
+                    'nom_role' => 'Section Nouvelle Technologie',
+                    'description' => 'Section Nouvelle Technologie',
+                ]);
+
+            // Also rename variant
+            $updated3 = DB::table('roles')
+                ->where('nom_role', 'Chef de Section Nouvelle Technologie')
+                ->update([
+                    'nom_role' => 'Section Nouvelle Technologie',
+                    'description' => 'Section Nouvelle Technologie',
+                ]);
+
+            if ($updated2 > 0 || $updated3 > 0) {
+                $output_messages[] = "Role 'Chef Section Nouvelle Technologie' renomme en 'Section Nouvelle Technologie'";
+            } else {
+                $exists2 = DB::table('roles')->where('nom_role', 'Section Nouvelle Technologie')->exists();
+                if ($exists2) {
+                    $output_messages[] = "Role 'Section Nouvelle Technologie' existe deja";
+                } else {
+                    $output_messages[] = "Role 'Chef Section Nouvelle Technologie' non trouve";
+                }
+            }
+
+            // Verification
+            $roles = DB::table('roles')->pluck('nom_role')->toArray();
+            $output_messages[] = "Roles actuels: " . implode(', ', $roles);
+            $success = true;
+
+            $output_messages[] = "Renommage des roles termine!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

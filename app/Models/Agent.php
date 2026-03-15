@@ -201,20 +201,23 @@ class Agent extends Authenticatable
     public function hasAdminAccess(): bool
     {
         return $this->hasRole([
+            'Section ressources humaines',
             'Chef Section RH',
             'RH National',
             'RH Provincial',
+            'Section Nouvelle Technologie',
             'Chef Section Nouvelle Technologie',
             'Chef de Section Nouvelle Technologie',
         ]);
     }
 
     /**
-     * Check if user is Chef de Section Nouvelle Technologie (admin panel access).
+     * Check if user is Section Nouvelle Technologie (admin panel access).
      */
     public function isAdminNT(): bool
     {
         return $this->hasRole([
+            'Section Nouvelle Technologie',
             'Chef Section Nouvelle Technologie',
             'Chef de Section Nouvelle Technologie',
         ]);

@@ -19,7 +19,8 @@ class AgentSeeder extends Seeder
         // Récupérer les données de référence
         $kinshasa = Province::where('code', 'KIN')->first();
         $gombe = Department::where('code', 'GOM')->first();
-        $chefRhRole = Role::where('nom_role', 'Chef Section RH')->first();
+        $chefRhRole = Role::where('nom_role', 'Section ressources humaines')->first()
+            ?? Role::where('nom_role', 'Chef Section RH')->first();
         $rhNationalRole = Role::where('nom_role', 'RH National')->first();
         $agentRole = Role::where('nom_role', 'Agent')->first();
 

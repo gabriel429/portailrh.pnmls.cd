@@ -18,12 +18,13 @@ class AdminNTMiddleware
 
         $role = strtolower(trim((string) $user->role->nom_role));
         $allowed = [
+            'section nouvelle technologie',
             'chef section nouvelle technologie',
             'chef de section nouvelle technologie',
         ];
 
         if (!in_array($role, $allowed, true)) {
-            abort(403, 'Accès réservé au Chef de Section Nouvelle Technologie.');
+            abort(403, 'Accès réservé à la Section Nouvelle Technologie.');
         }
 
         return $next($request);

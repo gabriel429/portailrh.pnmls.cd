@@ -181,6 +181,27 @@
             </form>
         </div>
     </div>
+
+    {{-- Renommage Roles --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-user-tag me-2" style="color: #20c997;"></i>
+                Renommage des Roles
+            </h5>
+
+            <p class="text-muted mb-3">
+                Renomme les roles : Chef Section RH &rarr; Section ressources humaines, Chef Section NT &rarr; Section Nouvelle Technologie
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-rename-roles') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn" style="background-color: #20c997; border-color: #20c997; color: #fff;">
+                    <i class="fas fa-play me-2"></i> Lancer Renommage
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -199,6 +220,7 @@
                 <p><strong>Module Communiques:</strong> Cree la table communiques pour les annonces officielles broadcast (SEN/SENA vers tous les agents) avec urgence, signataire et expiration</p>
                 <p><strong>Module Taches:</strong> Cree les tables taches et tache_commentaires pour la gestion des taches (Directeur assigne des taches aux agents de son departement, suivi de statut avec commentaires)</p>
                 <p><strong>Module Plan de Travail:</strong> Cree la table activite_plans pour le Plan de Travail Annuel (activites planifiees par unite organisationnelle SEN/SEP/SEL, avec progression et trimestres)</p>
+                <p><strong>Renommage Roles:</strong> Renomme les roles dans la base de donnees (Chef Section RH &rarr; Section ressources humaines, Chef Section NT &rarr; Section Nouvelle Technologie)</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

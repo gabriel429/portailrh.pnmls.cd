@@ -30,12 +30,12 @@ class RoleSeeder extends Seeder
                 'description' => 'Assistant RH au niveau national',
             ],
             [
-                'nom_role' => 'Chef Section RH',
-                'description' => 'Chef de Section RH',
+                'nom_role' => 'Section ressources humaines',
+                'description' => 'Section ressources humaines',
             ],
             [
-                'nom_role' => 'Chef Section Nouvelle Technologie',
-                'description' => 'Chef de Section Nouvelle Technologie',
+                'nom_role' => 'Section Nouvelle Technologie',
+                'description' => 'Section Nouvelle Technologie',
             ],
             [
                 'nom_role' => 'SEP',
