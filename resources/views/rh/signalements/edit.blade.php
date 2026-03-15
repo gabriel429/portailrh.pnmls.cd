@@ -45,7 +45,7 @@
                     <select class="form-select" disabled>
                         @foreach($agents as $agent)
                             <option value="{{ $agent->id }}" @selected($signalement->agent_id == $agent->id)>
-                                {{ $agent->matricule_pnmls }} - {{ $agent->prenom }} {{ $agent->nom }}
+                                ({{ $agent->id }}) {{ $agent->prenom }} {{ $agent->nom }}
                             </option>
                         @endforeach
                     </select>

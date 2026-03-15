@@ -34,7 +34,7 @@
                             <p class="mb-0">
                                 <strong>{{ $request->agent->prenom }} {{ $request->agent->nom }}</strong>
                                 <br>
-                                <small class="text-muted">{{ $request->agent->matricule_pnmls }}</small>
+                                <small class="text-muted">{{ $request->agent->id }}</small>
                             </p>
                         </div>
                         <div class="col-md-6">

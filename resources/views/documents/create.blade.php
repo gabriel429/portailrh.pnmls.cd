@@ -37,7 +37,7 @@
                     @if($agent)
                         <div class="alert alert-info mb-4" role="alert">
                             <i class="fas fa-info-circle me-2"></i>
-                            <strong>Document pour :</strong> {{ $agent->prenom }} {{ $agent->nom }} ({{ $agent->matricule_pnmls }})
+                            <strong>Document pour :</strong> {{ $agent->prenom }} {{ $agent->nom }} (ID: {{ $agent->id }})
                         </div>
                     @endif
 

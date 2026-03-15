@@ -710,8 +710,8 @@
                         </div>
                     </header>
                     <dl class="profile-sheet">
-                        <dt>Matricule PNMLS</dt>
-                        <dd>{{ $agent?->matricule_pnmls ?? 'Non renseigne' }}</dd>
+                        <dt>ID Agent</dt>
+                        <dd>{{ $agent?->id ?? '-' }}</dd>
 
                         <dt>Departement</dt>
                         <dd>{{ $agent?->departement->nom ?? 'Non assigne' }}</dd>

@@ -43,7 +43,7 @@
                                 <tr>
                                     <td>
                                         <strong>{{ $signalement->agent->prenom ?? '' }} {{ $signalement->agent->nom ?? '' }}</strong><br>
-                                        <small class="text-muted">{{ $signalement->agent->matricule_pnmls ?? 'N/A' }}</small>
+                                        <small class="text-muted">{{ $signalement->agent->id }}</small>
                                     </td>
                                     <td>{{ ucfirst($signalement->type) }}</td>
                                     <td>

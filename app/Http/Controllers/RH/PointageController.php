@@ -337,7 +337,7 @@ class PointageController extends Controller
                 $rows[] = [
                     $pointage->date_pointage->format('d/m/Y'),
                     $pointage->agent->prenom . ' ' . $pointage->agent->nom,
-                    $pointage->agent->matricule_pnmls,
+                    $pointage->agent->id,
                     $pointage->heure_entree ?? '-',
                     $pointage->heure_sortie ?? '-',
                     $pointage->heures_travaillees ?? 0,
@@ -368,7 +368,7 @@ class PointageController extends Controller
         foreach ($agentStats as $stat) {
             $rows[] = [
                 $stat['agent']->prenom . ' ' . $stat['agent']->nom,
-                $stat['agent']->matricule_pnmls,
+                $stat['agent']->id,
                 $stat['working_days'],
                 $stat['recorded'],
                 $stat['present'],

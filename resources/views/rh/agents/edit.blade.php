@@ -72,10 +72,8 @@
 
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="matricule_pnmls" class="form-label">Matricule PNMLS</label>
-                            <input type="text" class="form-control" id="matricule_pnmls"
-                                value="{{ $agent->matricule_pnmls }}" disabled>
-                            <small class="text-muted">Le matricule ne peut pas être modifié</small>
+                            <label class="form-label">ID Agent</label>
+                            <p class="form-control-plaintext fw-bold">{{ $agent->id }}</p>
                         </div>
 
                         <div class="col-md-6">

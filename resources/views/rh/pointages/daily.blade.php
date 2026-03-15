@@ -46,7 +46,7 @@
                         <option value="">Tous les agents</option>
                         @foreach($agents as $agent)
                             <option value="{{ $agent->id }}" {{ $agent_id == $agent->id ? 'selected' : '' }}>
-                                {{ $agent->prenom }} {{ $agent->nom }} ({{ $agent->matricule_pnmls }})
+                                {{ $agent->prenom }} {{ $agent->nom }} (ID: {{ $agent->id }})
                             </option>
                         @endforeach
                     </select>
@@ -88,7 +88,7 @@
                                 @foreach($dayPointages as $pointage)
                                     <tr>
                                         <td><strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong></td>
-                                        <td>{{ $pointage->agent->matricule_pnmls }}</td>
+                                        <td>{{ $pointage->agent->id }}</td>
                                         <td>{{ $pointage->heure_entree ? $pointage->heure_entree : '-' }}</td>
                                         <td>{{ $pointage->heure_sortie ? $pointage->heure_sortie : '-' }}</td>
                                         <td>{{ $pointage->heures_travaillees ? $pointage->heures_travaillees . 'h' : '-' }}</td>

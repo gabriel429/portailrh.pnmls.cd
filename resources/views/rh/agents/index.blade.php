@@ -63,7 +63,7 @@
                             <table class="rh-table">
                                 <thead>
                                     <tr>
-                                        <th>Matricule</th>
+                                        <th>ID Agent</th>
                                         <th>Nom et Prenom</th>
                                         <th>Email</th>
                                         <th>Poste</th>
@@ -76,7 +76,7 @@
                                 <tbody>
                                     @foreach($organeData['agents'] as $agent)
                                         <tr class="agent-row" style="cursor: pointer;" data-agent-id="{{ $agent->id }}">
-                                            <td><strong>{{ $agent->matricule_pnmls }}</strong></td>
+                                            <td><strong>{{ $agent->id }}</strong></td>
                                             <td>{{ $agent->prenom }} {{ $agent->nom }}</td>
                                             <td>{{ $agent->email }}</td>
                                             <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function displayAgentDetails(agent) {
         document.getElementById('modalAgentName').textContent = `${agent.prenom} ${agent.nom}`;
         document.getElementById('modalAgentMatricule').innerHTML = `
-            <span class="badge bg-light text-dark">${agent.matricule_pnmls}</span>
+            <span class="badge bg-light text-dark">${agent.id}</span>
         `;
 
         document.getElementById('modalEditBtn').href = `/rh/agents/${agent.id}/edit`;

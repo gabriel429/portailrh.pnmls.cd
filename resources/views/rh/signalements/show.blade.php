@@ -64,7 +64,7 @@
                 <div class="rh-list-card p-3 mb-3">
                     <h6 class="mb-2"><i class="fas fa-user me-2"></i>Agent concerne</h6>
                     <p class="mb-1"><strong>{{ $signalement->agent->prenom ?? '' }} {{ $signalement->agent->nom ?? '' }}</strong></p>
-                    <p class="mb-1"><small class="text-muted">Matricule:</small> {{ $signalement->agent->matricule_pnmls ?? 'N/A' }}</p>
+                    <p class="mb-1"><small class="text-muted">ID:</small> {{ $signalement->agent->id }}</p>
                     <p class="mb-0"><small class="text-muted">Email:</small> {{ $signalement->agent->email ?? 'N/A' }}</p>
                 </div>
 

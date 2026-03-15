@@ -47,9 +47,9 @@
                         <p class="mb-0">{{ $agent->telephone ?? 'N/A' }}</p>
                     </div>
                     <div class="mb-3">
-                        <small class="text-muted">Matricule</small>
+                        <small class="text-muted">ID</small>
                         <p class="mb-0">
-                            <strong>{{ $agent->matricule_pnmls }}</strong>
+                            <strong>{{ $agent->id }}</strong>
                         </p>
                     </div>
                     <div class="mb-3">

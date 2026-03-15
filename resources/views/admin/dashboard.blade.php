@@ -111,7 +111,7 @@
                             </div>
                             <div>
                                 <div style="font-weight:600;font-size:.85rem;">{{ $cu->nom_complet }}</div>
-                                <div style="font-size:.72rem;color:#9ca3af;">{{ $cu->agent?->matricule_pnmls ?? '' }}</div>
+                                <div style="font-size:.72rem;color:#9ca3af;">ID: {{ $cu->agent?->id ?? '' }}</div>
                             </div>
                         </div>
                     </td>

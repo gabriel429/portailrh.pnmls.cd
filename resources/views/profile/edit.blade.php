@@ -101,8 +101,8 @@
 
                         <div class="row mt-3">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label fw-bold">Matricule</label>
-                                <input type="text" class="form-control" value="{{ $agent->matricule_pnmls }}" disabled>
+                                <label class="form-label fw-bold">ID</label>
+                                <input type="text" class="form-control" value="{{ $agent->id }}" disabled>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Poste</label>

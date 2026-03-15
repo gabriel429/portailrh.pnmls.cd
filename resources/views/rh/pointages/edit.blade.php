@@ -44,8 +44,8 @@
                     <input type="text" class="form-control" value="{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}" disabled>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label">Matricule</label>
-                    <input type="text" class="form-control" value="{{ $pointage->agent->matricule_pnmls }}" disabled>
+                    <label class="form-label">ID</label>
+                    <input type="text" class="form-control" value="{{ $pointage->agent->id }}" disabled>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Date pointage</label>

@@ -51,16 +51,6 @@
                     <div class="row g-3">
 
                         <div class="col-md-6">
-                            <label for="matricule_pnmls" class="form-label">Matricule PNMLS</label>
-                            <input type="text" class="form-control @error('matricule_pnmls') is-invalid @enderror"
-                                   id="matricule_pnmls" name="matricule_pnmls"
-                                   value="{{ old('matricule_pnmls') }}">
-                            @error('matricule_pnmls')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
                             <label for="matricule_etat" class="form-label">Matricule de l'État</label>
                             <input type="text" class="form-control @error('matricule_etat') is-invalid @enderror"
                                    id="matricule_etat" name="matricule_etat"

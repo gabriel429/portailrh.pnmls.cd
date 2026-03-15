@@ -87,7 +87,6 @@ class AgentController extends Controller
                   ->orWhere('prenom', 'like', $search)
                   ->orWhere('postnom', 'like', $search)
                   ->orWhere('email', 'like', $search)
-                  ->orWhere('matricule_pnmls', 'like', $search)
                   ->orWhere('matricule_etat', 'like', $search)
                   ->orWhere('telephone', 'like', $search)
                   ->orWhere('fonction', 'like', $search)
@@ -179,7 +178,6 @@ class AgentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'matricule_pnmls' => 'nullable|unique:agents',
             'matricule_etat' => 'nullable|unique:agents,matricule_etat',
             'provenance_matricule' => 'nullable|string|max:255',
             'nom' => 'required|string',
@@ -219,9 +217,6 @@ class AgentController extends Controller
         // Convert empty matricule values to null to avoid unique constraint issues
         if (empty($validated['matricule_etat'])) {
             $validated['matricule_etat'] = null;
-        }
-        if (empty($validated['matricule_pnmls'])) {
-            $validated['matricule_pnmls'] = null;
         }
 
         Agent::create($validated);
@@ -342,9 +337,6 @@ class AgentController extends Controller
         if (empty($validated['matricule_etat'])) {
             $validated['matricule_etat'] = null;
         }
-        if (empty($validated['matricule_pnmls'])) {
-            $validated['matricule_pnmls'] = null;
-        }
 
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
@@ -425,7 +417,6 @@ class AgentController extends Controller
         return response()->json([
             'agent' => [
                 'id' => $agent->id,
-                'matricule_pnmls' => $agent->matricule_pnmls,
                 'prenom' => $agent->prenom,
                 'nom' => $agent->nom,
                 'postnom' => $agent->postnom,
