@@ -7,6 +7,7 @@
 /** @var array $organeOptions */
 /** @var array $fonctionOptions */
 /** @var \Illuminate\Support\Collection $grades */
+/** @var \Illuminate\Support\Collection $institutionCategories */
 @endphp
 
 @section('content')
@@ -120,6 +121,26 @@
                                 id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat ?? 'N.U.') }}" placeholder="Optionnel - N.U. si vide">
                             <small class="text-muted">Laisser vide pour "N.U." (Nouvelle Unité)</small>
                             @error('matricule_etat')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="institution_id" class="form-label">Provenance (Institution d'origine)</label>
+                            <select class="form-select @error('institution_id') is-invalid @enderror"
+                                    id="institution_id" name="institution_id">
+                                <option value="">-- Sélectionner une institution --</option>
+                                @foreach ($institutionCategories as $category)
+                                    <optgroup label="{{ $category->nom }}">
+                                        @foreach ($category->institutions as $institution)
+                                            <option value="{{ $institution->id }}" @selected(old('institution_id', $agent->institution_id) == $institution->id)>
+                                                {{ $institution->nom }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            @error('institution_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
