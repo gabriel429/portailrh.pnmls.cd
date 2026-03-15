@@ -244,6 +244,27 @@
             </form>
         </div>
     </div>
+
+    {{-- Module Affectations --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-user-tie me-2" style="color: #e11d48;"></i>
+                Module Affectations
+            </h5>
+
+            <p class="text-muted mb-3">
+                Crée les tables sections, cellules, localités et affectations pour la gestion des affectations.
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-affectations') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn" style="background-color: #e11d48; color: white;">
+                    <i class="fas fa-play me-2"></i> Lancer Déploiement
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
         <div class="form-card">
             <h6 class="mb-3">
@@ -262,6 +283,7 @@
                 <p><strong>Renommage Roles:</strong> Renomme les roles dans la base de donnees (Chef Section RH &rarr; Section ressources humaines, Chef Section NT &rarr; Section Nouvelle Technologie)</p>
                 <p><strong>Domaine d'études:</strong> Ajoute la colonne domaine_etudes pour préciser le domaine d'études de chaque agent (ex: Sciences informatiques, Droit, Médecine)</p>
                 <p><strong>Départements PNMLS:</strong> Insère les départements et sections du PNMLS (DAF, DPP, DSE, DPC, DPM, DRH, DPR, Direction, Sections, Audit)</p>
+                <p><strong>Module Affectations:</strong> Crée les tables sections, cellules, localités et affectations pour gérer l'affectation des agents aux fonctions dans les structures SEN/SEP/SEL</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

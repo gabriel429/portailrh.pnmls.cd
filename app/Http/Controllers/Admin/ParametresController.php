@@ -565,6 +565,11 @@ class ParametresController extends Controller
 
     public function affectationsIndex()
     {
+        if (!Schema::hasTable('affectations')) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Le module Affectations n\'est pas encore déployé. Rendez-vous dans Admin > Déploiement pour créer les tables nécessaires.');
+        }
+
         try {
             $affectations = Affectation::with([
                 'agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite',
@@ -582,10 +587,10 @@ class ParametresController extends Controller
     {
         return [
             'agents'      => Agent::orderBy('nom')->get(),
-            'fonctions'   => Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get(),
+            'fonctions'   => Schema::hasTable('fonctions') ? Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get() : collect(),
             'departments' => Department::orderBy('nom')->get(),
-            'sections'    => Section::with('department')->orderBy('type')->orderBy('nom')->get(),
-            'cellules'    => Cellule::with('section')->orderBy('nom')->get(),
+            'sections'    => Schema::hasTable('sections') ? Section::with('department')->orderBy('type')->orderBy('nom')->get() : collect(),
+            'cellules'    => Schema::hasTable('cellules') ? Cellule::with('section')->orderBy('nom')->get() : collect(),
             'provinces'   => Province::orderBy('nom')->get(),
             'localites'   => Schema::hasTable('localites') ? Localite::with('province')->orderBy('nom')->get() : collect(),
         ];
@@ -593,6 +598,10 @@ class ParametresController extends Controller
 
     public function affectationsCreate()
     {
+        if (!Schema::hasTable('affectations') || !Schema::hasTable('fonctions')) {
+            return redirect()->route('dashboard')
+                ->with('error', 'Le module Affectations n\'est pas encore déployé. Rendez-vous dans Admin > Déploiement.');
+        }
         return view('rh.affectations.create', $this->affectationsFormData());
     }
 

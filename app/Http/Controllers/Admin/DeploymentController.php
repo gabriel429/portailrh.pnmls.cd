@@ -809,4 +809,106 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Déployer les tables sections, cellules, localites et affectations.
+     */
+    public function deployAffectations()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            // 1. Table sections
+            if (!Schema::hasTable('sections')) {
+                $output_messages[] = "Création de la table sections...";
+                Schema::create('sections', function ($table) {
+                    $table->id();
+                    $table->string('code')->unique();
+                    $table->string('nom');
+                    $table->text('description')->nullable();
+                    $table->foreignId('department_id')->nullable()->constrained()->onDelete('cascade');
+                    $table->enum('type', ['section', 'service_rattache'])
+                          ->default('section');
+                    $table->timestamps();
+                });
+                $output_messages[] = "Table sections créée.";
+            } else {
+                $output_messages[] = "Table sections existe déjà.";
+            }
+
+            // 2. Table cellules
+            if (!Schema::hasTable('cellules')) {
+                $output_messages[] = "Création de la table cellules...";
+                Schema::create('cellules', function ($table) {
+                    $table->id();
+                    $table->string('code')->unique();
+                    $table->string('nom');
+                    $table->text('description')->nullable();
+                    $table->foreignId('section_id')->constrained()->onDelete('cascade');
+                    $table->timestamps();
+                });
+                $output_messages[] = "Table cellules créée.";
+            } else {
+                $output_messages[] = "Table cellules existe déjà.";
+            }
+
+            // 3. Table localites
+            if (!Schema::hasTable('localites')) {
+                $output_messages[] = "Création de la table localites...";
+                Schema::create('localites', function ($table) {
+                    $table->id();
+                    $table->string('code')->unique();
+                    $table->string('nom');
+                    $table->enum('type', ['territoire', 'zone_de_sante', 'commune', 'ville', 'autre'])->default('territoire');
+                    $table->text('description')->nullable();
+                    $table->foreignId('province_id')->constrained()->onDelete('cascade');
+                    $table->timestamps();
+                });
+                $output_messages[] = "Table localites créée.";
+            } else {
+                $output_messages[] = "Table localites existe déjà.";
+            }
+
+            // 4. Table affectations
+            if (!Schema::hasTable('affectations')) {
+                $output_messages[] = "Création de la table affectations...";
+                Schema::create('affectations', function ($table) {
+                    $table->id();
+                    $table->foreignId('agent_id')->constrained('agents')->onDelete('cascade');
+                    $table->foreignId('fonction_id')->constrained('fonctions')->onDelete('restrict');
+                    $table->enum('niveau_administratif', ['SEN', 'SEP', 'SEL'])->default('SEN');
+                    $table->enum('niveau', [
+                        'direction', 'service_rattache', 'département',
+                        'section', 'cellule', 'province', 'local',
+                    ])->default('département');
+                    $table->foreignId('department_id')->nullable()->constrained('departments')->onDelete('cascade');
+                    $table->foreignId('section_id')->nullable()->constrained('sections')->onDelete('cascade');
+                    $table->foreignId('cellule_id')->nullable()->constrained('cellules')->onDelete('cascade');
+                    $table->foreignId('province_id')->nullable()->constrained('provinces')->onDelete('cascade');
+                    $table->foreignId('localite_id')->nullable()->constrained('localites')->onDelete('cascade');
+                    $table->date('date_debut')->nullable();
+                    $table->date('date_fin')->nullable();
+                    $table->boolean('actif')->default(true);
+                    $table->text('remarque')->nullable();
+                    $table->timestamps();
+                });
+                $output_messages[] = "Table affectations créée.";
+            } else {
+                $output_messages[] = "Table affectations existe déjà.";
+            }
+
+            $output_messages[] = "Déploiement terminé avec succès!";
+            $success = true;
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }
