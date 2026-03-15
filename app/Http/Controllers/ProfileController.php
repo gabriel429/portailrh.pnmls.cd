@@ -25,30 +25,63 @@ class ProfileController extends Controller
     /**
      * Display the user's profile.
      */
-    public function show(Agent $agent): View
+    public function show(?Agent $agent = null): View
     {
+        // If no agent passed via route, use the authenticated user's agent
+        if (!$agent || !$agent->exists) {
+            $user = auth()->user();
+            $agent = $user->agent ?? null;
+
+            if (!$agent) {
+                abort(404, 'Aucun agent lié à votre compte.');
+            }
+        }
+
         return view('profile.show', compact('agent'));
     }
 
     /**
      * Show the form for editing the profile.
      */
-    public function edit(Agent $agent): View
+    public function edit(?Agent $agent = null): View
     {
+        $user = auth()->user();
+
+        // If no agent passed, use the authenticated user's agent
+        if (!$agent || !$agent->exists) {
+            $agent = $user->agent ?? null;
+
+            if (!$agent) {
+                abort(404, 'Aucun agent lié à votre compte.');
+            }
+        }
+
         // Vérifier que l'agent édite son propre profil
-        if (auth()->user()->id !== $agent->id && !auth()->user()->hasAdminAccess()) {
+        if ($user->agent && $user->agent->id !== $agent->id && !$user->hasAdminAccess()) {
             abort(403);
         }
+
         return view('profile.edit', compact('agent'));
     }
 
     /**
      * Update the profile.
      */
-    public function update(Request $request, Agent $agent): RedirectResponse
+    public function update(Request $request, ?Agent $agent = null): RedirectResponse
     {
+        $user = auth()->user();
+
+        // If no agent passed, use the authenticated user's agent
+        if (!$agent || !$agent->exists) {
+            $agent = $user->agent ?? null;
+
+            if (!$agent) {
+                abort(404, 'Aucun agent lié à votre compte.');
+            }
+        }
+
         // Vérifier que l'agent édite son propre profil
-        if (auth()->user()->id !== $agent->id && !auth()->user()->hasAdminAccess()) {
+        if ($user->agent && $user->agent->id !== $agent->id && !$user->hasAdminAccess()) {
             abort(403);
         }
 
@@ -70,7 +103,7 @@ class ProfileController extends Controller
 
         $agent->update($validated);
 
-        return redirect()->route('profile.show', $agent)
+        return redirect()->route('profile.show')
             ->with('success', 'Profil mis à jour avec succès');
     }
 
@@ -97,7 +130,7 @@ class ProfileController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
-        return redirect()->route('profile.show', $agent)
+        return redirect()->route('profile.show')
             ->with('success', 'Mot de passe modifié avec succès');
     }
 
