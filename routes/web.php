@@ -32,9 +32,9 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     // Profil agent
     Route::get('/dashboard', [ProfileController::class, 'index'])->name('dashboard');
-    Route::get('/profile/{agent}', [ProfileController::class, 'show'])->name('profile.show');
-    Route::get('/profile/{agent}/edit', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::put('/profile/{agent}', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/profile/{agent?}', [ProfileController::class, 'show'])->name('profile.show');
+    Route::get('/profile/{agent?}/edit', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile/{agent?}', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Messages
