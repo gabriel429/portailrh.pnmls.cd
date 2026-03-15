@@ -7,7 +7,6 @@
 /** @var array $organeOptions */
 /** @var array $fonctionOptions */
 /** @var \Illuminate\Support\Collection $grades */
-/** @var \Illuminate\Support\Collection $institutionCategories */
 @endphp
 
 @section('content')
@@ -116,32 +115,11 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="matricule_etat" class="form-label">Matricule de l'État <span class="text-danger">*</span></label>
+                            <label for="matricule_etat" class="form-label">Matricule de l'État</label>
                             <input type="text" class="form-control @error('matricule_etat') is-invalid @enderror"
-                                id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat) }}" required>
+                                id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat ?? 'N.U.') }}" placeholder="Optionnel - N.U. si vide">
+                            <small class="text-muted">Laisser vide pour "N.U." (Nouvelle Unité)</small>
                             @error('matricule_etat')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="institution_id" class="form-label">Provenance (Institution d'origine)</label>
-                            <select class="form-select @error('institution_id') is-invalid @enderror"
-                                    id="institution_id" name="institution_id">
-                                <option value="">-- N.U. (Nouvelle Unité) --</option>
-                                @foreach ($institutionCategories as $cat)
-                                    <optgroup label="{{ $cat->nom }}">
-                                        @foreach ($cat->institutions as $inst)
-                                            <option value="{{ $inst->id }}"
-                                                    @if (old('institution_id', $agent->institution_id) == $inst->id) selected @endif>
-                                                {{ $inst->nom }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
-                                @endforeach
-                            </select>
-                            <small class="text-muted">Sélectionner l'institution d'origine ou laisser "N.U." si aucune</small>
-                            @error('institution_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
