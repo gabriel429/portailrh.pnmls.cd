@@ -379,7 +379,11 @@
 
 @section('js')
 <script>
+console.log('🔧 create.blade.php script loaded');
+
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('✅ DOMContentLoaded event fired');
+
     const organeSelect      = document.getElementById('organe');
     const fonctionSelect    = document.getElementById('fonction');
     const departementSelect = document.getElementById('departement_id');

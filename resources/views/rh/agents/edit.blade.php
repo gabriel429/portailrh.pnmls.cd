@@ -394,7 +394,11 @@
 
 @section('js')
 <script>
+console.log('🔧 edit.blade.php script loaded');
+
 document.addEventListener('DOMContentLoaded', function () {
+    console.log('✅ DOMContentLoaded event fired');
+
     const organeInput       = document.getElementById('organe');
     const fonctionSelect    = document.getElementById('fonction');
     const departementSelect = document.getElementById('departement_id');
