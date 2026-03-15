@@ -155,7 +155,7 @@ class AgentController extends Controller
         $validated = $request->validate([
             'matricule_pnmls' => 'required|unique:agents',
             'matricule_etat' => 'required|unique:agents,matricule_etat',
-            'provenance_matricule' => 'required|string|max:255',
+            'provenance_matricule' => 'nullable|string|max:255',
             'nom' => 'required|string',
             'postnom' => 'required|string',
             'prenom' => 'required|string',
@@ -233,7 +233,7 @@ class AgentController extends Controller
         $validated = $request->validate([
             'matricule_pnmls' => 'required|unique:agents,matricule_pnmls,' . $agent->id,
             'matricule_etat' => 'required|unique:agents,matricule_etat,' . $agent->id,
-            'provenance_matricule' => 'required|string|max:255',
+            'provenance_matricule' => 'nullable|string|max:255',
             'nom' => 'required|string',
             'postnom' => 'required|string',
             'prenom' => 'required|string',
