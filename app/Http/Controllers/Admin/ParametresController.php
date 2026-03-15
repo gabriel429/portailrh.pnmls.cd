@@ -565,12 +565,16 @@ class ParametresController extends Controller
 
     public function affectationsIndex()
     {
-        $affectations = Affectation::with([
-            'agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite',
-        ])
-        ->orderBy('niveau_administratif')
-        ->orderBy('niveau')
-        ->paginate(25);
+        try {
+            $affectations = Affectation::with([
+                'agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite',
+            ])
+            ->orderBy('niveau_administratif')
+            ->orderBy('niveau')
+            ->paginate(25);
+        } catch (\Exception $e) {
+            $affectations = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
+        }
         return view('rh.affectations.index', compact('affectations'));
     }
 
@@ -583,7 +587,7 @@ class ParametresController extends Controller
             'sections'    => Section::with('department')->orderBy('type')->orderBy('nom')->get(),
             'cellules'    => Cellule::with('section')->orderBy('nom')->get(),
             'provinces'   => Province::orderBy('nom')->get(),
-            'localites'   => Localite::with('province')->orderBy('nom')->get(),
+            'localites'   => Schema::hasTable('localites') ? Localite::with('province')->orderBy('nom')->get() : collect(),
         ];
     }
 
@@ -651,7 +655,12 @@ class ParametresController extends Controller
             }
         }
 
-        Affectation::create($validated);
+        try {
+            Affectation::create($validated);
+        } catch (\Exception $e) {
+            return back()->withInput()
+                ->with('error', 'Erreur lors de la création : ' . $e->getMessage());
+        }
 
         return redirect()->route('rh.affectations.index')
             ->with('success', 'Affectation créée avec succès.');

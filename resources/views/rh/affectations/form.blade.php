@@ -39,6 +39,10 @@
                 @csrf
                 @if(isset($affectation)) @method('PUT') @endif
 
+                {{-- Champ unique pour le niveau (sera géré par JS) --}}
+                <input type="hidden" name="niveau" id="hidden-niveau"
+                       value="{{ old('niveau', $affectation->niveau ?? '') }}">
+
                 <div class="row g-3">
 
                     {{-- Étape 1 : Niveau administratif --}}
@@ -107,7 +111,7 @@
                             <span class="badge bg-primary me-1">3</span>
                             Rattachement SEN <span class="text-danger">*</span>
                         </label>
-                        <select name="niveau" id="select-niveau-sen"
+                        <select id="select-niveau-sen"
                                 class="form-select @error('niveau') is-invalid @enderror">
                             <option value="">– Choisir le type de rattachement –</option>
                             @php
@@ -173,7 +177,6 @@
 
                     {{-- SEP --}}
                     <div class="col-12 panel-na" id="panel-SEP" style="display:none">
-                        <input type="hidden" name="niveau" value="province">
                         <label class="form-label fw-semibold">
                             <span class="badge bg-success me-1">3</span>
                             Province (SEP) <span class="text-danger">*</span>
@@ -192,7 +195,6 @@
 
                     {{-- SEL --}}
                     <div class="col-12 panel-na" id="panel-SEL" style="display:none">
-                        <input type="hidden" name="niveau" value="local">
                         <label class="form-label fw-semibold">
                             <span class="badge bg-info me-1">3</span>
                             Localité (SEL) <span class="text-danger">*</span>
@@ -255,18 +257,30 @@
 @push('scripts')
 <script>
 (function () {
-    const naRadios  = document.querySelectorAll('[name="niveau_administratif"]');
-    const naPanels  = { SEN: document.getElementById('panel-SEN'), SEP: document.getElementById('panel-SEP'), SEL: document.getElementById('panel-SEL') };
+    const naRadios     = document.querySelectorAll('[name="niveau_administratif"]');
+    const naPanels     = { SEN: document.getElementById('panel-SEN'), SEP: document.getElementById('panel-SEP'), SEL: document.getElementById('panel-SEL') };
+    const hiddenNiveau = document.getElementById('hidden-niveau');
+    const selectSEN    = document.getElementById('select-niveau-sen');
+
+    function updateNiveau() {
+        const checkedNA = document.querySelector('[name="niveau_administratif"]:checked');
+        if (!checkedNA) return;
+        if (checkedNA.value === 'SEP') {
+            hiddenNiveau.value = 'province';
+        } else if (checkedNA.value === 'SEL') {
+            hiddenNiveau.value = 'local';
+        } else if (selectSEN) {
+            hiddenNiveau.value = selectSEN.value;
+        }
+    }
 
     function showNA(val) {
         Object.entries(naPanels).forEach(([k, el]) => { if (el) el.style.display = k === val ? '' : 'none'; });
-        const selNiveauSEN = document.getElementById('select-niveau-sen');
-        if (selNiveauSEN) selNiveauSEN.required = val === 'SEN';
+        if (selectSEN) selectSEN.required = val === 'SEN';
+        updateNiveau();
     }
 
     naRadios.forEach(r => r.addEventListener('change', () => showNA(r.value)));
-
-    const selectNiveauSEN = document.getElementById('select-niveau-sen');
 
     function showSENPanel(val) {
         ['senpanel-departement','senpanel-section','senpanel-cellule'].forEach(id => {
@@ -294,17 +308,18 @@
             const secEl = document.getElementById('senpanel-section');
             if (secEl) { secEl.style.display = ''; document.getElementById('sel-section').required = true; }
         }
+        updateNiveau();
     }
 
-    if (selectNiveauSEN) {
-        selectNiveauSEN.addEventListener('change', () => showSENPanel(selectNiveauSEN.value));
+    if (selectSEN) {
+        selectSEN.addEventListener('change', () => showSENPanel(selectSEN.value));
     }
 
     const checkedNA = document.querySelector('[name="niveau_administratif"]:checked');
     if (checkedNA) {
         showNA(checkedNA.value);
-        if (checkedNA.value === 'SEN' && selectNiveauSEN) {
-            showSENPanel(selectNiveauSEN.value);
+        if (checkedNA.value === 'SEN' && selectSEN) {
+            showSENPanel(selectSEN.value);
         }
     }
 })();
