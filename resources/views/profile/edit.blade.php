@@ -8,7 +8,7 @@
         <div class="col-lg-8">
 
             <div class="d-flex align-items-center mb-4">
-                <a href="{{ route('profile.show', $agent) }}" class="btn btn-outline-secondary me-3">
+                <a href="{{ route('profile.show') }}" class="btn btn-outline-secondary me-3">
                     <i class="fas fa-arrow-left"></i>
                 </a>
                 <h3 class="mb-0">Modifier le profil</h3>
@@ -124,7 +124,7 @@
 
                 <!-- Boutons -->
                 <div class="d-flex justify-content-between">
-                    <a href="{{ route('profile.show', $agent) }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('profile.show') }}" class="btn btn-outline-secondary">
                         <i class="fas fa-times me-2"></i> Annuler
                     </a>
                     <button type="submit" class="btn btn-primary">

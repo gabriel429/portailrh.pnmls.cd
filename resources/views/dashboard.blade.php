@@ -698,7 +698,7 @@
                         <a href="{{ route('requests.create') }}" class="quick-link"><span><i class="fas fa-plane-departure"></i> Demander un conge</span><i class="fas fa-chevron-right text-muted"></i></a>
                         <a href="{{ route('documents.create') }}" class="quick-link"><span><i class="fas fa-cloud-upload-alt"></i> Televerser un document</span><i class="fas fa-chevron-right text-muted"></i></a>
                         <a href="{{ route('signalements.create') }}" class="quick-link"><span><i class="fas fa-bullhorn"></i> Faire un signalement</span><i class="fas fa-chevron-right text-muted"></i></a>
-                        <a href="{{ route('profile.show', $agent) }}" class="quick-link"><span><i class="fas fa-user-cog"></i> Mettre a jour mon profil</span><i class="fas fa-chevron-right text-muted"></i></a>
+                        <a href="{{ route('profile.show') }}" class="quick-link"><span><i class="fas fa-user-cog"></i> Mettre a jour mon profil</span><i class="fas fa-chevron-right text-muted"></i></a>
                     </div>
                 </div>
 
@@ -722,7 +722,7 @@
                         <dt>Date d'embauche</dt>
                         <dd>{{ $agent?->date_embauche?->format('d/m/Y') ?? 'Non renseignee' }}</dd>
 
-                        <a href="{{ route('profile.show', $agent) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
+                        <a href="{{ route('profile.show') }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
                     </dl>
                 </div>
             </div>

@@ -225,7 +225,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('profile.show', auth()->user()) }}">
+                        <a class="nav-link" href="{{ route('profile.show') }}">
                             <i class="fas fa-user-circle"></i> Mon Profil
                         </a>
                     </li>
@@ -275,7 +275,7 @@
                             <i class="fas fa-user"></i> {{ auth()->user()->agent?->prenom ?? auth()->user()->name }}
                         </a>
                         <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('profile.show', auth()->user()->agent) }}">Mon Profil</a></li>
+                            <li><a class="dropdown-item" href="{{ route('profile.show') }}">Mon Profil</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST">
