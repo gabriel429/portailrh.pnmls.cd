@@ -96,7 +96,7 @@ class AgentController extends Controller
                   ->orWhere('annee_engagement_programme', 'like', $search)
                   ->orWhere('poste_actuel', 'like', $search)
                   // Related fields via relationships
-                  ->orWhereHas('province', fn($q) => $q->where('nom_province', 'like', $search))
+                  ->orWhereHas('province', fn($q) => $q->where('nom', 'like', $search))
                   ->orWhereHas('departement', fn($q) => $q->where('nom_dept', 'like', $search))
                   ->orWhereHas('grade', fn($q) => $q->where('nom', 'like', $search))
                   ->orWhereHas('institution', fn($q) => $q->where('nom', 'like', $search));
