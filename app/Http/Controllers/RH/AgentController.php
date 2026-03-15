@@ -417,6 +417,7 @@ class AgentController extends Controller
         return response()->json([
             'agent' => [
                 'id' => $agent->id,
+                'id_agent' => $agent->id_agent,
                 'prenom' => $agent->prenom,
                 'nom' => $agent->nom,
                 'postnom' => $agent->postnom,

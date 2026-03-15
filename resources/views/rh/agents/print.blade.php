@@ -96,7 +96,7 @@
             </div>
             <div class="info">
                 <h3>{{ $agent->prenom }} {{ $agent->postnom ?? '' }} {{ $agent->nom }}</h3>
-                <div class="matricule">ID Agent: {{ $agent->id }}</div>
+                <div class="matricule">{{ $agent->id_agent }}</div>
                 <div class="badges">
                     @if($agent->organe)
                         <span class="badge badge-blue">{{ $agent->organe }}</span>

@@ -66,6 +66,14 @@ class Agent extends Authenticatable
         'annee_engagement_programme' => 'integer',
     ];
 
+    /**
+     * Formatted agent ID (e.g. AGT-0001)
+     */
+    public function getIdAgentAttribute(): string
+    {
+        return 'AGT-' . str_pad($this->id, 4, '0', STR_PAD_LEFT);
+    }
+
     // Relations BelongsTo
     public function role(): BelongsTo
     {

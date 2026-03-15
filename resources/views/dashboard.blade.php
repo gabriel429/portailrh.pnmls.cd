@@ -711,7 +711,7 @@
                     </header>
                     <dl class="profile-sheet">
                         <dt>ID Agent</dt>
-                        <dd>{{ $agent?->id ?? '-' }}</dd>
+                        <dd>{{ $agent?->id_agent ?? '-' }}</dd>
 
                         <dt>Departement</dt>
                         <dd>{{ $agent?->departement->nom ?? 'Non assigne' }}</dd>

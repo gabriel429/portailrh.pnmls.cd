@@ -45,7 +45,7 @@
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">ID</label>
-                    <input type="text" class="form-control" value="{{ $pointage->agent->id }}" disabled>
+                    <input type="text" class="form-control" value="{{ $pointage->agent->id_agent }}" disabled>
                 </div>
                 <div class="col-md-6">
                     <label class="form-label">Date pointage</label>

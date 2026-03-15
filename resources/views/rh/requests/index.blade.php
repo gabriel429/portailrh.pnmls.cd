@@ -98,7 +98,7 @@
                                 <tr>
                                     <td>
                                         <strong>{{ $request->agent->prenom }} {{ $request->agent->nom }}</strong><br>
-                                        <small class="text-muted">{{ $request->agent->id }}</small>
+                                        <small class="text-muted">{{ $request->agent->id_agent }}</small>
                                     </td>
                                     <td>
                                         <span class="rh-pill st-mid">{{ ucfirst($request->type) }}</span>

@@ -85,7 +85,7 @@
                             @foreach($agentStats as $stat)
                                 <tr>
                                     <td><strong>{{ $stat['agent']->prenom }} {{ $stat['agent']->nom }}</strong></td>
-                                    <td>{{ $stat['agent']->id }}</td>
+                                    <td>{{ $stat['agent']->id_agent }}</td>
                                     <td>{{ $stat['working_days'] }}</td>
                                     <td>{{ $stat['recorded'] }}</td>
                                     <td><span class="status-chip st-ok">{{ $stat['present'] }}</span></td>

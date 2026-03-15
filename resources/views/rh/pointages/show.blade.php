@@ -60,7 +60,7 @@
                 <div class="rh-list-card p-3 mb-3">
                     <h6 class="mb-2"><i class="fas fa-user me-2"></i>Agent</h6>
                     <p class="mb-1"><strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong></p>
-                    <p class="mb-1"><small class="text-muted">ID:</small> {{ $pointage->agent->id }}</p>
+                    <p class="mb-1"><small class="text-muted">ID:</small> {{ $pointage->agent->id_agent }}</p>
                     <p class="mb-0"><small class="text-muted">Email:</small> {{ $pointage->agent->email }}</p>
                 </div>
 

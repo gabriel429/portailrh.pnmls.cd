@@ -49,7 +49,7 @@
                             @foreach($pointages as $pointage)
                                 <tr>
                                     <td><strong>{{ $pointage->agent->prenom }} {{ $pointage->agent->nom }}</strong></td>
-                                    <td>{{ $pointage->agent->id }}</td>
+                                    <td>{{ $pointage->agent->id_agent }}</td>
                                     <td>{{ $pointage->date_pointage?->format('d/m/Y') ?? 'N/A' }}</td>
                                     <td>
                                         @if($pointage->heure_entree)

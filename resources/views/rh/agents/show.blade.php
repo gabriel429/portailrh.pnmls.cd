@@ -42,7 +42,7 @@
                 <div>
                     <h2 class="mb-1">{{ $agent->prenom }} {{ $agent->nom }}</h2>
                     <div class="d-flex gap-2 align-items-center flex-wrap">
-                        <span class="badge bg-light text-dark">{{ $agent->id }}</span>
+                        <span class="badge bg-light text-dark">{{ $agent->id_agent }}</span>
                         @if($agent->organe)
                             <span class="badge bg-info">{{ $agent->organe }}</span>
                         @endif
@@ -519,7 +519,7 @@
                 <div class="card-body">
                     <div class="mb-3">
                         <small class="text-muted">ID Agent</small>
-                        <p class="mb-0 fw-bold">{{ $agent->id }}</p>
+                        <p class="mb-0 fw-bold">{{ $agent->id_agent }}</p>
                     </div>
                     <div class="mb-3">
                         <small class="text-muted">Membre depuis</small>

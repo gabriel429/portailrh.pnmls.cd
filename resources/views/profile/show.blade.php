@@ -49,7 +49,7 @@
                     <div class="mb-3">
                         <small class="text-muted">ID</small>
                         <p class="mb-0">
-                            <strong>{{ $agent->id }}</strong>
+                            <strong>{{ $agent->id_agent }}</strong>
                         </p>
                     </div>
                     <div class="mb-3">

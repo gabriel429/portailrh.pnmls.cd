@@ -55,7 +55,7 @@
                             <div class="me-3">
                                 <strong>{{ $request->agent->prenom }} {{ $request->agent->nom }}</strong>
                                 <br>
-                                <small class="text-muted">{{ $request->agent->id }}</small>
+                                <small class="text-muted">{{ $request->agent->id_agent }}</small>
                                 <br>
                                 <small class="text-muted">{{ $request->agent->poste_actuel }}</small>
                             </div>

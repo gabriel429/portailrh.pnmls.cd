@@ -73,7 +73,7 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">ID Agent</label>
-                            <p class="form-control-plaintext fw-bold">{{ $agent->id }}</p>
+                            <p class="form-control-plaintext fw-bold">{{ $agent->id_agent }}</p>
                         </div>
 
                         <div class="col-md-6">
