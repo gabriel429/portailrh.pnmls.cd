@@ -2,17 +2,29 @@
 
 @section('title', (isset($affectation) ? 'Modifier affectation' : 'Nouvelle affectation') . ' - Portail RH PNMLS')
 
+@section('css')
+<link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+@endsection
+
 @section('content')
-<div class="container-fluid py-4">
-    <div class="d-flex align-items-center mb-4">
-        <a href="{{ route('rh.affectations.index') }}" class="btn btn-outline-secondary me-3">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <h3 class="mb-0">
-            <i class="fas fa-user-tie me-2 text-primary"></i>
-            {{ isset($affectation) ? 'Modifier l\'affectation' : 'Nouvelle affectation' }}
-        </h3>
-    </div>
+<div class="rh-modern">
+    <div class="rh-list-shell">
+        <section class="rh-hero">
+            <div class="row g-2 align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="rh-title">
+                        <i class="fas fa-user-tie me-2"></i>
+                        {{ isset($affectation) ? 'Modifier l\'affectation' : 'Nouvelle affectation' }}
+                    </h1>
+                    <p class="rh-sub">{{ isset($affectation) ? 'Modifiez les détails de cette affectation.' : 'Affectez un agent à une fonction dans une structure.' }}</p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="hero-tools">
+                        <a href="{{ route('rh.affectations.index') }}" class="btn-rh main"><i class="fas fa-arrow-left me-1"></i> Retour à la liste</a>
+                    </div>
+                </div>
+            </div>
+        </section>
 
     @if(session('error'))
     <div class="alert alert-danger alert-dismissible fade show mb-3">
@@ -236,6 +248,7 @@
                 </div>
             </form>
         </div>
+    </div>
     </div>
 </div>
 
