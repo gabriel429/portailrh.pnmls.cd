@@ -182,10 +182,8 @@ class AgentController extends Controller
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat',
             'provenance_matricule' => 'nullable|string|max:255',
+            'grade_etat' => 'nullable|string|max:255',
             'nom' => 'required|string',
-            'postnom' => 'required|string',
-            'prenom' => 'required|string',
-            'email' => 'required|email|unique:agents',
             'email_prive' => 'nullable|email',
             'email_professionnel' => 'nullable|email',
             'annee_naissance' => 'required|integer|min:1950|max:2100',
@@ -305,10 +303,8 @@ class AgentController extends Controller
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat,' . $agent->id,
             'provenance_matricule' => 'nullable|string|max:255',
+            'grade_etat' => 'nullable|string|max:255',
             'nom' => 'required|string',
-            'postnom' => 'required|string',
-            'prenom' => 'required|string',
-            'email' => 'required|email|unique:agents,email,' . $agent->id,
             'email_prive' => 'nullable|email',
             'email_professionnel' => 'nullable|email',
             'annee_naissance' => 'required|integer|min:1950|max:2100',
