@@ -16,6 +16,10 @@
     $approvedCount = $agent ? $agent->requests()->where('statut', 'approuvé')->count() : 0;
     $absenceCount = $agent ? $agent->pointages()->whereNull('heure_entree')->count() : 0;
     $latestRequests = $agent ? $agent->requests()->latest()->limit(5)->get() : collect();
+
+    // Messages du DRH
+    $unreadMessages = $agent ? $agent->messages()->where('lu', false)->count() : 0;
+    $latestMessages = $agent ? $agent->messages()->with('sender')->latest()->limit(5)->get() : collect();
 @endphp
 
 <div class="rh-modern">
@@ -55,6 +59,11 @@
                 <p class="label">Absences detectees</p>
                 <h2 class="value">{{ $absenceCount }}</h2>
                 <span class="trend trend-bad"><i class="fas fa-calendar-times"></i> Controle presence</span>
+            </article>
+            <article class="kpi">
+                <p class="label">Messages non lus</p>
+                <h2 class="value">{{ $unreadMessages }}</h2>
+                <span class="trend {{ $unreadMessages > 0 ? 'trend-mid' : 'trend-ok' }}"><i class="fas fa-envelope"></i> Messagerie DRH</span>
             </article>
         </section>
 
@@ -136,6 +145,45 @@
                 </div>
             </div>
         </section>
+
+        {{-- Section Messages DRH --}}
+        @if($latestMessages->count() > 0)
+        <section class="overview" style="margin-top: 20px;">
+            <div class="panel">
+                <header class="panel-head">
+                    <div>
+                        <h3 class="panel-title"><i class="fas fa-envelope me-2 text-primary"></i>Messages de la DRH
+                            @if($unreadMessages > 0)
+                                <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">{{ $unreadMessages }} non lu{{ $unreadMessages > 1 ? 's' : '' }}</span>
+                            @endif
+                        </h3>
+                        <p class="panel-sub">Communications de la Direction des Ressources Humaines.</p>
+                    </div>
+                </header>
+                <div class="p-3">
+                    @foreach($latestMessages as $msg)
+                        <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1">
+                                        @if(!$msg->lu)
+                                            <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Nouveau</span>
+                                        @endif
+                                        {{ $msg->sujet }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-user me-1"></i>{{ $msg->sender?->name ?? 'DRH' }}
+                                        &bull; {{ $msg->created_at?->format('d/m/Y a H:i') }}
+                                    </small>
+                                </div>
+                            </div>
+                            <p class="mb-0 mt-2">{{ $msg->contenu }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+        @endif
     </div>
 </div>
 @endsection
