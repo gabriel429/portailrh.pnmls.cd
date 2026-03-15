@@ -83,7 +83,7 @@
         </section>
 
         <section class="dash-grid">
-            {{-- Colonne gauche : Activités récentes + Messages DRH --}}
+            {{-- Colonne gauche : Activités récentes + Parcours + Communiqués + Messages DRH --}}
             <div class="d-flex flex-column gap-3">
                 <div class="dash-panel">
                     <header class="panel-head">
@@ -119,91 +119,6 @@
                             <p class="mb-0">Aucune activite recente.</p>
                         </div>
                     @endif
-                </div>
-
-                {{-- Messages DRH --}}
-                <div class="dash-panel" id="messages-drh">
-                    <header class="panel-head">
-                        <div>
-                            <h3 class="panel-title"><i class="fas fa-envelope me-2 text-primary"></i>Messages DRH
-                                @if($unreadMessages > 0)
-                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">{{ $unreadMessages }} non lu{{ $unreadMessages > 1 ? 's' : '' }}</span>
-                                @endif
-                            </h3>
-                            <p class="panel-sub">Communications de la Direction RH.</p>
-                        </div>
-                    </header>
-                    <div class="p-3">
-                        @forelse($latestMessages as $msg)
-                            <a href="{{ route('messages.show', $msg) }}" class="text-decoration-none d-block">
-                            <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 class="mb-1 text-dark">
-                                            @if(!$msg->lu)
-                                                <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Nouveau</span>
-                                            @endif
-                                            {{ $msg->sujet }}
-                                        </h6>
-                                        <small class="text-muted">
-                                            <i class="fas fa-user me-1"></i>{{ $msg->sender?->name ?? 'DRH' }}
-                                            &bull; {{ $msg->created_at?->format('d/m/Y a H:i') }}
-                                        </small>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-muted mt-1"></i>
-                                </div>
-                                <p class="mb-0 mt-2 text-secondary">{{ Str::limit($msg->contenu, 100) }}</p>
-                            </div>
-                            </a>
-                        @empty
-                            <div class="text-center py-3 text-muted">
-                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                                <p class="mb-0">Aucun message.</p>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-
-            {{-- Colonne droite : Actions rapides + Profil + Communiqués SEN --}}
-            <div class="d-flex flex-column gap-3">
-                <div class="dash-panel">
-                    <header class="panel-head">
-                        <div>
-                            <h3 class="panel-title"><i class="fas fa-bolt me-2 text-warning"></i>Actions rapides</h3>
-                            <p class="panel-sub">Les operations les plus utilisees.</p>
-                        </div>
-                    </header>
-                    <div class="quick-actions">
-                        <a href="{{ route('requests.create') }}" class="quick-link"><span><i class="fas fa-plane-departure"></i> Demander un conge</span><i class="fas fa-chevron-right text-muted"></i></a>
-                        <a href="{{ route('documents.create') }}" class="quick-link"><span><i class="fas fa-cloud-upload-alt"></i> Televerser un document</span><i class="fas fa-chevron-right text-muted"></i></a>
-                        <a href="{{ route('signalements.create') }}" class="quick-link"><span><i class="fas fa-bullhorn"></i> Faire un signalement</span><i class="fas fa-chevron-right text-muted"></i></a>
-                        <a href="{{ route('profile.show', $agent) }}" class="quick-link"><span><i class="fas fa-user-cog"></i> Mettre a jour mon profil</span><i class="fas fa-chevron-right text-muted"></i></a>
-                    </div>
-                </div>
-
-                <div class="dash-panel">
-                    <header class="panel-head">
-                        <div>
-                            <h3 class="panel-title"><i class="fas fa-id-badge me-2 text-success"></i>Mon profil</h3>
-                            <p class="panel-sub">Informations administratives principales.</p>
-                        </div>
-                    </header>
-                    <dl class="profile-sheet">
-                        <dt>Matricule PNMLS</dt>
-                        <dd>{{ $agent?->matricule_pnmls ?? 'Non renseigne' }}</dd>
-
-                        <dt>Departement</dt>
-                        <dd>{{ $agent?->departement->nom ?? 'Non assigne' }}</dd>
-
-                        <dt>Province</dt>
-                        <dd>{{ $agent?->province->nom ?? 'Non assignee' }}</dd>
-
-                        <dt>Date d'embauche</dt>
-                        <dd>{{ $agent?->date_embauche?->format('d/m/Y') ?? 'Non renseignee' }}</dd>
-
-                        <a href="{{ route('profile.show', $agent) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
-                    </dl>
                 </div>
 
                 {{-- Mon parcours / Affectations --}}
@@ -303,6 +218,91 @@
                             </div>
                         @endforelse
                     </div>
+                </div>
+
+                {{-- Messages DRH --}}
+                <div class="dash-panel" id="messages-drh">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-envelope me-2 text-primary"></i>Messages DRH
+                                @if($unreadMessages > 0)
+                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">{{ $unreadMessages }} non lu{{ $unreadMessages > 1 ? 's' : '' }}</span>
+                                @endif
+                            </h3>
+                            <p class="panel-sub">Communications de la Direction RH.</p>
+                        </div>
+                    </header>
+                    <div class="p-3">
+                        @forelse($latestMessages as $msg)
+                            <a href="{{ route('messages.show', $msg) }}" class="text-decoration-none d-block">
+                            <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1 text-dark">
+                                            @if(!$msg->lu)
+                                                <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Nouveau</span>
+                                            @endif
+                                            {{ $msg->sujet }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>{{ $msg->sender?->name ?? 'DRH' }}
+                                            &bull; {{ $msg->created_at?->format('d/m/Y a H:i') }}
+                                        </small>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted mt-1"></i>
+                                </div>
+                                <p class="mb-0 mt-2 text-secondary">{{ Str::limit($msg->contenu, 100) }}</p>
+                            </div>
+                            </a>
+                        @empty
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                <p class="mb-0">Aucun message.</p>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
+            {{-- Colonne droite : Actions rapides + Profil --}}
+            <div class="d-flex flex-column gap-3">
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-bolt me-2 text-warning"></i>Actions rapides</h3>
+                            <p class="panel-sub">Les operations les plus utilisees.</p>
+                        </div>
+                    </header>
+                    <div class="quick-actions">
+                        <a href="{{ route('requests.create') }}" class="quick-link"><span><i class="fas fa-plane-departure"></i> Demander un conge</span><i class="fas fa-chevron-right text-muted"></i></a>
+                        <a href="{{ route('documents.create') }}" class="quick-link"><span><i class="fas fa-cloud-upload-alt"></i> Televerser un document</span><i class="fas fa-chevron-right text-muted"></i></a>
+                        <a href="{{ route('signalements.create') }}" class="quick-link"><span><i class="fas fa-bullhorn"></i> Faire un signalement</span><i class="fas fa-chevron-right text-muted"></i></a>
+                        <a href="{{ route('profile.show', $agent) }}" class="quick-link"><span><i class="fas fa-user-cog"></i> Mettre a jour mon profil</span><i class="fas fa-chevron-right text-muted"></i></a>
+                    </div>
+                </div>
+
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-id-badge me-2 text-success"></i>Mon profil</h3>
+                            <p class="panel-sub">Informations administratives principales.</p>
+                        </div>
+                    </header>
+                    <dl class="profile-sheet">
+                        <dt>Matricule PNMLS</dt>
+                        <dd>{{ $agent?->matricule_pnmls ?? 'Non renseigne' }}</dd>
+
+                        <dt>Departement</dt>
+                        <dd>{{ $agent?->departement->nom ?? 'Non assigne' }}</dd>
+
+                        <dt>Province</dt>
+                        <dd>{{ $agent?->province->nom ?? 'Non assignee' }}</dd>
+
+                        <dt>Date d'embauche</dt>
+                        <dd>{{ $agent?->date_embauche?->format('d/m/Y') ?? 'Non renseignee' }}</dd>
+
+                        <a href="{{ route('profile.show', $agent) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
+                    </dl>
                 </div>
             </div>
         </section>
