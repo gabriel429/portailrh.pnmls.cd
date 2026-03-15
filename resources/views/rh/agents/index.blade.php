@@ -10,7 +10,7 @@
 <div class="rh-modern">
     <div class="rh-list-shell">
         <section class="rh-hero">
-            <div class="row g-2 align-items-center">
+            <div class="row g-2 align-items-center mb-3">
                 <div class="col-lg-8">
                     <h1 class="rh-title"><i class="fas fa-users me-2"></i>Gestion des agents</h1>
                     <p class="rh-sub">Administrez les profils PNMLS, roles, statuts et informations administratives.</p>
@@ -19,6 +19,21 @@
                     <div class="hero-tools">
                         <a href="{{ route('rh.agents.create') }}" class="btn-rh main"><i class="fas fa-user-plus me-1"></i> Ajouter un agent</a>
                     </div>
+                </div>
+            </div>
+
+            {{-- Search bar --}}
+            <div class="row">
+                <div class="col-lg-12">
+                    <form action="{{ route('rh.agents.index') }}" method="GET">
+                        <div class="input-group">
+                            <input type="text" name="search" class="form-control" placeholder="Rechercher un agent... (nom, email, matricule)"
+                                   value="{{ request('search') }}">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </section>
