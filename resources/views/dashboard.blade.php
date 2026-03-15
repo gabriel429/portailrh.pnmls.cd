@@ -162,10 +162,11 @@
                 </header>
                 <div class="p-3">
                     @foreach($latestMessages as $msg)
-                        <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-3">
+                        <a href="{{ route('messages.show', $msg) }}" class="text-decoration-none d-block">
+                        <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-3" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6 class="mb-1">
+                                    <h6 class="mb-1 text-dark">
                                         @if(!$msg->lu)
                                             <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Nouveau</span>
                                         @endif
@@ -176,9 +177,11 @@
                                         &bull; {{ $msg->created_at?->format('d/m/Y a H:i') }}
                                     </small>
                                 </div>
+                                <i class="fas fa-chevron-right text-muted mt-1"></i>
                             </div>
-                            <p class="mb-0 mt-2">{{ $msg->contenu }}</p>
+                            <p class="mb-0 mt-2 text-secondary">{{ Str::limit($msg->contenu, 100) }}</p>
                         </div>
+                        </a>
                     @endforeach
                 </div>
             </div>

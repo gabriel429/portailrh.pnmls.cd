@@ -34,6 +34,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/{agent}', [ProfileController::class, 'update'])->name('profile.update');
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+    // Messages
+    Route::get('/messages/{message}', [ProfileController::class, 'showMessage'])->name('messages.show');
+
     // Documents (GED)
     Route::resource('documents', DocumentController::class);
     Route::post('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');

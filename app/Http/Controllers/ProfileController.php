@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Agent;
+use App\Models\Message;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -106,5 +107,27 @@ class ProfileController extends Controller
         return response()->json([
             'user' => auth()->user(),
         ]);
+    }
+
+    /**
+     * Show a single message and mark it as read.
+     */
+    public function showMessage(Message $message): View
+    {
+        $agent = auth()->user()->agent;
+
+        // Only the recipient agent can view the message
+        if (!$agent || $message->agent_id !== $agent->id) {
+            abort(403);
+        }
+
+        // Mark as read
+        if (!$message->lu) {
+            $message->update(['lu' => true]);
+        }
+
+        $message->load('sender');
+
+        return view('messages.show', compact('message', 'agent'));
     }
 }
