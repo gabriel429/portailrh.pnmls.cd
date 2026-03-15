@@ -43,31 +43,31 @@
         </section>
 
         <section class="kpi-grid">
-            <article class="kpi">
+            <a href="{{ route('documents.index') }}" class="kpi text-decoration-none" style="cursor: pointer;">
                 <p class="label">Documents</p>
                 <h2 class="value">{{ $agent?->documents->count() ?? 0 }}</h2>
                 <span class="trend trend-info"><i class="fas fa-folder-open"></i> Dossier personnel</span>
-            </article>
-            <article class="kpi">
+            </a>
+            <a href="{{ route('requests.index') }}" class="kpi text-decoration-none" style="cursor: pointer;">
                 <p class="label">Demandes en attente</p>
                 <h2 class="value">{{ $pendingCount }}</h2>
                 <span class="trend trend-mid"><i class="fas fa-hourglass-half"></i> Suivi en cours</span>
-            </article>
-            <article class="kpi">
+            </a>
+            <a href="{{ route('requests.index') }}" class="kpi text-decoration-none" style="cursor: pointer;">
                 <p class="label">Demandes approuvees</p>
                 <h2 class="value">{{ $approvedCount }}</h2>
                 <span class="trend trend-ok"><i class="fas fa-check-circle"></i> Historique valide</span>
-            </article>
-            <article class="kpi">
+            </a>
+            <a href="{{ route('profile.show', $agent) }}" class="kpi text-decoration-none" style="cursor: pointer;">
                 <p class="label">Absences detectees</p>
                 <h2 class="value">{{ $absenceCount }}</h2>
                 <span class="trend trend-bad"><i class="fas fa-calendar-times"></i> Controle presence</span>
-            </article>
-            <article class="kpi">
+            </a>
+            <a href="#messages-drh" class="kpi text-decoration-none" style="cursor: pointer;">
                 <p class="label">Messages non lus</p>
                 <h2 class="value">{{ $unreadMessages }}</h2>
                 <span class="trend {{ $unreadMessages > 0 ? 'trend-mid' : 'trend-ok' }}"><i class="fas fa-envelope"></i> Messagerie DRH</span>
-            </article>
+            </a>
         </section>
 
         <section class="dash-grid">
@@ -110,7 +110,7 @@
                 </div>
 
                 {{-- Messages DRH --}}
-                <div class="dash-panel">
+                <div class="dash-panel" id="messages-drh">
                     <header class="panel-head">
                         <div>
                             <h3 class="panel-title"><i class="fas fa-envelope me-2 text-primary"></i>Messages DRH
