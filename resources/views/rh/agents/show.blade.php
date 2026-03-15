@@ -156,7 +156,7 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Sexe</label>
-                                    <p class="mb-0">{{ $agent->sexe ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $agent->sexe === 'M' ? 'Masculin' : ($agent->sexe === 'F' ? 'Féminin' : ($agent->sexe ?? 'N/A')) }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Situation familiale</label>

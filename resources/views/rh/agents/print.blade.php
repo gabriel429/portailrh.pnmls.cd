@@ -133,7 +133,7 @@
                 </div>
                 <div class="data-item">
                     <div class="label">Sexe</div>
-                    <div class="value">{{ $agent->sexe ?? 'N/A' }}</div>
+                    <div class="value">{{ $agent->sexe === 'M' ? 'Masculin' : ($agent->sexe === 'F' ? 'Féminin' : ($agent->sexe ?? 'N/A')) }}</div>
                 </div>
                 <div class="data-item">
                     <div class="label">Date de naissance</div>
