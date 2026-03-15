@@ -18,11 +18,22 @@
     $latestRequests = $agent ? $agent->requests()->latest()->limit(5)->get() : collect();
 
     // Messages du DRH
-    $unreadMessages = $agent ? $agent->messages()->where('lu', false)->count() : 0;
-    $latestMessages = $agent ? $agent->messages()->with('sender')->latest()->limit(5)->get() : collect();
+    $unreadMessages = 0;
+    $latestMessages = collect();
+    try {
+        if ($agent && \Illuminate\Support\Facades\Schema::hasTable('messages')) {
+            $unreadMessages = $agent->messages()->where('lu', false)->count();
+            $latestMessages = $agent->messages()->with('sender')->latest()->limit(5)->get();
+        }
+    } catch (\Exception $e) {}
 
     // Communiqués officiels
-    $allCommuniques = \App\Models\Communique::visibles()->latest()->limit(5)->get();
+    $allCommuniques = collect();
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('communiques')) {
+            $allCommuniques = \App\Models\Communique::visibles()->latest()->limit(5)->get();
+        }
+    } catch (\Exception $e) {}
 
     // Affectations de l'agent
     $affectations = $agent ? $agent->affectations()
@@ -32,20 +43,28 @@
         ->get() : collect();
 
     // Taches assignees a l'agent
-    $tachesCount = $agent ? \App\Models\Tache::where('agent_id', $agent->id)
-        ->whereIn('statut', ['nouvelle', 'en_cours'])->count() : 0;
-    $mesTaches = $agent ? \App\Models\Tache::with('createur')
-        ->where('agent_id', $agent->id)
-        ->whereIn('statut', ['nouvelle', 'en_cours'])
-        ->latest()->limit(5)->get() : collect();
-
-    // Directeur: taches creees
-    $isDirecteur = $currentUser->hasRole('Directeur');
+    $tachesCount = 0;
+    $mesTaches = collect();
+    $isDirecteur = false;
     $tachesDirecteur = collect();
-    if ($isDirecteur && $agent) {
-        $tachesDirecteur = \App\Models\Tache::with('agent')
-            ->where('createur_id', $agent->id)
-            ->latest()->limit(5)->get();
+    try {
+        if ($agent && \Illuminate\Support\Facades\Schema::hasTable('taches')) {
+            $tachesCount = \App\Models\Tache::where('agent_id', $agent->id)
+                ->whereIn('statut', ['nouvelle', 'en_cours'])->count();
+            $mesTaches = \App\Models\Tache::with('createur')
+                ->where('agent_id', $agent->id)
+                ->whereIn('statut', ['nouvelle', 'en_cours'])
+                ->latest()->limit(5)->get();
+
+            $isDirecteur = $currentUser->hasRole('Directeur');
+            if ($isDirecteur) {
+                $tachesDirecteur = \App\Models\Tache::with('agent')
+                    ->where('createur_id', $agent->id)
+                    ->latest()->limit(5)->get();
+            }
+        }
+    } catch (\Exception $e) {
+        // Table taches pas encore deployee
     }
 @endphp
 
