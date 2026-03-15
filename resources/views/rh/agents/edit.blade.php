@@ -7,6 +7,7 @@
 /** @var array $organeOptions */
 /** @var array $fonctionOptions */
 /** @var \Illuminate\Support\Collection $grades */
+/** @var \Illuminate\Support\Collection $institutionCategories */
 @endphp
 
 @section('content')
@@ -128,6 +129,39 @@
                             <input type="text" class="form-control @error('provenance_matricule') is-invalid @enderror"
                                 id="provenance_matricule" name="provenance_matricule" value="{{ old('provenance_matricule', $agent->provenance_matricule) }}" required>
                             @error('provenance_matricule')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="institution_categorie_id" class="form-label">Catégorie d'Institution</label>
+                            <select class="form-select @error('institution_categorie_id') is-invalid @enderror"
+                                    id="institution_categorie_id" name="institution_categorie_id">
+                                <option value="">-- Sélectionner une catégorie --</option>
+                                @foreach ($institutionCategories as $cat)
+                                    <option value="{{ $cat->id }}"
+                                            @if (old('institution_categorie_id', $agent->institution?->institution_categorie_id) == $cat->id) selected @endif>
+                                        {{ $cat->nom }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('institution_categorie_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="institution_id" class="form-label">Institution</label>
+                            <select class="form-select @error('institution_id') is-invalid @enderror"
+                                    id="institution_id" name="institution_id">
+                                <option value="">-- D'abord sélectionner une catégorie --</option>
+                                @if ($agent->institution)
+                                    <option value="{{ $agent->institution->id }}" selected>
+                                        {{ $agent->institution->nom }}
+                                    </option>
+                                @endif
+                            </select>
+                            @error('institution_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -463,6 +497,27 @@ document.addEventListener('DOMContentLoaded', function () {
         departementSelect.disabled = disableDept;
         if (disableDept) departementSelect.value = '';
     };
+
+    // ══════════════════════════════ Institutions Cascadant ══════════════════════════════
+    const catSelect = document.getElementById('institution_categorie_id');
+    const instSelect = document.getElementById('institution_id');
+
+    // Données JSON: catId → institutions[]
+    const institutionData = {!! json_encode($institutionCategories->mapWithKeys(fn($cat) => [$cat->id => $cat->institutions])->toArray()) !!};
+
+    catSelect.addEventListener('change', function() {
+        const catId = this.value;
+        instSelect.innerHTML = '<option value="">-- Sélectionner une institution --</option>';
+
+        if (catId && institutionData[catId]) {
+            institutionData[catId].forEach(inst => {
+                const selected = {{ old('institution_id', $agent->institution_id ?? 0) }} === inst.id ? 'selected' : '';
+                instSelect.innerHTML += `<option value="${inst.id}" ${selected}>${inst.nom}</option>`;
+            });
+        }
+    });
+
+    // ══════════════════════════════ Fin Institutions ══════════════════════════════
 
     // Écouter les changements d'organe
     organeInput.addEventListener('change', function () {

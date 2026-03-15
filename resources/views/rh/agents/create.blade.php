@@ -81,6 +81,34 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label for="institution_categorie_id" class="form-label">Catégorie d'Institution</label>
+                            <select class="form-select @error('institution_categorie_id') is-invalid @enderror"
+                                    id="institution_categorie_id" name="institution_categorie_id">
+                                <option value="">-- Sélectionner une catégorie --</option>
+                                @foreach ($institutionCategories as $cat)
+                                    <option value="{{ $cat->id }}"
+                                            @if (old('institution_categorie_id') == $cat->id) selected @endif>
+                                        {{ $cat->nom }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('institution_categorie_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="institution_id" class="form-label">Institution</label>
+                            <select class="form-select @error('institution_id') is-invalid @enderror"
+                                    id="institution_id" name="institution_id">
+                                <option value="">-- D'abord sélectionner une catégorie --</option>
+                            </select>
+                            @error('institution_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="prenom" class="form-label">Prénom <span class="text-danger">*</span></label>
                             <input type="text" class="form-control @error('prenom') is-invalid @enderror"
                                    id="prenom" name="prenom"
@@ -444,6 +472,27 @@ document.addEventListener('DOMContentLoaded', function () {
         departementSelect.disabled = disableDept;
         if (disableDept) departementSelect.value = '';
     };
+
+    // ══════════════════════════════ Institutions Cascadant ══════════════════════════════
+    const catSelect = document.getElementById('institution_categorie_id');
+    const instSelect = document.getElementById('institution_id');
+
+    // Données JSON: catId → institutions[]
+    const institutionData = {!! json_encode($institutionCategories->mapWithKeys(fn($cat) => [$cat->id => $cat->institutions])->toArray()) !!};
+
+    catSelect.addEventListener('change', function() {
+        const catId = this.value;
+        instSelect.innerHTML = '<option value="">-- Sélectionner une institution --</option>';
+
+        if (catId && institutionData[catId]) {
+            institutionData[catId].forEach(inst => {
+                const selected = {{ old('institution_id') }} === inst.id ? 'selected' : '';
+                instSelect.innerHTML += `<option value="${inst.id}" ${selected}>${inst.nom}</option>`;
+            });
+        }
+    });
+
+    // ══════════════════════════════ Fin Institutions ══════════════════════════════
 
     // Écouter les changements d'organe
     organeSelect.addEventListener('change', function () {

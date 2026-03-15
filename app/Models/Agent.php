@@ -48,6 +48,7 @@ class Agent extends Authenticatable
         'province_id',
         'role_id',
         'grade_id',
+        'institution_id',
         'date_embauche',
         'statut',
     ];
@@ -84,6 +85,11 @@ class Agent extends Authenticatable
     public function departement(): BelongsTo
     {
         return $this->belongsTo(Department::class, 'departement_id');
+    }
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
     }
 
     // Relations HasMany

@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             RoleSeeder::class,
             PermissionSeeder::class,
             GradeSeeder::class,
+            InstitutionSeeder::class,
             AgentSeeder::class,
             AdminNTSeeder::class,
         ]);
