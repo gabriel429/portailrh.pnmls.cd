@@ -75,6 +75,7 @@
                             <label for="matricule_pnmls" class="form-label">Matricule PNMLS</label>
                             <input type="text" class="form-control" id="matricule_pnmls"
                                 value="{{ $agent->matricule_pnmls }}" disabled>
+                            <input type="hidden" name="matricule_pnmls" value="{{ $agent->matricule_pnmls }}">
                             <small class="text-muted">Le matricule ne peut pas être modifié</small>
                         </div>
 

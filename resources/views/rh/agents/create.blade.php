@@ -51,10 +51,10 @@
                     <div class="row g-3">
 
                         <div class="col-md-6">
-                            <label for="matricule_pnmls" class="form-label">Matricule PNMLS <span class="text-danger">*</span></label>
+                            <label for="matricule_pnmls" class="form-label">Matricule PNMLS</label>
                             <input type="text" class="form-control @error('matricule_pnmls') is-invalid @enderror"
                                    id="matricule_pnmls" name="matricule_pnmls"
-                                   value="{{ old('matricule_pnmls') }}" required>
+                                   value="{{ old('matricule_pnmls') }}">
                             @error('matricule_pnmls')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
