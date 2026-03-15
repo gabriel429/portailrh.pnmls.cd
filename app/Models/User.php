@@ -93,8 +93,6 @@ class User extends Authenticatable
             'Chef Section RH',
             'RH National',
             'RH Provincial',
-            'Chef Section Nouvelle Technologie',
-            'Chef de Section Nouvelle Technologie',
         ]);
     }
 

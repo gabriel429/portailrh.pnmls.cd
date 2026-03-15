@@ -245,19 +245,21 @@
                         </a>
                     </li>
 
-                    @if(auth()->user()->hasAdminAccess())
+                    @if(auth()->user()->hasAdminAccess() || auth()->user()->isAdminNT())
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                             <i class="fas fa-cog"></i> Admin
                         </a>
                         <ul class="dropdown-menu">
+                            @if(auth()->user()->hasAdminAccess())
                             <li><a class="dropdown-item" href="{{ route('rh.agents.index') }}">Gestion Agents</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.communiques.index') }}">Communiqués</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.pointages.index') }}">Pointages</a></li>
                             <li><a class="dropdown-item" href="{{ route('signalements.index') }}">Signalements</a></li>
                             <li><a class="dropdown-item" href="{{ route('rh.dashboard') }}">Tableau de Bord</a></li>
+                            @endif
                             @if(auth()->user()->isAdminNT())
-                            <li><hr class="dropdown-divider"></li>
+                            @if(auth()->user()->hasAdminAccess())<li><hr class="dropdown-divider"></li>@endif
                             <li>
                                 <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
                                     <i class="fas fa-sliders-h me-1"></i> Paramètres système

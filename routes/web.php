@@ -79,12 +79,12 @@ Route::middleware('auth')->group(function () {
     Route::put('/plan-travail/{activitePlan}/statut', [PlanTravailController::class, 'updateStatut'])->name('plan-travail.update-statut');
 
     // RH JSON API for Modal (returns agent details as JSON)
-    Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie'])->group(function () {
+    Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial'])->group(function () {
         Route::get('api/agents/{agent}', [AgentController::class, 'apiShow'])->name('api.agents.show');
     });
 
     // Routes admin/RH
-    Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie'])->prefix('rh')->name('rh.')->group(function () {
+    Route::middleware(['auth', 'role:Chef Section RH,RH National,RH Provincial'])->prefix('rh')->name('rh.')->group(function () {
         // Gestion des agents
         Route::resource('agents', AgentController::class);
         Route::post('agents/{agent}/generate-matricule', [AgentController::class, 'generateMatricule'])->name('agents.generate-matricule');
