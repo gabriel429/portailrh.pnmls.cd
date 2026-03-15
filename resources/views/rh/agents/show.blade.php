@@ -121,43 +121,44 @@
                             <h5 class="mb-0"><i class="fas fa-user me-2 text-primary"></i>Informations Personnelles</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
+                            {{-- Identité --}}
+                            <div class="row mb-2">
                                 <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">Prenom</label>
-                                    <p class="mb-0">{{ $agent->prenom }}</p>
+                                    <label class="text-muted small">Prénom</label>
+                                    <p class="mb-0 fw-semibold">{{ $agent->prenom }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Post-nom</label>
+                                    <p class="mb-0 fw-semibold">{{ $agent->postnom ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Nom</label>
-                                    <p class="mb-0">{{ $agent->nom }}</p>
+                                    <p class="mb-0 fw-semibold">{{ $agent->nom }}</p>
                                 </div>
+                            </div>
+
+                            <hr class="my-2">
+
+                            {{-- Naissance --}}
+                            <div class="row mb-2">
                                 <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">Post nom</label>
-                                    <p class="mb-0">{{ $agent->postnom ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Email</label>
-                                    <p class="mb-0"><a href="mailto:{{ $agent->email }}">{{ $agent->email }}</a></p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Telephone</label>
-                                    <p class="mb-0">{{ $agent->telephone ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">Date de Naissance</label>
+                                    <label class="text-muted small">Date de naissance</label>
                                     <p class="mb-0">{{ $agent->date_naissance?->format('d/m/Y') ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">Annee de naissance</label>
-                                    <p class="mb-0">{{ $agent->annee_naissance ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">Lieu de Naissance</label>
+                                    <label class="text-muted small">Lieu de naissance</label>
                                     <p class="mb-0">{{ $agent->lieu_naissance ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Sexe</label>
                                     <p class="mb-0">{{ $agent->sexe === 'M' ? 'Masculin' : ($agent->sexe === 'F' ? 'Féminin' : ($agent->sexe ?? 'N/A')) }}</p>
                                 </div>
+                            </div>
+
+                            <hr class="my-2">
+
+                            {{-- Famille --}}
+                            <div class="row mb-2">
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Situation familiale</label>
                                     <p class="mb-0">{{ $agent->situation_familiale ?? 'N/A' }}</p>
@@ -166,17 +167,27 @@
                                     <label class="text-muted small">Nombre d'enfants</label>
                                     <p class="mb-0">{{ $agent->nombre_enfants ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-12 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Adresse</label>
                                     <p class="mb-0">{{ $agent->adresse ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">E-mail prive</label>
-                                    <p class="mb-0">{{ $agent->email_prive ?? 'N/A' }}</p>
+                            </div>
+
+                            <hr class="my-2">
+
+                            {{-- Contact --}}
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Téléphone</label>
+                                    <p class="mb-0">{{ $agent->telephone ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">E-mail privé</label>
+                                    <p class="mb-0">{{ $agent->email_prive ? $agent->email_prive : 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
                                     <label class="text-muted small">E-mail professionnel</label>
-                                    <p class="mb-0">{{ $agent->email_professionnel ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $agent->email_professionnel ? $agent->email_professionnel : 'N/A' }}</p>
                                 </div>
                             </div>
                         </div>
@@ -188,62 +199,77 @@
                             <h5 class="mb-0"><i class="fas fa-briefcase me-2 text-primary"></i>Informations Professionnelles</h5>
                         </div>
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
+                            {{-- Poste --}}
+                            <div class="row mb-2">
+                                <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Organe</label>
-                                    <p class="mb-0">{{ $agent->organe ?? 'N/A' }}</p>
+                                    <p class="mb-0 fw-semibold">{{ $agent->organe ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
+                                <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Fonction</label>
-                                    <p class="mb-0">{{ $agent->fonction ?? 'N/A' }}</p>
+                                    <p class="mb-0 fw-semibold">{{ $agent->fonction ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Poste Actuel</label>
-                                    <p class="mb-0">{{ $agent->poste_actuel ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Date d'Embauche</label>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Date d'embauche</label>
                                     <p class="mb-0">{{ $agent->date_embauche?->format('d/m/Y') ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Matricule de l'Etat</label>
-                                    <p class="mb-0">{{ $agent->matricule_etat ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Provenance matricule</label>
-                                    <p class="mb-0">{{ $agent->provenance_matricule ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Grade de l'Etat</label>
-                                    <p class="mb-0">{{ $agent->grade_etat ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Niveau d'études</label>
-                                    <p class="mb-0">{{ $agent->niveau_etudes ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Domaine d'études</label>
-                                    <p class="mb-0">{{ $agent->domaine_etudes ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Annee d'engagement au programme</label>
-                                    <p class="mb-0">{{ $agent->annee_engagement_programme ?? 'N/A' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
+                            </div>
+
+                            <hr class="my-2">
+
+                            {{-- Localisation --}}
+                            <div class="row mb-2">
+                                <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Province</label>
                                     <p class="mb-0">{{ $agent->province?->nom ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Departement</label>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Département</label>
                                     <p class="mb-0">{{ $agent->departement?->nom ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Role</label>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Année d'engagement</label>
+                                    <p class="mb-0">{{ $agent->annee_engagement_programme ?? 'N/A' }}</p>
+                                </div>
+                            </div>
+
+                            <hr class="my-2">
+
+                            {{-- Matricule et grade --}}
+                            <div class="row mb-2">
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Matricule de l'État</label>
+                                    <p class="mb-0">{{ $agent->matricule_etat ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Provenance matricule</label>
+                                    <p class="mb-0">{{ $agent->provenance_matricule ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Grade de l'État</label>
+                                    <p class="mb-0">{{ $agent->grade_etat ?? 'N/A' }}</p>
+                                </div>
+                            </div>
+
+                            <hr class="my-2">
+
+                            {{-- Études --}}
+                            <div class="row mb-2">
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Niveau d'études</label>
+                                    <p class="mb-0">{{ $agent->niveau_etudes ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Domaine d'études</label>
+                                    <p class="mb-0">{{ $agent->domaine_etudes ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Rôle</label>
                                     <p class="mb-0">
                                         @if($agent->role)
                                             <span class="badge bg-info">{{ $agent->role->nom_role }}</span>
                                         @else
-                                            <span class="badge bg-secondary">Non assigne</span>
+                                            <span class="badge bg-secondary">Non assigné</span>
                                         @endif
                                     </p>
                                 </div>
