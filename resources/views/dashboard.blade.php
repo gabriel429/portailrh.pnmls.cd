@@ -71,42 +71,89 @@
         </section>
 
         <section class="dash-grid">
-            <div class="dash-panel">
-                <header class="panel-head">
-                    <div>
-                        <h3 class="panel-title"><i class="fas fa-wave-square me-2 text-info"></i>Activites recentes</h3>
-                        <p class="panel-sub">Dernieres evolutions de vos demandes RH.</p>
-                    </div>
-                    <a href="{{ route('requests.index') }}" class="btn btn-sm btn-outline-primary">Tout voir</a>
-                </header>
+            {{-- Colonne gauche : Activités récentes + Messages DRH --}}
+            <div class="d-flex flex-column gap-3">
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-wave-square me-2 text-info"></i>Activites recentes</h3>
+                            <p class="panel-sub">Dernieres evolutions de vos demandes RH.</p>
+                        </div>
+                        <a href="{{ route('requests.index') }}" class="btn btn-sm btn-outline-primary">Tout voir</a>
+                    </header>
 
-                @if($latestRequests->count() > 0)
-                    <div class="activity-list">
-                        @foreach($latestRequests as $request)
-                            @php
-                                $statusValue = strtolower((string) $request->statut);
-                                $statusClass = str_contains($statusValue, 'approuv')
-                                    ? 'st-ok'
-                                    : (str_contains($statusValue, 'rejet') ? 'st-bad' : 'st-mid');
-                            @endphp
-                            <div class="activity-item">
-                                <div class="activity-icon"><i class="fas fa-file-signature"></i></div>
-                                <div>
-                                    <p class="activity-title">Demande: {{ $request->type_demande ?? $request->type ?? 'N/A' }}</p>
-                                    <span class="status-chip {{ $statusClass }}">{{ ucfirst($request->statut) }}</span>
-                                    <p class="activity-time">{{ $request->created_at->format('d/m/Y a H:i') }}</p>
+                    @if($latestRequests->count() > 0)
+                        <div class="activity-list">
+                            @foreach($latestRequests as $request)
+                                @php
+                                    $statusValue = strtolower((string) $request->statut);
+                                    $statusClass = str_contains($statusValue, 'approuv')
+                                        ? 'st-ok'
+                                        : (str_contains($statusValue, 'rejet') ? 'st-bad' : 'st-mid');
+                                @endphp
+                                <div class="activity-item">
+                                    <div class="activity-icon"><i class="fas fa-file-signature"></i></div>
+                                    <div>
+                                        <p class="activity-title">Demande: {{ $request->type_demande ?? $request->type ?? 'N/A' }}</p>
+                                        <span class="status-chip {{ $statusClass }}">{{ ucfirst($request->statut) }}</span>
+                                        <p class="activity-time">{{ $request->created_at->format('d/m/Y a H:i') }}</p>
+                                    </div>
                                 </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-4 text-muted">
+                            <i class="fas fa-inbox fa-2x mb-2"></i>
+                            <p class="mb-0">Aucune activite recente.</p>
+                        </div>
+                    @endif
+                </div>
+
+                {{-- Messages DRH --}}
+                <div class="dash-panel">
+                    <header class="panel-head">
+                        <div>
+                            <h3 class="panel-title"><i class="fas fa-envelope me-2 text-primary"></i>Messages DRH
+                                @if($unreadMessages > 0)
+                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">{{ $unreadMessages }} non lu{{ $unreadMessages > 1 ? 's' : '' }}</span>
+                                @endif
+                            </h3>
+                            <p class="panel-sub">Communications de la Direction RH.</p>
+                        </div>
+                    </header>
+                    <div class="p-3">
+                        @forelse($latestMessages as $msg)
+                            <a href="{{ route('messages.show', $msg) }}" class="text-decoration-none d-block">
+                            <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <h6 class="mb-1 text-dark">
+                                            @if(!$msg->lu)
+                                                <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Nouveau</span>
+                                            @endif
+                                            {{ $msg->sujet }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-user me-1"></i>{{ $msg->sender?->name ?? 'DRH' }}
+                                            &bull; {{ $msg->created_at?->format('d/m/Y a H:i') }}
+                                        </small>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-muted mt-1"></i>
+                                </div>
+                                <p class="mb-0 mt-2 text-secondary">{{ Str::limit($msg->contenu, 100) }}</p>
                             </div>
-                        @endforeach
+                            </a>
+                        @empty
+                            <div class="text-center py-3 text-muted">
+                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                                <p class="mb-0">Aucun message.</p>
+                            </div>
+                        @endforelse
                     </div>
-                @else
-                    <div class="text-center py-4 text-muted">
-                        <i class="fas fa-inbox fa-2x mb-2"></i>
-                        <p class="mb-0">Aucune activite recente.</p>
-                    </div>
-                @endif
+                </div>
             </div>
 
+            {{-- Colonne droite : Actions rapides + Profil + Communiqués SEN --}}
             <div class="d-flex flex-column gap-3">
                 <div class="dash-panel">
                     <header class="panel-head">
@@ -146,63 +193,12 @@
                         <a href="{{ route('profile.show', $agent) }}" class="btn btn-sm btn-outline-primary w-100 mt-1">Voir mon profil complet</a>
                     </dl>
                 </div>
-            </div>
-        </section>
 
-        {{-- Section Messages DRH + Communiqués SEN côte à côte --}}
-        @if($latestMessages->count() > 0 || $allCommuniques->count() > 0)
-        <section class="row g-3" style="margin-top: 20px;">
-            {{-- Colonne Messages DRH --}}
-            <div class="col-lg-6">
-                <div class="panel h-100">
+                {{-- Communiqués SEN --}}
+                <div class="dash-panel">
                     <header class="panel-head">
                         <div>
-                            <h3 class="panel-title"><i class="fas fa-envelope me-2 text-primary"></i>Messages DRH
-                                @if($unreadMessages > 0)
-                                    <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">{{ $unreadMessages }} non lu{{ $unreadMessages > 1 ? 's' : '' }}</span>
-                                @endif
-                            </h3>
-                            <p class="panel-sub">Communications de la Direction RH.</p>
-                        </div>
-                    </header>
-                    <div class="p-3">
-                        @forelse($latestMessages as $msg)
-                            <a href="{{ route('messages.show', $msg) }}" class="text-decoration-none d-block">
-                            <div class="border-start border-3 {{ !$msg->lu ? 'border-warning bg-light' : 'border-primary' }} rounded p-3 mb-3" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
-                                <div class="d-flex justify-content-between align-items-start">
-                                    <div>
-                                        <h6 class="mb-1 text-dark">
-                                            @if(!$msg->lu)
-                                                <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Nouveau</span>
-                                            @endif
-                                            {{ $msg->sujet }}
-                                        </h6>
-                                        <small class="text-muted">
-                                            <i class="fas fa-user me-1"></i>{{ $msg->sender?->name ?? 'DRH' }}
-                                            &bull; {{ $msg->created_at?->format('d/m/Y a H:i') }}
-                                        </small>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-muted mt-1"></i>
-                                </div>
-                                <p class="mb-0 mt-2 text-secondary">{{ Str::limit($msg->contenu, 100) }}</p>
-                            </div>
-                            </a>
-                        @empty
-                            <div class="text-center py-4 text-muted">
-                                <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                                <p class="mb-0">Aucun message.</p>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-
-            {{-- Colonne Communiqués SEN --}}
-            <div class="col-lg-6">
-                <div class="panel h-100">
-                    <header class="panel-head">
-                        <div>
-                            <h3 class="panel-title"><i class="fas fa-bullhorn me-2 text-warning"></i>Communiqués officiels</h3>
+                            <h3 class="panel-title"><i class="fas fa-bullhorn me-2 text-danger"></i>Communiqués officiels</h3>
                             <p class="panel-sub">Annonces de la Direction / SEN.</p>
                         </div>
                     </header>
@@ -217,7 +213,7 @@
                                 };
                                 $bgClass = $comm->urgence === 'urgent' ? 'bg-light' : '';
                             @endphp
-                            <div class="border-start border-3 {{ $borderClass }} {{ $bgClass }} rounded p-3 mb-3" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                            <div class="border-start border-3 {{ $borderClass }} {{ $bgClass }} rounded p-3 mb-2" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <div>
                                         <h6 class="mb-1 text-dark">
@@ -239,7 +235,7 @@
                             </div>
                             </a>
                         @empty
-                            <div class="text-center py-4 text-muted">
+                            <div class="text-center py-3 text-muted">
                                 <i class="fas fa-bullhorn fa-2x mb-2 d-block"></i>
                                 <p class="mb-0">Aucun communiqué.</p>
                             </div>
@@ -248,7 +244,6 @@
                 </div>
             </div>
         </section>
-        @endif
     </div>
 </div>
 @endsection
