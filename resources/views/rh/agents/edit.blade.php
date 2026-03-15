@@ -1,7 +1,6 @@
 @extends('layouts.app')
 
 @php
-/** @var \Illuminate\Support\Collection $roles */
 /** @var \Illuminate\Support\Collection $departments */
 /** @var \Illuminate\Support\Collection $provinces */
 /** @var array $organeOptions */
@@ -354,22 +353,6 @@
                                 @endforeach
                             </select>
                             @error('departement_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="role_id" class="form-label">Rôle</label>
-                            <select class="form-select @error('role_id') is-invalid @enderror"
-                                id="role_id" name="role_id">
-                                <option value="">-- Sélectionner un rôle --</option>
-                                @foreach ($roles as $role)
-                                    <option value="{{ $role->id }}" @selected(old('role_id', $agent->role_id) == $role->id)>
-                                        {{ $role->nom_role }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('role_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

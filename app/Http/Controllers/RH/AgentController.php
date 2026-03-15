@@ -134,7 +134,6 @@ class AgentController extends Controller
      */
     public function create(): View
     {
-        $roles = Role::all();
         $departments = Department::all();
         $provinces = Province::all();
         $organeOptions = $this->getOrganeOptions();
@@ -142,7 +141,7 @@ class AgentController extends Controller
         $grades = $this->getGradeOptions();
         $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
 
-        return view('rh.agents.create', compact('roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
+        return view('rh.agents.create', compact('departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
     }
 
     /**
@@ -175,7 +174,6 @@ class AgentController extends Controller
             'poste_actuel' => 'nullable|string',
             'departement_id' => 'nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
-            'role_id' => 'nullable|exists:roles,id',
             'date_embauche' => 'nullable|date',
         ]);
 
@@ -210,7 +208,6 @@ class AgentController extends Controller
      */
     public function edit(Agent $agent): View
     {
-        $roles = Role::all();
         $departments = Department::all();
         $provinces = Province::all();
         $organeOptions = $this->getOrganeOptions();
@@ -218,7 +215,7 @@ class AgentController extends Controller
         $grades = $this->getGradeOptions();
         $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
 
-        return view('rh.agents.edit', compact('agent', 'roles', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
+        return view('rh.agents.edit', compact('agent', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
     }
 
     /**
@@ -251,7 +248,6 @@ class AgentController extends Controller
             'poste_actuel' => 'nullable|string',
             'departement_id' => 'nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
-            'role_id' => 'nullable|exists:roles,id',
             'date_embauche' => 'nullable|date',
             'statut' => 'required|in:actif,suspendu,ancien',
             'photo' => 'nullable|image|max:2048',
