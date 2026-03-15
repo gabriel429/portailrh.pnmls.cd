@@ -7,6 +7,7 @@
 /** @var array $organeOptions */
 /** @var array $fonctionOptions */
 /** @var \Illuminate\Support\Collection $grades */
+/** @var \Illuminate\Support\Collection $institutionCategories */
 @endphp
 
 @section('content')
@@ -120,6 +121,26 @@
                                 id="matricule_etat" name="matricule_etat" value="{{ old('matricule_etat', $agent->matricule_etat ?? 'N.U.') }}" placeholder="Optionnel - N.U. si vide">
                             <small class="text-muted">Laisser vide pour "N.U." (Nouvelle Unité)</small>
                             @error('matricule_etat')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6" id="provenance-wrapper" style="display: none;">
+                            <label for="institution_id" class="form-label">Provenance (Institution d'origine)</label>
+                            <select class="form-select @error('institution_id') is-invalid @enderror"
+                                    id="institution_id" name="institution_id">
+                                <option value="">-- Sélectionner une institution --</option>
+                                @foreach ($institutionCategories as $category)
+                                    <optgroup label="{{ $category->nom }}">
+                                        @foreach ($category->institutions as $institution)
+                                            <option value="{{ $institution->id }}" @selected(old('institution_id', $agent->institution_id) == $institution->id)>
+                                                {{ $institution->nom }}
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endforeach
+                            </select>
+                            @error('institution_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -379,6 +400,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const departementSelect = document.getElementById('departement_id');
     const provinceWrapper   = document.getElementById('province-wrapper');
     const provinceSelect    = document.getElementById('province_id');
+    const matriculeEtatInput = document.getElementById('matricule_etat');
+    const provenanceWrapper = document.getElementById('provenance-wrapper');
 
     // Mapping entre noms d'organe et codes de niveau administratif
     const organeToNiveauMap = {
@@ -456,11 +479,21 @@ document.addEventListener('DOMContentLoaded', function () {
         if (disableDept) departementSelect.value = '';
     };
 
+    // Fonction pour afficher/masquer le champ Provenance basé sur matricule_etat
+    const updateProvenanceVisibility = () => {
+        const hasMatriculeEtat = matriculeEtatInput.value.trim() !== '' && matriculeEtatInput.value.trim() !== 'N.U.';
+        provenanceWrapper.style.display = hasMatriculeEtat ? '' : 'none';
+    };
+
     // Écouter les changements d'organe
     organeInput.addEventListener('change', function () {
         updateFonctions(this.value);
         syncFields();
     });
+
+    // Écouter les changements de matricule_etat
+    matriculeEtatInput.addEventListener('input', updateProvenanceVisibility);
+    matriculeEtatInput.addEventListener('change', updateProvenanceVisibility);
 
     // Initialiser les fonctions au chargement
     if (organeInput.value) {
@@ -468,6 +501,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     syncFields();
+    updateProvenanceVisibility();
 });
 </script>
 @endsection
