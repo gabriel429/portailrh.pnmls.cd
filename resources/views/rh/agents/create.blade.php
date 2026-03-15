@@ -269,10 +269,25 @@
 
                         <div class="col-md-6">
                             <label for="niveau_etudes" class="form-label">Niveau d'études <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control @error('niveau_etudes') is-invalid @enderror"
-                                   id="niveau_etudes" name="niveau_etudes"
-                                   value="{{ old('niveau_etudes') }}" required>
+                            <select class="form-select @error('niveau_etudes') is-invalid @enderror"
+                                    id="niveau_etudes" name="niveau_etudes" required>
+                                <option value="">-- Sélectionner --</option>
+                                @foreach(\App\Models\Agent::NIVEAUX_ETUDES as $niveau)
+                                    <option value="{{ $niveau }}" {{ old('niveau_etudes') == $niveau ? 'selected' : '' }}>{{ $niveau }}</option>
+                                @endforeach
+                            </select>
                             @error('niveau_etudes')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="domaine_etudes" class="form-label">Domaine d'études</label>
+                            <input type="text" class="form-control @error('domaine_etudes') is-invalid @enderror"
+                                   id="domaine_etudes" name="domaine_etudes"
+                                   value="{{ old('domaine_etudes') }}"
+                                   placeholder="Ex: Sciences informatiques, Droit, Médecine...">
+                            @error('domaine_etudes')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

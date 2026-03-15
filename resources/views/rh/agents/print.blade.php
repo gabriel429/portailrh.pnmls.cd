@@ -209,8 +209,12 @@
                     <div class="value">{{ $agent->grade_etat ?? 'N.U.' }}</div>
                 </div>
                 <div class="data-item">
-                    <div class="label">Niveau d'etudes</div>
+                    <div class="label">Niveau d'études</div>
                     <div class="value">{{ $agent->niveau_etudes ?? 'N/A' }}</div>
+                </div>
+                <div class="data-item">
+                    <div class="label">Domaine d'études</div>
+                    <div class="value">{{ $agent->domaine_etudes ?? 'N/A' }}</div>
                 </div>
                 <div class="data-item">
                     <div class="label">Province</div>

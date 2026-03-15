@@ -718,4 +718,34 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Add domaine_etudes column to agents table
+     */
+    public function deployDomaineEtudes()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            if (Schema::hasColumn('agents', 'domaine_etudes')) {
+                $output_messages[] = "La colonne 'domaine_etudes' existe deja.";
+            } else {
+                Schema::table('agents', function ($table) {
+                    $table->string('domaine_etudes')->nullable()->after('niveau_etudes');
+                });
+                $output_messages[] = "Colonne 'domaine_etudes' ajoutee avec succes!";
+            }
+
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

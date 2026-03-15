@@ -218,8 +218,12 @@
                                     <p class="mb-0">{{ $agent->grade_etat ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="text-muted small">Niveau d'etudes</label>
+                                    <label class="text-muted small">Niveau d'études</label>
                                     <p class="mb-0">{{ $agent->niveau_etudes ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="text-muted small">Domaine d'études</label>
+                                    <p class="mb-0">{{ $agent->domaine_etudes ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="text-muted small">Annee d'engagement au programme</label>

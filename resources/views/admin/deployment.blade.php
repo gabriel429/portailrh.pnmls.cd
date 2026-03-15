@@ -202,6 +202,27 @@
             </form>
         </div>
     </div>
+
+    {{-- Domaine d'études --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-graduation-cap me-2" style="color: #6f42c1;"></i>
+                Domaine d'études
+            </h5>
+
+            <p class="text-muted mb-3">
+                Ajoute la colonne domaine_etudes à la table agents (complément du niveau d'études)
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-domaine-etudes') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn" style="background-color: #6f42c1; border-color: #6f42c1; color: #fff;">
+                    <i class="fas fa-play me-2"></i> Lancer Déploiement
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -221,6 +242,7 @@
                 <p><strong>Module Taches:</strong> Cree les tables taches et tache_commentaires pour la gestion des taches (Directeur assigne des taches aux agents de son departement, suivi de statut avec commentaires)</p>
                 <p><strong>Module Plan de Travail:</strong> Cree la table activite_plans pour le Plan de Travail Annuel (activites planifiees par unite organisationnelle SEN/SEP/SEL, avec progression et trimestres)</p>
                 <p><strong>Renommage Roles:</strong> Renomme les roles dans la base de donnees (Chef Section RH &rarr; Section ressources humaines, Chef Section NT &rarr; Section Nouvelle Technologie)</p>
+                <p><strong>Domaine d'études:</strong> Ajoute la colonne domaine_etudes pour préciser le domaine d'études de chaque agent (ex: Sciences informatiques, Droit, Médecine)</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

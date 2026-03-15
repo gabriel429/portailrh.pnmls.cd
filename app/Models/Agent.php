@@ -12,6 +12,27 @@ use App\Models\Grade;
 
 class Agent extends Authenticatable
 {
+    const NIVEAUX_ETUDES = [
+        'PP3',
+        'PP4',
+        'PP5',
+        'Certificat d\'Études Primaires (CEP)',
+        '1ère secondaire',
+        '2e secondaire',
+        'Brevet',
+        'D4',
+        'D5',
+        'D6',
+        'Diplôme d\'État',
+        'Graduat',
+        'Licence',
+        'Diplôme d\'Études Supérieures (DES)',
+        'Master',
+        'Doctorat (PhD)',
+        'Postdoctorat',
+        'Professeur d\'université',
+    ];
+
     const ORGANES = [
         'Secrétariat Exécutif National',
         'Secrétariat Exécutif Provincial',
@@ -43,6 +64,7 @@ class Agent extends Authenticatable
         'fonction',
         'grade_etat',
         'niveau_etudes',
+        'domaine_etudes',
         'annee_engagement_programme',
         'departement_id',
         'province_id',
