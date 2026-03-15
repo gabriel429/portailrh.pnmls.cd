@@ -1,0 +1,36 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class Message extends Model
+{
+    protected $fillable = [
+        'agent_id',
+        'sender_id',
+        'sujet',
+        'contenu',
+        'lu',
+    ];
+
+    protected $casts = [
+        'lu' => 'boolean',
+    ];
+
+    public function agent(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class);
+    }
+
+    public function sender(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'sender_id');
+    }
+
+    public function scopeNonLus($query)
+    {
+        return $query->where('lu', false);
+    }
+}

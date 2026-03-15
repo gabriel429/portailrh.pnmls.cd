@@ -225,11 +225,37 @@ class AgentController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Agent $agent): View
+    public function show(Request $request, Agent $agent): View
     {
-        $agent->load(['role', 'province', 'departement', 'documents', 'requests']);
+        $agent->load([
+            'role', 'province', 'departement', 'documents', 'requests',
+            'affectations.fonction', 'affectations.department', 'affectations.province',
+            'messages.sender',
+        ]);
 
-        return view('rh.agents.show', compact('agent'));
+        $tab = $request->query('tab', 'informations');
+
+        return view('rh.agents.show', compact('agent', 'tab'));
+    }
+
+    /**
+     * Store a message from DRH to an agent.
+     */
+    public function storeMessage(Request $request, Agent $agent): RedirectResponse
+    {
+        $validated = $request->validate([
+            'sujet' => 'required|string|max:255',
+            'contenu' => 'required|string',
+        ]);
+
+        $agent->messages()->create([
+            'sender_id' => auth()->user()->id,
+            'sujet' => $validated['sujet'],
+            'contenu' => $validated['contenu'],
+        ]);
+
+        return redirect()->route('rh.agents.show', ['agent' => $agent, 'tab' => 'messages'])
+            ->with('success', 'Message envoyé avec succès');
     }
 
     /**

@@ -129,6 +129,11 @@ class Agent extends Authenticatable
         return $this->hasMany(Affectation::class);
     }
 
+    public function messages(): HasMany
+    {
+        return $this->hasMany(Message::class);
+    }
+
     public function user(): HasMany
     {
         return $this->hasMany(User::class);
