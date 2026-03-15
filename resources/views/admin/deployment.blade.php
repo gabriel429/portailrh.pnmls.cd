@@ -223,10 +223,28 @@
             </form>
         </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-lg-12">
+    {{-- Départements PNMLS --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-building me-2" style="color: #0d6efd;"></i>
+                Départements PNMLS
+            </h5>
+
+            <p class="text-muted mb-3">
+                Insère les départements et sections du PNMLS (DAF, DRH, Direction, etc.)
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-departments') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-play me-2"></i> Lancer Déploiement
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
         <div class="form-card">
             <h6 class="mb-3">
                 <i class="fas fa-info-circle me-2"></i>
@@ -243,6 +261,7 @@
                 <p><strong>Module Plan de Travail:</strong> Cree la table activite_plans pour le Plan de Travail Annuel (activites planifiees par unite organisationnelle SEN/SEP/SEL, avec progression et trimestres)</p>
                 <p><strong>Renommage Roles:</strong> Renomme les roles dans la base de donnees (Chef Section RH &rarr; Section ressources humaines, Chef Section NT &rarr; Section Nouvelle Technologie)</p>
                 <p><strong>Domaine d'études:</strong> Ajoute la colonne domaine_etudes pour préciser le domaine d'études de chaque agent (ex: Sciences informatiques, Droit, Médecine)</p>
+                <p><strong>Départements PNMLS:</strong> Insère les départements et sections du PNMLS (DAF, DPP, DSE, DPC, DPM, DRH, DPR, Direction, Sections, Audit)</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

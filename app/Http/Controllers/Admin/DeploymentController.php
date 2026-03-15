@@ -748,4 +748,65 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Seed departments table with PNMLS departments
+     */
+    public function deployDepartments()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $departments = [
+                ['code' => 'DAF', 'nom' => 'Département Administration et Finances'],
+                ['code' => 'DPP', 'nom' => 'Département Planification et Programmation'],
+                ['code' => 'DSE', 'nom' => 'Département Suivi et Évaluation'],
+                ['code' => 'DPC', 'nom' => 'Département Prévention et Communication'],
+                ['code' => 'DPM', 'nom' => 'Département Prise en charge Médicale'],
+                ['code' => 'DRH', 'nom' => 'Département Ressources Humaines'],
+                ['code' => 'DPR', 'nom' => 'Département Passation des Marchés'],
+                ['code' => 'DIR', 'nom' => 'Direction'],
+                ['code' => 'SJU', 'nom' => 'Section Juridique'],
+                ['code' => 'SCO', 'nom' => 'Section Communication'],
+                ['code' => 'SNT', 'nom' => 'Section Nouvelle Technologie'],
+                ['code' => 'SRH', 'nom' => 'Section Ressources Humaines'],
+                ['code' => 'AUD', 'nom' => 'Audit Interne'],
+            ];
+
+            $created = 0;
+            $existing = 0;
+
+            foreach ($departments as $dept) {
+                $exists = DB::table('departments')->where('code', $dept['code'])->exists();
+                if (!$exists) {
+                    DB::table('departments')->insert([
+                        'code' => $dept['code'],
+                        'nom' => $dept['nom'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                    $created++;
+                    $output_messages[] = "Créé: {$dept['nom']} ({$dept['code']})";
+                } else {
+                    $existing++;
+                }
+            }
+
+            if ($existing > 0) {
+                $output_messages[] = "{$existing} département(s) existaient déjà.";
+            }
+            $output_messages[] = "{$created} département(s) créé(s). Total: " . DB::table('departments')->count();
+            $success = true;
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }
