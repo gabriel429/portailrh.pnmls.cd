@@ -482,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Fonction pour afficher/masquer le champ Provenance basé sur matricule_etat
     const updateProvenanceVisibility = () => {
         const hasMatriculeEtat = matriculeEtatInput.value.trim() !== '' && matriculeEtatInput.value.trim() !== 'N.U.';
-        provenanceWrapper.style.display = hasMatriculeEtat ? '' : 'none';
+        provenanceWrapper.style.display = hasMatriculeEtat ? 'block' : 'none';
     };
 
     // Écouter les changements d'organe
