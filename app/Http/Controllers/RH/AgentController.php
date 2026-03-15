@@ -300,7 +300,6 @@ class AgentController extends Controller
     public function update(Request $request, Agent $agent): RedirectResponse
     {
         $validated = $request->validate([
-            'matricule_pnmls' => 'nullable|unique:agents,matricule_pnmls,' . $agent->id,
             'matricule_etat' => 'nullable|unique:agents,matricule_etat,' . $agent->id,
             'provenance_matricule' => 'nullable|string|max:255',
             'nom' => 'required|string',
