@@ -27,7 +27,7 @@
                 <div class="col-lg-12">
                     <form action="{{ route('rh.agents.index') }}" method="GET">
                         <div class="input-group">
-                            <input type="text" name="search" class="form-control" placeholder="Rechercher un agent... (nom, email, matricule)"
+                            <input type="text" name="search" class="form-control" placeholder="Rechercher... (nom, email, matricule, province, grade, fonction, niveau etude)"
                                    value="{{ request('search') }}">
                             <button class="btn btn-primary" type="submit">
                                 <i class="fas fa-search"></i>

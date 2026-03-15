@@ -76,19 +76,30 @@ class AgentController extends Controller
         $search = $request->query('search');
 
         // Get all agents with relations
-        $query = Agent::with(['role', 'province', 'departement']);
+        $query = Agent::with(['role', 'province', 'departement', 'grade', 'institution']);
 
         // Apply search filter if provided
         if ($search) {
             $search = '%' . $search . '%';
             $query->where(function($q) use ($search) {
+                // Direct fields on agents table
                 $q->where('nom', 'like', $search)
                   ->orWhere('prenom', 'like', $search)
                   ->orWhere('postnom', 'like', $search)
                   ->orWhere('email', 'like', $search)
                   ->orWhere('matricule_pnmls', 'like', $search)
                   ->orWhere('matricule_etat', 'like', $search)
-                  ->orWhere('telephone', 'like', $search);
+                  ->orWhere('telephone', 'like', $search)
+                  ->orWhere('fonction', 'like', $search)
+                  ->orWhere('grade_etat', 'like', $search)
+                  ->orWhere('niveau_etudes', 'like', $search)
+                  ->orWhere('annee_engagement_programme', 'like', $search)
+                  ->orWhere('poste_actuel', 'like', $search)
+                  // Related fields via relationships
+                  ->orWhereHas('province', fn($q) => $q->where('nom_province', 'like', $search))
+                  ->orWhereHas('departement', fn($q) => $q->where('nom_dept', 'like', $search))
+                  ->orWhereHas('grade', fn($q) => $q->where('nom', 'like', $search))
+                  ->orWhereHas('institution', fn($q) => $q->where('nom', 'like', $search));
             });
         }
 
