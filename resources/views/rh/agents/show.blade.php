@@ -243,11 +243,11 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Provenance matricule</label>
-                                    <p class="mb-0">{{ $agent->provenance_matricule ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $agent->institution?->nom ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Grade de l'État</label>
-                                    <p class="mb-0">{{ $agent->grade_etat ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $agent->grade?->nom ?? 'N/A' }}</p>
                                 </div>
                             </div>
 

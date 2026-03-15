@@ -202,11 +202,11 @@
                 </div>
                 <div class="data-item">
                     <div class="label">Provenance matricule</div>
-                    <div class="value">{{ $agent->provenance_matricule ?? 'N/A' }}</div>
+                    <div class="value">{{ $agent->institution?->nom ?? 'N/A' }}</div>
                 </div>
                 <div class="data-item">
                     <div class="label">Grade de l'Etat</div>
-                    <div class="value">{{ $agent->grade_etat ?? 'N.U.' }}</div>
+                    <div class="value">{{ $agent->grade?->nom ?? 'N.U.' }}</div>
                 </div>
                 <div class="data-item">
                     <div class="label">Niveau d'études</div>

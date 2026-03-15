@@ -123,25 +123,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="provenance_matricule" class="form-label">Provenance matricule</label>
-                            <input type="text" class="form-control @error('provenance_matricule') is-invalid @enderror"
-                                id="provenance_matricule" name="provenance_matricule" value="{{ old('provenance_matricule', $agent->provenance_matricule) }}" placeholder="Ex: Fonction Publique, PNMLS...">
-                            @error('provenance_matricule')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="grade_etat" class="form-label">Grade de l'État</label>
-                            <input type="text" class="form-control @error('grade_etat') is-invalid @enderror"
-                                id="grade_etat" name="grade_etat" value="{{ old('grade_etat', $agent->grade_etat) }}" placeholder="Ex: Attaché de bureau, Directeur...">
-                            @error('grade_etat')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="institution_id" class="form-label">Provenance (Institution d'origine)</label>
+                            <label for="institution_id" class="form-label">Provenance matricule (Institution d'origine)</label>
                             <select class="form-select @error('institution_id') is-invalid @enderror"
                                     id="institution_id" name="institution_id">
                                 <option value="">-- Sélectionner une institution --</option>
@@ -156,6 +138,22 @@
                                 @endforeach
                             </select>
                             @error('institution_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="grade_id" class="form-label">Grade de l'État</label>
+                            <select class="form-select @error('grade_id') is-invalid @enderror"
+                                    id="grade_id" name="grade_id">
+                                <option value="">-- Sélectionner un grade --</option>
+                                @foreach ($grades as $grade)
+                                    <option value="{{ $grade->id }}" @selected(old('grade_id', $agent->grade_id) == $grade->id)>
+                                        {{ $grade->nom }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('grade_id')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
