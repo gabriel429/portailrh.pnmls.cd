@@ -431,4 +431,63 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Deploy Communiques module
+     */
+    public function deployCommuniques()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "Debut du deploiement du module Communiques...";
+
+            if (!Schema::hasTable('communiques')) {
+                $output_messages[] = "Table non trouvee, creation en cours...";
+
+                try {
+                    Schema::create('communiques', function ($table) {
+                        $table->id();
+                        $table->foreignId('auteur_id')->constrained('users')->onDelete('cascade');
+                        $table->string('titre');
+                        $table->text('contenu');
+                        $table->enum('urgence', ['normal', 'important', 'urgent'])->default('normal');
+                        $table->string('signataire')->nullable();
+                        $table->date('date_expiration')->nullable();
+                        $table->boolean('actif')->default(true);
+                        $table->timestamps();
+                    });
+
+                    $output_messages[] = "Table communiques creee!";
+                } catch (\Exception $e) {
+                    $error_messages[] = "Erreur lors de la creation de la table: " . $e->getMessage();
+                    return redirect()->route('admin.deployment.index')
+                        ->with('error_messages', $error_messages)
+                        ->with('output_messages', $output_messages);
+                }
+            } else {
+                $output_messages[] = "Table communiques existe deja";
+            }
+
+            if (Schema::hasTable('communiques')) {
+                $count = DB::table('communiques')->count();
+                $output_messages[] = "Table communiques existe avec $count enregistrements";
+                $success = true;
+            } else {
+                $error_messages[] = "La table communiques n'existe pas";
+            }
+
+            $output_messages[] = "Deploiement Communiques termine!";
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

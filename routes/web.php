@@ -8,6 +8,7 @@ use App\Http\Controllers\RH\RequestController;
 use App\Http\Controllers\RH\SignalementController;
 use App\Http\Controllers\RH\AgentController;
 use App\Http\Controllers\RH\PointageController;
+use App\Http\Controllers\RH\CommuniqueController;
 
 // Page d'accueil
 Route::get('/', function () {
@@ -37,6 +38,9 @@ Route::middleware('auth')->group(function () {
     // Messages
     Route::get('/messages/{message}', [ProfileController::class, 'showMessage'])->name('messages.show');
 
+    // Communiqués (vue agent)
+    Route::get('/communiques/{communique}', [CommuniqueController::class, 'showPublic'])->name('communiques.show-public');
+
     // Documents (GED)
     Route::resource('documents', DocumentController::class);
     Route::post('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
@@ -63,6 +67,9 @@ Route::middleware('auth')->group(function () {
         Route::post('agents/{agent}/generate-matricule', [AgentController::class, 'generateMatricule'])->name('agents.generate-matricule');
         Route::post('agents/{agent}/messages', [AgentController::class, 'storeMessage'])->name('agents.messages.store');
         Route::get('agents/{agent}/print', [AgentController::class, 'printFiche'])->name('agents.print');
+
+        // Communiqués
+        Route::resource('communiques', CommuniqueController::class);
 
         // Pointages
         Route::resource('pointages', PointageController::class);

@@ -20,6 +20,14 @@
     // Messages du DRH
     $unreadMessages = $agent ? $agent->messages()->where('lu', false)->count() : 0;
     $latestMessages = $agent ? $agent->messages()->with('sender')->latest()->limit(5)->get() : collect();
+
+    // Communiqués officiels
+    $urgentCommuniques = \App\Models\Communique::visibles()->urgent()->latest()->get();
+    $otherCommuniques = \App\Models\Communique::visibles()
+        ->whereIn('urgence', ['normal', 'important'])
+        ->latest()
+        ->limit(5)
+        ->get();
 @endphp
 
 <div class="rh-modern">
@@ -38,6 +46,28 @@
                 </div>
             </div>
         </section>
+
+        {{-- Bannière communiqués urgents --}}
+        @foreach($urgentCommuniques as $comm)
+        <div class="alert mb-2" style="border-left: 5px solid #dc3545; background: #fff5f5; border-radius: 6px;">
+            <div class="d-flex align-items-start gap-3">
+                <div style="flex-shrink: 0; margin-top: 2px;">
+                    <span class="badge bg-danger"><i class="fas fa-exclamation-triangle me-1"></i>URGENT</span>
+                </div>
+                <div class="flex-grow-1">
+                    <h6 class="mb-1">
+                        <a href="{{ route('communiques.show-public', $comm) }}" class="text-dark text-decoration-none">{{ $comm->titre }}</a>
+                    </h6>
+                    <p class="mb-1 text-secondary">{{ Str::limit($comm->contenu, 150) }}</p>
+                    <small class="text-muted">
+                        <i class="fas fa-pen-nib me-1"></i>{{ $comm->signataire ?? 'Direction PNMLS' }}
+                        &bull; {{ $comm->created_at->format('d/m/Y') }}
+                    </small>
+                </div>
+                <a href="{{ route('communiques.show-public', $comm) }}" class="text-muted"><i class="fas fa-chevron-right"></i></a>
+            </div>
+        </div>
+        @endforeach
 
         <section class="kpi-grid">
             <article class="kpi">
@@ -180,6 +210,44 @@
                                 <i class="fas fa-chevron-right text-muted mt-1"></i>
                             </div>
                             <p class="mb-0 mt-2 text-secondary">{{ Str::limit($msg->contenu, 100) }}</p>
+                        </div>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </section>
+        @endif
+
+        {{-- Section Communiqués Officiels --}}
+        @if($otherCommuniques->count() > 0)
+        <section class="overview" style="margin-top: 20px;">
+            <div class="panel">
+                <header class="panel-head">
+                    <div>
+                        <h3 class="panel-title"><i class="fas fa-bullhorn me-2 text-warning"></i>Communiqués officiels</h3>
+                        <p class="panel-sub">Annonces de la Direction.</p>
+                    </div>
+                </header>
+                <div class="p-3">
+                    @foreach($otherCommuniques as $comm)
+                        <a href="{{ route('communiques.show-public', $comm) }}" class="text-decoration-none d-block">
+                        <div class="border-start border-3 {{ $comm->urgence === 'important' ? 'border-warning' : 'border-info' }} rounded p-3 mb-3" style="cursor: pointer; transition: box-shadow 0.2s;" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" onmouseout="this.style.boxShadow='none'">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 text-dark">
+                                        @if($comm->urgence === 'important')
+                                            <span class="badge bg-warning text-dark me-1" style="font-size: 0.65rem;">Important</span>
+                                        @endif
+                                        {{ $comm->titre }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-pen-nib me-1"></i>{{ $comm->signataire ?? 'Direction PNMLS' }}
+                                        &bull; {{ $comm->created_at->format('d/m/Y \à H:i') }}
+                                    </small>
+                                </div>
+                                <i class="fas fa-chevron-right text-muted mt-1"></i>
+                            </div>
+                            <p class="mb-0 mt-2 text-secondary">{{ Str::limit($comm->contenu, 100) }}</p>
                         </div>
                         </a>
                     @endforeach
