@@ -107,11 +107,11 @@
                     <td>
                         <div class="d-flex align-items-center gap-2">
                             <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#3b5de7,#0099e5);display:flex;align-items:center;justify-content:center;color:#fff;font-size:.7rem;font-weight:700;flex-shrink:0;">
-                                {{ strtoupper(substr($cu->agent->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr($cu->agent->nom ?? '', 0, 1)) }}
+                                {{ strtoupper(substr($cu->agent?->prenom ?? 'U', 0, 1)) }}{{ strtoupper(substr($cu->agent?->nom ?? '', 0, 1)) }}
                             </div>
                             <div>
                                 <div style="font-weight:600;font-size:.85rem;">{{ $cu->nom_complet }}</div>
-                                <div style="font-size:.72rem;color:#9ca3af;">{{ $cu->agent->matricule_pnmls ?? '' }}</div>
+                                <div style="font-size:.72rem;color:#9ca3af;">{{ $cu->agent?->matricule_pnmls ?? '' }}</div>
                             </div>
                         </div>
                     </td>

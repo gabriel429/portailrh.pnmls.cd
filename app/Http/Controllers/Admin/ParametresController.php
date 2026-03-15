@@ -119,13 +119,13 @@ class ParametresController extends Controller
 
                 $connectedUsers = $sessions->map(function ($session) use ($users) {
                     $user = $users->get($session->user_id);
-                    if (!$user) return null;
+                    if (!$user || !$user->agent) return null;
 
                     return (object) [
                         'user' => $user,
                         'agent' => $user->agent,
                         'nom_complet' => trim(($user->agent->prenom ?? '') . ' ' . ($user->agent->nom ?? $user->name)),
-                        'province' => $user->agent?->province?->nom ?? 'Non définie',
+                        'province' => $user->agent->province?->nom ?? 'Non définie',
                         'role' => $user->role?->nom_role ?? 'Agent',
                         'last_activity' => \Carbon\Carbon::createFromTimestamp($session->last_activity),
                         'ip_address' => $session->ip_address,
