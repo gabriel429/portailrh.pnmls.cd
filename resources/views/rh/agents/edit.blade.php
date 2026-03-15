@@ -403,6 +403,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const matriculeEtatInput = document.getElementById('matricule_etat');
     const provenanceWrapper = document.getElementById('provenance-wrapper');
 
+    // Vérifier que tous les éléments existent
+    console.log('matriculeEtatInput:', matriculeEtatInput);
+    console.log('provenanceWrapper:', provenanceWrapper);
+
     // Mapping entre noms d'organe et codes de niveau administratif
     const organeToNiveauMap = {
         'secrétariat exécutif national': 'SEN',
@@ -481,7 +485,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fonction pour afficher/masquer le champ Provenance basé sur matricule_etat
     const updateProvenanceVisibility = () => {
-        const hasMatriculeEtat = matriculeEtatInput.value.trim() !== '' && matriculeEtatInput.value.trim() !== 'N.U.';
+        if (!matriculeEtatInput || !provenanceWrapper) {
+            console.error('Éléments manquants:', { matriculeEtatInput, provenanceWrapper });
+            return;
+        }
+        const value = matriculeEtatInput.value.trim();
+        const hasMatriculeEtat = value !== '' && value !== 'N.U.';
+        console.log('updateProvenanceVisibility - value:', value, 'hasMatriculeEtat:', hasMatriculeEtat);
         provenanceWrapper.style.display = hasMatriculeEtat ? 'block' : 'none';
     };
 
@@ -492,8 +502,16 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Écouter les changements de matricule_etat
-    matriculeEtatInput.addEventListener('input', updateProvenanceVisibility);
-    matriculeEtatInput.addEventListener('change', updateProvenanceVisibility);
+    if (matriculeEtatInput) {
+        matriculeEtatInput.addEventListener('input', function() {
+            console.log('input event triggered');
+            updateProvenanceVisibility();
+        });
+        matriculeEtatInput.addEventListener('change', function() {
+            console.log('change event triggered');
+            updateProvenanceVisibility();
+        });
+    }
 
     // Initialiser les fonctions au chargement
     if (organeInput.value) {
