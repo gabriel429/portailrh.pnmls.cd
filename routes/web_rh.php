@@ -45,36 +45,29 @@ Route::middleware('auth')->group(function () {
 
     // Ressources RH
     Route::prefix('rh')->name('rh.')->group(function () {
-        // Agents
-        Route::resource('agents', AgentController::class);
 
-        // Documents
+        // Agents, Demandes, Affectations — réservés à la Section RH
+        Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial')->group(function () {
+            Route::resource('agents', AgentController::class);
+            Route::resource('requests', RequestController::class);
+
+            // Affectations
+            Route::get('affectations',                    [ParametresController::class, 'affectationsIndex'])->name('affectations.index');
+            Route::get('affectations/create',             [ParametresController::class, 'affectationsCreate'])->name('affectations.create');
+            Route::post('affectations',                   [ParametresController::class, 'affectationsStore'])->name('affectations.store');
+            Route::get('affectations/{affectation}/edit', [ParametresController::class, 'affectationsEdit'])->name('affectations.edit');
+            Route::put('affectations/{affectation}',      [ParametresController::class, 'affectationsUpdate'])->name('affectations.update');
+            Route::delete('affectations/{affectation}',   [ParametresController::class, 'affectationsDestroy'])->name('affectations.destroy');
+        });
+
+        // Modules accessibles à tous les utilisateurs authentifiés
         Route::resource('documents', DocumentController::class);
-
-        // Demandes
-        Route::resource('requests', RequestController::class);
-
-        // Pointages
         Route::resource('pointages', PointageController::class);
-
-        // Signalements
         Route::resource('signalements', SignalementController::class);
-
-        // Rôles et Permissions
         Route::resource('roles', RoleController::class);
         Route::resource('permissions', PermissionController::class);
-
-        // Provinces et Départements
         Route::resource('provinces', ProvinceController::class);
         Route::resource('departments', DepartmentController::class);
-
-        // Affectations
-        Route::get('affectations',                    [ParametresController::class, 'affectationsIndex'])->name('affectations.index');
-        Route::get('affectations/create',             [ParametresController::class, 'affectationsCreate'])->name('affectations.create');
-        Route::post('affectations',                   [ParametresController::class, 'affectationsStore'])->name('affectations.store');
-        Route::get('affectations/{affectation}/edit', [ParametresController::class, 'affectationsEdit'])->name('affectations.edit');
-        Route::put('affectations/{affectation}',      [ParametresController::class, 'affectationsUpdate'])->name('affectations.update');
-        Route::delete('affectations/{affectation}',   [ParametresController::class, 'affectationsDestroy'])->name('affectations.destroy');
     });
 
     // ─── Section Paramètres – Chef NT uniquement ────────────────────────────────

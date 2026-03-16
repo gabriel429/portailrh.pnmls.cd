@@ -37,7 +37,7 @@ class AgentController extends Controller
      */
     private function getGradeOptions()
     {
-        return Grade::orderBy('ordre')->get();
+        return Schema::hasTable('grades') ? Grade::orderBy('ordre')->get() : collect();
     }
 
     /**

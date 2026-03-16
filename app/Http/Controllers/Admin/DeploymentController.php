@@ -820,6 +820,22 @@ class DeploymentController extends Controller
         $success = false;
 
         try {
+            // Créer la table si elle n'existe pas
+            if (!Schema::hasTable('grades')) {
+                $output_messages[] = "Création de la table grades...";
+                Schema::create('grades', function ($table) {
+                    $table->id();
+                    $table->char('categorie', 1);
+                    $table->string('nom_categorie');
+                    $table->unsignedTinyInteger('ordre');
+                    $table->string('libelle');
+                    $table->timestamps();
+                });
+                $output_messages[] = "Table grades créée.";
+            } else {
+                $output_messages[] = "Table grades existe déjà.";
+            }
+
             $grades = [
                 ['categorie' => 'A', 'nom_categorie' => 'Haut cadre',              'ordre' => 1,  'libelle' => 'Secrétaire général'],
                 ['categorie' => 'A', 'nom_categorie' => 'Haut cadre',              'ordre' => 2,  'libelle' => 'Directeur'],
