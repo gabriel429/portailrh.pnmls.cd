@@ -614,7 +614,7 @@ class ParametresController extends Controller
             'agent_id'             => 'required|exists:agents,id',
             'fonction_id'          => 'required|exists:fonctions,id',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
-            'niveau'               => 'required|in:direction,service_rattache,département,section,cellule,province,local',
+            'niveau'               => 'required|in:direction,service_rattache,departement,département,section,cellule,province,local',
             'department_id'        => 'nullable|exists:departments,id',
             'section_id'           => 'nullable|exists:sections,id',
             'cellule_id'           => 'nullable|exists:cellules,id',
@@ -640,6 +640,13 @@ class ParametresController extends Controller
         } else { // SEN
             $validated['province_id']   = null;
             $validated['localite_id']   = null;
+            $validated['cellule_id']    = null;
+            // Département: pas de section ; Service rattaché: pas de département
+            if ($niveau === 'departement') {
+                $validated['section_id'] = null;
+            } elseif ($niveau === 'service_rattache') {
+                $validated['department_id'] = null;
+            }
         }
 
         // Unicité chef actif par entité
@@ -689,7 +696,7 @@ class ParametresController extends Controller
             'agent_id'             => 'required|exists:agents,id',
             'fonction_id'          => 'required|exists:fonctions,id',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
-            'niveau'               => 'required|in:direction,service_rattache,département,section,cellule,province,local',
+            'niveau'               => 'required|in:direction,service_rattache,departement,département,section,cellule,province,local',
             'department_id'        => 'nullable|exists:departments,id',
             'section_id'           => 'nullable|exists:sections,id',
             'cellule_id'           => 'nullable|exists:cellules,id',

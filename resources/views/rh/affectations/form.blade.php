@@ -109,60 +109,53 @@
                     <div class="col-12 panel-na" id="panel-SEN">
                         <label class="form-label fw-semibold">
                             <span class="badge bg-primary me-1">3</span>
-                            Direction <span class="text-danger">*</span>
+                            Rattachement SEN <span class="text-danger">*</span>
                         </label>
-                        <select name="direction" id="select-direction" class="form-select @error('direction') is-invalid @enderror">
-                            <option value="">– Choisir –</option>
-                            <option value="SEN" @selected(old('direction', $affectation->direction ?? '') === 'SEN')>SEN – Secrétariat Exécutif National</option>
-                            <option value="SENA" @selected(old('direction', $affectation->direction ?? '') === 'SENA')>SENA – Secrétariat Exécutif National Adjoint</option>
-                        </select>
-                        @error('direction')<div class="invalid-feedback">{{ $message }}</div>@enderror
-
-                        <div class="mt-3">
-                            <label class="form-label fw-semibold">
-                                <span class="badge bg-primary me-1">4</span>
-                                Rattachement <span class="text-danger">*</span>
-                            </label>
-                            <div class="d-flex gap-2 mb-2">
-                                <div class="flex-fill">
-                                    <input type="radio" class="btn-check" name="type_rattachement" id="ratt_dept" value="departement"
-                                           @checked(old('type_rattachement', ($affectation->department_id ?? null) ? 'departement' : (($affectation->direction ?? null) ? 'service_rattache' : '')) === 'departement')>
-                                    <label class="btn btn-outline-primary w-100 text-start" for="ratt_dept">
-                                        <i class="fas fa-building me-1"></i> <strong>Département</strong><br>
-                                        <small>L'agent est affecté dans un département</small>
-                                    </label>
-                                </div>
-                                <div class="flex-fill">
-                                    <input type="radio" class="btn-check" name="type_rattachement" id="ratt_service" value="service_rattache"
-                                           @checked(old('type_rattachement', ($affectation->department_id ?? null) ? 'departement' : '') === 'service_rattache')>
-                                    <label class="btn btn-outline-warning w-100 text-start" for="ratt_service">
-                                        <i class="fas fa-link me-1"></i> <strong>Service rattaché</strong><br>
-                                        <small>Rattaché directement au SEN/SENA</small>
-                                    </label>
-                                </div>
+                        <div class="d-flex gap-2 mb-2">
+                            <div class="flex-fill">
+                                <input type="radio" class="btn-check" name="type_rattachement" id="ratt_dept" value="departement"
+                                       @checked(old('type_rattachement', ($affectation->department_id ?? null) ? 'departement' : '') === 'departement')>
+                                <label class="btn btn-outline-primary w-100 text-start" for="ratt_dept">
+                                    <i class="fas fa-building me-1"></i> <strong>Département</strong><br>
+                                    <small>L'agent est affecté dans un département</small>
+                                </label>
                             </div>
-
-                            {{-- Département --}}
-                            <div id="panel-ratt-dept" style="display:none" class="mt-2">
-                                <select name="department_id" id="sel-dept" class="form-select @error('department_id') is-invalid @enderror">
-                                    <option value="">– Choisir le département –</option>
-                                    @foreach($departments as $dept)
-                                    <option value="{{ $dept->id }}"
-                                        @selected(old('department_id', $affectation->department_id ?? '') == $dept->id)>
-                                        {{ $dept->nom }}
-                                    </option>
-                                    @endforeach
-                                </select>
-                                @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="flex-fill">
+                                <input type="radio" class="btn-check" name="type_rattachement" id="ratt_service" value="service_rattache"
+                                       @checked(old('type_rattachement', ($affectation->section_id ?? null) ? 'service_rattache' : '') === 'service_rattache')>
+                                <label class="btn btn-outline-warning w-100 text-start" for="ratt_service">
+                                    <i class="fas fa-link me-1"></i> <strong>Service rattaché</strong><br>
+                                    <small>Rattaché directement au SEN/SENA</small>
+                                </label>
                             </div>
+                        </div>
 
-                            {{-- Service rattaché info --}}
-                            <div id="panel-ratt-service" style="display:none" class="mt-2">
-                                <div class="alert alert-warning py-2 mb-0">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    L'agent sera rattaché directement au <strong id="label-direction-ratt">SEN/SENA</strong> sans passer par un département.
-                                </div>
-                            </div>
+                        {{-- Département --}}
+                        <div id="panel-ratt-dept" style="display:none" class="mt-2">
+                            <select name="department_id" id="sel-dept" class="form-select @error('department_id') is-invalid @enderror">
+                                <option value="">– Choisir le département –</option>
+                                @foreach($departments as $dept)
+                                <option value="{{ $dept->id }}"
+                                    @selected(old('department_id', $affectation->department_id ?? '') == $dept->id)>
+                                    {{ $dept->nom }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        {{-- Service rattaché --}}
+                        <div id="panel-ratt-service" style="display:none" class="mt-2">
+                            <select name="section_id" id="sel-service-rattache" class="form-select @error('section_id') is-invalid @enderror">
+                                <option value="">– Choisir le service rattaché –</option>
+                                @foreach($sections->where('type', 'service_rattache') as $service)
+                                <option value="{{ $service->id }}"
+                                    @selected(old('section_id', $affectation->section_id ?? '') == $service->id)>
+                                    {{ $service->nom }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('section_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 
@@ -276,8 +269,6 @@
     const rattRadios = document.querySelectorAll('[name="type_rattachement"]');
     const panelDept = document.getElementById('panel-ratt-dept');
     const panelService = document.getElementById('panel-ratt-service');
-    const directionSelect = document.getElementById('select-direction');
-    const labelDir = document.getElementById('label-direction-ratt');
 
     function showRattPanel() {
         const checked = document.querySelector('[name="type_rattachement"]:checked');
@@ -288,18 +279,18 @@
         }
         if (panelDept) panelDept.style.display = checked.value === 'departement' ? '' : 'none';
         if (panelService) panelService.style.display = checked.value === 'service_rattache' ? '' : 'none';
+        // Reset hidden fields when toggling
+        if (checked.value === 'departement') {
+            const selService = document.getElementById('sel-service-rattache');
+            if (selService) selService.value = '';
+        } else {
+            const selDept = document.getElementById('sel-dept');
+            if (selDept) selDept.value = '';
+        }
         updateNiveau();
     }
 
     rattRadios.forEach(r => r.addEventListener('change', showRattPanel));
-
-    // Update label "SEN/SENA" in service rattaché info
-    if (directionSelect && labelDir) {
-        directionSelect.addEventListener('change', function() {
-            const val = this.value;
-            labelDir.textContent = val || 'SEN/SENA';
-        });
-    }
 
     // Init on page load
     const checkedNA = document.querySelector('[name="niveau_administratif"]:checked');
