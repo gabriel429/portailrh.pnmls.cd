@@ -216,6 +216,30 @@
                         </div>
 
                         <div class="col-md-6">
+                            <label for="situation_familiale" class="form-label">État civil</label>
+                            <select class="form-select @error('situation_familiale') is-invalid @enderror"
+                                id="situation_familiale" name="situation_familiale">
+                                <option value="">-- Sélectionner --</option>
+                                <option value="Célibataire" @selected(old('situation_familiale', $agent->situation_familiale) === 'Célibataire')>Célibataire</option>
+                                <option value="Marié(e)" @selected(old('situation_familiale', $agent->situation_familiale) === 'Marié(e)')>Marié(e)</option>
+                                <option value="Divorcé(e)" @selected(old('situation_familiale', $agent->situation_familiale) === 'Divorcé(e)')>Divorcé(e)</option>
+                                <option value="Veuf/Veuve" @selected(old('situation_familiale', $agent->situation_familiale) === 'Veuf/Veuve')>Veuf/Veuve</option>
+                            </select>
+                            @error('situation_familiale')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="nombre_enfants" class="form-label">Nombre d'enfants</label>
+                            <input type="number" min="0" class="form-control @error('nombre_enfants') is-invalid @enderror"
+                                id="nombre_enfants" name="nombre_enfants" value="{{ old('nombre_enfants', $agent->nombre_enfants) }}">
+                            @error('nombre_enfants')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
                             <label for="adresse" class="form-label">Adresse</label>
                             <input type="text" class="form-control @error('adresse') is-invalid @enderror"
                                 id="adresse" name="adresse" value="{{ old('adresse', $agent->adresse) }}">
