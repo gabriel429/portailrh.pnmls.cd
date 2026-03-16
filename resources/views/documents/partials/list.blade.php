@@ -1,94 +1,88 @@
 @if($docs->count() > 0)
-    <div class="row g-4">
+    <div class="row g-3">
         @foreach($docs as $document)
             <div class="col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm document-card h-100">
-                    <div class="card-body">
-                        <!-- Icône et type -->
-                        <div class="mb-3">
+                <div class="doc-card">
+                    <div class="doc-card-top">
+                        {{-- Icône type fichier --}}
+                        <div class="doc-icon-wrap {{ $document->type_fichier === 'pdf' ? 'pdf' : (in_array($document->type_fichier, ['jpg','jpeg','png','gif','webp']) ? 'image' : (in_array($document->type_fichier, ['doc','docx']) ? 'word' : (in_array($document->type_fichier, ['xls','xlsx']) ? 'excel' : 'other'))) }}">
                             @if($document->type_fichier === 'pdf')
-                                <i class="fas fa-file-pdf fa-3x text-danger"></i>
-                            @elseif(in_array($document->type_fichier, ['jpg', 'jpeg', 'png']))
-                                <i class="fas fa-file-image fa-3x text-info"></i>
+                                <i class="fas fa-file-pdf"></i>
+                            @elseif(in_array($document->type_fichier, ['jpg','jpeg','png','gif','webp']))
+                                <i class="fas fa-file-image"></i>
+                            @elseif(in_array($document->type_fichier, ['doc','docx']))
+                                <i class="fas fa-file-word"></i>
+                            @elseif(in_array($document->type_fichier, ['xls','xlsx']))
+                                <i class="fas fa-file-excel"></i>
                             @else
-                                <i class="fas fa-file fa-3x text-muted"></i>
+                                <i class="fas fa-file"></i>
                             @endif
                         </div>
 
-                        <!-- Nom et catégorie -->
-                        <h6 class="card-title">
-                            {{ Str::limit($document->nom_fichier, 30) }}
-                        </h6>
-                        <p class="card-text text-muted small">
-                            <span class="badge bg-light text-dark">
+                        <div class="doc-card-info">
+                            <h6>{{ Str::limit($document->nom_fichier, 35) }}</h6>
+
+                            @if($document->description)
+                                <div class="doc-card-desc">{{ Str::limit($document->description, 70) }}</div>
+                            @endif
+
+                            {{-- Badge catégorie --}}
+                            <div class="mb-2">
                                 @switch($document->categorie)
                                     @case('identite')
-                                        <i class="fas fa-id-card me-1"></i> Identité
+                                        <span class="doc-badge identite"><i class="fas fa-id-card"></i> Identité</span>
                                         @break
                                     @case('parcours')
-                                        <i class="fas fa-graduation-cap me-1"></i> Parcours
+                                        <span class="doc-badge parcours"><i class="fas fa-graduation-cap"></i> Parcours</span>
                                         @break
                                     @case('carriere')
-                                        <i class="fas fa-briefcase me-1"></i> Carrière
+                                        <span class="doc-badge carriere"><i class="fas fa-briefcase"></i> Carrière</span>
                                         @break
                                     @case('mission')
-                                        <i class="fas fa-plane me-1"></i> Mission
+                                        <span class="doc-badge mission"><i class="fas fa-plane"></i> Mission</span>
                                         @break
                                 @endswitch
-                            </span>
-                        </p>
+                            </div>
 
-                        <!-- Description -->
-                        @if($document->description)
-                            <p class="small text-muted mb-2">
-                                {{ Str::limit($document->description, 80) }}
-                            </p>
-                        @endif
-
-                        <!-- Infos fichier -->
-                        <div class="small text-muted mb-3">
-                            <p class="mb-1">
-                                <i class="fas fa-hdd me-1"></i>
-                                {{ number_format($document->taille / 1024, 2) }} KB
-                            </p>
-                            <p class="mb-0">
-                                <i class="fas fa-calendar me-1"></i>
-                                {{ $document->created_at->format('d/m/Y') }}
-                            </p>
+                            {{-- Méta infos --}}
+                            <div class="doc-meta">
+                                <span><i class="fas fa-hdd"></i> {{ number_format($document->taille / 1024, 1) }} KB</span>
+                                <span><i class="fas fa-calendar-alt"></i> {{ $document->created_at->format('d/m/Y') }}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Actions -->
-                    <div class="card-footer bg-light border-top-0">
-                        <div class="btn-group btn-group-sm w-100" role="group">
-                            <a href="{{ route('documents.show', $document) }}" class="btn btn-outline-primary" title="Détails">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <a href="{{ route('documents.download', $document) }}" class="btn btn-outline-success" title="Télécharger">
-                                <i class="fas fa-download"></i>
-                            </a>
-                            @if(auth()->user()->id === $document->agent_id || auth()->user()->hasAdminAccess())
-                                <form method="POST" action="{{ route('documents.destroy', $document) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr ?');">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">
-                                        <i class="fas fa-trash"></i>
-                                    </button>
-                                </form>
-                            @endif
-                        </div>
+                    {{-- Actions --}}
+                    <div class="doc-card-actions">
+                        <a href="{{ route('documents.show', $document) }}" class="doc-action view" title="Voir les détails">
+                            <i class="fas fa-eye"></i> Détails
+                        </a>
+                        <a href="{{ route('documents.download', $document) }}" class="doc-action download" title="Télécharger">
+                            <i class="fas fa-download"></i> Télécharger
+                        </a>
+                        @if(auth()->user()->id === $document->agent_id || auth()->user()->hasAdminAccess())
+                            <form method="POST" action="{{ route('documents.destroy', $document) }}" style="flex:1;display:flex;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce document ?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="doc-action delete" style="width:100%;" title="Supprimer">
+                                    <i class="fas fa-trash-alt"></i> Suppr.
+                                </button>
+                            </form>
+                        @endif
                     </div>
                 </div>
             </div>
         @endforeach
     </div>
 @else
-    <div class="text-center py-5">
-        <i class="fas fa-inbox fa-5x text-muted mb-3 d-block"></i>
-        <h5 class="text-muted">Aucun document</h5>
-        <p class="text-muted mb-3">Vous n'avez pas encore uploadé de documents</p>
-        <a href="{{ route('documents.create') }}" class="btn btn-primary">
-            <i class="fas fa-cloud-upload-alt me-2"></i> Uploader un document
+    <div class="empty-state">
+        <div class="empty-state-icon">
+            <i class="fas fa-folder-open"></i>
+        </div>
+        <h5>Aucun document trouvé</h5>
+        <p>Vous n'avez pas encore uploadé de documents. Commencez par en ajouter un !</p>
+        <a href="{{ route('documents.create') }}" class="btn btn-filter">
+            <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
         </a>
     </div>
 @endif
