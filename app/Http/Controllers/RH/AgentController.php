@@ -304,6 +304,8 @@ class AgentController extends Controller
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat,' . $agent->id,
             'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'postnom' => 'required|string',
             'email_prive' => 'nullable|email',
             'email_professionnel' => 'nullable|email',
             'annee_naissance' => 'required|integer|min:1950|max:2100',
