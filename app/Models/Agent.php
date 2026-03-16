@@ -57,7 +57,6 @@ class Agent extends Authenticatable
         'nom',
         'postnom',
         'prenom',
-        'email',
         'email_prive',
         'email_professionnel',
         'password',

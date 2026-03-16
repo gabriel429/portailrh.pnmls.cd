@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('matricule_etat')->nullable()->unique()->comment('Matricule État');
             $table->string('nom');
             $table->string('prenom');
-            $table->string('email')->unique();
+            // $table->string('email')->unique(); // supprimé, on ne garde que email_prive et email_professionnel
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password')->nullable()->comment('Mot de passe si utilisateur');
             $table->string('photo')->nullable()->comment('Chemin de la photo de profil');
