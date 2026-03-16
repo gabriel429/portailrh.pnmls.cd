@@ -142,6 +142,26 @@
                                 @endforeach
                             </select>
                             @error('department_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+
+                            {{-- Section dans le département --}}
+                            <div id="panel-section-dept" class="mt-2" style="display:none">
+                                <label class="form-label fw-semibold">Section</label>
+                                <select name="section_id" id="sel-section-dept" class="form-select @error('section_id') is-invalid @enderror">
+                                    <option value="">– Aucune (niveau département) –</option>
+                                    @foreach($sections->where('type', 'section') as $section)
+                                    <option value="{{ $section->id }}"
+                                        data-dept="{{ $section->department_id }}"
+                                        @selected(old('section_id', $affectation->section_id ?? '') == $section->id)>
+                                        {{ $section->nom }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Laissez vide si l'agent est Directeur, Chef de département, Assistant ou Secrétaire du département.
+                                </small>
+                                @error('section_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
 
                         {{-- Service rattaché --}}
@@ -335,6 +355,36 @@
     }
 
     rattRadios.forEach(r => r.addEventListener('change', showRattPanel));
+
+    // SEN > Département: afficher/filtrer les sections par département
+    const selDept = document.getElementById('sel-dept');
+    const panelSectionDept = document.getElementById('panel-section-dept');
+    const selSectionDept = document.getElementById('sel-section-dept');
+
+    function filterSections() {
+        if (!selDept || !selSectionDept || !panelSectionDept) return;
+        const deptId = selDept.value;
+        // Afficher le panel section uniquement si un département est sélectionné
+        panelSectionDept.style.display = deptId ? '' : 'none';
+        if (!deptId) return;
+
+        const options = selSectionDept.querySelectorAll('option[data-dept]');
+        options.forEach(opt => {
+            const match = opt.getAttribute('data-dept') === deptId;
+            opt.style.display = match ? '' : 'none';
+            opt.disabled = !match;
+        });
+        // Reset si la section sélectionnée n'est plus dans le département
+        const selected = selSectionDept.querySelector('option:checked');
+        if (selected && selected.disabled) {
+            selSectionDept.value = '';
+        }
+    }
+
+    if (selDept) {
+        selDept.addEventListener('change', filterSections);
+        filterSections();
+    }
 
     // SEL: filtrer localités par province
     const selProvinceSel = document.getElementById('sel-province-sel');
