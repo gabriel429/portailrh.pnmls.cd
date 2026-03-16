@@ -156,7 +156,16 @@ class AgentController extends Controller
             $ordered['Non assigné'] = $agentsByOrgane['Non assigné'];
         }
 
-        return view('rh.agents.index', ['agentsByOrgane' => $ordered, 'totalAgents' => $allAgents->count(), 'searchTerm' => $search]);
+        $provinces = Province::orderBy('nom')->get();
+        $departments = Department::orderBy('nom')->get();
+
+        return view('rh.agents.index', [
+            'agentsByOrgane' => $ordered,
+            'totalAgents' => $allAgents->count(),
+            'searchTerm' => $search,
+            'provinces' => $provinces,
+            'departments' => $departments,
+        ]);
     }
 
     /**
@@ -385,6 +394,121 @@ class AgentController extends Controller
 
         return redirect()->route('rh.agents.index')
             ->with('success', 'Agent supprimé avec succès');
+    }
+
+    /**
+     * Export agents list as CSV with filters.
+     */
+    public function export(Request $request)
+    {
+        $organe = $request->input('organe');         // SEN, SEP, SEL or 'tous'
+        $province_id = $request->input('province_id');
+        $departement_id = $request->input('departement_id');
+
+        $organeMap = [
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
+        ];
+
+        $query = Agent::with(['province', 'departement', 'grade', 'institution']);
+
+        // Filter by organe
+        if ($organe && $organe !== 'tous') {
+            $organeNom = $organeMap[$organe] ?? null;
+            if ($organeNom) {
+                $query->where('organe', $organeNom);
+            }
+        }
+
+        // Filter by province
+        if ($province_id) {
+            $query->where('province_id', $province_id);
+        }
+
+        // Filter by department (SEN only)
+        if ($departement_id) {
+            $query->where('departement_id', $departement_id);
+        }
+
+        $agents = $query->orderBy('organe')->orderBy('nom')->get();
+
+        // Build filename
+        $parts = ['agents'];
+        if ($organe && $organe !== 'tous') {
+            $parts[] = $organe;
+        } else {
+            $parts[] = 'tous';
+        }
+        if ($province_id) {
+            $prov = Province::find($province_id);
+            if ($prov) $parts[] = str_replace(' ', '_', $prov->nom_province ?? $prov->nom ?? 'province');
+        }
+        if ($departement_id) {
+            $dept = Department::find($departement_id);
+            if ($dept) $parts[] = str_replace(' ', '_', $dept->nom ?? 'dept');
+        }
+        $filename = implode('_', $parts) . '_' . date('Y-m-d') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () use ($agents) {
+            $file = fopen('php://output', 'w');
+            // BOM UTF-8 for Excel
+            fwrite($file, "\xEF\xBB\xBF");
+
+            // Header row
+            fputcsv($file, [
+                'ID Agent', 'Matricule État', 'Nom', 'Postnom', 'Prénom', 'Sexe',
+                'Année naissance', 'Lieu naissance', 'État civil', 'Enfants',
+                'Téléphone', 'Email privé', 'Email institutionnel',
+                'Organe', 'Fonction', 'Poste actuel', 'Département', 'Province',
+                'Grade État', 'Institution origine', 'Niveau études', 'Domaine études',
+                'Année engagement', 'Ancienneté (ans)', 'Date embauche', 'Statut',
+            ], ';');
+
+            foreach ($agents as $agent) {
+                $anciennete = $agent->annee_engagement_programme
+                    ? (now()->year - $agent->annee_engagement_programme)
+                    : '';
+
+                fputcsv($file, [
+                    $agent->id_agent,
+                    $agent->matricule_etat ?? '',
+                    $agent->nom,
+                    $agent->postnom ?? '',
+                    $agent->prenom,
+                    $agent->sexe,
+                    $agent->annee_naissance ?? '',
+                    $agent->lieu_naissance ?? '',
+                    $agent->situation_familiale ?? '',
+                    $agent->nombre_enfants ?? '',
+                    $agent->telephone ?? '',
+                    $agent->email_prive ?? '',
+                    $agent->email_professionnel ?? '',
+                    $agent->organe ?? '',
+                    $agent->fonction ?? '',
+                    $agent->poste_actuel ?? '',
+                    $agent->departement?->nom ?? '',
+                    $agent->province?->nom_province ?? $agent->province?->nom ?? '',
+                    $agent->grade?->libelle ?? '',
+                    $agent->institution?->nom ?? '',
+                    $agent->niveau_etudes ?? '',
+                    $agent->domaine_etudes ?? '',
+                    $agent->annee_engagement_programme ?? '',
+                    $anciennete,
+                    $agent->date_embauche?->format('d/m/Y') ?? '',
+                    $agent->statut ?? '',
+                ], ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

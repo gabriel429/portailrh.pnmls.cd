@@ -16,7 +16,10 @@
                     <p class="rh-sub">Administrez les profils PNMLS, roles, statuts et informations administratives.</p>
                 </div>
                 <div class="col-lg-4">
-                    <div class="hero-tools">
+                    <div class="hero-tools d-flex gap-2">
+                        <button type="button" class="btn-rh main" data-bs-toggle="modal" data-bs-target="#exportModal" style="background:#28a745;border-color:#28a745;">
+                            <i class="fas fa-file-csv me-1"></i> Exporter
+                        </button>
                         <a href="{{ route('rh.agents.create') }}" class="btn-rh main"><i class="fas fa-user-plus me-1"></i> Ajouter un agent</a>
                     </div>
                 </div>
@@ -134,6 +137,61 @@
                 </a>
             </div>
         @endif
+    </div>
+</div>
+
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0">
+            <div class="modal-header" style="background:#28a745;color:#fff;">
+                <h5 class="modal-title"><i class="fas fa-file-csv me-2"></i>Exporter la liste des agents</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="exportForm" action="{{ route('rh.agents.export') }}" method="GET">
+                    <div class="mb-3">
+                        <label for="export_organe" class="form-label fw-bold">Organe</label>
+                        <select id="export_organe" name="organe" class="form-select">
+                            <option value="tous">Tous les organes</option>
+                            <option value="SEN">Secrétariat Exécutif National (SEN)</option>
+                            <option value="SEP">Secrétariat Exécutif Provincial (SEP)</option>
+                            <option value="SEL">Secrétariat Exécutif Local (SEL)</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="export_province_group" style="display:none;">
+                        <label for="export_province" class="form-label fw-bold">Province</label>
+                        <select id="export_province" name="province_id" class="form-select">
+                            <option value="">Toutes les provinces</option>
+                            @foreach($provinces as $province)
+                                <option value="{{ $province->id }}">{{ $province->nom_province ?? $province->nom }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-3" id="export_dept_group" style="display:none;">
+                        <label for="export_departement" class="form-label fw-bold">Département</label>
+                        <select id="export_departement" name="departement_id" class="form-select">
+                            <option value="">Tous les départements</option>
+                            @foreach($departments as $dept)
+                                <option value="{{ $dept->id }}">{{ $dept->nom }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="alert alert-info py-2">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Le fichier CSV sera téléchargé et peut être ouvert avec Excel.
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="submit" form="exportForm" class="btn btn-success">
+                    <i class="fas fa-download me-1"></i> Télécharger CSV
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -262,6 +320,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('agentDetailsBody').innerHTML = html;
     }
+    // Export modal: show/hide filters based on organe selection
+    const organeSelect = document.getElementById('export_organe');
+    const provinceGroup = document.getElementById('export_province_group');
+    const deptGroup = document.getElementById('export_dept_group');
+
+    function updateExportFilters() {
+        const val = organeSelect.value;
+        // Province: show for SEP, SEL, or tous
+        provinceGroup.style.display = (val === 'SEP' || val === 'SEL' || val === 'tous') ? 'block' : 'none';
+        // Department: show for SEN or tous
+        deptGroup.style.display = (val === 'SEN' || val === 'tous') ? 'block' : 'none';
+
+        // Reset hidden selects
+        if (provinceGroup.style.display === 'none') document.getElementById('export_province').value = '';
+        if (deptGroup.style.display === 'none') document.getElementById('export_departement').value = '';
+    }
+
+    organeSelect.addEventListener('change', updateExportFilters);
+    updateExportFilters();
 });
 </script>
 @endsection

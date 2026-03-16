@@ -48,6 +48,7 @@ Route::middleware('auth')->group(function () {
 
         // Agents, Demandes, Affectations — réservés à la Section RH
         Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial')->group(function () {
+            Route::get('agents/export', [AgentController::class, 'export'])->name('agents.export');
             Route::resource('agents', AgentController::class);
             Route::resource('requests', RequestController::class);
 
