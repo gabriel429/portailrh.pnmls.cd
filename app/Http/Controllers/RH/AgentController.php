@@ -13,6 +13,7 @@ use App\Models\Fonction;
 use App\Models\InstitutionCategorie;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
+use App\Models\Section;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -179,8 +180,10 @@ class AgentController extends Controller
         $fonctionOptions = $this->getFonctionGroupedOptions();
         $grades = $this->getGradeOptions();
         $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
+        $sections = Section::with('department')->orderBy('type')->orderBy('nom')->get();
+        $fonctionsAll = Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get();
 
-        return view('rh.agents.create', compact('departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
+        return view('rh.agents.create', compact('departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories', 'sections', 'fonctionsAll'));
     }
 
     /**
@@ -301,8 +304,10 @@ class AgentController extends Controller
         $fonctionOptions = $this->getFonctionGroupedOptions();
         $grades = $this->getGradeOptions();
         $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
+        $sections = Section::with('department')->orderBy('type')->orderBy('nom')->get();
+        $fonctionsAll = Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get();
 
-        return view('rh.agents.edit', compact('agent', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories'));
+        return view('rh.agents.edit', compact('agent', 'departments', 'provinces', 'organeOptions', 'fonctionOptions', 'grades', 'institutionCategories', 'sections', 'fonctionsAll'));
     }
 
     /**

@@ -279,18 +279,92 @@
                             @enderror
                         </div>
 
+                        {{-- SEN: Rattachement --}}
+                        <div class="col-md-6" id="panel-rattachement" style="display:none">
+                            <label class="form-label">Rattachement <span class="text-danger">*</span></label>
+                            <div class="d-flex gap-2">
+                                <div class="flex-fill">
+                                    <input type="radio" class="btn-check" name="type_rattachement" id="ratt_dept" value="departement"
+                                           @checked(old('type_rattachement', $agent->departement_id ? 'departement' : '') === 'departement')>
+                                    <label class="btn btn-outline-primary btn-sm w-100" for="ratt_dept">
+                                        <i class="fas fa-building me-1"></i> Département
+                                    </label>
+                                </div>
+                                <div class="flex-fill">
+                                    <input type="radio" class="btn-check" name="type_rattachement" id="ratt_service" value="service_rattache"
+                                           @checked(old('type_rattachement', (!$agent->departement_id && $agent->organe === 'Secrétariat Exécutif National') ? 'service_rattache' : '') === 'service_rattache')>
+                                    <label class="btn btn-outline-warning btn-sm w-100" for="ratt_service">
+                                        <i class="fas fa-link me-1"></i> Service rattaché
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Département (SEN) --}}
+                        <div class="col-md-6" id="dept-wrapper" style="display:none">
+                            <label for="departement_id" class="form-label">Département</label>
+                            <select class="form-select @error('departement_id') is-invalid @enderror"
+                                    id="departement_id" name="departement_id">
+                                <option value="">-- Sélectionner un département --</option>
+                                @foreach ($departments as $dept)
+                                    <option value="{{ $dept->id }}" @selected(old('departement_id', $agent->departement_id) == $dept->id)>
+                                        {{ $dept->nom }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('departement_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Section (après département) --}}
+                        <div class="col-md-6" id="section-wrapper" style="display:none">
+                            <label for="section_id" class="form-label">Section</label>
+                            <select class="form-select @error('section_id') is-invalid @enderror"
+                                    id="section_id" name="section_id">
+                                <option value="">-- Aucune (niveau département) --</option>
+                                @foreach ($sections->where('type', 'section') as $section)
+                                    <option value="{{ $section->id }}" data-dept="{{ $section->department_id }}"
+                                        @selected(old('section_id', $agent->section_id ?? '') == $section->id)>
+                                        {{ $section->nom }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Laissez vide pour Directeur, Chef de département, Assistant ou Secrétaire.</small>
+                            @error('section_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Province (SEP/SEL) --}}
+                        <div class="col-md-6" id="province-wrapper" style="display:none">
+                            <label for="province_id" class="form-label">Province</label>
+                            <select class="form-select @error('province_id') is-invalid @enderror"
+                                id="province_id" name="province_id">
+                                <option value="">-- Sélectionner une province --</option>
+                                @foreach ($provinces as $province)
+                                    <option value="{{ $province->id }}" @selected(old('province_id', $agent->province_id) == $province->id)>
+                                        {{ $province->nom_province ?? "Province {$province->id}" }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('province_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        {{-- Fonction (filtrée par contexte) --}}
                         <div class="col-md-6">
-                            <label for="fonction" class="form-label">Fonction <span class="text-danger">*</span></label>
+                            <label for="fonction" class="form-label">Fonction / Poste <span class="text-danger">*</span></label>
                             <select class="form-select @error('fonction') is-invalid @enderror" id="fonction" name="fonction" required>
                                 <option value="">-- Sélectionner une fonction --</option>
-                                @foreach ($fonctionOptions as $groupe => $fonctions)
-                                    <optgroup label="{{ $groupe }}">
-                                        @foreach ($fonctions as $fonction)
-                                            <option value="{{ $fonction->nom }}" @selected(old('fonction', $agent->fonction) === $fonction->nom)>
-                                                {{ $fonction->nom }}
-                                            </option>
-                                        @endforeach
-                                    </optgroup>
+                                @foreach ($fonctionsAll as $fonction)
+                                    <option value="{{ $fonction->nom }}"
+                                        data-niveau="{{ $fonction->niveau_administratif }}"
+                                        data-type="{{ $fonction->type_poste }}"
+                                        @selected(old('fonction', $agent->fonction) === $fonction->nom)>
+                                        {{ $fonction->nom }}@if($fonction->est_chef) ★@endif
+                                    </option>
                                 @endforeach
                             </select>
                             @error('fonction')
@@ -353,38 +427,6 @@
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
-
-                        <div class="col-md-6" id="province-wrapper">
-                            <label for="province_id" class="form-label">Province</label>
-                            <select class="form-select @error('province_id') is-invalid @enderror"
-                                id="province_id" name="province_id">
-                                <option value="">-- Sélectionner une province --</option>
-                                @foreach ($provinces as $province)
-                                    <option value="{{ $province->id }}" @selected(old('province_id', $agent->province_id) == $province->id)>
-                                        {{ $province->nom_province ?? "Province {$province->id}" }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('province_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
-                            <label for="departement_id" class="form-label">Département</label>
-                            <select class="form-select @error('departement_id') is-invalid @enderror"
-                                id="departement_id" name="departement_id">
-                                <option value="">-- Sélectionner un département --</option>
-                                @foreach ($departments as $dept)
-                                    <option value="{{ $dept->id }}" @selected(old('departement_id', $agent->departement_id) == $dept->id)>
-                                        {{ $dept->nom }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('departement_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
                     </div>
                 </section>
 
@@ -408,100 +450,100 @@
 @section('js')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const organeInput       = document.getElementById('organe');
-    const fonctionSelect    = document.getElementById('fonction');
-    const departementSelect = document.getElementById('departement_id');
-    const provinceWrapper   = document.getElementById('province-wrapper');
-    const provinceSelect    = document.getElementById('province_id');
+    const organeSelect   = document.getElementById('organe');
+    const fonctionSelect = document.getElementById('fonction');
+    const panelRatt      = document.getElementById('panel-rattachement');
+    const deptWrapper    = document.getElementById('dept-wrapper');
+    const sectionWrapper = document.getElementById('section-wrapper');
+    const provinceWrapper= document.getElementById('province-wrapper');
+    const deptSelect     = document.getElementById('departement_id');
+    const sectionSelect  = document.getElementById('section_id');
+    const rattRadios     = document.querySelectorAll('[name="type_rattachement"]');
 
-    // Mapping entre noms d'organe et codes de niveau administratif
-    const organeToNiveauMap = {
+    const organeToNiveau = {
         'secrétariat exécutif national': 'SEN',
         'secrétariat exécutif provincial': 'SEP',
         'secrétariat exécutif local': 'SEL',
     };
 
-    const isNational = (value) =>
-        (value || '').trim().toLowerCase() === 'secrétariat exécutif national';
-
-    const shouldDisableDepartment = (value) => {
-        const normalized = (value || '').trim().toLowerCase();
-        return normalized === 'secrétariat exécutif provincial' || normalized === 'secrétariat exécutif local';
-    };
-
-    // Fonction pour récupérer et afficher les fonctions filtrées
-    const updateFonctions = async (organe) => {
-        if (!organe) {
-            // Si pas d'organe, réinitialiser le dropdown
-            fonctionSelect.innerHTML = '<option value="">-- Sélectionner une fonction --</option>';
-            return;
-        }
-
-        const niveauCode = organeToNiveauMap[(organe || '').trim().toLowerCase()];
-
-        if (!niveauCode) {
-            // Organe non reconnu
-            fonctionSelect.innerHTML = '<option value="">-- Sélectionner une fonction --</option>';
-            return;
-        }
-
-        try {
-            const response = await fetch(`/admin/api/fonctions-by-organe/${niveauCode}`);
-            const fonctions = await response.json();
-
-            // Grouper les fonctions par type_poste
-            const grouped = {};
-            fonctions.forEach(f => {
-                const type = f.type_poste || 'Autres';
-                if (!grouped[type]) grouped[type] = [];
-                grouped[type].push(f);
-            });
-
-            // Construire le HTML
-            let html = '<option value="">-- Sélectionner une fonction --</option>';
-            for (const [type, items] of Object.entries(grouped)) {
-                html += `<optgroup label="${type}">`;
-                items.forEach(f => {
-                    html += `<option value="${f.nom}">${f.nom}</option>`;
-                });
-                html += '</optgroup>';
-            }
-
-            fonctionSelect.innerHTML = html;
-        } catch (error) {
-            console.error('Erreur lors du chargement des fonctions:', error);
-        }
-    };
-
-    const syncFields = () => {
-        // Province : masquée si organe national
-        if (isNational(organeInput.value)) {
-            provinceWrapper.style.display = 'none';
-            provinceSelect.value = '';
-            provinceSelect.disabled = true;
-        } else {
-            provinceWrapper.style.display = '';
-            provinceSelect.disabled = false;
-        }
-
-        // Département : désactivé si provincial ou local
-        const disableDept = shouldDisableDepartment(organeInput.value);
-        departementSelect.disabled = disableDept;
-        if (disableDept) departementSelect.value = '';
-    };
-
-    // Écouter les changements d'organe
-    organeInput.addEventListener('change', function () {
-        updateFonctions(this.value);
-        syncFields();
-    });
-
-    // Initialiser les fonctions au chargement
-    if (organeInput.value) {
-        updateFonctions(organeInput.value);
+    function getNiveau() {
+        return organeToNiveau[(organeSelect.value || '').trim().toLowerCase()] || '';
     }
 
-    syncFields();
+    function syncPanels() {
+        const niveau = getNiveau();
+        panelRatt.style.display = niveau === 'SEN' ? '' : 'none';
+        provinceWrapper.style.display = (niveau === 'SEP' || niveau === 'SEL') ? '' : 'none';
+
+        if (niveau === 'SEN') {
+            const ratt = document.querySelector('[name="type_rattachement"]:checked');
+            deptWrapper.style.display = (ratt && ratt.value === 'departement') ? '' : 'none';
+            sectionWrapper.style.display = 'none';
+            if (!ratt || ratt.value !== 'departement') {
+                deptSelect.value = '';
+                sectionSelect.value = '';
+            }
+        } else {
+            deptWrapper.style.display = 'none';
+            sectionWrapper.style.display = 'none';
+        }
+        filterFonctions();
+    }
+
+    function syncSection() {
+        if (getNiveau() !== 'SEN') return;
+        const deptId = deptSelect.value;
+        sectionWrapper.style.display = deptId ? '' : 'none';
+        if (!deptId) { sectionSelect.value = ''; filterFonctions(); return; }
+        sectionSelect.querySelectorAll('option[data-dept]').forEach(opt => {
+            const match = opt.getAttribute('data-dept') === deptId;
+            opt.style.display = match ? '' : 'none';
+            opt.disabled = !match;
+        });
+        const sel = sectionSelect.querySelector('option:checked');
+        if (sel && sel.disabled) sectionSelect.value = '';
+        filterFonctions();
+    }
+
+    function filterFonctions() {
+        const niveau = getNiveau();
+        if (!niveau) return;
+
+        let typePoste = null;
+        if (niveau === 'SEN') {
+            const ratt = document.querySelector('[name="type_rattachement"]:checked');
+            if (ratt && ratt.value === 'service_rattache') {
+                typePoste = 'service_rattache';
+            } else if (ratt && ratt.value === 'departement') {
+                typePoste = sectionSelect.value ? 'section' : 'département';
+            }
+        } else if (niveau === 'SEP') {
+            typePoste = 'province';
+        } else if (niveau === 'SEL') {
+            typePoste = 'local';
+        }
+
+        fonctionSelect.querySelectorAll('option[data-niveau]').forEach(opt => {
+            const optNa = opt.getAttribute('data-niveau');
+            const optType = opt.getAttribute('data-type');
+            let visible = (optNa === niveau || optNa === 'TOUS');
+            if (visible && typePoste) {
+                visible = (optType === typePoste || optType === 'appui');
+            }
+            opt.style.display = visible ? '' : 'none';
+            opt.disabled = !visible;
+        });
+        const sel = fonctionSelect.querySelector('option:checked');
+        if (sel && sel.disabled) fonctionSelect.value = '';
+    }
+
+    organeSelect.addEventListener('change', syncPanels);
+    rattRadios.forEach(r => r.addEventListener('change', syncPanels));
+    deptSelect.addEventListener('change', syncSection);
+    sectionSelect.addEventListener('change', filterFonctions);
+
+    syncPanels();
+    syncSection();
 });
 </script>
 @endsection
