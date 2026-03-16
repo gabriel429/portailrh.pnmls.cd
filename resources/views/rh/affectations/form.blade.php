@@ -181,18 +181,36 @@
                     <div class="col-12 panel-na" id="panel-SEL" style="display:none">
                         <label class="form-label fw-semibold">
                             <span class="badge bg-info me-1">3</span>
-                            Localité (SEL) <span class="text-danger">*</span>
+                            Province <span class="text-danger">*</span>
                         </label>
-                        <select name="localite_id" class="form-select @error('localite_id') is-invalid @enderror">
-                            <option value="">– Choisir la localité –</option>
-                            @foreach($localites as $loc)
-                            <option value="{{ $loc->id }}"
-                                @selected(old('localite_id', $affectation->localite_id ?? '') == $loc->id)>
-                                {{ $loc->nom }} – {{ $loc->province?->nom }}
+                        <select id="sel-province-sel" name="province_id_sel" class="form-select @error('province_id_sel') is-invalid @enderror">
+                            <option value="">– Choisir la province –</option>
+                            @foreach($provinces as $province)
+                            <option value="{{ $province->id }}"
+                                @selected(old('province_id_sel', $affectation->localite?->province_id ?? '') == $province->id)>
+                                {{ $province->nom }} ({{ $province->code }})
                             </option>
                             @endforeach
                         </select>
-                        @error('localite_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        @error('province_id_sel')<div class="invalid-feedback">{{ $message }}</div>@enderror
+
+                        <div class="mt-2">
+                            <label class="form-label fw-semibold">
+                                <span class="badge bg-info me-1">4</span>
+                                Localité (SEL) <span class="text-danger">*</span>
+                            </label>
+                            <select name="localite_id" id="sel-localite" class="form-select @error('localite_id') is-invalid @enderror">
+                                <option value="">– Choisir la localité –</option>
+                                @foreach($localites as $loc)
+                                <option value="{{ $loc->id }}"
+                                    data-province="{{ $loc->province_id }}"
+                                    @selected(old('localite_id', $affectation->localite_id ?? '') == $loc->id)>
+                                    {{ $loc->nom }}
+                                </option>
+                                @endforeach
+                            </select>
+                            @error('localite_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
 
                     {{-- Dates + statut --}}
@@ -317,6 +335,31 @@
     }
 
     rattRadios.forEach(r => r.addEventListener('change', showRattPanel));
+
+    // SEL: filtrer localités par province
+    const selProvinceSel = document.getElementById('sel-province-sel');
+    const selLocalite = document.getElementById('sel-localite');
+
+    function filterLocalites() {
+        if (!selProvinceSel || !selLocalite) return;
+        const provId = selProvinceSel.value;
+        const options = selLocalite.querySelectorAll('option[data-province]');
+        options.forEach(opt => {
+            const match = !provId || opt.getAttribute('data-province') === provId;
+            opt.style.display = match ? '' : 'none';
+            opt.disabled = !match;
+        });
+        // Reset si la localité sélectionnée n'est plus dans la province
+        const selected = selLocalite.querySelector('option:checked');
+        if (selected && selected.disabled) {
+            selLocalite.value = '';
+        }
+    }
+
+    if (selProvinceSel) {
+        selProvinceSel.addEventListener('change', filterLocalites);
+        filterLocalites();
+    }
 
     // Init on page load
     const checkedNA = document.querySelector('[name="niveau_administratif"]:checked');
