@@ -145,18 +145,13 @@
                             </div>
                         </div>
 
-                        {{-- Service rattaché --}}
+
+                        {{-- Service rattaché: pas de dropdown, seul Fonction/Poste sera affiché --}}
                         <div id="panel-ratt-service" style="display:none" class="mt-2">
-                            <select name="section_id" id="sel-service-rattache" class="form-select @error('section_id') is-invalid @enderror">
-                                <option value="">– Choisir le service rattaché –</option>
-                                @foreach($sections->where('type', 'service_rattache') as $service)
-                                <option value="{{ $service->id }}"
-                                    @selected(old('section_id', $affectation->section_id ?? '') == $service->id)>
-                                    {{ $service->nom }}
-                                </option>
-                                @endforeach
-                            </select>
-                            @error('section_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="alert alert-info py-2 mb-0">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Choisissez la fonction/poste ci-dessous.
+                            </div>
                         </div>
                     </div>
 
