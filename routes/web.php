@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
     // Routes admin/RH
     Route::middleware(['auth', 'role:Section ressources humaines,Chef Section RH,RH National,RH Provincial'])->prefix('rh')->name('rh.')->group(function () {
         // Gestion des agents
+        Route::get('agents/export', [AgentController::class, 'export'])->name('agents.export');
         Route::resource('agents', AgentController::class);
         Route::post('agents/{agent}/generate-matricule', [AgentController::class, 'generateMatricule'])->name('agents.generate-matricule');
         Route::post('agents/{agent}/messages', [AgentController::class, 'storeMessage'])->name('agents.messages.store');
