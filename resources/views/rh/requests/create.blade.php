@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-5">
+<div class="container py-5" style="background: linear-gradient(135deg, #f8fafc 60%, #e3e9f7 100%); min-height: 100vh;">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <!-- En-tête -->
@@ -25,7 +25,7 @@
                 </div>
             @endif
 
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-lg rounded-4" style="background: #fff;">
                 <div class="card-body p-4">
                     <form method="POST" action="{{ route('requests.store') }}">
                         @csrf
@@ -33,6 +33,7 @@
                         <!-- Agent -->
                         <div class="mb-4">
                             <label for="agent_id" class="form-label">
+                                <i class="fas fa-user me-2 text-primary"></i>
                                 <strong>Agent</strong>
                                 <span class="text-danger">*</span>
                             </label>
@@ -52,6 +53,7 @@
                         <!-- Type de demande -->
                         <div class="mb-4">
                             <label for="type" class="form-label">
+                                <i class="fas fa-list-alt me-2 text-primary"></i>
                                 <strong>Type de demande</strong>
                                 <span class="text-danger">*</span>
                             </label>
@@ -71,6 +73,7 @@
                         <!-- Description -->
                         <div class="mb-4">
                             <label for="description" class="form-label">
+                                <i class="fas fa-align-left me-2 text-primary"></i>
                                 <strong>Description</strong>
                                 <span class="text-danger">*</span>
                             </label>
@@ -84,6 +87,7 @@
                         <div class="row mb-4">
                             <div class="col-md-6">
                                 <label for="date_debut" class="form-label">
+                                    <i class="fas fa-calendar-alt me-2 text-primary"></i>
                                     <strong>Date de début</strong>
                                     <span class="text-danger">*</span>
                                 </label>
@@ -94,6 +98,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="date_fin" class="form-label">
+                                    <i class="fas fa-calendar-check me-2 text-primary"></i>
                                     <strong>Date de fin</strong> (optionnel)
                                 </label>
                                 <input type="date" name="date_fin" id="date_fin" class="form-control @error('date_fin') is-invalid @enderror" value="{{ old('date_fin') }}">

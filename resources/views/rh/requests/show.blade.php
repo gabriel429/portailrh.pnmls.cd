@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-5">
+<div class="container py-5" id="demande-print-area">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <!-- En-tête -->
@@ -104,24 +104,40 @@
                     <hr>
 
                     <!-- Boutons d'action -->
-                    <div class="d-flex gap-2 justify-content-end">
-                        <a href="{{ route('requests.index') }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left me-2"></i> Retour
-                        </a>
-                        <a href="{{ route('requests.edit', $request) }}" class="btn btn-warning">
-                            <i class="fas fa-edit me-2"></i> Modifier
-                        </a>
-                        <form method="POST" action="{{ route('requests.destroy', $request) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette demande ?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-danger">
-                                <i class="fas fa-trash me-2"></i> Supprimer
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="{{ route('requests.index') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i> Retour
+                            </a>
+                            <a href="{{ route('requests.edit', $request) }}" class="btn btn-warning">
+                                <i class="fas fa-edit me-2"></i> Modifier
+                            </a>
+                            <button onclick="window.printDemande()" class="btn btn-success">
+                                <i class="fas fa-print me-2"></i> Imprimer
                             </button>
-                        </form>
-                    </div>
+                            <form method="POST" action="{{ route('requests.destroy', $request) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette demande ?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="fas fa-trash me-2"></i> Supprimer
+                                </button>
+                            </form>
+                        </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+<script>
+window.printDemande = function() {
+    const printContents = document.getElementById('demande-print-area').innerHTML;
+    const originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    location.reload();
+}
+</script>
 @endsection
