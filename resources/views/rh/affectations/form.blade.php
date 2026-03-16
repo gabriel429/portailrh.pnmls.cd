@@ -86,25 +86,6 @@
                         @error('agent_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                     </div>
 
-                    <div class="col-12">
-                        <label class="form-label fw-semibold">Fonction / Poste <span class="text-danger">*</span></label>
-                        <select name="fonction_id" class="form-select @error('fonction_id') is-invalid @enderror" required>
-                            <option value="">– Choisir –</option>
-                            @foreach($fonctions->groupBy('niveau_administratif') as $na => $group)
-                            <optgroup label="━━ {{ $na }} – {{ ['SEN'=>'National','SEP'=>'Provincial','SEL'=>'Local','TOUS'=>'Tous niveaux'][$na] ?? $na }} ━━">
-                                @foreach($group as $fonction)
-                                <option value="{{ $fonction->id }}"
-                                    data-niveau="{{ $fonction->niveau_administratif }}"
-                                    @selected(old('fonction_id', $affectation->fonction_id ?? '') == $fonction->id)>
-                                    {{ $fonction->nom }}@if($fonction->est_chef) ★@endif
-                                </option>
-                                @endforeach
-                            </optgroup>
-                            @endforeach
-                        </select>
-                        @error('fonction_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                    </div>
-
                     {{-- Étape 3 : Rattachement structurel -- SEN --}}
                     <div class="col-12 panel-na" id="panel-SEN">
                         <label class="form-label fw-semibold">
@@ -233,6 +214,26 @@
                         </div>
                     </div>
 
+                    {{-- Fonction / Poste (affiché après le rattachement, filtré par type_poste) --}}
+                    <div class="col-12" id="panel-fonction">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-briefcase me-1"></i>
+                            Fonction / Poste <span class="text-danger">*</span>
+                        </label>
+                        <select name="fonction_id" id="sel-fonction" class="form-select @error('fonction_id') is-invalid @enderror" required>
+                            <option value="">– Choisir –</option>
+                            @foreach($fonctions as $fonction)
+                            <option value="{{ $fonction->id }}"
+                                data-niveau="{{ $fonction->niveau_administratif }}"
+                                data-type="{{ $fonction->type_poste }}"
+                                @selected(old('fonction_id', $affectation->fonction_id ?? '') == $fonction->id)>
+                                {{ $fonction->nom }}@if($fonction->est_chef) ★@endif
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('fonction_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+
                     {{-- Dates + statut --}}
                     <div class="col-md-6">
                         <label class="form-label fw-semibold">Date de début</label>
@@ -282,36 +283,12 @@
     const naRadios     = document.querySelectorAll('[name="niveau_administratif"]');
     const naPanels     = { SEN: document.getElementById('panel-SEN'), SEP: document.getElementById('panel-SEP'), SEL: document.getElementById('panel-SEL') };
     const hiddenNiveau = document.getElementById('hidden-niveau');
-
-    const fonctionSelect = document.querySelector('[name="fonction_id"]');
+    const fonctionSelect = document.getElementById('sel-fonction');
 
     function showNA(val) {
         Object.entries(naPanels).forEach(([k, el]) => { if (el) el.style.display = k === val ? '' : 'none'; });
-        filterFonctions(val);
         updateNiveau();
-    }
-
-    // Filtrer les fonctions selon le niveau administratif sélectionné
-    function filterFonctions(na) {
-        if (!fonctionSelect) return;
-        const optgroups = fonctionSelect.querySelectorAll('optgroup');
-        optgroups.forEach(og => {
-            const options = og.querySelectorAll('option');
-            let hasVisible = false;
-            options.forEach(opt => {
-                const niveau = opt.getAttribute('data-niveau');
-                const visible = (niveau === na || niveau === 'TOUS');
-                opt.style.display = visible ? '' : 'none';
-                opt.disabled = !visible;
-                if (visible) hasVisible = true;
-            });
-            og.style.display = hasVisible ? '' : 'none';
-        });
-        // Reset si la valeur actuelle n'est plus visible
-        const selected = fonctionSelect.querySelector('option:checked');
-        if (selected && selected.disabled) {
-            fonctionSelect.value = '';
-        }
+        filterFonctions();
     }
 
     function updateNiveau() {
@@ -324,6 +301,52 @@
         } else {
             const rattType = document.querySelector('[name="type_rattachement"]:checked');
             hiddenNiveau.value = rattType ? rattType.value : '';
+        }
+    }
+
+    // Filtrer les fonctions par niveau_administratif ET type_poste selon le contexte
+    function filterFonctions() {
+        if (!fonctionSelect) return;
+        const checkedNA = document.querySelector('[name="niveau_administratif"]:checked');
+        if (!checkedNA) return;
+        const na = checkedNA.value;
+
+        // Déterminer le type_poste attendu
+        let typePoste = null;
+        if (na === 'SEN') {
+            const rattType = document.querySelector('[name="type_rattachement"]:checked');
+            if (rattType && rattType.value === 'service_rattache') {
+                typePoste = 'service_rattache';
+            } else if (rattType && rattType.value === 'departement') {
+                const selSection = document.getElementById('sel-section-dept');
+                if (selSection && selSection.value) {
+                    typePoste = 'section'; // section choisie → fonctions de section
+                } else {
+                    typePoste = 'département'; // pas de section → fonctions de département
+                }
+            }
+        } else if (na === 'SEP') {
+            typePoste = 'province';
+        } else if (na === 'SEL') {
+            typePoste = 'local';
+        }
+
+        const options = fonctionSelect.querySelectorAll('option[data-niveau]');
+        options.forEach(opt => {
+            const optNa = opt.getAttribute('data-niveau');
+            const optType = opt.getAttribute('data-type');
+            let visible = (optNa === na || optNa === 'TOUS');
+            // Si un type_poste est déterminé, filtrer aussi par type
+            if (visible && typePoste) {
+                visible = (optType === typePoste || optType === 'appui');
+            }
+            opt.style.display = visible ? '' : 'none';
+            opt.disabled = !visible;
+        });
+        // Reset si la valeur actuelle n'est plus visible
+        const selected = fonctionSelect.querySelector('option:checked');
+        if (selected && selected.disabled) {
+            fonctionSelect.value = '';
         }
     }
 
@@ -343,15 +366,17 @@
         }
         if (panelDept) panelDept.style.display = checked.value === 'departement' ? '' : 'none';
         if (panelService) panelService.style.display = checked.value === 'service_rattache' ? '' : 'none';
-        // Reset hidden fields when toggling
         if (checked.value === 'departement') {
             const selService = document.getElementById('sel-service-rattache');
             if (selService) selService.value = '';
         } else {
             const selDept = document.getElementById('sel-dept');
             if (selDept) selDept.value = '';
+            const panelSect = document.getElementById('panel-section-dept');
+            if (panelSect) panelSect.style.display = 'none';
         }
         updateNiveau();
+        filterFonctions();
     }
 
     rattRadios.forEach(r => r.addEventListener('change', showRattPanel));
@@ -364,9 +389,8 @@
     function filterSections() {
         if (!selDept || !selSectionDept || !panelSectionDept) return;
         const deptId = selDept.value;
-        // Afficher le panel section uniquement si un département est sélectionné
         panelSectionDept.style.display = deptId ? '' : 'none';
-        if (!deptId) return;
+        if (!deptId) { filterFonctions(); return; }
 
         const options = selSectionDept.querySelectorAll('option[data-dept]');
         options.forEach(opt => {
@@ -374,16 +398,21 @@
             opt.style.display = match ? '' : 'none';
             opt.disabled = !match;
         });
-        // Reset si la section sélectionnée n'est plus dans le département
         const selected = selSectionDept.querySelector('option:checked');
         if (selected && selected.disabled) {
             selSectionDept.value = '';
         }
+        filterFonctions();
     }
 
     if (selDept) {
         selDept.addEventListener('change', filterSections);
         filterSections();
+    }
+
+    // Quand on change de section, re-filtrer les fonctions
+    if (selSectionDept) {
+        selSectionDept.addEventListener('change', filterFonctions);
     }
 
     // SEL: filtrer localités par province
@@ -399,7 +428,6 @@
             opt.style.display = match ? '' : 'none';
             opt.disabled = !match;
         });
-        // Reset si la localité sélectionnée n'est plus dans la province
         const selected = selLocalite.querySelector('option:checked');
         if (selected && selected.disabled) {
             selLocalite.value = '';
@@ -417,8 +445,7 @@
         showNA(checkedNA.value);
     }
     showRattPanel();
-    // Filtrage initial des fonctions
-    if (checkedNA) filterFonctions(checkedNA.value);
+    filterFonctions();
 })();
 </script>
 @endpush
