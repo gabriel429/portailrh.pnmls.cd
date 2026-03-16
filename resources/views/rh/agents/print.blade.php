@@ -206,7 +206,7 @@
                 </div>
                 <div class="data-item">
                     <div class="label">Grade de l'Etat</div>
-                    <div class="value">{{ $agent->grade?->nom ?? 'N.U.' }}</div>
+                    <div class="value">{{ $agent->grade?->libelle ?? 'N.U.' }}</div>
                 </div>
                 <div class="data-item">
                     <div class="label">Niveau d'études</div>

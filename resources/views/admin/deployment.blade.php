@@ -265,6 +265,27 @@
             </form>
         </div>
     </div>
+
+    {{-- Grades Fonction Publique --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-medal me-2" style="color: #f59e0b;"></i>
+                Grades Fonction Publique
+            </h5>
+
+            <p class="text-muted mb-3">
+                Insère les 11 grades de la Fonction Publique (Secrétaire général, Directeur, Chef de Division, etc.)
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-grades') }}" method="POST">
+                @csrf
+                <button type="submit" class="btn" style="background-color: #f59e0b; color: white;">
+                    <i class="fas fa-play me-2"></i> Lancer Déploiement
+                </button>
+            </form>
+        </div>
+    </div>
 </div>
         <div class="form-card">
             <h6 class="mb-3">
@@ -284,6 +305,7 @@
                 <p><strong>Domaine d'études:</strong> Ajoute la colonne domaine_etudes pour préciser le domaine d'études de chaque agent (ex: Sciences informatiques, Droit, Médecine)</p>
                 <p><strong>Départements PNMLS:</strong> Insère les départements et sections du PNMLS (DAF, DPP, DSE, DPC, DPM, DRH, DPR, Direction, Sections, Audit)</p>
                 <p><strong>Module Affectations:</strong> Crée les tables sections, cellules, localités et affectations pour gérer l'affectation des agents aux fonctions dans les structures SEN/SEP/SEL</p>
+                <p><strong>Grades Fonction Publique:</strong> Insère les 11 grades de la Fonction Publique (catégories A, B, C : Secrétaire général, Directeur, Attaché, Huissier, etc.)</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>

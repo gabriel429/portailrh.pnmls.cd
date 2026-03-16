@@ -811,6 +811,63 @@ class DeploymentController extends Controller
     }
 
     /**
+     * Déployer les grades de la Fonction Publique.
+     */
+    public function deployGrades()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $grades = [
+                ['categorie' => 'A', 'nom_categorie' => 'Haut cadre',              'ordre' => 1,  'libelle' => 'Secrétaire général'],
+                ['categorie' => 'A', 'nom_categorie' => 'Haut cadre',              'ordre' => 2,  'libelle' => 'Directeur'],
+                ['categorie' => 'A', 'nom_categorie' => 'Haut cadre',              'ordre' => 3,  'libelle' => 'Chef de Division'],
+                ['categorie' => 'A', 'nom_categorie' => 'Haut cadre',              'ordre' => 4,  'libelle' => 'Chef de Bureau'],
+                ['categorie' => 'B', 'nom_categorie' => 'Agent de collaboration',  'ordre' => 5,  'libelle' => "Attaché d'Administration de 1ère Classe"],
+                ['categorie' => 'B', 'nom_categorie' => 'Agent de collaboration',  'ordre' => 6,  'libelle' => "Attaché d'Administration de 2ème Classe"],
+                ['categorie' => 'B', 'nom_categorie' => 'Agent de collaboration',  'ordre' => 7,  'libelle' => "Agent d'Administration de 1ère Classe"],
+                ['categorie' => 'C', 'nom_categorie' => "Agents d'exécution",      'ordre' => 8,  'libelle' => "Agent d'Administration de 2ème Classe"],
+                ['categorie' => 'C', 'nom_categorie' => "Agents d'exécution",      'ordre' => 9,  'libelle' => "Agent Auxiliaire de 1ère Classe"],
+                ['categorie' => 'C', 'nom_categorie' => "Agents d'exécution",      'ordre' => 10, 'libelle' => "Agent Auxiliaire de 2ème Classe"],
+                ['categorie' => 'C', 'nom_categorie' => "Agents d'exécution",      'ordre' => 11, 'libelle' => 'Huissier'],
+            ];
+
+            $created = 0;
+            $existing = 0;
+
+            foreach ($grades as $grade) {
+                $exists = DB::table('grades')->where('ordre', $grade['ordre'])->exists();
+                if (!$exists) {
+                    DB::table('grades')->insert(array_merge($grade, [
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]));
+                    $created++;
+                    $output_messages[] = "Créé: {$grade['libelle']} ({$grade['categorie']})";
+                } else {
+                    $existing++;
+                }
+            }
+
+            if ($existing > 0) {
+                $output_messages[] = "{$existing} grade(s) existaient déjà.";
+            }
+            $output_messages[] = "{$created} grade(s) créé(s). Total: " . DB::table('grades')->count();
+            $success = true;
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
+
+    /**
      * Déployer les tables sections, cellules, localites et affectations.
      */
     public function deployAffectations()

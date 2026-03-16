@@ -247,7 +247,7 @@
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Grade de l'État</label>
-                                    <p class="mb-0">{{ $agent->grade?->nom ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $agent->grade?->libelle ?? 'N/A' }}</p>
                                 </div>
                             </div>
 

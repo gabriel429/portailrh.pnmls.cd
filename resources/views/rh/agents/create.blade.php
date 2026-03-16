@@ -88,7 +88,7 @@
                                 <option value="">-- Sélectionner un grade --</option>
                                 @foreach ($grades as $grade)
                                     <option value="{{ $grade->id }}" @selected(old('grade_id') == $grade->id)>
-                                        {{ $grade->nom }}
+                                        {{ $grade->libelle }} ({{ $grade->categorie }})
                                     </option>
                                 @endforeach
                             </select>
