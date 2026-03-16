@@ -127,15 +127,6 @@
                             @enderror
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="email" class="form-label">E-mail institutionnel <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror"
-                                   id="email" name="email"
-                                   value="{{ old('email') }}" required>
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
 
                         <div class="col-md-6">
                             <label for="email_prive" class="form-label">E-mail privé</label>

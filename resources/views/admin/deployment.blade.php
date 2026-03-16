@@ -1,3 +1,21 @@
+    {{-- Migration Fresh --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-database text-danger me-2"></i>
+                Réinitialiser la base de données
+            </h5>
+            <p class="text-muted mb-3">
+                <strong>Attention !</strong> Cette action supprime toutes les données et recrée toutes les tables (php artisan migrate:fresh).
+            </p>
+            <form action="{{ route('admin.deployment.migrate-fresh') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir réinitialiser la base de données ? Cette action est irréversible.');">
+                @csrf
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Réinitialiser la base
+                </button>
+            </form>
+        </div>
+    </div>
 @extends('admin.layouts.sidebar')
 
 @section('title', 'Déploiement')

@@ -65,7 +65,8 @@
                                     <tr>
                                         <th>ID Agent</th>
                                         <th>Nom et Prenom</th>
-                                        <th>Email</th>
+                                        <th>Email privé</th>
+                                        <th>Email professionnel</th>
                                         <th>Poste</th>
                                         <th>Role</th>
                                         <th>Departement</th>
@@ -78,7 +79,8 @@
                                         <tr class="agent-row" style="cursor: pointer;" data-agent-id="{{ $agent->id }}">
                                             <td><strong>{{ $agent->id_agent }}</strong></td>
                                             <td>{{ $agent->prenom }} {{ $agent->nom }}</td>
-                                            <td>{{ $agent->email }}</td>
+                                            <td>{{ $agent->email_prive ?? 'N/A' }}</td>
+                                            <td>{{ $agent->email_professionnel ?? 'N/A' }}</td>
                                             <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
                                             <td>
                                                 @if($agent->role)

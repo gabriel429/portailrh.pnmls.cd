@@ -76,14 +76,6 @@
                             <p class="form-control-plaintext fw-bold">{{ $agent->id_agent }}</p>
                         </div>
 
-                        <div class="col-md-6">
-                            <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control @error('email') is-invalid @enderror"
-                                id="email" name="email" value="{{ old('email', $agent->email) }}" required>
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
 
                         <div class="col-md-6">
                             <label for="prenom" class="form-label">Prénom <span class="text-danger">*</span></label>
