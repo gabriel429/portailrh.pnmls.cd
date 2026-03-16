@@ -245,9 +245,35 @@
     const naPanels     = { SEN: document.getElementById('panel-SEN'), SEP: document.getElementById('panel-SEP'), SEL: document.getElementById('panel-SEL') };
     const hiddenNiveau = document.getElementById('hidden-niveau');
 
+    const fonctionSelect = document.querySelector('[name="fonction_id"]');
+
     function showNA(val) {
         Object.entries(naPanels).forEach(([k, el]) => { if (el) el.style.display = k === val ? '' : 'none'; });
+        filterFonctions(val);
         updateNiveau();
+    }
+
+    // Filtrer les fonctions selon le niveau administratif sélectionné
+    function filterFonctions(na) {
+        if (!fonctionSelect) return;
+        const optgroups = fonctionSelect.querySelectorAll('optgroup');
+        optgroups.forEach(og => {
+            const options = og.querySelectorAll('option');
+            let hasVisible = false;
+            options.forEach(opt => {
+                const niveau = opt.getAttribute('data-niveau');
+                const visible = (niveau === na || niveau === 'TOUS');
+                opt.style.display = visible ? '' : 'none';
+                opt.disabled = !visible;
+                if (visible) hasVisible = true;
+            });
+            og.style.display = hasVisible ? '' : 'none';
+        });
+        // Reset si la valeur actuelle n'est plus visible
+        const selected = fonctionSelect.querySelector('option:checked');
+        if (selected && selected.disabled) {
+            fonctionSelect.value = '';
+        }
     }
 
     function updateNiveau() {
@@ -298,6 +324,8 @@
         showNA(checkedNA.value);
     }
     showRattPanel();
+    // Filtrage initial des fonctions
+    if (checkedNA) filterFonctions(checkedNA.value);
 })();
 </script>
 @endpush
