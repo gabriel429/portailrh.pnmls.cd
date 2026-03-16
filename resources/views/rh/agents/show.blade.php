@@ -231,6 +231,17 @@
                                     <label class="text-muted small">Année d'engagement</label>
                                     <p class="mb-0">{{ $agent->annee_engagement_programme ?? 'N/A' }}</p>
                                 </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="text-muted small">Ancienneté</label>
+                                    <p class="mb-0 fw-semibold">
+                                        @if($agent->annee_engagement_programme)
+                                            @php $anciennete = now()->year - $agent->annee_engagement_programme; @endphp
+                                            {{ $anciennete }} an{{ $anciennete > 1 ? 's' : '' }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </p>
+                                </div>
                             </div>
 
                             <hr class="my-2">
