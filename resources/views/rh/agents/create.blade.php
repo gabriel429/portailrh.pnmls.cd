@@ -139,7 +139,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="email_professionnel" class="form-label">E-mail professionnel</label>
+                            <label for="email_professionnel" class="form-label">E-mail institutionnel</label>
                             <input type="email" class="form-control @error('email_professionnel') is-invalid @enderror"
                                    id="email_professionnel" name="email_professionnel"
                                    value="{{ old('email_professionnel') }}">

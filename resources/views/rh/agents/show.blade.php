@@ -186,7 +186,7 @@
                                     <p class="mb-0">{{ $agent->email_prive ? $agent->email_prive : 'N/A' }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">E-mail professionnel</label>
+                                    <label class="text-muted small">E-mail institutionnel</label>
                                     <p class="mb-0">{{ $agent->email_professionnel ? $agent->email_professionnel : 'N/A' }}</p>
                                 </div>
                             </div>

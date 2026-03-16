@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('localites')) {
+            return;
+        }
+
         Schema::create('localites', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique()->comment('Code de la localité (ex: SEL-KIN-01)');

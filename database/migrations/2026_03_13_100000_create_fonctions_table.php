@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (Schema::hasTable('fonctions')) {
+            return;
+        }
+
         Schema::create('fonctions', function (Blueprint $table) {
             $table->id();
             $table->string('nom')->unique()->comment('Intitulé du poste / de la fonction');

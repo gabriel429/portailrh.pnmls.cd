@@ -151,15 +151,6 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="telephone" class="form-label">Téléphone</label>
-                            <input type="tel" class="form-control @error('telephone') is-invalid @enderror"
-                                id="telephone" name="telephone" value="{{ old('telephone', $agent->telephone) }}">
-                            @error('telephone')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="col-md-6">
                             <label for="email_prive" class="form-label">E-mail privé</label>
                             <input type="email" class="form-control @error('email_prive') is-invalid @enderror"
                                 id="email_prive" name="email_prive" value="{{ old('email_prive', $agent->email_prive) }}">
@@ -169,10 +160,19 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="email_professionnel" class="form-label">E-mail professionnel</label>
+                            <label for="email_professionnel" class="form-label">E-mail institutionnel</label>
                             <input type="email" class="form-control @error('email_professionnel') is-invalid @enderror"
                                 id="email_professionnel" name="email_professionnel" value="{{ old('email_professionnel', $agent->email_professionnel) }}">
                             @error('email_professionnel')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="telephone" class="form-label">Téléphone</label>
+                            <input type="tel" class="form-control @error('telephone') is-invalid @enderror"
+                                id="telephone" name="telephone" value="{{ old('telephone', $agent->telephone) }}">
+                            @error('telephone')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
