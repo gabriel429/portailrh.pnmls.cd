@@ -23,11 +23,7 @@
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
-<?php
-namespace App\Http\Controllers\Admin;
-
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Schema;
+// ...existing code...
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use App\Models\InstitutionCategorie;
