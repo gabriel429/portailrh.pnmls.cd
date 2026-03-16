@@ -1,3 +1,24 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use App\Models\InstitutionCategorie;
+use App\Models\Institution;
+
+class DeploymentController extends Controller
+{
+    /**
+     * Show deployment page
+     */
+    public function index()
+    {
+        return view('admin.deployment');
+    }
+
     /**
      * Exécute la commande php artisan migrate (applique les migrations sans perte de données)
      */
@@ -23,20 +44,31 @@
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
-// ...existing code...
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\DB;
-use App\Models\InstitutionCategorie;
-use App\Models\Institution;
 
-class DeploymentController extends Controller
-{
     /**
-     * Show deployment page
+     * Exécute migrate:fresh (supprime toutes les tables et recrée la base)
      */
-    public function index()
+    public function migrateFresh()
     {
-        return view('admin.deployment');
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "⚠️ Réinitialisation complète de la base de données...";
+            Artisan::call('migrate:fresh', ['--force' => true]);
+            $output = Artisan::output();
+            $output_messages[] = $output;
+            $output_messages[] = "✅ Base de données réinitialisée avec succès !";
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
     }
 
     /**

@@ -1,3 +1,40 @@
+@extends('admin.layouts.sidebar')
+
+@section('title', 'Déploiement')
+@section('page-title', 'Assistant de Déploiement')
+
+@section('content')
+
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show mb-3">
+        <i class="fas fa-check-circle me-2"></i>
+        <strong>Succès!</strong> Le déploiement est terminé.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if(session('error_messages') && count(session('error_messages')) > 0)
+    <div class="alert alert-danger alert-dismissible fade show mb-3">
+        <i class="fas fa-exclamation-circle me-2"></i>
+        <strong>Erreurs detectées:</strong>
+        <ul class="mb-0 ps-3 mt-2">
+            @foreach(session('error_messages') as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+@if(session('output_messages') && count(session('output_messages')) > 0)
+    <div class="bg-dark rounded p-3 mb-3" style="font-family: 'Courier New', monospace; color: #0f0; font-size: 0.85rem; max-height: 300px; overflow-y: auto;">
+        @foreach(session('output_messages') as $line)
+            <div>{{ $line }}</div>
+        @endforeach
+    </div>
+@endif
+
+<div class="row">
     {{-- Migration Standard --}}
     <div class="col-lg-6 mb-4">
         <div class="form-card">
@@ -25,9 +62,9 @@
                 Réinitialiser la base de données
             </h5>
             <p class="text-muted mb-3">
-                <strong>Attention !</strong> Cette action supprime toutes les données et recrée toutes les tables (php artisan migrate:fresh).
+                <strong>Attention !</strong> Cette action supprime toutes les données et recrée toutes les tables (php artisan migrate:fresh).
             </p>
-            <form action="{{ route('admin.deployment.migrate-fresh') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir réinitialiser la base de données ? Cette action est irréversible.');">
+            <form action="{{ route('admin.deployment.migrate-fresh') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir réinitialiser la base de données ? Cette action est irréversible.');">
                 @csrf
                 <button type="submit" class="btn btn-danger">
                     <i class="fas fa-exclamation-triangle me-2"></i> Réinitialiser la base
@@ -35,14 +72,7 @@
             </form>
         </div>
     </div>
-@extends('admin.layouts.sidebar')
 
-@section('title', 'Déploiement')
-@section('page-title', 'Assistant de Déploiement')
-
-@section('content')
-
-<div class="row">
     {{-- Module Organes --}}
     <div class="col-lg-6 mb-4">
         <div class="form-card">
@@ -54,35 +84,6 @@
             <p class="text-muted mb-3">
                 Déployer la table des Organes (SEN, SEP, SEL)
             </p>
-
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show mb-3">
-                    <i class="fas fa-check-circle me-2"></i>
-                    <strong>Succès!</strong> Le module Organe est maintenant déployé et opérationnel.
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
-            @if(session('error_messages') && count(session('error_messages')) > 0)
-                <div class="alert alert-danger alert-dismissible fade show mb-3">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    <strong>Erreurs detectées:</strong>
-                    <ul class="mb-0 ps-3 mt-2">
-                        @foreach(session('error_messages') as $error)
-                            <li>{{ $error }}</li>
-                        @endforeach
-                    </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
-            @if(session('output_messages') && count(session('output_messages')) > 0)
-                <div class="bg-dark rounded p-3 mb-3" style="font-family: 'Courier New', monospace; color: #0f0; font-size: 0.85rem; max-height: 300px; overflow-y: auto;">
-                    @foreach(session('output_messages') as $line)
-                        <div>{{ $line }}</div>
-                    @endforeach
-                </div>
-            @endif
 
             <form action="{{ route('admin.deployment.deploy-organes') }}" method="POST">
                 @csrf
@@ -324,6 +325,9 @@
         </div>
     </div>
 </div>
+
+<div class="row mt-3">
+    <div class="col-12">
         <div class="form-card">
             <h6 class="mb-3">
                 <i class="fas fa-info-circle me-2"></i>
