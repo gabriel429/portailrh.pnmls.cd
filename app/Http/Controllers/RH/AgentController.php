@@ -344,6 +344,18 @@ class AgentController extends Controller
             $validated['matricule_etat'] = null;
         }
 
+        // Normalize situation_familiale to match enum values
+        if (!empty($validated['situation_familiale'])) {
+            $map = [
+                'célibataire' => 'célibataire', 'celibataire' => 'célibataire',
+                'marié' => 'marié', 'marié(e)' => 'marié', 'marie' => 'marié',
+                'divorcé' => 'divorcé', 'divorcé(e)' => 'divorcé', 'divorce' => 'divorcé',
+                'veuf' => 'veuf', 'veuf/veuve' => 'veuf', 'veuve' => 'veuf',
+            ];
+            $key = mb_strtolower(trim($validated['situation_familiale']));
+            $validated['situation_familiale'] = $map[$key] ?? $validated['situation_familiale'];
+        }
+
         // Remove domaine_etudes if column doesn't exist yet
         if (!Schema::hasColumn('agents', 'domaine_etudes')) {
             unset($validated['domaine_etudes']);
