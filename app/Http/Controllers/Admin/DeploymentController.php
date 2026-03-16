@@ -1,28 +1,3 @@
-    /**
-     * Exécute la commande php artisan migrate:fresh
-     */
-    public function migrateFresh()
-    {
-        $output_messages = [];
-        $error_messages = [];
-        $success = false;
-
-        try {
-            $output_messages[] = "🚀 Lancement de la commande migrate:fresh...";
-            \Artisan::call('migrate:fresh', ['--force' => true]);
-            $output = \Artisan::output();
-            $output_messages[] = $output;
-            $output_messages[] = "✅ Migration terminée !";
-            $success = true;
-        } catch (\Exception $e) {
-            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
-        }
-
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
-    }
 
 <?php
 namespace App\Http\Controllers\Admin;
