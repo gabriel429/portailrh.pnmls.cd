@@ -23,8 +23,8 @@
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
-<?php
 
+<?php
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
