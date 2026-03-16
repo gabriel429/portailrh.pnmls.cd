@@ -130,6 +130,16 @@
                         </select>
                         @error('niveau')<div class="invalid-feedback">{{ $message }}</div>@enderror
 
+                        <div class="sen-panel mt-2" id="senpanel-direction" style="display:none">
+                            <label class="form-label fw-semibold">Rattachement direction</label>
+                            <select name="direction" class="form-select @error('direction') is-invalid @enderror">
+                                <option value="">– Choisir –</option>
+                                <option value="SEN" @selected(old('direction', $affectation->direction ?? '') === 'SEN')>SEN – Secrétariat Exécutif National</option>
+                                <option value="SENA" @selected(old('direction', $affectation->direction ?? '') === 'SENA')>SENA – Secrétariat Exécutif National Adjoint</option>
+                            </select>
+                            @error('direction')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
                         <div class="sen-panel mt-2" id="senpanel-departement" style="display:none">
                             <label class="form-label fw-semibold">Département</label>
                             <select name="department_id" id="sel-dept" class="form-select @error('department_id') is-invalid @enderror">
@@ -141,6 +151,15 @@
                                 </option>
                                 @endforeach
                             </select>
+                            <div class="mt-2">
+                                <label class="form-label fw-semibold">Rattachement du département</label>
+                                <select name="rattachement_dept" class="form-select @error('rattachement_dept') is-invalid @enderror">
+                                    <option value="">– Choisir –</option>
+                                    <option value="SEN" @selected(old('rattachement_dept', $affectation->rattachement_dept ?? '') === 'SEN')>Rattaché au SEN</option>
+                                    <option value="SENA" @selected(old('rattachement_dept', $affectation->rattachement_dept ?? '') === 'SENA')>Rattaché au SENA</option>
+                                </select>
+                                @error('rattachement_dept')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
                         </div>
 
                         <div class="sen-panel mt-2" id="senpanel-section" style="display:none">
@@ -283,13 +302,14 @@
     naRadios.forEach(r => r.addEventListener('change', () => showNA(r.value)));
 
     function showSENPanel(val) {
-        ['senpanel-departement','senpanel-section','senpanel-cellule'].forEach(id => {
+        ['senpanel-direction','senpanel-departement','senpanel-section','senpanel-cellule'].forEach(id => {
             const el = document.getElementById(id);
             if (el) el.style.display = 'none';
         });
         document.querySelectorAll('.sen-panel select').forEach(s => s.required = false);
 
         const map = {
+            'direction':        'senpanel-direction',
             'département':      'senpanel-departement',
             'section':          'senpanel-section',
             'cellule':          'senpanel-cellule',
