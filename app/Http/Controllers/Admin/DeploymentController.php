@@ -1,3 +1,28 @@
+    /**
+     * Exécute la commande php artisan migrate (applique les migrations sans perte de données)
+     */
+    public function migrate()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "🚀 Lancement de la commande migrate...";
+            Artisan::call('migrate', ['--force' => true]);
+            $output = Artisan::output();
+            $output_messages[] = $output;
+            $output_messages[] = "✅ Migration terminée !";
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 <?php
 namespace App\Http\Controllers\Admin;
 

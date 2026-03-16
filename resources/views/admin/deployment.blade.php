@@ -1,3 +1,22 @@
+    {{-- Migration Standard --}}
+    <div class="col-lg-6 mb-4">
+        <div class="form-card">
+            <h5 class="mb-3">
+                <i class="fas fa-database text-success me-2"></i>
+                Appliquer les migrations
+            </h5>
+            <p class="text-muted mb-3">
+                <strong>Action recommandée :</strong> Applique les dernières modifications de structure sans perte de données (php artisan migrate).
+            </p>
+            <form action="{{ route('admin.deployment.migrate') }}" method="POST" onsubmit="return confirm('Exécuter les migrations ?');">
+                @csrf
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-database me-2"></i> Appliquer les migrations
+                </button>
+            </form>
+        </div>
+    </div>
+
     {{-- Migration Fresh --}}
     <div class="col-lg-6 mb-4">
         <div class="form-card">
