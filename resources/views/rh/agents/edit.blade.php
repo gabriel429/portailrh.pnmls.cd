@@ -220,10 +220,10 @@
                             <select class="form-select @error('situation_familiale') is-invalid @enderror"
                                 id="situation_familiale" name="situation_familiale">
                                 <option value="">-- Sélectionner --</option>
-                                <option value="Célibataire" @selected(old('situation_familiale', $agent->situation_familiale) === 'Célibataire')>Célibataire</option>
-                                <option value="Marié(e)" @selected(old('situation_familiale', $agent->situation_familiale) === 'Marié(e)')>Marié(e)</option>
-                                <option value="Divorcé(e)" @selected(old('situation_familiale', $agent->situation_familiale) === 'Divorcé(e)')>Divorcé(e)</option>
-                                <option value="Veuf/Veuve" @selected(old('situation_familiale', $agent->situation_familiale) === 'Veuf/Veuve')>Veuf/Veuve</option>
+                                <option value="célibataire" @selected(old('situation_familiale', $agent->situation_familiale) === 'célibataire')>Célibataire</option>
+                                <option value="marié" @selected(old('situation_familiale', $agent->situation_familiale) === 'marié')>Marié(e)</option>
+                                <option value="divorcé" @selected(old('situation_familiale', $agent->situation_familiale) === 'divorcé')>Divorcé(e)</option>
+                                <option value="veuf" @selected(old('situation_familiale', $agent->situation_familiale) === 'veuf')>Veuf/Veuve</option>
                             </select>
                             @error('situation_familiale')
                                 <div class="invalid-feedback">{{ $message }}</div>
