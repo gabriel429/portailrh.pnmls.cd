@@ -1,136 +1,458 @@
-@extends('layouts.app')
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Connexion - Portail RH PNMLS</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-pnmls.png') }}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
-@section('title', 'Connexion - Portail RH PNMLS')
+        body {
+            font-family: 'Segoe UI', 'Roboto', -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: #f0f2f5;
+        }
 
-@section('content')
-<div class="container min-vh-100 d-flex align-items-center justify-content-center py-5">
-    <div class="row w-100" style="max-width: 1200px;">
-        <!-- Section gauche: promo -->
-        <div class="col-md-6 d-none d-md-flex flex-column justify-content-center align-items-center pb-5">
-            <div class="text-center">
-                <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS Logo" style="max-height: 250px; width: auto; object-fit: contain; margin-bottom: 20px;">
-                <h1 class="mt-4 mb-3">Portail RH PNMLS</h1>
-                <p class="lead text-muted mb-4">
-                    Gestion Intégrée des Ressources Humaines<br>
-                    Programme National Multisectoriel de Lutte contre le Sida
-                </p>
-                <ul class="list-unstyled text-start ms-5">
-                    <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Gestion centralisée des agents</li>
-                    <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Suivi de carrière numérisé</li>
-                    <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Gestion documentaire (GED)</li>
-                    <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Workflow des demandes</li>
-                    <li class="mb-3"><i class="fas fa-check-circle text-success me-2"></i> Demandes de congés simplifiées</li>
-                </ul>
-            </div>
+        /* ── Left panel ── */
+        .login-left {
+            flex: 1;
+            background: linear-gradient(135deg, #0077B5 0%, #005a87 40%, #003f5c 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+            color: #fff;
+        }
+        .login-left::before {
+            content: '';
+            position: absolute;
+            top: -120px;
+            right: -120px;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.05);
+        }
+        .login-left::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            left: -80px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.04);
+        }
+
+        .login-brand {
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            max-width: 420px;
+        }
+        .login-brand img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,.2));
+        }
+        .login-brand h1 {
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin-bottom: .5rem;
+            letter-spacing: -.3px;
+        }
+        .login-brand p {
+            font-size: .92rem;
+            opacity: .8;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+        }
+
+        .login-features {
+            list-style: none;
+            padding: 0;
+            text-align: left;
+            position: relative;
+            z-index: 1;
+        }
+        .login-features li {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .55rem 0;
+            font-size: .88rem;
+            opacity: .9;
+        }
+        .login-features li .feat-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255,255,255,.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .8rem;
+            flex-shrink: 0;
+        }
+
+        /* ── Right panel ── */
+        .login-right {
+            width: 520px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 3rem 3.5rem;
+            background: #fff;
+            position: relative;
+        }
+
+        .login-header {
+            margin-bottom: 2rem;
+        }
+        .login-header .mobile-logo {
+            display: none;
+        }
+        .login-header h2 {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #1a1a2e;
+            margin-bottom: .3rem;
+        }
+        .login-header p {
+            font-size: .88rem;
+            color: #9ca3af;
+            margin: 0;
+        }
+
+        /* Form */
+        .login-form .form-group {
+            margin-bottom: 1.3rem;
+        }
+        .login-form label {
+            font-size: .82rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: .4rem;
+            display: block;
+        }
+        .login-form .input-wrapper {
+            position: relative;
+        }
+        .login-form .input-wrapper i.field-icon {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: .9rem;
+            z-index: 2;
+            transition: color .2s;
+        }
+        .login-form .form-control {
+            height: 48px;
+            padding-left: 42px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: .9rem;
+            transition: all .2s;
+            background: #fafbfc;
+        }
+        .login-form .form-control:focus {
+            border-color: #0077B5;
+            box-shadow: 0 0 0 3px rgba(0,119,181,.1);
+            background: #fff;
+        }
+        .login-form .form-control:focus + i.field-icon,
+        .login-form .input-wrapper:focus-within i.field-icon {
+            color: #0077B5;
+        }
+        .login-form .form-control.is-invalid {
+            border-color: #ef4444;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px;
+            z-index: 2;
+            transition: color .2s;
+        }
+        .password-toggle:hover { color: #0077B5; }
+
+        .login-extras {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        .login-extras .form-check-input:checked {
+            background-color: #0077B5;
+            border-color: #0077B5;
+        }
+        .login-extras .form-check-label {
+            font-size: .82rem;
+            color: #6b7280;
+        }
+        .login-extras .forgot-link {
+            font-size: .82rem;
+            color: #0077B5;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color .2s;
+        }
+        .login-extras .forgot-link:hover {
+            color: #005a87;
+        }
+
+        .btn-login {
+            width: 100%;
+            height: 48px;
+            border: none;
+            border-radius: 12px;
+            font-size: .95rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
+            cursor: pointer;
+            transition: all .25s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: .5rem;
+            box-shadow: 0 4px 14px rgba(0,119,181,.25);
+        }
+        .btn-login:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0,119,181,.35);
+        }
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        /* Error alert */
+        .login-alert {
+            padding: .75rem 1rem;
+            border-radius: 10px;
+            font-size: .82rem;
+            margin-bottom: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+        .login-alert-danger {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        /* Footer */
+        .login-footer {
+            margin-top: 2rem;
+            padding-top: 1.2rem;
+            border-top: 1px solid #f3f4f6;
+        }
+        .login-footer .support-card {
+            display: flex;
+            align-items: center;
+            gap: .8rem;
+            padding: .8rem 1rem;
+            border-radius: 10px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+        }
+        .login-footer .support-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: #0077B5;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .85rem;
+            flex-shrink: 0;
+        }
+        .login-footer .support-text {
+            font-size: .78rem;
+            color: #6b7280;
+            line-height: 1.4;
+        }
+        .login-footer .support-text strong {
+            color: #1e293b;
+        }
+
+        .login-copyright {
+            text-align: center;
+            font-size: .72rem;
+            color: #d1d5db;
+            margin-top: 1.2rem;
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 991px) {
+            body { flex-direction: column; }
+            .login-left {
+                padding: 2rem 1.5rem;
+                min-height: auto;
+            }
+            .login-brand img { width: 80px; height: 80px; }
+            .login-brand h1 { font-size: 1.3rem; }
+            .login-brand p { margin-bottom: 1rem; font-size: .82rem; }
+            .login-features { display: none; }
+            .login-right {
+                width: 100%;
+                padding: 2rem 1.5rem;
+                border-radius: 24px 24px 0 0;
+                margin-top: -20px;
+                position: relative;
+                z-index: 2;
+            }
+        }
+        @media (max-width: 576px) {
+            .login-right { padding: 1.5rem 1.2rem; }
+            .login-header h2 { font-size: 1.3rem; }
+            .login-extras { flex-direction: column; align-items: flex-start; gap: .5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    {{-- ── Left panel ── --}}
+    <div class="login-left">
+        <div class="login-brand">
+            <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS Logo">
+            <h1>Portail RH PNMLS</h1>
+            <p>Gestion Intégrée des Ressources Humaines<br>Programme National Multisectoriel de Lutte contre le Sida</p>
+        </div>
+        <ul class="login-features">
+            <li>
+                <span class="feat-icon"><i class="fas fa-users"></i></span>
+                Gestion centralisée des agents SEN, SEP et SEL
+            </li>
+            <li>
+                <span class="feat-icon"><i class="fas fa-folder-open"></i></span>
+                Gestion documentaire et archivage numérique
+            </li>
+            <li>
+                <span class="feat-icon"><i class="fas fa-paper-plane"></i></span>
+                Workflow des demandes (congés, absences, formation)
+            </li>
+            <li>
+                <span class="feat-icon"><i class="fas fa-chart-line"></i></span>
+                Suivi de carrière et plans de travail
+            </li>
+            <li>
+                <span class="feat-icon"><i class="fas fa-shield-alt"></i></span>
+                Sécurisé et accessible par rôles
+            </li>
+        </ul>
+    </div>
+
+    {{-- ── Right panel (form) ── --}}
+    <div class="login-right">
+        <div class="login-header">
+            <h2>Bienvenue</h2>
+            <p>Connectez-vous à votre espace personnel</p>
         </div>
 
-        <!-- Section droite: formulaire -->
-        <div class="col-md-6">
-            <div class="card shadow-lg border-0" style="border-radius: 12px;">
-                <div class="card-body p-5">
-                    <h2 class="mb-4 text-center">
-                        <i class="fas fa-sign-in-alt me-2" style="color: #0077B5;"></i> Connexion
-                    </h2>
+        @if($errors->any())
+        <div class="login-alert login-alert-danger">
+            <i class="fas fa-exclamation-circle"></i>
+            @foreach($errors->all() as $error)
+                <span>{{ $error }}</span>
+            @endforeach
+        </div>
+        @endif
 
-                    <form action="{{ url('/login') }}" method="POST">
-                        @csrf
+        <form action="{{ url('/login') }}" method="POST" class="login-form">
+            @csrf
 
-                        <!-- Adresse Email Professionnelle -->
-                        <div class="mb-4">
-                            <label for="email" class="form-label fw-bold">Adresse Email Professionnelle</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
-                                <input
-                                    type="email"
-                                    class="form-control @error('email') is-invalid @enderror"
-                                    id="email"
-                                    name="email"
-                                    placeholder="Ex: patrick.wemba@pnmls.cd"
-                                    value="{{ old('email') }}"
-                                    required>
-                                @error('email')
-                                    <span class="invalid-feedback">{{ $message }}</span>
-                                @enderror
-                            </div>
-                            <small class="form-text text-muted">Entrez votre adresse email professionnelle</small>
-                        </div>
-
-                        <!-- Mot de passe -->
-                        <div class="mb-4">
-                            <label for="password" class="form-label fw-bold">Mot de passe</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input
-                                    type="password"
-                                    class="form-control @error('password') is-invalid @enderror"
-                                    id="password"
-                                    name="password"
-                                    placeholder="Votre mot de passe"
-                                    required>
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                @error('password')
-                                    <span class="invalid-feedback">{{ $message }}</span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <!-- Se souvenir -->
-                        <div class="mb-4 form-check">
-                            <input
-                                type="checkbox"
-                                class="form-check-input"
-                                id="remember"
-                                name="remember"
-                                {{ old('remember') ? 'checked' : '' }}>
-                            <label class="form-check-label" for="remember">
-                                Se souvenir de moi
-                            </label>
-                        </div>
-
-                        <!-- Bouton connexion -->
-                        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold mb-3">
-                            <i class="fas fa-sign-in-alt me-2"></i> Se Connecter
-                        </button>
-                    </form>
-
-                    <hr class="my-4">
-
-                    <!-- Liens utiles -->
-                    <div class="text-center">
-                        <p class="mb-2">
-                            <a href="{{ url('/forgot-password') }}" class="text-decoration-none">
-                                <i class="fas fa-question-circle me-1"></i> Mot de passe oublié ?
-                            </a>
-                        </p>
-                    </div>
+            <div class="form-group">
+                <label for="email">Adresse email professionnelle</label>
+                <div class="input-wrapper">
+                    <input type="email"
+                           class="form-control @error('email') is-invalid @enderror"
+                           id="email"
+                           name="email"
+                           placeholder="prenom.nom@pnmls.cd"
+                           value="{{ old('email') }}"
+                           required
+                           autofocus>
+                    <i class="fas fa-envelope field-icon"></i>
                 </div>
             </div>
 
-            <!-- Info de support -->
-            <div class="alert alert-info mt-4" role="alert">
-                <i class="fas fa-info-circle me-2"></i>
-                <strong>Besoin d'aide ?</strong> Contactez votre administrateur RH ou le support informatique du PNMLS.
+            <div class="form-group">
+                <label for="password">Mot de passe</label>
+                <div class="input-wrapper">
+                    <input type="password"
+                           class="form-control @error('password') is-invalid @enderror"
+                           id="password"
+                           name="password"
+                           placeholder="Entrez votre mot de passe"
+                           required>
+                    <i class="fas fa-lock field-icon"></i>
+                    <button type="button" class="password-toggle" id="togglePassword">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="login-extras">
+                <div class="form-check">
+                    <input type="checkbox" class="form-check-input" id="remember" name="remember" {{ old('remember') ? 'checked' : '' }}>
+                    <label class="form-check-label" for="remember">Se souvenir de moi</label>
+                </div>
+                <a href="{{ url('/forgot-password') }}" class="forgot-link">Mot de passe oublié ?</a>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-arrow-right"></i> Se connecter
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <div class="support-card">
+                <div class="support-icon"><i class="fas fa-headset"></i></div>
+                <div class="support-text">
+                    <strong>Besoin d'aide ?</strong><br>
+                    Contactez la Section Nouvelle Technologie du PNMLS
+                </div>
+            </div>
+            <div class="login-copyright">
+                &copy; {{ date('Y') }} PNMLS &mdash; Programme National Multisectoriel de Lutte contre le Sida
             </div>
         </div>
     </div>
-</div>
 
-<script>
-document.getElementById('togglePassword').addEventListener('click', function() {
-    const passwordInput = document.getElementById('password');
-    const icon = this.querySelector('i');
-
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        icon.classList.remove('fa-eye');
-        icon.classList.add('fa-eye-slash');
-    } else {
-        passwordInput.type = 'password';
-        icon.classList.remove('fa-eye-slash');
-        icon.classList.add('fa-eye');
-    }
-});
-</script>
-@endsection
+    <script>
+    document.getElementById('togglePassword').addEventListener('click', function() {
+        const input = document.getElementById('password');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            icon.classList.replace('fa-eye', 'fa-eye-slash');
+        } else {
+            input.type = 'password';
+            icon.classList.replace('fa-eye-slash', 'fa-eye');
+        }
+    });
+    </script>
+</body>
+</html>
