@@ -16,9 +16,9 @@ use App\Http\Controllers\RH\DepartmentController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\DeploymentController;
 
-// Routes publiques
+// Page d'accueil -> redirige vers dashboard ou login
 Route::get('/', function () {
-    return view('welcome');
+    return auth()->check() ? redirect()->route('dashboard') : redirect()->route('login');
 })->name('home');
 
 // Routes d'authentification
