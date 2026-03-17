@@ -101,6 +101,22 @@
                         </div>
                     @endif
 
+                    <!-- Lettre de demande -->
+                    @if($request->lettre_demande)
+                        <div class="mb-4">
+                            <h5 class="mb-2"><i class="fas fa-paperclip me-1"></i> Lettre de demande</h5>
+                            <div class="d-flex align-items-center gap-2 p-3 bg-light rounded">
+                                <i class="fas fa-file-alt text-primary" style="font-size:1.3rem;"></i>
+                                <div class="flex-grow-1">
+                                    <span class="fw-semibold">{{ basename($request->lettre_demande) }}</span>
+                                </div>
+                                <a href="{{ asset('storage/' . $request->lettre_demande) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-download me-1"></i> Télécharger
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+
                     <hr>
 
                     <!-- Boutons d'action -->

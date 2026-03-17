@@ -17,6 +17,7 @@ class Request extends Model
         'date_fin',
         'statut',
         'remarques',
+        'lettre_demande',
     ];
 
     protected $casts = [

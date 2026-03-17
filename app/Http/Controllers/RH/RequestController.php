@@ -50,7 +50,13 @@ class RequestController extends Controller
             'description' => 'required|string',
             'date_debut' => 'required|date',
             'date_fin' => 'nullable|date|after_or_equal:date_debut',
+            'lettre_demande' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
+
+        if ($request->hasFile('lettre_demande')) {
+            $validated['lettre_demande'] = $request->file('lettre_demande')
+                ->store('lettres_demandes', 'public');
+        }
 
         RequestModel::create($validated);
 
