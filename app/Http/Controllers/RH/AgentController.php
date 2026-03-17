@@ -19,6 +19,7 @@ use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class AgentController extends Controller
 {
@@ -379,7 +380,8 @@ class AgentController extends Controller
 
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $filename = Str::uuid() . '.' . $extension;
             $file->move(public_path('uploads/profiles'), $filename);
             $validated['photo'] = 'uploads/profiles/' . $filename;
         }

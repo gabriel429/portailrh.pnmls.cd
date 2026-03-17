@@ -8,13 +8,29 @@ use Symfony\Component\HttpFoundation\Response;
 
 class PermissionMiddleware
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, ...$permissions): Response
     {
-        return $next($request);
+        $user = $request->user();
+
+        if (!$user) {
+            return redirect()->route('login');
+        }
+
+        // If no specific permissions required, just check auth
+        if (empty($permissions)) {
+            return $next($request);
+        }
+
+        // Check if user's role has any of the required permissions
+        $agent = $user->agent ?? $user;
+        $userPermissions = $agent->permissions ?? collect();
+
+        foreach ($permissions as $permission) {
+            if ($userPermissions->contains('nom_permission', $permission)) {
+                return $next($request);
+            }
+        }
+
+        abort(403, 'Vous n\'avez pas la permission requise.');
     }
 }

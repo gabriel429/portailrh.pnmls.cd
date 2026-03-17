@@ -209,9 +209,12 @@
         <a href="{{ url('/notifications?filtre=plan_travail') }}" class="notif-action-btn {{ request('filtre') === 'plan_travail' ? 'active' : '' }}">Plan de travail</a>
         <a href="{{ url('/notifications?filtre=document_travail') }}" class="notif-action-btn {{ request('filtre') === 'document_travail' ? 'active' : '' }}">Documents</a>
         @if($nonLuesCount > 0)
-        <a href="{{ url('/notifications/mark-all-read') }}" class="notif-action-btn mark-all ms-auto">
-            <i class="fas fa-check-double me-1"></i> Tout marquer lu
-        </a>
+        <form action="{{ url('/notifications/mark-all-read') }}" method="POST" class="d-inline ms-auto">
+            @csrf
+            <button type="submit" class="notif-action-btn mark-all" style="border:none;cursor:pointer;">
+                <i class="fas fa-check-double me-1"></i> Tout marquer lu
+            </button>
+        </form>
         @endif
     </div>
 
@@ -249,13 +252,19 @@
             </div>
             <div class="notif-card-actions">
                 @if($notif->lien)
-                <a href="{{ url('/notifications/' . $notif->id . '/read') }}" class="notif-card-btn read-btn">
-                    <i class="fas fa-eye"></i> Voir
-                </a>
+                <form action="{{ url('/notifications/' . $notif->id . '/read') }}" method="POST" style="display:inline;">
+                    @csrf
+                    <button type="submit" class="notif-card-btn read-btn" style="border:none;cursor:pointer;">
+                        <i class="fas fa-eye"></i> Voir
+                    </button>
+                </form>
                 @elseif(!$notif->lu)
-                <a href="{{ url('/notifications/' . $notif->id . '/read') }}" class="notif-card-btn read-btn">
-                    <i class="fas fa-check"></i> Lu
-                </a>
+                <form action="{{ url('/notifications/' . $notif->id . '/read') }}" method="POST" style="display:inline;">
+                    @csrf
+                    <button type="submit" class="notif-card-btn read-btn" style="border:none;cursor:pointer;">
+                        <i class="fas fa-check"></i> Lu
+                    </button>
+                </form>
                 @endif
                 <form action="{{ url('/notifications/' . $notif->id) }}" method="POST" style="display:inline;">
                     @csrf @method('DELETE')

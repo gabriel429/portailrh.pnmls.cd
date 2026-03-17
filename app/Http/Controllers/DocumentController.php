@@ -6,6 +6,7 @@ use App\Models\Document;
 use App\Models\Agent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class DocumentController extends Controller
 {
@@ -62,7 +63,8 @@ class DocumentController extends Controller
 
         if ($request->hasFile('fichier')) {
             $file = $request->file('fichier');
-            $filename = time() . '_' . $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $filename = Str::uuid() . '.' . $extension;
             $file->move(public_path('uploads/documents'), $filename);
 
             $document = Document::create([

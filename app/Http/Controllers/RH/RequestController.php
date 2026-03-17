@@ -85,10 +85,26 @@ class RequestController extends Controller
     }
 
     /**
+     * Check if user can access this request (owner or RH).
+     */
+    private function authorizeAccess(RequestModel $request): void
+    {
+        $user = auth()->user();
+        if ($user->hasAdminAccess()) {
+            return;
+        }
+        $agent = $user->agent ?? null;
+        if (!$agent || $request->agent_id !== $agent->id) {
+            abort(403, 'Vous n\'avez pas accès à cette demande.');
+        }
+    }
+
+    /**
      * Display the specified resource.
      */
     public function show(RequestModel $request): View
     {
+        $this->authorizeAccess($request);
         return view('rh.requests.show', compact('request'));
     }
 
@@ -97,6 +113,7 @@ class RequestController extends Controller
      */
     public function edit(RequestModel $request): View
     {
+        $this->authorizeAccess($request);
         $agents = Agent::actifs()->get();
 
         return view('rh.requests.edit', compact('request', 'agents'));
@@ -107,6 +124,7 @@ class RequestController extends Controller
      */
     public function update(Request $httpRequest, RequestModel $request): RedirectResponse
     {
+        $this->authorizeAccess($request);
         $validated = $httpRequest->validate([
             'statut' => 'required|in:en_attente,approuvé,rejeté,annulé',
             'remarques' => 'nullable|string',
@@ -150,6 +168,7 @@ class RequestController extends Controller
      */
     public function destroy(RequestModel $request): RedirectResponse
     {
+        $this->authorizeAccess($request);
         $request->delete();
 
         return redirect()->route('requests.index')

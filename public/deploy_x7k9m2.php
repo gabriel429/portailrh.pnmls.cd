@@ -1,9 +1,17 @@
 <?php
-// S�CURIT� : � SUPPRIMER IMM�DIATEMENT APR�S USAGE
-if (!isset($_GET['token']) || $_GET['token'] !== 'MON_TOKEN_SECRET_2026') {
+// SECURITE : Token fort, rate limit, sanitize inputs
+$DEPLOY_TOKEN = 'PNMLS_D3PL0Y_S3CR3T_X9K2M7_2026!';
+
+if (!isset($_GET['token']) || !hash_equals($DEPLOY_TOKEN, $_GET['token'])) {
     http_response_code(403);
-    die('Acc�s refus�');
+    die('Acces refuse');
 }
+
+// Rate limit: max 10 requests per minute via file lock
+$lockFile = sys_get_temp_dir() . '/pnmls_deploy_' . date('YmdHi') . '.lock';
+$count = file_exists($lockFile) ? (int)file_get_contents($lockFile) : 0;
+if ($count >= 10) { http_response_code(429); die('Rate limit exceeded'); }
+file_put_contents($lockFile, $count + 1);
 
 // Le script est dans public/ ; Laravel root est le dossier parent
 $root = dirname(__DIR__);

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Auth\Events\PasswordReset;
 
 class AuthController extends Controller
@@ -32,14 +33,26 @@ class AuthController extends Controller
             'password.required'  => 'Le mot de passe est obligatoire.',
         ]);
 
+        // Rate limiting: max 5 attempts per minute per IP
+        $throttleKey = 'login:' . $request->ip();
+        if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = RateLimiter::availableIn($throttleKey);
+            return back()->withErrors([
+                'matricule' => "Trop de tentatives. Réessayez dans {$seconds} secondes.",
+            ])->onlyInput('matricule');
+        }
+
         // Try to authenticate using matricule_pnmls
         if (Auth::guard('web')->attempt([
             'matricule_pnmls' => $credentials['matricule'],
             'password' => $credentials['password'],
         ], $request->boolean('remember'))) {
+            RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
             return redirect()->route('dashboard')->with('success', 'Bienvenue ' . Auth::user()->prenom . ' !');
         }
+
+        RateLimiter::hit($throttleKey, 60);
 
         return back()->withErrors([
             'matricule' => 'Matricule ou mot de passe incorrect.',

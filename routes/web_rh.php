@@ -25,8 +25,9 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
+    // Registration disabled — accounts are created by admin only
+    // Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
+    // Route::post('/register', [AuthController::class, 'register']);
 });
 
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
@@ -65,10 +66,14 @@ Route::middleware('auth')->group(function () {
         Route::resource('documents', DocumentController::class);
         Route::resource('pointages', PointageController::class);
         Route::resource('signalements', SignalementController::class);
-        Route::resource('roles', RoleController::class);
-        Route::resource('permissions', PermissionController::class);
         Route::resource('provinces', ProvinceController::class);
         Route::resource('departments', DepartmentController::class);
+
+        // Roles & Permissions — restricted to RH staff only
+        Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial')->group(function () {
+            Route::resource('roles', RoleController::class);
+            Route::resource('permissions', PermissionController::class);
+        });
     });
 
     // Documents de travail (accessible à tous les agents)

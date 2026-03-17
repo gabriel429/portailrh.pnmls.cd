@@ -643,7 +643,7 @@
                             <li>
                                 <div class="notif-dd-header">
                                     <span class="notif-dd-title">Notifications</span>
-                                    <a href="{{ url('/notifications/mark-all-read') }}" class="notif-dd-clear" id="notifMarkAll" style="display:none;">Tout marquer lu</a>
+                                    <a href="#" class="notif-dd-clear" id="notifMarkAll" style="display:none;" onclick="event.preventDefault(); fetch('{{ url('/notifications/mark-all-read') }}', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}, credentials:'same-origin'}).then(()=>{ loadNotifs(); });">Tout marquer lu</a>
                                 </div>
                             </li>
                             <li id="notifLoading"><div class="notif-empty"><i class="fas fa-spinner fa-spin"></i></div></li>
