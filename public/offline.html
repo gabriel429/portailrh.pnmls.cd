@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Hors connexion - Portail RH PNMLS</title>
+    <link rel="icon" type="image/png" href="/images/logo-pnmls.png">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', 'Roboto', -apple-system, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(145deg, #f0f4f8 0%, #e2e8f0 50%, #dbeafe 100%);
+            padding: 2rem;
+        }
+        .offline-container {
+            text-align: center;
+            max-width: 480px;
+        }
+        .offline-icon {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            background: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            box-shadow: 0 12px 40px rgba(0,119,181,.15);
+            border: 3px solid rgba(0,119,181,.1);
+        }
+        .offline-icon img {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            opacity: .4;
+            filter: grayscale(100%);
+        }
+        .offline-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: .5rem;
+        }
+        .offline-message {
+            font-size: .9rem;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+        }
+        .btn-retry {
+            padding: .7rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: .9rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #0077B5, #005a87);
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,119,181,.25);
+            text-decoration: none;
+            display: inline-block;
+            transition: all .25s;
+        }
+        .btn-retry:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,119,181,.35);
+        }
+        .wifi-animation {
+            font-size: 3rem;
+            color: #cbd5e1;
+            margin-bottom: .5rem;
+            animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: .4; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.05); }
+        }
+    </style>
+</head>
+<body>
+    <div class="offline-container">
+        <div class="wifi-animation">&#x1F4F6;</div>
+        <div class="offline-icon">
+            <img src="/images/logo-pnmls.png" alt="PNMLS">
+        </div>
+        <h1 class="offline-title">Pas de connexion Internet</h1>
+        <p class="offline-message">
+            Vous êtes actuellement hors ligne.<br>
+            Vérifiez votre connexion Internet et réessayez.
+        </p>
+        <a href="/" class="btn-retry" onclick="window.location.reload(); return false;">
+            Réessayer
+        </a>
+    </div>
+</body>
+</html>

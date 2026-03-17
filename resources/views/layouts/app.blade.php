@@ -6,6 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Portail RH PNMLS')</title>
     <link rel="icon" type="image/png" href="{{ asset('images/logo-pnmls.png') }}">
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#0077B5">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="PNMLS RH">
+    <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192x192.png') }}">
 
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -621,5 +627,11 @@
 
     @yield('js')
     @stack('scripts')
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+    </script>
 </body>
 </html>
