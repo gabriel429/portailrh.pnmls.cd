@@ -18,6 +18,7 @@ use App\Models\Organe;
 use App\Models\Permission;
 use App\Models\DocumentTravail;
 use App\Models\CategorieDocument;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
@@ -1046,7 +1047,18 @@ class ParametresController extends Controller
         $validated['uploaded_by']   = auth()->id();
         $validated['actif']         = $request->has('actif');
 
-        DocumentTravail::create($validated);
+        $doc = DocumentTravail::create($validated);
+
+        // Notifier tous les utilisateurs du nouveau document
+        if ($doc->actif) {
+            NotificationService::notifierTous(
+                'document_travail',
+                'Nouveau document : ' . $doc->titre,
+                'Un nouveau document de travail a été publié dans la catégorie "' . $doc->categorie . '".',
+                '/documents-travail?categorie=' . urlencode($doc->categorie),
+                auth()->id()
+            );
+        }
 
         return redirect()->route('admin.documents-travail.index')
             ->with('success', 'Document de travail ajouté avec succès.');

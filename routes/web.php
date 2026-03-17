@@ -11,6 +11,7 @@ use App\Http\Controllers\RH\PointageController;
 use App\Http\Controllers\RH\CommuniqueController;
 use App\Http\Controllers\TacheController;
 use App\Http\Controllers\PlanTravailController;
+use App\Http\Controllers\NotificationController;
 
 // Page d'accueil
 Route::get('/', function () {
@@ -77,6 +78,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/plan-travail/{activitePlan}', [PlanTravailController::class, 'update'])->name('plan-travail.update');
     Route::delete('/plan-travail/{activitePlan}', [PlanTravailController::class, 'destroy'])->name('plan-travail.destroy');
     Route::put('/plan-travail/{activitePlan}/statut', [PlanTravailController::class, 'updateStatut'])->name('plan-travail.update-statut');
+
+    // Notifications
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::get('/notifications/{notification}/read', [NotificationController::class, 'markRead'])->name('notifications.read');
+    Route::delete('/notifications/{notification}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/api/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 
     // RH JSON API for Modal (returns agent details as JSON)
     Route::middleware(['auth', 'role:Section ressources humaines,Chef Section RH,RH National,RH Provincial'])->group(function () {

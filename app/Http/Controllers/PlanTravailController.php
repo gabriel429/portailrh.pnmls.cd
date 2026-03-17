@@ -8,6 +8,7 @@ use App\Models\Affectation;
 use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -261,7 +262,16 @@ class PlanTravailController extends Controller
 
         $validated['createur_id'] = auth()->user()->agent->id;
 
-        ActivitePlan::create($validated);
+        $activite = ActivitePlan::create($validated);
+
+        // Notifier tous les utilisateurs de la nouvelle activité
+        NotificationService::notifierTous(
+            'plan_travail',
+            'Nouvelle activité PTA : ' . $activite->titre,
+            'Une nouvelle activité a été ajoutée au Plan de Travail Annuel (' . $activite->annee . ' ' . ($activite->trimestre ?? '') . ').',
+            '/plan-travail/' . $activite->id,
+            auth()->id()
+        );
 
         return redirect()->route('plan-travail.index')
             ->with('success', 'Activite creee avec succes.');
@@ -312,6 +322,15 @@ class PlanTravailController extends Controller
         ]);
 
         $activitePlan->update($validated);
+
+        // Notifier de la mise à jour du plan
+        NotificationService::notifierTous(
+            'plan_travail',
+            'PTA mis à jour : ' . $activitePlan->titre,
+            'L\'activité "' . $activitePlan->titre . '" a été mise à jour (' . $activitePlan->statut . ', ' . $activitePlan->pourcentage . '%).',
+            '/plan-travail/' . $activitePlan->id,
+            auth()->id()
+        );
 
         return redirect()->route('plan-travail.show', $activitePlan)
             ->with('success', 'Activite mise a jour.');

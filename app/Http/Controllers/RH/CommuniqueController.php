@@ -4,6 +4,7 @@ namespace App\Http\Controllers\RH;
 
 use App\Http\Controllers\Controller;
 use App\Models\Communique;
+use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -38,7 +39,18 @@ class CommuniqueController extends Controller
         $validated['auteur_id'] = auth()->id();
         $validated['actif'] = $request->has('actif');
 
-        Communique::create($validated);
+        $communique = Communique::create($validated);
+
+        // Notifier tous les utilisateurs du nouveau communiqué
+        if ($communique->actif) {
+            NotificationService::notifierTous(
+                'communique',
+                'Nouveau communiqué : ' . $communique->titre,
+                'Un nouveau communiqué a été publié' . ($communique->urgence !== 'normal' ? ' (' . strtoupper($communique->urgence) . ')' : '') . '.',
+                '/communiques/' . $communique->id,
+                auth()->id()
+            );
+        }
 
         return redirect()->route('rh.communiques.index')
             ->with('success', 'Communiqué publié avec succès');

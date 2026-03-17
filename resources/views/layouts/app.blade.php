@@ -429,6 +429,88 @@
             color: rgba(255,255,255,.7);
             font-size: .82rem;
         }
+
+        /* ── Notification bell ── */
+        .nav-notif-btn {
+            position: relative;
+            padding: .4rem .5rem !important;
+            font-size: 1.1rem;
+            color: rgba(255,255,255,.8) !important;
+            transition: color .2s;
+        }
+        .nav-notif-btn:hover { color: #fff !important; }
+        .nav-notif-btn::after { display: none; }
+        .notif-badge {
+            position: absolute;
+            top: 2px; right: 0;
+            background: #ef4444;
+            color: #fff;
+            font-size: .6rem;
+            font-weight: 800;
+            padding: 1px 5px;
+            border-radius: 10px;
+            line-height: 1.3;
+            min-width: 16px;
+            text-align: center;
+            border: 2px solid var(--primary-color);
+            animation: notif-pulse 2s infinite;
+        }
+        @keyframes notif-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .notif-dropdown {
+            width: 340px;
+            padding: 0;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.12);
+            overflow: hidden;
+        }
+        .notif-dd-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .7rem 1rem;
+            background: #f8fafc;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        .notif-dd-title { font-weight: 700; font-size: .88rem; color: #1e293b; }
+        .notif-dd-clear { font-size: .72rem; color: #0077B5; text-decoration: none; font-weight: 600; }
+        .notif-dd-clear:hover { text-decoration: underline; }
+        .notif-item {
+            display: flex !important;
+            align-items: center;
+            gap: .6rem;
+            padding: .6rem 1rem !important;
+            border-bottom: 1px solid #f8fafc;
+            white-space: normal !important;
+        }
+        .notif-item:hover { background: #f0f9ff !important; }
+        .notif-unread { background: #f0f9ff; }
+        .notif-item-icon {
+            width: 34px; height: 34px; border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .8rem; flex-shrink: 0;
+        }
+        .notif-item-content { flex: 1; min-width: 0; }
+        .notif-item-title {
+            display: block; font-size: .78rem; font-weight: 600;
+            color: #1e293b; line-height: 1.3;
+        }
+        .notif-item-time { font-size: .68rem; color: #9ca3af; }
+        .notif-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #0077B5; flex-shrink: 0;
+        }
+        .notif-empty {
+            text-align: center; padding: 1.5rem 1rem;
+            color: #9ca3af; font-size: .82rem;
+        }
+        .notif-see-all {
+            font-size: .8rem !important; font-weight: 600;
+            color: #0077B5 !important; padding: .6rem 1rem !important;
+        }
     </style>
 
     @yield('css')
@@ -550,6 +632,56 @@
                     @endif
 
                     <div class="nav-divider d-none d-lg-block"></div>
+
+                    {{-- Notification bell --}}
+                    @php
+                        $notifCount = \App\Models\NotificationPortail::pourUser(auth()->id())->nonLues()->count();
+                    @endphp
+                    <li class="nav-item dropdown">
+                        <a class="nav-link nav-notif-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bell"></i>
+                            @if($notifCount > 0)
+                                <span class="notif-badge">{{ $notifCount > 99 ? '99+' : $notifCount }}</span>
+                            @endif
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end notif-dropdown">
+                            <li>
+                                <div class="notif-dd-header">
+                                    <span class="notif-dd-title">Notifications</span>
+                                    @if($notifCount > 0)
+                                        <a href="{{ url('/notifications/mark-all-read') }}" class="notif-dd-clear">Tout marquer lu</a>
+                                    @endif
+                                </div>
+                            </li>
+                            @php
+                                $recentNotifs = \App\Models\NotificationPortail::pourUser(auth()->id())
+                                    ->latest()->take(5)->get();
+                            @endphp
+                            @forelse($recentNotifs as $notif)
+                            <li>
+                                <a class="dropdown-item notif-item {{ !$notif->lu ? 'notif-unread' : '' }}"
+                                   href="{{ url('/notifications/' . $notif->id . '/read') }}">
+                                    <span class="notif-item-icon" style="background:{{ $notif->couleur }}20;color:{{ $notif->couleur }};">
+                                        <i class="fas {{ $notif->icone }}"></i>
+                                    </span>
+                                    <span class="notif-item-content">
+                                        <span class="notif-item-title">{{ Str::limit($notif->titre, 40) }}</span>
+                                        <span class="notif-item-time">{{ $notif->created_at->diffForHumans() }}</span>
+                                    </span>
+                                    @if(!$notif->lu)<span class="notif-dot"></span>@endif
+                                </a>
+                            </li>
+                            @empty
+                            <li><div class="notif-empty">Aucune notification</div></li>
+                            @endforelse
+                            <li><hr class="dropdown-divider m-0"></li>
+                            <li>
+                                <a class="dropdown-item text-center notif-see-all" href="{{ url('/notifications') }}">
+                                    Voir toutes les notifications
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
 
                     {{-- User dropdown --}}
                     <li class="nav-item dropdown">

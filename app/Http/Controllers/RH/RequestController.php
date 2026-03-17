@@ -5,6 +5,8 @@ namespace App\Http\Controllers\RH;
 use App\Http\Controllers\Controller;
 use App\Models\Request as RequestModel;
 use App\Models\Agent;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -65,7 +67,18 @@ class RequestController extends Controller
                 ->store('lettres_demandes', 'public');
         }
 
-        RequestModel::create($validated);
+        $demande = RequestModel::create($validated);
+
+        // Notifier les RH d'une nouvelle demande
+        $agent = Agent::find($validated['agent_id']);
+        $nomAgent = $agent ? $agent->prenom . ' ' . $agent->nom : 'Un agent';
+        NotificationService::notifierRH(
+            'demande',
+            'Nouvelle demande de ' . $validated['type'],
+            $nomAgent . ' a soumis une demande de ' . $validated['type'] . '.',
+            '/requests/' . $demande->id,
+            auth()->id()
+        );
 
         return redirect()->route('requests.index')
             ->with('success', 'Demande créée avec succès');
@@ -99,7 +112,34 @@ class RequestController extends Controller
             'remarques' => 'nullable|string',
         ]);
 
+        $oldStatut = $request->statut;
         $request->update($validated);
+
+        // Notifier l'agent du changement de statut
+        $agent = $request->agent;
+        if ($agent) {
+            $user = User::where('agent_id', $agent->id)->first();
+            if ($user) {
+                $type = match($validated['statut']) {
+                    'approuvé' => 'demande_approuvee',
+                    'rejeté' => 'demande_rejetee',
+                    default => 'demande_modifiee',
+                };
+                $titre = match($validated['statut']) {
+                    'approuvé' => 'Demande approuvée',
+                    'rejeté' => 'Demande rejetée',
+                    default => 'Demande mise à jour',
+                };
+                NotificationService::envoyer(
+                    $user->id,
+                    $type,
+                    $titre,
+                    'Votre demande de ' . $request->type . ' a été ' . $validated['statut'] . '.',
+                    '/requests/' . $request->id,
+                    auth()->id()
+                );
+            }
+        }
 
         return redirect()->route('requests.show', $request)
             ->with('success', 'Demande modifiée avec succès');
