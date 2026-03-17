@@ -86,37 +86,33 @@
             position: relative;
         }
         .error-illustration .compass {
-            width: 100px;
-            height: 100px;
+            width: 110px;
+            height: 110px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
+            background: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
             box-shadow: 0 12px 40px rgba(0, 119, 181, .2);
             position: relative;
+            border: 3px solid rgba(0, 119, 181, .1);
         }
-        .error-illustration .compass i {
-            font-size: 2.5rem;
-            color: #fff;
-            animation: spin-compass 8s linear infinite;
+        .error-illustration .compass img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+            animation: spin-logo 6s ease-in-out infinite;
         }
-        @keyframes spin-compass {
+        @keyframes spin-logo {
             0% { transform: rotate(0deg); }
-            25% { transform: rotate(90deg); }
-            30% { transform: rotate(85deg); }
-            35% { transform: rotate(90deg); }
-            75% { transform: rotate(270deg); }
-            80% { transform: rotate(265deg); }
-            85% { transform: rotate(270deg); }
             100% { transform: rotate(360deg); }
         }
         .error-illustration .compass::after {
             content: '';
             position: absolute;
-            width: 120px;
-            height: 120px;
+            width: 130px;
+            height: 130px;
             border: 2px dashed rgba(0, 119, 181, .15);
             border-radius: 50%;
             animation: pulse-ring 3s ease-in-out infinite;
@@ -240,8 +236,8 @@
             .error-message { font-size: .85rem; }
             .error-actions { flex-direction: column; align-items: center; }
             .btn-home { width: 100%; justify-content: center; }
-            .error-illustration .compass { width: 80px; height: 80px; }
-            .error-illustration .compass i { font-size: 2rem; }
+            .error-illustration .compass { width: 85px; height: 85px; }
+            .error-illustration .compass img { width: 55px; height: 55px; }
         }
     </style>
 </head>
@@ -254,7 +250,7 @@
 
         <div class="error-illustration">
             <div class="compass">
-                <i class="fas fa-compass"></i>
+                <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS">
             </div>
         </div>
 
