@@ -70,7 +70,7 @@
                     </td>
                     <td class="text-end">
                         <div class="btn-group btn-group-sm">
-                            <a href="{{ asset('storage/' . $doc->fichier) }}" target="_blank" class="btn btn-outline-info" title="Voir">
+                            <a href="{{ route('documents-travail.download', $doc) }}" class="btn btn-outline-info" title="Voir">
                                 <i class="fas fa-eye"></i>
                             </a>
                             <a href="{{ route('admin.documents-travail.edit', $doc) }}" class="btn btn-outline-primary" title="Modifier">

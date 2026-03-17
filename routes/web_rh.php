@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
 
     // Documents de travail (accessible à tous les agents)
     Route::get('/documents-travail', [\App\Http\Controllers\DocumentTravailController::class, 'index'])->name('documents-travail.index');
+    Route::get('/documents-travail/{documentTravail}/download', [\App\Http\Controllers\DocumentTravailController::class, 'download'])->name('documents-travail.download');
 
     // ─── Section Paramètres – Chef NT uniquement ────────────────────────────────
     Route::middleware('admin.nt')->prefix('admin')->name('admin.')->group(function () {

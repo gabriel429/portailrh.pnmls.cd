@@ -248,7 +248,7 @@
                 </div>
                 <div class="dt-card-footer">
                     <span class="dt-card-date"><i class="fas fa-clock me-1"></i>{{ $doc->created_at->format('d/m/Y') }}</span>
-                    <a href="{{ asset('storage/' . $doc->fichier) }}" target="_blank" class="dt-card-dl">
+                    <a href="{{ route('documents-travail.download', $doc) }}" class="dt-card-dl">
                         <i class="fas fa-download"></i> Télécharger
                     </a>
                 </div>
