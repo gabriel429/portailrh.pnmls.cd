@@ -17,6 +17,7 @@ use App\Models\Localite;
 use App\Models\Organe;
 use App\Models\Permission;
 use App\Models\DocumentTravail;
+use App\Models\CategorieDocument;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
@@ -1024,7 +1025,8 @@ class ParametresController extends Controller
 
     public function docsTravailCreate()
     {
-        return view('admin.documents-travail.form');
+        $categories = CategorieDocument::actives()->orderBy('nom')->pluck('nom');
+        return view('admin.documents-travail.form', compact('categories'));
     }
 
     public function docsTravailStore(Request $request)
@@ -1052,7 +1054,8 @@ class ParametresController extends Controller
 
     public function docsTravailEdit(DocumentTravail $documentTravail)
     {
-        return view('admin.documents-travail.form', ['document' => $documentTravail]);
+        $categories = CategorieDocument::actives()->orderBy('nom')->pluck('nom');
+        return view('admin.documents-travail.form', ['document' => $documentTravail, 'categories' => $categories]);
     }
 
     public function docsTravailUpdate(Request $request, DocumentTravail $documentTravail)
@@ -1086,5 +1089,61 @@ class ParametresController extends Controller
 
         return redirect()->route('admin.documents-travail.index')
             ->with('success', 'Document supprimé avec succès.');
+    }
+
+    // ─── Catégories Documents ────────────────────────────────────────────────────
+
+    public function categoriesDocsIndex()
+    {
+        $categories = CategorieDocument::orderBy('nom')->get();
+        return view('admin.categories-documents.index', compact('categories'));
+    }
+
+    public function categoriesDocsCreate()
+    {
+        return view('admin.categories-documents.form');
+    }
+
+    public function categoriesDocsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nom'   => 'required|string|max:100|unique:categorie_documents,nom',
+            'icone' => 'nullable|string|max:50',
+            'actif' => 'nullable|boolean',
+        ]);
+        $validated['actif'] = $request->has('actif');
+
+        CategorieDocument::create($validated);
+
+        return redirect()->route('admin.categories-documents.index')
+            ->with('success', 'Catégorie ajoutée avec succès.');
+    }
+
+    public function categoriesDocsEdit(CategorieDocument $categorieDocument)
+    {
+        return view('admin.categories-documents.form', ['categorie' => $categorieDocument]);
+    }
+
+    public function categoriesDocsUpdate(Request $request, CategorieDocument $categorieDocument)
+    {
+        $validated = $request->validate([
+            'nom'   => 'required|string|max:100|unique:categorie_documents,nom,' . $categorieDocument->id,
+            'icone' => 'nullable|string|max:50',
+            'actif' => 'nullable|boolean',
+        ]);
+        $validated['actif'] = $request->has('actif');
+
+        $categorieDocument->update($validated);
+
+        return redirect()->route('admin.categories-documents.index')
+            ->with('success', 'Catégorie mise à jour.');
+    }
+
+    public function categoriesDocsDestroy(CategorieDocument $categorieDocument)
+    {
+        $categorieDocument->delete();
+
+        return redirect()->route('admin.categories-documents.index')
+            ->with('success', 'Catégorie supprimée.');
     }
 }

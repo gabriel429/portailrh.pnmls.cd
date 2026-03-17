@@ -191,5 +191,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/documents-travail/{documentTravail}/edit',   [ParametresController::class, 'docsTravailEdit'])->name('documents-travail.edit');
         Route::put('/documents-travail/{documentTravail}',        [ParametresController::class, 'docsTravailUpdate'])->name('documents-travail.update');
         Route::delete('/documents-travail/{documentTravail}',     [ParametresController::class, 'docsTravailDestroy'])->name('documents-travail.destroy');
+
+        // Catégories documents
+        Route::get('/categories-documents',                             [ParametresController::class, 'categoriesDocsIndex'])->name('categories-documents.index');
+        Route::get('/categories-documents/create',                      [ParametresController::class, 'categoriesDocsCreate'])->name('categories-documents.create');
+        Route::post('/categories-documents',                            [ParametresController::class, 'categoriesDocsStore'])->name('categories-documents.store');
+        Route::get('/categories-documents/{categorieDocument}/edit',    [ParametresController::class, 'categoriesDocsEdit'])->name('categories-documents.edit');
+        Route::put('/categories-documents/{categorieDocument}',         [ParametresController::class, 'categoriesDocsUpdate'])->name('categories-documents.update');
+        Route::delete('/categories-documents/{categorieDocument}',      [ParametresController::class, 'categoriesDocsDestroy'])->name('categories-documents.destroy');
     });
 });

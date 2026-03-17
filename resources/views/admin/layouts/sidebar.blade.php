@@ -471,6 +471,10 @@
            class="sb-link {{ request()->routeIs('admin.documents-travail.*') ? 'active' : '' }}">
             <i class="fas fa-file-invoice ico"></i> Documents de travail
         </a>
+        <a href="{{ route('admin.categories-documents.index') }}"
+           class="sb-link {{ request()->routeIs('admin.categories-documents.*') ? 'active' : '' }}">
+            <i class="fas fa-tags ico"></i> Catégories Documents
+        </a>
         <a href="{{ route('admin.utilisateurs.index') }}"
            class="sb-link {{ request()->routeIs('admin.utilisateurs.*') ? 'active' : '' }}">
             <i class="fas fa-users-cog ico"></i> Utilisateurs

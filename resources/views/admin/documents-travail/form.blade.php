@@ -27,11 +27,14 @@
                 <label class="form-label fw-semibold">Catégorie <span class="text-danger">*</span></label>
                 <select name="categorie" class="form-select @error('categorie') is-invalid @enderror" required>
                     <option value="">– Choisir –</option>
-                    @foreach(['Règlement', 'Procédure', 'Formulaire', 'Note de service', 'Modèle', 'Rapport', 'Guide', 'Autre'] as $cat)
+                    @foreach($categories as $cat)
                         <option value="{{ $cat }}" @selected(old('categorie', $document->categorie ?? '') === $cat)>{{ $cat }}</option>
                     @endforeach
                 </select>
                 @error('categorie')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <small class="form-text text-muted">
+                    <a href="{{ route('admin.categories-documents.index') }}">Gérer les catégories</a>
+                </small>
             </div>
 
             <div class="col-12">
