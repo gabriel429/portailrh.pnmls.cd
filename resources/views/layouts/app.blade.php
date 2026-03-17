@@ -15,6 +15,8 @@
     <style>
         :root {
             --primary-color: #0077B5;
+            --primary-dark: #005a87;
+            --primary-light: #e8f4fd;
             --secondary-color: #F5F5F5;
             --text-dark: #333;
             --text-light: #666;
@@ -22,33 +24,255 @@
         }
 
         body {
-            font-family: 'Roboto', 'Segoe UI', sans-serif;
+            font-family: 'Segoe UI', 'Roboto', sans-serif;
             background-color: var(--secondary-color);
             color: var(--text-dark);
+            padding-top: 0;
         }
 
-        /* Navbar */
-        .navbar {
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            border-bottom: 1px solid var(--border-color);
+        /* ──────────────────────────────────────
+           NAVBAR – modern glassmorphism style
+           ────────────────────────────────────── */
+        .navbar-main {
+            background: linear-gradient(135deg, #0077B5 0%, #005a87 50%, #004060 100%);
+            box-shadow: 0 2px 20px rgba(0,0,0,.15);
+            padding: .5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 1050;
         }
 
-        .navbar-brand {
-            color: var(--primary-color) !important;
+        .navbar-main .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            color: #fff !important;
             font-weight: 700;
-            font-size: 1.5rem;
+            font-size: 1.15rem;
+            letter-spacing: -.3px;
+            text-decoration: none;
+            padding: .25rem 0;
+        }
+        .navbar-main .navbar-brand img {
+            height: 38px;
+            width: 38px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: rgba(255,255,255,.15);
+            padding: 3px;
+        }
+        .navbar-main .navbar-brand .brand-text {
+            line-height: 1.15;
+        }
+        .navbar-main .navbar-brand .brand-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+        .navbar-main .navbar-brand .brand-sub {
+            font-size: .65rem;
+            opacity: .7;
+            font-weight: 400;
+            letter-spacing: .5px;
+            text-transform: uppercase;
         }
 
-        .nav-link {
-            color: var(--text-dark) !important;
-            margin: 0 10px;
-            transition: color 0.3s;
+        /* Nav links */
+        .navbar-main .nav-link {
+            color: rgba(255,255,255,.8) !important;
+            font-size: .835rem;
+            font-weight: 500;
+            padding: .5rem .85rem !important;
+            border-radius: 8px;
+            transition: all .2s ease;
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            margin: 0 1px;
+            position: relative;
+        }
+        .navbar-main .nav-link:hover {
+            color: #fff !important;
+            background: rgba(255,255,255,.12);
+        }
+        .navbar-main .nav-link.active,
+        .navbar-main .nav-item.active > .nav-link {
+            color: #fff !important;
+            background: rgba(255,255,255,.18);
+        }
+        .navbar-main .nav-link .nav-icon {
+            width: 18px;
+            text-align: center;
+            font-size: .85rem;
+            opacity: .85;
         }
 
-        .nav-link:hover {
-            color: var(--primary-color) !important;
+        /* Notification badge on link */
+        .navbar-main .nav-badge {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            background: #ef4444;
+            color: #fff;
+            font-size: .6rem;
+            font-weight: 700;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
         }
+
+        /* Divider between link groups */
+        .nav-divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(255,255,255,.2);
+            margin: auto 6px;
+        }
+
+        /* Dropdown menus */
+        .navbar-main .dropdown-menu {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,.15);
+            padding: .5rem;
+            min-width: 220px;
+            animation: navDropIn .2s ease;
+        }
+        @keyframes navDropIn {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .navbar-main .dropdown-item {
+            font-size: .84rem;
+            padding: .55rem .9rem;
+            border-radius: 8px;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            transition: background .15s;
+        }
+        .navbar-main .dropdown-item:hover {
+            background: var(--primary-light);
+            color: var(--primary-color);
+        }
+        .navbar-main .dropdown-item .dd-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: .75rem;
+            flex-shrink: 0;
+        }
+        .navbar-main .dropdown-divider {
+            margin: .35rem .5rem;
+            border-color: var(--border-color);
+        }
+
+        /* Admin dropdown icons colors */
+        .dd-icon-blue   { background: #dbeafe; color: #2563eb; }
+        .dd-icon-green  { background: #dcfce7; color: #16a34a; }
+        .dd-icon-purple { background: #ede9fe; color: #7c3aed; }
+        .dd-icon-orange { background: #ffedd5; color: #ea580c; }
+        .dd-icon-red    { background: #fee2e2; color: #dc2626; }
+        .dd-icon-teal   { background: #ccfbf1; color: #0d9488; }
+        .dd-icon-slate  { background: #e2e8f0; color: #475569; }
+
+        /* User profile in navbar */
+        .nav-user-btn {
+            display: flex;
+            align-items: center;
+            gap: .55rem;
+            color: rgba(255,255,255,.9) !important;
+            padding: .35rem .7rem .35rem .4rem !important;
+            border-radius: 24px !important;
+            background: rgba(255,255,255,.1);
+            border: 1px solid rgba(255,255,255,.15);
+            transition: all .2s;
+        }
+        .nav-user-btn:hover {
+            background: rgba(255,255,255,.2) !important;
+        }
+        .nav-user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(255,255,255,.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: .7rem;
+            color: #fff;
+            flex-shrink: 0;
+        }
+        .nav-user-name {
+            font-size: .82rem;
+            font-weight: 500;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* User dropdown extras */
+        .user-dd-header {
+            padding: .7rem .9rem;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: .35rem;
+        }
+        .user-dd-name {
+            font-weight: 600;
+            font-size: .9rem;
+            color: var(--text-dark);
+        }
+        .user-dd-email {
+            font-size: .75rem;
+            color: var(--text-light);
+        }
+
+        /* Hamburger */
+        .navbar-main .navbar-toggler {
+            border: 1px solid rgba(255,255,255,.25);
+            padding: .35rem .6rem;
+            border-radius: 8px;
+        }
+        .navbar-main .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(255,255,255,0.85)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 991.98px) {
+            .navbar-main .navbar-collapse {
+                background: rgba(0,60,90,.95);
+                border-radius: 12px;
+                padding: .75rem;
+                margin-top: .5rem;
+            }
+            .navbar-main .nav-link {
+                padding: .6rem .9rem !important;
+                border-radius: 8px;
+            }
+            .nav-divider {
+                width: 100%;
+                height: 1px;
+                margin: .35rem 0;
+            }
+            .nav-user-btn {
+                justify-content: flex-start;
+                border-radius: 8px !important;
+                width: 100%;
+            }
+        }
+
+        /* ──────────────────────────────────────
+           GLOBAL STYLES (unchanged)
+           ────────────────────────────────────── */
 
         /* Cards */
         .card {
@@ -192,12 +416,12 @@
 
         /* Footer */
         .footer {
-            background-color: white;
-            border-top: 1px solid var(--border-color);
+            background: linear-gradient(135deg, #0077B5 0%, #004060 100%);
             padding: 20px;
             margin-top: 40px;
             text-align: center;
-            color: var(--text-light);
+            color: rgba(255,255,255,.7);
+            font-size: .82rem;
         }
     </style>
 
@@ -206,64 +430,107 @@
 <body>
     <!-- Navbar -->
     @if(auth()->check())
-    <nav class="navbar navbar-expand-lg navbar-light sticky-top">
-        <div class="container-fluid">
+    @php
+        $navUser = auth()->user();
+        $navAgent = $navUser->agent;
+        $navInitials = '';
+        if ($navAgent) {
+            $navInitials = mb_strtoupper(mb_substr($navAgent->prenom ?? '', 0, 1) . mb_substr($navAgent->nom ?? '', 0, 1));
+        }
+        if (!$navInitials) {
+            $navInitials = mb_strtoupper(mb_substr($navUser->name ?? 'U', 0, 2));
+        }
+    @endphp
+    <nav class="navbar navbar-expand-lg navbar-main">
+        <div class="container-fluid px-3">
+            {{-- Brand --}}
             <a class="navbar-brand" href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS Logo" style="height: 50px; width: auto; object-fit: contain;" class="me-2">
-                <span>Portail RH PNMLS</span>
+                <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS">
+                <div class="brand-text">
+                    <div class="brand-title">Portail RH</div>
+                    <div class="brand-sub">PNMLS</div>
+                </div>
             </a>
 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
                 <span class="navbar-toggler-icon"></span>
             </button>
 
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
+            <div class="collapse navbar-collapse" id="navbarMain">
+                {{-- Centre / Main navigation --}}
+                <ul class="navbar-nav mx-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('dashboard') }}">
-                            <i class="fas fa-home"></i> Accueil
+                        <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
+                            <i class="fas fa-th-large nav-icon"></i> Accueil
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('profile.show') }}">
-                            <i class="fas fa-user-circle"></i> Mon Profil
+                        <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" href="{{ route('profile.show') }}">
+                            <i class="fas fa-id-badge nav-icon"></i> Mon Profil
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('requests.index') }}">
-                            <i class="fas fa-file-alt"></i> Mes Demandes
+                        <a class="nav-link {{ request()->routeIs('requests.*') ? 'active' : '' }}" href="{{ route('requests.index') }}">
+                            <i class="fas fa-paper-plane nav-icon"></i> Demandes
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('documents.index') }}">
-                            <i class="fas fa-folder"></i> Documents
+                        <a class="nav-link {{ request()->routeIs('documents.*') ? 'active' : '' }}" href="{{ route('documents.index') }}">
+                            <i class="fas fa-folder-open nav-icon"></i> Documents
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('plan-travail.index') }}">
-                            <i class="fas fa-calendar-alt"></i> Plan de Travail
+                        <a class="nav-link {{ request()->routeIs('plan-travail.*') ? 'active' : '' }}" href="{{ route('plan-travail.index') }}">
+                            <i class="fas fa-calendar-check nav-icon"></i> Plan de Travail
                         </a>
                     </li>
+                </ul>
 
-                    @if(auth()->user()->hasAdminAccess() || auth()->user()->isAdminNT())
+                {{-- Right side --}}
+                <ul class="navbar-nav align-items-lg-center">
+                    @if($navUser->hasAdminAccess() || $navUser->isAdminNT())
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-cog"></i> Admin
+                            <i class="fas fa-shield-halved nav-icon"></i> Admin
                         </a>
-                        <ul class="dropdown-menu">
-                            @if(auth()->user()->hasAdminAccess())
-                            <li><a class="dropdown-item" href="{{ route('rh.agents.index') }}">Gestion Agents</a></li>
-                            <li><a class="dropdown-item" href="{{ route('rh.communiques.index') }}">Communiqués</a></li>
-                            <li><a class="dropdown-item" href="{{ route('rh.pointages.index') }}">Pointages</a></li>
-                            <li><a class="dropdown-item" href="{{ route('rh.affectations.index') }}">Affectations</a></li>
-                            <li><a class="dropdown-item" href="{{ route('signalements.index') }}">Signalements</a></li>
-                            <li><a class="dropdown-item" href="{{ route('rh.dashboard') }}">Tableau de Bord</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            @if($navUser->hasAdminAccess())
+                            <li>
+                                <a class="dropdown-item" href="{{ route('rh.agents.index') }}">
+                                    <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion Agents
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('rh.communiques.index') }}">
+                                    <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiqués
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('rh.pointages.index') }}">
+                                    <span class="dd-icon dd-icon-purple"><i class="fas fa-clock"></i></span> Pointages
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('rh.affectations.index') }}">
+                                    <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('signalements.index') }}">
+                                    <span class="dd-icon dd-icon-red"><i class="fas fa-flag"></i></span> Signalements
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('rh.dashboard') }}">
+                                    <span class="dd-icon dd-icon-teal"><i class="fas fa-chart-line"></i></span> Tableau de Bord
+                                </a>
+                            </li>
                             @endif
-                            @if(auth()->user()->isAdminNT())
-                            @if(auth()->user()->hasAdminAccess())<li><hr class="dropdown-divider"></li>@endif
+                            @if($navUser->isAdminNT())
+                            @if($navUser->hasAdminAccess())<li><hr class="dropdown-divider"></li>@endif
                             <li>
                                 <a class="dropdown-item" href="{{ route('admin.dashboard') }}">
-                                    <i class="fas fa-sliders-h me-1"></i> Paramètres système
+                                    <span class="dd-icon dd-icon-slate"><i class="fas fa-sliders-h"></i></span> Paramètres système
                                 </a>
                             </li>
                             @endif
@@ -271,17 +538,33 @@
                     </li>
                     @endif
 
+                    <div class="nav-divider d-none d-lg-block"></div>
+
+                    {{-- User dropdown --}}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user"></i> {{ auth()->user()->agent?->prenom ?? auth()->user()->name }}
+                        <a class="nav-link nav-user-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <span class="nav-user-avatar">{{ $navInitials }}</span>
+                            <span class="nav-user-name">{{ $navAgent?->prenom ?? $navUser->name }}</span>
                         </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="{{ route('profile.show') }}">Mon Profil</a></li>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <div class="user-dd-header">
+                                    <div class="user-dd-name">{{ $navAgent?->prenom ?? '' }} {{ $navAgent?->nom ?? $navUser->name }}</div>
+                                    <div class="user-dd-email">{{ $navUser->email }}</div>
+                                </div>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('profile.show') }}">
+                                    <span class="dd-icon dd-icon-blue"><i class="fas fa-user"></i></span> Mon Profil
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
                                 <form action="{{ route('logout') }}" method="POST">
                                     @csrf
-                                    <button class="dropdown-item" type="submit">Déconnexion</button>
+                                    <button class="dropdown-item text-danger" type="submit">
+                                        <span class="dd-icon dd-icon-red"><i class="fas fa-sign-out-alt"></i></span> Déconnexion
+                                    </button>
                                 </form>
                             </li>
                         </ul>
@@ -325,7 +608,7 @@
 
     <!-- Footer -->
     <footer class="footer mt-5">
-        <p>&copy; 2026 Portail RH PNMLS - Programme National Multisectoriel de Lutte contre le Sida</p>
+        <p class="mb-0">&copy; 2026 Portail RH PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
     </footer>
 
     <!-- Bootstrap JS -->
