@@ -15,19 +15,19 @@ class RequestController extends Controller
      * Display a listing of the resource.
      */
     public function index(): View
-        {
-            $user = auth()->user();
-            $agent = $user->agent ?? null;
-            $requestsQuery = RequestModel::with(['agent']);
+    {
+        $user = auth()->user();
+        $agent = $user->agent ?? null;
+        $requestsQuery = RequestModel::with(['agent']);
 
-            // Si l'utilisateur appartient à la section "nouvelle technologie"
-            if ($agent && $agent->departement && strtolower($agent->departement->nom) === 'nouvelle technologie') {
-                $requestsQuery->where('agent_id', $agent->id);
-            }
-
-            $requests = $requestsQuery->paginate(15);
-            return view('rh.requests.index', compact('requests'));
+        // Seuls les RH voient toutes les demandes, les autres ne voient que les leurs
+        if (!$user->hasAdminAccess()) {
+            $requestsQuery->where('agent_id', $agent?->id);
         }
+
+        $requests = $requestsQuery->latest()->paginate(15);
+        return view('rh.requests.index', compact('requests'));
+    }
 
     /**
      * Show the form for creating a new resource.
