@@ -630,7 +630,49 @@
 
     <script>
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            // Check for updates every 60 seconds
+            setInterval(() => reg.update(), 60000);
+
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        showUpdateBanner();
+                    }
+                });
+            });
+        });
+
+        // Listen for SW_UPDATED message
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'SW_UPDATED') {
+                showUpdateBanner();
+            }
+        });
+
+        function showUpdateBanner() {
+            if (document.getElementById('pwa-update-banner')) return;
+            const banner = document.createElement('div');
+            banner.id = 'pwa-update-banner';
+            banner.innerHTML = `
+                <div style="position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:99999;
+                    background:linear-gradient(135deg,#0077B5,#005a87);color:#fff;padding:12px 20px;
+                    border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.25);display:flex;align-items:center;
+                    gap:12px;font-family:'Segoe UI',sans-serif;font-size:.88rem;max-width:420px;width:90%;">
+                    <i class="fas fa-arrow-rotate-right" style="font-size:1.1rem;"></i>
+                    <span style="flex:1;">Nouvelle version disponible !</span>
+                    <button onclick="location.reload()" style="background:#fff;color:#0077B5;border:none;
+                        padding:6px 16px;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;">
+                        Mettre à jour
+                    </button>
+                    <button onclick="this.closest('#pwa-update-banner').remove()" style="background:none;
+                        border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;padding:0 4px;">
+                        &times;
+                    </button>
+                </div>`;
+            document.body.appendChild(banner);
+        }
     }
     </script>
 </body>

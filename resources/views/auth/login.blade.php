@@ -461,7 +461,17 @@
         }
     });
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(() => {});
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            setInterval(() => reg.update(), 60000);
+            reg.addEventListener('updatefound', () => {
+                const nw = reg.installing;
+                nw.addEventListener('statechange', () => {
+                    if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                        location.reload();
+                    }
+                });
+            });
+        });
     }
     </script>
 </body>
