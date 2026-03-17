@@ -21,7 +21,8 @@
         /* ── Left panel ── */
         .login-left {
             flex: 1;
-            background: linear-gradient(135deg, #0077B5 0%, #005a87 40%, #003f5c 100%);
+            background: linear-gradient(135deg, rgba(0,119,181,.88) 0%, rgba(0,90,135,.92) 40%, rgba(0,63,92,.95) 100%),
+                        url('{{ asset("images/pnmls.jpeg") }}') center/cover no-repeat;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -39,7 +40,7 @@
             width: 400px;
             height: 400px;
             border-radius: 50%;
-            background: rgba(255,255,255,.05);
+            background: rgba(255,255,255,.06);
         }
         .login-left::after {
             content: '';
@@ -49,7 +50,7 @@
             width: 300px;
             height: 300px;
             border-radius: 50%;
-            background: rgba(255,255,255,.04);
+            background: rgba(255,255,255,.05);
         }
 
         .login-brand {
