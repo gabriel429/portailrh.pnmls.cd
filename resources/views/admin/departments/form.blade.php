@@ -9,8 +9,7 @@
 @endsection
 
 @section('content')
-<div class="card border-0 shadow-sm" style="max-width:540px">
-    <div class="card-body p-4">
+<div class="form-card" style="max-width:680px">
         <form method="POST"
               action="{{ isset($department)
                 ? route('admin.departments.update', $department)
@@ -58,6 +57,5 @@
                 </div>
             </div>
         </form>
-    </div>
 </div>
 @endsection

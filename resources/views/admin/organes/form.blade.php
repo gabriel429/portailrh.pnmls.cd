@@ -3,9 +3,15 @@
 @section('title', 'Organes')
 @section('page-title', isset($organe) ? 'Modifier un Organe' : 'Créer un Organe')
 
+@section('topbar-actions')
+<a href="{{ route('admin.organes.index') }}" class="btn btn-outline-secondary btn-sm">
+    <i class="fas fa-arrow-left me-1"></i> Retour
+</a>
+@endsection
+
 @section('content')
 
-<div class="form-card">
+<div class="form-card" style="max-width:680px">
     <form action="{{ isset($organe) ? route('admin.organes.update', $organe) : route('admin.organes.store') }}" method="POST">
         @csrf
         @if(isset($organe))
@@ -67,9 +73,7 @@
             <button type="submit" class="btn btn-primary">
                 <i class="fas fa-save me-2"></i> {{ isset($organe) ? 'Mettre à jour' : 'Créer' }}
             </button>
-            <a href="{{ route('admin.organes.index') }}" class="btn btn-secondary">
-                <i class="fas fa-times me-2"></i> Annuler
-            </a>
+            <a href="{{ route('admin.organes.index') }}" class="btn btn-outline-secondary">Annuler</a>
         </div>
     </form>
 </div>

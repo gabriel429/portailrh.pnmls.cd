@@ -9,8 +9,7 @@
 @endsection
 
 @section('content')
-<div class="card border-0 shadow-sm" style="max-width:800px">
-    <div class="card-body p-4">
+<div class="form-card" style="max-width:860px">
         <form method="POST"
               action="{{ isset($province)
                 ? route('admin.provinces.update', $province)
@@ -37,7 +36,7 @@
                     <textarea name="description" class="form-control" rows="2">{{ old('description', $province->description ?? '') }}</textarea>
                 </div>
 
-                <div class="col-12"><hr class="my-1"><p class="fw-semibold text-primary mb-0"><i class="fas fa-building me-2"></i>Secrétariat provincial / local</p></div>
+                <div class="col-12"><div class="form-section-title"><i class="fas fa-building me-2"></i>Secrétariat provincial / local</div></div>
 
                 <div class="col-md-6">
                     <label class="form-label">Ville du secrétariat</label>
@@ -80,6 +79,5 @@
                 </div>
             </div>
         </form>
-    </div>
 </div>
 @endsection

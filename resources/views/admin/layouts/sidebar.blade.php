@@ -310,6 +310,75 @@
         .alert-success { background: #f0fdf4; color: #166534; }
         .alert-danger  { background: #fef2f2; color: #991b1b; }
 
+        /* ═══════════════════════════════════════ INDEX BANNER */
+        .index-banner {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-sm);
+            padding: 18px 22px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            border-left: 4px solid var(--acc, var(--primary));
+        }
+        .index-banner-left { display: flex; align-items: center; gap: 14px; }
+        .index-banner-ico {
+            width: 48px; height: 48px; border-radius: 12px;
+            background: var(--acc-bg, #eef1fc); color: var(--acc, var(--primary));
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.2rem; flex-shrink: 0;
+        }
+        .index-banner-title { font-size: 1.05rem; font-weight: 700; color: #1a2448; margin: 0; }
+        .index-banner-desc { font-size: .78rem; color: var(--text-muted); margin: 2px 0 0; }
+        .index-banner-stats { display: flex; gap: 18px; align-items: center; }
+        .index-banner-stat { text-align: center; }
+        .index-banner-stat-val { font-size: 1.4rem; font-weight: 800; color: var(--acc, var(--primary)); line-height: 1; }
+        .index-banner-stat-lbl { font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: var(--text-muted); margin-top: 2px; }
+
+        /* Level badges */
+        .badge-sen { background: #eef1fc; color: #3b5de7; font-weight: 600; }
+        .badge-sep { background: #d1fae5; color: #10b981; font-weight: 600; }
+        .badge-sel { background: #ccfbf1; color: #0d9488; font-weight: 600; }
+        .badge-tous { background: #f1f5f9; color: #64748b; font-weight: 600; }
+
+        /* Empty state */
+        .empty-state { text-align: center; padding: 48px 20px; color: var(--text-muted); }
+        .empty-state-icon {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--bg-page);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 12px; font-size: 1.4rem; color: #9ca3af;
+        }
+        .empty-state p { margin: 0; font-size: .88rem; }
+        .empty-state .btn { margin-top: 12px; }
+
+        /* Pagination standardized */
+        .pagination-wrapper {
+            padding: 12px 18px; border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .pagination-wrapper .pagination { margin: 0; }
+        .pagination-wrapper .page-info { font-size: .78rem; color: var(--text-muted); }
+
+        /* Form section divider */
+        .form-section-title {
+            font-size: .75rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .8px; color: var(--primary);
+            display: flex; align-items: center; gap: 8px;
+            padding-bottom: 8px; border-bottom: 2px solid var(--bg-page);
+            margin: 20px 0 14px;
+        }
+        .form-section-title i { font-size: .7rem; }
+
+        /* Sidebar section dots */
+        .sb-section .sb-dot {
+            display: inline-block; width: 8px; height: 8px;
+            border-radius: 50%; margin-left: 6px; vertical-align: middle;
+        }
+
         /* ═══════════════════════════════════════ MOBILE */
         .sb-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 999; }
         @media (max-width: 991px) {
@@ -353,10 +422,10 @@
             <i class="fas fa-home ico"></i> Portail RH
         </a>
 
-        <p class="sb-section">Structure organisationnelle</p>
-        <a href="{{ route('admin.provinces.index') }}"
-           class="sb-link {{ request()->routeIs('admin.provinces.*') ? 'active' : '' }}">
-            <i class="fas fa-map-marked-alt ico"></i> Provinces
+        <p class="sb-section">SEN — Niveau National <span class="sb-dot" style="background:#3b5de7;"></span></p>
+        <a href="{{ route('admin.organes.index') }}"
+           class="sb-link {{ request()->routeIs('admin.organes.*') ? 'active' : '' }}">
+            <i class="fas fa-landmark ico"></i> Organes
         </a>
         <a href="{{ route('admin.departments.index') }}"
            class="sb-link {{ request()->routeIs('admin.departments.*') ? 'active' : '' }}">
@@ -370,23 +439,27 @@
            class="sb-link {{ request()->routeIs('admin.cellules.*') ? 'active' : '' }}">
             <i class="fas fa-cubes ico"></i> Cellules
         </a>
-        <a href="{{ route('admin.fonctions.index') }}"
-           class="sb-link {{ request()->routeIs('admin.fonctions.*') ? 'active' : '' }}">
-            <i class="fas fa-briefcase ico"></i> Fonctions
+
+        <p class="sb-section">SEP — Niveau Provincial <span class="sb-dot" style="background:#10b981;"></span></p>
+        <a href="{{ route('admin.provinces.index') }}"
+           class="sb-link {{ request()->routeIs('admin.provinces.*') ? 'active' : '' }}">
+            <i class="fas fa-map-marked-alt ico"></i> Provinces
         </a>
+
+        <p class="sb-section">SEL — Niveau Local <span class="sb-dot" style="background:#0d9488;"></span></p>
         <a href="{{ route('admin.localites.index') }}"
            class="sb-link {{ request()->routeIs('admin.localites.*') ? 'active' : '' }}">
-            <i class="fas fa-map-pin ico"></i> Localités SEL
+            <i class="fas fa-map-pin ico"></i> Localités
         </a>
 
         <p class="sb-section">Référentiels</p>
+        <a href="{{ route('admin.fonctions.index') }}"
+           class="sb-link {{ request()->routeIs('admin.fonctions.*') ? 'active' : '' }}">
+            <i class="fas fa-briefcase ico"></i> Fonctions / Postes
+        </a>
         <a href="{{ route('admin.grades.index') }}"
            class="sb-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}">
             <i class="fas fa-layer-group ico"></i> Grades
-        </a>
-        <a href="{{ route('admin.organes.index') }}"
-           class="sb-link {{ request()->routeIs('admin.organes.*') ? 'active' : '' }}">
-            <i class="fas fa-sitemap ico"></i> Organes
         </a>
         <a href="{{ route('admin.roles.index') }}"
            class="sb-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}">

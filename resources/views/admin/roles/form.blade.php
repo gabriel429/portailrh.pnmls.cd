@@ -9,8 +9,7 @@
 @endsection
 
 @section('content')
-<div class="card border-0 shadow-sm" style="max-width:500px">
-    <div class="card-body p-4">
+<div class="form-card" style="max-width:680px">
         <form method="POST"
               action="{{ isset($role) ? route('admin.roles.update', $role) : route('admin.roles.store') }}">
             @csrf
@@ -29,13 +28,12 @@
             </div>
 
             <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-warning">
+                <button type="submit" class="btn btn-primary">
                     <i class="fas fa-save me-1"></i>
                     {{ isset($role) ? 'Mettre à jour' : 'Créer le rôle' }}
                 </button>
                 <a href="{{ route('admin.roles.index') }}" class="btn btn-outline-secondary">Annuler</a>
             </div>
         </form>
-    </div>
 </div>
 @endsection

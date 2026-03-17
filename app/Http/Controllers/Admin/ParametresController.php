@@ -319,7 +319,7 @@ class ParametresController extends Controller
 
     public function departmentsIndex()
     {
-        $departments = Department::with('province')->withCount('agents')->orderBy('nom')->paginate(20);
+        $departments = Department::with('province')->withCount(['agents', 'sections'])->orderBy('nom')->paginate(20);
         return view('admin.departments.index', compact('departments'));
     }
 

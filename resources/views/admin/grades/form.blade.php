@@ -9,8 +9,7 @@
 @endsection
 
 @section('content')
-<div class="card border-0 shadow-sm" style="max-width:520px">
-    <div class="card-body p-4">
+<div class="form-card" style="max-width:680px">
         <form method="POST"
               action="{{ isset($grade) ? route('admin.grades.update', $grade) : route('admin.grades.store') }}">
             @csrf
@@ -47,7 +46,7 @@
                     @error('libelle')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-12 d-flex gap-2">
-                    <button type="submit" class="btn btn-success">
+                    <button type="submit" class="btn btn-primary">
                         <i class="fas fa-save me-1"></i>
                         {{ isset($grade) ? 'Mettre à jour' : 'Créer le grade' }}
                     </button>
@@ -55,6 +54,5 @@
                 </div>
             </div>
         </form>
-    </div>
 </div>
 @endsection
