@@ -34,9 +34,15 @@ class RequestController extends Controller
      */
     public function create(): View
     {
-        $agents = Agent::actifs()->get();
+        $user = auth()->user();
+        $isRH = $user->hasAdminAccess();
 
-        return view('rh.requests.create', compact('agents'));
+        // RH peut sélectionner n'importe quel agent, sinon seulement soi-même
+        $agents = $isRH
+            ? Agent::actifs()->get()
+            : collect($user->agent ? [$user->agent] : []);
+
+        return view('rh.requests.create', compact('agents', 'isRH'));
     }
 
     /**

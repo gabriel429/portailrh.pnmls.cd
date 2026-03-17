@@ -315,30 +315,47 @@
                     $currentAgent = auth()->user()->agent;
                 @endphp
 
-                @if($currentAgent)
-                    <div class="agent-banner">
-                        <div class="ab-avatar">
-                            {{ mb_strtoupper(mb_substr($currentAgent->prenom ?? '', 0, 1) . mb_substr($currentAgent->nom ?? '', 0, 1)) }}
+                @if(!empty($isRH))
+                    {{-- RH : peut sélectionner n'importe quel agent --}}
+                    @if($currentAgent)
+                        <div class="agent-banner">
+                            <div class="ab-avatar">
+                                {{ mb_strtoupper(mb_substr($currentAgent->prenom ?? '', 0, 1) . mb_substr($currentAgent->nom ?? '', 0, 1)) }}
+                            </div>
+                            <div class="ab-info">
+                                <div class="ab-name">{{ $currentAgent->prenom }} {{ $currentAgent->nom }}</div>
+                                <div class="ab-id">{{ $currentAgent->id_agent }} — Connecté</div>
+                            </div>
                         </div>
-                        <div class="ab-info">
-                            <div class="ab-name">{{ $currentAgent->prenom }} {{ $currentAgent->nom }}</div>
-                            <div class="ab-id">{{ $currentAgent->id_agent }}</div>
-                        </div>
-                    </div>
-                @endif
+                    @endif
 
-                <div class="mb-4">
-                    <label class="req-label">Agent <span class="text-danger">*</span></label>
-                    <select name="agent_id" id="agent_id" class="form-select @error('agent_id') is-invalid @enderror" required>
-                        <option value="">-- Sélectionner un agent --</option>
-                        @foreach($agents as $agent)
-                            <option value="{{ $agent->id }}" @selected(old('agent_id', $currentAgent?->id) == $agent->id)>
-                                {{ $agent->prenom }} {{ $agent->nom }} ({{ $agent->id_agent }})
-                            </option>
-                        @endforeach
-                    </select>
-                    @error('agent_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                </div>
+                    <div class="mb-4">
+                        <label class="req-label">Agent <span class="text-danger">*</span></label>
+                        <select name="agent_id" id="agent_id" class="form-select @error('agent_id') is-invalid @enderror" required>
+                            <option value="">-- Sélectionner un agent --</option>
+                            @foreach($agents as $agent)
+                                <option value="{{ $agent->id }}" @selected(old('agent_id', $currentAgent?->id) == $agent->id)>
+                                    {{ $agent->prenom }} {{ $agent->nom }} ({{ $agent->id_agent }})
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('agent_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                    </div>
+                @else
+                    {{-- Non-RH : demande pour soi-même uniquement --}}
+                    @if($currentAgent)
+                        <div class="agent-banner">
+                            <div class="ab-avatar">
+                                {{ mb_strtoupper(mb_substr($currentAgent->prenom ?? '', 0, 1) . mb_substr($currentAgent->nom ?? '', 0, 1)) }}
+                            </div>
+                            <div class="ab-info">
+                                <div class="ab-name">{{ $currentAgent->prenom }} {{ $currentAgent->nom }}</div>
+                                <div class="ab-id">{{ $currentAgent->id_agent }}</div>
+                            </div>
+                        </div>
+                        <input type="hidden" name="agent_id" value="{{ $currentAgent->id }}">
+                    @endif
+                @endif
 
                 {{-- Section 2 : Type de demande --}}
                 <div class="section-title">
