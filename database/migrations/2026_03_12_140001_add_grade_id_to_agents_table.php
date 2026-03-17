@@ -9,12 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('agents', function (Blueprint $table) {
-            $table->foreignId('grade_id')
-                ->nullable()
-                ->after('role_id')
-                ->constrained('grades')
-                ->nullOnDelete()
-                ->comment('Grade de l\'agent (référence table grades)');
+            if (!Schema::hasColumn('agents', 'grade_id')) {
+                $table->foreignId('grade_id')
+                    ->nullable()
+                    ->after('role_id')
+                    ->constrained('grades')
+                    ->nullOnDelete()
+                    ->comment('Grade de l\'agent (référence table grades)');
+            }
         });
     }
 

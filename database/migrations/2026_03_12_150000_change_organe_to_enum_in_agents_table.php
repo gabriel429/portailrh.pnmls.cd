@@ -8,13 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->enum('organe', [
-                'Secrétariat Exécutif National',
-                'Secrétariat Exécutif Provincial',
-                'Secrétariat Exécutif Local',
-            ])->nullable()->default(null)->change();
-        });
+        try {
+            Schema::table('agents', function (Blueprint $table) {
+                $table->enum('organe', [
+                    'Secrétariat Exécutif National',
+                    'Secrétariat Exécutif Provincial',
+                    'Secrétariat Exécutif Local',
+                ])->nullable()->default(null)->change();
+            });
+        } catch (\Exception $e) {
+            // Column may already be an enum with these values; ignore
+        }
     }
 
     public function down(): void

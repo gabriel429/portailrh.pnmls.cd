@@ -12,17 +12,39 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('agents', function (Blueprint $table) {
-            $table->string('postnom')->nullable()->after('nom');
-            $table->string('organe')->nullable()->after('postnom');
-            $table->string('fonction')->nullable()->after('poste_actuel');
-            $table->string('grade_etat')->nullable()->after('fonction');
-            $table->string('sexe', 20)->nullable()->after('grade_etat');
-            $table->string('provenance_matricule')->nullable()->after('matricule_etat');
-            $table->string('niveau_etudes')->nullable()->after('provenance_matricule');
-            $table->unsignedSmallInteger('annee_engagement_programme')->nullable()->after('niveau_etudes');
-            $table->unsignedSmallInteger('annee_naissance')->nullable()->after('annee_engagement_programme');
-            $table->string('email_prive')->nullable()->after('email');
-            $table->string('email_professionnel')->nullable()->after('email_prive');
+            if (!Schema::hasColumn('agents', 'postnom')) {
+                $table->string('postnom')->nullable()->after('nom');
+            }
+            if (!Schema::hasColumn('agents', 'organe')) {
+                $table->string('organe')->nullable()->after('postnom');
+            }
+            if (!Schema::hasColumn('agents', 'fonction')) {
+                $table->string('fonction')->nullable()->after('poste_actuel');
+            }
+            if (!Schema::hasColumn('agents', 'grade_etat')) {
+                $table->string('grade_etat')->nullable()->after('fonction');
+            }
+            if (!Schema::hasColumn('agents', 'sexe')) {
+                $table->string('sexe', 20)->nullable()->after('grade_etat');
+            }
+            if (!Schema::hasColumn('agents', 'provenance_matricule')) {
+                $table->string('provenance_matricule')->nullable()->after('matricule_etat');
+            }
+            if (!Schema::hasColumn('agents', 'niveau_etudes')) {
+                $table->string('niveau_etudes')->nullable()->after('provenance_matricule');
+            }
+            if (!Schema::hasColumn('agents', 'annee_engagement_programme')) {
+                $table->unsignedSmallInteger('annee_engagement_programme')->nullable()->after('niveau_etudes');
+            }
+            if (!Schema::hasColumn('agents', 'annee_naissance')) {
+                $table->unsignedSmallInteger('annee_naissance')->nullable()->after('annee_engagement_programme');
+            }
+            if (!Schema::hasColumn('agents', 'email_prive')) {
+                $table->string('email_prive')->nullable()->after('email');
+            }
+            if (!Schema::hasColumn('agents', 'email_professionnel')) {
+                $table->string('email_professionnel')->nullable()->after('email_prive');
+            }
         });
     }
 

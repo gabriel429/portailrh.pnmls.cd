@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('agent_id')->nullable()->constrained('agents')->onDelete('cascade')->after('id');
-            $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('set null')->after('agent_id');
+            if (!Schema::hasColumn('users', 'agent_id')) {
+                $table->foreignId('agent_id')->nullable()->constrained('agents')->onDelete('cascade')->after('id');
+            }
+            if (!Schema::hasColumn('users', 'role_id')) {
+                $table->foreignId('role_id')->nullable()->constrained('roles')->onDelete('set null')->after('agent_id');
+            }
             $table->string('email')->nullable()->change();
         });
     }

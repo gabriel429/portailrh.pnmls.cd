@@ -12,34 +12,38 @@ return new class extends Migration
     public function up(): void
     {
         // Table: Institution Categories (Parent)
-        Schema::create('institution_categories', function (Blueprint $table) {
-            $table->id();
-            $table->string('code')->unique();
-            $table->string('nom');
-            $table->tinyInteger('ordre')->default(1); // 1-11 for ordering
-            $table->text('description')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('institution_categories')) {
+            Schema::create('institution_categories', function (Blueprint $table) {
+                $table->id();
+                $table->string('code')->unique();
+                $table->string('nom');
+                $table->tinyInteger('ordre')->default(1); // 1-11 for ordering
+                $table->text('description')->nullable();
+                $table->timestamps();
 
-            $table->index('ordre');
-        });
+                $table->index('ordre');
+            });
+        }
 
         // Table: Institutions (Child)
-        Schema::create('institutions', function (Blueprint $table) {
-            $table->id();
-            $table->string('code')->unique();
-            $table->string('nom');
-            $table->foreignId('institution_categorie_id')
-                ->constrained('institution_categories')
-                ->onDelete('cascade');
-            $table->tinyInteger('ordre')->default(1);
-            $table->text('description')->nullable();
-            $table->boolean('actif')->default(true);
-            $table->timestamps();
+        if (!Schema::hasTable('institutions')) {
+            Schema::create('institutions', function (Blueprint $table) {
+                $table->id();
+                $table->string('code')->unique();
+                $table->string('nom');
+                $table->foreignId('institution_categorie_id')
+                    ->constrained('institution_categories')
+                    ->onDelete('cascade');
+                $table->tinyInteger('ordre')->default(1);
+                $table->text('description')->nullable();
+                $table->boolean('actif')->default(true);
+                $table->timestamps();
 
-            $table->index('institution_categorie_id');
-            $table->index('actif');
-            $table->index('ordre');
-        });
+                $table->index('institution_categorie_id');
+                $table->index('actif');
+                $table->index('ordre');
+            });
+        }
     }
 
     /**
