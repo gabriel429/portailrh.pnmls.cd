@@ -18,15 +18,16 @@ class RequestController extends Controller
     {
         $user = auth()->user();
         $agent = $user->agent ?? null;
+        $isRH = $user->hasAdminAccess();
         $requestsQuery = RequestModel::with(['agent']);
 
         // Seuls les RH voient toutes les demandes, les autres ne voient que les leurs
-        if (!$user->hasAdminAccess()) {
+        if (!$isRH) {
             $requestsQuery->where('agent_id', $agent?->id);
         }
 
         $requests = $requestsQuery->latest()->paginate(15);
-        return view('rh.requests.index', compact('requests'));
+        return view('rh.requests.index', compact('requests', 'isRH'));
     }
 
     /**

@@ -467,6 +467,10 @@
         </a>
 
         <p class="sb-section">Système</p>
+        <a href="{{ route('admin.documents-travail.index') }}"
+           class="sb-link {{ request()->routeIs('admin.documents-travail.*') ? 'active' : '' }}">
+            <i class="fas fa-file-invoice ico"></i> Documents de travail
+        </a>
         <a href="{{ route('admin.utilisateurs.index') }}"
            class="sb-link {{ request()->routeIs('admin.utilisateurs.*') ? 'active' : '' }}">
             <i class="fas fa-users-cog ico"></i> Utilisateurs

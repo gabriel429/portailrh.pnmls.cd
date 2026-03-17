@@ -16,6 +16,7 @@ use App\Models\Affectation;
 use App\Models\Localite;
 use App\Models\Organe;
 use App\Models\Permission;
+use App\Models\DocumentTravail;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
@@ -1011,5 +1012,79 @@ class ParametresController extends Controller
 
         return redirect()->route('admin.logs')
             ->with('success', 'Logs effacés avec succès.');
+    }
+
+    // ─── Documents de travail ────────────────────────────────────────────────────
+
+    public function docsTravailIndex()
+    {
+        $documents = DocumentTravail::with('uploader')->latest()->paginate(20);
+        return view('admin.documents-travail.index', compact('documents'));
+    }
+
+    public function docsTravailCreate()
+    {
+        return view('admin.documents-travail.form');
+    }
+
+    public function docsTravailStore(Request $request)
+    {
+        $validated = $request->validate([
+            'titre'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'categorie'   => 'required|string|max:100',
+            'fichier'     => 'required|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|max:10240',
+            'actif'       => 'nullable|boolean',
+        ]);
+
+        $file = $request->file('fichier');
+        $validated['fichier']       = $file->store('documents_travail', 'public');
+        $validated['type_fichier']  = $file->getClientOriginalExtension();
+        $validated['taille']        = $file->getSize();
+        $validated['uploaded_by']   = auth()->id();
+        $validated['actif']         = $request->has('actif');
+
+        DocumentTravail::create($validated);
+
+        return redirect()->route('admin.documents-travail.index')
+            ->with('success', 'Document de travail ajouté avec succès.');
+    }
+
+    public function docsTravailEdit(DocumentTravail $documentTravail)
+    {
+        return view('admin.documents-travail.form', ['document' => $documentTravail]);
+    }
+
+    public function docsTravailUpdate(Request $request, DocumentTravail $documentTravail)
+    {
+        $validated = $request->validate([
+            'titre'       => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'categorie'   => 'required|string|max:100',
+            'fichier'     => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|max:10240',
+            'actif'       => 'nullable|boolean',
+        ]);
+
+        if ($request->hasFile('fichier')) {
+            $file = $request->file('fichier');
+            $validated['fichier']      = $file->store('documents_travail', 'public');
+            $validated['type_fichier'] = $file->getClientOriginalExtension();
+            $validated['taille']       = $file->getSize();
+        }
+
+        $validated['actif'] = $request->has('actif');
+
+        $documentTravail->update($validated);
+
+        return redirect()->route('admin.documents-travail.index')
+            ->with('success', 'Document mis à jour avec succès.');
+    }
+
+    public function docsTravailDestroy(DocumentTravail $documentTravail)
+    {
+        $documentTravail->delete();
+
+        return redirect()->route('admin.documents-travail.index')
+            ->with('success', 'Document supprimé avec succès.');
     }
 }

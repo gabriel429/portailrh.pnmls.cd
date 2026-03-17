@@ -71,6 +71,9 @@ Route::middleware('auth')->group(function () {
         Route::resource('departments', DepartmentController::class);
     });
 
+    // Documents de travail (accessible à tous les agents)
+    Route::get('/documents-travail', [\App\Http\Controllers\DocumentTravailController::class, 'index'])->name('documents-travail.index');
+
     // ─── Section Paramètres – Chef NT uniquement ────────────────────────────────
     Route::middleware('admin.nt')->prefix('admin')->name('admin.')->group(function () {
 
@@ -180,5 +183,13 @@ Route::middleware('auth')->group(function () {
         // Logs
         Route::get('/logs',        [ParametresController::class, 'logs'])->name('logs');
         Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');
+
+        // Documents de travail
+        Route::get('/documents-travail',                          [ParametresController::class, 'docsTravailIndex'])->name('documents-travail.index');
+        Route::get('/documents-travail/create',                   [ParametresController::class, 'docsTravailCreate'])->name('documents-travail.create');
+        Route::post('/documents-travail',                         [ParametresController::class, 'docsTravailStore'])->name('documents-travail.store');
+        Route::get('/documents-travail/{documentTravail}/edit',   [ParametresController::class, 'docsTravailEdit'])->name('documents-travail.edit');
+        Route::put('/documents-travail/{documentTravail}',        [ParametresController::class, 'docsTravailUpdate'])->name('documents-travail.update');
+        Route::delete('/documents-travail/{documentTravail}',     [ParametresController::class, 'docsTravailDestroy'])->name('documents-travail.destroy');
     });
 });

@@ -484,6 +484,11 @@
                             <i class="fas fa-calendar-check nav-icon"></i> Plan de Travail
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('documents-travail.*') ? 'active' : '' }}" href="{{ route('documents-travail.index') }}">
+                            <i class="fas fa-file-invoice nav-icon"></i> Docs Travail
+                        </a>
+                    </li>
                 </ul>
 
                 {{-- Right side --}}
