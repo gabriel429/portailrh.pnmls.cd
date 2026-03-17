@@ -63,11 +63,25 @@ class NotificationController extends Controller
     }
 
     /**
-     * API: get unread count (for AJAX polling)
+     * API: get unread count + recent notifications (for AJAX)
      */
     public function unreadCount()
     {
         $count = NotificationPortail::pourUser(auth()->id())->nonLues()->count();
-        return response()->json(['count' => $count]);
+        $recent = NotificationPortail::pourUser(auth()->id())
+            ->latest()
+            ->take(5)
+            ->get()
+            ->map(fn($n) => [
+                'id' => $n->id,
+                'titre' => \Illuminate\Support\Str::limit($n->titre, 40),
+                'icone' => $n->icone,
+                'couleur' => $n->couleur,
+                'lu' => $n->lu,
+                'temps' => $n->created_at->diffForHumans(),
+                'lien' => url('/notifications/' . $n->id . '/read'),
+            ]);
+
+        return response()->json(['count' => $count, 'recent' => $recent]);
     }
 }

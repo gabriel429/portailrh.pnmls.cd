@@ -633,47 +633,20 @@
 
                     <div class="nav-divider d-none d-lg-block"></div>
 
-                    {{-- Notification bell --}}
-                    @php
-                        $notifCount = \App\Models\NotificationPortail::pourUser(auth()->id())->nonLues()->count();
-                    @endphp
+                    {{-- Notification bell (loaded via AJAX) --}}
                     <li class="nav-item dropdown">
-                        <a class="nav-link nav-notif-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link nav-notif-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" id="notifBell">
                             <i class="fas fa-bell"></i>
-                            @if($notifCount > 0)
-                                <span class="notif-badge">{{ $notifCount > 99 ? '99+' : $notifCount }}</span>
-                            @endif
+                            <span class="notif-badge" id="notifBadge" style="display:none;">0</span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end notif-dropdown">
+                        <ul class="dropdown-menu dropdown-menu-end notif-dropdown" id="notifDropdown">
                             <li>
                                 <div class="notif-dd-header">
                                     <span class="notif-dd-title">Notifications</span>
-                                    @if($notifCount > 0)
-                                        <a href="{{ url('/notifications/mark-all-read') }}" class="notif-dd-clear">Tout marquer lu</a>
-                                    @endif
+                                    <a href="{{ url('/notifications/mark-all-read') }}" class="notif-dd-clear" id="notifMarkAll" style="display:none;">Tout marquer lu</a>
                                 </div>
                             </li>
-                            @php
-                                $recentNotifs = \App\Models\NotificationPortail::pourUser(auth()->id())
-                                    ->latest()->take(5)->get();
-                            @endphp
-                            @forelse($recentNotifs as $notif)
-                            <li>
-                                <a class="dropdown-item notif-item {{ !$notif->lu ? 'notif-unread' : '' }}"
-                                   href="{{ url('/notifications/' . $notif->id . '/read') }}">
-                                    <span class="notif-item-icon" style="background:{{ $notif->couleur }}20;color:{{ $notif->couleur }};">
-                                        <i class="fas {{ $notif->icone }}"></i>
-                                    </span>
-                                    <span class="notif-item-content">
-                                        <span class="notif-item-title">{{ Str::limit($notif->titre, 40) }}</span>
-                                        <span class="notif-item-time">{{ $notif->created_at->diffForHumans() }}</span>
-                                    </span>
-                                    @if(!$notif->lu)<span class="notif-dot"></span>@endif
-                                </a>
-                            </li>
-                            @empty
-                            <li><div class="notif-empty">Aucune notification</div></li>
-                            @endforelse
+                            <li id="notifLoading"><div class="notif-empty"><i class="fas fa-spinner fa-spin"></i></div></li>
                             <li><hr class="dropdown-divider m-0"></li>
                             <li>
                                 <a class="dropdown-item text-center notif-see-all" href="{{ url('/notifications') }}">
@@ -806,6 +779,60 @@
             document.body.appendChild(banner);
         }
     }
+
+    // ── Notifications AJAX ──
+    (function() {
+        const badge = document.getElementById('notifBadge');
+        const dropdown = document.getElementById('notifDropdown');
+        const loading = document.getElementById('notifLoading');
+        const markAll = document.getElementById('notifMarkAll');
+        if (!badge) return;
+
+        function loadNotifs() {
+            fetch('/api/notifications/unread-count', { credentials: 'same-origin' })
+                .then(r => r.json())
+                .then(data => {
+                    // Update badge
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 99 ? '99+' : data.count;
+                        badge.style.display = '';
+                        markAll.style.display = '';
+                    } else {
+                        badge.style.display = 'none';
+                        markAll.style.display = 'none';
+                    }
+                    // Update dropdown items
+                    if (loading) loading.remove();
+                    const divider = dropdown.querySelector('.dropdown-divider');
+                    // Remove old notification items
+                    dropdown.querySelectorAll('.notif-item-ajax').forEach(el => el.closest('li').remove());
+                    if (data.recent && data.recent.length > 0) {
+                        data.recent.forEach(n => {
+                            const li = document.createElement('li');
+                            li.innerHTML = `<a class="dropdown-item notif-item notif-item-ajax ${!n.lu ? 'notif-unread' : ''}" href="${n.lien}">
+                                <span class="notif-item-icon" style="background:${n.couleur}20;color:${n.couleur};">
+                                    <i class="fas ${n.icone}"></i>
+                                </span>
+                                <span class="notif-item-content">
+                                    <span class="notif-item-title">${n.titre}</span>
+                                    <span class="notif-item-time">${n.temps}</span>
+                                </span>
+                                ${!n.lu ? '<span class="notif-dot"></span>' : ''}
+                            </a>`;
+                            divider.parentElement.insertBefore(li, divider.parentElement);
+                        });
+                    } else {
+                        const li = document.createElement('li');
+                        li.innerHTML = '<div class="notif-empty notif-item-ajax">Aucune notification</div>';
+                        divider.parentElement.insertBefore(li, divider.parentElement);
+                    }
+                })
+                .catch(() => {});
+        }
+
+        // Load on page ready, then every 30 seconds
+        loadNotifs();
+        setInterval(loadNotifs, 30000);
+    })();
     </script>
-</body>
 </html>
