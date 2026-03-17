@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Documents de travail - Portail RH PNMLS')
+@section('title', ($categorie ? $categorie . ' - ' : '') . 'Documents de travail - Portail RH PNMLS')
 
 @section('css')
 <style>
@@ -33,29 +33,151 @@
     .dt-hero-stat-val { font-size: 1.5rem; font-weight: 800; }
     .dt-hero-stat-lbl { font-size: .7rem; opacity: .7; text-transform: uppercase; letter-spacing: .5px; }
 
-    /* Filters */
-    .dt-filters {
-        display: flex;
-        gap: .5rem;
-        flex-wrap: wrap;
-        margin-bottom: 1.2rem;
+    /* ── Category cards ── */
+    .dt-cat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: .8rem;
+        margin-bottom: 1.5rem;
     }
-    .dt-filter-btn {
-        padding: .4rem .9rem;
+    .dt-cat-card {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .9rem 1rem;
+        background: #fff;
+        border: 2px solid #e5e7eb;
+        border-radius: 14px;
+        text-decoration: none;
+        color: #374151;
+        transition: all .25s;
+        cursor: pointer;
+    }
+    .dt-cat-card:hover {
+        border-color: #ea580c;
+        color: #ea580c;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(234,88,12,.1);
+    }
+    .dt-cat-card.active {
+        background: linear-gradient(135deg, #ea580c, #c2410c);
+        border-color: #ea580c;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(234,88,12,.25);
+    }
+    .dt-cat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        flex-shrink: 0;
+        background: #fff7ed;
+        color: #ea580c;
+    }
+    .dt-cat-card.active .dt-cat-icon {
+        background: rgba(255,255,255,.2);
+        color: #fff;
+    }
+    .dt-cat-card:hover .dt-cat-icon {
+        background: #fff7ed;
+        color: #ea580c;
+    }
+    .dt-cat-card.active:hover .dt-cat-icon {
+        background: rgba(255,255,255,.3);
+        color: #fff;
+    }
+    .dt-cat-info { flex: 1; min-width: 0; }
+    .dt-cat-name {
+        font-size: .82rem;
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dt-cat-count {
+        font-size: .7rem;
+        opacity: .6;
+    }
+    .dt-cat-card.active .dt-cat-count { opacity: .8; }
+
+    /* All button */
+    .dt-cat-all {
+        display: flex;
+        align-items: center;
+        gap: .7rem;
+        padding: .9rem 1rem;
+        background: #fff;
+        border: 2px solid #e5e7eb;
+        border-radius: 14px;
+        text-decoration: none;
+        color: #374151;
+        transition: all .25s;
+    }
+    .dt-cat-all:hover {
+        border-color: #0077B5;
+        color: #0077B5;
+        transform: translateY(-2px);
+    }
+    .dt-cat-all.active {
+        background: linear-gradient(135deg, #0077B5, #005a87);
+        border-color: #0077B5;
+        color: #fff;
+        box-shadow: 0 4px 16px rgba(0,119,181,.25);
+    }
+    .dt-cat-all .dt-cat-icon {
+        background: #e0f2fe;
+        color: #0077B5;
+    }
+    .dt-cat-all.active .dt-cat-icon {
+        background: rgba(255,255,255,.2);
+        color: #fff;
+    }
+
+    /* ── Section title when filtered ── */
+    .dt-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+        padding-bottom: .6rem;
+        border-bottom: 2px solid #f3f4f6;
+    }
+    .dt-section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+    }
+    .dt-section-badge {
+        font-size: .72rem;
+        font-weight: 700;
+        padding: .2rem .6rem;
         border-radius: 20px;
+        background: #fff7ed;
+        color: #ea580c;
+    }
+    .dt-back-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .35rem .8rem;
+        border-radius: 8px;
         font-size: .78rem;
         font-weight: 600;
-        border: 2px solid #e5e7eb;
-        background: #fff;
+        background: #f3f4f6;
         color: #6b7280;
-        cursor: pointer;
-        transition: all .2s;
         text-decoration: none;
+        transition: all .2s;
     }
-    .dt-filter-btn:hover { border-color: #ea580c; color: #ea580c; }
-    .dt-filter-btn.active { background: #ea580c; border-color: #ea580c; color: #fff; }
+    .dt-back-btn:hover { background: #e5e7eb; color: #374151; }
 
-    /* Document cards */
+    /* ── Document cards ── */
     .dt-grid {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -172,6 +294,11 @@
         margin: 0 auto 1rem;
         color: #d1d5db;
     }
+
+    @media (max-width: 576px) {
+        .dt-cat-grid { grid-template-columns: repeat(2, 1fr); }
+        .dt-grid { grid-template-columns: 1fr; }
+    }
 </style>
 @endsection
 
@@ -184,23 +311,51 @@
         <p>Documents officiels mis à disposition par l'administration</p>
         <div class="dt-hero-stats">
             <div>
-                <div class="dt-hero-stat-val">{{ $documents->total() }}</div>
+                <div class="dt-hero-stat-val">{{ $totalDocs }}</div>
                 <div class="dt-hero-stat-lbl">Documents</div>
             </div>
             <div>
-                <div class="dt-hero-stat-val">{{ $categories->count() }}</div>
+                <div class="dt-hero-stat-val">{{ $categoriesDB->count() }}</div>
                 <div class="dt-hero-stat-lbl">Catégories</div>
             </div>
         </div>
     </div>
 
-    {{-- Category filter pills --}}
-    @if($categories->count() > 1)
-    <div class="dt-filters">
-        <span class="dt-filter-btn active" data-cat="all">Tous</span>
-        @foreach($categories as $cat)
-            <span class="dt-filter-btn" data-cat="{{ Str::slug($cat) }}">{{ $cat }}</span>
+    {{-- Category cards --}}
+    <div class="dt-cat-grid">
+        <a href="{{ url('/documents-travail') }}" class="dt-cat-all {{ !$categorie ? 'active' : '' }}">
+            <div class="dt-cat-icon"><i class="fas fa-th-large"></i></div>
+            <div class="dt-cat-info">
+                <div class="dt-cat-name">Toutes</div>
+                <div class="dt-cat-count">{{ $totalDocs }} document{{ $totalDocs > 1 ? 's' : '' }}</div>
+            </div>
+        </a>
+        @foreach($categoriesDB as $cat)
+        @php $count = $categoryCounts[$cat->nom] ?? 0; @endphp
+        <a href="{{ url('/documents-travail?categorie=' . urlencode($cat->nom)) }}"
+           class="dt-cat-card {{ $categorie === $cat->nom ? 'active' : '' }}">
+            <div class="dt-cat-icon">
+                <i class="fas {{ $cat->icone ?? 'fa-folder' }}"></i>
+            </div>
+            <div class="dt-cat-info">
+                <div class="dt-cat-name">{{ $cat->nom }}</div>
+                <div class="dt-cat-count">{{ $count }} document{{ $count > 1 ? 's' : '' }}</div>
+            </div>
+        </a>
         @endforeach
+    </div>
+
+    {{-- Section header when filtered --}}
+    @if($categorie)
+    <div class="dt-section-header">
+        <div class="dt-section-title">
+            <i class="fas fa-folder-open" style="color:#ea580c;"></i>
+            {{ $categorie }}
+            <span class="dt-section-badge">{{ $documents->total() }} document{{ $documents->total() > 1 ? 's' : '' }}</span>
+        </div>
+        <a href="{{ url('/documents-travail') }}" class="dt-back-btn">
+            <i class="fas fa-arrow-left"></i> Toutes les catégories
+        </a>
     </div>
     @endif
 
@@ -227,7 +382,7 @@
                     default => 'fa-file-alt',
                 };
             @endphp
-            <div class="dt-card" data-category="{{ Str::slug($doc->categorie) }}">
+            <div class="dt-card">
                 <div class="dt-card-top">
                     <div class="dt-card-icon {{ $iconClass }}">
                         <i class="fas {{ $iconName }}"></i>
@@ -263,30 +418,18 @@
         @endif
     @else
         <div class="dt-empty">
-            <div class="dt-empty-icon"><i class="fas fa-file-invoice"></i></div>
-            <h5>Aucun document pour le moment</h5>
-            <p>Les documents de travail seront publiés ici par l'administration.</p>
+            <div class="dt-empty-icon"><i class="fas fa-folder-open"></i></div>
+            @if($categorie)
+                <h5>Aucun document dans « {{ $categorie }} »</h5>
+                <p>Il n'y a pas encore de documents dans cette catégorie.</p>
+                <a href="{{ url('/documents-travail') }}" class="dt-back-btn mt-3" style="display:inline-flex;">
+                    <i class="fas fa-arrow-left"></i> Voir toutes les catégories
+                </a>
+            @else
+                <h5>Aucun document pour le moment</h5>
+                <p>Les documents de travail seront publiés ici par l'administration.</p>
+            @endif
         </div>
     @endif
 </div>
 @endsection
-
-@push('scripts')
-<script>
-(function() {
-    const btns = document.querySelectorAll('.dt-filter-btn');
-    const cards = document.querySelectorAll('.dt-card');
-
-    btns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            btns.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            const cat = btn.dataset.cat;
-            cards.forEach(card => {
-                card.style.display = (cat === 'all' || card.dataset.category === cat) ? '' : 'none';
-            });
-        });
-    });
-})();
-</script>
-@endpush

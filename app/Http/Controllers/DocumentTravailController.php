@@ -2,25 +2,39 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CategorieDocument;
 use App\Models\DocumentTravail;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentTravailController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
-        $documents = DocumentTravail::actifs()
-            ->latest()
-            ->paginate(20);
+        $categorie = $request->query('categorie');
 
-        $categories = DocumentTravail::actifs()
-            ->select('categorie')
-            ->distinct()
-            ->pluck('categorie');
+        $categoriesDB = CategorieDocument::actives()->orderBy('nom')->get();
 
-        return view('documents-travail.index', compact('documents', 'categories'));
+        // Count documents per category
+        $categoryCounts = DocumentTravail::actifs()
+            ->selectRaw('categorie, COUNT(*) as total')
+            ->groupBy('categorie')
+            ->pluck('total', 'categorie');
+
+        $totalDocs = DocumentTravail::actifs()->count();
+
+        // If a category is selected, filter documents
+        $documentsQuery = DocumentTravail::actifs()->latest();
+        if ($categorie) {
+            $documentsQuery->where('categorie', $categorie);
+        }
+        $documents = $documentsQuery->paginate(20)->appends(['categorie' => $categorie]);
+
+        return view('documents-travail.index', compact(
+            'documents', 'categoriesDB', 'categoryCounts', 'totalDocs', 'categorie'
+        ));
     }
 
     public function download(DocumentTravail $documentTravail): StreamedResponse
