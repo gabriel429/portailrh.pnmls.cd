@@ -351,8 +351,11 @@
                 {{-- ONGLET 3 : PARCOURS / CARRIERE --}}
                 <div class="tab-pane fade {{ $tab === 'parcours' ? 'show active' : '' }}" id="tab-parcours" role="tabpanel">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-light border-bottom">
+                        <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
                             <h5 class="mb-0"><i class="fas fa-route me-2 text-primary"></i>Parcours et Carriere</h5>
+                            <a href="{{ route('rh.affectations.create', ['agent_id' => $agent->id]) }}" class="btn btn-sm btn-primary">
+                                <i class="fas fa-plus me-1"></i> Ajouter un poste
+                            </a>
                         </div>
                         <div class="card-body">
                             @if($agent->affectations->count() > 0)

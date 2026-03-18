@@ -599,13 +599,15 @@ class ParametresController extends Controller
         ];
     }
 
-    public function affectationsCreate()
+    public function affectationsCreate(Request $request)
     {
         if (!Schema::hasTable('affectations') || !Schema::hasTable('fonctions')) {
             return redirect()->route('dashboard')
                 ->with('error', 'Le module Affectations n\'est pas encore déployé. Rendez-vous dans Admin > Déploiement.');
         }
-        return view('rh.affectations.create', $this->affectationsFormData());
+        $data = $this->affectationsFormData();
+        $data['preselectedAgentId'] = $request->query('agent_id');
+        return view('rh.affectations.create', $data);
     }
 
     public function affectationsStore(Request $request)

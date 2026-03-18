@@ -78,7 +78,7 @@
                             <option value="">– Choisir un agent –</option>
                             @foreach($agents as $agent)
                             <option value="{{ $agent->id }}"
-                                @selected(old('agent_id', $affectation->agent_id ?? '') == $agent->id)>
+                                @selected(old('agent_id', $affectation->agent_id ?? ($preselectedAgentId ?? '')) == $agent->id)>
                                 {{ $agent->nom }} {{ $agent->postnom }} – {{ $agent->id_agent }}
                             </option>
                             @endforeach
