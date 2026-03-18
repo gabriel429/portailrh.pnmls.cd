@@ -42,7 +42,7 @@ self.addEventListener('install', event => {
     );
 });
 
-// ── Activate: clean old caches + notify clients of update ──
+// ── Activate: clean old caches ──
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(keys =>
@@ -51,14 +51,6 @@ self.addEventListener('activate', event => {
             )
         )
         .then(() => self.clients.claim())
-        .then(() => {
-            // Notify all open tabs that an update is available
-            self.clients.matchAll().then(clients => {
-                clients.forEach(client => {
-                    client.postMessage({ type: 'SW_UPDATED', version: CACHE_VERSION });
-                });
-            });
-        })
     );
 });
 

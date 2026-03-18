@@ -736,8 +736,8 @@
     <script>
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').then(reg => {
-            // Check for updates every 60 seconds
-            setInterval(() => reg.update(), 60000);
+            // Check for updates every 24 hours (not every 60s to avoid false positives)
+            setInterval(() => reg.update(), 86400000);
 
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
@@ -747,13 +747,6 @@
                     }
                 });
             });
-        });
-
-        // Listen for SW_UPDATED message
-        navigator.serviceWorker.addEventListener('message', event => {
-            if (event.data && event.data.type === 'SW_UPDATED') {
-                showUpdateBanner();
-            }
         });
 
         function showUpdateBanner() {
