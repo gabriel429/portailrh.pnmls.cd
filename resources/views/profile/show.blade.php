@@ -564,50 +564,103 @@
                 </div>
                 <div class="info-card-body">
                     @if($agent->affectations->count() > 0)
-                        @foreach($agent->affectations->sortByDesc('date_debut') as $affectation)
-                            <div class="d-flex align-items-start mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
-                                <div class="me-3">
-                                    @if($affectation->actif)
-                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success" style="width:36px;height:36px;">
-                                            <i class="fas fa-briefcase text-white" style="font-size:.85rem;"></i>
-                                        </span>
-                                    @else
-                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-secondary" style="width:36px;height:36px;">
-                                            <i class="fas fa-history text-white" style="font-size:.85rem;"></i>
-                                        </span>
-                                    @endif
-                                </div>
-                                <div class="flex-grow-1">
-                                    <h6 class="mb-1">{{ $affectation->fonction?->nom ?? 'Fonction non définie' }}</h6>
-                                    <div class="d-flex gap-2 flex-wrap mb-1">
-                                        <span class="badge bg-primary" style="font-size:.7rem;">{{ $affectation->niveau_administratif_label }}</span>
-                                        @if($affectation->actif)
-                                            <span class="badge bg-success" style="font-size:.7rem;">En cours</span>
-                                        @else
-                                            <span class="badge bg-secondary" style="font-size:.7rem;">Terminé</span>
+                        <style>
+                            .profile-timeline { position: relative; padding-left: 32px; }
+                            .profile-timeline::before {
+                                content: '';
+                                position: absolute;
+                                left: 14px;
+                                top: 6px;
+                                bottom: 6px;
+                                width: 3px;
+                                background: linear-gradient(180deg, #00897b 0%, #e0e0e0 100%);
+                                border-radius: 3px;
+                            }
+                            .profile-tl-item {
+                                position: relative;
+                                padding-bottom: 24px;
+                            }
+                            .profile-tl-item:last-child { padding-bottom: 0; }
+                            .profile-tl-dot {
+                                position: absolute;
+                                left: -25px;
+                                top: 4px;
+                                width: 16px;
+                                height: 16px;
+                                border-radius: 50%;
+                                border: 3px solid #fff;
+                                box-shadow: 0 0 0 2px #ccc;
+                            }
+                            .profile-tl-dot.active {
+                                background: #28a745;
+                                box-shadow: 0 0 0 2px #28a745, 0 0 8px rgba(40,167,69,.35);
+                                animation: tl-pulse 2s infinite;
+                            }
+                            .profile-tl-dot.ended {
+                                background: #adb5bd;
+                                box-shadow: 0 0 0 2px #adb5bd;
+                            }
+                            @keyframes tl-pulse {
+                                0%, 100% { box-shadow: 0 0 0 2px #28a745, 0 0 4px rgba(40,167,69,.2); }
+                                50% { box-shadow: 0 0 0 2px #28a745, 0 0 12px rgba(40,167,69,.5); }
+                            }
+                            .profile-tl-card {
+                                background: #f8fafb;
+                                border-radius: 10px;
+                                padding: 14px 16px;
+                                border-left: 3px solid #e0e0e0;
+                                transition: all .2s;
+                            }
+                            .profile-tl-card:hover {
+                                background: #f0f7f5;
+                                border-left-color: #00897b;
+                            }
+                            .profile-tl-card.current {
+                                border-left-color: #28a745;
+                                background: #f0fff4;
+                            }
+                        </style>
+                        <div class="profile-timeline">
+                            @foreach($agent->affectations->sortByDesc('date_debut') as $affectation)
+                                <div class="profile-tl-item">
+                                    <div class="profile-tl-dot {{ $affectation->actif ? 'active' : 'ended' }}"></div>
+                                    <div class="profile-tl-card {{ $affectation->actif ? 'current' : '' }}">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="mb-1" style="font-size:.95rem;">
+                                                    {{ $affectation->fonction?->nom ?? 'Fonction non définie' }}
+                                                </h6>
+                                                <div class="d-flex gap-2 flex-wrap mb-1">
+                                                    <span class="badge bg-primary" style="font-size:.68rem;">{{ $affectation->niveau_administratif_label }}</span>
+                                                    @if($affectation->actif)
+                                                        <span class="badge bg-success" style="font-size:.68rem;">Poste actuel</span>
+                                                    @else
+                                                        <span class="badge bg-secondary" style="font-size:.68rem;">Terminé</span>
+                                                    @endif
+                                                </div>
+                                            </div>
+                                            <small class="text-muted text-end" style="white-space:nowrap;">
+                                                {{ $affectation->date_debut?->format('M Y') ?? '?' }}
+                                                @if($affectation->date_fin)
+                                                    <br>{{ $affectation->date_fin->format('M Y') }}
+                                                @elseif($affectation->actif)
+                                                    <br><span class="text-success fw-semibold">Présent</span>
+                                                @endif
+                                            </small>
+                                        </div>
+                                        @if($affectation->department)
+                                            <small class="text-muted d-block mt-1"><i class="fas fa-building me-1"></i>{{ $affectation->department->nom }}</small>
+                                        @endif
+                                        @if($affectation->province)
+                                            <small class="text-muted d-block"><i class="fas fa-map-marker-alt me-1"></i>{{ $affectation->province->nom }}</small>
+                                        @endif
+                                        @if($affectation->remarque)
+                                            <small class="text-muted fst-italic d-block mt-1"><i class="fas fa-comment me-1"></i>{{ $affectation->remarque }}</small>
                                         @endif
                                     </div>
-                                    @if($affectation->department)
-                                        <small class="text-muted d-block"><i class="fas fa-building me-1"></i>{{ $affectation->department->nom }}</small>
-                                    @endif
-                                    @if($affectation->province)
-                                        <small class="text-muted d-block"><i class="fas fa-map-marker-alt me-1"></i>{{ $affectation->province->nom }}</small>
-                                    @endif
-                                    <small class="text-muted d-block mt-1">
-                                        <i class="fas fa-calendar me-1"></i>
-                                        {{ $affectation->date_debut?->format('d/m/Y') ?? '?' }}
-                                        @if($affectation->date_fin)
-                                            - {{ $affectation->date_fin->format('d/m/Y') }}
-                                        @elseif($affectation->actif)
-                                            - Aujourd'hui
-                                        @endif
-                                    </small>
-                                    @if($affectation->remarque)
-                                        <small class="text-muted fst-italic d-block mt-1">{{ $affectation->remarque }}</small>
-                                    @endif
                                 </div>
-                            </div>
-                        @endforeach
+                            @endforeach
+                        </div>
                     @else
                         <div class="text-center py-4">
                             <i class="fas fa-route fa-2x text-muted mb-2 d-block opacity-50"></i>
