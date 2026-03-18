@@ -224,7 +224,7 @@
                 </div>
                 <div>
                     <h5>Matricule & Grade</h5>
-                    <small>Matricule de l'État, institution d'origine et grade</small>
+                    <small>Matricule de l'État, provenance du matricule et grade</small>
                 </div>
             </div>
 
@@ -237,7 +237,7 @@
                     @error('matricule_etat')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
                 <div class="col-md-4">
-                    <label for="institution_id" class="form-label">Institution d'origine</label>
+                    <label for="institution_id" class="form-label">Provenance matricule</label>
                     <select class="form-select @error('institution_id') is-invalid @enderror" id="institution_id" name="institution_id">
                         <option value="">-- Sélectionner --</option>
                         @foreach ($institutionCategories as $category)

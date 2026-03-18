@@ -115,7 +115,7 @@
                         </div>
 
                         <div class="col-md-6">
-                            <label for="institution_id" class="form-label">Provenance matricule (Institution d'origine)</label>
+                            <label for="institution_id" class="form-label">Provenance matricule</label>
                             <select class="form-select @error('institution_id') is-invalid @enderror"
                                     id="institution_id" name="institution_id">
                                 <option value="">-- Sélectionner une institution --</option>
