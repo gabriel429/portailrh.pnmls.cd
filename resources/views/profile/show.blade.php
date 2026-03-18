@@ -453,7 +453,7 @@
                                 </div>
                                 <div>
                                     <div class="info-item-label">Province</div>
-                                    <div class="info-item-value">{{ $agent->province?->nom ?? 'N/A' }}</div>
+                                    <div class="info-item-value">{{ $agent->province?->nom ?? (str_contains($agent->organe ?? '', 'National') ? 'National' : 'N/A') }}</div>
                                 </div>
                             </div>
                         </div>

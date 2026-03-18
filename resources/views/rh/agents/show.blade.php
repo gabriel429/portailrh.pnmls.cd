@@ -221,7 +221,7 @@
                             <div class="row mb-2">
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Province</label>
-                                    <p class="mb-0">{{ $agent->province?->nom ?? 'N/A' }}</p>
+                                    <p class="mb-0">{{ $agent->province?->nom ?? (str_contains($agent->organe ?? '', 'National') ? 'National' : 'N/A') }}</p>
                                 </div>
                                 <div class="col-md-4 mb-3">
                                     <label class="text-muted small">Département</label>
