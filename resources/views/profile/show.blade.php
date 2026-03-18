@@ -474,8 +474,8 @@
                                     <i class="fas fa-star"></i>
                                 </div>
                                 <div>
-                                    <div class="info-item-label">Grade</div>
-                                    <div class="info-item-value">{{ $agent->grade?->nom ?? ($agent->grade_etat ?? 'N/A') }}</div>
+                                    <div class="info-item-label">Grade de l'État</div>
+                                    <div class="info-item-value">{{ $agent->grade?->libelle ?? 'N/A' }}</div>
                                 </div>
                             </div>
                         </div>
@@ -492,6 +492,17 @@
                             </div>
                         </div>
                         @endif
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <div class="info-item-icon" style="background:#e8eaf6;color:#3949ab;">
+                                    <i class="fas fa-university"></i>
+                                </div>
+                                <div>
+                                    <div class="info-item-label">Provenance matricule</div>
+                                    <div class="info-item-value">{{ $agent->institution?->nom ?? 'N/A' }}</div>
+                                </div>
+                            </div>
+                        </div>
                         @if($agent->annee_engagement_programme)
                         <div class="col-md-6">
                             <div class="info-item">
