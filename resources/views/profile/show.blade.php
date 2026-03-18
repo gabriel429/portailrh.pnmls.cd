@@ -554,6 +554,69 @@
                 </div>
             </div>
 
+            {{-- Parcours / Carrière --}}
+            <div class="info-card">
+                <div class="info-card-header">
+                    <div class="info-card-icon" style="background:linear-gradient(135deg,#00897b,#00695c);">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h5>Parcours <span class="badge bg-light text-dark ms-2" style="font-size:.75rem;">{{ $agent->affectations->count() }}</span></h5>
+                </div>
+                <div class="info-card-body">
+                    @if($agent->affectations->count() > 0)
+                        @foreach($agent->affectations->sortByDesc('date_debut') as $affectation)
+                            <div class="d-flex align-items-start mb-3 pb-3 {{ !$loop->last ? 'border-bottom' : '' }}">
+                                <div class="me-3">
+                                    @if($affectation->actif)
+                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success" style="width:36px;height:36px;">
+                                            <i class="fas fa-briefcase text-white" style="font-size:.85rem;"></i>
+                                        </span>
+                                    @else
+                                        <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-secondary" style="width:36px;height:36px;">
+                                            <i class="fas fa-history text-white" style="font-size:.85rem;"></i>
+                                        </span>
+                                    @endif
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ $affectation->fonction?->nom ?? 'Fonction non définie' }}</h6>
+                                    <div class="d-flex gap-2 flex-wrap mb-1">
+                                        <span class="badge bg-primary" style="font-size:.7rem;">{{ $affectation->niveau_administratif_label }}</span>
+                                        @if($affectation->actif)
+                                            <span class="badge bg-success" style="font-size:.7rem;">En cours</span>
+                                        @else
+                                            <span class="badge bg-secondary" style="font-size:.7rem;">Terminé</span>
+                                        @endif
+                                    </div>
+                                    @if($affectation->department)
+                                        <small class="text-muted d-block"><i class="fas fa-building me-1"></i>{{ $affectation->department->nom }}</small>
+                                    @endif
+                                    @if($affectation->province)
+                                        <small class="text-muted d-block"><i class="fas fa-map-marker-alt me-1"></i>{{ $affectation->province->nom }}</small>
+                                    @endif
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fas fa-calendar me-1"></i>
+                                        {{ $affectation->date_debut?->format('d/m/Y') ?? '?' }}
+                                        @if($affectation->date_fin)
+                                            - {{ $affectation->date_fin->format('d/m/Y') }}
+                                        @elseif($affectation->actif)
+                                            - Aujourd'hui
+                                        @endif
+                                    </small>
+                                    @if($affectation->remarque)
+                                        <small class="text-muted fst-italic d-block mt-1">{{ $affectation->remarque }}</small>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                    @else
+                        <div class="text-center py-4">
+                            <i class="fas fa-route fa-2x text-muted mb-2 d-block opacity-50"></i>
+                            <p class="text-muted small mb-0">Aucun parcours enregistré</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Documents --}}
             <div class="info-card">
                 <div class="info-card-header">
