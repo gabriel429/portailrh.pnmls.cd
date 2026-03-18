@@ -442,7 +442,7 @@
                                 </div>
                                 <div>
                                     <div class="info-item-label">Département</div>
-                                    <div class="info-item-value">{{ $agent->departement?->nom_dept ?? 'N/A' }}</div>
+                                    <div class="info-item-value">{{ $agent->departement?->nom ?? 'N/A' }}</div>
                                 </div>
                             </div>
                         </div>
