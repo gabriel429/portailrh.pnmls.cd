@@ -653,7 +653,7 @@
                                                         <span class="badge bg-secondary" style="font-size:.68rem;">Terminé</span>
                                                     @endif
                                                     @if($duree)
-                                                        <span class="badge bg-outline-dark border" style="font-size:.68rem;"><i class="fas fa-clock me-1"></i>{{ $duree }}</span>
+                                                        <span class="badge bg-warning text-dark" style="font-size:.68rem;"><i class="fas fa-clock me-1"></i>{{ $duree }}</span>
                                                     @endif
                                                 </div>
                                             </div>
