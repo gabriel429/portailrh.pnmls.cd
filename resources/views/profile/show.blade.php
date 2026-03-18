@@ -552,19 +552,6 @@
                                 </div>
                             </div>
                         </div>
-                        @if($agent->institution)
-                        <div class="col-md-12">
-                            <div class="info-item">
-                                <div class="info-item-icon" style="background:#fff3e0;color:#e67e22;">
-                                    <i class="fas fa-university"></i>
-                                </div>
-                                <div>
-                                    <div class="info-item-label">Institution</div>
-                                    <div class="info-item-value">{{ $agent->institution->nom }}</div>
-                                </div>
-                            </div>
-                        </div>
-                        @endif
                     </div>
                 </div>
             </div>

@@ -106,15 +106,31 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Poste</label>
-                                <input type="text" class="form-control" value="{{ $agent->poste_actuel }}" disabled>
+                                <input type="text" class="form-control" value="{{ $agent->fonction ?? ($agent->poste_actuel ?? 'N/A') }}" disabled>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Département</label>
-                                <input type="text" class="form-control" value="{{ $agent->department?->nom_dept ?? 'N/A' }}" disabled>
+                                <input type="text" class="form-control" value="{{ $agent->departement?->nom ?? 'N/A' }}" disabled>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label fw-bold">Province</label>
-                                <input type="text" class="form-control" value="{{ $agent->province?->nom ?? 'N/A' }}" disabled>
+                                <input type="text" class="form-control" value="{{ $agent->province?->nom ?? (str_contains($agent->organe ?? '', 'National') ? 'National' : 'N/A') }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Grade de l'État</label>
+                                <input type="text" class="form-control" value="{{ $agent->grade?->libelle ?? 'N/A' }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Provenance matricule</label>
+                                <input type="text" class="form-control" value="{{ $agent->institution?->nom ?? 'N/A' }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Matricule État</label>
+                                <input type="text" class="form-control" value="{{ $agent->matricule_etat ?? 'N/A' }}" disabled>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-bold">Organe</label>
+                                <input type="text" class="form-control" value="{{ $agent->organe ?? 'N/A' }}" disabled>
                             </div>
                         </div>
 
