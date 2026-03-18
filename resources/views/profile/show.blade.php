@@ -624,6 +624,19 @@
                         </style>
                         <div class="profile-timeline">
                             @foreach($agent->affectations->sortByDesc('date_debut') as $affectation)
+                                @php
+                                    $debut = $affectation->date_debut;
+                                    $fin = $affectation->date_fin ?? now();
+                                    if ($debut) {
+                                        $diff = $debut->diff($fin);
+                                        $duree = '';
+                                        if ($diff->y > 0) $duree .= $diff->y . ' an' . ($diff->y > 1 ? 's' : '');
+                                        if ($diff->m > 0) $duree .= ($duree ? ' ' : '') . $diff->m . ' mois';
+                                        if (!$duree) $duree = $diff->d . ' jour' . ($diff->d > 1 ? 's' : '');
+                                    } else {
+                                        $duree = null;
+                                    }
+                                @endphp
                                 <div class="profile-tl-item">
                                     <div class="profile-tl-dot {{ $affectation->actif ? 'active' : 'ended' }}"></div>
                                     <div class="profile-tl-card {{ $affectation->actif ? 'current' : '' }}">
@@ -638,6 +651,9 @@
                                                         <span class="badge bg-success" style="font-size:.68rem;">Poste actuel</span>
                                                     @else
                                                         <span class="badge bg-secondary" style="font-size:.68rem;">Terminé</span>
+                                                    @endif
+                                                    @if($duree)
+                                                        <span class="badge bg-outline-dark border" style="font-size:.68rem;"><i class="fas fa-clock me-1"></i>{{ $duree }}</span>
                                                     @endif
                                                 </div>
                                             </div>
