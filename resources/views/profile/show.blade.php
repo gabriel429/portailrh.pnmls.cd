@@ -217,7 +217,11 @@
                 </div>
                 <div class="profile-identity">
                     <h2>{{ $agent->prenom }} {{ $agent->postnom }} {{ $agent->nom }}</h2>
-                    <div class="poste">{{ $agent->poste_actuel ?? 'Poste non défini' }}</div>
+                    @php
+                        $affectationActive = $agent->affectations->where('actif', true)->first();
+                        $posteActuel = $affectationActive?->fonction?->nom ?? $agent->fonction ?? $agent->poste_actuel ?? 'Poste non défini';
+                    @endphp
+                    <div class="poste">{{ $posteActuel }}</div>
                     <div class="organe">{{ $agent->organe ?? '' }}</div>
 
                     <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
