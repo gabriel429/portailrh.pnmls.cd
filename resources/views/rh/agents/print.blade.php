@@ -108,9 +108,6 @@
                     @else
                         <span class="badge badge-gray">{{ ucfirst($agent->statut) }}</span>
                     @endif
-                    @if($agent->role)
-                        <span class="badge badge-blue">{{ $agent->role->nom_role }}</span>
-                    @endif
                 </div>
             </div>
         </div>

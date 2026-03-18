@@ -274,16 +274,6 @@
                                     <label class="text-muted small">Domaine d'études</label>
                                     <p class="mb-0">{{ $agent->domaine_etudes ?? 'N/A' }}</p>
                                 </div>
-                                <div class="col-md-4 mb-3">
-                                    <label class="text-muted small">Rôle</label>
-                                    <p class="mb-0">
-                                        @if($agent->role)
-                                            <span class="badge bg-info">{{ $agent->role->nom_role }}</span>
-                                        @else
-                                            <span class="badge bg-secondary">Non assigné</span>
-                                        @endif
-                                    </p>
-                                </div>
                             </div>
                         </div>
                     </div>
