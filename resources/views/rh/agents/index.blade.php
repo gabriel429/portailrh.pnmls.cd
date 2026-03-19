@@ -92,7 +92,7 @@
                                                     <span class="rh-pill st-neutral">Non assigne</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $agent->departement?->nom_dept ?? 'N/A' }}</td>
+                                            <td>{{ $agent->departement?->nom ?? 'N/A' }}</td>
                                             <td>
                                                 @if($agent->statut === 'actif')
                                                     <span class="rh-pill st-ok">Actif</span>
@@ -299,7 +299,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <h6 class="text-muted mb-3">Informations professionnelles</h6>
                     <p class="mb-2"><strong class="text-muted">Poste:</strong><br>${agent.poste_actuel || 'N/A'}</p>
                     <p class="mb-2"><strong class="text-muted">Role:</strong><br>${badgeRole}</p>
-                    <p class="mb-2"><strong class="text-muted">Departement:</strong><br>${agent.departement?.nom_dept || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Departement:</strong><br>${agent.departement?.nom || 'N/A'}</p>
                     <p class="mb-2"><strong class="text-muted">Statut:</strong><br>${badgeStatut}</p>
                 </div>
             </div>
