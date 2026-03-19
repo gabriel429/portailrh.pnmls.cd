@@ -76,7 +76,7 @@
                                         @else
                                             <th>Province</th>
                                         @endif
-                                        <th>Matricule</th>
+                                        <th>Matricule de l'État</th>
                                         <th>Ancienneté</th>
                                         <th>Statut</th>
                                     </tr>
@@ -100,7 +100,7 @@
                                                     {{ $agent->province?->nom ?? 'N/A' }}
                                                 @endif
                                             </td>
-                                            <td>{{ $agent->matricule_pnmls ?? 'N/A' }}</td>
+                                            <td>{{ $agent->matricule_etat ?? 'N/A' }}</td>
                                             <td>
                                                 @if($agent->annee_engagement_programme)
                                                     {{ now()->year - $agent->annee_engagement_programme }} an{{ now()->year - $agent->annee_engagement_programme > 1 ? 's' : '' }}
