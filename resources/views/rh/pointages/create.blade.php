@@ -10,6 +10,8 @@
     .pointage-table input[type="text"] { min-width: 150px; }
     .pointage-table .agent-name { font-weight: 600; white-space: nowrap; }
     .pointage-table .agent-poste { font-size: 0.85em; color: #6c757d; }
+    .row-recorded { background-color: #f0fdf4; }
+    .badge-recorded { font-size: 0.75em; }
     #agents-table-container { display: none; }
 </style>
 @endsection
@@ -54,19 +56,27 @@
                 <div class="row g-3 mb-4">
                     <div class="col-md-4">
                         <label for="date_pointage_caf" class="form-label fw-bold">Date du pointage</label>
-                        <input type="date" class="form-control" id="date_pointage_caf" value="{{ date('Y-m-d') }}">
+                        <input type="date" class="form-control" id="date_pointage_caf" value="{{ $datePointage }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <a href="#" id="btn-reload-caf" class="btn btn-primary w-100">
+                            <i class="fas fa-sync-alt me-1"></i> Actualiser
+                        </a>
                     </div>
                 </div>
 
                 <form action="{{ route('rh.pointages.store-bulk') }}" method="POST" id="caf-form">
                     @csrf
-                    <input type="hidden" name="date_pointage" id="form_date_caf" value="{{ date('Y-m-d') }}">
+                    <input type="hidden" name="date_pointage" id="form_date_caf" value="{{ $datePointage }}">
 
                     <div class="alert alert-info py-2 mb-3">
                         <i class="fas fa-map-marker-alt me-1"></i>
                         <strong>{{ $cafProvince->nom }}</strong> &mdash;
                         {{ $cafAgents->count() }} agent(s).
-                        Remplissez les heures pour les agents presents. Les lignes vides seront ignorees.
+                        @if($cafPointages->count() > 0)
+                            <span class="badge bg-success badge-recorded ms-2">{{ $cafPointages->count() }} deja pointe(s)</span>
+                        @endif
+                        <br><small class="text-muted">Les heures existantes sont pre-remplies. Vous pouvez completer les heures de sortie et re-enregistrer.</small>
                     </div>
 
                     @if($cafAgents->count() > 0)
@@ -76,28 +86,43 @@
                                     <tr>
                                         <th style="width: 5%">#</th>
                                         <th style="width: 25%">Agent</th>
-                                        <th style="width: 20%">Arrivée (Avant-midi)</th>
-                                        <th style="width: 20%">Sortie (Après-midi)</th>
+                                        <th style="width: 20%">Arrivee (Avant-midi)</th>
+                                        <th style="width: 20%">Sortie (Apres-midi)</th>
                                         <th style="width: 30%">Observation</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($cafAgents as $index => $agent)
-                                        <tr>
+                                        @php $p = $cafPointages->get($agent->id); @endphp
+                                        <tr class="{{ $p ? 'row-recorded' : '' }}">
                                             <td>{{ $index + 1 }}</td>
                                             <td>
-                                                <div class="agent-name">{{ $agent->prenom }} {{ $agent->nom }}</div>
+                                                <div class="agent-name">
+                                                    {{ $agent->prenom }} {{ $agent->nom }}
+                                                    @if($p)
+                                                        <span class="badge bg-success badge-recorded ms-1" title="Pointage deja enregistre">
+                                                            <i class="fas fa-check"></i>
+                                                        </span>
+                                                    @endif
+                                                </div>
                                                 <div class="agent-poste">{{ $agent->poste_actuel ?? '' }}</div>
                                                 <input type="hidden" name="pointages[{{ $index }}][agent_id]" value="{{ $agent->id }}">
                                             </td>
                                             <td>
-                                                <input type="time" class="form-control heure-entree" name="pointages[{{ $index }}][heure_entree]">
+                                                <input type="time" class="form-control heure-entree"
+                                                       name="pointages[{{ $index }}][heure_entree]"
+                                                       value="{{ $p && $p->heure_entree ? \Carbon\Carbon::parse($p->heure_entree)->format('H:i') : '' }}">
                                             </td>
                                             <td>
-                                                <input type="time" class="form-control heure-sortie" name="pointages[{{ $index }}][heure_sortie]">
+                                                <input type="time" class="form-control heure-sortie"
+                                                       name="pointages[{{ $index }}][heure_sortie]"
+                                                       value="{{ $p && $p->heure_sortie ? \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') : '' }}">
                                             </td>
                                             <td>
-                                                <input type="text" class="form-control" name="pointages[{{ $index }}][observations]" placeholder="Observation...">
+                                                <input type="text" class="form-control"
+                                                       name="pointages[{{ $index }}][observations]"
+                                                       placeholder="Observation..."
+                                                       value="{{ $p->observations ?? '' }}">
                                             </td>
                                         </tr>
                                     @endforeach
@@ -129,7 +154,6 @@
                 {{-- MODE SEN : selection par departement                         --}}
                 {{-- ============================================================ --}}
 
-                {{-- Filtres : Departement + Date --}}
                 <div class="row g-3 mb-4">
                     <div class="col-md-6">
                         <label for="department_id" class="form-label fw-bold">Departement / Service</label>
@@ -151,7 +175,6 @@
                     </div>
                 </div>
 
-                {{-- Loading spinner --}}
                 <div id="loading-spinner" class="text-center py-4" style="display: none;">
                     <div class="spinner-border text-primary" role="status">
                         <span class="visually-hidden">Chargement...</span>
@@ -159,7 +182,6 @@
                     <p class="mt-2 text-muted">Chargement des agents...</p>
                 </div>
 
-                {{-- Table des agents --}}
                 <div id="agents-table-container">
                     <form action="{{ route('rh.pointages.store-bulk') }}" method="POST">
                         @csrf
@@ -169,7 +191,8 @@
                             <i class="fas fa-info-circle me-1"></i>
                             <strong id="dept-name"></strong> &mdash;
                             <span id="agent-count"></span> agent(s).
-                            Remplissez les heures pour les agents presents. Les lignes vides seront ignorees.
+                            <span id="recorded-count"></span>
+                            <br><small class="text-muted">Les heures existantes sont pre-remplies. Vous pouvez completer les heures de sortie et re-enregistrer.</small>
                         </div>
 
                         <div class="table-responsive">
@@ -178,8 +201,8 @@
                                     <tr>
                                         <th style="width: 5%">#</th>
                                         <th style="width: 25%">Agent</th>
-                                        <th style="width: 20%">Arrivée (Avant-midi)</th>
-                                        <th style="width: 20%">Sortie (Après-midi)</th>
+                                        <th style="width: 20%">Arrivee (Avant-midi)</th>
+                                        <th style="width: 20%">Sortie (Apres-midi)</th>
                                         <th style="width: 30%">Observation</th>
                                     </tr>
                                 </thead>
@@ -202,7 +225,6 @@
                     </form>
                 </div>
 
-                {{-- Empty state --}}
                 <div id="empty-state" class="text-center py-5">
                     <i class="fas fa-building fa-3x text-muted mb-3 d-block"></i>
                     <h5 class="text-muted">Selectionnez un departement</h5>
@@ -219,8 +241,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // ── Boutons Remplir / Effacer (communs aux deux modes) ──
     document.querySelectorAll('#btn-fill-all, .btn-fill-all-js').forEach(btn => {
         btn.addEventListener('click', function () {
-            document.querySelectorAll('.heure-entree').forEach(input => { input.value = '08:00'; });
-            document.querySelectorAll('.heure-sortie').forEach(input => { input.value = '16:00'; });
+            document.querySelectorAll('.heure-entree').forEach(input => { if (!input.value) input.value = '08:00'; });
+            document.querySelectorAll('.heure-sortie').forEach(input => { if (!input.value) input.value = '16:00'; });
         });
     });
 
@@ -233,11 +255,18 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     @if($isCAF)
-        // ── MODE CAF : synchroniser la date ──
+        // ── MODE CAF : recharger la page avec la date selectionnee ──
         const dateCaf = document.getElementById('date_pointage_caf');
         const formDateCaf = document.getElementById('form_date_caf');
+
         dateCaf.addEventListener('change', function () {
             formDateCaf.value = this.value;
+        });
+
+        document.getElementById('btn-reload-caf').addEventListener('click', function (e) {
+            e.preventDefault();
+            const date = dateCaf.value;
+            window.location.href = `{{ route('rh.pointages.create') }}?date=${date}`;
         });
     @else
         // ── MODE SEN : chargement AJAX par departement ──
@@ -251,6 +280,7 @@ document.addEventListener('DOMContentLoaded', function () {
         const formDate = document.getElementById('form_date_pointage');
         const deptNameEl = document.getElementById('dept-name');
         const agentCountEl = document.getElementById('agent-count');
+        const recordedCountEl = document.getElementById('recorded-count');
 
         btnLoad.addEventListener('click', loadAgents);
 
@@ -266,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
             tableContainer.style.display = 'none';
             emptyState.style.display = 'none';
 
-            fetch(`{{ route('rh.pointages.agents-by-department') }}?department_id=${deptId}`)
+            fetch(`{{ route('rh.pointages.agents-by-department') }}?department_id=${deptId}&date=${date}`)
                 .then(res => res.json())
                 .then(agents => {
                     spinner.style.display = 'none';
@@ -283,19 +313,30 @@ document.addEventListener('DOMContentLoaded', function () {
                     deptNameEl.textContent = deptSelect.options[deptSelect.selectedIndex].text;
                     agentCountEl.textContent = agents.length;
 
+                    // Count already recorded
+                    const recorded = agents.filter(a => a.pointage_existant).length;
+                    recordedCountEl.innerHTML = recorded > 0
+                        ? `<span class="badge bg-success badge-recorded ms-2">${recorded} deja pointe(s)</span>`
+                        : '';
+
                     tbody.innerHTML = '';
                     agents.forEach((agent, index) => {
+                        const p = agent.pointage_existant;
+                        const rowClass = p ? 'row-recorded' : '';
+                        const checkBadge = p ? '<span class="badge bg-success badge-recorded ms-1"><i class="fas fa-check"></i></span>' : '';
+
                         const tr = document.createElement('tr');
+                        tr.className = rowClass;
                         tr.innerHTML = `
                             <td>${index + 1}</td>
                             <td>
-                                <div class="agent-name">${agent.prenom} ${agent.nom}</div>
+                                <div class="agent-name">${agent.prenom} ${agent.nom} ${checkBadge}</div>
                                 <div class="agent-poste">${agent.poste_actuel || ''}</div>
                                 <input type="hidden" name="pointages[${index}][agent_id]" value="${agent.id}">
                             </td>
-                            <td><input type="time" class="form-control heure-entree" name="pointages[${index}][heure_entree]"></td>
-                            <td><input type="time" class="form-control heure-sortie" name="pointages[${index}][heure_sortie]"></td>
-                            <td><input type="text" class="form-control" name="pointages[${index}][observations]" placeholder="Observation..."></td>
+                            <td><input type="time" class="form-control heure-entree" name="pointages[${index}][heure_entree]" value="${p?.heure_entree || ''}"></td>
+                            <td><input type="time" class="form-control heure-sortie" name="pointages[${index}][heure_sortie]" value="${p?.heure_sortie || ''}"></td>
+                            <td><input type="text" class="form-control" name="pointages[${index}][observations]" placeholder="Observation..." value="${p?.observations || ''}"></td>
                         `;
                         tbody.appendChild(tr);
                     });

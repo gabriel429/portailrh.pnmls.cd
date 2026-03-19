@@ -30,13 +30,15 @@ class PointageController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View
+    public function create(Request $request): View
     {
         $departments = Department::orderBy('nom')->get();
         $user = auth()->user();
         $isCAF = false;
         $cafAgents = collect();
         $cafProvince = null;
+        $cafPointages = collect();
+        $datePointage = $request->query('date', date('Y-m-d'));
 
         // If user is RH Provincial (CAF), pre-load agents from their province
         if ($user->role && $user->role->nom_role === 'RH Provincial' && $user->agent && $user->agent->province_id) {
@@ -46,22 +48,46 @@ class PointageController extends Controller
                 ->where('province_id', $user->agent->province_id)
                 ->orderBy('nom')
                 ->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+
+            // Load existing pointages for this date
+            $cafPointages = Pointage::where('date_pointage', $datePointage)
+                ->whereIn('agent_id', $cafAgents->pluck('id'))
+                ->get()
+                ->keyBy('agent_id');
         }
 
-        return view('rh.pointages.create', compact('departments', 'isCAF', 'cafAgents', 'cafProvince'));
+        return view('rh.pointages.create', compact('departments', 'isCAF', 'cafAgents', 'cafProvince', 'cafPointages', 'datePointage'));
     }
 
     /**
-     * Return agents for a given department (JSON).
+     * Return agents for a given department (JSON), with existing pointages for the date.
      */
     public function agentsByDepartment(Request $request): JsonResponse
     {
         $departmentId = $request->query('department_id');
+        $date = $request->query('date');
 
         $agents = Agent::actifs()
             ->where('departement_id', $departmentId)
             ->orderBy('nom')
             ->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+
+        // Attach existing pointage for each agent on the given date
+        if ($date) {
+            $pointages = Pointage::where('date_pointage', $date)
+                ->whereIn('agent_id', $agents->pluck('id'))
+                ->get()
+                ->keyBy('agent_id');
+
+            $agents->each(function ($agent) use ($pointages) {
+                $p = $pointages->get($agent->id);
+                $agent->pointage_existant = $p ? [
+                    'heure_entree' => $p->heure_entree ? Carbon::parse($p->heure_entree)->format('H:i') : null,
+                    'heure_sortie' => $p->heure_sortie ? Carbon::parse($p->heure_sortie)->format('H:i') : null,
+                    'observations' => $p->observations,
+                ] : null;
+            });
+        }
 
         return response()->json($agents);
     }
@@ -87,7 +113,7 @@ class PointageController extends Controller
     }
 
     /**
-     * Store bulk pointages for all agents in a department.
+     * Store or update bulk pointages for all agents in a department.
      */
     public function storeBulk(Request $request): RedirectResponse
     {
@@ -102,47 +128,54 @@ class PointageController extends Controller
 
         $date = $request->date_pointage;
         $created = 0;
-        $skipped = 0;
+        $updated = 0;
 
         foreach ($request->pointages as $row) {
-            // Skip rows where no time was entered
+            // Skip rows where no time was entered at all
             if (empty($row['heure_entree']) && empty($row['heure_sortie'])) {
                 continue;
             }
 
-            // Check if pointage already exists for this agent on this date
-            $exists = Pointage::where('agent_id', $row['agent_id'])
+            $existing = Pointage::where('agent_id', $row['agent_id'])
                 ->where('date_pointage', $date)
-                ->exists();
+                ->first();
 
-            if ($exists) {
-                $skipped++;
-                continue;
-            }
+            $heureEntree = $row['heure_entree'] ?? ($existing->heure_entree ?? null);
+            $heureSortie = $row['heure_sortie'] ?? ($existing->heure_sortie ?? null);
 
             $heures = null;
-            if (!empty($row['heure_entree']) && !empty($row['heure_sortie'])) {
-                $entree = Carbon::createFromFormat('H:i', $row['heure_entree']);
-                $sortie = Carbon::createFromFormat('H:i', $row['heure_sortie']);
+            if ($heureEntree && $heureSortie) {
+                $entree = Carbon::createFromFormat('H:i', $heureEntree);
+                $sortie = Carbon::createFromFormat('H:i', $heureSortie);
                 $heures = round($sortie->diffInMinutes($entree) / 60, 1);
             }
 
-            Pointage::create([
-                'agent_id' => $row['agent_id'],
-                'date_pointage' => $date,
-                'heure_entree' => $row['heure_entree'] ?? null,
-                'heure_sortie' => $row['heure_sortie'] ?? null,
-                'heures_travaillees' => $heures,
-                'observations' => $row['observations'] ?? null,
-            ]);
-
-            $created++;
+            if ($existing) {
+                // Update: merge new data with existing
+                $existing->update([
+                    'heure_entree' => $heureEntree,
+                    'heure_sortie' => $heureSortie,
+                    'heures_travaillees' => $heures,
+                    'observations' => $row['observations'] ?? $existing->observations,
+                ]);
+                $updated++;
+            } else {
+                Pointage::create([
+                    'agent_id' => $row['agent_id'],
+                    'date_pointage' => $date,
+                    'heure_entree' => $heureEntree,
+                    'heure_sortie' => $heureSortie,
+                    'heures_travaillees' => $heures,
+                    'observations' => $row['observations'] ?? null,
+                ]);
+                $created++;
+            }
         }
 
-        $message = "{$created} pointage(s) enregistré(s) avec succès.";
-        if ($skipped > 0) {
-            $message .= " {$skipped} ignoré(s) (déjà existants).";
-        }
+        $parts = [];
+        if ($created > 0) $parts[] = "{$created} pointage(s) créé(s)";
+        if ($updated > 0) $parts[] = "{$updated} pointage(s) mis à jour";
+        $message = implode(', ', $parts) . '.';
 
         return redirect()->route('rh.pointages.index')->with('success', $message);
     }
