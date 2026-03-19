@@ -76,8 +76,8 @@
                                     <tr>
                                         <th style="width: 5%">#</th>
                                         <th style="width: 25%">Agent</th>
-                                        <th style="width: 20%">Heure d'arrivee</th>
-                                        <th style="width: 20%">Heure de depart</th>
+                                        <th style="width: 20%">Arrivée (Avant-midi)</th>
+                                        <th style="width: 20%">Sortie (Après-midi)</th>
                                         <th style="width: 30%">Observation</th>
                                     </tr>
                                 </thead>
@@ -178,8 +178,8 @@
                                     <tr>
                                         <th style="width: 5%">#</th>
                                         <th style="width: 25%">Agent</th>
-                                        <th style="width: 20%">Heure d'arrivee</th>
-                                        <th style="width: 20%">Heure de depart</th>
+                                        <th style="width: 20%">Arrivée (Avant-midi)</th>
+                                        <th style="width: 20%">Sortie (Après-midi)</th>
                                         <th style="width: 30%">Observation</th>
                                     </tr>
                                 </thead>
