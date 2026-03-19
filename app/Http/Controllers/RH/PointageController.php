@@ -5,7 +5,9 @@ namespace App\Http\Controllers\RH;
 use App\Http\Controllers\Controller;
 use App\Models\Pointage;
 use App\Models\Agent;
+use App\Models\Department;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Http\StreamedResponse;
 use Illuminate\View\View;
@@ -30,9 +32,24 @@ class PointageController extends Controller
      */
     public function create(): View
     {
-        $agents = Agent::actifs()->get();
+        $departments = Department::orderBy('nom')->get();
 
-        return view('rh.pointages.create', compact('agents'));
+        return view('rh.pointages.create', compact('departments'));
+    }
+
+    /**
+     * Return agents for a given department (JSON).
+     */
+    public function agentsByDepartment(Request $request): JsonResponse
+    {
+        $departmentId = $request->query('department_id');
+
+        $agents = Agent::actifs()
+            ->where('departement_id', $departmentId)
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+
+        return response()->json($agents);
     }
 
     /**
@@ -53,6 +70,67 @@ class PointageController extends Controller
 
         return redirect()->route('rh.pointages.index')
             ->with('success', 'Pointage créé avec succès');
+    }
+
+    /**
+     * Store bulk pointages for all agents in a department.
+     */
+    public function storeBulk(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'date_pointage' => 'required|date',
+            'pointages' => 'required|array',
+            'pointages.*.agent_id' => 'required|exists:agents,id',
+            'pointages.*.heure_entree' => 'nullable|date_format:H:i',
+            'pointages.*.heure_sortie' => 'nullable|date_format:H:i',
+            'pointages.*.observations' => 'nullable|string',
+        ]);
+
+        $date = $request->date_pointage;
+        $created = 0;
+        $skipped = 0;
+
+        foreach ($request->pointages as $row) {
+            // Skip rows where no time was entered
+            if (empty($row['heure_entree']) && empty($row['heure_sortie'])) {
+                continue;
+            }
+
+            // Check if pointage already exists for this agent on this date
+            $exists = Pointage::where('agent_id', $row['agent_id'])
+                ->where('date_pointage', $date)
+                ->exists();
+
+            if ($exists) {
+                $skipped++;
+                continue;
+            }
+
+            $heures = null;
+            if (!empty($row['heure_entree']) && !empty($row['heure_sortie'])) {
+                $entree = Carbon::createFromFormat('H:i', $row['heure_entree']);
+                $sortie = Carbon::createFromFormat('H:i', $row['heure_sortie']);
+                $heures = round($sortie->diffInMinutes($entree) / 60, 1);
+            }
+
+            Pointage::create([
+                'agent_id' => $row['agent_id'],
+                'date_pointage' => $date,
+                'heure_entree' => $row['heure_entree'] ?? null,
+                'heure_sortie' => $row['heure_sortie'] ?? null,
+                'heures_travaillees' => $heures,
+                'observations' => $row['observations'] ?? null,
+            ]);
+
+            $created++;
+        }
+
+        $message = "{$created} pointage(s) enregistré(s) avec succès.";
+        if ($skipped > 0) {
+            $message .= " {$skipped} ignoré(s) (déjà existants).";
+        }
+
+        return redirect()->route('rh.pointages.index')->with('success', $message);
     }
 
     /**

@@ -65,6 +65,8 @@ Route::middleware('auth')->group(function () {
         // Modules accessibles à tous les utilisateurs authentifiés
         Route::resource('documents', DocumentController::class);
         Route::resource('pointages', PointageController::class);
+        Route::post('pointages/bulk', [PointageController::class, 'storeBulk'])->name('pointages.store-bulk');
+        Route::get('pointages/api/agents-by-department', [PointageController::class, 'agentsByDepartment'])->name('pointages.agents-by-department');
         Route::resource('signalements', SignalementController::class);
         Route::resource('provinces', ProvinceController::class);
         Route::resource('departments', DepartmentController::class);
