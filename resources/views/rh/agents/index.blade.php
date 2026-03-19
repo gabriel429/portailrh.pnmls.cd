@@ -98,7 +98,11 @@
                                             </td>
                                             <td>
                                                 @if($agent->organe === 'Secrétariat Exécutif National')
-                                                    {{ $agent->departement?->nom ?? 'N/A' }}
+                                                    @if($agent->departement)
+                                                        {{ $agent->departement->nom }}
+                                                    @else
+                                                        Service rattaché au SEN
+                                                    @endif
                                                 @else
                                                     {{ $agent->province?->nom ?? 'N/A' }}
                                                 @endif
