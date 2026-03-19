@@ -79,7 +79,6 @@
                                         <th>Matricule</th>
                                         <th>Ancienneté</th>
                                         <th>Statut</th>
-                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -117,23 +116,6 @@
                                                 @else
                                                     <span class="rh-pill st-neutral">{{ ucfirst($agent->statut) }}</span>
                                                 @endif
-                                            </td>
-                                            <td onclick="event.stopPropagation();">
-                                                <div class="btn-group btn-group-sm" role="group">
-                                                    <a href="{{ route('rh.agents.show', $agent) }}" class="btn btn-outline-primary" title="Détails complets">
-                                                        <i class="fas fa-external-link-alt"></i>
-                                                    </a>
-                                                    <a href="{{ route('rh.agents.edit', $agent) }}" class="btn btn-outline-warning" title="Modifier">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    <form method="POST" action="{{ route('rh.agents.destroy', $agent) }}" style="display:inline;" onsubmit="return confirm('Êtes-vous sûr ?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-outline-danger btn-sm" title="Supprimer">
-                                                            <i class="fas fa-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
