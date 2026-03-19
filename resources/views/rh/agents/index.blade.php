@@ -66,17 +66,18 @@
                             <table class="rh-table">
                                 <thead>
                                     <tr>
-                                        <th>ID Agent</th>
                                         <th>Nom et Prenom</th>
                                         <th>Email privé</th>
                                         <th>Email professionnel</th>
+                                        <th>Téléphone</th>
                                         <th>Poste</th>
-                                        <th>Role</th>
                                         @if($organeKey === 'Secrétariat Exécutif National')
                                             <th>Département/Service</th>
                                         @else
                                             <th>Province</th>
                                         @endif
+                                        <th>Matricule</th>
+                                        <th>Ancienneté</th>
                                         <th>Statut</th>
                                         <th>Actions</th>
                                     </tr>
@@ -84,18 +85,11 @@
                                 <tbody>
                                     @foreach($organeData['agents'] as $agent)
                                         <tr class="agent-row" style="cursor: pointer;" data-agent-id="{{ $agent->id }}">
-                                            <td><strong>{{ $agent->id_agent }}</strong></td>
                                             <td>{{ $agent->prenom }} {{ $agent->nom }}</td>
                                             <td>{{ $agent->email_prive ?? 'N/A' }}</td>
                                             <td>{{ $agent->email_professionnel ?? 'N/A' }}</td>
+                                            <td>{{ $agent->telephone ?? 'N/A' }}</td>
                                             <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
-                                            <td>
-                                                @if($agent->role)
-                                                    <span class="rh-pill st-mid">{{ $agent->role->nom }}</span>
-                                                @else
-                                                    <span class="rh-pill st-neutral">Non assigne</span>
-                                                @endif
-                                            </td>
                                             <td>
                                                 @if($agent->organe === 'Secrétariat Exécutif National')
                                                     @if($agent->departement)
@@ -105,6 +99,14 @@
                                                     @endif
                                                 @else
                                                     {{ $agent->province?->nom ?? 'N/A' }}
+                                                @endif
+                                            </td>
+                                            <td>{{ $agent->matricule_pnmls ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($agent->annee_engagement_programme)
+                                                    {{ now()->year - $agent->annee_engagement_programme }} an{{ now()->year - $agent->annee_engagement_programme > 1 ? 's' : '' }}
+                                                @else
+                                                    N/A
                                                 @endif
                                             </td>
                                             <td>
