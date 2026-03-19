@@ -30,6 +30,27 @@ if (isset($_GET['clearcache'])) {
     echo '</pre>'; exit;
 }
 
+// -- MODE FIXEMAIL : ?token=...&fixemail --------------------------------------
+if (isset($_GET['fixemail'])) {
+    echo "=== Fix: rendre la colonne email nullable ===\n";
+    // Load Laravel to use DB
+    require $root . '/vendor/autoload.php';
+    $app = require_once $root . '/bootstrap/app.php';
+    $kernel = $app->make(\Illuminate\Contracts\Console\Kernel::class);
+    $kernel->bootstrap();
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasColumn('agents', 'email')) {
+            \Illuminate\Support\Facades\DB::statement('ALTER TABLE agents MODIFY email VARCHAR(255) NULL DEFAULT NULL');
+            echo "Colonne 'email' rendue nullable avec succes.\n";
+        } else {
+            echo "Colonne 'email' n'existe pas dans la table agents.\n";
+        }
+    } catch (\Exception $e) {
+        echo "ERREUR: " . $e->getMessage() . "\n";
+    }
+    echo '</pre>'; exit;
+}
+
 // -- MODE GITPULL : ?token=...&gitpull&git=TOKEN ---------------------------
 if (isset($_GET['gitpull'])) {
     $gitToken = $_GET['git'] ?? '';
