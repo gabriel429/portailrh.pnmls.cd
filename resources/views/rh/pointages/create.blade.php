@@ -21,7 +21,11 @@
             <div class="row g-2 align-items-center">
                 <div class="col-lg-8">
                     <h1 class="rh-title"><i class="fas fa-clipboard-check me-2"></i>Saisie des pointages</h1>
-                    <p class="rh-sub">Saisie groupee par departement/service. Selectionnez un departement pour afficher ses agents.</p>
+                    @if($isCAF)
+                        <p class="rh-sub">Saisie des presences pour la province <strong>{{ $cafProvince->nom }}</strong>.</p>
+                    @else
+                        <p class="rh-sub">Saisie groupee par departement/service. Selectionnez un departement pour afficher ses agents.</p>
+                    @endif
                 </div>
                 <div class="col-lg-4">
                     <div class="hero-tools">
@@ -43,196 +47,273 @@
                 </div>
             @endif
 
-            {{-- Filtres : Departement + Date --}}
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <label for="department_id" class="form-label fw-bold">Departement / Service</label>
-                    <select class="form-select" id="department_id">
-                        <option value="">-- Selectionner un departement --</option>
-                        @foreach ($departments as $dept)
-                            <option value="{{ $dept->id }}">{{ $dept->nom }}</option>
-                        @endforeach
-                    </select>
+            @if($isCAF)
+                {{-- ============================================================ --}}
+                {{-- MODE CAF (SEP/SEL) : masque direct avec agents de la province --}}
+                {{-- ============================================================ --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="date_pointage_caf" class="form-label fw-bold">Date du pointage</label>
+                        <input type="date" class="form-control" id="date_pointage_caf" value="{{ date('Y-m-d') }}">
+                    </div>
                 </div>
-                <div class="col-md-4">
-                    <label for="date_pointage" class="form-label fw-bold">Date du pointage</label>
-                    <input type="date" class="form-control" id="date_pointage" value="{{ date('Y-m-d') }}">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="button" class="btn btn-primary w-100" id="btn-load-agents">
-                        <i class="fas fa-search me-1"></i> Charger
-                    </button>
-                </div>
-            </div>
 
-            {{-- Loading spinner --}}
-            <div id="loading-spinner" class="text-center py-4" style="display: none;">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Chargement...</span>
-                </div>
-                <p class="mt-2 text-muted">Chargement des agents...</p>
-            </div>
-
-            {{-- Table des agents --}}
-            <div id="agents-table-container">
-                <form action="{{ route('rh.pointages.store-bulk') }}" method="POST">
+                <form action="{{ route('rh.pointages.store-bulk') }}" method="POST" id="caf-form">
                     @csrf
-                    <input type="hidden" name="date_pointage" id="form_date_pointage">
+                    <input type="hidden" name="date_pointage" id="form_date_caf" value="{{ date('Y-m-d') }}">
 
                     <div class="alert alert-info py-2 mb-3">
-                        <i class="fas fa-info-circle me-1"></i>
-                        <strong id="dept-name"></strong> &mdash;
-                        <span id="agent-count"></span> agent(s).
+                        <i class="fas fa-map-marker-alt me-1"></i>
+                        <strong>{{ $cafProvince->nom }}</strong> &mdash;
+                        {{ $cafAgents->count() }} agent(s).
                         Remplissez les heures pour les agents presents. Les lignes vides seront ignorees.
                     </div>
 
-                    <div class="table-responsive">
-                        <table class="table table-hover pointage-table">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 5%">#</th>
-                                    <th style="width: 25%">Agent</th>
-                                    <th style="width: 20%">Heure d'arrivee</th>
-                                    <th style="width: 20%">Heure de depart</th>
-                                    <th style="width: 30%">Observation</th>
-                                </tr>
-                            </thead>
-                            <tbody id="agents-tbody">
-                            </tbody>
-                        </table>
-                    </div>
+                    @if($cafAgents->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover pointage-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 25%">Agent</th>
+                                        <th style="width: 20%">Heure d'arrivee</th>
+                                        <th style="width: 20%">Heure de depart</th>
+                                        <th style="width: 30%">Observation</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($cafAgents as $index => $agent)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>
+                                                <div class="agent-name">{{ $agent->prenom }} {{ $agent->nom }}</div>
+                                                <div class="agent-poste">{{ $agent->poste_actuel ?? '' }}</div>
+                                                <input type="hidden" name="pointages[{{ $index }}][agent_id]" value="{{ $agent->id }}">
+                                            </td>
+                                            <td>
+                                                <input type="time" class="form-control heure-entree" name="pointages[{{ $index }}][heure_entree]">
+                                            </td>
+                                            <td>
+                                                <input type="time" class="form-control heure-sortie" name="pointages[{{ $index }}][heure_sortie]">
+                                            </td>
+                                            <td>
+                                                <input type="text" class="form-control" name="pointages[{{ $index }}][observations]" placeholder="Observation...">
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
 
-                    <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-primary btn-lg">
-                            <i class="fas fa-save me-2"></i>Enregistrer les pointages
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary" id="btn-fill-all">
-                            <i class="fas fa-clock me-1"></i> Remplir tout (08:00 - 16:00)
-                        </button>
-                        <button type="button" class="btn btn-outline-danger" id="btn-clear-all">
-                            <i class="fas fa-eraser me-1"></i> Tout effacer
-                        </button>
-                    </div>
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Enregistrer les pointages
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-fill-all">
+                                <i class="fas fa-clock me-1"></i> Remplir tout (08:00 - 16:00)
+                            </button>
+                            <button type="button" class="btn btn-outline-danger" id="btn-clear-all">
+                                <i class="fas fa-eraser me-1"></i> Tout effacer
+                            </button>
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <i class="fas fa-users-slash fa-3x text-muted mb-3 d-block"></i>
+                            <h5 class="text-muted">Aucun agent actif dans la province {{ $cafProvince->nom }}</h5>
+                        </div>
+                    @endif
                 </form>
-            </div>
 
-            {{-- Empty state --}}
-            <div id="empty-state" class="text-center py-5">
-                <i class="fas fa-building fa-3x text-muted mb-3 d-block"></i>
-                <h5 class="text-muted">Selectionnez un departement</h5>
-                <p class="text-muted">Choisissez un departement et une date, puis cliquez sur "Charger" pour afficher les agents.</p>
-            </div>
+            @else
+                {{-- ============================================================ --}}
+                {{-- MODE SEN : selection par departement                         --}}
+                {{-- ============================================================ --}}
+
+                {{-- Filtres : Departement + Date --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="department_id" class="form-label fw-bold">Departement / Service</label>
+                        <select class="form-select" id="department_id">
+                            <option value="">-- Selectionner un departement --</option>
+                            @foreach ($departments as $dept)
+                                <option value="{{ $dept->id }}">{{ $dept->nom }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="date_pointage" class="form-label fw-bold">Date du pointage</label>
+                        <input type="date" class="form-control" id="date_pointage" value="{{ date('Y-m-d') }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="button" class="btn btn-primary w-100" id="btn-load-agents">
+                            <i class="fas fa-search me-1"></i> Charger
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Loading spinner --}}
+                <div id="loading-spinner" class="text-center py-4" style="display: none;">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="mt-2 text-muted">Chargement des agents...</p>
+                </div>
+
+                {{-- Table des agents --}}
+                <div id="agents-table-container">
+                    <form action="{{ route('rh.pointages.store-bulk') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="date_pointage" id="form_date_pointage">
+
+                        <div class="alert alert-info py-2 mb-3">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <strong id="dept-name"></strong> &mdash;
+                            <span id="agent-count"></span> agent(s).
+                            Remplissez les heures pour les agents presents. Les lignes vides seront ignorees.
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="table table-hover pointage-table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 25%">Agent</th>
+                                        <th style="width: 20%">Heure d'arrivee</th>
+                                        <th style="width: 20%">Heure de depart</th>
+                                        <th style="width: 30%">Observation</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="agents-tbody">
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex gap-2 mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Enregistrer les pointages
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary btn-fill-all-js">
+                                <i class="fas fa-clock me-1"></i> Remplir tout (08:00 - 16:00)
+                            </button>
+                            <button type="button" class="btn btn-outline-danger btn-clear-all-js">
+                                <i class="fas fa-eraser me-1"></i> Tout effacer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Empty state --}}
+                <div id="empty-state" class="text-center py-5">
+                    <i class="fas fa-building fa-3x text-muted mb-3 d-block"></i>
+                    <h5 class="text-muted">Selectionnez un departement</h5>
+                    <p class="text-muted">Choisissez un departement et une date, puis cliquez sur "Charger" pour afficher les agents.</p>
+                </div>
+            @endif
         </div>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const deptSelect = document.getElementById('department_id');
-    const dateInput = document.getElementById('date_pointage');
-    const btnLoad = document.getElementById('btn-load-agents');
-    const spinner = document.getElementById('loading-spinner');
-    const tableContainer = document.getElementById('agents-table-container');
-    const emptyState = document.getElementById('empty-state');
-    const tbody = document.getElementById('agents-tbody');
-    const formDate = document.getElementById('form_date_pointage');
-    const deptNameEl = document.getElementById('dept-name');
-    const agentCountEl = document.getElementById('agent-count');
 
-    btnLoad.addEventListener('click', loadAgents);
+    // ── Boutons Remplir / Effacer (communs aux deux modes) ──
+    document.querySelectorAll('#btn-fill-all, .btn-fill-all-js').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.heure-entree').forEach(input => { input.value = '08:00'; });
+            document.querySelectorAll('.heure-sortie').forEach(input => { input.value = '16:00'; });
+        });
+    });
 
-    function loadAgents() {
-        const deptId = deptSelect.value;
-        const date = dateInput.value;
+    document.querySelectorAll('#btn-clear-all, .btn-clear-all-js').forEach(btn => {
+        btn.addEventListener('click', function () {
+            document.querySelectorAll('.heure-entree').forEach(input => { input.value = ''; });
+            document.querySelectorAll('.heure-sortie').forEach(input => { input.value = ''; });
+            document.querySelectorAll('input[name*="observations"]').forEach(input => { input.value = ''; });
+        });
+    });
 
-        if (!deptId) {
-            alert('Veuillez selectionner un departement.');
-            return;
-        }
-        if (!date) {
-            alert('Veuillez selectionner une date.');
-            return;
-        }
+    @if($isCAF)
+        // ── MODE CAF : synchroniser la date ──
+        const dateCaf = document.getElementById('date_pointage_caf');
+        const formDateCaf = document.getElementById('form_date_caf');
+        dateCaf.addEventListener('change', function () {
+            formDateCaf.value = this.value;
+        });
+    @else
+        // ── MODE SEN : chargement AJAX par departement ──
+        const deptSelect = document.getElementById('department_id');
+        const dateInput = document.getElementById('date_pointage');
+        const btnLoad = document.getElementById('btn-load-agents');
+        const spinner = document.getElementById('loading-spinner');
+        const tableContainer = document.getElementById('agents-table-container');
+        const emptyState = document.getElementById('empty-state');
+        const tbody = document.getElementById('agents-tbody');
+        const formDate = document.getElementById('form_date_pointage');
+        const deptNameEl = document.getElementById('dept-name');
+        const agentCountEl = document.getElementById('agent-count');
 
-        // Update hidden form field
-        formDate.value = date;
+        btnLoad.addEventListener('click', loadAgents);
 
-        // Show spinner
-        spinner.style.display = 'block';
-        tableContainer.style.display = 'none';
-        emptyState.style.display = 'none';
+        function loadAgents() {
+            const deptId = deptSelect.value;
+            const date = dateInput.value;
 
-        fetch(`{{ route('rh.pointages.agents-by-department') }}?department_id=${deptId}`)
-            .then(res => res.json())
-            .then(agents => {
-                spinner.style.display = 'none';
+            if (!deptId) { alert('Veuillez selectionner un departement.'); return; }
+            if (!date) { alert('Veuillez selectionner une date.'); return; }
 
-                if (agents.length === 0) {
+            formDate.value = date;
+            spinner.style.display = 'block';
+            tableContainer.style.display = 'none';
+            emptyState.style.display = 'none';
+
+            fetch(`{{ route('rh.pointages.agents-by-department') }}?department_id=${deptId}`)
+                .then(res => res.json())
+                .then(agents => {
+                    spinner.style.display = 'none';
+
+                    if (agents.length === 0) {
+                        emptyState.innerHTML = `
+                            <i class="fas fa-users-slash fa-3x text-muted mb-3 d-block"></i>
+                            <h5 class="text-muted">Aucun agent actif dans ce departement</h5>
+                        `;
+                        emptyState.style.display = 'block';
+                        return;
+                    }
+
+                    deptNameEl.textContent = deptSelect.options[deptSelect.selectedIndex].text;
+                    agentCountEl.textContent = agents.length;
+
+                    tbody.innerHTML = '';
+                    agents.forEach((agent, index) => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${index + 1}</td>
+                            <td>
+                                <div class="agent-name">${agent.prenom} ${agent.nom}</div>
+                                <div class="agent-poste">${agent.poste_actuel || ''}</div>
+                                <input type="hidden" name="pointages[${index}][agent_id]" value="${agent.id}">
+                            </td>
+                            <td><input type="time" class="form-control heure-entree" name="pointages[${index}][heure_entree]"></td>
+                            <td><input type="time" class="form-control heure-sortie" name="pointages[${index}][heure_sortie]"></td>
+                            <td><input type="text" class="form-control" name="pointages[${index}][observations]" placeholder="Observation..."></td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+
+                    tableContainer.style.display = 'block';
+                })
+                .catch(() => {
+                    spinner.style.display = 'none';
                     emptyState.innerHTML = `
-                        <i class="fas fa-users-slash fa-3x text-muted mb-3 d-block"></i>
-                        <h5 class="text-muted">Aucun agent actif dans ce departement</h5>
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            Erreur lors du chargement des agents.
+                        </div>
                     `;
                     emptyState.style.display = 'block';
-                    return;
-                }
-
-                // Update info
-                deptNameEl.textContent = deptSelect.options[deptSelect.selectedIndex].text;
-                agentCountEl.textContent = agents.length;
-
-                // Build table rows
-                tbody.innerHTML = '';
-                agents.forEach((agent, index) => {
-                    const fullName = `${agent.prenom} ${agent.nom}`;
-                    const poste = agent.poste_actuel || '';
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td>${index + 1}</td>
-                        <td>
-                            <div class="agent-name">${fullName}</div>
-                            <div class="agent-poste">${poste}</div>
-                            <input type="hidden" name="pointages[${index}][agent_id]" value="${agent.id}">
-                        </td>
-                        <td>
-                            <input type="time" class="form-control heure-entree" name="pointages[${index}][heure_entree]">
-                        </td>
-                        <td>
-                            <input type="time" class="form-control heure-sortie" name="pointages[${index}][heure_sortie]">
-                        </td>
-                        <td>
-                            <input type="text" class="form-control" name="pointages[${index}][observations]" placeholder="Observation...">
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
                 });
-
-                tableContainer.style.display = 'block';
-            })
-            .catch(() => {
-                spinner.style.display = 'none';
-                emptyState.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="fas fa-exclamation-circle me-2"></i>
-                        Erreur lors du chargement des agents.
-                    </div>
-                `;
-                emptyState.style.display = 'block';
-            });
-    }
-
-    // Fill all with default hours
-    document.getElementById('btn-fill-all').addEventListener('click', function () {
-        document.querySelectorAll('.heure-entree').forEach(input => { input.value = '08:00'; });
-        document.querySelectorAll('.heure-sortie').forEach(input => { input.value = '16:00'; });
-    });
-
-    // Clear all
-    document.getElementById('btn-clear-all').addEventListener('click', function () {
-        document.querySelectorAll('.heure-entree').forEach(input => { input.value = ''; });
-        document.querySelectorAll('.heure-sortie').forEach(input => { input.value = ''; });
-        document.querySelectorAll('input[name*="observations"]').forEach(input => { input.value = ''; });
-    });
+        }
+    @endif
 });
 </script>
 @endsection

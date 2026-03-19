@@ -33,8 +33,22 @@ class PointageController extends Controller
     public function create(): View
     {
         $departments = Department::orderBy('nom')->get();
+        $user = auth()->user();
+        $isCAF = false;
+        $cafAgents = collect();
+        $cafProvince = null;
 
-        return view('rh.pointages.create', compact('departments'));
+        // If user is RH Provincial (CAF), pre-load agents from their province
+        if ($user->role && $user->role->nom_role === 'RH Provincial' && $user->agent && $user->agent->province_id) {
+            $isCAF = true;
+            $cafProvince = $user->agent->province;
+            $cafAgents = Agent::actifs()
+                ->where('province_id', $user->agent->province_id)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+        }
+
+        return view('rh.pointages.create', compact('departments', 'isCAF', 'cafAgents', 'cafProvince'));
     }
 
     /**
