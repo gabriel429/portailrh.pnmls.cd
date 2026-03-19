@@ -9,8 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 class Role extends Model
 {
     protected $fillable = [
-        'nom',
-        'code',
+        'nom_role',
         'description',
     ];
 
@@ -25,11 +24,4 @@ class Role extends Model
     {
         return $this->belongsToMany(Permission::class, 'role_permission')->withTimestamps();
     }
-
-    // Scopes
-    public function scopeByCode($query, $code)
-    {
-        return $query->where('code', $code);
-    }
 }
-

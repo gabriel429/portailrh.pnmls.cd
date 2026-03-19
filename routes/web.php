@@ -22,9 +22,6 @@ Route::get('/', function () {
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.store');
-    // Registration disabled — accounts are created by admin only
-    // Route::get('/register', [AuthController::class, 'showRegister'])->name('register');
-    // Route::post('/register', [AuthController::class, 'register'])->name('register.store');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPassword'])->name('password.request');
     Route::post('/forgot-password', [AuthController::class, 'sendResetLink'])->name('password.email');
     Route::get('/reset-password/{token}', [AuthController::class, 'showResetForm'])->name('password.reset');
@@ -33,7 +30,6 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     // Profil agent
-    Route::get('/dashboard', [ProfileController::class, 'index'])->name('dashboard');
     Route::get('/profile/{agent?}', [ProfileController::class, 'show'])->name('profile.show');
     Route::get('/profile/{agent?}/edit', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile/{agent?}', [ProfileController::class, 'update'])->name('profile.update');
@@ -54,13 +50,9 @@ Route::middleware('auth')->group(function () {
 
     // Demandes
     Route::resource('requests', RequestController::class)->names('requests');
-    Route::put('/requests/{request}/visa', [RequestController::class, 'visa'])->name('requests.visa');
-    Route::put('/requests/{request}/approve', [RequestController::class, 'approve'])->name('requests.approve');
-    Route::put('/requests/{request}/reject', [RequestController::class, 'reject'])->name('requests.reject');
 
     // Signalements
     Route::resource('signalements', SignalementController::class)->names('signalements');
-    Route::post('signalements/{signalement}/resolve', [SignalementController::class, 'resolve'])->name('signalements.resolve');
 
     // Taches
     Route::get('/taches', [TacheController::class, 'index'])->name('taches.index');
@@ -88,29 +80,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/api/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
 
     // RH JSON API for Modal (returns agent details as JSON)
-    Route::middleware(['auth', 'role:Section ressources humaines,Chef Section RH,RH National,RH Provincial'])->group(function () {
+    Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial')->group(function () {
         Route::get('api/agents/{agent}', [AgentController::class, 'apiShow'])->name('api.agents.show');
     });
 
     // Routes admin/RH
-    Route::middleware(['auth', 'role:Section ressources humaines,Chef Section RH,RH National,RH Provincial'])->prefix('rh')->name('rh.')->group(function () {
+    Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('rh')->name('rh.')->group(function () {
         // Gestion des agents
         Route::get('agents/export', [AgentController::class, 'export'])->name('agents.export');
         Route::resource('agents', AgentController::class);
-        Route::post('agents/{agent}/generate-matricule', [AgentController::class, 'generateMatricule'])->name('agents.generate-matricule');
         Route::post('agents/{agent}/messages', [AgentController::class, 'storeMessage'])->name('agents.messages.store');
         Route::get('agents/{agent}/print', [AgentController::class, 'printFiche'])->name('agents.print');
 
         // Communiqués
         Route::resource('communiques', CommuniqueController::class);
 
-        // Pointages
-        Route::resource('pointages', PointageController::class);
+        // Pointages — note: custom routes BEFORE resource to avoid {pointage} capturing them
         Route::get('pointages/daily/view', [PointageController::class, 'daily'])->name('pointages.daily');
         Route::get('pointages/daily/export', [PointageController::class, 'exportDailyExcel'])->name('pointages.daily-export');
         Route::get('pointages/monthly/report', [PointageController::class, 'monthlyReport'])->name('pointages.monthly-report');
         Route::get('pointages/monthly/export', [PointageController::class, 'exportMonthlyExcel'])->name('pointages.monthly-export');
-        Route::post('pointages/import', [PointageController::class, 'import'])->name('pointages.import');
+        Route::resource('pointages', PointageController::class);
 
         // Tableau de bord RH
         Route::get('/dashboard', [AgentController::class, 'dashboard'])->name('dashboard');

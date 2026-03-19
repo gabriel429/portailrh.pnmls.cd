@@ -47,7 +47,7 @@ class SignalementController extends Controller
 
         Signalement::create($validated);
 
-        return redirect()->route('signalements.index')
+        return redirect()->route('rh.signalements.index')
             ->with('success', 'Signalement créé avec succès');
     }
 
@@ -84,7 +84,7 @@ class SignalementController extends Controller
 
         $signalement->update($validated);
 
-        return redirect()->route('signalements.show', $signalement)
+        return redirect()->route('rh.signalements.show', $signalement)
             ->with('success', 'Signalement modifié avec succès');
     }
 
@@ -95,7 +95,7 @@ class SignalementController extends Controller
     {
         $signalement->delete();
 
-        return redirect()->route('signalements.index')
+        return redirect()->route('rh.signalements.index')
             ->with('success', 'Signalement supprimé avec succès');
     }
 }

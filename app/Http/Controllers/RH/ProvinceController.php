@@ -100,7 +100,7 @@ class ProvinceController extends Controller
     {
         $province->delete();
 
-        return redirect()->route('provinces.index')
+        return redirect()->route('rh.provinces.index')
             ->with('success', 'Province supprimée avec succès');
     }
 }

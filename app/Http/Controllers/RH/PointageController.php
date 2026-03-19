@@ -22,6 +22,7 @@ class PointageController extends Controller
     public function index(): View
     {
         $pointages = Pointage::with(['agent'])
+            ->orderBy('date_pointage', 'desc')
             ->paginate(15);
 
         return view('rh.pointages.index', compact('pointages'));

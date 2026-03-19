@@ -800,15 +800,17 @@
                     // Remove old notification items
                     dropdown.querySelectorAll('.notif-item-ajax').forEach(el => el.closest('li').remove());
                     if (data.recent && data.recent.length > 0) {
+                        const escText = (s) => { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; };
+                        const escUrl = (s) => { try { const u = new URL(s, location.origin); return ['http:', 'https:'].includes(u.protocol) ? u.href : '#'; } catch { return '#'; } };
                         data.recent.forEach(n => {
                             const li = document.createElement('li');
-                            li.innerHTML = `<a class="dropdown-item notif-item notif-item-ajax ${!n.lu ? 'notif-unread' : ''}" href="${n.lien}">
-                                <span class="notif-item-icon" style="background:${n.couleur}20;color:${n.couleur};">
-                                    <i class="fas ${n.icone}"></i>
+                            li.innerHTML = `<a class="dropdown-item notif-item notif-item-ajax ${!n.lu ? 'notif-unread' : ''}" href="${escUrl(n.lien)}">
+                                <span class="notif-item-icon" style="background:${escText(n.couleur)}20;color:${escText(n.couleur)};">
+                                    <i class="fas ${escText(n.icone)}"></i>
                                 </span>
                                 <span class="notif-item-content">
-                                    <span class="notif-item-title">${n.titre}</span>
-                                    <span class="notif-item-time">${n.temps}</span>
+                                    <span class="notif-item-title">${escText(n.titre)}</span>
+                                    <span class="notif-item-time">${escText(n.temps)}</span>
                                 </span>
                                 ${!n.lu ? '<span class="notif-dot"></span>' : ''}
                             </a>`;
@@ -828,4 +830,5 @@
         setInterval(loadNotifs, 30000);
     })();
     </script>
+</body>
 </html>

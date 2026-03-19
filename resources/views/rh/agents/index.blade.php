@@ -262,14 +262,24 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    function displayAgentDetails(agent) {
-        document.getElementById('modalAgentName').textContent = `${agent.prenom} ${agent.nom}`;
-        document.getElementById('modalAgentMatricule').innerHTML = `
-            <span class="badge bg-light text-dark">${agent.id_agent}</span>
-        `;
+    function esc(str) {
+        if (!str) return 'N/A';
+        const d = document.createElement('div');
+        d.textContent = str;
+        return d.innerHTML;
+    }
 
-        document.getElementById('modalEditBtn').href = `/rh/agents/${agent.id}/edit`;
-        document.getElementById('modalViewFullBtn').href = `/rh/agents/${agent.id}`;
+    function displayAgentDetails(agent) {
+        document.getElementById('modalAgentName').textContent = `${agent.prenom || ''} ${agent.nom || ''}`;
+        const matriculeBadge = document.getElementById('modalAgentMatricule');
+        matriculeBadge.textContent = '';
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-light text-dark';
+        badge.textContent = agent.id_agent || '';
+        matriculeBadge.appendChild(badge);
+
+        document.getElementById('modalEditBtn').href = `/rh/agents/${parseInt(agent.id)}/edit`;
+        document.getElementById('modalViewFullBtn').href = `/rh/agents/${parseInt(agent.id)}`;
 
         let badgeStatut = '';
         if (agent.statut === 'actif') {
@@ -277,27 +287,28 @@ document.addEventListener('DOMContentLoaded', function() {
         } else if (agent.statut === 'suspendu') {
             badgeStatut = '<span class="rh-pill st-mid">Suspendu</span>';
         } else {
-            badgeStatut = `<span class="rh-pill st-neutral">${agent.statut ? (agent.statut.charAt(0).toUpperCase() + agent.statut.slice(1)) : 'N/A'}</span>`;
+            badgeStatut = `<span class="rh-pill st-neutral">${esc(agent.statut)}</span>`;
         }
 
+        const roleName = agent.role ? esc(agent.role.nom) : 'Non assigné';
         let badgeRole = agent.role
-            ? `<span class="rh-pill st-mid">${agent.role.nom}</span>`
-            : '<span class="rh-pill st-neutral">Non assigne</span>';
+            ? `<span class="rh-pill st-mid">${roleName}</span>`
+            : '<span class="rh-pill st-neutral">Non assigné</span>';
 
         const html = `
             <div class="row">
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Informations personnelles</h6>
-                    <p class="mb-2"><strong class="text-muted">Prenom:</strong><br>${agent.prenom || 'N/A'}</p>
-                    <p class="mb-2"><strong class="text-muted">Nom:</strong><br>${agent.nom || 'N/A'}</p>
-                    <p class="mb-2"><strong class="text-muted">Email:</strong><br><a href="mailto:${agent.email}">${agent.email || 'N/A'}</a></p>
-                    <p class="mb-2"><strong class="text-muted">Telephone:</strong><br>${agent.telephone || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Prenom:</strong><br>${esc(agent.prenom)}</p>
+                    <p class="mb-2"><strong class="text-muted">Nom:</strong><br>${esc(agent.nom)}</p>
+                    <p class="mb-2"><strong class="text-muted">Email:</strong><br>${esc(agent.email)}</p>
+                    <p class="mb-2"><strong class="text-muted">Telephone:</strong><br>${esc(agent.telephone)}</p>
                 </div>
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Informations professionnelles</h6>
-                    <p class="mb-2"><strong class="text-muted">Poste:</strong><br>${agent.poste_actuel || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Poste:</strong><br>${esc(agent.poste_actuel)}</p>
                     <p class="mb-2"><strong class="text-muted">Role:</strong><br>${badgeRole}</p>
-                    <p class="mb-2"><strong class="text-muted">Departement:</strong><br>${agent.departement?.nom || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Departement:</strong><br>${esc(agent.departement?.nom)}</p>
                     <p class="mb-2"><strong class="text-muted">Statut:</strong><br>${badgeStatut}</p>
                 </div>
             </div>
@@ -305,13 +316,13 @@ document.addEventListener('DOMContentLoaded', function() {
             <div class="row">
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Dates importantes</h6>
-                    <p class="mb-2"><strong class="text-muted">Date de naissance:</strong><br>${agent.date_naissance || 'N/A'}</p>
-                    <p class="mb-2"><strong class="text-muted">Lieu de naissance:</strong><br>${agent.lieu_naissance || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Date de naissance:</strong><br>${esc(agent.date_naissance)}</p>
+                    <p class="mb-2"><strong class="text-muted">Lieu de naissance:</strong><br>${esc(agent.lieu_naissance)}</p>
                 </div>
                 <div class="col-md-6">
                     <h6 class="text-muted mb-3">Details supplementaires</h6>
-                    <p class="mb-2"><strong class="text-muted">Date d'embauche:</strong><br>${agent.date_embauche || 'N/A'}</p>
-                    <p class="mb-2"><strong class="text-muted">Adresse:</strong><br>${agent.adresse || 'N/A'}</p>
+                    <p class="mb-2"><strong class="text-muted">Date d'embauche:</strong><br>${esc(agent.date_embauche)}</p>
+                    <p class="mb-2"><strong class="text-muted">Adresse:</strong><br>${esc(agent.adresse)}</p>
                 </div>
             </div>
         `;

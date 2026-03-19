@@ -28,7 +28,7 @@ class AdminNTSeeder extends Seeder
                 'postnom'                   => 'NT',
                 'prenom'                    => 'Système',
                 'email'                     => 'admin.nt@pnmls.cd',
-                'password'                  => Hash::make('Admin@2026'),
+                'password'                  => Hash::make(env('ADMIN_DEFAULT_PASSWORD', 'Admin@2026')),
                 'date_naissance'            => '1990-01-01',
                 'annee_naissance'           => 1990,
                 'lieu_naissance'            => 'Kinshasa',

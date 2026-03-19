@@ -344,7 +344,7 @@
                                 <option value="">-- Sélectionner une province --</option>
                                 @foreach ($provinces as $province)
                                     <option value="{{ $province->id }}" @selected(old('province_id', $agent->province_id) == $province->id)>
-                                        {{ $province->nom_province ?? "Province {$province->id}" }}
+                                        {{ $province->nom_province ?? $province->nom ?? "Province {$province->id}" }}
                                     </option>
                                 @endforeach
                             </select>

@@ -243,7 +243,7 @@
                     @endif
                 </div>
 
-                @if(auth()->id() === $agent->id)
+                @if(auth()->id() == $agent->id)
                 <div class="profile-actions">
                     <a href="{{ route('profile.edit', $agent) }}" class="btn btn-edit-profile">
                         <i class="fas fa-pen me-2"></i>Modifier mon profil

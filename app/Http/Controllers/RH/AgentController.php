@@ -545,7 +545,7 @@ class AgentController extends Controller
 
         // Request statistics
         $totalRequests = RequestModel::count();
-        $pendingRequests = RequestModel::where('statut', 'en attente')->count();
+        $pendingRequests = RequestModel::where('statut', 'en_attente')->count();
         $approvedRequests = RequestModel::where('statut', 'approuvé')->count();
         $rejectedRequests = RequestModel::where('statut', 'rejeté')->count();
 

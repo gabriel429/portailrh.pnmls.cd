@@ -283,7 +283,7 @@ class Agent extends Authenticatable
         if ($this->role) {
             return $this->role->permissions;
         }
-        return $this->permissions;
+        return $this->permissions()->get();
     }
 }
 

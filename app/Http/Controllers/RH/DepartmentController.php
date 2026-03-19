@@ -46,7 +46,7 @@ class DepartmentController extends Controller
 
         Department::create($validated);
 
-        return redirect()->route('departments.index')
+        return redirect()->route('rh.departments.index')
             ->with('success', 'Département créé avec succès');
     }
 
@@ -84,7 +84,7 @@ class DepartmentController extends Controller
 
         $department->update($validated);
 
-        return redirect()->route('departments.show', $department)
+        return redirect()->route('rh.departments.show', $department)
             ->with('success', 'Département modifié avec succès');
     }
 
@@ -95,7 +95,7 @@ class DepartmentController extends Controller
     {
         $department->delete();
 
-        return redirect()->route('departments.index')
+        return redirect()->route('rh.departments.index')
             ->with('success', 'Département supprimé avec succès');
     }
 }

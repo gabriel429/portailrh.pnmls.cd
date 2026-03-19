@@ -9,6 +9,7 @@ class Document extends Model
 {
     protected $fillable = [
         'agent_id',
+        'name',
         'type',
         'fichier',
         'description',

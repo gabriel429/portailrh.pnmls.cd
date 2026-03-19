@@ -52,7 +52,7 @@ class DocumentController extends Controller
 
         Document::create($validated);
 
-        return redirect()->route('documents.index')
+        return redirect()->route('rh.documents.index')
             ->with('success', 'Document créé avec succès');
     }
 
@@ -88,7 +88,7 @@ class DocumentController extends Controller
 
         $document->update($validated);
 
-        return redirect()->route('documents.show', $document)
+        return redirect()->route('rh.documents.show', $document)
             ->with('success', 'Document modifié avec succès');
     }
 
@@ -99,7 +99,7 @@ class DocumentController extends Controller
     {
         $document->delete();
 
-        return redirect()->route('documents.index')
+        return redirect()->route('rh.documents.index')
             ->with('success', 'Document supprimé avec succès');
     }
 }

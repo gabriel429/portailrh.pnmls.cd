@@ -38,8 +38,7 @@ class RoleController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nom' => 'required|unique:roles',
-            'code' => 'required|unique:roles',
+            'nom_role' => 'required|unique:roles,nom_role',
             'description' => 'nullable|string',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
@@ -51,7 +50,7 @@ class RoleController extends Controller
         $role = Role::create($validated);
         $role->permissions()->sync($permissions);
 
-        return redirect()->route('roles.index')
+        return redirect()->route('rh.roles.index')
             ->with('success', 'Rôle créé avec succès');
     }
 
@@ -82,7 +81,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role): RedirectResponse
     {
         $validated = $request->validate([
-            'nom' => 'required|unique:roles,nom,' . $role->id,
+            'nom_role' => 'required|unique:roles,nom_role,' . $role->id,
             'description' => 'nullable|string',
             'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
@@ -94,7 +93,7 @@ class RoleController extends Controller
         $role->update($validated);
         $role->permissions()->sync($permissions);
 
-        return redirect()->route('roles.show', $role)
+        return redirect()->route('rh.roles.show', $role)
             ->with('success', 'Rôle modifié avec succès');
     }
 
@@ -106,7 +105,7 @@ class RoleController extends Controller
         $role->permissions()->detach();
         $role->delete();
 
-        return redirect()->route('roles.index')
+        return redirect()->route('rh.roles.index')
             ->with('success', 'Rôle supprimé avec succès');
     }
 }
