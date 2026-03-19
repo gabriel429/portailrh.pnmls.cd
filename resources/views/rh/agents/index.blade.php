@@ -72,7 +72,7 @@
                                         <th>Email professionnel</th>
                                         <th>Poste</th>
                                         <th>Role</th>
-                                        <th>Departement</th>
+                                        <th>{{ $organeKey === 'Secrétariat Exécutif National' ? 'Service rattaché au SEN' : 'Departement' }}</th>
                                         <th>Statut</th>
                                         <th>Actions</th>
                                     </tr>
