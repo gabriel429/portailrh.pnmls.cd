@@ -73,7 +73,7 @@
                                         <th>Poste</th>
                                         <th>Role</th>
                                         @if($organeKey === 'Secrétariat Exécutif National')
-                                            <th>Service rattaché au SEN</th>
+                                            <th>Département/Service</th>
                                         @else
                                             <th>Province</th>
                                         @endif
