@@ -239,6 +239,13 @@ class AgentController extends Controller
             unset($validated['domaine_etudes']);
         }
 
+        // Populate email column from email_professionnel or email_prive
+        if (Schema::hasColumn('agents', 'email')) {
+            $validated['email'] = $validated['email_professionnel']
+                ?? $validated['email_prive']
+                ?? null;
+        }
+
         Agent::create($validated);
 
         return redirect()->route('rh.agents.index')
@@ -376,6 +383,13 @@ class AgentController extends Controller
         // Remove domaine_etudes if column doesn't exist yet
         if (!Schema::hasColumn('agents', 'domaine_etudes')) {
             unset($validated['domaine_etudes']);
+        }
+
+        // Populate email column from email_professionnel or email_prive
+        if (Schema::hasColumn('agents', 'email')) {
+            $validated['email'] = $validated['email_professionnel']
+                ?? $validated['email_prive']
+                ?? $agent->email;
         }
 
         if ($request->hasFile('photo')) {

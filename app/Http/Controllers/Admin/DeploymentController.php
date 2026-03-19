@@ -1036,4 +1036,51 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Pull latest code from GitHub, clear caches, and run migrations.
+     */
+    public function gitPull()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $root = base_path();
+            $php = PHP_BINARY;
+
+            // Use Hostinger PHP path if available
+            if (file_exists('/opt/alt/php83/usr/bin/php')) {
+                $php = '/opt/alt/php83/usr/bin/php';
+            }
+
+            $output_messages[] = "=== Git Pull origin main ===";
+            $gitOutput = shell_exec("cd {$root} && git pull origin main 2>&1");
+            $output_messages[] = $gitOutput ?: '(aucune sortie)';
+
+            $output_messages[] = "=== Nettoyage des caches ===";
+            Artisan::call('config:clear');
+            $output_messages[] = Artisan::output();
+            Artisan::call('route:clear');
+            $output_messages[] = Artisan::output();
+            Artisan::call('view:clear');
+            $output_messages[] = Artisan::output();
+
+            $output_messages[] = "=== Migration ===";
+            Artisan::call('migrate', ['--force' => true]);
+            $output_messages[] = Artisan::output();
+
+            $output_messages[] = "Déploiement Git terminé avec succès!";
+            $success = true;
+
+        } catch (\Exception $e) {
+            $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

@@ -35,6 +35,25 @@
 @endif
 
 <div class="row">
+    {{-- Git Pull - Deployer les modifications --}}
+    <div class="col-lg-12 mb-4">
+        <div class="form-card" style="border-left: 4px solid #0d6efd;">
+            <h5 class="mb-3">
+                <i class="fab fa-github me-2" style="color: #0d6efd;"></i>
+                Deployer les modifications (Git Pull)
+            </h5>
+            <p class="text-muted mb-3">
+                <strong>Action principale :</strong> Tire les dernières modifications depuis GitHub (<code>git pull origin main</code>), nettoie les caches et applique les migrations automatiquement.
+            </p>
+            <form action="{{ route('admin.deployment.git-pull') }}" method="POST" onsubmit="return confirm('Deployer les dernieres modifications depuis GitHub ?');">
+                @csrf
+                <button type="submit" class="btn btn-primary btn-lg">
+                    <i class="fas fa-cloud-download-alt me-2"></i> Deployer les modifications
+                </button>
+            </form>
+        </div>
+    </div>
+
     {{-- Migration Standard --}}
     <div class="col-lg-6 mb-4">
         <div class="form-card">
