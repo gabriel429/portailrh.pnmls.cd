@@ -91,7 +91,7 @@
                                             <td>{{ $agent->poste_actuel ?? 'N/A' }}</td>
                                             <td>
                                                 @if($agent->role)
-                                                    <span class="rh-pill st-mid">{{ $agent->role->nom_role }}</span>
+                                                    <span class="rh-pill st-mid">{{ $agent->role->nom }}</span>
                                                 @else
                                                     <span class="rh-pill st-neutral">Non assigne</span>
                                                 @endif
@@ -297,7 +297,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         let badgeRole = agent.role
-            ? `<span class="rh-pill st-mid">${agent.role.nom_role}</span>`
+            ? `<span class="rh-pill st-mid">${agent.role.nom}</span>`
             : '<span class="rh-pill st-neutral">Non assigne</span>';
 
         const html = `
