@@ -72,7 +72,11 @@
                                         <th>Email professionnel</th>
                                         <th>Poste</th>
                                         <th>Role</th>
-                                        <th>{{ $organeKey === 'Secrétariat Exécutif National' ? 'Service rattaché au SEN' : 'Departement' }}</th>
+                                        @if($organeKey === 'Secrétariat Exécutif National')
+                                            <th>Service rattaché au SEN</th>
+                                        @else
+                                            <th>Province</th>
+                                        @endif
                                         <th>Statut</th>
                                         <th>Actions</th>
                                     </tr>
@@ -92,7 +96,13 @@
                                                     <span class="rh-pill st-neutral">Non assigne</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $agent->departement?->nom ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($agent->organe === 'Secrétariat Exécutif National')
+                                                    {{ $agent->departement?->nom ?? 'N/A' }}
+                                                @else
+                                                    {{ $agent->province?->nom ?? 'N/A' }}
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if($agent->statut === 'actif')
                                                     <span class="rh-pill st-ok">Actif</span>
