@@ -1,146 +1,140 @@
 <template>
-  <div class="py-4">
-    <!-- Loading -->
-    <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Chargement...</span>
-      </div>
-    </div>
-
-    <div v-else-if="demande" class="row justify-content-center" id="demande-print-area">
-      <div class="col-lg-8">
-        <!-- Header -->
-        <div class="mb-4">
-          <router-link :to="{ name: 'requests.index' }" class="text-muted text-decoration-none small">
-            <i class="fas fa-arrow-left me-1"></i> Retour
-          </router-link>
-          <h4 class="mt-2"><i class="fas fa-file-alt me-2"></i> Demande #{{ demande.id }}</h4>
+  <div class="rh-modern">
+    <div class="rh-shell">
+      <!-- Loading -->
+      <div v-if="loading" class="text-center py-5">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Chargement...</span>
         </div>
+      </div>
 
-        <div class="card border-0 shadow-sm mb-4">
-          <div class="card-body p-4">
-
-            <!-- Status & date -->
-            <div class="d-flex justify-content-between align-items-start mb-4">
-              <div>
-                <h6 class="text-muted mb-1">Statut</h6>
-                <span :class="statusBadgeClass(demande.statut)" style="font-size:1em;">
+      <template v-else-if="demande">
+        <!-- Hero -->
+        <section class="rh-hero">
+          <div class="row g-3 align-items-center">
+            <div class="col-lg-8">
+              <router-link :to="{ name: 'requests.index' }" class="back-link">
+                <i class="fas fa-arrow-left me-1"></i> Retour aux demandes
+              </router-link>
+              <h1 class="rh-title mt-2"><i class="fas fa-file-alt me-2"></i>Demande #{{ demande.id }}</h1>
+              <p class="rh-sub">Soumise le {{ formatDateTime(demande.created_at) }}</p>
+            </div>
+            <div class="col-lg-4">
+              <div class="hero-tools">
+                <span :class="statusHeroBadge(demande.statut)">
+                  <i :class="statusIcon(demande.statut)" class="me-1"></i>
                   {{ statusLabel(demande.statut) }}
                 </span>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <div id="demande-print-area">
+          <!-- Info cards -->
+          <div class="info-row mt-3">
+            <div class="dash-panel info-card">
+              <div class="info-icon blue"><i class="fas fa-user"></i></div>
               <div>
-                <small class="text-muted">Creee le {{ formatDateTime(demande.created_at) }}</small>
+                <div class="info-label">Agent</div>
+                <div class="info-value">{{ demande.agent?.prenom }} {{ demande.agent?.nom }}</div>
+                <div class="info-sub">{{ demande.agent?.id_agent }} · {{ demande.agent?.poste_actuel }}</div>
               </div>
             </div>
-
-            <hr>
-
-            <!-- Agent info -->
-            <div class="mb-4">
-              <h6 class="mb-3">Agent</h6>
-              <div class="d-flex align-items-center">
-                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3"
-                     style="width:40px;height:40px;font-size:.8rem;font-weight:700;">
-                  {{ initials(demande.agent) }}
+            <div class="dash-panel info-card">
+              <div class="info-icon teal"><i class="fas fa-tag"></i></div>
+              <div>
+                <div class="info-label">Type de demande</div>
+                <div class="info-value">{{ formatType(demande.type) }}</div>
+              </div>
+            </div>
+            <div class="dash-panel info-card">
+              <div class="info-icon purple"><i class="fas fa-calendar-alt"></i></div>
+              <div>
+                <div class="info-label">Periode</div>
+                <div class="info-value">
+                  {{ formatDate(demande.date_debut) }}
+                  <template v-if="demande.date_fin"> - {{ formatDate(demande.date_fin) }}</template>
                 </div>
-                <div>
-                  <strong>{{ demande.agent?.prenom }} {{ demande.agent?.nom }}</strong>
-                  <br>
-                  <small class="text-muted">{{ demande.agent?.id_agent }}</small>
-                  <br>
-                  <small class="text-muted">{{ demande.agent?.poste_actuel }}</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="dash-panel mt-3">
+            <div class="panel-header">
+              <h6 class="panel-title"><i class="fas fa-align-left me-2"></i> Description</h6>
+            </div>
+            <div class="panel-body">
+              <p class="desc-text">{{ demande.description }}</p>
+            </div>
+          </div>
+
+          <!-- Remarques -->
+          <div v-if="demande.remarques" class="dash-panel mt-3">
+            <div class="panel-header">
+              <h6 class="panel-title"><i class="fas fa-comment-alt me-2"></i> Remarques RH</h6>
+            </div>
+            <div class="panel-body">
+              <div class="remark-box">
+                <i class="fas fa-quote-left remark-icon"></i>
+                <p class="mb-0">{{ demande.remarques }}</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Lettre de demande -->
+          <div v-if="demande.lettre_demande" class="dash-panel mt-3">
+            <div class="panel-header">
+              <h6 class="panel-title"><i class="fas fa-paperclip me-2"></i> Lettre de demande</h6>
+            </div>
+            <div class="panel-body">
+              <div class="file-box">
+                <div class="file-icon"><i class="fas fa-file-alt"></i></div>
+                <div class="file-info">
+                  <span class="file-name">{{ fileName(demande.lettre_demande) }}</span>
                 </div>
-              </div>
-            </div>
-
-            <hr>
-
-            <!-- Request details -->
-            <div class="row mb-4">
-              <div class="col-md-6">
-                <h6 class="mb-2">Type</h6>
-                <span class="badge bg-info text-dark">{{ formatType(demande.type) }}</span>
-              </div>
-              <div class="col-md-6">
-                <h6 class="mb-2">Periode</h6>
-                <p class="mb-0">
-                  Du <strong>{{ formatDate(demande.date_debut) }}</strong>
-                  <template v-if="demande.date_fin">
-                    au <strong>{{ formatDate(demande.date_fin) }}</strong>
-                  </template>
-                </p>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="mb-4">
-              <h6 class="mb-2">Description</h6>
-              <div class="bg-light p-3 rounded">{{ demande.description }}</div>
-            </div>
-
-            <!-- Remarques -->
-            <div v-if="demande.remarques" class="mb-4">
-              <h6 class="mb-2">Remarques</h6>
-              <div class="alert alert-info mb-0">{{ demande.remarques }}</div>
-            </div>
-
-            <!-- Lettre de demande -->
-            <div v-if="demande.lettre_demande" class="mb-4">
-              <h6 class="mb-2"><i class="fas fa-paperclip me-1"></i> Lettre de demande</h6>
-              <div class="d-flex align-items-center gap-2 p-3 bg-light rounded">
-                <i class="fas fa-file-alt text-primary" style="font-size:1.3rem;"></i>
-                <div class="flex-grow-1">
-                  <span class="fw-semibold">{{ fileName(demande.lettre_demande) }}</span>
-                </div>
-                <a :href="storageUrl(demande.lettre_demande)" target="_blank" class="btn btn-sm btn-outline-primary">
+                <a :href="storageUrl(demande.lettre_demande)" target="_blank" class="btn-rh outline">
                   <i class="fas fa-download me-1"></i> Telecharger
                 </a>
               </div>
             </div>
-
-            <hr>
-
-            <!-- Action buttons -->
-            <div class="d-flex gap-2 justify-content-end flex-wrap">
-              <router-link :to="{ name: 'requests.index' }" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-2"></i> Retour
-              </router-link>
-
-              <!-- RH: approve / reject button (links to edit page) -->
-              <router-link
-                v-if="isRH"
-                :to="{ name: 'requests.edit', params: { id: demande.id } }"
-                class="btn btn-warning"
-              >
-                <i class="fas fa-edit me-2"></i> Modifier le statut
-              </router-link>
-
-              <!-- Print button -->
-              <button class="btn btn-success" @click="handlePrint">
-                <i class="fas fa-print me-2"></i> Imprimer
-              </button>
-
-              <!-- Delete (own request & en_attente, or RH) -->
-              <button
-                v-if="canDelete"
-                class="btn btn-danger"
-                @click="showDeleteModal = true"
-              >
-                <i class="fas fa-trash me-2"></i> Supprimer
-              </button>
-            </div>
           </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Error / not found -->
-    <div v-else class="text-center py-5">
-      <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3 d-block"></i>
-      <h5>Demande introuvable</h5>
-      <router-link :to="{ name: 'requests.index' }" class="btn btn-primary mt-3">
-        <i class="fas fa-arrow-left me-2"></i> Retour aux demandes
-      </router-link>
+        <!-- Action buttons -->
+        <div class="action-bar mt-3">
+          <router-link :to="{ name: 'requests.index' }" class="btn-rh outline">
+            <i class="fas fa-arrow-left me-1"></i> Retour
+          </router-link>
+          <div class="d-flex gap-2 flex-wrap">
+            <button class="btn-rh success" @click="handlePrint">
+              <i class="fas fa-print me-1"></i> Imprimer
+            </button>
+            <router-link
+              v-if="isRH"
+              :to="{ name: 'requests.edit', params: { id: demande.id } }"
+              class="btn-rh warning"
+            >
+              <i class="fas fa-edit me-1"></i> Modifier le statut
+            </router-link>
+            <button v-if="canDelete" class="btn-rh danger" @click="showDeleteModal = true">
+              <i class="fas fa-trash me-1"></i> Supprimer
+            </button>
+          </div>
+        </div>
+      </template>
+
+      <!-- Not found -->
+      <div v-else class="dash-panel mt-3">
+        <div class="p-5 text-center">
+          <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3 d-block"></i>
+          <h5>Demande introuvable</h5>
+          <router-link :to="{ name: 'requests.index' }" class="btn-rh main mt-3">
+            <i class="fas fa-arrow-left me-1"></i> Retour aux demandes
+          </router-link>
+        </div>
+      </div>
     </div>
 
     <!-- Confirm delete modal -->
@@ -181,11 +175,6 @@ const canDelete = computed(() => {
   return isOwner.value && demande.value.statut === 'en_attente'
 })
 
-function initials(agent) {
-  if (!agent) return ''
-  return ((agent.prenom || '').charAt(0) + (agent.nom || '').charAt(0)).toUpperCase()
-}
-
 function formatDate(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
@@ -214,14 +203,25 @@ function statusLabel(statut) {
   return labels[statut] || statut
 }
 
-function statusBadgeClass(statut) {
-  const classes = {
-    en_attente: 'badge bg-warning text-dark',
-    'approuvé': 'badge bg-success',
-    'rejeté': 'badge bg-danger',
-    'annulé': 'badge bg-secondary',
+function statusIcon(statut) {
+  const icons = {
+    en_attente: 'fas fa-hourglass-half',
+    'approuvé': 'fas fa-check-circle',
+    'rejeté': 'fas fa-times-circle',
+    'annulé': 'fas fa-ban',
   }
-  return classes[statut] || 'badge bg-secondary'
+  return icons[statut] || 'fas fa-circle'
+}
+
+function statusHeroBadge(statut) {
+  const base = 'hero-status-badge'
+  const colors = {
+    en_attente: 'warning',
+    'approuvé': 'success',
+    'rejeté': 'danger',
+    'annulé': 'secondary',
+  }
+  return `${base} ${colors[statut] || 'secondary'}`
 }
 
 function fileName(path) {
@@ -272,11 +272,72 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.back-link { color: rgba(255,255,255,.7); text-decoration: none; font-size: .85rem; transition: color .2s; }
+.back-link:hover { color: #fff; }
+
+/* Hero status badge */
+.hero-status-badge { display: inline-flex; align-items: center; padding: .5rem 1.25rem; border-radius: 12px; font-weight: 700; font-size: .9rem; }
+.hero-status-badge.warning { background: rgba(245,158,11,.2); color: #fcd34d; }
+.hero-status-badge.success { background: rgba(34,197,94,.2); color: #86efac; }
+.hero-status-badge.danger { background: rgba(239,68,68,.2); color: #fca5a5; }
+.hero-status-badge.secondary { background: rgba(148,163,184,.2); color: #cbd5e1; }
+
+/* Info row */
+.info-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.info-card { display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem; }
+.info-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+.info-icon.blue { background: #dbeafe; color: #2563eb; }
+.info-icon.teal { background: #ccfbf1; color: #0d9488; }
+.info-icon.purple { background: #ede9fe; color: #7c3aed; }
+.info-label { font-size: .72rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+.info-value { font-size: .92rem; font-weight: 700; color: #1e293b; margin-top: .15rem; }
+.info-sub { font-size: .78rem; color: #94a3b8; margin-top: .1rem; }
+
+/* Panel */
+.panel-header { padding: 1rem 1.25rem; border-bottom: 1px solid #f1f5f9; }
+.panel-title { margin: 0; font-size: .88rem; font-weight: 700; color: #334155; }
+.panel-body { padding: 1.25rem; }
+
+.desc-text { margin: 0; font-size: .9rem; line-height: 1.7; color: #334155; white-space: pre-wrap; }
+
+.remark-box { background: #eff6ff; border-left: 4px solid #0077B5; border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; position: relative; font-size: .88rem; color: #334155; line-height: 1.6; }
+.remark-icon { position: absolute; top: .5rem; left: .75rem; color: #93c5fd; font-size: .7rem; }
+
+/* File box */
+.file-box { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; }
+.file-icon { width: 42px; height: 42px; border-radius: 10px; background: #dbeafe; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.file-info { flex-grow: 1; min-width: 0; }
+.file-name { font-weight: 600; font-size: .88rem; color: #1e293b; word-break: break-all; }
+
+/* Action bar */
+.action-bar { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; flex-wrap: wrap; gap: .75rem; }
+
+/* Buttons */
+.btn-rh { display: inline-flex; align-items: center; gap: .35rem; padding: .55rem 1.25rem; border-radius: 10px; font-weight: 600; font-size: .85rem; border: none; cursor: pointer; transition: all .2s; text-decoration: none; }
+.btn-rh.main { background: linear-gradient(135deg, #0077B5, #005a87); color: #fff; }
+.btn-rh.main:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,119,181,.3); }
+.btn-rh.outline { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.btn-rh.outline:hover { background: #f8fafc; color: #334155; }
+.btn-rh.success { background: #16a34a; color: #fff; }
+.btn-rh.success:hover { background: #15803d; }
+.btn-rh.warning { background: #d97706; color: #fff; }
+.btn-rh.warning:hover { background: #b45309; }
+.btn-rh.danger { background: #ef4444; color: #fff; }
+.btn-rh.danger:hover { background: #dc2626; }
+
 @media (max-width: 767.98px) {
-    .card { border-radius: 12px; }
-    .card-header { padding: .75rem 1rem; font-size: .88rem; }
-    .card-body { padding: .85rem; }
-    .badge { font-size: .7rem; }
-    .btn-sm { font-size: .78rem; }
+  .info-row { grid-template-columns: 1fr; }
+  .info-card { padding: 1rem; }
+  .hero-status-badge { font-size: .8rem; padding: .4rem 1rem; }
+  .file-box { flex-direction: column; text-align: center; gap: .75rem; }
+  .action-bar { flex-direction: column; align-items: stretch; }
+  .action-bar > div { display: flex; flex-direction: column; gap: .5rem; }
+  .btn-rh { justify-content: center; width: 100%; }
+}
+
+@media print {
+  .rh-hero, .action-bar { display: none !important; }
+  .rh-modern { background: #fff !important; padding: 0 !important; }
+  .dash-panel { box-shadow: none !important; border: 1px solid #ddd !important; }
 }
 </style>
