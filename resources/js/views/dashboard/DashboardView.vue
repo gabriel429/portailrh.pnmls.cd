@@ -271,6 +271,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.user-dashboard {
+  padding-top: 1.5rem;
+}
+
 /* ═══════════════════════════════════════════
    Hero Welcome Banner
    ═══════════════════════════════════════════ */
