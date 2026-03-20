@@ -1,117 +1,129 @@
 <template>
-  <div class="py-4">
-    <!-- Hero Header -->
-    <div class="docs-hero mb-4">
-      <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+  <div class="container py-4">
+    <!-- Hero -->
+    <div class="doc-hero">
+      <div class="doc-hero-content">
         <div>
-          <h2 class="fw-bold mb-1">
-            <i class="fas fa-folder-open me-2"></i>Gestion Electronique de Documents
-          </h2>
-          <p class="mb-0 opacity-75">Organisez, consultez et gerez vos documents en toute simplicite</p>
+          <h2><i class="fas fa-folder-open me-2"></i>Gestion Electronique de Documents</h2>
+          <p>Organisez, consultez et gerez vos documents en toute simplicite</p>
         </div>
-        <router-link :to="{ name: 'documents.create' }" class="btn btn-upload">
+        <router-link :to="{ name: 'documents.create' }" class="doc-upload-btn">
           <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
         </router-link>
       </div>
-    </div>
-
-    <!-- Stats Pills -->
-    <div class="row g-3 mb-4">
-      <div class="col-6 col-md">
-        <div class="stat-pill">
-          <div class="stat-pill-icon" style="background:#e6f7ef;color:#28a745;">
-            <i class="fas fa-file-alt"></i>
-          </div>
-          <div>
-            <div class="stat-pill-val">{{ stats.total }}</div>
-            <div class="stat-pill-label">Total</div>
-          </div>
+      <div class="doc-hero-stats">
+        <div>
+          <div class="doc-hero-stat-val">{{ stats.total }}</div>
+          <div class="doc-hero-stat-lbl">Total</div>
         </div>
-      </div>
-      <div class="col-6 col-md">
-        <div class="stat-pill">
-          <div class="stat-pill-icon" style="background:#e8f4fd;color:#0077B5;">
-            <i class="fas fa-id-card"></i>
-          </div>
-          <div>
-            <div class="stat-pill-val">{{ stats.identite }}</div>
-            <div class="stat-pill-label">Identite</div>
-          </div>
+        <div>
+          <div class="doc-hero-stat-val">{{ stats.identite }}</div>
+          <div class="doc-hero-stat-lbl">Identite</div>
         </div>
-      </div>
-      <div class="col-6 col-md">
-        <div class="stat-pill">
-          <div class="stat-pill-icon" style="background:#fff3e0;color:#e67e22;">
-            <i class="fas fa-graduation-cap"></i>
-          </div>
-          <div>
-            <div class="stat-pill-val">{{ stats.parcours }}</div>
-            <div class="stat-pill-label">Parcours</div>
-          </div>
+        <div>
+          <div class="doc-hero-stat-val">{{ stats.parcours }}</div>
+          <div class="doc-hero-stat-lbl">Parcours</div>
         </div>
-      </div>
-      <div class="col-6 col-md">
-        <div class="stat-pill">
-          <div class="stat-pill-icon" style="background:#ede9fe;color:#7c3aed;">
-            <i class="fas fa-briefcase"></i>
-          </div>
-          <div>
-            <div class="stat-pill-val">{{ stats.carriere }}</div>
-            <div class="stat-pill-label">Carriere</div>
-          </div>
+        <div>
+          <div class="doc-hero-stat-val">{{ stats.carriere }}</div>
+          <div class="doc-hero-stat-lbl">Carriere</div>
         </div>
-      </div>
-      <div class="col-6 col-md">
-        <div class="stat-pill">
-          <div class="stat-pill-icon" style="background:#e6f7ef;color:#28a745;">
-            <i class="fas fa-plane"></i>
-          </div>
-          <div>
-            <div class="stat-pill-val">{{ stats.mission }}</div>
-            <div class="stat-pill-label">Mission</div>
-          </div>
+        <div>
+          <div class="doc-hero-stat-val">{{ stats.mission }}</div>
+          <div class="doc-hero-stat-lbl">Mission</div>
         </div>
       </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="filter-card mb-4">
-      <div class="row g-3 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label fw-semibold">
-            <i class="fas fa-filter me-1" style="color:#0077B5;"></i>Categorie
-          </label>
-          <select v-model="filters.categorie" class="form-select" @change="fetchDocuments(1)">
-            <option value="">Toutes les categories</option>
-            <option value="identite">Identite</option>
-            <option value="parcours">Parcours</option>
-            <option value="carriere">Carriere</option>
-            <option value="mission">Mission</option>
-          </select>
+    <!-- Category filter cards -->
+    <div class="doc-cat-grid">
+      <button
+        class="doc-cat-all"
+        :class="{ active: !filters.categorie }"
+        @click="filters.categorie = ''; fetchDocuments(1)"
+      >
+        <div class="doc-cat-icon"><i class="fas fa-th-large"></i></div>
+        <div class="doc-cat-info">
+          <div class="doc-cat-name">Toutes</div>
+          <div class="doc-cat-count">{{ stats.total }} document{{ stats.total > 1 ? 's' : '' }}</div>
         </div>
-        <div class="col-md-5">
-          <label class="form-label fw-semibold">
-            <i class="fas fa-search me-1" style="color:#0077B5;"></i>Recherche
-          </label>
-          <input
-            v-model="filters.search"
-            type="text"
-            class="form-control"
-            placeholder="Rechercher un document..."
-            @keyup.enter="fetchDocuments(1)"
-          />
+      </button>
+      <button
+        class="doc-cat-card"
+        :class="{ active: filters.categorie === 'identite' }"
+        @click="filters.categorie = 'identite'; fetchDocuments(1)"
+      >
+        <div class="doc-cat-icon"><i class="fas fa-id-card"></i></div>
+        <div class="doc-cat-info">
+          <div class="doc-cat-name">Identite</div>
+          <div class="doc-cat-count">{{ stats.identite }} document{{ stats.identite > 1 ? 's' : '' }}</div>
         </div>
-        <div class="col-md-3">
-          <div class="d-flex gap-2">
-            <button class="btn btn-primary-custom flex-grow-1" @click="fetchDocuments(1)">
-              <i class="fas fa-search me-1"></i>Filtrer
-            </button>
-            <button class="btn btn-reset" @click="resetFilters">
-              <i class="fas fa-redo"></i>
-            </button>
-          </div>
+      </button>
+      <button
+        class="doc-cat-card"
+        :class="{ active: filters.categorie === 'parcours' }"
+        @click="filters.categorie = 'parcours'; fetchDocuments(1)"
+      >
+        <div class="doc-cat-icon"><i class="fas fa-graduation-cap"></i></div>
+        <div class="doc-cat-info">
+          <div class="doc-cat-name">Parcours</div>
+          <div class="doc-cat-count">{{ stats.parcours }} document{{ stats.parcours > 1 ? 's' : '' }}</div>
         </div>
+      </button>
+      <button
+        class="doc-cat-card"
+        :class="{ active: filters.categorie === 'carriere' }"
+        @click="filters.categorie = 'carriere'; fetchDocuments(1)"
+      >
+        <div class="doc-cat-icon"><i class="fas fa-briefcase"></i></div>
+        <div class="doc-cat-info">
+          <div class="doc-cat-name">Carriere</div>
+          <div class="doc-cat-count">{{ stats.carriere }} document{{ stats.carriere > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+      <button
+        class="doc-cat-card"
+        :class="{ active: filters.categorie === 'mission' }"
+        @click="filters.categorie = 'mission'; fetchDocuments(1)"
+      >
+        <div class="doc-cat-icon"><i class="fas fa-plane"></i></div>
+        <div class="doc-cat-info">
+          <div class="doc-cat-name">Mission</div>
+          <div class="doc-cat-count">{{ stats.mission }} document{{ stats.mission > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Search bar -->
+    <div class="doc-search-bar">
+      <div class="doc-search-input-wrap">
+        <i class="fas fa-search doc-search-icon"></i>
+        <input
+          v-model="filters.search"
+          type="text"
+          class="doc-search-input"
+          placeholder="Rechercher un document..."
+          @keyup.enter="fetchDocuments(1)"
+        />
       </div>
+      <button class="doc-search-btn" @click="fetchDocuments(1)">
+        <i class="fas fa-search me-1"></i>Filtrer
+      </button>
+      <button v-if="filters.search || filters.categorie" class="doc-reset-btn" @click="resetFilters">
+        <i class="fas fa-redo"></i>
+      </button>
+    </div>
+
+    <!-- Section header when filtered -->
+    <div v-if="filters.categorie" class="doc-section-header">
+      <div class="doc-section-title">
+        <i class="fas fa-folder-open" style="color:#0077B5;"></i>
+        {{ getCategoryLabel(filters.categorie) }}
+        <span class="doc-section-badge">{{ meta.total }} document{{ meta.total > 1 ? 's' : '' }}</span>
+      </div>
+      <button class="doc-back-btn" @click="resetFilters">
+        <i class="fas fa-arrow-left"></i> Toutes les categories
+      </button>
     </div>
 
     <!-- Loading State -->
@@ -123,85 +135,86 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="documents.length === 0" class="empty-state">
-      <div class="empty-state-icon">
-        <i class="fas fa-folder-open"></i>
-      </div>
-      <h5>Aucun document trouve</h5>
-      <p>Vous n'avez pas encore de documents dans votre dossier. Commencez par uploader votre premier document.</p>
-      <router-link :to="{ name: 'documents.create' }" class="btn btn-primary-custom">
-        <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
-      </router-link>
+    <div v-else-if="documents.length === 0" class="doc-empty">
+      <div class="doc-empty-icon"><i class="fas fa-folder-open"></i></div>
+      <template v-if="filters.categorie">
+        <h5>Aucun document dans &laquo; {{ getCategoryLabel(filters.categorie) }} &raquo;</h5>
+        <p>Il n'y a pas encore de documents dans cette categorie.</p>
+        <button class="doc-back-btn mt-3" style="display:inline-flex;" @click="resetFilters">
+          <i class="fas fa-arrow-left"></i> Voir toutes les categories
+        </button>
+      </template>
+      <template v-else>
+        <h5>Aucun document trouve</h5>
+        <p>Vous n'avez pas encore de documents dans votre dossier. Commencez par uploader votre premier document.</p>
+        <router-link :to="{ name: 'documents.create' }" class="doc-upload-action">
+          <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
+        </router-link>
+      </template>
     </div>
 
     <!-- Documents Grid -->
-    <div v-else class="row g-3">
-      <div v-for="doc in documents" :key="doc.id" class="col-md-6 col-lg-4">
-        <div class="doc-card">
+    <template v-else>
+      <div class="doc-grid">
+        <div v-for="doc in documents" :key="doc.id" class="doc-card">
           <div class="doc-card-top">
-            <div :class="['doc-icon-wrap', getFileIconClass(doc)]">
+            <div class="doc-card-icon" :class="getFileIconClass(doc)">
               <i :class="getFileIcon(doc)"></i>
             </div>
             <div class="doc-card-info">
-              <h6>{{ getDocName(doc) }}</h6>
-              <div v-if="getDocDescription(doc)" class="doc-card-desc">
-                {{ getDocDescription(doc) }}
-              </div>
-              <div class="mb-2">
-                <span :class="['doc-badge', doc.type]">
-                  <i :class="getCategoryIcon(doc.type)"></i>
-                  {{ getCategoryLabel(doc.type) }}
-                </span>
-              </div>
-              <div class="doc-meta">
-                <span><i class="fas fa-calendar-alt"></i> {{ formatDate(doc.created_at) }}</span>
-              </div>
+              <div class="doc-card-title">{{ getDocName(doc) }}</div>
+              <div v-if="getDocDescription(doc)" class="doc-card-desc">{{ getDocDescription(doc) }}</div>
             </div>
           </div>
-          <div class="doc-card-actions">
-            <router-link :to="{ name: 'documents.show', params: { id: doc.id } }" class="doc-action view">
-              <i class="fas fa-eye"></i> Voir
-            </router-link>
-            <button class="doc-action download" @click="handleDownload(doc)">
-              <i class="fas fa-download"></i> Telecharger
-            </button>
-            <button class="doc-action delete" @click="confirmDelete(doc)">
-              <i class="fas fa-trash-alt"></i> Supprimer
-            </button>
+          <div class="doc-card-meta">
+            <span class="doc-meta-badge doc-meta-cat" :class="doc.type">
+              <i :class="getCategoryIcon(doc.type)" class="me-1"></i>{{ getCategoryLabel(doc.type) }}
+            </span>
+            <span class="doc-meta-badge">.{{ getFileExtension(doc).toUpperCase() }}</span>
+          </div>
+          <div class="doc-card-footer">
+            <span class="doc-card-date"><i class="fas fa-clock me-1"></i>{{ formatDate(doc.created_at) }}</span>
+            <div class="doc-card-actions">
+              <router-link :to="{ name: 'documents.show', params: { id: doc.id } }" class="doc-action-btn doc-action-view">
+                <i class="fas fa-eye"></i> Voir
+              </router-link>
+              <button class="doc-action-btn doc-action-download" @click="handleDownload(doc)">
+                <i class="fas fa-download"></i> Telecharger
+              </button>
+              <button class="doc-action-btn doc-action-delete" @click="confirmDelete(doc)">
+                <i class="fas fa-trash-alt"></i> Supprimer
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- Pagination -->
-    <div v-if="meta.total > 0 && meta.last_page > 1" class="pagination-wrap mt-4">
-      <div class="page-info">
-        Affichage <strong>{{ meta.from }}</strong> a <strong>{{ meta.to }}</strong>
-        sur <strong>{{ meta.total }}</strong> documents
+      <!-- Pagination -->
+      <div v-if="meta.total > 0 && meta.last_page > 1" class="doc-pagination">
+        <div class="doc-page-info">
+          Affichage <strong>{{ meta.from }}</strong> a <strong>{{ meta.to }}</strong>
+          sur <strong>{{ meta.total }}</strong> documents
+        </div>
+        <nav>
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" :class="{ disabled: meta.current_page <= 1 }">
+              <button class="page-link" @click="fetchDocuments(meta.current_page - 1)">&laquo;</button>
+            </li>
+            <li
+              v-for="page in visiblePages"
+              :key="page"
+              class="page-item"
+              :class="{ active: page === meta.current_page }"
+            >
+              <button class="page-link" @click="fetchDocuments(page)">{{ page }}</button>
+            </li>
+            <li class="page-item" :class="{ disabled: meta.current_page >= meta.last_page }">
+              <button class="page-link" @click="fetchDocuments(meta.current_page + 1)">&raquo;</button>
+            </li>
+          </ul>
+        </nav>
       </div>
-      <nav>
-        <ul class="pagination mb-0">
-          <li class="page-item" :class="{ disabled: meta.current_page <= 1 }">
-            <button class="page-link" @click="fetchDocuments(meta.current_page - 1)">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-          </li>
-          <li
-            v-for="page in visiblePages"
-            :key="page"
-            class="page-item"
-            :class="{ active: page === meta.current_page }"
-          >
-            <button class="page-link" @click="fetchDocuments(page)">{{ page }}</button>
-          </li>
-          <li class="page-item" :class="{ disabled: meta.current_page >= meta.last_page }">
-            <button class="page-link" @click="fetchDocuments(meta.current_page + 1)">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </li>
-        </ul>
-      </nav>
-    </div>
+    </template>
 
     <!-- Delete Confirmation Modal -->
     <ConfirmModal
@@ -295,11 +308,11 @@ function getFileExtension(doc) {
 
 function getFileIconClass(doc) {
   const ext = getFileExtension(doc)
-  if (ext === 'pdf') return 'pdf'
-  if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return 'image'
-  if (['doc', 'docx'].includes(ext)) return 'word'
-  if (['xls', 'xlsx'].includes(ext)) return 'excel'
-  return 'other'
+  if (ext === 'pdf') return 'doc-ic-pdf'
+  if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) return 'doc-ic-img'
+  if (['doc', 'docx'].includes(ext)) return 'doc-ic-doc'
+  if (['xls', 'xlsx'].includes(ext)) return 'doc-ic-xls'
+  return 'doc-ic-other'
 }
 
 function getFileIcon(doc) {
@@ -383,359 +396,620 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Hero Header */
-.docs-hero {
-  background: linear-gradient(135deg, #0077B5 0%, #005885 50%, #004165 100%);
-  border-radius: 16px;
-  padding: 2.5rem 2rem;
+/* ── Hero ── */
+.doc-hero {
+  background: linear-gradient(135deg, #0077B5 0%, #005a87 50%, #004165 100%);
+  border-radius: 18px;
+  padding: 2rem 2.2rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
   position: relative;
   overflow: hidden;
-  color: #fff;
 }
-.docs-hero::after {
-    content: '';
-    position: absolute;
-    right: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 200px;
-    height: 200px;
-    background: url('/images/pnmls.jpeg') center/contain no-repeat;
-    opacity: 0.10;
-    pointer-events: none;
-}
-.docs-hero::before {
+.doc-hero::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.06'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  top: -40%;
+  right: -8%;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .07);
 }
-.docs-hero > * {
+.doc-hero-content {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
-.btn-upload {
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+.doc-hero h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0 0 .3rem;
+}
+.doc-hero p {
+  font-size: .85rem;
+  opacity: .8;
+  margin: 0;
+}
+.doc-hero-stats {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 1rem;
+  position: relative;
+  z-index: 1;
+}
+.doc-hero-stat-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+.doc-hero-stat-lbl {
+  font-size: .7rem;
+  opacity: .7;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.doc-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, .18);
+  border: 2px solid rgba(255, 255, 255, .35);
   color: #fff;
   font-weight: 700;
-  padding: 0.6rem 1.5rem;
+  padding: .55rem 1.4rem;
   border-radius: 12px;
-  transition: all 0.2s;
+  transition: all .25s;
   backdrop-filter: blur(4px);
   text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.btn-upload:hover {
+.doc-upload-btn:hover {
   background: #fff;
   color: #0077B5;
   border-color: #fff;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .15);
 }
 
-/* Stat Pills */
-.stat-pill {
+/* ── Category filter cards ── */
+.doc-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: .8rem;
+  margin-bottom: 1.5rem;
+}
+.doc-cat-card,
+.doc-cat-all {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: .7rem;
+  padding: .9rem 1rem;
   background: #fff;
-  border: 1px solid #e9ecef;
-  border-radius: 12px;
-  padding: 0.65rem 1.1rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
-  height: 100%;
+  border: 2px solid #e5e7eb;
+  border-radius: 14px;
+  text-decoration: none;
+  color: #374151;
+  transition: all .25s;
+  cursor: pointer;
 }
-.stat-pill-icon {
-  width: 38px;
-  height: 38px;
+.doc-cat-card:hover {
+  border-color: #0077B5;
+  color: #0077B5;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 119, 181, .1);
+}
+.doc-cat-card.active {
+  background: linear-gradient(135deg, #0077B5, #005a87);
+  border-color: #0077B5;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(0, 119, 181, .25);
+}
+.doc-cat-all:hover {
+  border-color: #28a745;
+  color: #28a745;
+  transform: translateY(-2px);
+}
+.doc-cat-all.active {
+  background: linear-gradient(135deg, #28a745, #1e7e34);
+  border-color: #28a745;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(40, 167, 69, .25);
+}
+.doc-cat-icon {
+  width: 40px;
+  height: 40px;
   border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  flex-shrink: 0;
+  background: #e8f4fd;
+  color: #0077B5;
 }
-.stat-pill-val {
-  font-weight: 800;
-  font-size: 1.2rem;
-  color: #1a1a2e;
+.doc-cat-card.active .doc-cat-icon,
+.doc-cat-all.active .doc-cat-icon {
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
 }
-.stat-pill-label {
-  font-size: 0.75rem;
-  color: #6c757d;
+.doc-cat-all .doc-cat-icon {
+  background: #e6f7ef;
+  color: #28a745;
+}
+.doc-cat-info {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+.doc-cat-name {
+  font-size: .82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.doc-cat-count {
+  font-size: .7rem;
+  opacity: .6;
+}
+.doc-cat-card.active .doc-cat-count,
+.doc-cat-all.active .doc-cat-count {
+  opacity: .8;
 }
 
-/* Filter Card */
-.filter-card {
+/* ── Search bar ── */
+.doc-search-bar {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  margin-bottom: 1.5rem;
   background: #fff;
+  border: 2px solid #e5e7eb;
   border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-  border: 1px solid #e9ecef;
-  padding: 1.5rem;
+  padding: .5rem .7rem;
+  transition: border-color .2s;
 }
-.filter-card .form-control,
-.filter-card .form-select {
-  border-radius: 10px;
-  border: 2px solid #e9ecef;
-  padding: 0.6rem 1rem;
-  transition: border-color 0.2s;
-}
-.filter-card .form-control:focus,
-.filter-card .form-select:focus {
+.doc-search-bar:focus-within {
   border-color: #0077B5;
-  box-shadow: 0 0 0 0.2rem rgba(0, 119, 181, 0.15);
+  box-shadow: 0 0 0 .2rem rgba(0, 119, 181, .1);
 }
-.btn-primary-custom {
-  background: linear-gradient(135deg, #0077B5, #005885);
+.doc-search-input-wrap {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: .5rem;
+}
+.doc-search-icon {
+  color: #9ca3af;
+  font-size: .9rem;
+  margin-left: .4rem;
+}
+.doc-search-input {
   border: none;
-  color: #fff;
+  outline: none;
+  flex: 1;
+  font-size: .88rem;
+  color: #1e293b;
+  background: transparent;
+  padding: .4rem 0;
+}
+.doc-search-input::placeholder {
+  color: #9ca3af;
+}
+.doc-search-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: .45rem 1.1rem;
+  border-radius: 10px;
+  font-size: .82rem;
   font-weight: 600;
-  border-radius: 10px;
-  padding: 0.6rem 1.5rem;
-  transition: all 0.2s;
-}
-.btn-primary-custom:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 119, 181, 0.3);
+  background: linear-gradient(135deg, #0077B5, #005a87);
   color: #fff;
+  border: none;
+  cursor: pointer;
+  transition: all .2s;
+  white-space: nowrap;
 }
-.btn-reset {
-  background: #f5f5f5;
-  border: 2px solid #e9ecef;
-  color: #666;
+.doc-search-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 119, 181, .3);
+}
+.doc-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border-radius: 10px;
-  padding: 0.6rem 0.85rem;
-  transition: all 0.2s;
+  font-size: .82rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  border: none;
+  cursor: pointer;
+  transition: all .2s;
+  flex-shrink: 0;
 }
-.btn-reset:hover {
-  background: #e9ecef;
-  color: #333;
+.doc-reset-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
 }
 
-/* Document Card */
+/* ── Section header (filtered) ── */
+.doc-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  padding-bottom: .6rem;
+  border-bottom: 2px solid #f3f4f6;
+}
+.doc-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+}
+.doc-section-badge {
+  font-size: .72rem;
+  font-weight: 700;
+  padding: .2rem .6rem;
+  border-radius: 20px;
+  background: #e8f4fd;
+  color: #0077B5;
+}
+.doc-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .8rem;
+  border-radius: 8px;
+  font-size: .78rem;
+  font-weight: 600;
+  background: #f3f4f6;
+  color: #6b7280;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all .2s;
+}
+.doc-back-btn:hover {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* ── Document grid ── */
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+}
 .doc-card {
   background: #fff;
   border-radius: 14px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  border: 1px solid #e9ecef;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .04);
   overflow: hidden;
-  transition: transform 0.2s, box-shadow 0.2s;
-  height: 100%;
+  transition: all .2s;
   display: flex;
   flex-direction: column;
 }
 .doc-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, .08);
+  transform: translateY(-2px);
 }
 .doc-card-top {
-  padding: 1.5rem 1.25rem 1rem;
   display: flex;
-  gap: 1rem;
   align-items: flex-start;
-  flex: 1;
+  gap: .8rem;
+  padding: 1.2rem 1.2rem .6rem;
 }
-.doc-icon-wrap {
-  width: 52px;
-  height: 52px;
+.doc-card-icon {
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.1rem;
   flex-shrink: 0;
-  font-size: 1.4rem;
 }
-.doc-icon-wrap.pdf { background: #fdeaec; color: #dc3545; }
-.doc-icon-wrap.image { background: #e0f4ff; color: #0dcaf0; }
-.doc-icon-wrap.word { background: #e3effe; color: #0d6efd; }
-.doc-icon-wrap.excel { background: #e6f7ef; color: #28a745; }
-.doc-icon-wrap.other { background: #f5f5f5; color: #6c757d; }
-.doc-card-info h6 {
+.doc-ic-pdf { background: #fee2e2; color: #dc2626; }
+.doc-ic-img { background: #e0f2fe; color: #0284c7; }
+.doc-ic-doc { background: #dbeafe; color: #2563eb; }
+.doc-ic-xls { background: #dcfce7; color: #16a34a; }
+.doc-ic-other { background: #f1f5f9; color: #64748b; }
+
+.doc-card-info {
+  flex: 1;
+  min-width: 0;
+}
+.doc-card-title {
   font-weight: 700;
-  color: #1a1a2e;
-  font-size: 0.95rem;
-  margin-bottom: 0.3rem;
+  font-size: .9rem;
+  color: #1e293b;
+  margin-bottom: .2rem;
   line-height: 1.3;
 }
 .doc-card-desc {
-  color: #6c757d;
-  font-size: 0.82rem;
-  line-height: 1.4;
-  margin-bottom: 0.4rem;
+  font-size: .78rem;
+  color: #9ca3af;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
-.doc-meta {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.78rem;
-  color: #999;
-}
-.doc-meta span {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-.doc-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.6rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.75rem;
-}
-.doc-badge.identite { background: #e8f4fd; color: #0077B5; }
-.doc-badge.parcours { background: #fff3e0; color: #e67e22; }
-.doc-badge.carriere { background: #ede9fe; color: #7c3aed; }
-.doc-badge.mission { background: #e6f7ef; color: #28a745; }
 
-/* Card Footer Actions */
+/* ── Meta badges ── */
+.doc-card-meta {
+  padding: .5rem 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+.doc-meta-badge {
+  font-size: .68rem;
+  font-weight: 600;
+  padding: .2rem .55rem;
+  border-radius: 6px;
+  background: #f3f4f6;
+  color: #6b7280;
+}
+.doc-meta-cat.identite { background: #e8f4fd; color: #0077B5; }
+.doc-meta-cat.parcours { background: #fff3e0; color: #e67e22; }
+.doc-meta-cat.carriere { background: #ede9fe; color: #7c3aed; }
+.doc-meta-cat.mission { background: #e6f7ef; color: #28a745; }
+
+/* ── Card footer ── */
+.doc-card-footer {
+  border-top: 1px solid #f3f4f6;
+  padding: .7rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+.doc-card-date {
+  font-size: .72rem;
+  color: #9ca3af;
+}
 .doc-card-actions {
   display: flex;
-  border-top: 1px solid #f0f2f5;
-}
-.doc-card-actions .doc-action {
-  flex: 1;
-  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  padding: 0.7rem 0.5rem;
-  font-size: 0.82rem;
+  gap: .4rem;
+}
+.doc-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  padding: .3rem .65rem;
+  border-radius: 8px;
+  font-size: .72rem;
   font-weight: 600;
-  color: #6c757d;
   text-decoration: none;
-  border: none;
-  background: none;
-  transition: all 0.15s;
+  border: 1px solid transparent;
   cursor: pointer;
+  transition: all .2s;
 }
-.doc-card-actions .doc-action + .doc-action {
-  border-left: 1px solid #f0f2f5;
+.doc-action-view {
+  background: #e8f4fd;
+  color: #0077B5;
+  border-color: #bde0f5;
 }
-.doc-card-actions .doc-action:hover { background: #f8f9fc; }
-.doc-card-actions .doc-action.view:hover { color: #0077B5; }
-.doc-card-actions .doc-action.download:hover { color: #28a745; }
-.doc-card-actions .doc-action.delete:hover { color: #dc3545; background: #fef5f5; }
+.doc-action-view:hover {
+  background: #0077B5;
+  color: #fff;
+  border-color: #0077B5;
+}
+.doc-action-download {
+  background: #e6f7ef;
+  color: #28a745;
+  border-color: #b7ebc9;
+}
+.doc-action-download:hover {
+  background: #28a745;
+  color: #fff;
+  border-color: #28a745;
+}
+.doc-action-delete {
+  background: #fef2f2;
+  color: #dc3545;
+  border-color: #fecaca;
+}
+.doc-action-delete:hover {
+  background: #dc3545;
+  color: #fff;
+  border-color: #dc3545;
+}
 
-/* Empty State */
-.empty-state {
+/* ── Empty state ── */
+.doc-empty {
   text-align: center;
-  padding: 4rem 2rem;
-  background: #fff;
-  border-radius: 14px;
-  border: 2px dashed #dee2e6;
+  padding: 3rem 1rem;
+  color: #9ca3af;
 }
-.empty-state-icon {
-  width: 80px;
-  height: 80px;
+.doc-empty-icon {
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background: linear-gradient(135deg, #e8f4fd, #cce5f6);
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 1.5rem;
   margin: 0 auto 1rem;
-  font-size: 2rem;
   color: #0077B5;
 }
-.empty-state h5 { font-weight: 700; color: #1a1a2e; }
-.empty-state p { color: #6c757d; max-width: 400px; margin: 0 auto 1.25rem; }
-
-/* Pagination */
-.pagination-wrap {
-  display: flex;
-  justify-content: space-between;
+.doc-empty h5 {
+  font-weight: 700;
+  color: #1e293b;
+}
+.doc-empty p {
+  color: #6c757d;
+  max-width: 400px;
+  margin: 0 auto 1.25rem;
+}
+.doc-upload-action {
+  display: inline-flex;
   align-items: center;
-  padding: 1rem 1.5rem;
+  padding: .5rem 1.2rem;
+  border-radius: 10px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #0077B5, #005a87);
+  color: #fff;
+  text-decoration: none;
+  transition: all .2s;
+}
+.doc-upload-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 119, 181, .3);
+  color: #fff;
+}
+
+/* ── Pagination ── */
+.doc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+  padding: .8rem 1.2rem;
   background: #fff;
   border-radius: 12px;
-  border: 1px solid #e9ecef;
+  border: 1px solid #e5e7eb;
 }
-.page-info {
-  color: #6c757d;
-  font-size: 0.88rem;
+.doc-page-info {
+  font-size: .82rem;
+  color: #6b7280;
 }
-.pagination .page-link {
+.doc-pagination .pagination .page-link {
   border-radius: 8px !important;
   margin: 0 2px;
   border: none;
-  color: #333;
+  color: #374151;
   font-weight: 600;
+  font-size: .82rem;
 }
-.pagination .page-item.active .page-link {
-  background: linear-gradient(135deg, #0077B5, #005885);
+.doc-pagination .pagination .page-item.active .page-link {
+  background: linear-gradient(135deg, #0077B5, #005a87);
   border-color: transparent;
   color: #fff;
 }
 
-/* Mobile Responsive */
-@media (max-width: 767.98px) {
-  .docs-hero {
-    padding: 1.25rem 1rem;
+/* ── Mobile responsive ── */
+@media (max-width: 576px) {
+  .doc-hero {
+    padding: 1.3rem 1.1rem;
     border-radius: 14px;
   }
-  .docs-hero h2 {
-    font-size: 1.15rem;
+  .doc-hero h2 {
+    font-size: 1.1rem;
   }
-  .docs-hero::after {
-    width: 120px;
-    height: 120px;
+  .doc-hero p {
+    font-size: .78rem;
   }
-  .btn-upload {
+  .doc-hero::before {
+    width: 160px;
+    height: 160px;
+    right: -12%;
+  }
+  .doc-hero-content {
+    flex-direction: column;
+  }
+  .doc-upload-btn {
     width: 100%;
-    text-align: center;
-    padding: 0.5rem 1rem;
-    font-size: 0.88rem;
+    justify-content: center;
+    padding: .5rem 1rem;
+    font-size: .85rem;
   }
-  .stat-pill {
-    padding: 0.5rem 0.75rem;
-    border-radius: 10px;
+  .doc-hero-stats {
+    flex-wrap: wrap;
+    gap: 1rem;
   }
-  .stat-pill-val {
-    font-size: 1rem;
+  .doc-hero-stat-val {
+    font-size: 1.2rem;
   }
-  .stat-pill-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 0.85rem;
+  .doc-cat-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  .filter-card {
-    padding: 1rem;
+  .doc-cat-card,
+  .doc-cat-all {
+    padding: .7rem .8rem;
+  }
+  .doc-cat-icon {
+    width: 34px;
+    height: 34px;
+    font-size: .85rem;
+  }
+  .doc-cat-name {
+    font-size: .75rem;
+  }
+  .doc-search-bar {
     border-radius: 12px;
+    padding: .4rem .5rem;
   }
-  .doc-card {
-    border-radius: 12px;
+  .doc-search-btn {
+    padding: .4rem .8rem;
+    font-size: .78rem;
+  }
+  .doc-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: .5rem;
+  }
+  .doc-grid {
+    grid-template-columns: 1fr;
   }
   .doc-card-top {
-    padding: 1rem;
-    gap: 0.75rem;
+    padding: 1rem 1rem .5rem;
   }
-  .doc-icon-wrap {
-    width: 42px;
-    height: 42px;
-    font-size: 1.15rem;
-    border-radius: 10px;
+  .doc-card-icon {
+    width: 38px;
+    height: 38px;
+    font-size: .95rem;
   }
-  .doc-card-info h6 {
-    font-size: 0.88rem;
+  .doc-card-title {
+    font-size: .85rem;
   }
-  .doc-card-actions .doc-action {
-    font-size: 0.75rem;
-    padding: 0.55rem 0.25rem;
+  .doc-card-meta {
+    padding: .4rem 1rem;
   }
-  .empty-state {
-    padding: 2.5rem 1rem;
-    border-radius: 12px;
-  }
-  .empty-state-icon {
-    width: 64px;
-    height: 64px;
-    font-size: 1.5rem;
-  }
-  .pagination-wrap {
+  .doc-card-footer {
+    padding: .6rem 1rem;
     flex-direction: column;
-    gap: 0.75rem;
+    align-items: flex-start;
+    gap: .5rem;
+  }
+  .doc-card-actions {
+    width: 100%;
+  }
+  .doc-action-btn {
+    flex: 1;
+    justify-content: center;
+    font-size: .68rem;
+    padding: .3rem .4rem;
+  }
+  .doc-pagination {
+    flex-direction: column;
+    gap: .6rem;
     text-align: center;
-    padding: 1rem;
+    padding: .8rem;
+  }
+  .doc-empty {
+    padding: 2rem 1rem;
+  }
+  .doc-empty-icon {
+    width: 56px;
+    height: 56px;
+    font-size: 1.3rem;
   }
 }
 </style>
