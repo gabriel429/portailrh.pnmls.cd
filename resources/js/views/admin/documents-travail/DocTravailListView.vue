@@ -1,95 +1,144 @@
 <template>
-  <div class="py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h4 class="mb-0">Documents de Travail</h4>
-      <router-link :to="{ name: 'admin.documents-travail.create' }" class="btn btn-primary">
-        <i class="fas fa-plus me-1"></i> Nouveau Document
-      </router-link>
+  <div class="doc-travail-page">
+    <!-- Hero Header -->
+    <div class="page-hero">
+      <div class="page-hero-content">
+        <div class="page-hero-icon">
+          <i class="fas fa-folder-open"></i>
+        </div>
+        <div>
+          <h4 class="text-white mb-0 fw-bold">Documents de Travail</h4>
+          <small class="text-white-50">Gestion des documents de travail</small>
+        </div>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="count-badge" v-if="pagination.total">
+          {{ pagination.total }} document{{ pagination.total > 1 ? 's' : '' }}
+        </span>
+        <router-link :to="{ name: 'admin.documents-travail.create' }" class="hero-btn">
+          <i class="fas fa-plus"></i> Nouveau Document
+        </router-link>
+      </div>
     </div>
 
-    <div v-if="error" class="alert alert-danger alert-dismissible fade show">
+    <!-- Alert -->
+    <div v-if="error" class="alert alert-danger alert-dismissible fade show" style="border-radius: 12px;">
       {{ error }}
       <button type="button" class="btn-close" @click="error = null"></button>
     </div>
 
-    <div class="card shadow-sm mb-3">
-      <div class="card-body py-2">
-        <div class="row align-items-center">
-          <div class="col-md-6">
-            <div class="input-group">
-              <span class="input-group-text"><i class="fas fa-search"></i></span>
-              <input type="text" v-model="search" class="form-control" placeholder="Rechercher par titre..." @input="onSearchInput">
-            </div>
-          </div>
-        </div>
+    <!-- Search Box -->
+    <div class="search-box">
+      <div class="search-wrapper">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          v-model="search"
+          class="search-input"
+          placeholder="Rechercher par titre..."
+          @input="onSearchInput"
+        >
       </div>
     </div>
 
+    <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border text-primary" role="status">
+      <div class="spinner-border" style="color: #0ea5e9;" role="status">
         <span class="visually-hidden">Chargement...</span>
       </div>
+      <p class="text-muted mt-2 mb-0" style="font-size: .88rem;">Chargement des documents...</p>
     </div>
 
-    <div v-else class="card shadow-sm">
-      <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>Titre</th>
-              <th>Categorie</th>
-              <th>Uploade par</th>
-              <th>Actif</th>
-              <th>Date</th>
-              <th class="text-end">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="documents.length === 0">
-              <td colspan="6" class="text-center text-muted py-4">Aucun document trouve.</td>
-            </tr>
-            <tr v-for="doc in documents" :key="doc.id">
-              <td>{{ doc.titre }}</td>
-              <td>{{ doc.categorie || '-' }}</td>
-              <td>{{ doc.uploader ? doc.uploader.name : '-' }}</td>
-              <td>
-                <span class="badge" :class="doc.actif ? 'bg-success' : 'bg-secondary'">
-                  {{ doc.actif ? 'Oui' : 'Non' }}
-                </span>
-              </td>
-              <td>{{ formatDate(doc.created_at) }}</td>
-              <td class="text-end">
-                <router-link :to="{ name: 'admin.documents-travail.edit', params: { id: doc.id } }" class="btn btn-sm btn-outline-primary me-1">
-                  <i class="fas fa-edit"></i>
-                </router-link>
-                <button class="btn btn-sm btn-outline-danger" @click="deleteDocument(doc)">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+    <!-- Data Table -->
+    <div v-else>
+      <div v-if="documents.length === 0" class="empty-state">
+        <i class="fas fa-folder-open"></i>
+        <p>Aucun document trouve.</p>
       </div>
-    </div>
 
-    <!-- Pagination -->
-    <nav v-if="pagination.lastPage > 1" class="mt-3">
-      <ul class="pagination justify-content-center mb-0">
-        <li class="page-item" :class="{ disabled: pagination.currentPage === 1 }">
-          <a class="page-link" href="#" @click.prevent="goToPage(pagination.currentPage - 1)">
-            <i class="fas fa-chevron-left"></i>
-          </a>
-        </li>
-        <li v-for="page in paginationPages" :key="page" class="page-item" :class="{ active: page === pagination.currentPage, disabled: page === '...' }">
-          <a class="page-link" href="#" @click.prevent="page !== '...' && goToPage(page)">{{ page }}</a>
-        </li>
-        <li class="page-item" :class="{ disabled: pagination.currentPage === pagination.lastPage }">
-          <a class="page-link" href="#" @click.prevent="goToPage(pagination.currentPage + 1)">
-            <i class="fas fa-chevron-right"></i>
-          </a>
-        </li>
-      </ul>
-    </nav>
+      <div v-else class="data-card">
+        <div class="table-responsive">
+          <table class="table data-table">
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Categorie</th>
+                <th>Uploade par</th>
+                <th>Actif</th>
+                <th>Date</th>
+                <th class="text-end">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="doc in documents" :key="doc.id">
+                <td>
+                  <div class="d-flex align-items-center gap-2">
+                    <div class="doc-icon">
+                      <i class="fas fa-file-alt"></i>
+                    </div>
+                    <span class="fw-500">{{ doc.titre }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span v-if="doc.categorie" class="categorie-badge">
+                    {{ doc.categorie }}
+                  </span>
+                  <span v-else class="text-muted">-</span>
+                </td>
+                <td>
+                  <span class="text-muted">{{ doc.uploader ? doc.uploader.name : '-' }}</span>
+                </td>
+                <td>
+                  <span class="status-dot" :class="doc.actif ? 'status-active' : 'status-inactive'"></span>
+                  {{ doc.actif ? 'Oui' : 'Non' }}
+                </td>
+                <td>
+                  <span class="text-muted">{{ formatDate(doc.created_at) }}</span>
+                </td>
+                <td class="text-end">
+                  <div class="d-flex justify-content-end gap-1">
+                    <router-link
+                      :to="{ name: 'admin.documents-travail.edit', params: { id: doc.id } }"
+                      class="action-btn"
+                      title="Modifier"
+                    >
+                      <i class="fas fa-edit"></i>
+                    </router-link>
+                    <button class="action-btn action-btn-danger" @click="deleteDocument(doc)" title="Supprimer">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <nav v-if="pagination.lastPage > 1" class="mt-3">
+        <ul class="pagination modern-pagination justify-content-center mb-0">
+          <li class="page-item" :class="{ disabled: pagination.currentPage === 1 }">
+            <a class="page-link" href="#" @click.prevent="goToPage(pagination.currentPage - 1)">
+              <i class="fas fa-chevron-left"></i>
+            </a>
+          </li>
+          <li
+            v-for="page in paginationPages"
+            :key="page"
+            class="page-item"
+            :class="{ active: page === pagination.currentPage, disabled: page === '...' }"
+          >
+            <a class="page-link" href="#" @click.prevent="page !== '...' && goToPage(page)">{{ page }}</a>
+          </li>
+          <li class="page-item" :class="{ disabled: pagination.currentPage === pagination.lastPage }">
+            <a class="page-link" href="#" @click.prevent="goToPage(pagination.currentPage + 1)">
+              <i class="fas fa-chevron-right"></i>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
   </div>
 </template>
 
@@ -178,3 +227,253 @@ async function deleteDocument(doc) {
 
 onMounted(() => fetchDocuments())
 </script>
+
+<style scoped>
+.doc-travail-page {
+  padding: 1.5rem 0;
+}
+
+.page-hero {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  box-shadow: 0 8px 32px rgba(14, 165, 233, .25);
+  margin-bottom: 1.5rem;
+}
+
+.page-hero-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.page-hero-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  color: #fff;
+}
+
+.count-badge {
+  background: rgba(255, 255, 255, .2);
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+
+.hero-btn {
+  background: rgba(255, 255, 255, .2);
+  border: 1px solid rgba(255, 255, 255, .3);
+  color: #fff;
+  padding: .5rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: .85rem;
+  text-decoration: none;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.hero-btn:hover {
+  background: rgba(255, 255, 255, .35);
+  color: #fff;
+}
+
+.search-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  border: 1px solid #f1f5f9;
+  margin-bottom: 1.25rem;
+}
+
+.search-wrapper {
+  position: relative;
+}
+
+.search-input {
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: .5rem 1rem .5rem 2.5rem;
+  font-size: .88rem;
+  width: 100%;
+  transition: border-color .2s;
+}
+
+.search-input:focus {
+  border-color: #0ea5e9;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, .1);
+}
+
+.search-icon {
+  position: absolute;
+  left: .85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.data-card {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+}
+
+.data-table {
+  margin-bottom: 0;
+}
+
+.data-table thead th {
+  background: #f8fafc;
+  border: none;
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #64748b;
+  padding: .85rem 1rem;
+}
+
+.data-table tbody td {
+  padding: .75rem 1rem;
+  border-color: #f1f5f9;
+  vertical-align: middle;
+  font-size: .88rem;
+}
+
+.data-table tbody tr {
+  transition: background .15s;
+}
+
+.data-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.doc-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #f0f9ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0ea5e9;
+  font-size: .85rem;
+  flex-shrink: 0;
+}
+
+.fw-500 {
+  font-weight: 500;
+}
+
+.categorie-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: .78rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 4px;
+}
+
+.status-active {
+  background: #22c55e;
+}
+
+.status-inactive {
+  background: #94a3b8;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-size: .8rem;
+  transition: all .2s;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.action-btn:hover {
+  border-color: #0ea5e9;
+  color: #0ea5e9;
+  background: #f0f9ff;
+}
+
+.action-btn-danger:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  border: 2px dashed #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.empty-state i {
+  font-size: 2.5rem;
+  color: #cbd5e1;
+  margin-bottom: .75rem;
+  display: block;
+}
+
+.empty-state p {
+  color: #94a3b8;
+  margin: 0;
+  font-weight: 500;
+}
+
+.modern-pagination .page-link {
+  border-radius: 8px;
+  margin: 0 2px;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: .85rem;
+}
+
+.modern-pagination .page-item.active .page-link {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+}
+
+.modern-pagination .page-link:hover {
+  background: #f0f9ff;
+  color: #0ea5e9;
+  border-color: #0ea5e9;
+}
+</style>
