@@ -15,6 +15,14 @@
           <div class="dash-hero-stat-lbl">Documents</div>
         </div>
         <div>
+          <div class="dash-hero-stat-val">{{ stats.messages_non_lus ?? 0 }}</div>
+          <div class="dash-hero-stat-lbl">Messages</div>
+        </div>
+        <div>
+          <div class="dash-hero-stat-val">{{ stats.communiques ?? 0 }}</div>
+          <div class="dash-hero-stat-lbl">Communiques</div>
+        </div>
+        <div>
           <div class="dash-hero-stat-val">{{ stats.requests_pending ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">En attente</div>
         </div>
@@ -180,6 +188,8 @@ const quickActions = [
 const maxStat = computed(() => {
   const vals = [
     stats.value.documents ?? 0,
+    stats.value.messages_non_lus ?? 0,
+    stats.value.communiques ?? 0,
     stats.value.requests_pending ?? 0,
     stats.value.requests_approved ?? 0,
     stats.value.absences ?? 0,
@@ -189,6 +199,8 @@ const maxStat = computed(() => {
 
 const statCards = computed(() => [
   { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', color: '#0077B5', bg: '#e0f2fe', pct: ((stats.value.documents ?? 0) / maxStat.value) * 100 },
+  { label: 'Messages non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100 },
+  { label: 'Communiques du SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100 },
   { label: 'Demandes en attente', value: stats.value.requests_pending ?? 0, icon: 'fa-clock', color: '#d97706', bg: '#fef3c7', pct: ((stats.value.requests_pending ?? 0) / maxStat.value) * 100 },
   { label: 'Demandes approuvees', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', color: '#059669', bg: '#d1fae5', pct: ((stats.value.requests_approved ?? 0) / maxStat.value) * 100 },
   { label: 'Absences', value: stats.value.absences ?? 0, icon: 'fa-calendar-times', color: '#dc2626', bg: '#fee2e2', pct: ((stats.value.absences ?? 0) / maxStat.value) * 100 },

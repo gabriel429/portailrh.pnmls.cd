@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Communique;
+use App\Models\Message;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -12,12 +14,16 @@ class DashboardController extends Controller
         $user = $request->user();
         $agent = $user->agent;
 
+        $communiques = Communique::visibles()->count();
+
         if (!$agent) {
             return response()->json([
                 'documents' => 0,
                 'requests_pending' => 0,
                 'requests_approved' => 0,
                 'absences' => 0,
+                'messages_non_lus' => 0,
+                'communiques' => $communiques,
             ]);
         }
 
@@ -29,6 +35,8 @@ class DashboardController extends Controller
                 ->whereNull('heure_entree')
                 ->whereNull('heure_sortie')
                 ->count(),
+            'messages_non_lus' => Message::where('agent_id', $agent->id)->nonLus()->count(),
+            'communiques' => $communiques,
         ]);
     }
 }
