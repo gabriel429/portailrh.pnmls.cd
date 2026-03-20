@@ -35,6 +35,9 @@ class RoleMiddleware
         }
 
         if (!$hasRole) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Acces refuse.'], 403);
+            }
             abort(403, 'Accès refusé. Vous n\'avez pas les permissions nécessaires.');
         }
 

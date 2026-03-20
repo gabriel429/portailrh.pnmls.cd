@@ -13,6 +13,9 @@ class AdminNTMiddleware
         $user = $request->user();
 
         if (!$user || !$user->role) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Acces refuse.'], 403);
+            }
             abort(403, 'Accès refusé.');
         }
 
@@ -24,6 +27,9 @@ class AdminNTMiddleware
         ];
 
         if (!in_array($role, $allowed, true)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Acces reserve a la Section Nouvelle Technologie.'], 403);
+            }
             abort(403, 'Accès réservé à la Section Nouvelle Technologie.');
         }
 

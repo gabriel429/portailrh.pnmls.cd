@@ -106,3 +106,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [AgentController::class, 'dashboard'])->name('dashboard');
     });
 });
+
+// ── SPA Catch-All ──
+// Serves the Vue SPA for all unmatched GET routes (must be LAST)
+Route::get('/{any}', function () {
+    return view('spa');
+})->where('any', '^(?!api/).*$');

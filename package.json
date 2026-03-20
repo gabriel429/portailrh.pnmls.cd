@@ -1,0 +1,35 @@
+{
+  "name": "portailrh.pnmls.cd",
+  "version": "1.0.0",
+  "description": "Gestion Intégrée des Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gabriel429/portailrh.pnmls.cd.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/gabriel429/portailrh.pnmls.cd/issues"
+  },
+  "homepage": "https://github.com/gabriel429/portailrh.pnmls.cd#readme",
+  "dependencies": {
+    "@fortawesome/fontawesome-free": "^7.2.0",
+    "@popperjs/core": "^2.11.8",
+    "axios": "^1.13.6",
+    "bootstrap": "^5.3.0",
+    "pinia": "^3.0.4",
+    "vue": "^3.5.30",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.5",
+    "vite": "^8.0.1"
+  }
+}
