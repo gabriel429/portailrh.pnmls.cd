@@ -179,7 +179,7 @@
     </nav>
 
     <!-- Content -->
-    <div class="container-fluid">
+    <div class="container-fluid main-content">
       <AppToast />
       <slot />
     </div>

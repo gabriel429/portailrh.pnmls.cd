@@ -22,6 +22,9 @@ body {
     padding-top: 0;
 }
 
+/* ── MAIN CONTENT ── */
+.main-content { padding-top: 1rem; }
+
 /* ── NAVBAR ── */
 .navbar-main {
     background: linear-gradient(135deg, #0077B5 0%, #005a87 50%, #004060 100%);
