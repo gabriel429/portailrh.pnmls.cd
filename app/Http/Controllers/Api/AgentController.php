@@ -475,13 +475,15 @@ class AgentController extends Controller
      */
     public function formOptions(): JsonResponse
     {
-        $organeOptions = Organe::where('actif', true)->orderBy('nom')->pluck('nom');
+        $organeOptions = Schema::hasTable('organes') ? Organe::where('actif', true)->orderBy('nom')->pluck('nom') : collect();
         $departments = Department::orderBy('nom')->get(['id', 'nom']);
         $provinces = Province::orderBy('nom')->get();
         $grades = Schema::hasTable('grades') ? Grade::orderBy('ordre')->get() : collect();
-        $institutionCategories = InstitutionCategorie::with('institutions')->orderBy('ordre')->get();
-        $sections = Section::with('department:id,nom')->orderBy('type')->orderBy('nom')->get();
-        $fonctions = Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get();
+        $institutionCategories = Schema::hasTable('institution_categories')
+            ? InstitutionCategorie::with('institutions')->orderBy('ordre')->get()
+            : collect();
+        $sections = Schema::hasTable('sections') ? Section::with('department:id,nom')->orderBy('type')->orderBy('nom')->get() : collect();
+        $fonctions = Schema::hasTable('fonctions') ? Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get() : collect();
         $niveauxEtudes = Agent::NIVEAUX_ETUDES;
 
         return response()->json([
