@@ -252,3 +252,130 @@ function formatShortDate(dateStr) {
 
 onMounted(() => loadPlan())
 </script>
+
+<style scoped>
+/* Page wrapper */
+.rh-modern { padding: 0; }
+.rh-shell { padding: 0; }
+
+/* Hero */
+.rh-hero {
+  background: linear-gradient(135deg, #0077B5 0%, #005a87 50%, #003f5f 100%);
+  border-radius: 16px;
+  padding: 1.75rem 2rem;
+  color: #fff;
+  box-shadow: 0 8px 32px rgba(0,119,181,.25);
+}
+.rh-title {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin-bottom: .35rem;
+  color: #fff;
+}
+.rh-sub {
+  font-size: .9rem;
+  color: rgba(255,255,255,.7);
+  margin-bottom: 0;
+}
+.hero-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+}
+.btn-rh {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .55rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: .85rem;
+  text-decoration: none;
+  transition: all .2s;
+  border: none;
+  cursor: pointer;
+}
+.btn-rh.main {
+  background: rgba(255,255,255,.2);
+  border: 1px solid rgba(255,255,255,.3);
+  color: #fff;
+}
+.btn-rh.main:hover {
+  background: rgba(255,255,255,.35);
+  color: #fff;
+}
+
+/* Panels / Cards */
+.dash-panel {
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.06);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+}
+.panel-head {
+  background: #f8fafc;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+.panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0;
+}
+
+/* Tables inside panels */
+.dash-panel .table { margin-bottom: 0; }
+.dash-panel .table thead th {
+  background: #f8fafc;
+  border: none;
+  font-size: .78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #64748b;
+  padding: .75rem 1rem;
+}
+.dash-panel .table tbody td {
+  padding: .75rem 1rem;
+  border-color: #f1f5f9;
+  vertical-align: middle;
+  font-size: .88rem;
+}
+.dash-panel .table tbody tr { transition: background .15s; }
+.dash-panel .table tbody tr:hover { background: #f8fafc; }
+
+/* Badges */
+.badge { font-weight: 600; font-size: .75rem; padding: 4px 10px; border-radius: 6px; }
+.badge.bg-success { background: #dcfce7 !important; color: #166534 !important; }
+.badge.bg-primary { background: #dbeafe !important; color: #1e40af !important; }
+.badge.bg-secondary { background: #f1f5f9 !important; color: #475569 !important; }
+.badge.bg-info { background: #e0f2fe !important; color: #075985 !important; }
+
+/* Action buttons */
+.btn-sm { border-radius: 8px; font-size: .8rem; }
+.btn-outline-primary { border-color: #e2e8f0; color: #0077B5; }
+.btn-outline-primary:hover { background: #f0f9ff; border-color: #0077B5; }
+.btn-outline-secondary { border-color: #e2e8f0; color: #64748b; }
+.btn-outline-secondary:hover { background: #f8fafc; border-color: #94a3b8; }
+
+/* Form elements */
+.form-select, .form-control { border-radius: 10px; border: 1px solid #e2e8f0; font-size: .88rem; }
+.form-select:focus, .form-control:focus { border-color: #0077B5; box-shadow: 0 0 0 3px rgba(0,119,181,.1); }
+.form-label { font-size: .8rem; font-weight: 600; color: #475569; }
+
+/* Progress bars */
+.progress { border-radius: 6px; background: #f1f5f9; }
+.progress-bar { border-radius: 6px; }
+
+/* KPI cards (inline styled, just round them) */
+.rounded { border-radius: 12px !important; }
+
+/* Responsive */
+@media (max-width: 767.98px) {
+  .rh-hero { padding: 1.25rem; border-radius: 12px; }
+  .rh-title { font-size: 1.1rem; }
+  .hero-tools { margin-top: .75rem; justify-content: flex-start; }
+}
+</style>
