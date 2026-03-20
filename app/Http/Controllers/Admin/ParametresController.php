@@ -142,6 +142,114 @@ class ParametresController extends Controller
         return view('admin.dashboard', compact('stats', 'statsByOrgane', 'organes', 'connectedUsers'));
     }
 
+    /**
+     * API: Tableau de bord des paramètres (JSON).
+     */
+    public function apiDashboard()
+    {
+        $organes = [];
+        if (Schema::hasTable('organes')) {
+            $organes = Organe::where('actif', true)->get();
+        }
+
+        $stats = [
+            'provinces'   => Province::count(),
+            'departments' => Department::count(),
+            'sections'    => Section::count(),
+            'cellules'    => Cellule::count(),
+            'fonctions'   => Fonction::count(),
+            'localites'   => Localite::count(),
+            'grades'      => Grade::count(),
+            'roles'       => Role::count(),
+            'permissions' => Permission::count(),
+            'organes'     => Schema::hasTable('organes') ? Organe::count() : 0,
+            'agents'      => Agent::count(),
+            'users'       => User::count(),
+        ];
+
+        $statsByOrgane = [];
+        if (Schema::hasTable('organes') && count($organes) > 0) {
+            $niveauMap = [
+                'SEN' => 'Secrétariat Exécutif National',
+                'SEP' => 'Secrétariat Exécutif Provincial',
+                'SEL' => 'Secrétariat Exécutif Local',
+            ];
+            foreach ($organes as $organe) {
+                $organeCode = $organe->code;
+                $niveau = $niveauMap[$organeCode] ?? $organe->nom;
+                $statsByOrgane[] = [
+                    'nom' => $organe->nom,
+                    'sigle' => $organe->sigle,
+                    'code' => $organeCode,
+                    'icon' => match($organeCode) {
+                        'SEN' => 'fa-flag',
+                        'SEP' => 'fa-map-marked-alt',
+                        'SEL' => 'fa-map-pin',
+                        default => 'fa-sitemap'
+                    },
+                    'color' => match($organeCode) {
+                        'SEN' => '#0077B5',
+                        'SEP' => '#0ea5e9',
+                        'SEL' => '#0d9488',
+                        default => '#6b7280'
+                    },
+                    'bgColor' => match($organeCode) {
+                        'SEN' => '#eff6ff',
+                        'SEP' => '#e0f2fe',
+                        'SEL' => '#ccfbf1',
+                        default => '#f3f4f6'
+                    },
+                    'agents' => Agent::where('organe', $niveau)->count(),
+                    'affectations' => Affectation::whereHas('fonction', function($q) use ($organeCode) {
+                        $q->where('niveau_administratif', $organeCode)->orWhere('niveau_administratif', 'TOUS');
+                    })->count(),
+                    'fonctions' => Fonction::where('niveau_administratif', $organeCode)
+                        ->orWhere('niveau_administratif', 'TOUS')
+                        ->count(),
+                ];
+            }
+        }
+
+        $connectedUsers = [];
+        if (Schema::hasTable('sessions')) {
+            try {
+                $threshold = now()->subMinutes(30)->timestamp;
+                $sessions = DB::table('sessions')
+                    ->whereNotNull('user_id')
+                    ->where('last_activity', '>=', $threshold)
+                    ->orderByDesc('last_activity')
+                    ->get();
+
+                $userIds = $sessions->pluck('user_id')->unique();
+                $users = User::with(['agent.province', 'role'])
+                    ->whereIn('id', $userIds)
+                    ->get()
+                    ->keyBy('id');
+
+                $connectedUsers = $sessions->map(function ($session) use ($users) {
+                    $user = $users->get($session->user_id);
+                    if (!$user || !$user->agent) return null;
+                    return [
+                        'id' => $user->id,
+                        'nom_complet' => trim(($user->agent->prenom ?? '') . ' ' . ($user->agent->nom ?? $user->name)),
+                        'province' => $user->agent->province?->nom ?? 'Non definie',
+                        'role' => $user->role?->nom_role ?? 'Agent',
+                        'last_activity' => \Carbon\Carbon::createFromTimestamp($session->last_activity)->toIso8601String(),
+                        'ip_address' => $session->ip_address,
+                    ];
+                })->filter()->unique('id')->values();
+            } catch (\Exception $e) {
+                // Silently fail
+            }
+        }
+
+        return response()->json([
+            'stats' => $stats,
+            'statsByOrgane' => $statsByOrgane,
+            'connectedUsers' => $connectedUsers,
+        ]);
+    }
+
     // ─── PROVINCES ───────────────────────────────────────────────
 
     public function provincesIndex()

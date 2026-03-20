@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\SignalementController;
 use App\Http\Controllers\Api\CommuniqueController;
 use App\Http\Controllers\Api\DocumentTravailController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Admin\ParametresController;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
@@ -93,5 +94,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Communiques
         Route::apiResource('communiques', CommuniqueController::class);
+    });
+
+    // Admin NT (Chef Section Nouvelle Technologie)
+    Route::middleware('admin.nt')->prefix('admin')->group(function () {
+        Route::get('dashboard', [ParametresController::class, 'apiDashboard']);
     });
 });
