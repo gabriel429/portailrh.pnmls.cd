@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="{{ asset('images/logo-pnmls.png') }}">
     <link rel="manifest" href="{{ asset('manifest.json') }}">
     <meta name="theme-color" content="#0077B5">
-    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PNMLS RH">
     <link rel="apple-touch-icon" href="{{ asset('images/icons/icon-192x192.png') }}">
