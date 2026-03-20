@@ -1268,4 +1268,631 @@ class ParametresController extends Controller
         return redirect()->route('admin.categories-documents.index')
             ->with('success', 'Catégorie supprimée.');
     }
+
+    // ─── API METHODS (JSON) ─────────────────────────────────────
+
+    public function apiProvincesIndex(Request $request)
+    {
+        $q = Province::withCount(['agents', 'departments'])->orderBy('nom');
+        if ($request->search) {
+            $q->where('nom', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 20));
+    }
+
+    public function apiProvincesShow(Province $province)
+    {
+        $province->loadCount(['agents', 'departments']);
+        return response()->json($province);
+    }
+
+    public function apiProvincesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:provinces',
+            'nom' => 'required|string|max:255|unique:provinces',
+            'description' => 'nullable|string',
+            'ville_secretariat' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string|max:500',
+            'nom_gouverneur' => 'nullable|string|max:255',
+            'nom_secretariat_executif' => 'nullable|string|max:255',
+            'email_officiel' => 'nullable|email|max:255',
+            'telephone_officiel' => 'nullable|string|max:50',
+        ]);
+        $province = Province::create($validated);
+        return response()->json($province, 201);
+    }
+
+    public function apiProvincesUpdate(Request $request, Province $province)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:provinces,code,' . $province->id,
+            'nom' => 'required|string|max:255|unique:provinces,nom,' . $province->id,
+            'description' => 'nullable|string',
+            'ville_secretariat' => 'nullable|string|max:255',
+            'adresse' => 'nullable|string|max:500',
+            'nom_gouverneur' => 'nullable|string|max:255',
+            'nom_secretariat_executif' => 'nullable|string|max:255',
+            'email_officiel' => 'nullable|email|max:255',
+            'telephone_officiel' => 'nullable|string|max:50',
+        ]);
+        $province->update($validated);
+        return response()->json($province);
+    }
+
+    public function apiProvincesDestroy(Province $province)
+    {
+        $province->delete();
+        return response()->json(['message' => 'Province supprimee.']);
+    }
+
+    public function apiGradesIndex()
+    {
+        $grades = Grade::orderBy('ordre')->get();
+        return response()->json(['data' => $grades, 'grouped' => $grades->groupBy('categorie')]);
+    }
+
+    public function apiGradesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'categorie' => 'required|in:A,B,C',
+            'nom_categorie' => 'required|string|max:255',
+            'ordre' => 'required|integer',
+            'libelle' => 'required|string|max:255',
+        ]);
+        $grade = Grade::create($validated);
+        return response()->json($grade, 201);
+    }
+
+    public function apiGradesUpdate(Request $request, Grade $grade)
+    {
+        $validated = $request->validate([
+            'categorie' => 'required|in:A,B,C',
+            'nom_categorie' => 'required|string|max:255',
+            'ordre' => 'required|integer',
+            'libelle' => 'required|string|max:255',
+        ]);
+        $grade->update($validated);
+        return response()->json($grade);
+    }
+
+    public function apiGradesDestroy(Grade $grade)
+    {
+        $grade->delete();
+        return response()->json(['message' => 'Grade supprime.']);
+    }
+
+    public function apiRolesIndex(Request $request)
+    {
+        $q = Role::withCount('agents')->orderBy('nom_role');
+        if ($request->search) {
+            $q->where('nom_role', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 20));
+    }
+
+    public function apiRolesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nom_role' => 'required|string|max:255|unique:roles',
+            'description' => 'nullable|string',
+        ]);
+        $role = Role::create($validated);
+        return response()->json($role, 201);
+    }
+
+    public function apiRolesUpdate(Request $request, Role $role)
+    {
+        $validated = $request->validate([
+            'nom_role' => 'required|string|max:255|unique:roles,nom_role,' . $role->id,
+            'description' => 'nullable|string',
+        ]);
+        $role->update($validated);
+        return response()->json($role);
+    }
+
+    public function apiRolesDestroy(Role $role)
+    {
+        if ($role->agents()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des agents utilisent ce role.'], 422);
+        }
+        $role->delete();
+        return response()->json(['message' => 'Role supprime.']);
+    }
+
+    public function apiDepartmentsIndex(Request $request)
+    {
+        $q = Department::with('province')->withCount(['agents', 'sections'])->orderBy('nom');
+        if ($request->search) {
+            $q->where('nom', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 20));
+    }
+
+    public function apiDepartmentsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:departments',
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'province_id' => 'nullable|exists:provinces,id',
+        ]);
+        $dept = Department::create($validated);
+        return response()->json($dept->load('province'), 201);
+    }
+
+    public function apiDepartmentsUpdate(Request $request, Department $department)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:departments,code,' . $department->id,
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'province_id' => 'nullable|exists:provinces,id',
+        ]);
+        $department->update($validated);
+        return response()->json($department->load('province'));
+    }
+
+    public function apiDepartmentsDestroy(Department $department)
+    {
+        $department->delete();
+        return response()->json(['message' => 'Departement supprime.']);
+    }
+
+    public function apiFonctionsIndex(Request $request)
+    {
+        $q = Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom');
+        if ($request->search) {
+            $q->where('nom', 'like', "%{$request->search}%");
+        }
+        if ($request->niveau) {
+            $q->where('niveau_administratif', $request->niveau);
+        }
+        return response()->json($q->paginate($request->per_page ?? 30));
+    }
+
+    public function apiFonctionsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL,TOUS',
+            'type_poste' => 'nullable|string|max:100',
+            'est_chef' => 'boolean',
+            'description' => 'nullable|string',
+        ]);
+        $fonction = Fonction::create($validated);
+        return response()->json($fonction, 201);
+    }
+
+    public function apiFonctionsUpdate(Request $request, Fonction $fonction)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL,TOUS',
+            'type_poste' => 'nullable|string|max:100',
+            'est_chef' => 'boolean',
+            'description' => 'nullable|string',
+        ]);
+        $fonction->update($validated);
+        return response()->json($fonction);
+    }
+
+    public function apiFonctionsDestroy(Fonction $fonction)
+    {
+        if (Schema::hasTable('affectations') && Affectation::where('fonction_id', $fonction->id)->exists()) {
+            return response()->json(['message' => 'Impossible: des affectations utilisent cette fonction.'], 422);
+        }
+        $fonction->delete();
+        return response()->json(['message' => 'Fonction supprimee.']);
+    }
+
+    public function apiSectionsIndex(Request $request)
+    {
+        $q = Section::with('department')->withCount('cellules')->orderBy('nom');
+        if ($request->search) {
+            $q->where('nom', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 25));
+    }
+
+    public function apiSectionsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:sections',
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'type' => 'required|in:section,service_rattache',
+            'department_id' => 'nullable|exists:departments,id',
+        ]);
+        $section = Section::create($validated);
+        return response()->json($section->load('department'), 201);
+    }
+
+    public function apiSectionsUpdate(Request $request, Section $section)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:sections,code,' . $section->id,
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'type' => 'required|in:section,service_rattache',
+            'department_id' => 'nullable|exists:departments,id',
+        ]);
+        $section->update($validated);
+        return response()->json($section->load('department'));
+    }
+
+    public function apiSectionsDestroy(Section $section)
+    {
+        $section->delete();
+        return response()->json(['message' => 'Section supprimee.']);
+    }
+
+    public function apiCellulesIndex(Request $request)
+    {
+        $q = Cellule::with('section.department')->orderBy('nom');
+        if ($request->search) {
+            $q->where('nom', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 25));
+    }
+
+    public function apiCellulesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:cellules',
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'section_id' => 'required|exists:sections,id',
+        ]);
+        $cellule = Cellule::create($validated);
+        return response()->json($cellule->load('section'), 201);
+    }
+
+    public function apiCellulesUpdate(Request $request, Cellule $cellule)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:cellules,code,' . $cellule->id,
+            'nom' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'section_id' => 'required|exists:sections,id',
+        ]);
+        $cellule->update($validated);
+        return response()->json($cellule->load('section'));
+    }
+
+    public function apiCellulesDestroy(Cellule $cellule)
+    {
+        $cellule->delete();
+        return response()->json(['message' => 'Cellule supprimee.']);
+    }
+
+    public function apiLocalitesIndex(Request $request)
+    {
+        $q = Localite::with('province')->withCount('affectations')->orderBy('nom');
+        if ($request->search) {
+            $q->where('nom', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 25));
+    }
+
+    public function apiLocalitesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:localites',
+            'nom' => 'required|string|max:255',
+            'type' => 'required|in:territoire,zone_de_sante,commune,ville,autre',
+            'description' => 'nullable|string',
+            'province_id' => 'required|exists:provinces,id',
+        ]);
+        $localite = Localite::create($validated);
+        return response()->json($localite->load('province'), 201);
+    }
+
+    public function apiLocalitesUpdate(Request $request, Localite $localite)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:localites,code,' . $localite->id,
+            'nom' => 'required|string|max:255',
+            'type' => 'required|in:territoire,zone_de_sante,commune,ville,autre',
+            'description' => 'nullable|string',
+            'province_id' => 'required|exists:provinces,id',
+        ]);
+        $localite->update($validated);
+        return response()->json($localite->load('province'));
+    }
+
+    public function apiLocalitesDestroy(Localite $localite)
+    {
+        $localite->delete();
+        return response()->json(['message' => 'Localite supprimee.']);
+    }
+
+    public function apiOrganesIndex()
+    {
+        if (!Schema::hasTable('organes')) {
+            return response()->json(['data' => []]);
+        }
+        $organes = Organe::orderBy('code')->get();
+        return response()->json(['data' => $organes]);
+    }
+
+    public function apiOrganesStore(Request $request)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:organes',
+            'nom' => 'required|string|max:255',
+            'sigle' => 'required|string|max:20',
+            'description' => 'nullable|string',
+            'actif' => 'boolean',
+        ]);
+        $organe = Organe::create($validated);
+        return response()->json($organe, 201);
+    }
+
+    public function apiOrganesUpdate(Request $request, Organe $organe)
+    {
+        $validated = $request->validate([
+            'code' => 'required|string|max:10|unique:organes,code,' . $organe->id,
+            'nom' => 'required|string|max:255',
+            'sigle' => 'required|string|max:20',
+            'description' => 'nullable|string',
+            'actif' => 'boolean',
+        ]);
+        $organe->update($validated);
+        return response()->json($organe);
+    }
+
+    public function apiOrganesDestroy(Organe $organe)
+    {
+        $organe->delete();
+        return response()->json(['message' => 'Organe supprime.']);
+    }
+
+    public function apiUtilisateursIndex(Request $request)
+    {
+        $q = User::with(['agent', 'role'])->orderByDesc('id');
+        if ($request->search) {
+            $q->where('name', 'like', "%{$request->search}%")
+              ->orWhere('email', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 15));
+    }
+
+    public function apiUtilisateursFormData()
+    {
+        $agentsWithoutUser = Agent::whereDoesntHave('user')->orderBy('nom')->get(['id', 'nom', 'prenom', 'matricule']);
+        $roles = Role::orderBy('nom_role')->get(['id', 'nom_role']);
+        return response()->json(['agents' => $agentsWithoutUser, 'roles' => $roles]);
+    }
+
+    public function apiUtilisateursStore(Request $request)
+    {
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:agents,id|unique:users,agent_id',
+            'role_id' => 'required|exists:roles,id',
+            'password' => 'required|string|min:6',
+        ]);
+        $agent = Agent::findOrFail($validated['agent_id']);
+        $email = $agent->email ?: strtolower(str_replace(' ', '.', trim($agent->prenom ?? 'agent') . '.' . trim($agent->nom ?? $agent->id))) . '@pnmls.cd';
+        $user = User::create([
+            'name' => trim(($agent->prenom ?? '') . ' ' . ($agent->nom ?? '')),
+            'email' => $email,
+            'password' => bcrypt($validated['password']),
+            'agent_id' => $agent->id,
+            'role_id' => $validated['role_id'],
+        ]);
+        return response()->json($user->load(['agent', 'role']), 201);
+    }
+
+    public function apiUtilisateursUpdate(Request $request, User $user)
+    {
+        $validated = $request->validate([
+            'role_id' => 'required|exists:roles,id',
+            'password' => 'nullable|string|min:6',
+        ]);
+        $user->role_id = $validated['role_id'];
+        if (!empty($validated['password'])) {
+            $user->password = bcrypt($validated['password']);
+        }
+        $user->save();
+        return response()->json($user->load(['agent', 'role']));
+    }
+
+    public function apiUtilisateursDestroy(Request $request, User $user)
+    {
+        if ($user->id === $request->user()->id) {
+            return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 422);
+        }
+        $user->delete();
+        return response()->json(['message' => 'Utilisateur supprime.']);
+    }
+
+    public function apiDocsTravailIndex(Request $request)
+    {
+        $q = DocumentTravail::with('uploader')->orderByDesc('created_at');
+        if ($request->search) {
+            $q->where('titre', 'like', "%{$request->search}%");
+        }
+        return response()->json($q->paginate($request->per_page ?? 20));
+    }
+
+    public function apiDocsTravailStore(Request $request)
+    {
+        $validated = $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'categorie' => 'nullable|string|max:100',
+            'fichier' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
+            'actif' => 'boolean',
+        ]);
+        $path = $request->file('fichier')->store('documents-travail', 'public');
+        $doc = DocumentTravail::create([
+            'titre' => $validated['titre'],
+            'description' => $validated['description'] ?? null,
+            'categorie' => $validated['categorie'] ?? null,
+            'fichier' => $path,
+            'actif' => $validated['actif'] ?? true,
+            'uploaded_by' => $request->user()->id,
+        ]);
+        return response()->json($doc, 201);
+    }
+
+    public function apiDocsTravailUpdate(Request $request, DocumentTravail $documentTravail)
+    {
+        $validated = $request->validate([
+            'titre' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'categorie' => 'nullable|string|max:100',
+            'fichier' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
+            'actif' => 'boolean',
+        ]);
+        $data = collect($validated)->except('fichier')->toArray();
+        if ($request->hasFile('fichier')) {
+            $data['fichier'] = $request->file('fichier')->store('documents-travail', 'public');
+        }
+        $documentTravail->update($data);
+        return response()->json($documentTravail);
+    }
+
+    public function apiDocsTravailDestroy(DocumentTravail $documentTravail)
+    {
+        $documentTravail->delete();
+        return response()->json(['message' => 'Document supprime.']);
+    }
+
+    public function apiCategoriesDocsIndex()
+    {
+        $categories = CategorieDocument::orderBy('nom')->get();
+        return response()->json(['data' => $categories]);
+    }
+
+    public function apiCategoriesDocsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255|unique:categorie_documents',
+            'icone' => 'nullable|string|max:50',
+            'actif' => 'boolean',
+        ]);
+        $cat = CategorieDocument::create($validated);
+        return response()->json($cat, 201);
+    }
+
+    public function apiCategoriesDocsUpdate(Request $request, CategorieDocument $categorieDocument)
+    {
+        $validated = $request->validate([
+            'nom' => 'required|string|max:255|unique:categorie_documents,nom,' . $categorieDocument->id,
+            'icone' => 'nullable|string|max:50',
+            'actif' => 'boolean',
+        ]);
+        $categorieDocument->update($validated);
+        return response()->json($categorieDocument);
+    }
+
+    public function apiCategoriesDocsDestroy(CategorieDocument $categorieDocument)
+    {
+        $categorieDocument->delete();
+        return response()->json(['message' => 'Categorie supprimee.']);
+    }
+
+    public function apiLogs()
+    {
+        $logFile = storage_path('logs/laravel.log');
+        $lines = [];
+        if (file_exists($logFile)) {
+            $content = file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            $lines = array_slice($content, -300);
+        }
+        return response()->json(['lines' => $lines, 'file' => $logFile]);
+    }
+
+    public function apiLogsClear()
+    {
+        $logFile = storage_path('logs/laravel.log');
+        if (file_exists($logFile)) {
+            file_put_contents($logFile, '');
+        }
+        return response()->json(['message' => 'Logs effaces.']);
+    }
+
+    public function apiDeploymentIndex()
+    {
+        return response()->json(['message' => 'Deployment panel ready.']);
+    }
+
+    public function apiAffectationsIndex(Request $request)
+    {
+        if (!Schema::hasTable('affectations')) {
+            return response()->json(['data' => [], 'total' => 0]);
+        }
+        $q = Affectation::with(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite'])
+            ->orderByDesc('created_at');
+        if ($request->search) {
+            $q->whereHas('agent', function($aq) use ($request) {
+                $aq->where('nom', 'like', "%{$request->search}%")
+                   ->orWhere('prenom', 'like', "%{$request->search}%");
+            });
+        }
+        return response()->json($q->paginate($request->per_page ?? 25));
+    }
+
+    public function apiAffectationsFormData()
+    {
+        return response()->json([
+            'agents' => Agent::orderBy('nom')->get(['id', 'nom', 'prenom', 'matricule']),
+            'fonctions' => Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif']),
+            'departments' => Department::orderBy('nom')->get(['id', 'nom', 'code']),
+            'sections' => Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']),
+            'cellules' => Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']),
+            'provinces' => Province::orderBy('nom')->get(['id', 'nom', 'code']),
+            'localites' => Localite::orderBy('nom')->get(['id', 'nom', 'code', 'province_id']),
+        ]);
+    }
+
+    public function apiAffectationsStore(Request $request)
+    {
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:agents,id',
+            'fonction_id' => 'required|exists:fonctions,id',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'niveau' => 'required|in:direction,service_rattache,departement,section,cellule,province,local',
+            'department_id' => 'nullable|exists:departments,id',
+            'section_id' => 'nullable|exists:sections,id',
+            'cellule_id' => 'nullable|exists:cellules,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'localite_id' => 'nullable|exists:localites,id',
+            'date_debut' => 'nullable|date',
+            'date_fin' => 'nullable|date|after_or_equal:date_debut',
+            'actif' => 'boolean',
+            'remarque' => 'nullable|string',
+        ]);
+        $affectation = Affectation::create($validated);
+        return response()->json($affectation->load(['agent', 'fonction']), 201);
+    }
+
+    public function apiAffectationsUpdate(Request $request, Affectation $affectation)
+    {
+        $validated = $request->validate([
+            'agent_id' => 'required|exists:agents,id',
+            'fonction_id' => 'required|exists:fonctions,id',
+            'niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'niveau' => 'required|in:direction,service_rattache,departement,section,cellule,province,local',
+            'department_id' => 'nullable|exists:departments,id',
+            'section_id' => 'nullable|exists:sections,id',
+            'cellule_id' => 'nullable|exists:cellules,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'localite_id' => 'nullable|exists:localites,id',
+            'date_debut' => 'nullable|date',
+            'date_fin' => 'nullable|date|after_or_equal:date_debut',
+            'actif' => 'boolean',
+            'remarque' => 'nullable|string',
+        ]);
+        $affectation->update($validated);
+        return response()->json($affectation->load(['agent', 'fonction']));
+    }
+
+    public function apiAffectationsDestroy(Affectation $affectation)
+    {
+        $affectation->delete();
+        return response()->json(['message' => 'Affectation supprimee.']);
+    }
 }

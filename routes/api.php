@@ -99,5 +99,96 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin NT (Chef Section Nouvelle Technologie)
     Route::middleware('admin.nt')->prefix('admin')->group(function () {
         Route::get('dashboard', [ParametresController::class, 'apiDashboard']);
+
+        // Provinces
+        Route::get('provinces', [ParametresController::class, 'apiProvincesIndex']);
+        Route::post('provinces', [ParametresController::class, 'apiProvincesStore']);
+        Route::get('provinces/{province}', [ParametresController::class, 'apiProvincesShow']);
+        Route::put('provinces/{province}', [ParametresController::class, 'apiProvincesUpdate']);
+        Route::delete('provinces/{province}', [ParametresController::class, 'apiProvincesDestroy']);
+
+        // Grades
+        Route::get('grades', [ParametresController::class, 'apiGradesIndex']);
+        Route::post('grades', [ParametresController::class, 'apiGradesStore']);
+        Route::put('grades/{grade}', [ParametresController::class, 'apiGradesUpdate']);
+        Route::delete('grades/{grade}', [ParametresController::class, 'apiGradesDestroy']);
+
+        // Roles
+        Route::get('roles', [ParametresController::class, 'apiRolesIndex']);
+        Route::post('roles', [ParametresController::class, 'apiRolesStore']);
+        Route::put('roles/{role}', [ParametresController::class, 'apiRolesUpdate']);
+        Route::delete('roles/{role}', [ParametresController::class, 'apiRolesDestroy']);
+
+        // Departments
+        Route::get('departments', [ParametresController::class, 'apiDepartmentsIndex']);
+        Route::post('departments', [ParametresController::class, 'apiDepartmentsStore']);
+        Route::put('departments/{department}', [ParametresController::class, 'apiDepartmentsUpdate']);
+        Route::delete('departments/{department}', [ParametresController::class, 'apiDepartmentsDestroy']);
+
+        // Fonctions
+        Route::get('fonctions', [ParametresController::class, 'apiFonctionsIndex']);
+        Route::post('fonctions', [ParametresController::class, 'apiFonctionsStore']);
+        Route::put('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsUpdate']);
+        Route::delete('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsDestroy']);
+
+        // Sections
+        Route::get('sections', [ParametresController::class, 'apiSectionsIndex']);
+        Route::post('sections', [ParametresController::class, 'apiSectionsStore']);
+        Route::put('sections/{section}', [ParametresController::class, 'apiSectionsUpdate']);
+        Route::delete('sections/{section}', [ParametresController::class, 'apiSectionsDestroy']);
+
+        // Cellules
+        Route::get('cellules', [ParametresController::class, 'apiCellulesIndex']);
+        Route::post('cellules', [ParametresController::class, 'apiCellulesStore']);
+        Route::put('cellules/{cellule}', [ParametresController::class, 'apiCellulesUpdate']);
+        Route::delete('cellules/{cellule}', [ParametresController::class, 'apiCellulesDestroy']);
+
+        // Localites
+        Route::get('localites', [ParametresController::class, 'apiLocalitesIndex']);
+        Route::post('localites', [ParametresController::class, 'apiLocalitesStore']);
+        Route::put('localites/{localite}', [ParametresController::class, 'apiLocalitesUpdate']);
+        Route::delete('localites/{localite}', [ParametresController::class, 'apiLocalitesDestroy']);
+
+        // Organes
+        Route::get('organes', [ParametresController::class, 'apiOrganesIndex']);
+        Route::post('organes', [ParametresController::class, 'apiOrganesStore']);
+        Route::put('organes/{organe}', [ParametresController::class, 'apiOrganesUpdate']);
+        Route::delete('organes/{organe}', [ParametresController::class, 'apiOrganesDestroy']);
+
+        // Utilisateurs
+        Route::get('utilisateurs', [ParametresController::class, 'apiUtilisateursIndex']);
+        Route::get('utilisateurs/form-data', [ParametresController::class, 'apiUtilisateursFormData']);
+        Route::post('utilisateurs', [ParametresController::class, 'apiUtilisateursStore']);
+        Route::put('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursUpdate']);
+        Route::delete('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursDestroy']);
+
+        // Documents de Travail
+        Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
+        Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
+        Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
+        Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);
+
+        // Categories Documents
+        Route::get('categories-documents', [ParametresController::class, 'apiCategoriesDocsIndex']);
+        Route::post('categories-documents', [ParametresController::class, 'apiCategoriesDocsStore']);
+        Route::put('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsUpdate']);
+        Route::delete('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsDestroy']);
+
+        // Affectations
+        Route::get('affectations', [ParametresController::class, 'apiAffectationsIndex']);
+        Route::get('affectations/form-data', [ParametresController::class, 'apiAffectationsFormData']);
+        Route::post('affectations', [ParametresController::class, 'apiAffectationsStore']);
+        Route::put('affectations/{affectation}', [ParametresController::class, 'apiAffectationsUpdate']);
+        Route::delete('affectations/{affectation}', [ParametresController::class, 'apiAffectationsDestroy']);
+
+        // Logs
+        Route::get('logs', [ParametresController::class, 'apiLogs']);
+        Route::post('logs/clear', [ParametresController::class, 'apiLogsClear']);
+
+        // Deployment
+        Route::get('deployment', [ParametresController::class, 'apiDeploymentIndex']);
+
+        // Fonctions by organe (used by forms)
+        Route::get('fonctions-by-organe/{code}', [ParametresController::class, 'getAllFonctionsByOrgane']);
     });
 });

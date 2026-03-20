@@ -1,1 +1,0 @@
-import{a as e,b as t,c as n}from"./runtime-core.esm-bundler-D-b1XERb.js";import{t as r}from"./app-BIpkT5VH.js";var i={},a={class:`py-4`};function o(r,i){return t(),n(`div`,a,[...i[0]||=[e(`h4`,null,`Localites`,-1),e(`p`,{class:`text-muted`},`Cette page est en cours de developpement.`,-1)]])}var s=r(i,[[`render`,o]]);export{s as default};
