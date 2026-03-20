@@ -198,3 +198,64 @@ function isOverdue(tache) {
 
 onMounted(() => loadTaches())
 </script>
+
+<style scoped>
+/* ── Mobile responsive styles ── */
+@media (max-width: 768px) {
+  .rh-hero .row {
+    text-align: center;
+  }
+  .rh-hero .col-lg-4 {
+    text-align: center;
+  }
+  .hero-tools {
+    justify-content: center;
+    display: flex;
+  }
+  .rh-title {
+    font-size: 1.3rem;
+  }
+  .rh-sub {
+    font-size: 0.85rem;
+  }
+
+  /* Panel headers */
+  .panel-title {
+    font-size: 1rem;
+  }
+  .panel-sub {
+    font-size: 0.8rem;
+  }
+
+  /* Table compact */
+  .table {
+    font-size: 0.82rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.5rem 0.4rem;
+    white-space: nowrap;
+  }
+
+  /* Hide De/Assigne (2nd), Echeance (5th), Date (6th) */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
+
+  /* Compact action buttons */
+  .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  /* Dash panels spacing */
+  .dash-panel {
+    margin-top: 0.75rem !important;
+  }
+}
+</style>

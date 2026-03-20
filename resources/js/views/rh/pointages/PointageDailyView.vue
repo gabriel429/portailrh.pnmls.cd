@@ -211,3 +211,40 @@ onMounted(() => {
     fetchDaily()
 })
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    /* Hide Matricule(2), Entree(3), Sortie(4) */
+    .rh-table th:nth-child(2),
+    .rh-table td:nth-child(2),
+    .rh-table th:nth-child(3),
+    .rh-table td:nth-child(3),
+    .rh-table th:nth-child(4),
+    .rh-table td:nth-child(4) { display: none; }
+
+    /* Compact table */
+    .rh-table th, .rh-table td { padding: .4rem .3rem; font-size: .76rem; }
+    .rh-table th { font-size: .65rem; }
+
+    /* Day card stats should wrap */
+    .d-flex.gap-2 .rh-pill { font-size: .68rem; padding: .15rem .4rem; }
+
+    /* Filters */
+    .rh-filters { padding: .6rem; }
+    .rh-filters .row.g-3 > [class*="col-md"] { flex: 0 0 100%; max-width: 100%; }
+
+    /* Nav tabs wrap */
+    .d-flex.gap-2.mb-3 .btn { font-size: .78rem; padding: .3rem .55rem; }
+}
+
+@media (max-width: 575.98px) {
+    /* Also hide Heures(5) */
+    .rh-table th:nth-child(5),
+    .rh-table td:nth-child(5) { display: none; }
+
+    .rh-table th, .rh-table td { padding: .35rem .25rem; font-size: .72rem; }
+    .rh-table th { font-size: .62rem; }
+
+    .d-flex.gap-2 .rh-pill { font-size: .62rem; padding: .1rem .3rem; }
+}
+</style>

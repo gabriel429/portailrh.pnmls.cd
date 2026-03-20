@@ -272,3 +272,63 @@ onMounted(() => {
   fetchAffectations()
 })
 </script>
+
+<style scoped>
+/* ── Mobile responsive styles ── */
+@media (max-width: 768px) {
+  /* Header stack */
+  .d-flex.justify-content-between.align-items-center.mb-4 {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.75rem;
+  }
+
+  /* Search bar */
+  .card-body .row {
+    flex-direction: column;
+  }
+  .col-md-4.text-end {
+    text-align: center !important;
+  }
+
+  /* Table compact */
+  .table {
+    font-size: 0.82rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.5rem 0.4rem;
+    white-space: nowrap;
+  }
+
+  /* Hide Niveau Admin (3rd), Departement (4th), Section (5th), Province (6th) */
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) {
+    display: none;
+  }
+
+  /* Compact action buttons */
+  .btn-group .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Keep only Agent (1st), Fonction (2nd), Actif (7th), Actions (8th) */
+  /* Already hiding 3-6 above; no additional hides needed */
+  .table {
+    font-size: 0.78rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.35rem 0.3rem;
+  }
+}
+</style>

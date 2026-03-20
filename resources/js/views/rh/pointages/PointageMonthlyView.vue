@@ -240,3 +240,53 @@ onMounted(() => {
     fetchMonthly()
 })
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    /* Hide Matricule(2), Jours travail(3), Enregistres(4), Heures(7) */
+    .rh-table th:nth-child(2),
+    .rh-table td:nth-child(2),
+    .rh-table th:nth-child(3),
+    .rh-table td:nth-child(3),
+    .rh-table th:nth-child(4),
+    .rh-table td:nth-child(4),
+    .rh-table th:nth-child(7),
+    .rh-table td:nth-child(7) { display: none; }
+
+    /* Compact table */
+    .rh-table th, .rh-table td { padding: .4rem .3rem; font-size: .76rem; }
+    .rh-table th { font-size: .65rem; }
+
+    /* KPI grid: 2 columns on mobile */
+    .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: .6rem; }
+    .kpi-grid .kpi { padding: .6rem; }
+    .kpi-grid .kpi .value { font-size: 1.3rem; }
+    .kpi-grid .kpi .label { font-size: .7rem; }
+    .kpi-grid .kpi .trend { font-size: .6rem; }
+
+    /* Period info cards stack */
+    .row.g-3 > .col-md-6 { flex: 0 0 100%; max-width: 100%; }
+
+    /* Filters */
+    .rh-filters { padding: .6rem; }
+    .rh-filters .row.g-3 > [class*="col-md"] { flex: 0 0 100%; max-width: 100%; }
+
+    /* Nav tabs wrap */
+    .d-flex.gap-2.mb-3 .btn { font-size: .78rem; padding: .3rem .55rem; }
+
+    /* Footer row in tfoot - adjust colspan */
+    .rh-table tfoot td { font-size: .7rem; }
+}
+
+@media (max-width: 575.98px) {
+    /* Also hide Absents(6) */
+    .rh-table th:nth-child(6),
+    .rh-table td:nth-child(6) { display: none; }
+
+    .rh-table th, .rh-table td { padding: .35rem .25rem; font-size: .72rem; }
+    .rh-table th { font-size: .62rem; }
+
+    .kpi-grid .kpi .value { font-size: 1.1rem; }
+    .kpi-grid .kpi .label { font-size: .65rem; }
+}
+</style>

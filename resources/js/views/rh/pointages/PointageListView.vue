@@ -286,3 +286,39 @@ onMounted(() => {
     fetchDepartments()
 })
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    /* Hide Matricule(2), Entree(4), Sortie(5) */
+    .rh-table th:nth-child(2),
+    .rh-table td:nth-child(2),
+    .rh-table th:nth-child(4),
+    .rh-table td:nth-child(4),
+    .rh-table th:nth-child(5),
+    .rh-table td:nth-child(5) { display: none; }
+
+    /* Compact table */
+    .rh-table th, .rh-table td { padding: .4rem .3rem; font-size: .76rem; }
+    .rh-table th { font-size: .65rem; }
+
+    /* Action buttons */
+    .btn-group-sm .btn { padding: .2rem .35rem; font-size: .68rem; }
+
+    /* Filters */
+    .rh-list-card .row.g-3 > [class*="col-md"] { flex: 0 0 100%; max-width: 100%; }
+
+    /* Nav tabs wrap */
+    .d-flex.gap-2.mb-3 .btn { font-size: .78rem; padding: .3rem .55rem; }
+}
+
+@media (max-width: 575.98px) {
+    /* Also hide Heures(6) */
+    .rh-table th:nth-child(6),
+    .rh-table td:nth-child(6) { display: none; }
+
+    .rh-table th, .rh-table td { padding: .35rem .25rem; font-size: .72rem; }
+    .rh-table th { font-size: .62rem; }
+
+    .btn-group-sm .btn { padding: .18rem .3rem; font-size: .65rem; }
+}
+</style>

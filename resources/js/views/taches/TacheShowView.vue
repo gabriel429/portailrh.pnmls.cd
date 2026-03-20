@@ -270,3 +270,14 @@ function formatDateTime(dateStr) {
 
 onMounted(() => loadTache())
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    .rh-list-card, .dash-panel { border-radius: 12px; }
+    .card { border-radius: 12px; }
+    .card-body { padding: .85rem; }
+    dl.row dt { font-size: .8rem; }
+    dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
+    .badge { font-size: .7rem; }
+}
+</style>

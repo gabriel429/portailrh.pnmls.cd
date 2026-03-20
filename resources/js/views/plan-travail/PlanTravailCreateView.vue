@@ -225,3 +225,13 @@ async function handleSubmit() {
 
 onMounted(() => loadFormData())
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    .rh-list-card, .dash-panel { border-radius: 12px; padding: 1rem; }
+    .card { border-radius: 12px; }
+    .card-body { padding: .85rem; }
+    .form-label { font-size: .82rem; }
+    .btn { font-size: .85rem; }
+}
+</style>

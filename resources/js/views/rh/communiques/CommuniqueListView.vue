@@ -236,3 +236,69 @@ async function handleDelete() {
 
 onMounted(() => loadCommuniques())
 </script>
+
+<style scoped>
+/* ── Mobile responsive styles ── */
+@media (max-width: 768px) {
+  .rh-hero .row {
+    text-align: center;
+  }
+  .rh-hero .col-lg-4 {
+    text-align: center;
+  }
+  .hero-tools {
+    justify-content: center;
+    display: flex;
+  }
+  .rh-title {
+    font-size: 1.3rem;
+  }
+  .rh-sub {
+    font-size: 0.85rem;
+  }
+
+  /* Table compact */
+  .table {
+    font-size: 0.82rem;
+  }
+  .table th,
+  .table td {
+    padding: 0.5rem 0.4rem;
+    white-space: nowrap;
+  }
+
+  /* Hide Signataire (3rd), Date (4th), Expiration (5th) */
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(4),
+  .table td:nth-child(4),
+  .table th:nth-child(5),
+  .table td:nth-child(5) {
+    display: none;
+  }
+
+  /* Compact action buttons */
+  .d-flex.gap-1 .btn {
+    padding: 0.25rem 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  /* Pagination */
+  .pagination {
+    flex-wrap: wrap;
+    gap: 2px;
+  }
+  .page-link {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 576px) {
+  /* Also hide Urgence (2nd) */
+  .table th:nth-child(2),
+  .table td:nth-child(2) {
+    display: none;
+  }
+}
+</style>

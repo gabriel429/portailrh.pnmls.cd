@@ -280,3 +280,13 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    .card { border-radius: 12px; }
+    .card-header { padding: .75rem 1rem; font-size: .88rem; }
+    .card-body { padding: .85rem; }
+    .badge { font-size: .7rem; }
+    .btn-sm { font-size: .78rem; }
+}
+</style>
