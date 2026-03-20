@@ -13,6 +13,12 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->group(base_path('routes/web_rh.php'));
+
+            // SPA catch-all — MUST be registered AFTER all other routes
+            \Illuminate\Support\Facades\Route::middleware('web')
+                ->get('/{any}', function () {
+                    return view('spa');
+                })->where('any', '^(?!api/).*$');
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
