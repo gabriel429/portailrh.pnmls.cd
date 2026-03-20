@@ -6,8 +6,9 @@
         <i class="fas fa-user"></i>
       </div>
       <div class="dash-hero-text">
-        <h2>Bienvenue, {{ auth.agent?.prenom || auth.user?.name || 'Utilisateur' }}</h2>
-        <p>{{ today }}</p>
+        <h2>Bienvenu(e), {{ auth.agent ? auth.agent.nom + ' ' + auth.agent.prenom : auth.user?.name || 'Utilisateur' }}</h2>
+        <p v-if="auth.agent?.fonction" class="dash-hero-fonction">{{ auth.agent.fonction }}</p>
+        <p class="dash-hero-date">{{ today }}</p>
       </div>
       <div class="dash-hero-stats">
         <div>
@@ -255,7 +256,8 @@ onMounted(async () => {
 }
 .dash-hero-text { flex: 1; min-width: 150px; }
 .dash-hero-text h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 .2rem; }
-.dash-hero-text p { font-size: .82rem; opacity: .7; margin: 0; text-transform: capitalize; }
+.dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
+.dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
 .dash-hero-stats { display: flex; gap: 1.5rem; margin-left: auto; }
 .dash-hero-stat-val { font-size: 1.4rem; font-weight: 800; text-align: center; }
 .dash-hero-stat-lbl { font-size: .68rem; opacity: .7; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
