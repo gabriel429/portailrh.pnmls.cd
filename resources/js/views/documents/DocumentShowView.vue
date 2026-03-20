@@ -441,4 +441,50 @@ onMounted(() => {
 .btn-primary-custom:hover {
   color: #fff;
 }
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+  .detail-card {
+    border-radius: 12px;
+  }
+  .detail-card-header {
+    padding: 1.25rem 1rem;
+    gap: 0.75rem;
+  }
+  .detail-card-header h4 {
+    font-size: 1.05rem;
+  }
+  .doc-icon-lg {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    font-size: 1.3rem;
+  }
+  .detail-card-body {
+    padding: 1rem;
+  }
+  .detail-field label {
+    font-size: 0.75rem;
+  }
+  .detail-field p {
+    font-size: 0.88rem;
+  }
+  .file-preview-section {
+    padding: 1rem;
+  }
+  .detail-card-footer {
+    padding: 1rem;
+    gap: 0.5rem;
+  }
+  .detail-card-footer .btn {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.85rem;
+  }
+  .btn-delete-doc {
+    margin-left: 0 !important;
+    width: 100%;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+}
 </style>

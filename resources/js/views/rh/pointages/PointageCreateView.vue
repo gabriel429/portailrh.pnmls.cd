@@ -295,4 +295,39 @@ onMounted(() => {
 .agent-name { font-weight: 600; white-space: nowrap; }
 .agent-poste { font-size: 0.85em; color: #6c757d; }
 .row-recorded { background-color: #f0fdf4; }
+
+/* Mobile responsive */
+@media (max-width: 767.98px) {
+    .pointage-table th, .pointage-table td {
+        padding: 0.4rem 0.35rem;
+        font-size: 0.82rem;
+    }
+    .pointage-table input[type="time"] {
+        min-width: 90px;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.4rem;
+    }
+    .pointage-table input[type="text"] {
+        min-width: 90px;
+        font-size: 0.85rem;
+        padding: 0.25rem 0.4rem;
+    }
+    .agent-name {
+        white-space: normal;
+        font-size: 0.85rem;
+    }
+    .agent-poste {
+        font-size: 0.75em;
+    }
+    .d-flex.gap-2.mt-3 {
+        flex-direction: column;
+    }
+    .d-flex.gap-2.mt-3 .btn {
+        width: 100%;
+    }
+    .btn-lg {
+        font-size: 0.95rem;
+        padding: 0.5rem 1rem;
+    }
+}
 </style>

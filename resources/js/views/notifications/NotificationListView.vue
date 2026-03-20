@@ -318,4 +318,86 @@ onMounted(() => loadNotifications())
   .notif-card { flex-wrap: wrap; gap: .6rem; }
   .notif-card-actions { flex-direction: row; width: 100%; }
 }
+
+/* ── Tablet/Mobile Responsive ── */
+@media (max-width: 767.98px) {
+  .notif-hero {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+  .notif-hero::after {
+    width: 120px;
+    height: 120px;
+  }
+  .notif-hero h2 {
+    font-size: 1.1rem;
+  }
+  .notif-hero p {
+    font-size: .78rem;
+  }
+  .notif-hero-stats {
+    gap: 1rem;
+    margin-top: .75rem;
+  }
+  .notif-hero-stat-val {
+    font-size: 1.2rem;
+  }
+  .notif-hero-stat-lbl {
+    font-size: .65rem;
+  }
+  .notif-actions {
+    gap: .4rem;
+    margin-bottom: 1rem;
+  }
+  .notif-action-btn {
+    padding: .35rem .7rem;
+    font-size: .72rem;
+  }
+  .notif-card {
+    padding: .85rem 1rem;
+    border-radius: 10px;
+    gap: .75rem;
+  }
+  .notif-card-icon {
+    width: 38px;
+    height: 38px;
+    font-size: .95rem;
+    border-radius: 10px;
+  }
+  .notif-card-title {
+    font-size: .82rem;
+  }
+  .notif-card-msg {
+    font-size: .75rem;
+  }
+  .notif-card-meta {
+    flex-wrap: wrap;
+    gap: .35rem;
+  }
+  .notif-card-time {
+    font-size: .68rem;
+  }
+  .notif-card-type {
+    font-size: .6rem;
+  }
+  .notif-card-btn {
+    font-size: .65rem;
+    padding: .2rem .5rem;
+  }
+  .notif-empty-icon {
+    width: 52px;
+    height: 52px;
+    font-size: 1.2rem;
+  }
+  .notif-empty h5 {
+    font-size: 1rem;
+  }
+  .notif-empty p {
+    font-size: .82rem;
+  }
+  .pagination .page-link {
+    font-size: .75rem;
+    padding: .3rem .6rem;
+  }
+}
 </style>

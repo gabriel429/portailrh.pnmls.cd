@@ -386,4 +386,67 @@ onMounted(() => {
   margin: 0;
   font-weight: 500;
 }
+
+/* ── Mobile Responsive ── */
+@media (max-width: 767.98px) {
+  .page-hero {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+  .page-hero h4 {
+    font-size: 1.1rem;
+  }
+  .page-hero small {
+    font-size: .78rem;
+  }
+  .page-hero-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+  .hero-btn {
+    padding: .4rem .9rem;
+    font-size: .78rem;
+  }
+  .file-info-bar {
+    border-radius: 10px;
+    padding: .6rem 1rem;
+  }
+  .file-info-item {
+    font-size: .75rem;
+  }
+  .log-card {
+    border-radius: 10px;
+  }
+  .log-container {
+    max-height: 400px;
+  }
+  .log-content {
+    font-size: .7rem;
+    padding: .75rem .5rem;
+  }
+  .line-number {
+    width: 32px;
+    margin-right: 8px;
+    font-size: .65rem;
+  }
+  .log-footer {
+    padding: .6rem 1rem;
+  }
+  .scroll-btn {
+    font-size: .75rem;
+    padding: .3rem .7rem;
+  }
+  .empty-state {
+    padding: 2rem 1rem;
+    border-radius: 10px;
+  }
+  .empty-state i {
+    font-size: 2rem;
+  }
+  .empty-title {
+    font-size: 1rem;
+  }
+}
 </style>

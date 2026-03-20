@@ -585,4 +585,42 @@ onMounted(() => {
     display: inline-flex; align-items: center; justify-content: center;
     font-size: .75rem; margin-right: .35rem;
 }
+
+/* Mobile responsive */
+@media (max-width: 767.98px) {
+    .agent-form-hero {
+        padding: 1.25rem 1rem;
+        border-radius: 10px;
+    }
+    .agent-form-hero::after {
+        width: 120px;
+        height: 120px;
+        right: -10px;
+    }
+    .agent-form-hero h2 {
+        font-size: 1.2rem;
+    }
+    .form-section {
+        padding: 1.25rem 1rem;
+        border-radius: 10px;
+    }
+    .form-section-header h5 {
+        font-size: 1rem;
+    }
+    .form-section-icon {
+        width: 36px;
+        height: 36px;
+        font-size: 0.95rem;
+    }
+    .btn-submit, .btn-cancel {
+        padding: 0.6rem 1.25rem;
+        font-size: 0.9rem;
+    }
+    .d-flex.gap-3.justify-content-end {
+        flex-direction: column;
+    }
+    .d-flex.gap-3.justify-content-end .btn {
+        width: 100%;
+    }
+}
 </style>

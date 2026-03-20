@@ -666,4 +666,76 @@ onMounted(() => {
   border-color: transparent;
   color: #fff;
 }
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+  .docs-hero {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
+  .docs-hero h2 {
+    font-size: 1.15rem;
+  }
+  .docs-hero::after {
+    width: 120px;
+    height: 120px;
+  }
+  .btn-upload {
+    width: 100%;
+    text-align: center;
+    padding: 0.5rem 1rem;
+    font-size: 0.88rem;
+  }
+  .stat-pill {
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+  }
+  .stat-pill-val {
+    font-size: 1rem;
+  }
+  .stat-pill-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 0.85rem;
+  }
+  .filter-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+  .doc-card {
+    border-radius: 12px;
+  }
+  .doc-card-top {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+  .doc-icon-wrap {
+    width: 42px;
+    height: 42px;
+    font-size: 1.15rem;
+    border-radius: 10px;
+  }
+  .doc-card-info h6 {
+    font-size: 0.88rem;
+  }
+  .doc-card-actions .doc-action {
+    font-size: 0.75rem;
+    padding: 0.55rem 0.25rem;
+  }
+  .empty-state {
+    padding: 2.5rem 1rem;
+    border-radius: 12px;
+  }
+  .empty-state-icon {
+    width: 64px;
+    height: 64px;
+    font-size: 1.5rem;
+  }
+  .pagination-wrap {
+    flex-direction: column;
+    gap: 0.75rem;
+    text-align: center;
+    padding: 1rem;
+  }
+}
 </style>

@@ -683,4 +683,48 @@ onMounted(() => {
     border-left-color: #ffc107;
     background: #fffef5;
 }
+
+/* Mobile responsive */
+@media (max-width: 767.98px) {
+    .agent-header {
+        padding: 20px 16px;
+        border-radius: 6px;
+    }
+    .agent-header::after {
+        width: 120px;
+        height: 120px;
+        right: -10px;
+    }
+    .agent-header h2 {
+        font-size: 1.25rem;
+    }
+    .agent-header .badge {
+        font-size: 0.75rem;
+    }
+    .nav-tabs .nav-link {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.6rem;
+    }
+    .nav-tabs .nav-link i {
+        display: none;
+    }
+    .tab-badge {
+        font-size: 0.6rem;
+    }
+    .timeline-item {
+        padding-left: 20px;
+        padding-bottom: 14px;
+    }
+    .message-card {
+        padding: 10px;
+        margin-bottom: 10px;
+    }
+    .card-body {
+        padding: 0.75rem;
+    }
+    .table th, .table td {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.85rem;
+    }
+}
 </style>

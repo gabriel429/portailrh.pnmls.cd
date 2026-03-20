@@ -283,4 +283,25 @@ async function submitForm() {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+  .card {
+    border-radius: 12px;
+  }
+  .card-body {
+    padding: 1rem !important;
+  }
+  .password-icon-wrap {
+    width: 52px;
+    height: 52px;
+    font-size: 1.2rem;
+  }
+  .btn-primary {
+    font-size: 0.9rem;
+  }
+  .btn-outline-secondary {
+    font-size: 0.88rem;
+  }
+}
 </style>

@@ -677,4 +677,54 @@ async function submitForm() {
     grid-template-columns: 1fr;
   }
 }
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+  .upload-hero {
+    padding: 1.25rem 1rem;
+    border-radius: 14px;
+  }
+  .upload-hero h2 {
+    font-size: 1.2rem;
+  }
+  .upload-hero::after {
+    width: 120px;
+    height: 120px;
+  }
+  .form-card {
+    border-radius: 12px;
+  }
+  .form-card-header {
+    padding: 1rem 1.25rem;
+  }
+  .form-card-body {
+    padding: 1rem;
+  }
+  .upload-zone {
+    padding: 2rem 1rem;
+    border-radius: 12px;
+  }
+  .upload-zone-icon {
+    width: 60px;
+    height: 60px;
+  }
+  .upload-zone-icon i {
+    font-size: 1.5rem;
+  }
+  .btn-submit {
+    padding: 0.6rem 1.25rem;
+    font-size: 0.88rem;
+  }
+  .btn-cancel {
+    padding: 0.6rem 1rem;
+    font-size: 0.88rem;
+  }
+  .info-banner {
+    border-radius: 10px;
+    padding: 0.85rem 1rem;
+  }
+  .info-banner p {
+    font-size: 0.82rem;
+  }
+}
 </style>

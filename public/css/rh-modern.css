@@ -454,11 +454,49 @@
 }
 
 @media (max-width: 768px) {
+    .rh-modern { padding: 1rem 0 2rem; }
+    .rh-shell { padding: 0 .75rem; }
+    .rh-list-shell { padding: 0 .75rem; }
     .hero-tools { justify-content: flex-start; margin-top: .6rem; }
     .rh-toolbar { grid-template-columns: 1fr; }
+    .rh-hero { padding: 1.1rem; border-radius: 16px; }
+    .rh-title { font-size: 1.15rem !important; }
+    .rh-sub { font-size: .78rem; }
+    .btn-rh { padding: .4rem .7rem; font-size: .78rem; }
+    .overview { gap: .6rem; }
+    .panel-head { padding: .7rem .8rem .6rem; }
+    .panel-title { font-size: .9rem; }
+    .table-wrap { padding: .4rem .5rem .7rem; }
+    .rh-table { font-size: .78rem; }
+    .rh-table th, .rh-table td { padding: .45rem .35rem; }
+    .rh-table th { font-size: .68rem; }
+    .rh-filters { padding: .65rem; }
+    .kpi .value { font-size: 1.3rem; }
+    .kpi .label { font-size: .68rem; }
+    .activity-item { grid-template-columns: 32px 1fr; gap: .6rem; }
+    .activity-icon { width: 32px; height: 32px; font-size: .8rem; }
+    .activity-title { font-size: .84rem; }
+    .activity-time { font-size: .72rem; }
+    .action-card { padding: .7rem; }
+    .action-title { font-size: .82rem; }
+    .action-desc { font-size: .72rem; }
+    .action-icon { width: 30px; height: 30px; }
+    .quick-link { padding: .55rem .65rem; font-size: .84rem; }
+    .dash-panel { border-radius: 14px; }
+    .rh-list-card { border-radius: 14px; }
 }
 
 @media (max-width: 576px) {
+    .rh-modern { padding: .75rem 0 1.5rem; }
+    .rh-shell { padding: 0 .5rem; }
+    .rh-list-shell { padding: 0 .5rem; }
+    .rh-hero { padding: .9rem; border-radius: 12px; }
+    .rh-title { font-size: 1.05rem !important; }
+    .btn-rh { padding: .35rem .6rem; font-size: .72rem; }
     .kpi-grid { grid-template-columns: 1fr; }
+    .kpi { padding: .7rem; }
+    .kpi .value { font-size: 1.1rem; }
     .actions-grid { grid-template-columns: 1fr; }
+    .dash-grid { grid-template-columns: 1fr; }
+    .rh-table th, .rh-table td { padding: .35rem .25rem; font-size: .74rem; }
 }

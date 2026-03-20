@@ -480,4 +480,71 @@ onMounted(() => fetchUtilisateurs())
   color: #cbd5e1;
   border-color: #f1f5f9;
 }
+
+/* ── Mobile Responsive ── */
+@media (max-width: 767.98px) {
+  .page-hero {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+  .hero-title {
+    font-size: 1.1rem;
+  }
+  .hero-subtitle {
+    font-size: .78rem;
+  }
+  .page-hero-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+  .hero-btn {
+    padding: .4rem .9rem;
+    font-size: .78rem;
+  }
+  .search-box {
+    border-radius: 10px;
+    padding: .85rem 1rem;
+  }
+  .search-wrapper {
+    max-width: 100% !important;
+  }
+  .search-input {
+    font-size: .82rem;
+  }
+  .data-card {
+    border-radius: 10px;
+  }
+  .data-table thead th {
+    font-size: .72rem;
+    padding: .65rem .75rem;
+  }
+  .data-table tbody td {
+    font-size: .82rem;
+    padding: .6rem .75rem;
+  }
+  .user-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: .6rem;
+    border-radius: 8px;
+  }
+  .action-btn {
+    width: 28px;
+    height: 28px;
+    font-size: .72rem;
+  }
+  .empty-state {
+    padding: 2rem 1rem;
+    border-radius: 10px;
+  }
+  .empty-state i {
+    font-size: 2rem;
+  }
+  .modern-pagination .page-link {
+    font-size: .78rem;
+    padding: .3rem .55rem;
+  }
+}
 </style>

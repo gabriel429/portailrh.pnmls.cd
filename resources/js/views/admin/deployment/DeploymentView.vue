@@ -431,4 +431,59 @@ async function runAction(action) {
   border-color: #dc2626;
   color: #fff;
 }
+
+/* ── Mobile Responsive ── */
+@media (max-width: 767.98px) {
+  .page-hero {
+    padding: 1.25rem 1rem;
+    border-radius: 12px;
+  }
+  .page-hero::after {
+    width: 120px;
+    height: 120px;
+  }
+  .page-hero h4 {
+    font-size: 1.1rem;
+  }
+  .page-hero small {
+    font-size: .78rem;
+  }
+  .page-hero-icon {
+    width: 42px;
+    height: 42px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+  .result-alert {
+    border-radius: 10px;
+    padding: .85rem 1rem;
+  }
+  .result-output {
+    font-size: .75rem;
+    padding: .6rem;
+  }
+  .section-block {
+    margin-bottom: 1.5rem;
+  }
+  .deploy-card {
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .deploy-card-icon {
+    width: 36px;
+    height: 36px;
+    font-size: .95rem;
+    border-radius: 10px;
+  }
+  .deploy-card-title {
+    font-size: .85rem;
+  }
+  .deploy-card-desc {
+    font-size: .75rem;
+  }
+  .deploy-btn {
+    font-size: .78rem;
+    padding: .4rem .85rem;
+  }
+}
 </style>

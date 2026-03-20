@@ -325,4 +325,24 @@ onMounted(fetchProfileData)
   background-color: #f8f9fc;
   color: #6c757d;
 }
+
+/* Mobile Responsive */
+@media (max-width: 767.98px) {
+  .card {
+    border-radius: 12px;
+  }
+  .card-body {
+    padding: 1rem;
+  }
+  .card-title {
+    font-size: 0.95rem;
+  }
+  .btn-primary {
+    padding: 0.5rem 1rem;
+    font-size: 0.88rem;
+  }
+  .btn-outline-secondary {
+    font-size: 0.88rem;
+  }
+}
 </style>

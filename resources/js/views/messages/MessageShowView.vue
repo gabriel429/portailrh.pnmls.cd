@@ -13,7 +13,7 @@
       <!-- Carte message avec logo PNMLS en fond -->
       <div class="card shadow-sm border-0" style="overflow: hidden; position: relative;">
         <!-- Logo en arriere-plan watermark -->
-        <div style="
+        <div class="watermark-wrapper" style="
           position: absolute;
           top: 50%;
           left: 50%;
@@ -22,7 +22,7 @@
           pointer-events: none;
           z-index: 0;
         ">
-          <img src="/images/logo-pnmls.png" alt="" style="width: 350px; height: auto;">
+          <img src="/images/logo-pnmls.png" alt="" class="watermark-logo" style="width: 350px; height: auto;">
         </div>
 
         <!-- En-tete du message -->
@@ -120,3 +120,29 @@ function timeAgo(dateStr) {
 
 onMounted(() => loadMessage())
 </script>
+
+<style scoped>
+@media (max-width: 767.98px) {
+    /* Fix logo watermark overflow on small screens */
+    .watermark-logo {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    /* Reduce card body padding */
+    .card-body {
+        padding: 1rem !important;
+    }
+
+    /* Slightly compact header title */
+    .card-header h4 {
+        font-size: 1.1rem;
+    }
+
+    /* Stack footer items vertically to avoid overflow */
+    .card-footer .d-flex {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+</style>
