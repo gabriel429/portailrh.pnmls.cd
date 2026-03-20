@@ -1,1 +1,0 @@
-import{i as e}from"./app-B0hVqhCx.js";function t(t={}){return e.get(`/requests`,{params:t})}function n(t){return e.get(`/requests/${t}`)}function r(t){return e.post(`/requests`,t,{headers:{"Content-Type":`multipart/form-data`}})}function i(t,n){return e.put(`/requests/${t}`,n)}function a(t){return e.delete(`/requests/${t}`)}export{i as a,a as i,n,t as r,r as t};

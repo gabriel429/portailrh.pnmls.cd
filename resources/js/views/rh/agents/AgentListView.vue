@@ -472,3 +472,189 @@ onMounted(() => {
     fetchAgents()
 })
 </script>
+
+<style scoped>
+/* ── KPI cards ── */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: .75rem;
+}
+.kpi-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: .9rem;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.kpi-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1e293b;
+    line-height: 1;
+}
+.kpi-label {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin-top: .35rem;
+}
+
+/* ── Card header organe ── */
+.card-header {
+    padding: .85rem 1rem;
+}
+.card-title {
+    font-weight: 800;
+    font-size: 1rem;
+}
+
+/* ── Table ── */
+.rh-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.rh-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.rh-table th, .rh-table td {
+    padding: .55rem .5rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle;
+    font-size: .84rem;
+}
+.rh-table th {
+    font-size: .72rem;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    background: #f8fafc;
+    white-space: nowrap;
+}
+.agent-row:hover {
+    background: #f0f9ff;
+}
+
+/* ── Action buttons ── */
+.btn-group-sm .btn {
+    padding: .25rem .45rem;
+    font-size: .75rem;
+}
+
+/* ── Form controls in hero ── */
+.rh-hero .form-control,
+.rh-hero .form-select {
+    border-radius: 10px;
+    font-size: .85rem;
+    border: 1.5px solid rgba(255,255,255,.25);
+    background: rgba(255,255,255,.15);
+    color: #fff;
+}
+.rh-hero .form-control::placeholder { color: rgba(255,255,255,.6); }
+.rh-hero .form-control:focus,
+.rh-hero .form-select:focus {
+    background: rgba(255,255,255,.25);
+    border-color: rgba(255,255,255,.5);
+    color: #fff;
+    box-shadow: none;
+}
+.rh-hero .form-select option { color: #333; background: #fff; }
+.rh-hero .btn-primary {
+    background: rgba(255,255,255,.2);
+    border: 1.5px solid rgba(255,255,255,.3);
+    color: #fff;
+}
+.rh-hero .btn-outline-secondary {
+    border-color: rgba(255,255,255,.3);
+    color: rgba(255,255,255,.8);
+}
+
+/* ── Modal ── */
+.modal-content { border-radius: 16px; overflow: hidden; }
+
+/* ═══════════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+    /* KPI grid */
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+    .kpi-card { padding: .65rem .5rem; border-radius: 10px; }
+    .kpi-value { font-size: 1.2rem; }
+    .kpi-label { font-size: .65rem; }
+
+    /* Card header */
+    .card-header { padding: .65rem .75rem; }
+    .card-title { font-size: .88rem; }
+
+    /* Table — hide secondary columns on mobile */
+    .rh-table th:nth-child(3),
+    .rh-table td:nth-child(3),
+    .rh-table th:nth-child(4),
+    .rh-table td:nth-child(4),
+    .rh-table th:nth-child(7),
+    .rh-table td:nth-child(7),
+    .rh-table th:nth-child(8),
+    .rh-table td:nth-child(8) {
+        display: none;
+    }
+
+    .rh-table th, .rh-table td {
+        padding: .4rem .3rem;
+        font-size: .76rem;
+    }
+    .rh-table th { font-size: .65rem; }
+
+    /* Avatar */
+    .agent-avatar-initials,
+    .agent-avatar img {
+        width: 26px !important;
+        height: 26px !important;
+        font-size: .65rem !important;
+    }
+
+    /* Action buttons */
+    .btn-group-sm .btn {
+        padding: .2rem .35rem;
+        font-size: .68rem;
+    }
+
+    /* Hero filters */
+    .rh-hero .input-group {
+        flex-wrap: nowrap;
+    }
+    .rh-hero .form-control,
+    .rh-hero .form-select {
+        font-size: .8rem;
+    }
+
+    /* Modal */
+    .modal-dialog { margin: .75rem; }
+    .modal-header { padding: .75rem 1rem; }
+    .modal-header h5 { font-size: .95rem; }
+    .modal-body { padding: .9rem; }
+    .modal-footer { padding: .6rem .9rem; }
+}
+
+@media (max-width: 575.98px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .kpi-value { font-size: 1rem; }
+
+    /* Hide even more columns on very small screens */
+    .rh-table th:nth-child(5),
+    .rh-table td:nth-child(5),
+    .rh-table th:nth-child(6),
+    .rh-table td:nth-child(6) {
+        display: none;
+    }
+
+    .rh-table th, .rh-table td {
+        padding: .35rem .25rem;
+        font-size: .72rem;
+    }
+}
+</style>
