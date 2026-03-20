@@ -521,6 +521,20 @@ onMounted(() => {
     border-radius: 16px;
     padding: 2rem 2.5rem;
     margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+.agent-form-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
 }
 .agent-form-hero h2 { font-weight: 700; margin-bottom: .25rem; }
 .agent-form-hero p { opacity: .85; margin-bottom: 0; }

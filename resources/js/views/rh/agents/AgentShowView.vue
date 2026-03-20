@@ -635,6 +635,20 @@ onMounted(() => {
     padding: 30px;
     border-radius: 8px;
     margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+}
+.agent-header::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
 }
 .agent-header .badge { font-size: 0.85rem; }
 .nav-tabs .nav-link { font-weight: 500; color: #666; }

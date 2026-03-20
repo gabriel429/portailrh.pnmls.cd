@@ -219,6 +219,35 @@ body {
 .toast-item.info { background: #0077B5; color: #fff; }
 @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
 
+/* ── RH Hero (global for views using class rh-hero without scoped styles) ── */
+.rh-hero {
+    background: linear-gradient(135deg, #0077B5 0%, #005a87 50%, #003f5f 100%);
+    border-radius: 18px;
+    padding: 2rem 2.25rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+}
+.rh-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
+}
+.rh-hero .rh-title { font-size: 1.55rem; font-weight: 800; color: #fff; margin: 0; }
+.rh-hero .rh-sub { font-size: .92rem; color: rgba(255,255,255,.8); margin: 0; }
+.rh-hero .hero-tools { display: flex; gap: .5rem; align-items: center; }
+.rh-hero .hero-tools .btn-rh { padding: .45rem 1.1rem; border-radius: 10px; font-size: .85rem; font-weight: 600; border: none; }
+.rh-hero .hero-tools .btn-rh.main { background: rgba(255,255,255,.2); color: #fff; backdrop-filter: blur(4px); }
+.rh-hero .hero-tools .btn-rh.main:hover { background: rgba(255,255,255,.35); }
+
 /* ── Loading spinner ── */
 .loading-overlay {
     display: flex; align-items: center; justify-content: center;

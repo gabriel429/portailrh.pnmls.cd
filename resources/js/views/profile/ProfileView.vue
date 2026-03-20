@@ -592,6 +592,19 @@ onMounted(fetchProfile)
   height: 200px;
   border-radius: 16px 16px 0 0;
   position: relative;
+  overflow: hidden;
+}
+.profile-cover::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
 }
 .profile-cover .cover-pattern {
   position: absolute; inset: 0;

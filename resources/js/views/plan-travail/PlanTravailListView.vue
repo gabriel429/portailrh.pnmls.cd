@@ -265,6 +265,20 @@ onMounted(() => loadPlan())
   padding: 1.75rem 2rem;
   color: #fff;
   box-shadow: 0 8px 32px rgba(0,119,181,.25);
+  position: relative;
+  overflow: hidden;
+}
+.rh-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
 }
 .rh-title {
   font-size: 1.4rem;

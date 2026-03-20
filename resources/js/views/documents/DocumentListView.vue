@@ -392,6 +392,18 @@ onMounted(() => {
   overflow: hidden;
   color: #fff;
 }
+.docs-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
+}
 .docs-hero::before {
   content: '';
   position: absolute;

@@ -287,6 +287,19 @@ onMounted(async () => {
   box-shadow: 0 10px 40px rgba(0, 119, 181, 0.3);
 }
 
+.hero-banner::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
+}
+
 .hero-pattern {
   position: absolute;
   inset: 0;

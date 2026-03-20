@@ -227,6 +227,20 @@ onMounted(async () => {
   flex-wrap: wrap;
   gap: 1rem;
   box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
+  position: relative;
+  overflow: hidden;
+}
+.dash-hero::after {
+    content: '';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px;
+    height: 200px;
+    background: url('/images/pnmls.jpeg') center/contain no-repeat;
+    opacity: 0.10;
+    pointer-events: none;
 }
 .dash-hero-content {
   display: flex;
