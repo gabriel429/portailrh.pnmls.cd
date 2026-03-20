@@ -426,14 +426,24 @@ const formOptions = reactive({
 
 // Organe to niveau mapping
 const organeToNiveau = {
+    'secrétariat exécutif national': 'SEN',
     'secretariat executif national': 'SEN',
+    'secrétariat exécutif provincial': 'SEP',
     'secretariat executif provincial': 'SEP',
+    'secrétariat exécutif local': 'SEL',
     'secretariat executif local': 'SEL',
+}
+
+function normalizeStr(str) {
+    return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 const currentNiveau = computed(() => {
     if (!form.organe) return ''
-    return organeToNiveau[form.organe.trim().toLowerCase()] || ''
+    const key = form.organe.trim().toLowerCase()
+    if (organeToNiveau[key]) return organeToNiveau[key]
+    const normalized = normalizeStr(form.organe)
+    return organeToNiveau[normalized] || ''
 })
 
 const filteredSections = computed(() => {
@@ -529,7 +539,8 @@ function populateForm(agentData) {
     form.statut = agentData.statut || 'actif'
 
     // Determine rattachement type for SEN
-    const niveau = organeToNiveau[(form.organe || '').trim().toLowerCase()] || ''
+    const orgKey = (form.organe || '').trim().toLowerCase()
+    const niveau = organeToNiveau[orgKey] || organeToNiveau[normalizeStr(form.organe || '')] || ''
     if (niveau === 'SEN') {
         typeRattachement.value = form.departement_id ? 'departement' : 'service_rattache'
     }

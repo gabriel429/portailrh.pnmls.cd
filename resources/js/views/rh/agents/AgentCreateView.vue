@@ -377,14 +377,25 @@ const options = reactive({
 
 // Organe to niveau mapping
 const organeToNiveau = {
+    'secrétariat exécutif national': 'SEN',
     'secretariat executif national': 'SEN',
+    'secrétariat exécutif provincial': 'SEP',
     'secretariat executif provincial': 'SEP',
+    'secrétariat exécutif local': 'SEL',
     'secretariat executif local': 'SEL',
+}
+
+function normalizeStr(str) {
+    return str.trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 const currentNiveau = computed(() => {
     if (!form.organe) return ''
-    return organeToNiveau[form.organe.trim().toLowerCase()] || ''
+    const key = form.organe.trim().toLowerCase()
+    if (organeToNiveau[key]) return organeToNiveau[key]
+    // Fallback: strip accents
+    const normalized = normalizeStr(form.organe)
+    return organeToNiveau[normalized] || ''
 })
 
 // Filtered sections based on selected department
