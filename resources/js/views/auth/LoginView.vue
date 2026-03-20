@@ -432,29 +432,145 @@ async function handleLogin() {
 @media (max-width: 768px) {
     .login-page {
         flex-direction: column;
+        min-height: 100vh;
     }
 
+    /* Brand panel becomes a compact header on mobile */
     .login-brand {
         flex: none;
-        padding: 2.5rem 1.5rem;
+        padding: 2rem 1.5rem 1.5rem;
+        min-height: auto;
+    }
+
+    .brand-content {
+        padding: 1rem 0;
     }
 
     .brand-logo {
-        width: 90px;
-        height: 90px;
+        width: 80px;
+        height: 80px;
+        margin-bottom: 1rem;
+        border-width: 3px;
+        box-shadow: 0 4px 20px rgba(0,0,0,.25), 0 0 0 5px rgba(255,255,255,.08);
     }
 
     .brand-title {
-        font-size: 1.75rem;
+        font-size: 1.5rem;
         letter-spacing: 4px;
+        margin-bottom: .3rem;
     }
 
     .brand-tagline {
+        font-size: .78rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+    }
+
+    .brand-separator {
+        width: 40px;
+        height: 2px;
+        margin: 0 auto .75rem;
+    }
+
+    .brand-portal {
+        font-size: .7rem;
+        letter-spacing: 2px;
+    }
+
+    /* Form panel takes remaining space */
+    .login-form-panel {
+        flex: 1;
+        padding: 1.5rem 1.25rem 2rem;
+        align-items: flex-start;
+        background: #fff;
+        border-radius: 24px 24px 0 0;
+        margin-top: -1rem;
+        position: relative;
+        z-index: 3;
+        box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+    }
+
+    .login-card {
+        max-width: 100%;
+    }
+
+    .login-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .login-icon {
+        width: 48px;
+        height: 48px;
+        font-size: 1.1rem;
+        border-radius: 14px;
+        margin-bottom: .75rem;
+    }
+
+    .login-header h2 {
+        font-size: 1.3rem;
+    }
+
+    .login-header p {
         font-size: .82rem;
     }
 
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-control {
+        padding: .65rem .9rem;
+        font-size: .88rem;
+        border-radius: 10px;
+    }
+
+    .btn-login {
+        padding: .7rem;
+        font-size: .9rem;
+        border-radius: 10px;
+        margin-top: .25rem;
+    }
+
+    .form-options {
+        margin-bottom: 1.25rem;
+    }
+
+    .login-footer {
+        margin-top: 1.5rem;
+    }
+
+    .alert-danger {
+        font-size: .8rem;
+        border-radius: 10px;
+    }
+}
+
+/* Extra small screens */
+@media (max-width: 380px) {
+    .login-brand {
+        padding: 1.5rem 1rem 1.25rem;
+    }
+
+    .brand-logo {
+        width: 65px;
+        height: 65px;
+    }
+
+    .brand-title {
+        font-size: 1.3rem;
+        letter-spacing: 3px;
+    }
+
+    .brand-tagline {
+        font-size: .72rem;
+    }
+
     .login-form-panel {
-        padding: 1.5rem;
+        padding: 1.25rem 1rem 1.5rem;
+    }
+
+    .login-header h2 {
+        font-size: 1.15rem;
     }
 }
 </style>
