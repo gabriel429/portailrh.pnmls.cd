@@ -115,12 +115,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Roles
         Route::get('roles', [ParametresController::class, 'apiRolesIndex']);
+        Route::get('roles/{role}', [ParametresController::class, 'apiRolesShow']);
         Route::post('roles', [ParametresController::class, 'apiRolesStore']);
         Route::put('roles/{role}', [ParametresController::class, 'apiRolesUpdate']);
         Route::delete('roles/{role}', [ParametresController::class, 'apiRolesDestroy']);
 
         // Departments
         Route::get('departments', [ParametresController::class, 'apiDepartmentsIndex']);
+        Route::get('departments/{department}', [ParametresController::class, 'apiDepartmentsShow']);
         Route::post('departments', [ParametresController::class, 'apiDepartmentsStore']);
         Route::put('departments/{department}', [ParametresController::class, 'apiDepartmentsUpdate']);
         Route::delete('departments/{department}', [ParametresController::class, 'apiDepartmentsDestroy']);
@@ -151,6 +153,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Organes
         Route::get('organes', [ParametresController::class, 'apiOrganesIndex']);
+        Route::get('organes/{organe}', [ParametresController::class, 'apiOrganesShow']);
         Route::post('organes', [ParametresController::class, 'apiOrganesStore']);
         Route::put('organes/{organe}', [ParametresController::class, 'apiOrganesUpdate']);
         Route::delete('organes/{organe}', [ParametresController::class, 'apiOrganesDestroy']);
@@ -158,18 +161,21 @@ Route::middleware('auth:sanctum')->group(function () {
         // Utilisateurs
         Route::get('utilisateurs', [ParametresController::class, 'apiUtilisateursIndex']);
         Route::get('utilisateurs/form-data', [ParametresController::class, 'apiUtilisateursFormData']);
+        Route::get('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursShow']);
         Route::post('utilisateurs', [ParametresController::class, 'apiUtilisateursStore']);
         Route::put('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursUpdate']);
         Route::delete('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursDestroy']);
 
         // Documents de Travail
         Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
+        Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
         Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
         Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
         Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);
 
         // Categories Documents
         Route::get('categories-documents', [ParametresController::class, 'apiCategoriesDocsIndex']);
+        Route::get('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsShow']);
         Route::post('categories-documents', [ParametresController::class, 'apiCategoriesDocsStore']);
         Route::put('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsUpdate']);
         Route::delete('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsDestroy']);

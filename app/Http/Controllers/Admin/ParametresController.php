@@ -1371,6 +1371,11 @@ class ParametresController extends Controller
         return response()->json($q->paginate($request->per_page ?? 20));
     }
 
+    public function apiRolesShow(Role $role)
+    {
+        return response()->json($role);
+    }
+
     public function apiRolesStore(Request $request)
     {
         $validated = $request->validate([
@@ -1407,6 +1412,11 @@ class ParametresController extends Controller
             $q->where('nom', 'like', "%{$request->search}%");
         }
         return response()->json($q->paginate($request->per_page ?? 20));
+    }
+
+    public function apiDepartmentsShow(Department $department)
+    {
+        return response()->json($department->load('province'));
     }
 
     public function apiDepartmentsStore(Request $request)
@@ -1616,6 +1626,11 @@ class ParametresController extends Controller
         return response()->json(['data' => $organes]);
     }
 
+    public function apiOrganesShow(Organe $organe)
+    {
+        return response()->json($organe);
+    }
+
     public function apiOrganesStore(Request $request)
     {
         $validated = $request->validate([
@@ -1663,6 +1678,11 @@ class ParametresController extends Controller
         $agentsWithoutUser = Agent::whereDoesntHave('user')->orderBy('nom')->get(['id', 'nom', 'prenom', 'matricule_pnmls']);
         $roles = Role::orderBy('nom_role')->get(['id', 'nom_role']);
         return response()->json(['agents' => $agentsWithoutUser, 'roles' => $roles]);
+    }
+
+    public function apiUtilisateursShow(User $user)
+    {
+        return response()->json($user->load(['agent', 'role']));
     }
 
     public function apiUtilisateursStore(Request $request)
@@ -1716,6 +1736,11 @@ class ParametresController extends Controller
         return response()->json($q->paginate($request->per_page ?? 20));
     }
 
+    public function apiDocsTravailShow(DocumentTravail $documentTravail)
+    {
+        return response()->json($documentTravail->load('uploader'));
+    }
+
     public function apiDocsTravailStore(Request $request)
     {
         $validated = $request->validate([
@@ -1764,6 +1789,11 @@ class ParametresController extends Controller
     {
         $categories = CategorieDocument::orderBy('nom')->get();
         return response()->json(['data' => $categories]);
+    }
+
+    public function apiCategoriesDocsShow(CategorieDocument $categorieDocument)
+    {
+        return response()->json($categorieDocument);
     }
 
     public function apiCategoriesDocsStore(Request $request)
