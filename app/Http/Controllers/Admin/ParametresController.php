@@ -1407,7 +1407,7 @@ class ParametresController extends Controller
 
     public function apiDepartmentsIndex(Request $request)
     {
-        $q = Department::with('province')->withCount(['agents', 'sections'])->orderBy('nom');
+        $q = Department::withCount(['agents', 'sections'])->orderBy('nom');
         if ($request->search) {
             $q->where('nom', 'like', "%{$request->search}%");
         }
@@ -1416,7 +1416,7 @@ class ParametresController extends Controller
 
     public function apiDepartmentsShow(Department $department)
     {
-        return response()->json($department->load('province'));
+        return response()->json($department);
     }
 
     public function apiDepartmentsStore(Request $request)
@@ -1425,10 +1425,9 @@ class ParametresController extends Controller
             'code' => 'required|string|max:10|unique:departments',
             'nom' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'province_id' => 'nullable|exists:provinces,id',
         ]);
         $dept = Department::create($validated);
-        return response()->json($dept->load('province'), 201);
+        return response()->json($dept, 201);
     }
 
     public function apiDepartmentsUpdate(Request $request, Department $department)
@@ -1437,10 +1436,9 @@ class ParametresController extends Controller
             'code' => 'required|string|max:10|unique:departments,code,' . $department->id,
             'nom' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'province_id' => 'nullable|exists:provinces,id',
         ]);
         $department->update($validated);
-        return response()->json($department->load('province'));
+        return response()->json($department);
     }
 
     public function apiDepartmentsDestroy(Department $department)

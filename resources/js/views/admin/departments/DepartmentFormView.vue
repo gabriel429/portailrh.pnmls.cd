@@ -68,27 +68,6 @@
               ></textarea>
               <div v-if="errors.description" class="invalid-feedback">{{ errors.description[0] }}</div>
             </div>
-
-            <!-- Province -->
-            <div class="col-md-6">
-              <label for="province_id" class="form-label">Province <span class="text-danger">*</span></label>
-              <select
-                id="province_id"
-                v-model="form.province_id"
-                class="form-select"
-                :class="{ 'is-invalid': errors.province_id }"
-                required
-              >
-                <option value="">-- Selectionner une province --</option>
-                <option v-for="prov in provinces" :key="prov.id" :value="prov.id">
-                  {{ prov.nom }}
-                </option>
-              </select>
-              <div v-if="errors.province_id" class="invalid-feedback">{{ errors.province_id[0] }}</div>
-              <div v-if="loadingProvinces" class="form-text">
-                <span class="spinner-border spinner-border-sm me-1"></span>Chargement des provinces...
-              </div>
-            </div>
           </div>
 
           <!-- Actions -->
@@ -115,29 +94,14 @@ const route = useRoute()
 
 const isEdit = computed(() => !!route.params.id)
 const loadingData = ref(false)
-const loadingProvinces = ref(false)
 const saving = ref(false)
 const errors = ref({})
-const provinces = ref([])
 
 const form = ref({
   code: '',
   nom: '',
   description: '',
-  province_id: '',
 })
-
-async function loadProvinces() {
-  loadingProvinces.value = true
-  try {
-    const { data } = await client.get('/admin/provinces', { params: { per_page: 100 } })
-    provinces.value = data.data || []
-  } catch (e) {
-    console.error('Erreur chargement provinces:', e)
-  } finally {
-    loadingProvinces.value = false
-  }
-}
 
 async function loadDepartment() {
   loadingData.value = true
@@ -148,7 +112,6 @@ async function loadDepartment() {
       code: d.code || '',
       nom: d.nom || '',
       description: d.description || '',
-      province_id: d.province_id || '',
     }
   } catch (e) {
     console.error('Erreur chargement departement:', e)
@@ -180,8 +143,7 @@ async function submit() {
   }
 }
 
-onMounted(async () => {
-  await loadProvinces()
+onMounted(() => {
   if (isEdit.value) {
     loadDepartment()
   }

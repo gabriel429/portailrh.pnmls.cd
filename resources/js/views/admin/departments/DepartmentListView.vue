@@ -48,7 +48,6 @@
               <tr>
                 <th>Code</th>
                 <th>Nom</th>
-                <th>Province</th>
                 <th class="text-center">Agents</th>
                 <th class="text-center">Sections</th>
                 <th class="text-end pe-3">Actions</th>
@@ -66,12 +65,6 @@
                     </div>
                     <span class="fw-semibold">{{ dept.nom }}</span>
                   </div>
-                </td>
-                <td>
-                  <span v-if="dept.province" class="province-tag">
-                    <i class="fas fa-map-marker-alt me-1"></i>{{ dept.province.nom }}
-                  </span>
-                  <span v-else class="text-muted">-</span>
                 </td>
                 <td class="text-center">
                   <span class="count-pill count-pill-primary">{{ dept.agents_count ?? 0 }}</span>
