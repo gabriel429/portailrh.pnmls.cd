@@ -192,8 +192,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 import AppToast from '@/components/common/AppToast.vue'
@@ -201,6 +201,26 @@ import AppToast from '@/components/common/AppToast.vue'
 const auth = useAuthStore()
 const notifStore = useNotificationStore()
 const router = useRouter()
+const route = useRoute()
+
+// Close mobile navbar and dropdowns on route change
+watch(() => route.fullPath, () => {
+    const navbarEl = document.getElementById('navbarMain')
+    if (navbarEl && navbarEl.classList.contains('show')) {
+        const bsCollapse = window.bootstrap?.Collapse?.getInstance(navbarEl)
+        if (bsCollapse) {
+            bsCollapse.hide()
+        } else {
+            navbarEl.classList.remove('show')
+        }
+    }
+    // Close any open dropdowns
+    document.querySelectorAll('.navbar-main .dropdown-menu.show').forEach(menu => {
+        menu.classList.remove('show')
+        menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.classList.remove('show')
+        menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.setAttribute('aria-expanded', 'false')
+    })
+})
 
 const initials = computed(() => {
     const agent = auth.agent
