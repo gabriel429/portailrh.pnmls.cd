@@ -10,8 +10,6 @@
         <div class="brand-separator"></div>
         <p class="brand-portal">Portail des Ressources Humaines</p>
       </div>
-      <!-- Decorative watermark -->
-      <img src="/images/pnmls.jpeg" alt="" class="brand-watermark">
     </div>
 
     <!-- Right form panel -->
@@ -154,10 +152,10 @@ async function handleLogin() {
 
 .brand-bg {
     position: absolute;
-    inset: 0;
-    background:
-        radial-gradient(circle at 20% 80%, rgba(255,255,255,.06) 0%, transparent 50%),
-        radial-gradient(circle at 80% 20%, rgba(255,255,255,.04) 0%, transparent 50%);
+    inset: -20px;
+    background: url('/images/pnmls.jpeg') center/cover no-repeat;
+    filter: blur(6px);
+    opacity: 0.15;
 }
 
 .brand-content {
@@ -213,18 +211,6 @@ async function handleLogin() {
     color: rgba(255,255,255,.5);
     text-transform: uppercase;
     letter-spacing: 3px;
-}
-
-.brand-watermark {
-    position: absolute;
-    bottom: -60px;
-    right: -60px;
-    width: 320px;
-    height: 320px;
-    object-fit: contain;
-    opacity: 0.06;
-    pointer-events: none;
-    z-index: 1;
 }
 
 /* ── Right Form Panel ── */
@@ -465,13 +451,6 @@ async function handleLogin() {
 
     .brand-tagline {
         font-size: .82rem;
-    }
-
-    .brand-watermark {
-        width: 180px;
-        height: 180px;
-        bottom: -40px;
-        right: -40px;
     }
 
     .login-form-panel {
