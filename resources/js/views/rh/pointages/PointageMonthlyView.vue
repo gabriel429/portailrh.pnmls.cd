@@ -1,214 +1,245 @@
 <template>
   <div class="rh-modern">
     <div class="rh-list-shell">
-      <section class="rh-hero">
+
+      <!-- ═══ Hero banner ═══ -->
+      <section class="rh-hero pm-hero">
         <div class="row g-2 align-items-center">
-          <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-chart-bar me-2"></i>Rapport mensuel pointages</h1>
-            <p class="rh-sub">Synthese d'assiduite, de presence et d'heures travaillees.</p>
+          <div class="col-lg-7">
+            <h1 class="rh-title"><i class="fas fa-chart-bar me-2"></i>Rapport mensuel</h1>
+            <p class="rh-sub">Synthese d'assiduite, de presence et d'heures travaillees — <strong>{{ monthLabel }}</strong></p>
           </div>
-          <div class="col-lg-4">
+          <div class="col-lg-5">
             <div class="hero-tools">
+              <router-link :to="{ name: 'rh.pointages.index' }" class="btn-rh alt">
+                <i class="fas fa-list me-1"></i> Liste
+              </router-link>
+              <router-link :to="{ name: 'rh.pointages.daily' }" class="btn-rh alt">
+                <i class="fas fa-calendar-alt me-1"></i> Par jour
+              </router-link>
               <button class="btn-rh main" @click="exportExcel" :disabled="exporting">
                 <span v-if="exporting" class="spinner-border spinner-border-sm me-1"></span>
-                <i v-else class="fas fa-download me-1"></i> Export Excel
+                <i v-else class="fas fa-file-excel me-1"></i> Export
               </button>
             </div>
           </div>
         </div>
-      </section>
 
-      <!-- Navigation tabs -->
-      <div class="d-flex gap-2 mb-3 flex-wrap">
-        <router-link :to="{ name: 'rh.pointages.index' }" class="btn btn-outline-secondary">
-          <i class="fas fa-list me-2"></i>Liste
-        </router-link>
-        <router-link :to="{ name: 'rh.pointages.daily' }" class="btn btn-outline-secondary">
-          <i class="fas fa-calendar-alt me-2"></i>Par jour
-        </router-link>
-        <router-link :to="{ name: 'rh.pointages.monthly' }" class="btn btn-primary">
-          <i class="fas fa-chart-bar me-2"></i>Rapport mensuel
-        </router-link>
-      </div>
-
-      <!-- Month picker + organe filter -->
-      <div class="rh-filters mb-3">
-        <form @submit.prevent="fetchMonthly" class="row g-3 align-items-end">
-          <div class="col-md-5">
-            <label for="month" class="form-label">Mois</label>
-            <input type="month" name="month" id="month" class="form-control" v-model="selectedMonth">
+        <!-- Inline month / organe picker inside hero -->
+        <div class="pm-hero-filters">
+          <div class="pm-month-picker">
+            <i class="fas fa-calendar-week"></i>
+            <input type="month" v-model="selectedMonth" @change="fetchMonthly" class="pm-month-input">
           </div>
-          <div class="col-md-4">
-            <label for="organe" class="form-label">Organe</label>
-            <select id="organe" v-model="selectedOrgane" class="form-select">
-              <option value="">Tous les organes</option>
-              <option v-for="o in organeOptions" :key="o.value" :value="o.value">{{ o.label }}</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <button type="submit" class="btn btn-primary w-100" :disabled="loading">
-              <i class="fas fa-search me-2"></i>Afficher
+          <div class="pm-organe-pills">
+            <button class="pm-pill" :class="{ active: !selectedOrgane }" @click="filterByOrgane('')">Tous</button>
+            <button v-for="o in organeOptions" :key="o.code" class="pm-pill"
+              :class="{ active: selectedOrgane === o.value }" @click="filterByOrgane(o.value)">
+              <span class="pm-pill-dot" :style="{ background: o.color }"></span>
+              {{ o.code }}
             </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </section>
 
       <LoadingSpinner v-if="loading" message="Chargement du rapport mensuel..." />
 
       <template v-else>
-        <!-- Organe overview cards -->
-        <div class="pm-organe-overview" v-if="statsByOrgane && !selectedOrgane">
-          <div class="pm-organe-card" v-for="o in organeOverview" :key="o.code"
-            :class="{ active: selectedOrgane === o.value }"
-            @click="filterByOrgane(o.value)">
-            <div class="pm-organe-top">
-              <div class="pm-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
-              <div class="pm-organe-name">{{ o.label }}</div>
-            </div>
-            <div class="pm-organe-stats">
-              <div class="pm-organe-stat">
-                <div class="pm-organe-val">{{ o.total_agents }}</div>
-                <div class="pm-organe-lbl">Agents</div>
+
+        <!-- ═══ Organe overview — 3 premium glass cards ═══ -->
+        <div class="pm-organes" v-if="statsByOrgane && !selectedOrgane">
+          <div class="pm-org-card" v-for="o in organeOverview" :key="o.code"
+            @click="filterByOrgane(o.value)"
+            :style="{ '--org-color': o.color }">
+            <div class="pm-org-head">
+              <div class="pm-org-icon" :style="{ background: o.color }">
+                <i class="fas" :class="o.icon"></i>
               </div>
-              <div class="pm-organe-stat">
-                <div class="pm-organe-val" style="color:#059669;">{{ o.total_present }}</div>
-                <div class="pm-organe-lbl">Presents</div>
-              </div>
-              <div class="pm-organe-stat">
-                <div class="pm-organe-val" style="color:#dc2626;">{{ o.total_absent }}</div>
-                <div class="pm-organe-lbl">Absents</div>
-              </div>
-              <div class="pm-organe-stat">
-                <div class="pm-organe-val" :style="{ color: rateColor(o.average_attendance) }">{{ o.average_attendance }}%</div>
-                <div class="pm-organe-lbl">Taux</div>
+              <div>
+                <div class="pm-org-label">{{ o.label }}</div>
+                <div class="pm-org-code">{{ o.code }}</div>
               </div>
             </div>
-            <div class="pm-organe-bar">
-              <div class="pm-organe-bar-fill" :style="{ width: o.average_attendance + '%', background: o.color }"></div>
+
+            <div class="pm-org-metrics">
+              <div class="pm-org-metric">
+                <span class="pm-org-metric-val">{{ o.total_agents }}</span>
+                <span class="pm-org-metric-lbl">Agents</span>
+              </div>
+              <div class="pm-org-divider"></div>
+              <div class="pm-org-metric">
+                <span class="pm-org-metric-val pm-green">{{ o.total_present }}</span>
+                <span class="pm-org-metric-lbl">Presents</span>
+              </div>
+              <div class="pm-org-divider"></div>
+              <div class="pm-org-metric">
+                <span class="pm-org-metric-val pm-red">{{ o.total_absent }}</span>
+                <span class="pm-org-metric-lbl">Absents</span>
+              </div>
+            </div>
+
+            <!-- Attendance gauge -->
+            <div class="pm-org-gauge">
+              <div class="pm-org-gauge-track">
+                <div class="pm-org-gauge-fill" :style="{ width: o.average_attendance + '%', background: `linear-gradient(135deg, ${o.color}, ${o.color}cc)` }"></div>
+              </div>
+              <span class="pm-org-gauge-pct" :style="{ color: rateColor(o.average_attendance) }">
+                {{ o.average_attendance }}%
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- KPI cards -->
-        <div class="pm-kpi-grid" v-if="globalStats">
-          <div class="pm-kpi">
-            <div class="pm-kpi-icon" style="background:#e0f2fe;color:#0077B5;">
-              <i class="fas fa-users"></i>
+        <!-- ═══ KPI strip — 4 metric cards ═══ -->
+        <div class="pm-kpis" v-if="globalStats">
+          <div class="pm-kpi-card" v-for="kpi in kpiCards" :key="kpi.label">
+            <div class="pm-kpi-icon-wrap" :style="{ background: kpi.bg, color: kpi.fg }">
+              <i class="fas" :class="kpi.icon"></i>
             </div>
-            <div class="pm-kpi-body">
-              <div class="pm-kpi-val">{{ globalStats.total_agents }}</div>
-              <div class="pm-kpi-lbl">{{ selectedOrgane ? 'Agents (organe)' : 'Total agents' }}</div>
-            </div>
-          </div>
-          <div class="pm-kpi">
-            <div class="pm-kpi-icon" style="background:#d1fae5;color:#059669;">
-              <i class="fas fa-user-check"></i>
-            </div>
-            <div class="pm-kpi-body">
-              <div class="pm-kpi-val">{{ globalStats.total_present }}</div>
-              <div class="pm-kpi-lbl">Presences cumulees</div>
-            </div>
-          </div>
-          <div class="pm-kpi">
-            <div class="pm-kpi-icon" style="background:#fee2e2;color:#dc2626;">
-              <i class="fas fa-user-times"></i>
-            </div>
-            <div class="pm-kpi-body">
-              <div class="pm-kpi-val">{{ globalStats.total_absent }}</div>
-              <div class="pm-kpi-lbl">Absences cumulees</div>
-            </div>
-          </div>
-          <div class="pm-kpi">
-            <div class="pm-kpi-icon" :style="{ background: rateColor(globalStats.average_attendance) + '20', color: rateColor(globalStats.average_attendance) }">
-              <i class="fas fa-chart-line"></i>
-            </div>
-            <div class="pm-kpi-body">
-              <div class="pm-kpi-val">{{ globalStats.average_attendance }}%</div>
-              <div class="pm-kpi-lbl">Taux moyen</div>
+            <div class="pm-kpi-content">
+              <div class="pm-kpi-value">{{ kpi.value }}<span v-if="kpi.suffix" class="pm-kpi-suffix">{{ kpi.suffix }}</span></div>
+              <div class="pm-kpi-label">{{ kpi.label }}</div>
             </div>
           </div>
         </div>
 
-        <!-- Active organe filter chip -->
-        <div v-if="selectedOrgane" class="pm-active-filter">
-          <span class="pm-filter-chip">
-            <i class="fas fa-filter me-1"></i>
-            {{ organeOptions.find(o => o.value === selectedOrgane)?.label || selectedOrgane }}
-            <button @click="clearOrgane" class="pm-filter-clear"><i class="fas fa-times"></i></button>
-          </span>
+        <!-- ═══ Active organe filter indicator ═══ -->
+        <div v-if="selectedOrgane" class="pm-active-filter-bar">
+          <div class="pm-filter-indicator">
+            <span class="pm-filter-dot" :style="{ background: organeColor(selectedOrgane) }"></span>
+            Filtrage : <strong>{{ organeOptions.find(o => o.value === selectedOrgane)?.label || selectedOrgane }}</strong>
+          </div>
+          <button @click="clearOrgane" class="pm-filter-clear-btn">
+            <i class="fas fa-times me-1"></i> Effacer le filtre
+          </button>
         </div>
 
-        <!-- Agent stats table -->
-        <div class="pm-table-card">
-          <div class="pm-table-header">
-            <h5><i class="fas fa-table me-2"></i>Detail par agent — {{ monthLabel }}</h5>
-            <span class="pm-table-count">{{ agentStats.length }} agent(s)</span>
-          </div>
-          <template v-if="agentStats.length > 0">
-            <div class="rh-table-wrap">
-              <table class="rh-table">
-                <thead>
-                  <tr>
-                    <th>Agent</th>
-                    <th>Matricule</th>
-                    <th>Organe</th>
-                    <th>Jours travail</th>
-                    <th>Presents</th>
-                    <th>Absents</th>
-                    <th>Heures</th>
-                    <th>Taux</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="stat in agentStats" :key="stat.agent?.id">
-                    <td><strong>{{ stat.agent?.prenom }} {{ stat.agent?.nom }}</strong></td>
-                    <td><span class="pm-matricule">{{ stat.agent?.id_agent }}</span></td>
-                    <td><span class="pm-organe-chip" :style="{ background: organeColor(stat.agent?.organe) + '18', color: organeColor(stat.agent?.organe) }">{{ organeShort(stat.agent?.organe) }}</span></td>
-                    <td>{{ stat.working_days }}</td>
-                    <td><span class="status-chip st-ok">{{ stat.present }}</span></td>
-                    <td><span class="status-chip st-bad">{{ stat.absent }}</span></td>
-                    <td>{{ stat.total_hours }}h</td>
-                    <td>
-                      <span class="pm-rate-badge" :style="{ background: rateColor(stat.attendance_rate) + '18', color: rateColor(stat.attendance_rate) }">
-                        {{ stat.attendance_rate }}%
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="4"><strong>Total</strong></td>
-                    <td><strong>{{ globalStats.total_present }}</strong></td>
-                    <td><strong>{{ globalStats.total_absent }}</strong></td>
-                    <td><strong>{{ totalHours }}h</strong></td>
-                    <td><strong>{{ globalStats.average_attendance }}%</strong></td>
-                  </tr>
-                </tfoot>
-              </table>
+        <!-- ═══ Data table panel ═══ -->
+        <div class="pm-panel" v-if="agentStats.length > 0">
+          <div class="pm-panel-head">
+            <div class="pm-panel-title">
+              <i class="fas fa-table me-2"></i>Detail par agent
             </div>
-          </template>
-          <div v-else class="text-center py-5 text-muted">
-            <i class="fas fa-chart-bar fa-3x mb-3 d-block" style="opacity:.3;"></i>
-            <h5>Aucune donnee</h5>
-            <p class="mb-0">Aucun pointage sur ce mois{{ selectedOrgane ? ' pour cet organe' : '' }}.</p>
+            <div class="pm-panel-meta">
+              <span class="pm-badge-count">{{ agentStats.length }} agent(s)</span>
+              <span class="pm-badge-period">{{ monthLabel }}</span>
+            </div>
+          </div>
+
+          <div class="rh-table-wrap">
+            <table class="rh-table pm-tbl">
+              <thead>
+                <tr>
+                  <th class="pm-th-agent">Agent</th>
+                  <th class="pm-th-mat">Matricule</th>
+                  <th class="pm-th-org">Organe</th>
+                  <th class="pm-th-num">Jours</th>
+                  <th class="pm-th-num">Presents</th>
+                  <th class="pm-th-num">Absents</th>
+                  <th class="pm-th-num">Heures</th>
+                  <th class="pm-th-rate">Taux</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(stat, idx) in agentStats" :key="stat.agent?.id" :class="{ 'pm-row-alt': idx % 2 === 0 }">
+                  <td class="pm-td-agent">
+                    <div class="pm-agent-cell">
+                      <div class="pm-avatar" :style="{ background: avatarColor(stat.agent?.prenom) }">
+                        {{ avatarInitials(stat.agent?.prenom, stat.agent?.nom) }}
+                      </div>
+                      <div>
+                        <div class="pm-agent-name">{{ stat.agent?.prenom }} {{ stat.agent?.nom }}</div>
+                        <div class="pm-agent-dept">{{ stat.agent?.department?.nom || '' }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td><code class="pm-matricule">{{ stat.agent?.id_agent }}</code></td>
+                  <td>
+                    <span class="pm-organe-tag" :style="{ '--tag-color': organeColor(stat.agent?.organe) }">
+                      {{ organeShort(stat.agent?.organe) }}
+                    </span>
+                  </td>
+                  <td class="pm-td-num">{{ stat.working_days }}</td>
+                  <td class="pm-td-num"><span class="pm-num-present">{{ stat.present }}</span></td>
+                  <td class="pm-td-num"><span class="pm-num-absent">{{ stat.absent }}</span></td>
+                  <td class="pm-td-num">{{ stat.total_hours }}<small>h</small></td>
+                  <td class="pm-td-rate">
+                    <div class="pm-rate-wrap">
+                      <div class="pm-rate-bar">
+                        <div class="pm-rate-bar-fill" :style="{ width: stat.attendance_rate + '%', background: rateColor(stat.attendance_rate) }"></div>
+                      </div>
+                      <span class="pm-rate-pct" :style="{ color: rateColor(stat.attendance_rate) }">{{ stat.attendance_rate }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan="3" class="pm-tfoot-label">
+                    <i class="fas fa-sigma me-1"></i> Totaux
+                  </td>
+                  <td class="pm-td-num"><strong>—</strong></td>
+                  <td class="pm-td-num"><strong>{{ globalStats.total_present }}</strong></td>
+                  <td class="pm-td-num"><strong>{{ globalStats.total_absent }}</strong></td>
+                  <td class="pm-td-num"><strong>{{ totalHours }}h</strong></td>
+                  <td class="pm-td-rate"><strong :style="{ color: rateColor(globalStats.average_attendance) }">{{ globalStats.average_attendance }}%</strong></td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
         </div>
 
-        <!-- Period / averages info -->
-        <div class="pm-info-grid" v-if="globalStats && agentStats.length > 0">
-          <div class="pm-info-card">
-            <div class="pm-info-title"><i class="fas fa-calendar me-2" style="color:#0077B5;"></i>Periode</div>
-            <div class="pm-info-row"><span>Debut</span><strong>{{ formatDate(dateDebut) }}</strong></div>
-            <div class="pm-info-row"><span>Fin</span><strong>{{ formatDate(dateFin) }}</strong></div>
-            <div class="pm-info-row"><span>Duree</span><strong>{{ periodDays }} jours</strong></div>
+        <!-- ═══ Empty state ═══ -->
+        <div v-else-if="!loading" class="pm-empty">
+          <div class="pm-empty-icon"><i class="fas fa-chart-bar"></i></div>
+          <h5>Aucune donnee pour ce mois</h5>
+          <p>Aucun pointage enregistre{{ selectedOrgane ? ' pour cet organe' : '' }} sur la periode selectionnee.</p>
+          <button class="btn-rh main" @click="fetchMonthly"><i class="fas fa-sync me-1"></i> Reactualiser</button>
+        </div>
+
+        <!-- ═══ Period + averages summary ═══ -->
+        <div class="pm-summary" v-if="globalStats && agentStats.length > 0">
+          <div class="pm-summary-card">
+            <div class="pm-summary-icon" style="color:#0077B5;">
+              <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="pm-summary-body">
+              <div class="pm-summary-title">Periode</div>
+              <div class="pm-summary-rows">
+                <div class="pm-summary-row"><span>Debut</span><strong>{{ formatDate(dateDebut) }}</strong></div>
+                <div class="pm-summary-row"><span>Fin</span><strong>{{ formatDate(dateFin) }}</strong></div>
+                <div class="pm-summary-row"><span>Duree</span><strong>{{ periodDays }} jours</strong></div>
+              </div>
+            </div>
           </div>
-          <div class="pm-info-card">
-            <div class="pm-info-title"><i class="fas fa-calculator me-2" style="color:#7c3aed;"></i>Moyennes</div>
-            <div class="pm-info-row"><span>Heures/agent</span><strong>{{ globalStats.average_hours }}h</strong></div>
-            <div class="pm-info-row"><span>Taux assiduite</span><strong>{{ globalStats.average_attendance }}%</strong></div>
-            <div class="pm-info-row"><span>Agents</span><strong>{{ globalStats.total_agents }}</strong></div>
+          <div class="pm-summary-card">
+            <div class="pm-summary-icon" style="color:#7c3aed;">
+              <i class="fas fa-calculator"></i>
+            </div>
+            <div class="pm-summary-body">
+              <div class="pm-summary-title">Moyennes</div>
+              <div class="pm-summary-rows">
+                <div class="pm-summary-row"><span>Heures / agent</span><strong>{{ globalStats.average_hours }}h</strong></div>
+                <div class="pm-summary-row"><span>Taux assiduite</span><strong :style="{ color: rateColor(globalStats.average_attendance) }">{{ globalStats.average_attendance }}%</strong></div>
+                <div class="pm-summary-row"><span>Agents suivis</span><strong>{{ globalStats.total_agents }}</strong></div>
+              </div>
+            </div>
+          </div>
+          <div class="pm-summary-card">
+            <div class="pm-summary-icon" style="color:#059669;">
+              <i class="fas fa-clock"></i>
+            </div>
+            <div class="pm-summary-body">
+              <div class="pm-summary-title">Volume horaire</div>
+              <div class="pm-summary-rows">
+                <div class="pm-summary-row"><span>Total heures</span><strong>{{ totalHours }}h</strong></div>
+                <div class="pm-summary-row"><span>Presences tot.</span><strong>{{ globalStats.total_present }}</strong></div>
+                <div class="pm-summary-row"><span>Absences tot.</span><strong class="pm-red">{{ globalStats.total_absent }}</strong></div>
+              </div>
+            </div>
           </div>
         </div>
+
       </template>
     </div>
   </div>
@@ -236,10 +267,12 @@ const dateDebut = ref('')
 const dateFin = ref('')
 
 const organeOptions = [
-  { value: 'Secretariat Executif National', label: 'National (SEN)', code: 'SEN', color: '#0077B5' },
-  { value: 'Secretariat Executif Provincial', label: 'Provincial (SEP)', code: 'SEP', color: '#0ea5e9' },
-  { value: 'Secretariat Executif Local', label: 'Local (SEL)', code: 'SEL', color: '#0d9488' },
+  { value: 'Secretariat Executif National', label: 'National', code: 'SEN', color: '#0077B5', icon: 'fa-landmark' },
+  { value: 'Secretariat Executif Provincial', label: 'Provincial', code: 'SEP', color: '#0ea5e9', icon: 'fa-map-marked-alt' },
+  { value: 'Secretariat Executif Local', label: 'Local', code: 'SEL', color: '#0d9488', icon: 'fa-map-pin' },
 ]
+
+/* ─── Computed ─── */
 
 const organeOverview = computed(() => {
   if (!statsByOrgane.value) return []
@@ -265,6 +298,18 @@ const periodDays = computed(() => {
   return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1
 })
 
+const kpiCards = computed(() => {
+  if (!globalStats.value) return []
+  return [
+    { icon: 'fa-users', value: globalStats.value.total_agents, label: selectedOrgane.value ? 'Agents (organe)' : 'Total agents', bg: '#e0f2fe', fg: '#0077B5' },
+    { icon: 'fa-user-check', value: globalStats.value.total_present, label: 'Presences cumulees', bg: '#d1fae5', fg: '#059669' },
+    { icon: 'fa-user-times', value: globalStats.value.total_absent, label: 'Absences cumulees', bg: '#fee2e2', fg: '#dc2626' },
+    { icon: 'fa-chart-line', value: globalStats.value.average_attendance, suffix: '%', label: 'Taux moyen', bg: rateColor(globalStats.value.average_attendance) + '18', fg: rateColor(globalStats.value.average_attendance) },
+  ]
+})
+
+/* ─── Helpers ─── */
+
 function rateColor(rate) {
   if (rate >= 90) return '#059669'
   if (rate >= 80) return '#d97706'
@@ -280,18 +325,31 @@ function organeColor(organe) {
 }
 
 function organeShort(organe) {
-  if (!organe) return '-'
+  if (!organe) return '—'
   if (organe.includes('National')) return 'SEN'
   if (organe.includes('Provincial')) return 'SEP'
   if (organe.includes('Local')) return 'SEL'
-  return '-'
+  return '—'
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A'
   const d = new Date(dateStr)
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
+
+function avatarInitials(prenom, nom) {
+  return ((prenom?.[0] || '') + (nom?.[0] || '')).toUpperCase()
+}
+
+function avatarColor(name) {
+  const colors = ['#0077B5', '#0ea5e9', '#0d9488', '#059669', '#7c3aed', '#d97706', '#dc2626', '#6366f1']
+  let hash = 0
+  for (const ch of (name || '')) hash = ch.charCodeAt(0) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+/* ─── Actions ─── */
 
 function filterByOrgane(organe) {
   selectedOrgane.value = organe
@@ -351,117 +409,315 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ═══ Organe overview ═══ */
-.pm-organe-overview { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-bottom: 1rem; }
-.pm-organe-card {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1rem;
-  cursor: pointer; transition: all .25s;
-}
-.pm-organe-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-.pm-organe-card.active { border-color: #0077B5; box-shadow: 0 0 0 2px rgba(0,119,181,.15); }
-.pm-organe-top { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; }
-.pm-organe-badge {
-  width: 36px; height: 36px; border-radius: 10px; display: flex;
-  align-items: center; justify-content: center;
-  font-size: .65rem; font-weight: 800; color: #fff; flex-shrink: 0;
-}
-.pm-organe-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
-.pm-organe-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; margin-bottom: .6rem; }
-.pm-organe-stat { text-align: center; }
-.pm-organe-val { font-size: 1.1rem; font-weight: 800; color: #1e293b; line-height: 1; }
-.pm-organe-lbl { font-size: .58rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .1rem; }
-.pm-organe-bar { height: 4px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
-.pm-organe-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; min-width: 2px; }
+/* ═══════════════════════════════════════════════
+   MONTHLY REPORT — PREMIUM LAYOUT
+   ═══════════════════════════════════════════════ */
 
-/* ═══ KPI ═══ */
-.pm-kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1rem; }
-.pm-kpi {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1rem;
-  display: flex; align-items: center; gap: .8rem; transition: all .25s;
-}
-.pm-kpi:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
-.pm-kpi-icon {
-  width: 44px; height: 44px; border-radius: 12px; display: flex;
-  align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;
-}
-.pm-kpi-body {}
-.pm-kpi-val { font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1; }
-.pm-kpi-lbl { font-size: .68rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; margin-top: .15rem; }
+/* ── Hero extension ── */
+.pm-hero { position: relative; overflow: visible; }
 
-/* ═══ Active filter ═══ */
-.pm-active-filter { margin-bottom: .75rem; }
-.pm-filter-chip {
-  display: inline-flex; align-items: center; gap: .3rem;
-  background: #e0f2fe; color: #0077B5; font-size: .78rem; font-weight: 600;
-  padding: .3rem .7rem; border-radius: 8px;
+.pm-hero-filters {
+  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  margin-top: 1.2rem; padding-top: 1rem;
+  border-top: 1px solid rgba(255,255,255,.12);
 }
-.pm-filter-clear {
-  background: none; border: none; color: #0077B5; cursor: pointer;
-  padding: 0 0 0 .3rem; font-size: .7rem; opacity: .7; transition: opacity .2s;
-}
-.pm-filter-clear:hover { opacity: 1; }
 
-/* ═══ Table card ═══ */
-.pm-table-card {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  padding: 1.2rem 1.3rem; margin-bottom: 1rem;
+.pm-month-picker {
+  display: flex; align-items: center; gap: .5rem;
+  background: rgba(255,255,255,.12); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.18); border-radius: 12px;
+  padding: .4rem .7rem; color: #fff;
 }
-.pm-table-header {
-  display: flex; justify-content: space-between; align-items: center;
+.pm-month-picker i { font-size: .85rem; opacity: .7; }
+.pm-month-input {
+  background: transparent; border: none; outline: none;
+  color: #fff; font-size: .88rem; font-weight: 600;
+  width: auto;
+}
+.pm-month-input::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+.pm-organe-pills { display: flex; gap: .4rem; flex-wrap: wrap; }
+.pm-pill {
+  display: inline-flex; align-items: center; gap: .35rem;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.75); border-radius: 999px; padding: .32rem .85rem;
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  transition: all .2s ease;
+}
+.pm-pill:hover { background: rgba(255,255,255,.18); color: #fff; }
+.pm-pill.active {
+  background: #fff; color: #0b2948;
+  border-color: #fff; font-weight: 700;
+}
+.pm-pill-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block; flex-shrink: 0;
+}
+.pm-pill.active .pm-pill-dot { box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+
+/* ── Organe overview cards ── */
+.pm-organes {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .85rem; margin-bottom: 1.2rem;
+}
+.pm-org-card {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #e5e7eb; padding: 1.2rem;
+  cursor: pointer; transition: all .3s cubic-bezier(.4,0,.2,1);
+  position: relative; overflow: hidden;
+}
+.pm-org-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--org-color); opacity: 0;
+  transition: opacity .3s ease;
+}
+.pm-org-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,.1);
+}
+.pm-org-card:hover::before { opacity: 1; }
+
+.pm-org-head {
+  display: flex; align-items: center; gap: .75rem;
+  margin-bottom: 1.1rem;
+}
+.pm-org-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .95rem; flex-shrink: 0;
+}
+.pm-org-label { font-size: .88rem; font-weight: 700; color: #1e293b; }
+.pm-org-code { font-size: .62rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .8px; }
+
+.pm-org-metrics {
+  display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 1rem;
 }
-.pm-table-header h5 { font-size: .95rem; font-weight: 700; color: #1e293b; margin: 0; }
-.pm-table-count { font-size: .72rem; color: #94a3b8; font-weight: 600; }
-.pm-matricule { font-family: monospace; font-size: .78rem; color: #64748b; }
-.pm-organe-chip {
-  display: inline-block; font-size: .65rem; font-weight: 700; padding: .15rem .45rem;
-  border-radius: 6px; letter-spacing: .3px;
+.pm-org-metric { flex: 1; text-align: center; }
+.pm-org-metric-val { display: block; font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.pm-org-metric-lbl { display: block; font-size: .6rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .4px; margin-top: .25rem; }
+.pm-green { color: #059669 !important; }
+.pm-red { color: #dc2626 !important; }
+.pm-org-divider { width: 1px; height: 28px; background: #e5e7eb; flex-shrink: 0; }
+
+.pm-org-gauge { display: flex; align-items: center; gap: .6rem; }
+.pm-org-gauge-track {
+  flex: 1; height: 6px; background: #f1f5f9;
+  border-radius: 6px; overflow: hidden;
 }
-.pm-rate-badge {
-  display: inline-block; font-size: .78rem; font-weight: 700; padding: .15rem .5rem;
-  border-radius: 6px;
+.pm-org-gauge-fill {
+  height: 100%; border-radius: 6px;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+  min-width: 3px;
+}
+.pm-org-gauge-pct { font-size: .82rem; font-weight: 800; min-width: 38px; text-align: right; }
+
+/* ── KPI strip ── */
+.pm-kpis {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: .85rem; margin-bottom: 1.2rem;
+}
+.pm-kpi-card {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #e5e7eb; padding: 1.1rem;
+  display: flex; align-items: center; gap: .85rem;
+  transition: all .3s cubic-bezier(.4,0,.2,1);
+}
+.pm-kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 28px rgba(0,0,0,.07);
+}
+.pm-kpi-icon-wrap {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem; flex-shrink: 0;
+}
+.pm-kpi-value {
+  font-size: 1.65rem; font-weight: 800; color: #1e293b;
+  line-height: 1; letter-spacing: -.03em;
+}
+.pm-kpi-suffix { font-size: .85rem; font-weight: 700; margin-left: 1px; }
+.pm-kpi-label {
+  font-size: .68rem; color: #94a3b8; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .4px; margin-top: .2rem;
 }
 
-/* ═══ Info grid ═══ */
-.pm-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-.pm-info-card {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1.1rem;
+/* ── Active filter bar ── */
+.pm-active-filter-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 1px solid #bae6fd; border-radius: 12px;
+  padding: .65rem 1rem; margin-bottom: 1rem;
 }
-.pm-info-title { font-size: .88rem; font-weight: 700; color: #1e293b; margin-bottom: .75rem; display: flex; align-items: center; }
-.pm-info-row {
+.pm-filter-indicator {
+  font-size: .82rem; color: #0369a1;
+  display: flex; align-items: center; gap: .5rem;
+}
+.pm-filter-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.pm-filter-clear-btn {
+  background: #fff; border: 1px solid #bae6fd; color: #0077B5;
+  border-radius: 8px; font-size: .75rem; font-weight: 600;
+  padding: .3rem .7rem; cursor: pointer;
+  transition: all .2s;
+}
+.pm-filter-clear-btn:hover { background: #0077B5; color: #fff; border-color: #0077B5; }
+
+/* ── Data table panel ── */
+.pm-panel {
+  background: #fff; border-radius: 18px;
+  border: 1px solid #e5e7eb; overflow: hidden;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+}
+.pm-panel-head {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem 1.3rem; border-bottom: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+.pm-panel-title { font-size: .95rem; font-weight: 700; color: #1e293b; }
+.pm-panel-meta { display: flex; gap: .5rem; align-items: center; }
+.pm-badge-count {
+  font-size: .7rem; font-weight: 700; color: #0077B5;
+  background: #e0f2fe; padding: .2rem .6rem; border-radius: 999px;
+}
+.pm-badge-period {
+  font-size: .7rem; font-weight: 600; color: #64748b;
+  background: #f1f5f9; padding: .2rem .6rem; border-radius: 999px;
+  text-transform: capitalize;
+}
+
+/* Table refinements */
+.pm-tbl { font-size: .84rem; }
+.pm-tbl thead th {
+  font-size: .68rem; text-transform: uppercase; letter-spacing: .5px;
+  color: #64748b; font-weight: 700; padding: .7rem .6rem;
+  background: #f8fafc; border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+.pm-tbl tbody td { padding: .65rem .6rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
+.pm-row-alt { background: #fafbfc; }
+.pm-tbl tbody tr:hover { background: #f0f9ff; }
+
+.pm-td-agent { min-width: 180px; }
+.pm-agent-cell { display: flex; align-items: center; gap: .6rem; }
+.pm-avatar {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .65rem; font-weight: 800;
+  flex-shrink: 0;
+}
+.pm-agent-name { font-size: .84rem; font-weight: 600; color: #1e293b; line-height: 1.2; }
+.pm-agent-dept { font-size: .65rem; color: #94a3b8; font-weight: 500; }
+
+.pm-matricule {
+  font-size: .76rem; color: #475569; background: #f1f5f9;
+  padding: .15rem .4rem; border-radius: 6px;
+}
+
+.pm-organe-tag {
+  display: inline-block; font-size: .65rem; font-weight: 700;
+  padding: .18rem .5rem; border-radius: 6px;
+  background: color-mix(in srgb, var(--tag-color) 12%, transparent);
+  color: var(--tag-color);
+  letter-spacing: .3px;
+}
+
+.pm-td-num { text-align: center; font-weight: 600; color: #475569; white-space: nowrap; }
+.pm-num-present { color: #059669; font-weight: 700; }
+.pm-num-absent { color: #dc2626; font-weight: 700; }
+
+.pm-td-rate { min-width: 120px; }
+.pm-rate-wrap { display: flex; align-items: center; gap: .5rem; }
+.pm-rate-bar { flex: 1; height: 5px; background: #f1f5f9; border-radius: 5px; overflow: hidden; }
+.pm-rate-bar-fill { height: 100%; border-radius: 5px; transition: width .8s ease; min-width: 2px; }
+.pm-rate-pct { font-size: .78rem; font-weight: 800; min-width: 34px; text-align: right; }
+
+/* tfoot */
+.pm-tbl tfoot td {
+  padding: .75rem .6rem; background: #f8fbff;
+  border-top: 2px solid #e5e7eb; font-size: .82rem;
+}
+.pm-tfoot-label { font-weight: 700; color: #1e293b; white-space: nowrap; }
+
+/* ── Empty state ── */
+.pm-empty {
+  text-align: center; padding: 3.5rem 2rem;
+  background: #fff; border-radius: 18px;
+  border: 1px solid #e5e7eb; margin-bottom: 1.2rem;
+}
+.pm-empty-icon {
+  width: 72px; height: 72px; border-radius: 20px;
+  background: #f0f9ff; color: #0077B5;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 1.8rem; margin-bottom: 1rem;
+}
+.pm-empty h5 { font-weight: 700; color: #1e293b; margin-bottom: .4rem; }
+.pm-empty p { font-size: .88rem; color: #94a3b8; margin-bottom: 1.2rem; }
+
+/* ── Summary cards ── */
+.pm-summary {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: .85rem;
+}
+.pm-summary-card {
+  background: #fff; border-radius: 16px;
+  border: 1px solid #e5e7eb; padding: 1.2rem;
+  display: flex; gap: .85rem;
+  transition: all .25s;
+}
+.pm-summary-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+.pm-summary-icon { font-size: 1.2rem; margin-top: .1rem; }
+.pm-summary-body { flex: 1; }
+.pm-summary-title { font-size: .88rem; font-weight: 700; color: #1e293b; margin-bottom: .6rem; }
+.pm-summary-row {
   display: flex; justify-content: space-between; align-items: center;
   font-size: .82rem; color: #475569; padding: .3rem 0;
   border-bottom: 1px solid #f8fafc;
 }
-.pm-info-row:last-child { border-bottom: none; }
+.pm-summary-row:last-child { border-bottom: none; }
+.pm-summary-row strong { color: #1e293b; }
 
 /* ═══ Responsive ═══ */
+@media (max-width: 1100px) {
+  .pm-organes { grid-template-columns: 1fr 1fr; }
+  .pm-kpis { grid-template-columns: repeat(2, 1fr); }
+  .pm-summary { grid-template-columns: 1fr; }
+}
 @media (max-width: 991.98px) {
-  .pm-organe-overview { grid-template-columns: 1fr; }
-  .pm-kpi-grid { grid-template-columns: repeat(2, 1fr); }
-  .pm-info-grid { grid-template-columns: 1fr; }
+  .pm-organes { grid-template-columns: 1fr; }
+  .pm-hero-filters { flex-direction: column; align-items: flex-start; gap: .75rem; }
 }
 @media (max-width: 767.98px) {
-  .rh-table th:nth-child(2), .rh-table td:nth-child(2),
-  .rh-table th:nth-child(3), .rh-table td:nth-child(3),
-  .rh-table th:nth-child(4), .rh-table td:nth-child(4),
-  .rh-table th:nth-child(7), .rh-table td:nth-child(7) { display: none; }
-  .rh-table th, .rh-table td { padding: .4rem .3rem; font-size: .76rem; }
-  .rh-table th { font-size: .65rem; }
-  .pm-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
-  .pm-kpi { padding: .7rem; }
-  .pm-kpi-val { font-size: 1.2rem; }
-  .pm-kpi-icon { width: 38px; height: 38px; font-size: .85rem; }
-  .rh-filters .row.g-3 > [class*="col-md"] { flex: 0 0 100%; max-width: 100%; }
-  .d-flex.gap-2.mb-3 .btn { font-size: .78rem; padding: .3rem .55rem; }
-  .rh-table tfoot td { font-size: .7rem; }
-  .pm-organe-stats { grid-template-columns: repeat(2, 1fr); }
+  .pm-kpis { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+  .pm-kpi-card { padding: .8rem; }
+  .pm-kpi-value { font-size: 1.3rem; }
+  .pm-kpi-icon-wrap { width: 40px; height: 40px; font-size: .9rem; }
+  .pm-organe-pills { gap: .3rem; }
+  .pm-pill { font-size: .72rem; padding: .28rem .65rem; }
+
+  /* Table compact */
+  .pm-tbl thead th { font-size: .6rem; padding: .5rem .3rem; }
+  .pm-tbl tbody td { padding: .45rem .3rem; font-size: .76rem; }
+  .pm-th-mat, .pm-tbl td:nth-child(2),
+  .pm-th-org, .pm-tbl td:nth-child(3),
+  .pm-th-num:nth-of-type(1), .pm-tbl td:nth-child(4) { display: none; }
+  .pm-avatar { width: 28px; height: 28px; font-size: .55rem; border-radius: 8px; }
+  .pm-agent-name { font-size: .76rem; }
+  .pm-agent-dept { display: none; }
+  .pm-rate-bar { display: none; }
+  .pm-active-filter-bar { flex-direction: column; gap: .5rem; text-align: center; }
+  .pm-panel-head { flex-direction: column; gap: .4rem; padding: .8rem; }
+  .pm-summary { grid-template-columns: 1fr; }
 }
 @media (max-width: 575.98px) {
-  .rh-table th:nth-child(6), .rh-table td:nth-child(6) { display: none; }
-  .rh-table th, .rh-table td { padding: .35rem .25rem; font-size: .72rem; }
-  .rh-table th { font-size: .62rem; }
-  .pm-kpi-val { font-size: 1.05rem; }
-  .pm-kpi-lbl { font-size: .6rem; }
+  .pm-kpis { grid-template-columns: 1fr 1fr; }
+  .pm-kpi-value { font-size: 1.1rem; }
+  .pm-kpi-label { font-size: .58rem; }
+  .hero-tools { flex-wrap: wrap; gap: .4rem; }
+  .hero-tools .btn-rh { font-size: .72rem; padding: .3rem .6rem; }
+  .pm-tbl tfoot td { font-size: .7rem; padding: .5rem .3rem; }
 }
 </style>
