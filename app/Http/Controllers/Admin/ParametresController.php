@@ -1867,7 +1867,7 @@ class ParametresController extends Controller
     {
         return response()->json([
             'agents' => Agent::orderBy('nom')->get(['id', 'nom', 'prenom', 'matricule_pnmls']),
-            'fonctions' => Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif']),
+            'fonctions' => Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']),
             'departments' => Department::orderBy('nom')->get(['id', 'nom', 'code']),
             'sections' => Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']),
             'cellules' => Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']),

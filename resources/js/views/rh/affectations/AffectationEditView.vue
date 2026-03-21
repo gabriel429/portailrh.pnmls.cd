@@ -73,8 +73,8 @@
               <label for="fonction_id" class="form-label">Fonction <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.fonction_id }" id="fonction_id" v-model="form.fonction_id" required>
                 <option value="">-- Selectionner une fonction --</option>
-                <option v-for="f in options.fonctions" :key="f.id" :value="f.id">
-                  {{ f.nom }} ({{ f.niveau_administratif }})
+                <option v-for="f in filteredFonctions" :key="f.id" :value="f.id">
+                  {{ f.nom }}
                 </option>
               </select>
               <div v-if="errors.fonction_id" class="invalid-feedback">{{ errors.fonction_id[0] }}</div>
@@ -91,7 +91,7 @@
             </div>
             <div class="col-md-3">
               <label for="niveau" class="form-label">Type de poste <span class="text-danger">*</span></label>
-              <select class="form-select" :class="{ 'is-invalid': errors.niveau }" id="niveau" v-model="form.niveau" required>
+              <select class="form-select" :class="{ 'is-invalid': errors.niveau }" id="niveau" v-model="form.niveau" required @change="form.fonction_id = ''">
                 <option value="">-- Selectionner --</option>
                 <option value="direction">Direction</option>
                 <option value="service_rattache">Service rattache</option>
@@ -256,6 +256,29 @@ const options = reactive({
   localites: [],
 })
 
+// Filtered fonctions based on niveau_administratif and type de poste (niveau)
+const filteredFonctions = computed(() => {
+  return options.fonctions.filter(f => {
+    if (form.niveau_administratif) {
+      if (f.niveau_administratif !== form.niveau_administratif && f.niveau_administratif !== 'TOUS') return false
+    }
+    if (form.niveau && f.type_poste) {
+      const niveauToType = {
+        'direction': 'direction',
+        'service_rattache': 'service_rattache',
+        'departement': 'département',
+        'section': 'section',
+        'cellule': 'cellule',
+        'province': 'province',
+        'local': 'local',
+      }
+      const typePoste = niveauToType[form.niveau] || form.niveau
+      if (f.type_poste !== typePoste && f.type_poste !== 'appui') return false
+    }
+    return true
+  })
+})
+
 // Filtered dropdowns based on parent selection
 const filteredSections = computed(() => {
   if (!form.department_id) return []
@@ -274,6 +297,7 @@ const filteredLocalites = computed(() => {
 
 // Cascading resets
 function onNiveauChange() {
+  form.fonction_id = ''
   if (form.niveau_administratif === 'SEN') {
     form.province_id = ''
     form.localite_id = ''
