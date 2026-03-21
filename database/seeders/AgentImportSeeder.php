@@ -111,6 +111,16 @@ class AgentImportSeeder extends Seeder
                 continue;
             }
 
+            // Skip if agent with this matricule_etat already exists (unique constraint)
+            $matriculeEtatClean = trim($matriculeEtat);
+            if ($matriculeEtatClean === 'NU' || $matriculeEtatClean === '') {
+                $matriculeEtatClean = null;
+            }
+            if ($matriculeEtatClean && Agent::where('matricule_etat', $matriculeEtatClean)->exists()) {
+                $skipped++;
+                continue;
+            }
+
             // Find department ID
             $departementId = null;
             if (!empty($departement)) {
@@ -129,12 +139,6 @@ class AgentImportSeeder extends Seeder
 
             // Normalize niveau_etudes to match NIVEAUX_ETUDES constant
             $niveauNormalized = $this->normalizeNiveauEtudes(trim($niveauEtudes));
-
-            // Clean matricule_etat
-            $matriculeEtatClean = trim($matriculeEtat);
-            if ($matriculeEtatClean === 'NU' || $matriculeEtatClean === '') {
-                $matriculeEtatClean = null;
-            }
 
             // Parse date_embauche (year only → 01-01)
             $dateEmbaucheFormatted = null;
