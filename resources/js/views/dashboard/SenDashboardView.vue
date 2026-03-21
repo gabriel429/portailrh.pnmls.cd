@@ -87,7 +87,7 @@
         </div>
       </div>
 
-      <!-- ═══ KEY METRICS - 2 rows of 4 ═══ -->
+      <!-- ═══ KEY METRICS ═══ -->
       <div class="sen-section">
         <div class="sen-section-head">
           <div class="sen-section-icon" style="background:#ede9fe;color:#7c3aed;">
@@ -117,69 +117,175 @@
         </div>
       </div>
 
-      <!-- ═══ AGENTS PAR ORGANE + PLAN STRATEGIQUE (side by side) ═══ -->
-      <div class="sen-dual-section">
-        <!-- Organes -->
-        <div class="sen-panel">
-          <div class="sen-panel-head">
-            <div class="sen-section-icon" style="background:#dbeafe;color:#2563eb;">
-              <i class="fas fa-sitemap"></i>
+      <!-- ═══ AGENTS PAR ORGANE (full width, detailed) ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#dbeafe;color:#2563eb;">
+            <i class="fas fa-sitemap"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Effectifs par organe</h3>
+            <p class="sen-section-sub">{{ data.agents?.total ?? 0 }} agents au total, dont {{ data.agents?.actifs ?? 0 }} actifs</p>
+          </div>
+        </div>
+        <div class="sen-organe-grid">
+          <div v-for="o in organeCards" :key="o.code" class="sen-organe-card" :style="{ borderTop: '4px solid ' + o.color }">
+            <div class="sen-organe-header">
+              <div class="sen-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
+              <div>
+                <div class="sen-organe-name">{{ o.nom }}</div>
+                <div class="sen-organe-sub">{{ orgPct(o.total) }}% de l'effectif total</div>
+              </div>
             </div>
-            <div>
-              <h3 class="sen-section-title">Repartition par organe</h3>
-              <p class="sen-section-sub">{{ data.agents?.total ?? 0 }} agents au total</p>
+            <div class="sen-organe-stats">
+              <div class="sen-organe-stat">
+                <div class="sen-organe-stat-val" style="color:#1e293b;">{{ o.total }}</div>
+                <div class="sen-organe-stat-lbl">Total</div>
+              </div>
+              <div class="sen-organe-stat">
+                <div class="sen-organe-stat-val" style="color:#059669;">{{ o.actifs }}</div>
+                <div class="sen-organe-stat-lbl">Actifs</div>
+              </div>
+              <div class="sen-organe-stat">
+                <div class="sen-organe-stat-val" style="color:#d97706;">{{ o.suspendus }}</div>
+                <div class="sen-organe-stat-lbl">Suspendus</div>
+              </div>
+              <div class="sen-organe-stat">
+                <div class="sen-organe-stat-val" style="color:#64748b;">{{ o.anciens }}</div>
+                <div class="sen-organe-stat-lbl">Anciens</div>
+              </div>
+            </div>
+            <div class="sen-organe-bar-wrap">
+              <div class="sen-organe-bar-bg">
+                <div class="sen-organe-bar-fill" :style="{ background: o.color, width: orgPct(o.actifs) + '%' }"></div>
+              </div>
+              <div class="sen-organe-bar-label">{{ o.actifs }} actifs sur {{ data.agents?.actifs ?? 0 }}</div>
             </div>
           </div>
-          <div class="sen-organes">
-            <div v-for="o in organeCards" :key="o.code" class="sen-organe">
-              <div class="sen-organe-left">
-                <div class="sen-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
-                <div>
-                  <div class="sen-organe-name">{{ o.nom }}</div>
-                  <div class="sen-organe-pct">{{ orgPct(o.count) }}% de l'effectif</div>
-                </div>
+        </div>
+      </div>
+
+      <!-- ═══ PRESENCE PAR ORGANE ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#d1fae5;color:#059669;">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Presence par organe</h3>
+            <p class="sen-section-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} presents aujourd'hui ({{ data.attendance?.today_rate ?? 0 }}%)</p>
+          </div>
+        </div>
+        <div class="sen-presence-grid">
+          <!-- Global -->
+          <div class="sen-presence-card sen-presence-global">
+            <div class="sen-presence-card-head">
+              <i class="fas fa-globe-africa"></i> Global
+            </div>
+            <div class="sen-presence-big">{{ data.attendance?.today_rate ?? 0 }}%</div>
+            <div class="sen-presence-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }}</div>
+            <div class="sen-presence-item">
+              <span>Aujourd'hui</span>
+              <span class="fw-bold">{{ data.attendance?.today_rate ?? 0 }}%</span>
+            </div>
+            <div class="sen-presence-bar">
+              <div class="sen-presence-fill" style="background:linear-gradient(90deg,#059669,#34d399);" :style="{ width: (data.attendance?.today_rate ?? 0) + '%' }"></div>
+            </div>
+            <div class="sen-presence-item">
+              <span>Moy. mensuelle</span>
+              <span class="fw-bold">{{ data.attendance?.monthly_avg_rate ?? 0 }}%</span>
+            </div>
+            <div class="sen-presence-bar">
+              <div class="sen-presence-fill" style="background:linear-gradient(90deg,#0077B5,#38bdf8);" :style="{ width: (data.attendance?.monthly_avg_rate ?? 0) + '%' }"></div>
+            </div>
+          </div>
+          <!-- Par organe -->
+          <div v-for="o in presenceOrganes" :key="o.code" class="sen-presence-card">
+            <div class="sen-presence-card-head" :style="{ color: o.color }">
+              <i class="fas" :class="o.icon"></i> {{ o.label }}
+            </div>
+            <div class="sen-presence-big" :style="{ color: o.color }">{{ o.today_rate }}%</div>
+            <div class="sen-presence-sub">{{ o.today_present }} / {{ o.total_active }} agents</div>
+            <div class="sen-presence-item">
+              <span>Aujourd'hui</span>
+              <span class="fw-bold">{{ o.today_rate }}%</span>
+            </div>
+            <div class="sen-presence-bar">
+              <div class="sen-presence-fill" :style="{ background: o.color, width: o.today_rate + '%' }"></div>
+            </div>
+            <div class="sen-presence-item">
+              <span>Moy. mensuelle</span>
+              <span class="fw-bold">{{ o.monthly_rate }}%</span>
+            </div>
+            <div class="sen-presence-bar">
+              <div class="sen-presence-fill" :style="{ background: o.color, width: o.monthly_rate + '%', opacity: .6 }"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ PLAN DE TRAVAIL PAR ORGANE ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fef3c7;color:#d97706;">
+            <i class="fas fa-tasks"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Plan de travail {{ currentYear }} par organe</h3>
+            <p class="sen-section-sub">{{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} activites terminees ({{ data.plan_travail?.avg_completion ?? 0 }}% global)</p>
+          </div>
+        </div>
+
+        <!-- Global trimestres -->
+        <div class="sen-plan-global-row">
+          <div class="sen-plan-ring-wrap">
+            <svg viewBox="0 0 120 120" class="sen-ring-svg">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#0077B5" stroke-width="10"
+                stroke-linecap="round"
+                :stroke-dasharray="ringDash"
+                :stroke-dashoffset="ringOffset"
+                transform="rotate(-90 60 60)"/>
+            </svg>
+            <div class="sen-ring-center">
+              <div class="sen-ring-val">{{ data.plan_travail?.avg_completion ?? 0 }}%</div>
+              <div class="sen-ring-lbl">Global</div>
+            </div>
+          </div>
+          <div class="sen-plan-trims">
+            <div v-for="t in (data.plan_travail?.by_trimestre || [])" :key="t.trimestre" class="sen-trim">
+              <div class="sen-trim-head">
+                <span class="sen-trim-name">{{ t.trimestre }}</span>
+                <span class="sen-trim-pct">{{ t.avg_pourcentage }}%</span>
               </div>
-              <div class="sen-organe-count" :style="{ color: o.color }">{{ o.count }}</div>
+              <div class="sen-trim-bar">
+                <div class="sen-trim-fill" :style="{ width: t.avg_pourcentage + '%' }"></div>
+              </div>
+              <div class="sen-trim-detail">{{ t.terminee }}/{{ t.total }} terminees</div>
             </div>
           </div>
         </div>
 
-        <!-- Plan Strategique -->
-        <div class="sen-panel">
-          <div class="sen-panel-head">
-            <div class="sen-section-icon" style="background:#fef3c7;color:#d97706;">
-              <i class="fas fa-tasks"></i>
-            </div>
-            <div>
-              <h3 class="sen-section-title">Progres strategique {{ currentYear }}</h3>
-              <p class="sen-section-sub">{{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} activites terminees</p>
-            </div>
-          </div>
-          <div class="sen-plan">
-            <div class="sen-plan-ring">
-              <svg viewBox="0 0 120 120" class="sen-ring-svg">
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#f1f5f9" stroke-width="10"/>
-                <circle cx="60" cy="60" r="52" fill="none" stroke="#0077B5" stroke-width="10"
-                  stroke-linecap="round"
-                  :stroke-dasharray="ringDash"
-                  :stroke-dashoffset="ringOffset"
-                  transform="rotate(-90 60 60)"/>
-              </svg>
-              <div class="sen-ring-center">
-                <div class="sen-ring-val">{{ data.plan_travail?.avg_completion ?? 0 }}%</div>
-                <div class="sen-ring-lbl">Global</div>
+        <!-- Par organe -->
+        <div class="sen-plan-organe-grid">
+          <div v-for="po in planOrganes" :key="po.code" class="sen-plan-organe-card" :style="{ borderLeft: '4px solid ' + po.color }">
+            <div class="sen-plan-organe-head">
+              <div class="sen-plan-organe-badge" :style="{ background: po.color }">{{ po.code }}</div>
+              <div class="sen-plan-organe-info">
+                <div class="sen-plan-organe-name">{{ po.label }}</div>
+                <div class="sen-plan-organe-summary">{{ po.terminee }}/{{ po.total }} terminees &middot; <strong>{{ po.avg }}%</strong></div>
               </div>
+              <div class="sen-plan-organe-pct" :style="{ color: po.color }">{{ po.avg }}%</div>
             </div>
-            <div class="sen-trims">
-              <div v-for="t in (data.plan_travail?.by_trimestre || [])" :key="t.trimestre" class="sen-trim">
-                <div class="sen-trim-head">
-                  <span class="sen-trim-name">{{ t.trimestre }}</span>
-                  <span class="sen-trim-pct">{{ t.avg_pourcentage }}%</span>
+            <div class="sen-plan-organe-trims">
+              <div v-for="t in po.trims" :key="t.trimestre" class="sen-plan-organe-trim">
+                <div class="sen-plan-organe-trim-head">
+                  <span>{{ t.trimestre }}</span>
+                  <span class="fw-bold">{{ t.avg_pourcentage }}%</span>
                 </div>
-                <div class="sen-trim-bar">
-                  <div class="sen-trim-fill" :style="{ width: t.avg_pourcentage + '%' }"></div>
+                <div class="sen-plan-organe-trim-bar">
+                  <div class="sen-plan-organe-trim-fill" :style="{ width: t.avg_pourcentage + '%', background: po.color }"></div>
                 </div>
-                <div class="sen-trim-detail">{{ t.terminee }}/{{ t.total }} terminees</div>
               </div>
             </div>
           </div>
@@ -282,83 +388,38 @@
         </div>
       </div>
 
-      <!-- ═══ SANTE OPERATIONNELLE ═══ -->
+      <!-- ═══ TACHES ═══ -->
       <div class="sen-section">
         <div class="sen-section-head">
-          <div class="sen-section-icon" style="background:#d1fae5;color:#059669;">
-            <i class="fas fa-heartbeat"></i>
+          <div class="sen-section-icon" style="background:#ede9fe;color:#7c3aed;">
+            <i class="fas fa-clipboard-list"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Sante operationnelle</h3>
-            <p class="sen-section-sub">Suivi de la presence et des taches</p>
+            <h3 class="sen-section-title">Gestion des taches</h3>
+            <p class="sen-section-sub">{{ data.taches?.total ?? 0 }} taches au total</p>
           </div>
         </div>
-        <div class="sen-health-grid">
-          <!-- Presence -->
-          <div class="sen-health-card">
-            <div class="sen-health-title">
-              <i class="fas fa-user-check" style="color:#059669;"></i>
-              Presence du personnel
+        <div class="sen-taches-card">
+          <div class="sen-task-items">
+            <div class="sen-task-row">
+              <div class="sen-task-dot" style="background:#3b82f6;"></div>
+              <span>Nouvelles</span>
+              <span class="sen-task-count">{{ data.taches?.nouvelle ?? 0 }}</span>
             </div>
-            <div class="sen-health-main">
-              <div class="sen-health-big" style="color:#059669;">
-                {{ data.attendance?.today_rate ?? 0 }}%
-              </div>
-              <div class="sen-health-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} presents aujourd'hui</div>
+            <div class="sen-task-row">
+              <div class="sen-task-dot" style="background:#f59e0b;"></div>
+              <span>En cours</span>
+              <span class="sen-task-count">{{ data.taches?.en_cours ?? 0 }}</span>
             </div>
-            <div class="sen-health-item">
-              <div class="sen-health-item-head">
-                <span>Aujourd'hui</span>
-                <span class="fw-bold">{{ data.attendance?.today_rate ?? 0 }}%</span>
-              </div>
-              <div class="sen-health-bar">
-                <div class="sen-health-fill" style="background:linear-gradient(90deg,#059669,#34d399);" :style="{ width: (data.attendance?.today_rate ?? 0) + '%' }"></div>
-              </div>
+            <div class="sen-task-row">
+              <div class="sen-task-dot" style="background:#22c55e;"></div>
+              <span>Terminees</span>
+              <span class="sen-task-count">{{ data.taches?.terminee ?? 0 }}</span>
             </div>
-            <div class="sen-health-item">
-              <div class="sen-health-item-head">
-                <span>Moyenne mensuelle</span>
-                <span class="fw-bold">{{ data.attendance?.monthly_avg_rate ?? 0 }}%</span>
-              </div>
-              <div class="sen-health-bar">
-                <div class="sen-health-fill" style="background:linear-gradient(90deg,#0077B5,#38bdf8);" :style="{ width: (data.attendance?.monthly_avg_rate ?? 0) + '%' }"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Taches -->
-          <div class="sen-health-card">
-            <div class="sen-health-title">
-              <i class="fas fa-clipboard-list" style="color:#7c3aed;"></i>
-              Gestion des taches
-            </div>
-            <div class="sen-health-main">
-              <div class="sen-health-big" style="color:#7c3aed;">
-                {{ data.taches?.total ?? 0 }}
-              </div>
-              <div class="sen-health-sub">taches au total</div>
-            </div>
-            <div class="sen-task-items">
-              <div class="sen-task-row">
-                <div class="sen-task-dot" style="background:#3b82f6;"></div>
-                <span>Nouvelles</span>
-                <span class="sen-task-count">{{ data.taches?.nouvelle ?? 0 }}</span>
-              </div>
-              <div class="sen-task-row">
-                <div class="sen-task-dot" style="background:#f59e0b;"></div>
-                <span>En cours</span>
-                <span class="sen-task-count">{{ data.taches?.en_cours ?? 0 }}</span>
-              </div>
-              <div class="sen-task-row">
-                <div class="sen-task-dot" style="background:#22c55e;"></div>
-                <span>Terminees</span>
-                <span class="sen-task-count">{{ data.taches?.terminee ?? 0 }}</span>
-              </div>
-              <div v-if="data.taches?.overdue" class="sen-task-row sen-task-overdue">
-                <div class="sen-task-dot" style="background:#ef4444;"></div>
-                <span><i class="fas fa-exclamation-triangle me-1"></i>En retard</span>
-                <span class="sen-task-count">{{ data.taches.overdue }}</span>
-              </div>
+            <div v-if="data.taches?.overdue" class="sen-task-row sen-task-overdue">
+              <div class="sen-task-dot" style="background:#ef4444;"></div>
+              <span><i class="fas fa-exclamation-triangle me-1"></i>En retard</span>
+              <span class="sen-task-count">{{ data.taches.overdue }}</span>
             </div>
           </div>
         </div>
@@ -420,16 +481,40 @@ function pct(val) {
   return Math.min(((val ?? 0) / maxMetric.value) * 100, 100)
 }
 
-const organeCards = computed(() => [
-  { code: 'SEN', nom: 'Secretariat Executif National', count: data.value.agents?.by_organe?.sen ?? 0, color: '#0077B5' },
-  { code: 'SEP', nom: 'Secretariat Executif Provincial', count: data.value.agents?.by_organe?.sep ?? 0, color: '#0ea5e9' },
-  { code: 'SEL', nom: 'Secretariat Executif Local', count: data.value.agents?.by_organe?.sel ?? 0, color: '#0d9488' },
-])
+// ─── ORGANES: agents breakdown ───
+const organeCards = computed(() => {
+  const bo = data.value.agents?.by_organe || {}
+  return [
+    { code: 'SEN', nom: 'Secretariat Executif National', total: bo.sen?.total ?? 0, actifs: bo.sen?.actifs ?? 0, suspendus: bo.sen?.suspendus ?? 0, anciens: bo.sen?.anciens ?? 0, color: '#0077B5' },
+    { code: 'SEP', nom: 'Secretariat Executif Provincial', total: bo.sep?.total ?? 0, actifs: bo.sep?.actifs ?? 0, suspendus: bo.sep?.suspendus ?? 0, anciens: bo.sep?.anciens ?? 0, color: '#0ea5e9' },
+    { code: 'SEL', nom: 'Secretariat Executif Local', total: bo.sel?.total ?? 0, actifs: bo.sel?.actifs ?? 0, suspendus: bo.sel?.suspendus ?? 0, anciens: bo.sel?.anciens ?? 0, color: '#0d9488' },
+  ]
+})
 
 function orgPct(count) {
-  const total = data.value.agents?.total || 1
+  const total = data.value.agents?.actifs || 1
   return Math.round((count / total) * 100)
 }
+
+// ─── PRESENCE par organe ───
+const presenceOrganes = computed(() => {
+  const att = data.value.attendance?.by_organe || {}
+  return [
+    { code: 'SEN', label: 'National', icon: 'fa-flag', color: '#0077B5', today_present: att.sen?.today_present ?? 0, today_rate: att.sen?.today_rate ?? 0, monthly_rate: att.sen?.monthly_avg_rate ?? 0, total_active: att.sen?.total_active_agents ?? 0 },
+    { code: 'SEP', label: 'Provincial', icon: 'fa-map-marked-alt', color: '#0ea5e9', today_present: att.sep?.today_present ?? 0, today_rate: att.sep?.today_rate ?? 0, monthly_rate: att.sep?.monthly_avg_rate ?? 0, total_active: att.sep?.total_active_agents ?? 0 },
+    { code: 'SEL', label: 'Local', icon: 'fa-map-pin', color: '#0d9488', today_present: att.sel?.today_present ?? 0, today_rate: att.sel?.today_rate ?? 0, monthly_rate: att.sel?.monthly_avg_rate ?? 0, total_active: att.sel?.total_active_agents ?? 0 },
+  ]
+})
+
+// ─── PLAN par organe ───
+const planOrganes = computed(() => {
+  const bo = data.value.plan_travail?.by_organe || {}
+  return [
+    { code: 'SEN', label: 'National (SEN)', color: '#0077B5', total: bo.sen?.total ?? 0, terminee: bo.sen?.terminee ?? 0, avg: bo.sen?.avg_completion ?? 0, trims: bo.sen?.by_trimestre || [] },
+    { code: 'SEP', label: 'Provincial (SEP)', color: '#0ea5e9', total: bo.sep?.total ?? 0, terminee: bo.sep?.terminee ?? 0, avg: bo.sep?.avg_completion ?? 0, trims: bo.sep?.by_trimestre || [] },
+    { code: 'SEL', label: 'Local (SEL)', color: '#0d9488', total: bo.sel?.total ?? 0, terminee: bo.sel?.terminee ?? 0, avg: bo.sel?.avg_completion ?? 0, trims: bo.sel?.by_trimestre || [] },
+  ]
+})
 
 const ringCirc = 2 * Math.PI * 52
 const ringDash = ringCirc.toFixed(1)
@@ -487,15 +572,11 @@ onMounted(async () => {
   background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.05));
   border: 1px solid rgba(255,255,255,.15);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; color: #fbbf24;
-  backdrop-filter: blur(8px);
+  font-size: 1.5rem; color: #fbbf24; backdrop-filter: blur(8px);
 }
 .sen-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
 .sen-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
-.sen-hero-role {
-  font-size: .78rem; font-weight: 600; opacity: .75; margin-bottom: .2rem;
-  display: flex; align-items: center;
-}
+.sen-hero-role { font-size: .78rem; font-weight: 600; opacity: .75; margin-bottom: .2rem; display: flex; align-items: center; }
 .sen-hero-date { font-size: .72rem; opacity: .45; text-transform: capitalize; }
 
 .sen-hero-kpis {
@@ -531,10 +612,7 @@ onMounted(async () => {
   background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
   text-decoration: none; color: #374151; transition: all .25s; overflow: hidden;
 }
-.sen-action-glow {
-  position: absolute; top: 0; left: 0; width: 3px; height: 100%;
-  opacity: 0; transition: opacity .25s;
-}
+.sen-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .25s; }
 .sen-action:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
 .sen-action:hover .sen-action-glow { opacity: 1; }
 .sen-action-icon {
@@ -566,35 +644,55 @@ onMounted(async () => {
 .sen-metric-bar { height: 4px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: .7rem; }
 .sen-metric-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; min-width: 3px; }
 
-/* ═══════════ DUAL SECTION ═══════════ */
-.sen-dual-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.8rem; }
-.sen-panel {
-  background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
-  padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,.03);
+/* ═══════════ ORGANE CARDS (agents) ═══════════ */
+.sen-organe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.sen-organe-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.3rem; transition: all .25s;
 }
-.sen-panel-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.2rem; }
-
-/* Organes */
-.sen-organes { display: flex; flex-direction: column; gap: .6rem; }
-.sen-organe {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: .85rem 1rem; background: #f8fafc; border-radius: 12px;
-  transition: background .2s;
-}
-.sen-organe:hover { background: #f1f5f9; }
-.sen-organe-left { display: flex; align-items: center; gap: .75rem; }
+.sen-organe-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-organe-header { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
 .sen-organe-badge {
-  width: 38px; height: 38px; border-radius: 10px; display: flex;
+  width: 42px; height: 42px; border-radius: 12px; display: flex;
   align-items: center; justify-content: center;
-  font-size: .7rem; font-weight: 800; color: #fff; flex-shrink: 0;
+  font-size: .72rem; font-weight: 800; color: #fff; flex-shrink: 0;
 }
-.sen-organe-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
-.sen-organe-pct { font-size: .68rem; color: #94a3b8; }
-.sen-organe-count { font-size: 1.5rem; font-weight: 800; }
+.sen-organe-name { font-size: .85rem; font-weight: 700; color: #1e293b; }
+.sen-organe-sub { font-size: .68rem; color: #94a3b8; }
+.sen-organe-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: 1rem; }
+.sen-organe-stat { text-align: center; padding: .5rem .25rem; background: #f8fafc; border-radius: 10px; }
+.sen-organe-stat-val { font-size: 1.3rem; font-weight: 800; line-height: 1; }
+.sen-organe-stat-lbl { font-size: .6rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .15rem; }
+.sen-organe-bar-wrap {}
+.sen-organe-bar-bg { height: 6px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+.sen-organe-bar-fill { height: 100%; border-radius: 6px; transition: width .8s ease; min-width: 2px; }
+.sen-organe-bar-label { font-size: .62rem; color: #94a3b8; margin-top: .25rem; }
 
-/* Plan de travail */
-.sen-plan { display: flex; align-items: flex-start; gap: 1.5rem; }
-.sen-plan-ring { position: relative; flex-shrink: 0; }
+/* ═══════════ PRESENCE PAR ORGANE ═══════════ */
+.sen-presence-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.sen-presence-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.2rem; transition: all .25s;
+}
+.sen-presence-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-presence-global { border-top: 4px solid #059669; }
+.sen-presence-card-head {
+  font-size: .88rem; font-weight: 700; color: #1e293b; margin-bottom: .8rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+.sen-presence-big { font-size: 2rem; font-weight: 800; text-align: center; line-height: 1; margin-bottom: .15rem; }
+.sen-presence-sub { font-size: .7rem; color: #94a3b8; text-align: center; margin-bottom: .8rem; }
+.sen-presence-item { display: flex; justify-content: space-between; font-size: .75rem; color: #475569; margin-bottom: .25rem; }
+.sen-presence-bar { height: 6px; background: #f1f5f9; border-radius: 6px; overflow: hidden; margin-bottom: .6rem; }
+.sen-presence-fill { height: 100%; border-radius: 6px; transition: width .8s ease; min-width: 2px; }
+
+/* ═══════════ PLAN DE TRAVAIL ═══════════ */
+.sen-plan-global-row {
+  display: flex; align-items: flex-start; gap: 1.5rem; padding: 1.3rem;
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  margin-bottom: .75rem;
+}
+.sen-plan-ring-wrap { position: relative; flex-shrink: 0; }
 .sen-ring-svg { width: 120px; height: 120px; }
 .sen-ring-center {
   position: absolute; inset: 0; display: flex; flex-direction: column;
@@ -602,7 +700,7 @@ onMounted(async () => {
 }
 .sen-ring-val { font-size: 1.5rem; font-weight: 800; color: #0077B5; line-height: 1; }
 .sen-ring-lbl { font-size: .62rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
-.sen-trims { flex: 1; display: flex; flex-direction: column; gap: .75rem; }
+.sen-plan-trims { flex: 1; display: flex; flex-direction: column; gap: .75rem; }
 .sen-trim {}
 .sen-trim-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .3rem; }
 .sen-trim-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
@@ -613,6 +711,28 @@ onMounted(async () => {
   background: linear-gradient(90deg, #0077B5, #38bdf8);
 }
 .sen-trim-detail { font-size: .65rem; color: #94a3b8; margin-top: .2rem; }
+
+.sen-plan-organe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.sen-plan-organe-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.2rem; transition: all .25s;
+}
+.sen-plan-organe-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-plan-organe-head { display: flex; align-items: center; gap: .6rem; margin-bottom: 1rem; }
+.sen-plan-organe-badge {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: .65rem; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.sen-plan-organe-info { flex: 1; min-width: 0; }
+.sen-plan-organe-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.sen-plan-organe-summary { font-size: .68rem; color: #94a3b8; }
+.sen-plan-organe-pct { font-size: 1.4rem; font-weight: 800; flex-shrink: 0; }
+.sen-plan-organe-trims { display: flex; flex-direction: column; gap: .5rem; }
+.sen-plan-organe-trim {}
+.sen-plan-organe-trim-head { display: flex; justify-content: space-between; font-size: .72rem; color: #475569; margin-bottom: .2rem; }
+.sen-plan-organe-trim-bar { height: 6px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+.sen-plan-organe-trim-fill { height: 100%; border-radius: 6px; transition: width .8s ease; min-width: 2px; }
 
 /* ═══════════ RECENT ACTIVITY ═══════════ */
 .sen-recent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
@@ -662,24 +782,11 @@ onMounted(async () => {
 .sev-moyenne { background: #fef3c7; color: #d97706; }
 .sev-haute { background: #fee2e2; color: #dc2626; }
 
-/* ═══════════ HEALTH ═══════════ */
-.sen-health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-.sen-health-card {
+/* ═══════════ TACHES ═══════════ */
+.sen-taches-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  padding: 1.3rem; box-shadow: 0 2px 12px rgba(0,0,0,.03);
+  padding: 1.3rem; max-width: 500px;
 }
-.sen-health-title {
-  font-size: .88rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;
-  display: flex; align-items: center; gap: .5rem;
-}
-.sen-health-main { text-align: center; margin-bottom: 1.2rem; padding: .5rem 0; }
-.sen-health-big { font-size: 2.5rem; font-weight: 800; line-height: 1; }
-.sen-health-sub { font-size: .72rem; color: #94a3b8; margin-top: .3rem; }
-.sen-health-item { margin-bottom: .75rem; }
-.sen-health-item-head { display: flex; justify-content: space-between; font-size: .78rem; color: #475569; margin-bottom: .3rem; }
-.sen-health-bar { height: 8px; background: #f1f5f9; border-radius: 8px; overflow: hidden; }
-.sen-health-fill { height: 100%; border-radius: 8px; transition: width .8s ease; min-width: 3px; }
-
 .sen-task-items { display: flex; flex-direction: column; gap: .5rem; }
 .sen-task-row {
   display: flex; align-items: center; gap: .6rem; padding: .55rem .8rem;
@@ -698,9 +805,10 @@ onMounted(async () => {
 @media (max-width: 991.98px) {
   .sen-metrics { grid-template-columns: repeat(2, 1fr); }
   .sen-actions { grid-template-columns: repeat(2, 1fr); }
-  .sen-dual-section { grid-template-columns: 1fr; }
+  .sen-organe-grid { grid-template-columns: 1fr; }
+  .sen-presence-grid { grid-template-columns: repeat(2, 1fr); }
+  .sen-plan-organe-grid { grid-template-columns: 1fr; }
   .sen-recent-grid { grid-template-columns: 1fr; }
-  .sen-health-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 767.98px) {
   .sen-dashboard { padding: 0 .5rem 1.5rem; }
@@ -717,8 +825,8 @@ onMounted(async () => {
   .sen-metrics { gap: .5rem; }
   .sen-metric { padding: .85rem; }
   .sen-metric-val { font-size: 1.4rem; }
-  .sen-panel { padding: 1.1rem; }
-  .sen-plan { flex-direction: column; align-items: center; }
+  .sen-presence-grid { grid-template-columns: 1fr 1fr; }
+  .sen-plan-global-row { flex-direction: column; align-items: center; }
 }
 @media (max-width: 575.98px) {
   .sen-hero-kpis { border-radius: 12px; }
@@ -729,5 +837,7 @@ onMounted(async () => {
   .sen-actions { grid-template-columns: 1fr; }
   .sen-action-arrow { display: none; }
   .sen-metrics { grid-template-columns: repeat(2, 1fr); }
+  .sen-presence-grid { grid-template-columns: 1fr; }
+  .sen-organe-stats { grid-template-columns: repeat(2, 1fr); }
 }
 </style>

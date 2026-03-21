@@ -29,17 +29,28 @@ class ExecutiveDashboardController extends Controller
         $currentYear = $now->year;
         $startOfMonth = $now->copy()->startOfMonth();
 
+        // ─── ORGANES mapping ───
+        $organes = [
+            'sen' => 'Secretariat Executif National',
+            'sep' => 'Secretariat Executif Provincial',
+            'sel' => 'Secretariat Executif Local',
+        ];
+
         // ─── AGENTS ───
         $agentsTotal = Agent::count();
         $agentsActifs = Agent::actifs()->count();
         $agentsSuspendus = Agent::suspendu()->count();
         $agentsAnciens = Agent::anciens()->count();
 
-        $agentsByOrgane = [
-            'sen' => Agent::where('organe', 'Secrétariat Exécutif National')->count(),
-            'sep' => Agent::where('organe', 'Secrétariat Exécutif Provincial')->count(),
-            'sel' => Agent::where('organe', 'Secrétariat Exécutif Local')->count(),
-        ];
+        $agentsByOrgane = [];
+        foreach ($organes as $code => $nom) {
+            $agentsByOrgane[$code] = [
+                'total' => Agent::where('organe', $nom)->count(),
+                'actifs' => Agent::actifs()->where('organe', $nom)->count(),
+                'suspendus' => Agent::suspendu()->where('organe', $nom)->count(),
+                'anciens' => Agent::anciens()->where('organe', $nom)->count(),
+            ];
+        }
 
         // ─── DEMANDES ───
         $requestsTotal = RequestModel::count();
@@ -74,6 +85,36 @@ class ExecutiveDashboardController extends Controller
         if ($monthlyPointages->count() > 0) {
             $avgPresent = $monthlyPointages->avg('present');
             $avgMonthlyRate = round(($avgPresent / $totalActiveAgents) * 100, 1);
+        }
+
+        // Presence par organe
+        $attendanceByOrgane = [];
+        foreach ($organes as $code => $nom) {
+            $orgActifs = $agentsByOrgane[$code]['actifs'] ?: 1;
+            $orgTodayPresent = Pointage::byDate($now->toDateString())
+                ->whereNotNull('heure_entree')
+                ->whereHas('agent', fn($q) => $q->where('organe', $nom))
+                ->distinct('agent_id')
+                ->count('agent_id');
+
+            $orgMonthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                ->whereNotNull('heure_entree')
+                ->whereHas('agent', fn($q) => $q->where('organe', $nom))
+                ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+                ->groupBy('date_pointage')
+                ->get();
+
+            $orgMonthlyRate = 0;
+            if ($orgMonthly->count() > 0) {
+                $orgMonthlyRate = round(($orgMonthly->avg('present') / $orgActifs) * 100, 1);
+            }
+
+            $attendanceByOrgane[$code] = [
+                'today_present' => $orgTodayPresent,
+                'today_rate' => round(($orgTodayPresent / $orgActifs) * 100, 1),
+                'monthly_avg_rate' => $orgMonthlyRate,
+                'total_active_agents' => $agentsByOrgane[$code]['actifs'],
+            ];
         }
 
         // ─── SIGNALEMENTS ───
@@ -121,6 +162,36 @@ class ExecutiveDashboardController extends Controller
             ];
         }
 
+        // Plan par organe (niveau_administratif = SEN/SEP/SEL)
+        $planByOrgane = [];
+        foreach (['SEN', 'SEP', 'SEL'] as $niveau) {
+            $nq = ActivitePlan::parAnnee($currentYear)->parNiveau($niveau);
+            $nTotal = (clone $nq)->count();
+            $nTerminee = (clone $nq)->terminee()->count();
+            $nAvg = (clone $nq)->avg('pourcentage') ?? 0;
+
+            $nTrimestres = [];
+            for ($t = 1; $t <= 4; $t++) {
+                $ntq = ActivitePlan::parAnnee($currentYear)->parNiveau($niveau)->parTrimestre("T{$t}");
+                $ntTotal = (clone $ntq)->count();
+                $ntTerminee = (clone $ntq)->terminee()->count();
+                $ntAvg = (clone $ntq)->avg('pourcentage') ?? 0;
+                $nTrimestres[] = [
+                    'trimestre' => "T{$t}",
+                    'total' => $ntTotal,
+                    'terminee' => $ntTerminee,
+                    'avg_pourcentage' => round($ntAvg, 0),
+                ];
+            }
+
+            $planByOrgane[strtolower($niveau)] = [
+                'total' => $nTotal,
+                'terminee' => $nTerminee,
+                'avg_completion' => round($nAvg, 0),
+                'by_trimestre' => $nTrimestres,
+            ];
+        }
+
         // ─── COMMUNIQUES ───
         $communiquesActifs = Communique::visibles()->count();
         $communiquesUrgents = Communique::visibles()->urgent()->count();
@@ -153,6 +224,7 @@ class ExecutiveDashboardController extends Controller
                 'today_rate' => $todayRate,
                 'monthly_avg_rate' => $avgMonthlyRate,
                 'total_active_agents' => $totalActiveAgents,
+                'by_organe' => $attendanceByOrgane,
             ],
             'signalements' => [
                 'total' => $signalementTotal,
@@ -175,6 +247,7 @@ class ExecutiveDashboardController extends Controller
                 'terminee' => $planTerminee,
                 'avg_completion' => round($avgCompletion, 0),
                 'by_trimestre' => $progressByTrimestre,
+                'by_organe' => $planByOrgane,
             ],
             'communiques' => [
                 'actifs' => $communiquesActifs,
