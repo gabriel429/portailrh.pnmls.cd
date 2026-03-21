@@ -68,7 +68,7 @@ class AgentController extends Controller
                   ->orWhere('niveau_etudes', 'like', $term)
                   ->orWhere('annee_engagement_programme', 'like', $term)
                   ->orWhere('poste_actuel', 'like', $term)
-                  ->orWhereHas('province', fn($q) => $q->where('nom', 'like', $term)->orWhere('nom_province', 'like', $term))
+                  ->orWhereHas('province', fn($q) => $q->where('nom', 'like', $term))
                   ->orWhereHas('departement', fn($q) => $q->where('nom', 'like', $term))
                   ->orWhereHas('grade', fn($q) => $q->where('nom', 'like', $term))
                   ->orWhereHas('institution', fn($q) => $q->where('nom', 'like', $term));
