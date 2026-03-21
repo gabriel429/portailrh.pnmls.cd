@@ -205,31 +205,31 @@ const routes = [
         path: '/rh/dashboard',
         name: 'rh.dashboard',
         component: () => import('@/views/dashboard/RhDashboardView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/agents',
         name: 'rh.agents.index',
         component: () => import('@/views/rh/agents/AgentListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/agents/create',
         name: 'rh.agents.create',
         component: () => import('@/views/rh/agents/AgentCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/agents/:id',
         name: 'rh.agents.show',
         component: () => import('@/views/rh/agents/AgentShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/agents/:id/edit',
         name: 'rh.agents.edit',
         component: () => import('@/views/rh/agents/AgentEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
 
     // RH Pointages
@@ -275,13 +275,13 @@ const routes = [
         path: '/rh/communiques',
         name: 'rh.communiques.index',
         component: () => import('@/views/rh/communiques/CommuniqueListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/communiques/create',
         name: 'rh.communiques.create',
         component: () => import('@/views/rh/communiques/CommuniqueCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
 
     // RH Affectations
@@ -289,19 +289,19 @@ const routes = [
         path: '/rh/affectations',
         name: 'rh.affectations.index',
         component: () => import('@/views/rh/affectations/AffectationListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/affectations/create',
         name: 'rh.affectations.create',
         component: () => import('@/views/rh/affectations/AffectationCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/rh/affectations/:id/edit',
         name: 'rh.affectations.edit',
         component: () => import('@/views/rh/affectations/AffectationEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
 
     // ── Admin Routes ──
