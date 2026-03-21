@@ -51,6 +51,10 @@ export const useAuthStore = defineStore('auth', {
         async logout() {
             await client.post('/logout')
             this.user = null
+            // Clear cached API data so next user doesn't see stale data
+            if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' })
+            }
         },
         clearUser() {
             this.user = null

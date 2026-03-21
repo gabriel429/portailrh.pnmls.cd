@@ -15,5 +15,22 @@
 </head>
 <body>
     <div id="app"></div>
+
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').then(reg => {
+            setInterval(() => reg.update(), 86400000);
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        window.location.reload();
+                    }
+                });
+            });
+        }).catch(err => console.warn('SW registration failed:', err));
+    }
+    </script>
 </body>
 </html>

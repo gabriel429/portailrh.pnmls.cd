@@ -1,12 +1,12 @@
-const CACHE_VERSION = 2;
+const CACHE_VERSION = 3;
 const CACHE_NAME = 'pnmls-rh-v' + CACHE_VERSION;
+const API_CACHE_NAME = 'pnmls-api-v1';
 const OFFLINE_URL = '/offline.html';
 
 // App shell: everything needed to run offline
 const APP_SHELL = [
     OFFLINE_URL,
     '/',
-    '/login',
     '/dashboard',
     '/manifest.json',
     '/images/logo-pnmls.png',
@@ -19,11 +19,17 @@ const APP_SHELL = [
 ];
 
 // URLs to NEVER cache
-const NO_CACHE = ['/api/', 'deploy_', 'csrf', '/logout', '/login'];
+const NO_CACHE = ['deploy_', 'csrf', '/api/login', '/api/logout', '/sanctum', '/logout'];
 
 function shouldCache(url) {
     const path = new URL(url).pathname;
     return !NO_CACHE.some(skip => path.includes(skip));
+}
+
+function isApiGetRequest(request) {
+    if (request.method !== 'GET') return false;
+    const url = new URL(request.url);
+    return url.pathname.startsWith('/api/');
 }
 
 // ── Install: pre-cache app shell ──
@@ -31,7 +37,6 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                // Cache what we can, skip failures (e.g. login requires session)
                 return Promise.allSettled(
                     APP_SHELL.map(url =>
                         cache.add(url).catch(() => console.log('Skip cache:', url))
@@ -44,10 +49,11 @@ self.addEventListener('install', event => {
 
 // ── Activate: clean old caches ──
 self.addEventListener('activate', event => {
+    const keepCaches = [CACHE_NAME, API_CACHE_NAME];
     event.waitUntil(
         caches.keys().then(keys =>
             Promise.all(
-                keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+                keys.filter(key => !keepCaches.includes(key)).map(key => caches.delete(key))
             )
         )
         .then(() => self.clients.claim())
@@ -66,12 +72,36 @@ self.addEventListener('fetch', event => {
     // Skip requests that should never be cached
     if (!shouldCache(request.url)) return;
 
+    // ── API GET requests: Network first → Cache fallback (for offline) ──
+    if (isApiGetRequest(request)) {
+        event.respondWith(
+            fetch(request)
+                .then(response => {
+                    if (response.ok) {
+                        const clone = response.clone();
+                        caches.open(API_CACHE_NAME).then(cache => cache.put(request, clone));
+                    }
+                    return response;
+                })
+                .catch(() => {
+                    return caches.match(request).then(cached => {
+                        if (cached) return cached;
+                        // No cache available: return a JSON 503 error
+                        return new Response(
+                            JSON.stringify({ message: 'Vous etes hors ligne et ces donnees ne sont pas disponibles en cache.' }),
+                            { status: 503, headers: { 'Content-Type': 'application/json' } }
+                        );
+                    });
+                })
+        );
+        return;
+    }
+
     // ── Navigation (pages): Network first → Cache → Offline page ──
     if (request.mode === 'navigate') {
         event.respondWith(
             fetch(request)
                 .then(response => {
-                    // Cache every page visited for offline access
                     if (response.ok) {
                         const clone = response.clone();
                         caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
@@ -79,7 +109,6 @@ self.addEventListener('fetch', event => {
                     return response;
                 })
                 .catch(() => {
-                    // Offline: serve from cache or show offline page
                     return caches.match(request)
                         .then(cached => cached || caches.match(OFFLINE_URL));
                 })
@@ -95,7 +124,6 @@ self.addEventListener('fetch', event => {
         url.pathname.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot)$/)) {
         event.respondWith(
             caches.match(request).then(cached => {
-                // Return cache immediately, but also update in background
                 const fetchPromise = fetch(request).then(response => {
                     if (response.ok) {
                         const clone = response.clone();
@@ -124,9 +152,12 @@ self.addEventListener('fetch', event => {
     );
 });
 
-// ── Listen for skip waiting message from client ──
+// ── Listen for messages from client ──
 self.addEventListener('message', event => {
     if (event.data && event.data.type === 'SKIP_WAITING') {
         self.skipWaiting();
+    }
+    if (event.data && event.data.type === 'CLEAR_API_CACHE') {
+        caches.delete(API_CACHE_NAME);
     }
 });
