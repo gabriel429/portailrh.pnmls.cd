@@ -24,9 +24,9 @@ class AgentImportSeeder extends Seeder
         // Load grade mapping
         $gradeMap = [];
         if (Schema::hasTable('grades')) {
-            $grades = Grade::pluck('id', 'nom')->toArray();
-            foreach ($grades as $nom => $id) {
-                $gradeMap[mb_strtolower(trim($nom))] = $id;
+            $grades = Grade::pluck('id', 'libelle')->toArray();
+            foreach ($grades as $libelle => $id) {
+                $gradeMap[mb_strtolower(trim($libelle))] = $id;
             }
         }
 
