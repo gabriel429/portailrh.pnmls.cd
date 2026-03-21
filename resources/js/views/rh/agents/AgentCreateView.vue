@@ -67,7 +67,7 @@
             </div>
             <div class="col-md-3">
               <label for="annee_naissance" class="form-label">Annee de naissance <span class="text-danger">*</span></label>
-              <input type="number" min="1950" max="2100" class="form-control" :class="{ 'is-invalid': errors.annee_naissance }" id="annee_naissance" v-model.number="form.annee_naissance" placeholder="1985" required>
+              <input type="number" min="1945" max="2100" class="form-control" :class="{ 'is-invalid': errors.annee_naissance }" id="annee_naissance" v-model.number="form.annee_naissance" placeholder="1985" required>
               <div v-if="errors.annee_naissance" class="invalid-feedback">{{ errors.annee_naissance[0] }}</div>
             </div>
             <div class="col-md-3">
