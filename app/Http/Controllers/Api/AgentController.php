@@ -97,9 +97,12 @@ class AgentController extends Controller
             $query->where('departement_id', $request->query('department_id'));
         }
 
-        // Status filter
-        if ($request->query('statut')) {
-            $query->where('statut', $request->query('statut'));
+        // Status filter — default to 'actif' only
+        $statut = $request->query('statut');
+        if ($statut) {
+            $query->where('statut', $statut);
+        } else {
+            $query->where('statut', 'actif');
         }
 
         // Sort by hierarchical position (grade_etat maps to Fonction Publique ranks)
