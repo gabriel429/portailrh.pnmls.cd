@@ -101,25 +101,25 @@ const routes = [
         path: '/signalements',
         name: 'signalements.index',
         component: () => import('@/views/rh/signalements/SignalementListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/signalements/create',
         name: 'signalements.create',
         component: () => import('@/views/rh/signalements/SignalementCreateView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/signalements/:id',
         name: 'signalements.show',
         component: () => import('@/views/rh/signalements/SignalementShowView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
         path: '/signalements/:id/edit',
         name: 'signalements.edit',
         component: () => import('@/views/rh/signalements/SignalementEditView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
 
     // Taches

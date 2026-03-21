@@ -55,7 +55,7 @@
                 <i class="fas fa-shield-halved nav-icon"></i> Admin
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
-                <template v-if="auth.isRH">
+                <template v-if="auth.isRH || auth.isSEN">
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
                       <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion Agents
@@ -88,7 +88,7 @@
                   </li>
                 </template>
                 <template v-if="auth.isAdminNT">
-                  <li v-if="auth.isRH"><hr class="dropdown-divider"></li>
+                  <li v-if="auth.isRH || auth.isSEN"><hr class="dropdown-divider"></li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'admin.dashboard' }">
                       <span class="dd-icon dd-icon-slate"><i class="fas fa-sliders-h"></i></span> Parametres systeme
