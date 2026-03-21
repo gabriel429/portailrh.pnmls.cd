@@ -134,7 +134,7 @@
                       <th>Matricule de l'Etat</th>
                       <th>Anciennete</th>
                       <th>Statut</th>
-                      <th style="width:100px;">Actions</th>
+                      <!-- <th style="width:100px;">Actions</th> -->
                     </tr>
                   </thead>
                   <tbody>
@@ -176,6 +176,7 @@
                         <span v-else-if="agent.statut === 'suspendu'" class="rh-pill st-mid">Suspendu</span>
                         <span v-else class="rh-pill st-neutral">{{ capitalize(agent.statut) }}</span>
                       </td>
+                      <!-- Actions column hidden
                       <td @click.stop>
                         <div class="btn-group btn-group-sm">
                           <router-link
@@ -201,6 +202,7 @@
                           </button>
                         </div>
                       </td>
+                      -->
                     </tr>
                   </tbody>
                 </table>
