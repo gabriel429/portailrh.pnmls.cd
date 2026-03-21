@@ -101,7 +101,24 @@ class AgentController extends Controller
             $query->where('statut', $request->query('statut'));
         }
 
-        $allAgents = $query->orderBy('organe')->orderBy('nom')->get();
+        // Sort by hierarchical position (grade_etat maps to Fonction Publique ranks)
+        $allAgents = $query->orderBy('organe')
+            ->orderByRaw("CASE
+                WHEN LOWER(grade_etat) LIKE '%secrétaire général%' OR LOWER(grade_etat) LIKE '%secretaire general%' THEN 1
+                WHEN LOWER(grade_etat) LIKE '%directeur%' THEN 2
+                WHEN LOWER(grade_etat) LIKE '%chef de division%' THEN 3
+                WHEN LOWER(grade_etat) LIKE '%chef de bureau%' THEN 4
+                WHEN LOWER(grade_etat) LIKE '%attaché%1ère%' OR LOWER(grade_etat) LIKE '%attache%1ere%' THEN 5
+                WHEN LOWER(grade_etat) LIKE '%attaché%2ème%' OR LOWER(grade_etat) LIKE '%attache%2eme%' THEN 6
+                WHEN LOWER(grade_etat) LIKE '%agent%1ère%' OR LOWER(grade_etat) LIKE '%agent%1ere%' THEN 7
+                WHEN LOWER(grade_etat) LIKE '%agent%2ème%' OR LOWER(grade_etat) LIKE '%agent%2eme%' THEN 8
+                WHEN LOWER(grade_etat) LIKE '%auxiliaire%1ère%' OR LOWER(grade_etat) LIKE '%auxiliaire%1ere%' THEN 9
+                WHEN LOWER(grade_etat) LIKE '%auxiliaire%2ème%' OR LOWER(grade_etat) LIKE '%auxiliaire%2eme%' THEN 10
+                WHEN LOWER(grade_etat) LIKE '%huissier%' THEN 11
+                ELSE 12
+            END")
+            ->orderBy('nom')
+            ->get();
 
         // Group by organe
         $agentsByOrgane = [];
