@@ -117,6 +117,10 @@ class AgentController extends Controller
                 WHEN LOWER(grade_etat) LIKE '%huissier%' THEN 11
                 ELSE 12
             END")
+            ->orderByRaw("CASE
+                WHEN LOWER(fonction) LIKE '%adjoint%' THEN 2
+                ELSE 1
+            END")
             ->orderBy('nom')
             ->get();
 
