@@ -1,5 +1,6 @@
 <template>
-  <div class="container py-4">
+  <SenDashboardView v-if="auth.isSEN" />
+  <div v-else class="container py-4">
     <!-- Hero -->
     <div class="dash-hero">
       <div class="dash-hero-avatar">
@@ -164,6 +165,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import SenDashboardView from '@/views/dashboard/SenDashboardView.vue'
 
 const auth = useAuthStore()
 const loading = ref(true)

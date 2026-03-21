@@ -28,8 +28,12 @@ export const useAuthStore = defineStore('auth', {
                 'chef de section nouvelle technologie',
             ].includes(role)
         },
+        isSEN(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase()
+            return role === 'sen'
+        },
         hasAdminAccess(state) {
-            return this.isRH || this.isAdminNT
+            return this.isRH || this.isAdminNT || this.isSEN
         },
     },
     actions: {

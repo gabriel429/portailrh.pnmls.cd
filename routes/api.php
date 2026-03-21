@@ -28,6 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
+    Route::get('/dashboard/executive', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'index']);
 
     // Profile (legacy)
     Route::get('/profile', [ProfileController::class, 'apiShow']);
@@ -75,7 +76,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('messages/{message}', [MessageController::class, 'show']);
 
     // RH Agents (role-protected)
-    Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie')->group(function () {
+    Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN')->group(function () {
         Route::get('agents/export', [ApiAgentController::class, 'export']);
         Route::get('agents/form-options', [ApiAgentController::class, 'formOptions']);
         Route::apiResource('agents', ApiAgentController::class);
