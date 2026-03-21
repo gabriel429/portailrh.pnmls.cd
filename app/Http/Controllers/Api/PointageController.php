@@ -44,6 +44,13 @@ class PointageController extends Controller
             });
         }
 
+        // Filter by organe (via agent relation)
+        if ($request->filled('organe')) {
+            $query->whereHas('agent', function ($q) use ($request) {
+                $q->where('organe', $request->organe);
+            });
+        }
+
         $pointages = $query->orderBy('date_pointage', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
@@ -181,12 +188,17 @@ class PointageController extends Controller
         $dateDebut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
         $dateFin = $request->query('date_fin', now()->format('Y-m-d'));
         $agent_id = $request->query('agent_id');
+        $organeFilter = $request->query('organe');
 
         $query = Pointage::with(['agent'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
 
         if ($agent_id) {
             $query->where('agent_id', $agent_id);
+        }
+
+        if ($organeFilter) {
+            $query->whereHas('agent', fn($q) => $q->where('organe', $organeFilter));
         }
 
         $pointages = $query->orderBy('date_pointage', 'desc')->get();
@@ -227,6 +239,8 @@ class PointageController extends Controller
 
     /**
      * Monthly report with per-agent summary statistics.
+     * Accepts optional ?organe=Secretariat Executif National filter.
+     * Always returns stats_by_organe for the overview.
      */
     public function monthly(Request $request): JsonResponse
     {
@@ -236,29 +250,36 @@ class PointageController extends Controller
         $dateDebut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
         $dateFin = $dateDebut->copy()->endOfMonth();
 
-        $pointages = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin])
-            ->orderBy('date_pointage', 'desc')
-            ->get();
+        $organeFilter = $request->query('organe');
+
+        $query = Pointage::with(['agent'])
+            ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+
+        if ($organeFilter) {
+            $query->whereHas('agent', fn($q) => $q->where('organe', $organeFilter));
+        }
+
+        $pointages = $query->orderBy('date_pointage', 'desc')->get();
+
+        // Calculate working days for the month
+        $workingDays = 0;
+        $current = $dateDebut->copy();
+        while ($current <= $dateFin) {
+            if ($current->isWeekday()) {
+                $workingDays++;
+            }
+            $current->addDay();
+        }
 
         // Group by agent
         $pointagesByAgent = $pointages->groupBy('agent_id');
 
         // Calculate monthly statistics per agent
-        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDebut, $dateFin) {
+        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDebut, $dateFin, $workingDays) {
             $totalDays = $dateDebut->diffInDays($dateFin) + 1;
-            $workingDays = 0;
             $presentDays = 0;
             $absentDays = 0;
             $totalHours = 0;
-
-            $current = $dateDebut->copy();
-            while ($current <= $dateFin) {
-                if ($current->isWeekday()) {
-                    $workingDays++;
-                }
-                $current->addDay();
-            }
 
             foreach ($agentPointages as $pointage) {
                 if ($pointage->heure_entree) {
@@ -295,9 +316,51 @@ class PointageController extends Controller
             'average_attendance' => $agentStats->count() > 0 ? round($agentStats->avg('attendance_rate'), 2) : 0,
         ];
 
+        // Stats by organe (always returned for overview)
+        $organes = [
+            'sen' => 'Secretariat Executif National',
+            'sep' => 'Secretariat Executif Provincial',
+            'sel' => 'Secretariat Executif Local',
+        ];
+
+        $allPointages = Pointage::with(['agent'])
+            ->whereBetween('date_pointage', [$dateDebut, $dateFin])
+            ->get();
+
+        $statsByOrgane = [];
+        foreach ($organes as $code => $nom) {
+            $orgPointages = $allPointages->filter(fn($p) => $p->agent && $p->agent->organe === $nom);
+            $orgByAgent = $orgPointages->groupBy('agent_id');
+
+            $orgPresent = 0;
+            $orgAbsent = 0;
+            $orgHours = 0;
+            $orgRates = [];
+
+            foreach ($orgByAgent as $agPts) {
+                $pres = $agPts->filter(fn($p) => $p->heure_entree)->count();
+                $abs = $agPts->filter(fn($p) => !$p->heure_entree)->count();
+                $orgPresent += $pres;
+                $orgAbsent += $abs;
+                $orgHours += $agPts->sum('heures_travaillees');
+                if ($workingDays > 0) {
+                    $orgRates[] = round(($pres / $workingDays) * 100, 2);
+                }
+            }
+
+            $statsByOrgane[$code] = [
+                'total_agents' => $orgByAgent->count(),
+                'total_present' => $orgPresent,
+                'total_absent' => $orgAbsent,
+                'total_hours' => $orgHours,
+                'average_attendance' => count($orgRates) > 0 ? round(array_sum($orgRates) / count($orgRates), 2) : 0,
+            ];
+        }
+
         return response()->json([
             'agent_stats' => $agentStats,
             'global_stats' => $globalStats,
+            'stats_by_organe' => $statsByOrgane,
             'month' => $month,
             'date_debut' => $dateDebut->format('Y-m-d'),
             'date_fin' => $dateFin->format('Y-m-d'),

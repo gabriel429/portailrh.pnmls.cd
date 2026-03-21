@@ -33,11 +33,11 @@
       <!-- Filters -->
       <div class="rh-list-card p-3 mb-3">
         <form @submit.prevent="applyFilters" class="row g-3 align-items-end">
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label for="filter-date-debut" class="form-label">Date debut</label>
             <input type="date" id="filter-date-debut" v-model="filters.date_debut" class="form-control">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label for="filter-date-fin" class="form-label">Date fin</label>
             <input type="date" id="filter-date-fin" v-model="filters.date_fin" class="form-control">
           </div>
@@ -48,7 +48,16 @@
               <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.nom }}</option>
             </select>
           </div>
-          <div class="col-md-3 d-flex gap-2">
+          <div class="col-md-3">
+            <label for="filter-organe" class="form-label">Organe</label>
+            <select id="filter-organe" v-model="filters.organe" class="form-select">
+              <option value="">Tous les organes</option>
+              <option value="Secretariat Executif National">National (SEN)</option>
+              <option value="Secretariat Executif Provincial">Provincial (SEP)</option>
+              <option value="Secretariat Executif Local">Local (SEL)</option>
+            </select>
+          </div>
+          <div class="col-md-2 d-flex gap-2">
             <button type="submit" class="btn btn-primary flex-fill">
               <i class="fas fa-filter me-1"></i> Filtrer
             </button>
@@ -172,6 +181,7 @@ const filters = reactive({
     date_debut: '',
     date_fin: '',
     department_id: '',
+    organe: '',
 })
 
 const showDeleteModal = ref(false)
@@ -219,6 +229,7 @@ async function fetchPointages(page = 1) {
         if (filters.date_debut) params.date_debut = filters.date_debut
         if (filters.date_fin) params.date_fin = filters.date_fin
         if (filters.department_id) params.department_id = filters.department_id
+        if (filters.organe) params.organe = filters.organe
 
         const { data } = await pointagesApi.list(params)
         pointages.value = data.data
@@ -253,6 +264,7 @@ function resetFilters() {
     filters.date_debut = ''
     filters.date_fin = ''
     filters.department_id = ''
+    filters.organe = ''
     fetchPointages(1)
 }
 

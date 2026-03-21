@@ -34,21 +34,30 @@
       <!-- Filters -->
       <div class="rh-filters mb-3">
         <form @submit.prevent="fetchDaily" class="row g-3">
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label for="date_debut" class="form-label">Date debut</label>
             <input type="date" name="date_debut" id="date_debut" class="form-control" v-model="filters.date_debut">
           </div>
-          <div class="col-md-3">
+          <div class="col-md-2">
             <label for="date_fin" class="form-label">Date fin</label>
             <input type="date" name="date_fin" id="date_fin" class="form-control" v-model="filters.date_fin">
           </div>
-          <div class="col-md-4">
+          <div class="col-md-3">
             <label for="agent_id" class="form-label">Agent</label>
             <select name="agent_id" id="agent_id" class="form-select" v-model="filters.agent_id">
               <option value="">Tous les agents</option>
               <option v-for="agent in agentsList" :key="agent.id" :value="agent.id">
                 {{ agent.prenom }} {{ agent.nom }} ({{ agent.id_agent }})
               </option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label for="organe" class="form-label">Organe</label>
+            <select id="organe" class="form-select" v-model="filters.organe">
+              <option value="">Tous les organes</option>
+              <option value="Secretariat Executif National">National (SEN)</option>
+              <option value="Secretariat Executif Provincial">Provincial (SEP)</option>
+              <option value="Secretariat Executif Local">Local (SEL)</option>
             </select>
           </div>
           <div class="col-md-2 d-flex align-items-end">
@@ -139,6 +148,7 @@ const filters = reactive({
     date_debut: startOfMonth.toISOString().split('T')[0],
     date_fin: now.toISOString().split('T')[0],
     agent_id: '',
+    organe: '',
 })
 
 function formatTime(timeStr) {
@@ -167,6 +177,7 @@ async function fetchDaily() {
             date_fin: filters.date_fin,
         }
         if (filters.agent_id) params.agent_id = filters.agent_id
+        if (filters.organe) params.organe = filters.organe
 
         const { data } = await pointagesApi.daily(params)
         days.value = data.days || []
@@ -186,6 +197,7 @@ async function exportExcel() {
             date_fin: filters.date_fin,
         }
         if (filters.agent_id) params.agent_id = filters.agent_id
+        if (filters.organe) params.organe = filters.organe
 
         const response = await pointagesApi.exportDaily(params)
 
