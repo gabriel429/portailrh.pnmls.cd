@@ -155,4 +155,5 @@ Route::middleware(['auth', 'admin.nt'])->prefix('admin')->name('admin.')->group(
     Route::post('/deployment/deploy-departments', [DeploymentController::class, 'deployDepartments'])->name('deployment.deploy-departments');
     Route::post('/deployment/deploy-affectations', [DeploymentController::class, 'deployAffectations'])->name('deployment.deploy-affectations');
     Route::post('/deployment/deploy-grades', [DeploymentController::class, 'deployGrades'])->name('deployment.deploy-grades');
+    Route::post('/deployment/deploy-agents', [DeploymentController::class, 'deployAgents'])->name('deployment.deploy-agents');
 });

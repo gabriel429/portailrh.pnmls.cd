@@ -1083,4 +1083,41 @@ class DeploymentController extends Controller
             ->with('error_messages', $error_messages)
             ->with('success', $success);
     }
+
+    /**
+     * Import des 65 agents SEN depuis le seeder AgentImportSeeder
+     */
+    public function deployAgents()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "🚀 Lancement de l'import des agents SEN...";
+
+            $countBefore = DB::table('agents')->count();
+
+            Artisan::call('db:seed', [
+                '--class' => 'Database\\Seeders\\AgentImportSeeder',
+                '--force' => true,
+            ]);
+            $output = Artisan::output();
+            $output_messages[] = $output;
+
+            $countAfter = DB::table('agents')->count();
+            $imported = $countAfter - $countBefore;
+
+            $output_messages[] = "📊 Agents avant: {$countBefore}, après: {$countAfter} (+{$imported} nouveaux)";
+            $output_messages[] = "✅ Import des agents terminé !";
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
 }

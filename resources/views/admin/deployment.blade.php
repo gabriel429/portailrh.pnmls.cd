@@ -345,12 +345,30 @@
     </div>
 </div>
 
+{{-- Bouton Import Agents SEN --}}
 <div class="row mt-3">
-    <div class="col-12">
+    <div class="col-md-6">
         <div class="form-card">
-            <h6 class="mb-3">
-                <i class="fas fa-info-circle me-2"></i>
-                Information
+            <h5>
+                <i class="fas fa-users me-2" style="color: #3b82f6;"></i>
+                Import Agents SEN (65 agents)
+            </h5>
+
+            <p class="text-muted mb-3">
+                Charge les 65 agents du SEN depuis le fichier CSV (AGT-0000 = SEN, AGT-0001 = SEN Adjoint). Les doublons sont ignorés automatiquement.
+            </p>
+
+            <form action="{{ route('admin.deployment.deploy-agents') }}" method="POST" onsubmit="return confirm('Importer les 65 agents SEN dans la base de données ?');">
+                @csrf
+                <button type="submit" class="btn" style="background-color: #3b82f6; color: white;">
+                    <i class="fas fa-play me-2"></i> Lancer Import Agents
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
             </h6>
 
             <div class="small text-muted">
@@ -366,6 +384,7 @@
                 <p><strong>Départements PNMLS:</strong> Insère les départements et sections du PNMLS (DAF, DPP, DSE, DPC, DPM, DRH, DPR, Direction, Sections, Audit)</p>
                 <p><strong>Module Affectations:</strong> Crée les tables sections, cellules, localités et affectations pour gérer l'affectation des agents aux fonctions dans les structures SEN/SEP/SEL</p>
                 <p><strong>Grades Fonction Publique:</strong> Insère les 11 grades de la Fonction Publique (catégories A, B, C : Secrétaire général, Directeur, Attaché, Huissier, etc.)</p>
+                <p><strong>Import Agents SEN:</strong> Charge les 65 agents du SEN depuis le fichier CSV avec matricules AGT-0000 à AGT-0064 (AGT-0000 = Secrétaire Exécutif National, AGT-0001 = SEN Adjoint). Les doublons sont ignorés.</p>
                 <p>Ces déploiements sont <strong>idempotents</strong> - ils peuvent être exécutés plusieurs fois sans risque.</p>
             </div>
         </div>
