@@ -1,35 +1,59 @@
 <template>
-  <div class="container py-4">
-    <!-- Hero -->
+  <div class="sen-dashboard">
+    <!-- ═══ HERO ═══ -->
     <div class="sen-hero">
-      <div class="sen-hero-content">
-        <div class="sen-hero-avatar">
-          <i class="fas fa-landmark"></i>
+      <div class="sen-hero-bg"></div>
+      <div class="sen-hero-inner">
+        <div class="sen-hero-left">
+          <div class="sen-hero-badge">
+            <i class="fas fa-crown"></i>
+          </div>
+          <div>
+            <div class="sen-hero-greeting">Bienvenue,</div>
+            <h1 class="sen-hero-name">
+              {{ auth.agent ? auth.agent.prenom + ' ' + auth.agent.nom : auth.user?.name || 'SEN' }}
+            </h1>
+            <div class="sen-hero-role">
+              <i class="fas fa-shield-alt me-1"></i>
+              Secretariat Executif National
+            </div>
+            <div class="sen-hero-date">
+              <i class="fas fa-calendar-alt me-1"></i>{{ today }}
+            </div>
+          </div>
         </div>
-        <div class="sen-hero-text">
-          <h2>Tableau de bord executif</h2>
-          <p class="sen-hero-name">
-            {{ auth.agent ? auth.agent.prenom + ' ' + auth.agent.nom : auth.user?.name || 'SEN' }}
-          </p>
-          <p class="sen-hero-date">{{ today }}</p>
-        </div>
-      </div>
-      <div class="sen-hero-kpis">
-        <div class="sen-kpi">
-          <div class="sen-kpi-val">{{ data.agents?.actifs ?? '-' }}</div>
-          <div class="sen-kpi-lbl">Agents actifs</div>
-        </div>
-        <div class="sen-kpi">
-          <div class="sen-kpi-val">{{ data.attendance?.today_rate ?? 0 }}%</div>
-          <div class="sen-kpi-lbl">Presence aujourd'hui</div>
-        </div>
-        <div class="sen-kpi">
-          <div class="sen-kpi-val">{{ data.requests?.en_attente ?? 0 }}</div>
-          <div class="sen-kpi-lbl">Demandes en attente</div>
-        </div>
-        <div class="sen-kpi">
-          <div class="sen-kpi-val">{{ data.plan_travail?.avg_completion ?? 0 }}%</div>
-          <div class="sen-kpi-lbl">Plan de travail</div>
+        <div class="sen-hero-kpis">
+          <div class="sen-kpi">
+            <div class="sen-kpi-icon"><i class="fas fa-users"></i></div>
+            <div>
+              <div class="sen-kpi-val">{{ data.agents?.actifs ?? '-' }}</div>
+              <div class="sen-kpi-lbl">Agents actifs</div>
+            </div>
+          </div>
+          <div class="kpi-divider"></div>
+          <div class="sen-kpi">
+            <div class="sen-kpi-icon"><i class="fas fa-chart-line"></i></div>
+            <div>
+              <div class="sen-kpi-val">{{ data.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
+              <div class="sen-kpi-lbl">Presence</div>
+            </div>
+          </div>
+          <div class="kpi-divider"></div>
+          <div class="sen-kpi">
+            <div class="sen-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
+            <div>
+              <div class="sen-kpi-val">{{ data.requests?.en_attente ?? 0 }}</div>
+              <div class="sen-kpi-lbl">En attente</div>
+            </div>
+          </div>
+          <div class="kpi-divider"></div>
+          <div class="sen-kpi">
+            <div class="sen-kpi-icon"><i class="fas fa-bullseye"></i></div>
+            <div>
+              <div class="sen-kpi-val">{{ data.plan_travail?.avg_completion ?? 0 }}<span class="kpi-unit">%</span></div>
+              <div class="sen-kpi-lbl">Plan annuel</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -37,176 +61,304 @@
     <LoadingSpinner v-if="loading" message="Chargement du tableau de bord executif..." />
 
     <template v-else>
-      <!-- Quick Actions -->
-      <div class="dash-section-header">
-        <div class="dash-section-title"><i class="fas fa-bolt" style="color:#0077B5;"></i> Actions rapides</div>
-      </div>
-      <div class="dash-action-grid">
-        <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="dash-action-card">
-          <div class="dash-action-icon" :style="{ background: a.bg, color: a.color }">
-            <i class="fas" :class="a.icon"></i>
+      <!-- ═══ QUICK ACTIONS ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#e0f2fe;color:#0077B5;">
+            <i class="fas fa-bolt"></i>
           </div>
-          <div class="dash-action-info">
-            <div class="dash-action-name">{{ a.label }}</div>
-            <div class="dash-action-desc">{{ a.desc }}</div>
+          <div>
+            <h3 class="sen-section-title">Actions rapides</h3>
+            <p class="sen-section-sub">Acces direct aux modules cles</p>
           </div>
-        </router-link>
-      </div>
-
-      <!-- Overview Stats -->
-      <div class="dash-section-header">
-        <div class="dash-section-title"><i class="fas fa-chart-bar" style="color:#0077B5;"></i> Vue d'ensemble</div>
-      </div>
-      <div class="overview-grid mb-4">
-        <div v-for="c in overviewCards" :key="c.label" class="overview-card">
-          <div class="overview-icon" :style="{ background: c.color + '18', color: c.color }">
-            <i :class="['fas', c.icon]"></i>
-          </div>
-          <div class="overview-val">{{ c.value }}</div>
-          <div class="overview-lbl">{{ c.label }}</div>
+        </div>
+        <div class="sen-actions">
+          <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="sen-action">
+            <div class="sen-action-glow" :style="{ background: a.color }"></div>
+            <div class="sen-action-icon" :style="{ background: a.bg, color: a.color }">
+              <i class="fas" :class="a.icon"></i>
+            </div>
+            <div class="sen-action-text">
+              <div class="sen-action-label">{{ a.label }}</div>
+              <div class="sen-action-desc">{{ a.desc }}</div>
+            </div>
+            <i class="fas fa-chevron-right sen-action-arrow"></i>
+          </router-link>
         </div>
       </div>
 
-      <!-- Agents par Organe -->
-      <div class="dash-section-header">
-        <div class="dash-section-title"><i class="fas fa-sitemap" style="color:#0077B5;"></i> Repartition par organe</div>
-      </div>
-      <div class="row g-3 mb-4">
-        <div v-for="o in organeCards" :key="o.code" class="col-md-4">
-          <div class="organe-card" :style="{ borderTop: '4px solid ' + o.color }">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <div class="organe-icon" :style="{ background: o.color + '20', color: o.color }">
-                <i :class="['fas', o.icon]"></i>
+      <!-- ═══ KEY METRICS - 2 rows of 4 ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#ede9fe;color:#7c3aed;">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Indicateurs cles</h3>
+            <p class="sen-section-sub">Vue d'ensemble de l'organisation</p>
+          </div>
+        </div>
+        <div class="sen-metrics">
+          <div v-for="m in metrics" :key="m.label" class="sen-metric">
+            <div class="sen-metric-header">
+              <div class="sen-metric-icon" :style="{ background: m.bg, color: m.color }">
+                <i class="fas" :class="m.icon"></i>
               </div>
-              <div class="flex-grow-1">
-                <div class="fw-bold" style="font-size:.88rem;">{{ o.nom }}</div>
-              </div>
-              <span class="badge text-white" :style="{ background: o.color }">{{ o.code }}</span>
+              <span v-if="m.alert" class="sen-metric-alert">
+                <i class="fas fa-exclamation-circle"></i>
+              </span>
             </div>
-            <div class="organe-count" :style="{ color: o.color }">{{ o.count }}</div>
-            <div class="organe-label">agents</div>
+            <div class="sen-metric-val" :style="{ color: m.color }">{{ m.value }}</div>
+            <div class="sen-metric-lbl">{{ m.label }}</div>
+            <div class="sen-metric-bar">
+              <div class="sen-metric-bar-fill" :style="{ background: m.color, width: m.pct + '%' }"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Plan de Travail -->
-      <div class="dash-section-header">
-        <div class="dash-section-title"><i class="fas fa-tasks" style="color:#0077B5;"></i> Progres strategique {{ currentYear }}</div>
-      </div>
-      <div class="row g-3 mb-4">
-        <div class="col-md-3">
-          <div class="plan-global">
-            <div class="plan-global-pct">{{ data.plan_travail?.avg_completion ?? 0 }}%</div>
-            <div class="plan-global-label">Completion moyenne</div>
-            <div class="plan-global-counts">
-              {{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} terminees
+      <!-- ═══ AGENTS PAR ORGANE + PLAN STRATEGIQUE (side by side) ═══ -->
+      <div class="sen-dual-section">
+        <!-- Organes -->
+        <div class="sen-panel">
+          <div class="sen-panel-head">
+            <div class="sen-section-icon" style="background:#dbeafe;color:#2563eb;">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <div>
+              <h3 class="sen-section-title">Repartition par organe</h3>
+              <p class="sen-section-sub">{{ data.agents?.total ?? 0 }} agents au total</p>
             </div>
           </div>
-        </div>
-        <div v-for="t in (data.plan_travail?.by_trimestre || [])" :key="t.trimestre" class="col">
-          <div class="plan-trim">
-            <div class="plan-trim-head">{{ t.trimestre }}</div>
-            <div class="plan-trim-bar-bg">
-              <div class="plan-trim-bar-fill" :style="{ width: t.avg_pourcentage + '%' }"></div>
-            </div>
-            <div class="plan-trim-info">{{ t.terminee }}/{{ t.total }} &middot; {{ t.avg_pourcentage }}%</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Recent Activity -->
-      <div class="dash-section-header">
-        <div class="dash-section-title"><i class="fas fa-history" style="color:#0077B5;"></i> Activites recentes</div>
-      </div>
-      <div class="row g-3 mb-4">
-        <!-- Communiques -->
-        <div class="col-md-4">
-          <div class="recent-card">
-            <div class="recent-header">
-              <i class="fas fa-bullhorn me-2" style="color:#0891b2;"></i>
-              Communiques ({{ data.communiques?.actifs ?? 0 }})
-              <span v-if="data.communiques?.urgents" class="badge bg-danger ms-auto">{{ data.communiques.urgents }} urgent(s)</span>
-            </div>
-            <div v-if="data.communiques?.recent?.length" class="recent-list">
-              <router-link v-for="c in data.communiques.recent" :key="c.id" :to="'/communiques/' + c.id" class="recent-item">
-                <span class="recent-item-title">{{ c.titre }}</span>
-                <span class="recent-item-time">{{ formatTime(c.created_at) }}</span>
-              </router-link>
-            </div>
-            <div v-else class="recent-empty"><i class="fas fa-inbox me-1"></i>Aucun communique</div>
-          </div>
-        </div>
-
-        <!-- Demandes en attente -->
-        <div class="col-md-4">
-          <div class="recent-card">
-            <div class="recent-header">
-              <i class="fas fa-clock me-2" style="color:#d97706;"></i>
-              Demandes en attente ({{ data.requests?.en_attente ?? 0 }})
-            </div>
-            <div v-if="data.requests?.recent_pending?.length" class="recent-list">
-              <div v-for="r in data.requests.recent_pending" :key="r.id" class="recent-item">
-                <span class="recent-item-title">{{ r.type }} — {{ r.agent?.prenom }} {{ r.agent?.nom }}</span>
-                <span class="recent-item-time">{{ formatTime(r.created_at) }}</span>
-              </div>
-            </div>
-            <div v-else class="recent-empty"><i class="fas fa-check-circle me-1"></i>Aucune demande</div>
-          </div>
-        </div>
-
-        <!-- Signalements -->
-        <div class="col-md-4">
-          <div class="recent-card">
-            <div class="recent-header">
-              <i class="fas fa-flag me-2" style="color:#dc2626;"></i>
-              Signalements ({{ data.signalements?.ouvert ?? 0 }} ouverts)
-              <span v-if="data.signalements?.haute_severite" class="badge bg-danger ms-auto">{{ data.signalements.haute_severite }} haute</span>
-            </div>
-            <div v-if="data.signalements?.recent?.length" class="recent-list">
-              <router-link v-for="s in data.signalements.recent" :key="s.id" :to="'/signalements/' + s.id" class="recent-item">
-                <div class="d-flex align-items-center gap-2">
-                  <span class="sev-dot" :class="'sev-' + s.severite"></span>
-                  <span class="recent-item-title">{{ s.type }}</span>
+          <div class="sen-organes">
+            <div v-for="o in organeCards" :key="o.code" class="sen-organe">
+              <div class="sen-organe-left">
+                <div class="sen-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
+                <div>
+                  <div class="sen-organe-name">{{ o.nom }}</div>
+                  <div class="sen-organe-pct">{{ orgPct(o.count) }}% de l'effectif</div>
                 </div>
-                <span class="recent-item-time">{{ formatTime(s.created_at) }}</span>
-              </router-link>
+              </div>
+              <div class="sen-organe-count" :style="{ color: o.color }">{{ o.count }}</div>
             </div>
-            <div v-else class="recent-empty"><i class="fas fa-shield-alt me-1"></i>Aucun signalement</div>
+          </div>
+        </div>
+
+        <!-- Plan Strategique -->
+        <div class="sen-panel">
+          <div class="sen-panel-head">
+            <div class="sen-section-icon" style="background:#fef3c7;color:#d97706;">
+              <i class="fas fa-tasks"></i>
+            </div>
+            <div>
+              <h3 class="sen-section-title">Progres strategique {{ currentYear }}</h3>
+              <p class="sen-section-sub">{{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} activites terminees</p>
+            </div>
+          </div>
+          <div class="sen-plan">
+            <div class="sen-plan-ring">
+              <svg viewBox="0 0 120 120" class="sen-ring-svg">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#0077B5" stroke-width="10"
+                  stroke-linecap="round"
+                  :stroke-dasharray="ringDash"
+                  :stroke-dashoffset="ringOffset"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="sen-ring-center">
+                <div class="sen-ring-val">{{ data.plan_travail?.avg_completion ?? 0 }}%</div>
+                <div class="sen-ring-lbl">Global</div>
+              </div>
+            </div>
+            <div class="sen-trims">
+              <div v-for="t in (data.plan_travail?.by_trimestre || [])" :key="t.trimestre" class="sen-trim">
+                <div class="sen-trim-head">
+                  <span class="sen-trim-name">{{ t.trimestre }}</span>
+                  <span class="sen-trim-pct">{{ t.avg_pourcentage }}%</span>
+                </div>
+                <div class="sen-trim-bar">
+                  <div class="sen-trim-fill" :style="{ width: t.avg_pourcentage + '%' }"></div>
+                </div>
+                <div class="sen-trim-detail">{{ t.terminee }}/{{ t.total }} terminees</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Operational Health -->
-      <div class="dash-section-header">
-        <div class="dash-section-title"><i class="fas fa-heartbeat" style="color:#0077B5;"></i> Sante operationnelle</div>
-      </div>
-      <div class="row g-3">
-        <!-- Attendance -->
-        <div class="col-md-6">
-          <div class="health-card">
-            <h6 class="fw-bold mb-3"><i class="fas fa-user-check me-2" style="color:#059669;"></i>Presence</h6>
-            <div class="health-row">
-              <span>Aujourd'hui</span>
-              <strong>{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} ({{ data.attendance?.today_rate ?? 0 }}%)</strong>
-            </div>
-            <div class="health-bar"><div class="health-bar-fill" style="background:#059669;" :style="{ width: (data.attendance?.today_rate ?? 0) + '%' }"></div></div>
-            <div class="health-row mt-2">
-              <span>Moyenne mensuelle</span>
-              <strong>{{ data.attendance?.monthly_avg_rate ?? 0 }}%</strong>
-            </div>
-            <div class="health-bar"><div class="health-bar-fill" style="background:#0077B5;" :style="{ width: (data.attendance?.monthly_avg_rate ?? 0) + '%' }"></div></div>
+      <!-- ═══ ACTIVITES RECENTES ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fce7f3;color:#db2777;">
+            <i class="fas fa-stream"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Activites recentes</h3>
+            <p class="sen-section-sub">Dernieres mises a jour organisationnelles</p>
           </div>
         </div>
-        <!-- Taches -->
-        <div class="col-md-6">
-          <div class="health-card">
-            <h6 class="fw-bold mb-3"><i class="fas fa-tasks me-2" style="color:#7c3aed;"></i>Taches</h6>
-            <div class="health-row"><span>Nouvelles</span><strong>{{ data.taches?.nouvelle ?? 0 }}</strong></div>
-            <div class="health-row"><span>En cours</span><strong>{{ data.taches?.en_cours ?? 0 }}</strong></div>
-            <div class="health-row"><span>Terminees</span><strong>{{ data.taches?.terminee ?? 0 }}</strong></div>
-            <div v-if="data.taches?.overdue" class="health-row text-danger">
-              <span><i class="fas fa-exclamation-triangle me-1"></i>En retard</span>
-              <strong>{{ data.taches.overdue }}</strong>
+        <div class="sen-recent-grid">
+          <!-- Communiques -->
+          <div class="sen-recent-col">
+            <div class="sen-recent-head" style="border-color:#0891b2;">
+              <div class="sen-recent-head-icon" style="background:#cffafe;color:#0891b2;">
+                <i class="fas fa-bullhorn"></i>
+              </div>
+              <div>
+                <div class="sen-recent-head-title">Communiques</div>
+                <div class="sen-recent-head-count">{{ data.communiques?.actifs ?? 0 }} actifs</div>
+              </div>
+              <span v-if="data.communiques?.urgents" class="sen-alert-badge">{{ data.communiques.urgents }} urgent(s)</span>
+            </div>
+            <div v-if="data.communiques?.recent?.length" class="sen-recent-body">
+              <router-link v-for="c in data.communiques.recent" :key="c.id" :to="'/communiques/' + c.id" class="sen-recent-item">
+                <div class="sen-recent-dot" style="background:#0891b2;"></div>
+                <div class="sen-recent-info">
+                  <div class="sen-recent-title">{{ c.titre }}</div>
+                  <div class="sen-recent-time"><i class="fas fa-clock me-1"></i>{{ formatTime(c.created_at) }}</div>
+                </div>
+              </router-link>
+            </div>
+            <div v-else class="sen-recent-empty">
+              <i class="fas fa-inbox"></i>
+              <span>Aucun communique</span>
+            </div>
+          </div>
+
+          <!-- Demandes en attente -->
+          <div class="sen-recent-col">
+            <div class="sen-recent-head" style="border-color:#d97706;">
+              <div class="sen-recent-head-icon" style="background:#fef3c7;color:#d97706;">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div>
+                <div class="sen-recent-head-title">Demandes en attente</div>
+                <div class="sen-recent-head-count">{{ data.requests?.en_attente ?? 0 }} en attente</div>
+              </div>
+            </div>
+            <div v-if="data.requests?.recent_pending?.length" class="sen-recent-body">
+              <div v-for="r in data.requests.recent_pending" :key="r.id" class="sen-recent-item">
+                <div class="sen-recent-dot" style="background:#d97706;"></div>
+                <div class="sen-recent-info">
+                  <div class="sen-recent-title">{{ r.type }} — {{ r.agent?.prenom }} {{ r.agent?.nom }}</div>
+                  <div class="sen-recent-time"><i class="fas fa-clock me-1"></i>{{ formatTime(r.created_at) }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="sen-recent-empty">
+              <i class="fas fa-check-circle"></i>
+              <span>Aucune demande</span>
+            </div>
+          </div>
+
+          <!-- Signalements -->
+          <div class="sen-recent-col">
+            <div class="sen-recent-head" style="border-color:#dc2626;">
+              <div class="sen-recent-head-icon" style="background:#fee2e2;color:#dc2626;">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div>
+                <div class="sen-recent-head-title">Signalements</div>
+                <div class="sen-recent-head-count">{{ data.signalements?.ouvert ?? 0 }} ouverts</div>
+              </div>
+              <span v-if="data.signalements?.haute_severite" class="sen-alert-badge">{{ data.signalements.haute_severite }} haute</span>
+            </div>
+            <div v-if="data.signalements?.recent?.length" class="sen-recent-body">
+              <router-link v-for="s in data.signalements.recent" :key="s.id" :to="'/signalements/' + s.id" class="sen-recent-item">
+                <div class="sen-recent-dot" :class="'sev-bg-' + s.severite"></div>
+                <div class="sen-recent-info">
+                  <div class="sen-recent-title">{{ s.type }}
+                    <span class="sen-sev-badge" :class="'sev-' + s.severite">{{ s.severite }}</span>
+                  </div>
+                  <div class="sen-recent-time"><i class="fas fa-clock me-1"></i>{{ formatTime(s.created_at) }}</div>
+                </div>
+              </router-link>
+            </div>
+            <div v-else class="sen-recent-empty">
+              <i class="fas fa-shield-alt"></i>
+              <span>Aucun signalement</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ SANTE OPERATIONNELLE ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#d1fae5;color:#059669;">
+            <i class="fas fa-heartbeat"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Sante operationnelle</h3>
+            <p class="sen-section-sub">Suivi de la presence et des taches</p>
+          </div>
+        </div>
+        <div class="sen-health-grid">
+          <!-- Presence -->
+          <div class="sen-health-card">
+            <div class="sen-health-title">
+              <i class="fas fa-user-check" style="color:#059669;"></i>
+              Presence du personnel
+            </div>
+            <div class="sen-health-main">
+              <div class="sen-health-big" style="color:#059669;">
+                {{ data.attendance?.today_rate ?? 0 }}%
+              </div>
+              <div class="sen-health-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} presents aujourd'hui</div>
+            </div>
+            <div class="sen-health-item">
+              <div class="sen-health-item-head">
+                <span>Aujourd'hui</span>
+                <span class="fw-bold">{{ data.attendance?.today_rate ?? 0 }}%</span>
+              </div>
+              <div class="sen-health-bar">
+                <div class="sen-health-fill" style="background:linear-gradient(90deg,#059669,#34d399);" :style="{ width: (data.attendance?.today_rate ?? 0) + '%' }"></div>
+              </div>
+            </div>
+            <div class="sen-health-item">
+              <div class="sen-health-item-head">
+                <span>Moyenne mensuelle</span>
+                <span class="fw-bold">{{ data.attendance?.monthly_avg_rate ?? 0 }}%</span>
+              </div>
+              <div class="sen-health-bar">
+                <div class="sen-health-fill" style="background:linear-gradient(90deg,#0077B5,#38bdf8);" :style="{ width: (data.attendance?.monthly_avg_rate ?? 0) + '%' }"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Taches -->
+          <div class="sen-health-card">
+            <div class="sen-health-title">
+              <i class="fas fa-clipboard-list" style="color:#7c3aed;"></i>
+              Gestion des taches
+            </div>
+            <div class="sen-health-main">
+              <div class="sen-health-big" style="color:#7c3aed;">
+                {{ data.taches?.total ?? 0 }}
+              </div>
+              <div class="sen-health-sub">taches au total</div>
+            </div>
+            <div class="sen-task-items">
+              <div class="sen-task-row">
+                <div class="sen-task-dot" style="background:#3b82f6;"></div>
+                <span>Nouvelles</span>
+                <span class="sen-task-count">{{ data.taches?.nouvelle ?? 0 }}</span>
+              </div>
+              <div class="sen-task-row">
+                <div class="sen-task-dot" style="background:#f59e0b;"></div>
+                <span>En cours</span>
+                <span class="sen-task-count">{{ data.taches?.en_cours ?? 0 }}</span>
+              </div>
+              <div class="sen-task-row">
+                <div class="sen-task-dot" style="background:#22c55e;"></div>
+                <span>Terminees</span>
+                <span class="sen-task-count">{{ data.taches?.terminee ?? 0 }}</span>
+              </div>
+              <div v-if="data.taches?.overdue" class="sen-task-row sen-task-overdue">
+                <div class="sen-task-dot" style="background:#ef4444;"></div>
+                <span><i class="fas fa-exclamation-triangle me-1"></i>En retard</span>
+                <span class="sen-task-count">{{ data.taches.overdue }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -239,26 +391,52 @@ const quickActions = [
   { to: '/requests', label: 'Demandes', desc: 'Gerer les demandes', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
 ]
 
-const overviewCards = computed(() => [
-  { label: 'Agents total', value: data.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5' },
-  { label: 'Agents actifs', value: data.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669' },
-  { label: 'Demandes en attente', value: data.value.requests?.en_attente ?? 0, icon: 'fa-clock', color: '#d97706' },
-  { label: 'Signalements ouverts', value: data.value.signalements?.ouvert ?? 0, icon: 'fa-flag', color: '#dc2626' },
-  { label: 'Taches en cours', value: data.value.taches?.en_cours ?? 0, icon: 'fa-spinner', color: '#7c3aed' },
-  { label: 'Communiques actifs', value: data.value.communiques?.actifs ?? 0, icon: 'fa-bullhorn', color: '#0891b2' },
-  { label: 'Plan completion', value: (data.value.plan_travail?.avg_completion ?? 0) + '%', icon: 'fa-chart-line', color: '#059669' },
-  { label: "Presence aujourd'hui", value: (data.value.attendance?.today_rate ?? 0) + '%', icon: 'fa-calendar-check', color: '#0ea5e9' },
-  { label: 'Haute severite', value: data.value.signalements?.haute_severite ?? 0, icon: 'fa-exclamation-triangle', color: '#f43f5e' },
-  { label: 'Taches en retard', value: data.value.taches?.overdue ?? 0, icon: 'fa-calendar-times', color: '#ef4444' },
-  { label: 'Documents', value: data.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1' },
-  { label: 'Agents suspendus', value: data.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#64748b' },
+const maxMetric = computed(() => {
+  const vals = [
+    data.value.agents?.total ?? 0,
+    data.value.agents?.actifs ?? 0,
+    data.value.requests?.en_attente ?? 0,
+    data.value.requests?.approuve ?? 0,
+    data.value.signalements?.ouvert ?? 0,
+    data.value.taches?.en_cours ?? 0,
+    data.value.communiques?.actifs ?? 0,
+    data.value.documents?.total ?? 0,
+  ]
+  return Math.max(...vals, 1)
+})
+
+const metrics = computed(() => [
+  { label: 'Agents total', value: data.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(data.value.agents?.total), alert: false },
+  { label: 'Agents actifs', value: data.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(data.value.agents?.actifs), alert: false },
+  { label: 'Demandes en attente', value: data.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#d97706', bg: '#fef3c7', pct: pct(data.value.requests?.en_attente), alert: (data.value.requests?.en_attente ?? 0) > 5 },
+  { label: 'Demandes approuvees', value: data.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(data.value.requests?.approuve), alert: false },
+  { label: 'Signalements ouverts', value: data.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(data.value.signalements?.ouvert), alert: (data.value.signalements?.ouvert ?? 0) > 0 },
+  { label: 'Taches en cours', value: data.value.taches?.en_cours ?? 0, icon: 'fa-spinner', color: '#7c3aed', bg: '#ede9fe', pct: pct(data.value.taches?.en_cours), alert: false },
+  { label: 'Communiques actifs', value: data.value.communiques?.actifs ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: pct(data.value.communiques?.actifs), alert: false },
+  { label: 'Documents', value: data.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1', bg: '#e0e7ff', pct: pct(data.value.documents?.total), alert: false },
 ])
 
+function pct(val) {
+  return Math.min(((val ?? 0) / maxMetric.value) * 100, 100)
+}
+
 const organeCards = computed(() => [
-  { code: 'SEN', nom: 'Secretariat Executif National', count: data.value.agents?.by_organe?.sen ?? 0, icon: 'fa-flag', color: '#0077B5' },
-  { code: 'SEP', nom: 'Secretariat Executif Provincial', count: data.value.agents?.by_organe?.sep ?? 0, icon: 'fa-map-marked-alt', color: '#0ea5e9' },
-  { code: 'SEL', nom: 'Secretariat Executif Local', count: data.value.agents?.by_organe?.sel ?? 0, icon: 'fa-map-pin', color: '#0d9488' },
+  { code: 'SEN', nom: 'Secretariat Executif National', count: data.value.agents?.by_organe?.sen ?? 0, color: '#0077B5' },
+  { code: 'SEP', nom: 'Secretariat Executif Provincial', count: data.value.agents?.by_organe?.sep ?? 0, color: '#0ea5e9' },
+  { code: 'SEL', nom: 'Secretariat Executif Local', count: data.value.agents?.by_organe?.sel ?? 0, color: '#0d9488' },
 ])
+
+function orgPct(count) {
+  const total = data.value.agents?.total || 1
+  return Math.round((count / total) * 100)
+}
+
+const ringCirc = 2 * Math.PI * 52
+const ringDash = ringCirc.toFixed(1)
+const ringOffset = computed(() => {
+  const pctVal = data.value.plan_travail?.avg_completion ?? 0
+  return (ringCirc - (ringCirc * pctVal / 100)).toFixed(1)
+})
 
 function formatTime(iso) {
   if (!iso) return '-'
@@ -284,137 +462,272 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ── Hero ── */
+.sen-dashboard { max-width: 1200px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+/* ═══════════ HERO ═══════════ */
 .sen-hero {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 40%, #0077B5 100%);
-  border-radius: 18px; padding: 2rem 2.2rem; margin-bottom: 1.5rem; color: #fff;
-  position: relative; overflow: hidden;
+  position: relative; border-radius: 20px; overflow: hidden; margin-bottom: 1.8rem;
+  background: linear-gradient(135deg, #0a1628 0%, #0f2847 30%, #0c4a6e 60%, #0077B5 100%);
+  box-shadow: 0 8px 32px rgba(0, 30, 60, .25);
 }
-.sen-hero::before {
-  content: ''; position: absolute; top: -50%; right: -10%;
-  width: 300px; height: 300px; border-radius: 50%; background: rgba(255,255,255,.04);
+.sen-hero-bg {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 400px 300px at 85% 20%, rgba(0,119,181,.25) 0%, transparent 70%),
+    radial-gradient(ellipse 200px 200px at 10% 80%, rgba(56,189,248,.1) 0%, transparent 60%);
+  pointer-events: none;
 }
-.sen-hero-content { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.2rem; }
-.sen-hero-avatar {
-  width: 56px; height: 56px; border-radius: 14px;
-  background: rgba(255,255,255,.12); display: flex; align-items: center;
-  justify-content: center; font-size: 1.5rem; flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,.15);
+.sen-hero-inner {
+  position: relative; z-index: 1; padding: 2rem 2.5rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap;
 }
-.sen-hero-text h2 { font-size: 1.35rem; font-weight: 800; margin: 0 0 .15rem; }
-.sen-hero-name { font-size: .9rem; opacity: .85; margin: 0 0 .1rem; font-weight: 500; }
-.sen-hero-date { font-size: .75rem; opacity: .55; margin: 0; text-transform: capitalize; }
-.sen-hero-kpis { display: flex; gap: 2rem; flex-wrap: wrap; }
-.sen-kpi { text-align: center; }
-.sen-kpi-val { font-size: 1.6rem; font-weight: 800; line-height: 1.1; }
-.sen-kpi-lbl { font-size: .68rem; opacity: .6; text-transform: uppercase; letter-spacing: .5px; margin-top: .15rem; }
-
-/* ── Overview grid ── */
-.overview-grid {
-  display: grid; grid-template-columns: repeat(6, 1fr); gap: .65rem;
+.sen-hero-left { display: flex; align-items: center; gap: 1.2rem; color: #fff; }
+.sen-hero-badge {
+  width: 60px; height: 60px; border-radius: 16px; flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.05));
+  border: 1px solid rgba(255,255,255,.15);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: #fbbf24;
+  backdrop-filter: blur(8px);
 }
-.overview-card {
-  background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0,0,0,.04); padding: .85rem .7rem;
-  text-align: center; transition: all .2s;
-}
-.overview-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
-.overview-icon {
-  width: 36px; height: 36px; border-radius: 10px; display: flex;
-  align-items: center; justify-content: center; font-size: .85rem;
-  margin: 0 auto .5rem;
-}
-.overview-val { font-size: 1.35rem; font-weight: 800; color: #1e293b; line-height: 1; }
-.overview-lbl { font-size: .65rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; margin-top: .25rem; }
-
-/* ── Organe cards ── */
-.organe-card {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1.2rem; text-align: center;
-}
-.organe-icon {
-  width: 36px; height: 36px; border-radius: 10px; display: flex;
-  align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0;
-}
-.organe-count { font-size: 2rem; font-weight: 800; line-height: 1; margin-top: .5rem; }
-.organe-label { font-size: .7rem; color: #9ca3af; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
-
-/* ── Plan de travail ── */
-.plan-global {
-  background: linear-gradient(135deg, #0077B5, #005a87); border-radius: 14px;
-  padding: 1.5rem; color: #fff; text-align: center; height: 100%;
-  display: flex; flex-direction: column; justify-content: center;
-}
-.plan-global-pct { font-size: 2.5rem; font-weight: 900; line-height: 1; }
-.plan-global-label { font-size: .75rem; opacity: .7; text-transform: uppercase; margin-top: .3rem; }
-.plan-global-counts { font-size: .8rem; opacity: .8; margin-top: .5rem; }
-
-.plan-trim {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0,0,0,.04); padding: 1rem; text-align: center;
-  height: 100%; display: flex; flex-direction: column; justify-content: center;
-}
-.plan-trim-head { font-size: 1rem; font-weight: 800; color: #1e293b; margin-bottom: .6rem; }
-.plan-trim-bar-bg { height: 8px; background: #f3f4f6; border-radius: 8px; overflow: hidden; margin-bottom: .5rem; }
-.plan-trim-bar-fill { height: 100%; background: linear-gradient(90deg, #0077B5, #0ea5e9); border-radius: 8px; transition: width .6s ease; }
-.plan-trim-info { font-size: .72rem; color: #9ca3af; font-weight: 600; }
-
-/* ── Recent cards ── */
-.recent-card {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04); overflow: hidden; height: 100%;
-}
-.recent-header {
-  padding: .85rem 1rem; background: #f8fafc; border-bottom: 1px solid #f1f5f9;
-  font-weight: 700; font-size: .85rem; color: #1e293b;
+.sen-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
+.sen-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
+.sen-hero-role {
+  font-size: .78rem; font-weight: 600; opacity: .75; margin-bottom: .2rem;
   display: flex; align-items: center;
 }
-.recent-list { max-height: 240px; overflow-y: auto; }
-.recent-item {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: .6rem 1rem; border-bottom: 1px solid #f8fafc;
-  text-decoration: none; color: inherit; transition: background .15s;
+.sen-hero-date { font-size: .72rem; opacity: .45; text-transform: capitalize; }
+
+.sen-hero-kpis {
+  display: flex; align-items: center; gap: 0;
+  background: rgba(255,255,255,.08); border-radius: 16px; padding: .8rem 1.2rem;
+  border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(8px);
 }
-.recent-item:hover { background: #f0f9ff; }
-.recent-item-title { font-size: .8rem; font-weight: 600; color: #1e293b; }
-.recent-item-time { font-size: .68rem; color: #9ca3af; white-space: nowrap; margin-left: .5rem; }
-.recent-empty { padding: 1.5rem; text-align: center; color: #9ca3af; font-size: .82rem; }
+.sen-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; }
+.sen-kpi-icon {
+  width: 38px; height: 38px; border-radius: 10px;
+  background: rgba(255,255,255,.1); display: flex; align-items: center;
+  justify-content: center; font-size: .85rem; flex-shrink: 0;
+}
+.sen-kpi-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.kpi-unit { font-size: .85rem; font-weight: 600; opacity: .7; }
+.sen-kpi-lbl { font-size: .62rem; opacity: .5; text-transform: uppercase; letter-spacing: .4px; margin-top: .1rem; font-weight: 600; }
+.kpi-divider { width: 1px; height: 36px; background: rgba(255,255,255,.12); margin: 0 .2rem; }
 
-.sev-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.sev-basse { background: #22c55e; }
-.sev-moyenne { background: #f59e0b; }
-.sev-haute { background: #ef4444; }
+/* ═══════════ SECTIONS ═══════════ */
+.sen-section { margin-bottom: 1.8rem; }
+.sen-section-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.sen-section-icon {
+  width: 40px; height: 40px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0;
+}
+.sen-section-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2; }
+.sen-section-sub { font-size: .72rem; color: #94a3b8; margin: 0; font-weight: 500; }
 
-/* ── Health cards ── */
-.health-card {
+/* ═══════════ QUICK ACTIONS ═══════════ */
+.sen-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.sen-action {
+  position: relative; display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+  text-decoration: none; color: #374151; transition: all .25s; overflow: hidden;
+}
+.sen-action-glow {
+  position: absolute; top: 0; left: 0; width: 3px; height: 100%;
+  opacity: 0; transition: opacity .25s;
+}
+.sen-action:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-action:hover .sen-action-glow { opacity: 1; }
+.sen-action-icon {
+  width: 42px; height: 42px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;
+}
+.sen-action-text { flex: 1; min-width: 0; }
+.sen-action-label { font-size: .84rem; font-weight: 700; line-height: 1.2; }
+.sen-action-desc { font-size: .7rem; color: #94a3b8; margin-top: .1rem; }
+.sen-action-arrow { font-size: .65rem; color: #cbd5e1; transition: all .2s; }
+.sen-action:hover .sen-action-arrow { color: #0077B5; transform: translateX(3px); }
+
+/* ═══════════ METRICS ═══════════ */
+.sen-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.sen-metric {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1.2rem;
+  padding: 1.1rem; transition: all .25s; position: relative;
 }
-.health-row {
-  display: flex; justify-content: space-between; align-items: center;
-  font-size: .84rem; color: #374151; margin-bottom: .3rem;
+.sen-metric:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+.sen-metric-icon {
+  width: 40px; height: 40px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: .9rem;
 }
-.health-bar { height: 6px; background: #f3f4f6; border-radius: 6px; overflow: hidden; margin-bottom: .6rem; }
-.health-bar-fill { height: 100%; border-radius: 6px; transition: width .6s ease; min-width: 2px; }
+.sen-metric-alert { color: #ef4444; font-size: .75rem; animation: pulse-alert 2s infinite; }
+@keyframes pulse-alert { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
+.sen-metric-val { font-size: 1.75rem; font-weight: 800; line-height: 1; margin-bottom: .2rem; }
+.sen-metric-lbl { font-size: .68rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+.sen-metric-bar { height: 4px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: .7rem; }
+.sen-metric-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; min-width: 3px; }
 
-/* ── Responsive ── */
+/* ═══════════ DUAL SECTION ═══════════ */
+.sen-dual-section { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.8rem; }
+.sen-panel {
+  background: #fff; border-radius: 16px; border: 1px solid #e5e7eb;
+  padding: 1.5rem; box-shadow: 0 2px 12px rgba(0,0,0,.03);
+}
+.sen-panel-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.2rem; }
+
+/* Organes */
+.sen-organes { display: flex; flex-direction: column; gap: .6rem; }
+.sen-organe {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 1rem; background: #f8fafc; border-radius: 12px;
+  transition: background .2s;
+}
+.sen-organe:hover { background: #f1f5f9; }
+.sen-organe-left { display: flex; align-items: center; gap: .75rem; }
+.sen-organe-badge {
+  width: 38px; height: 38px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center;
+  font-size: .7rem; font-weight: 800; color: #fff; flex-shrink: 0;
+}
+.sen-organe-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.sen-organe-pct { font-size: .68rem; color: #94a3b8; }
+.sen-organe-count { font-size: 1.5rem; font-weight: 800; }
+
+/* Plan de travail */
+.sen-plan { display: flex; align-items: flex-start; gap: 1.5rem; }
+.sen-plan-ring { position: relative; flex-shrink: 0; }
+.sen-ring-svg { width: 120px; height: 120px; }
+.sen-ring-center {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+}
+.sen-ring-val { font-size: 1.5rem; font-weight: 800; color: #0077B5; line-height: 1; }
+.sen-ring-lbl { font-size: .62rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
+.sen-trims { flex: 1; display: flex; flex-direction: column; gap: .75rem; }
+.sen-trim {}
+.sen-trim-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .3rem; }
+.sen-trim-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.sen-trim-pct { font-size: .78rem; font-weight: 700; color: #0077B5; }
+.sen-trim-bar { height: 8px; background: #f1f5f9; border-radius: 8px; overflow: hidden; }
+.sen-trim-fill {
+  height: 100%; border-radius: 8px; transition: width .8s ease;
+  background: linear-gradient(90deg, #0077B5, #38bdf8);
+}
+.sen-trim-detail { font-size: .65rem; color: #94a3b8; margin-top: .2rem; }
+
+/* ═══════════ RECENT ACTIVITY ═══════════ */
+.sen-recent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.sen-recent-col {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.sen-recent-head {
+  display: flex; align-items: center; gap: .6rem; padding: .9rem 1rem;
+  border-bottom: 2px solid; background: #fafbfc;
+}
+.sen-recent-head-icon {
+  width: 34px; height: 34px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0;
+}
+.sen-recent-head-title { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.sen-recent-head-count { font-size: .65rem; color: #94a3b8; }
+.sen-alert-badge {
+  margin-left: auto; font-size: .62rem; font-weight: 700; color: #fff;
+  background: #ef4444; padding: .15rem .5rem; border-radius: 6px; white-space: nowrap;
+}
+.sen-recent-body { flex: 1; max-height: 250px; overflow-y: auto; }
+.sen-recent-item {
+  display: flex; align-items: flex-start; gap: .6rem; padding: .65rem 1rem;
+  border-bottom: 1px solid #f8fafc; text-decoration: none; color: inherit;
+  transition: background .15s;
+}
+.sen-recent-item:hover { background: #f0f9ff; }
+.sen-recent-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: .35rem; }
+.sen-recent-info { flex: 1; min-width: 0; }
+.sen-recent-title { font-size: .78rem; font-weight: 600; color: #1e293b; line-height: 1.3; }
+.sen-recent-time { font-size: .65rem; color: #94a3b8; margin-top: .15rem; }
+.sen-recent-empty {
+  flex: 1; display: flex; flex-direction: column; align-items: center;
+  justify-content: center; gap: .4rem; padding: 2rem 1rem; color: #cbd5e1; font-size: .82rem;
+}
+.sen-recent-empty i { font-size: 1.3rem; }
+
+.sev-bg-basse { background: #22c55e; }
+.sev-bg-moyenne { background: #f59e0b; }
+.sev-bg-haute { background: #ef4444; }
+.sen-sev-badge {
+  display: inline-block; font-size: .58rem; font-weight: 700; padding: .1rem .4rem;
+  border-radius: 4px; margin-left: .3rem; text-transform: uppercase; letter-spacing: .3px;
+}
+.sev-basse { background: #dcfce7; color: #16a34a; }
+.sev-moyenne { background: #fef3c7; color: #d97706; }
+.sev-haute { background: #fee2e2; color: #dc2626; }
+
+/* ═══════════ HEALTH ═══════════ */
+.sen-health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.sen-health-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.3rem; box-shadow: 0 2px 12px rgba(0,0,0,.03);
+}
+.sen-health-title {
+  font-size: .88rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;
+  display: flex; align-items: center; gap: .5rem;
+}
+.sen-health-main { text-align: center; margin-bottom: 1.2rem; padding: .5rem 0; }
+.sen-health-big { font-size: 2.5rem; font-weight: 800; line-height: 1; }
+.sen-health-sub { font-size: .72rem; color: #94a3b8; margin-top: .3rem; }
+.sen-health-item { margin-bottom: .75rem; }
+.sen-health-item-head { display: flex; justify-content: space-between; font-size: .78rem; color: #475569; margin-bottom: .3rem; }
+.sen-health-bar { height: 8px; background: #f1f5f9; border-radius: 8px; overflow: hidden; }
+.sen-health-fill { height: 100%; border-radius: 8px; transition: width .8s ease; min-width: 3px; }
+
+.sen-task-items { display: flex; flex-direction: column; gap: .5rem; }
+.sen-task-row {
+  display: flex; align-items: center; gap: .6rem; padding: .55rem .8rem;
+  background: #f8fafc; border-radius: 10px; font-size: .82rem; color: #475569;
+}
+.sen-task-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.sen-task-count { margin-left: auto; font-weight: 800; color: #1e293b; font-size: .9rem; }
+.sen-task-overdue { background: #fef2f2; color: #dc2626; }
+.sen-task-overdue .sen-task-count { color: #dc2626; }
+
+/* ═══════════ RESPONSIVE ═══════════ */
+@media (max-width: 1100px) {
+  .sen-hero-inner { flex-direction: column; align-items: flex-start; }
+  .sen-hero-kpis { width: 100%; justify-content: space-between; }
+}
 @media (max-width: 991.98px) {
-  .overview-grid { grid-template-columns: repeat(4, 1fr); }
+  .sen-metrics { grid-template-columns: repeat(2, 1fr); }
+  .sen-actions { grid-template-columns: repeat(2, 1fr); }
+  .sen-dual-section { grid-template-columns: 1fr; }
+  .sen-recent-grid { grid-template-columns: 1fr; }
+  .sen-health-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 767.98px) {
-  .sen-hero { padding: 1.25rem 1rem; }
-  .sen-hero-content { gap: .75rem; }
-  .sen-hero-avatar { width: 44px; height: 44px; font-size: 1.2rem; }
-  .sen-hero-text h2 { font-size: 1.1rem; }
-  .sen-hero-kpis { gap: 1rem; }
-  .sen-kpi-val { font-size: 1.2rem; }
-  .overview-grid { grid-template-columns: repeat(3, 1fr); gap: .5rem; }
-  .overview-card { padding: .65rem .5rem; }
-  .overview-val { font-size: 1.1rem; }
-  .overview-icon { width: 30px; height: 30px; font-size: .75rem; }
+  .sen-dashboard { padding: 0 .5rem 1.5rem; }
+  .sen-hero { border-radius: 16px; margin-bottom: 1.2rem; }
+  .sen-hero-inner { padding: 1.3rem 1.2rem; gap: 1rem; }
+  .sen-hero-badge { width: 48px; height: 48px; font-size: 1.2rem; }
+  .sen-hero-name { font-size: 1.2rem; }
+  .sen-hero-kpis { padding: .6rem .8rem; gap: 0; flex-wrap: wrap; }
+  .sen-kpi { padding: 0 .6rem; }
+  .sen-kpi-val { font-size: 1.15rem; }
+  .kpi-divider { height: 28px; }
+  .sen-actions { grid-template-columns: 1fr 1fr; gap: .5rem; }
+  .sen-action { padding: .75rem .85rem; }
+  .sen-metrics { gap: .5rem; }
+  .sen-metric { padding: .85rem; }
+  .sen-metric-val { font-size: 1.4rem; }
+  .sen-panel { padding: 1.1rem; }
+  .sen-plan { flex-direction: column; align-items: center; }
 }
 @media (max-width: 575.98px) {
-  .overview-grid { grid-template-columns: repeat(2, 1fr); }
-  .sen-hero-kpis { gap: .75rem; justify-content: space-between; width: 100%; }
+  .sen-hero-kpis { border-radius: 12px; }
+  .sen-kpi { padding: .4rem .4rem; }
+  .sen-kpi-icon { display: none; }
+  .sen-kpi-val { font-size: 1.1rem; }
+  .kpi-divider { height: 24px; }
+  .sen-actions { grid-template-columns: 1fr; }
+  .sen-action-arrow { display: none; }
+  .sen-metrics { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
