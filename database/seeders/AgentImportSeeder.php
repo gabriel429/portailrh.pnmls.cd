@@ -150,6 +150,7 @@ class AgentImportSeeder extends Seeder
                 'prenom'                    => trim($prenom),
                 'sexe'                      => $sexe === 'M' ? 'Masculin' : 'Feminin',
                 'date_naissance'            => ((int) $anneeNaissance) . '-01-01',
+                'lieu_naissance'            => 'Non renseigné',
                 'annee_naissance'           => (int) $anneeNaissance,
                 'telephone'                 => trim($telephone) ?: null,
                 'email_prive'               => (!empty(trim($emailPrive)) && str_contains($emailPrive, '@')) ? trim($emailPrive) : null,
