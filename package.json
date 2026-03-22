@@ -41,14 +41,14 @@
   "build": {
     "appId": "cd.pnmls.portailrh",
     "productName": "Portail RH PNMLS",
+    "asar": false,
     "win": {
       "target": "nsis",
-      "icon": "public/images/pnmls.jpeg"
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerHeaderIcon": "public/images/pnmls.jpeg",
       "shortcutName": "Portail RH PNMLS"
     },
     "extraResources": [
@@ -71,6 +71,7 @@
       "desktop/**/*",
       "!desktop/bin/**",
       "public/**/*",
+      "!public/storage",
       "app/**/*",
       "bootstrap/**/*",
       "config/**/*",

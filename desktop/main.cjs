@@ -14,7 +14,7 @@ const crypto = require('crypto')
 const isDev = !app.isPackaged
 const PROJECT_ROOT = isDev
     ? path.resolve(__dirname, '..')
-    : path.resolve(process.resourcesPath, '..', 'app')
+    : path.join(process.resourcesPath, 'app')
 const DB_PORT = 3307
 const APP_PORT = 8100
 const DB_NAME = 'portailrh_pnmls'
@@ -175,6 +175,23 @@ function stopMariaDb(paths) {
 // Env Setup
 // ═══════════════════════════════════════════════════════
 function setupDesktopEnv() {
+    // Ensure storage subdirectories exist (Laravel requires them)
+    const storageDirs = [
+        'storage/app/public',
+        'storage/framework/cache/data',
+        'storage/framework/sessions',
+        'storage/framework/views',
+        'storage/logs',
+    ]
+    for (const dir of storageDirs) {
+        const fullPath = path.join(PROJECT_ROOT, dir)
+        if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true })
+    }
+
+    // Ensure bootstrap/cache exists
+    const bootstrapCache = path.join(PROJECT_ROOT, 'bootstrap', 'cache')
+    if (!fs.existsSync(bootstrapCache)) fs.mkdirSync(bootstrapCache, { recursive: true })
+
     const envPath = path.join(PROJECT_ROOT, '.env')
     const envBackup = path.join(PROJECT_ROOT, '.env.web-backup')
 
@@ -387,6 +404,7 @@ async function boot() {
         runArtisan('db:seed --force', phpPath)
 
         updateSplash(70, 'Optimisation...')
+        runArtisan('storage:link', phpPath)
         runArtisan('config:clear', phpPath)
         runArtisan('route:clear', phpPath)
         runArtisan('view:clear', phpPath)
