@@ -22,6 +22,33 @@ use App\Http\Controllers\Api\SyncController;
 // Public
 Route::post('/login', [AuthController::class, 'login']);
 
+// Diagnostic - remove after debugging
+Route::get('/health-check', function () {
+    $checks = [];
+    try {
+        \DB::connection()->getPdo();
+        $checks['database'] = 'ok';
+    } catch (\Throwable $e) {
+        $checks['database'] = 'FAIL: ' . $e->getMessage();
+    }
+    try {
+        $hasUsersTable = \Schema::hasTable('users');
+        $checks['users_table'] = $hasUsersTable ? 'ok' : 'MISSING';
+    } catch (\Throwable $e) {
+        $checks['users_table'] = 'FAIL: ' . $e->getMessage();
+    }
+    try {
+        $hasSessionsTable = \Schema::hasTable('sessions');
+        $checks['sessions_table'] = $hasSessionsTable ? 'ok' : 'MISSING';
+    } catch (\Throwable $e) {
+        $checks['sessions_table'] = 'FAIL: ' . $e->getMessage();
+    }
+    $checks['session_driver'] = config('session.driver');
+    $checks['php_version'] = PHP_VERSION;
+    $checks['laravel_version'] = app()->version();
+    return response()->json($checks);
+});
+
 // Sync status (public, for online detection)
 Route::get('/sync/status', [SyncController::class, 'status']);
 

@@ -10,18 +10,37 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+        try {
+            $request->validate([
+                'email' => 'required|email',
+                'password' => 'required|string',
+            ]);
 
-        if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
-            return response()->json(['message' => 'Identifiants incorrects.'], 401);
+            if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+                return response()->json(['message' => 'Identifiants incorrects.'], 401);
+            }
+
+            try {
+                $request->session()->regenerate();
+            } catch (\Throwable $e) {
+                \Log::warning('Session regenerate failed: ' . $e->getMessage());
+            }
+
+            $user = Auth::user();
+            $user->load(['agent', 'role']);
+
+            return response()->json([
+                'message' => 'Connexion reussie.',
+                'user' => $user,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            throw $e; // Let Laravel handle validation errors normally
+        } catch (\Throwable $e) {
+            \Log::error('API login error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return response()->json([
+                'message' => 'Erreur serveur lors de la connexion: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $request->session()->regenerate();
-
-        return response()->json(['message' => 'Connexion reussie.']);
     }
 
     public function logout(Request $request)
