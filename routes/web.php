@@ -9,6 +9,29 @@ use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\DeploymentController;
 use App\Http\Controllers\DocumentTravailController;
 
+// ── Emergency deploy route (TEMPORARY — remove after use) ──
+Route::get('/emergency-deploy-pnmls-2026', function () {
+    $output = [];
+    $root = base_path();
+    $php = PHP_BINARY;
+    if (file_exists('/opt/alt/php83/usr/bin/php')) {
+        $php = '/opt/alt/php83/usr/bin/php';
+    }
+
+    $output[] = '=== Git Pull ===';
+    $output[] = shell_exec("cd {$root} && git pull origin main 2>&1") ?: '(no output)';
+
+    $output[] = '=== Clear Caches ===';
+    \Illuminate\Support\Facades\Artisan::call('config:clear');
+    $output[] = \Illuminate\Support\Facades\Artisan::output();
+    \Illuminate\Support\Facades\Artisan::call('route:clear');
+    $output[] = \Illuminate\Support\Facades\Artisan::output();
+    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    $output[] = \Illuminate\Support\Facades\Artisan::output();
+
+    return '<pre>' . htmlspecialchars(implode("\n", $output)) . '</pre>';
+});
+
 // Named login route — required by Laravel auth middleware for redirect
 Route::get('/login', function () {
     return view('spa');
