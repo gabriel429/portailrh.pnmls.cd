@@ -23,6 +23,45 @@ use App\Http\Controllers\Api\SyncController;
 Route::post('/login', [AuthController::class, 'login']);
 
 // Diagnostic - remove after debugging
+Route::get('/login-test', function (Request $request) {
+    $steps = [];
+
+    // Step 1: Check if a test user exists
+    try {
+        $user = \App\Models\User::first();
+        $steps['step1_user_exists'] = $user ? 'ok (id=' . $user->id . ', email=' . $user->email . ')' : 'FAIL: no users in DB';
+    } catch (\Throwable $e) {
+        $steps['step1_user_exists'] = 'FAIL: ' . $e->getMessage();
+    }
+
+    // Step 2: Test Auth::attempt with fake credentials (should fail gracefully)
+    try {
+        $result = \Auth::attempt(['email' => 'test@nonexistent.com', 'password' => 'wrong']);
+        $steps['step2_auth_attempt'] = 'ok (returned false as expected)';
+    } catch (\Throwable $e) {
+        $steps['step2_auth_attempt'] = 'FAIL: ' . $e->getMessage();
+    }
+
+    // Step 3: Test session
+    try {
+        $request->session()->put('_health', true);
+        $request->session()->forget('_health');
+        $steps['step3_session'] = 'ok';
+    } catch (\Throwable $e) {
+        $steps['step3_session'] = 'FAIL: ' . $e->getMessage();
+    }
+
+    // Step 4: Check SANCTUM_STATEFUL_DOMAINS
+    $steps['step4_stateful_domains'] = config('sanctum.stateful');
+
+    // Step 5: Check session config
+    $steps['step5_session_domain'] = config('session.domain') ?: '(null)';
+    $steps['step5_same_site'] = config('session.same_site');
+    $steps['step5_secure'] = config('session.secure_cookie') ?? '(null)';
+
+    return response()->json($steps);
+});
+
 Route::get('/health-check', function () {
     $checks = [];
     try {
