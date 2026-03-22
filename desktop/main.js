@@ -2,7 +2,8 @@
  * Portail RH PNMLS — Desktop Application
  * Main Electron process: orchestrates MariaDB, PHP, and the BrowserWindow.
  */
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import electronModule from 'electron'
+const { app, BrowserWindow, ipcMain, dialog } = electronModule
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { execSync } from 'child_process'

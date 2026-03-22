@@ -2,7 +2,8 @@
  * Sync Engine — Orchestrator
  * Manages automatic and manual synchronization between desktop and server.
  */
-import { ipcMain, BrowserWindow } from 'electron'
+import electronModule from 'electron'
+const { ipcMain, BrowserWindow } = electronModule
 import { pullFromServer } from './sync-pull.js'
 import { pushToServer } from './sync-push.js'
 import { syncFiles } from './sync-files.js'

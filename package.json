@@ -2,12 +2,12 @@
   "name": "portailrh.pnmls.cd",
   "version": "1.0.0",
   "description": "Gestion Intégrée des Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida",
-  "main": "desktop/main.js",
+  "main": "desktop/main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "electron:dev": "npm run build && electron desktop/main.js",
+    "electron:dev": "npm run build && electron .",
     "electron:build": "npm run build && electron-builder --win",
     "electron:setup": "powershell -ExecutionPolicy Bypass -File desktop/setup-binaries.ps1"
   },
@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.5",
-    "electron": "^41.0.3",
+    "electron": "^33.4.11",
     "electron-builder": "^26.8.1",
     "laravel-vite-plugin": "^3.0.0",
     "vite": "^8.0.1"
@@ -52,8 +52,20 @@
       "shortcutName": "Portail RH PNMLS"
     },
     "extraResources": [
-      { "from": "desktop/bin/php", "to": "php", "filter": ["**/*"] },
-      { "from": "desktop/bin/mariadb", "to": "mariadb", "filter": ["**/*"] }
+      {
+        "from": "desktop/bin/php",
+        "to": "php",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "desktop/bin/mariadb",
+        "to": "mariadb",
+        "filter": [
+          "**/*"
+        ]
+      }
     ],
     "files": [
       "desktop/**/*",
