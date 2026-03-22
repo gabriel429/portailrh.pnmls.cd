@@ -4,6 +4,7 @@
  */
 import { spawn } from 'child_process'
 import path from 'path'
+import fs from 'fs'
 import net from 'net'
 
 let phpProcess = null
@@ -15,8 +16,10 @@ let phpProcess = null
  */
 export function getPhpPath(isDev) {
     if (isDev) {
-        // Use WAMP's PHP in development
-        return 'C:\\wamp64\\bin\\php\\php8.3.14\\php.exe'
+        // Prefer desktop/bin/php if downloaded, fallback to WAMP PHP
+        const localPhp = path.join(process.cwd(), 'desktop', 'bin', 'php', 'php.exe')
+        if (fs.existsSync(localPhp)) return localPhp
+        return 'C:\\wamp64\\bin\\php\\php8.2.26\\php.exe'
     }
     // In production, PHP is bundled in resources/php
     const resourcesPath = process.resourcesPath
