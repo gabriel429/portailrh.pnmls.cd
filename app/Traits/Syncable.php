@@ -2,27 +2,55 @@
 
 namespace App\Traits;
 
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 /**
  * Syncable Trait
  *
- * Provides sync capabilities to Eloquent models:
- * - Auto-generates UUID on creation
- * - Marks records as dirty on update
- * - Provides scopes for querying sync state
- * - Adds soft delete support
+ * Provides sync capabilities to Eloquent models.
+ * Safe to use even before the sync migration has been run —
+ * all sync features are no-ops when the columns don't exist yet.
  */
 trait Syncable
 {
-    use SoftDeletes;
+    /**
+     * Cache of which tables have sync columns.
+     */
+    protected static array $syncColumnsCache = [];
+
+    /**
+     * Check if sync columns exist on this model's table.
+     */
+    public static function hasSyncColumns(): bool
+    {
+        $table = (new static)->getTable();
+
+        if (!isset(static::$syncColumnsCache[$table])) {
+            try {
+                static::$syncColumnsCache[$table] = Schema::hasColumn($table, 'uuid');
+            } catch (\Throwable) {
+                static::$syncColumnsCache[$table] = false;
+            }
+        }
+
+        return static::$syncColumnsCache[$table];
+    }
 
     /**
      * Boot the Syncable trait.
      */
     public static function bootSyncable(): void
     {
+        // Only register sync hooks and soft-delete scope if columns exist
+        if (!static::hasSyncColumns()) {
+            return;
+        }
+
+        // Register SoftDeletes global scope
+        static::addGlobalScope(new SoftDeletingScope);
+
         // Auto-generate UUID on creating
         static::creating(function ($model) {
             if (empty($model->uuid)) {
@@ -43,13 +71,16 @@ trait Syncable
      */
     public function initializeSyncable(): void
     {
-        // Ensure these columns are in fillable
+        if (!static::hasSyncColumns()) {
+            return;
+        }
+
         $this->mergeFillable(['uuid', 'synced_at', 'is_dirty']);
 
-        // Cast types
         $this->mergeCasts([
             'synced_at' => 'datetime',
             'is_dirty' => 'boolean',
+            'deleted_at' => 'datetime',
         ]);
     }
 
@@ -58,18 +89,12 @@ trait Syncable
      */
     protected bool $syncing = false;
 
-    /**
-     * Set the model into sync mode (prevents marking as dirty).
-     */
     public function setSyncing(bool $syncing = true): static
     {
         $this->syncing = $syncing;
         return $this;
     }
 
-    /**
-     * Check if the model is currently being synced.
-     */
     public function isSyncing(): bool
     {
         return $this->syncing;
@@ -80,6 +105,10 @@ trait Syncable
      */
     public function markSynced(): static
     {
+        if (!static::hasSyncColumns()) {
+            return $this;
+        }
+
         $this->syncing = true;
         $this->update([
             'is_dirty' => false,
@@ -94,6 +123,10 @@ trait Syncable
      */
     public function markDirty(): static
     {
+        if (!static::hasSyncColumns()) {
+            return $this;
+        }
+
         $this->syncing = true;
         $this->update(['is_dirty' => true]);
         $this->syncing = false;
@@ -105,6 +138,9 @@ trait Syncable
      */
     public function scopeDirty($query)
     {
+        if (!static::hasSyncColumns()) {
+            return $query;
+        }
         return $query->where('is_dirty', true);
     }
 
@@ -113,6 +149,9 @@ trait Syncable
      */
     public function scopeUnsynced($query)
     {
+        if (!static::hasSyncColumns()) {
+            return $query;
+        }
         return $query->whereNull('synced_at');
     }
 
@@ -121,6 +160,9 @@ trait Syncable
      */
     public function scopeSyncedBefore($query, $date)
     {
+        if (!static::hasSyncColumns()) {
+            return $query;
+        }
         return $query->where('synced_at', '<', $date);
     }
 
@@ -137,6 +179,9 @@ trait Syncable
      */
     public static function findByUuid(string $uuid)
     {
+        if (!static::hasSyncColumns()) {
+            return null;
+        }
         return static::where('uuid', $uuid)->first();
     }
 
@@ -156,5 +201,48 @@ trait Syncable
         $data = $this->toArray();
         unset($data['is_dirty'], $data['syncing']);
         return $data;
+    }
+
+    /**
+     * SoftDeletes compatibility — these methods allow the model to act
+     * as if it has SoftDeletes when columns exist, without using the trait.
+     */
+    public function trashed(): bool
+    {
+        if (!static::hasSyncColumns()) {
+            return false;
+        }
+        return !is_null($this->{$this->getDeletedAtColumn()});
+    }
+
+    public function restore(): bool
+    {
+        if (!static::hasSyncColumns()) {
+            return false;
+        }
+
+        $this->{$this->getDeletedAtColumn()} = null;
+        $this->exists = true;
+
+        $result = $this->save();
+
+        return $result;
+    }
+
+    public function forceDelete(): ?bool
+    {
+        return $this->newQueryWithoutScopes()
+            ->where($this->getKeyName(), $this->getKey())
+            ->forceDelete();
+    }
+
+    public function getDeletedAtColumn(): string
+    {
+        return defined('static::DELETED_AT') ? static::DELETED_AT : 'deleted_at';
+    }
+
+    public function getQualifiedDeletedAtColumn(): string
+    {
+        return $this->qualifyColumn($this->getDeletedAtColumn());
     }
 }
