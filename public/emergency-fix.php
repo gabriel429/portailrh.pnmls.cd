@@ -1,20 +1,36 @@
 <?php
 /**
- * Emergency fix — standalone PHP script (no Laravel bootstrap).
- * Writes the corrected Syncable.php directly to disk.
+ * Emergency fix v2 — standalone PHP script (no Laravel bootstrap).
+ * Fixes Syncable.php + resets OPcache.
  * DELETE THIS FILE AFTER USE.
  */
+header('Content-Type: text/plain; charset=utf-8');
 
 $baseDir = dirname(__DIR__);
 $syncablePath = $baseDir . '/app/Traits/Syncable.php';
-
 $output = [];
-$output[] = '=== Emergency Fix: Syncable.php ===';
-$output[] = 'Base dir: ' . $baseDir;
-$output[] = 'Target: ' . $syncablePath;
-$output[] = '';
 
-$fixedContent = '<?php
+// Step 0: Show current state
+$output[] = '=== Current Syncable.php ===';
+if (file_exists($syncablePath)) {
+    $current = file_get_contents($syncablePath);
+    if (strpos($current, 'use SoftDeletes;') !== false) {
+        $output[] = 'STATUS: BROKEN (contains "use SoftDeletes;")';
+    } elseif (strpos($current, 'hasSyncColumns') !== false) {
+        $output[] = 'STATUS: ALREADY FIXED (contains "hasSyncColumns")';
+    } else {
+        $output[] = 'STATUS: UNKNOWN';
+    }
+    $output[] = 'Size: ' . strlen($current) . ' bytes';
+} else {
+    $output[] = 'STATUS: FILE NOT FOUND!';
+}
+
+// Step 1: Write the fixed file
+$output[] = '';
+$output[] = '=== Writing Fixed Syncable.php ===';
+
+$fixed = '<?php
 
 namespace App\Traits;
 
@@ -171,47 +187,79 @@ trait Syncable
 }
 ';
 
-// Write the file
-$written = file_put_contents($syncablePath, $fixedContent);
+$written = file_put_contents($syncablePath, $fixed);
+$output[] = $written ? "Written {$written} bytes OK" : "WRITE FAILED!";
 
-if ($written) {
-    $output[] = "SUCCESS: Written {$written} bytes";
-
-    // Also clear cached files
-    $cacheDirs = [
-        $baseDir . '/bootstrap/cache/config.php',
-        $baseDir . '/bootstrap/cache/routes-v7.php',
-        $baseDir . '/bootstrap/cache/services.php',
-    ];
-    foreach ($cacheDirs as $cacheFile) {
-        if (file_exists($cacheFile)) {
-            unlink($cacheFile);
-            $output[] = "Deleted cache: " . basename($cacheFile);
-        }
-    }
-
-    // Clear compiled views
-    $viewsDir = $baseDir . '/storage/framework/views';
-    if (is_dir($viewsDir)) {
-        $count = 0;
-        foreach (glob($viewsDir . '/*.php') as $view) {
-            unlink($view);
-            $count++;
-        }
-        $output[] = "Deleted {$count} compiled views";
-    }
-
-    $output[] = '';
-    $output[] = 'FIX APPLIED! Try logging in now.';
-    $output[] = 'DELETE this file (public/emergency-fix.php) when done.';
-} else {
-    $output[] = "FAILED to write file!";
-    $output[] = "Dir writable: " . (is_writable(dirname($syncablePath)) ? 'yes' : 'no');
-    $output[] = "File exists: " . (file_exists($syncablePath) ? 'yes' : 'no');
-    if (file_exists($syncablePath)) {
-        $output[] = "File writable: " . (is_writable($syncablePath) ? 'yes' : 'no');
-    }
+// Step 2: Reset OPcache
+$output[] = '';
+$output[] = '=== OPcache Reset ===';
+if (function_exists('opcache_invalidate')) {
+    opcache_invalidate($syncablePath, true);
+    $output[] = 'opcache_invalidate: done';
+}
+if (function_exists('opcache_reset')) {
+    opcache_reset();
+    $output[] = 'opcache_reset: done';
+}
+if (!function_exists('opcache_invalidate') && !function_exists('opcache_reset')) {
+    $output[] = 'OPcache not available';
 }
 
-header('Content-Type: text/plain; charset=utf-8');
+// Step 3: Clear Laravel bootstrap caches
+$output[] = '';
+$output[] = '=== Clear Caches ===';
+$cacheFiles = glob($baseDir . '/bootstrap/cache/*.php');
+foreach ($cacheFiles as $f) {
+    unlink($f);
+    $output[] = 'Deleted: bootstrap/cache/' . basename($f);
+}
+if (empty($cacheFiles)) {
+    $output[] = 'No cache files to delete';
+}
+
+// Clear compiled views
+$viewsDir = $baseDir . '/storage/framework/views';
+if (is_dir($viewsDir)) {
+    $count = 0;
+    foreach (glob($viewsDir . '/*.php') as $v) {
+        unlink($v);
+        $count++;
+    }
+    $output[] = "Deleted {$count} compiled views";
+}
+
+// Step 4: Verify file was written correctly
+$output[] = '';
+$output[] = '=== Verification ===';
+$reread = file_get_contents($syncablePath);
+if (strpos($reread, 'use SoftDeletes;') !== false) {
+    $output[] = 'PROBLEM: File still contains "use SoftDeletes;"!';
+} elseif (strpos($reread, 'hasSyncColumns') !== false) {
+    $output[] = 'OK: File contains "hasSyncColumns" (fixed version)';
+} else {
+    $output[] = 'UNKNOWN: unexpected content';
+}
+$output[] = 'File size after write: ' . strlen($reread) . ' bytes';
+
+// Step 5: Try to load Laravel and test
+$output[] = '';
+$output[] = '=== Laravel Boot Test ===';
+try {
+    require $baseDir . '/vendor/autoload.php';
+    $app = require $baseDir . '/bootstrap/app.php';
+    $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
+    $output[] = 'Laravel booted successfully!';
+
+    // Test DB
+    try {
+        $userCount = \App\Models\User::count();
+        $output[] = "DB test: {$userCount} users found";
+    } catch (\Throwable $e) {
+        $output[] = 'DB test FAILED: ' . $e->getMessage();
+    }
+} catch (\Throwable $e) {
+    $output[] = 'Laravel boot FAILED: ' . $e->getMessage();
+    $output[] = 'File: ' . $e->getFile() . ':' . $e->getLine();
+}
+
 echo implode("\n", $output);
