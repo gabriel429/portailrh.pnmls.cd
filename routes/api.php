@@ -17,14 +17,26 @@ use App\Http\Controllers\Api\CommuniqueController;
 use App\Http\Controllers\Api\DocumentTravailController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Admin\ParametresController;
+use App\Http\Controllers\Api\SyncController;
 
 // Public
 Route::post('/login', [AuthController::class, 'login']);
+
+// Sync status (public, for online detection)
+Route::get('/sync/status', [SyncController::class, 'status']);
 
 // Authenticated (Sanctum SPA cookie auth)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    // Sync endpoints (desktop ↔ server)
+    Route::post('/sync/pull', [SyncController::class, 'pull']);
+    Route::post('/sync/push', [SyncController::class, 'push']);
+    Route::get('/sync/dirty', [SyncController::class, 'dirty']);
+    Route::post('/sync/mark-synced', [SyncController::class, 'markSynced']);
+    Route::post('/sync/files/upload', [SyncController::class, 'uploadFile']);
+    Route::get('/sync/files/download/{uuid}', [SyncController::class, 'downloadFile']);
 
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);

@@ -6,8 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+use App\Traits\Syncable;
+
 class Tache extends Model
 {
+    use Syncable;
+
     protected $fillable = [
         'createur_id',
         'agent_id',

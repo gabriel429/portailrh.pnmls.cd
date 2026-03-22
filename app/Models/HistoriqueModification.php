@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\Syncable;
+
 class HistoriqueModification extends Model
 {
+    use Syncable;
+
     protected $table = 'historique_modifications';
 
     protected $fillable = [

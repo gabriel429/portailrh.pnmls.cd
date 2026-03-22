@@ -49,6 +49,10 @@
           </ul>
 
           <ul class="navbar-nav align-items-lg-center">
+            <!-- Sync status (desktop only) -->
+            <li class="nav-item">
+              <SyncStatusBar />
+            </li>
             <!-- Admin dropdown -->
             <li v-if="auth.hasAdminAccess" class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -197,6 +201,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 import AppToast from '@/components/common/AppToast.vue'
+import SyncStatusBar from '@/components/SyncStatusBar.vue'
 
 const auth = useAuthStore()
 const notifStore = useNotificationStore()

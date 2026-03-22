@@ -5,8 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use App\Traits\Syncable;
+
 class NotificationPortail extends Model
 {
+    use Syncable;
+
     protected $table = 'notifications_portail';
 
     protected $fillable = [

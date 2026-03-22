@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Affectation;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\Grade;
+use App\Traits\Syncable;
 
 class Agent extends Authenticatable
 {
+    use Syncable;
     // Génération automatique du matricule PNMLS
     protected static function booted()
     {

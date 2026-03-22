@@ -22,3 +22,10 @@ Homestead.json
 Homestead.yaml
 Thumbs.db
 /public/deploy_x7k9m2.php
+
+# Desktop (Electron)
+/desktop/bin/php/
+/desktop/bin/mariadb/
+/dist-electron/
+.env.web-backup
+/storage/sync_meta.json
