@@ -23,6 +23,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
         $middleware->alias([
             'role'     => \App\Http\Middleware\RoleMiddleware::class,
             'permission' => \App\Http\Middleware\PermissionMiddleware::class,
@@ -30,17 +33,15 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        // Return JSON for unauthenticated API requests instead of redirect
-        $exceptions->render(function (\Illuminate\Auth\AuthenticationException $e, $request) {
-            if ($request->expectsJson() || $request->is('api/*')) {
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            }
-        });
-
-        // Return JSON for any unhandled exception on API routes
+        // ALWAYS return JSON for API routes — catch everything
         $exceptions->render(function (\Throwable $e, $request) {
-            if ($request->is('api/*') || $request->expectsJson()) {
-                $status = method_exists($e, 'getStatusCode') ? $e->getStatusCode() : 500;
+            if ($request->is('api/*') || $request->expectsJson() || $request->ajax()) {
+                $status = 500;
+                if (method_exists($e, 'getStatusCode')) {
+                    $status = $e->getStatusCode();
+                } elseif ($e instanceof \Illuminate\Auth\AuthenticationException) {
+                    $status = 401;
+                }
                 return response()->json([
                     'message' => $e->getMessage() ?: 'Server Error',
                 ], $status);
