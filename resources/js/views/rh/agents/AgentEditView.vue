@@ -73,10 +73,6 @@
               <label class="form-label">ID Agent</label>
               <p class="form-control-plaintext fw-bold">{{ agent.id_agent }}</p>
             </div>
-            <div class="col-md-6">
-              <label class="form-label">Matricule PNMLS</label>
-              <p class="form-control-plaintext fw-bold">{{ agent.matricule_pnmls || 'Auto-genere' }}</p>
-            </div>
             <div class="col-md-4">
               <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
               <input type="text" class="form-control" :class="{ 'is-invalid': errors.nom }" id="nom" v-model="form.nom" required>

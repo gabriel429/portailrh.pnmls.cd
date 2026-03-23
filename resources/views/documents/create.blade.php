@@ -340,7 +340,7 @@
                     <div class="agent-banner-icon"><i class="fas fa-user"></i></div>
                     <div>
                         <div class="agent-banner-name">{{ $agent->prenom }} {{ $agent->nom }}</div>
-                        <div class="agent-banner-id">{{ $agent->id_agent }} &bull; {{ $agent->matricule_pnmls ?? '' }}</div>
+                        <div class="agent-banner-id">{{ $agent->id_agent }}</div>
                     </div>
                 </div>
             @endif

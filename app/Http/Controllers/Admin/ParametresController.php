@@ -1673,7 +1673,7 @@ class ParametresController extends Controller
 
     public function apiUtilisateursFormData()
     {
-        $agentsWithoutUser = Agent::whereDoesntHave('user')->orderBy('nom')->get(['id', 'nom', 'prenom', 'matricule_pnmls']);
+        $agentsWithoutUser = Agent::whereDoesntHave('user')->orderBy('nom')->get(['id', 'nom', 'prenom']);
         $roles = Role::orderBy('nom_role')->get(['id', 'nom_role']);
         return response()->json(['agents' => $agentsWithoutUser, 'roles' => $roles]);
     }
@@ -1866,7 +1866,7 @@ class ParametresController extends Controller
     public function apiAffectationsFormData()
     {
         return response()->json([
-            'agents' => Agent::orderBy('nom')->get(['id', 'nom', 'prenom', 'matricule_pnmls']),
+            'agents' => Agent::orderBy('nom')->get(['id', 'nom', 'prenom']),
             'fonctions' => Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']),
             'departments' => Department::orderBy('nom')->get(['id', 'nom', 'code']),
             'sections' => Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']),

@@ -36,7 +36,6 @@
             <div class="organe">{{ agent.organe || '' }}</div>
 
             <div class="d-flex align-items-center gap-2 flex-wrap mt-2">
-              <span v-if="agent.matricule_pnmls" class="matricule">{{ agent.matricule_pnmls }}</span>
               <span :class="['status-badge', agent.statut || 'actif']">
                 <span class="status-dot"></span>
                 {{ capitalize(agent.statut || 'actif') }}

@@ -42,9 +42,9 @@ class AuthController extends Controller
             ])->onlyInput('matricule');
         }
 
-        // Try to authenticate using matricule_pnmls
+        // Try to authenticate using email
         if (Auth::guard('web')->attempt([
-            'matricule_pnmls' => $credentials['matricule'],
+            'email' => $credentials['matricule'],
             'password' => $credentials['password'],
         ], $request->boolean('remember'))) {
             RateLimiter::clear($throttleKey);
@@ -76,7 +76,6 @@ class AuthController extends Controller
             'nom' => 'required|string|max:255',
             'prenom' => 'required|string|max:255',
             'email' => 'required|email|unique:agents',
-            'matricule_pnmls' => 'required|unique:agents|regex:/^PNM-[0-9]{6}$/',
             'date_naissance' => 'required|date',
             'lieu_naissance' => 'required|string',
             'date_embauche' => 'required|date',
@@ -174,7 +173,7 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt([
-            'matricule_pnmls' => $credentials['matricule'],
+            'email' => $credentials['matricule'],
             'password' => $credentials['password'],
         ])) {
             $user = Auth::user();

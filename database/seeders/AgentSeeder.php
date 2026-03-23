@@ -26,7 +26,6 @@ class AgentSeeder extends Seeder
 
         $agents = [
             [
-                'matricule_pnmls' => 'PNM-000001',
                 'nom' => 'Kabamba',
                 'prenom' => 'Jean-Pierre',
                 'password' => Hash::make('password'),
@@ -42,7 +41,6 @@ class AgentSeeder extends Seeder
                 'statut' => 'actif',
             ],
             [
-                'matricule_pnmls' => 'PNM-000002',
                 'nom' => 'Mutua',
                 'prenom' => 'Marie',
                 'password' => Hash::make('password'),
@@ -58,7 +56,6 @@ class AgentSeeder extends Seeder
                 'statut' => 'actif',
             ],
             [
-                'matricule_pnmls' => 'PNM-000003',
                 'nom' => 'Malu',
                 'prenom' => 'Simon',
                 'password' => Hash::make('password'),
@@ -77,7 +74,7 @@ class AgentSeeder extends Seeder
 
         foreach ($agents as $agent) {
             Agent::firstOrCreate(
-                ['matricule_pnmls' => $agent['matricule_pnmls']],
+                ['nom' => $agent['nom'], 'prenom' => $agent['prenom']],
                 $agent
             );
         }

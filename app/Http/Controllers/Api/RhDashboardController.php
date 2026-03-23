@@ -61,7 +61,7 @@ class RhDashboardController extends Controller
             ->pluck('total', 'type')
             ->toArray();
 
-        $recentRequests = RequestModel::with('agent:id,nom,prenom,matricule_pnmls')
+        $recentRequests = RequestModel::with('agent:id,nom,prenom')
             ->orderByDesc('created_at')
             ->limit(8)
             ->get(['id', 'agent_id', 'type', 'statut', 'created_at']);

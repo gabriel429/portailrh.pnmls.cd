@@ -18,7 +18,6 @@
               <h2 class="mb-1">{{ agent.prenom }} {{ agent.nom }}</h2>
               <div class="d-flex gap-2 align-items-center flex-wrap">
                 <span class="badge bg-light text-dark">{{ agent.id_agent }}</span>
-                <span v-if="agent.matricule_pnmls" class="badge bg-light text-dark">{{ agent.matricule_pnmls }}</span>
                 <span v-if="agent.organe" class="badge bg-info">{{ agent.organe }}</span>
                 <span v-if="agent.statut === 'actif'" class="badge bg-success">Actif</span>
                 <span v-else-if="agent.statut === 'suspendu'" class="badge bg-warning text-dark">Suspendu</span>
@@ -419,10 +418,6 @@
               <div class="mb-3">
                 <small class="text-muted">ID Agent</small>
                 <p class="mb-0 fw-bold">{{ agent.id_agent }}</p>
-              </div>
-              <div v-if="agent.matricule_pnmls" class="mb-3">
-                <small class="text-muted">Matricule PNMLS</small>
-                <p class="mb-0 fw-bold">{{ agent.matricule_pnmls }}</p>
               </div>
               <div class="mb-3">
                 <small class="text-muted">Membre depuis</small>

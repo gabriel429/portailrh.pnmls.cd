@@ -322,7 +322,7 @@
                     {{ r.type }}
                     <span class="rh-statut-badge" :class="'statut-' + r.statut">{{ statutLabel(r.statut) }}</span>
                   </div>
-                  <div class="rh-recent-subtitle" v-if="r.agent">{{ r.agent.prenom }} {{ r.agent.nom }} ({{ r.agent.matricule_pnmls }})</div>
+                  <div class="rh-recent-subtitle" v-if="r.agent">{{ r.agent.prenom }} {{ r.agent.nom }}</div>
                   <div class="rh-recent-time"><i class="fas fa-clock me-1"></i>{{ formatTime(r.created_at) }}</div>
                 </div>
               </router-link>

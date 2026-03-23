@@ -23,7 +23,6 @@ class AdminNTSeeder extends Seeder
         Agent::updateOrCreate(
             ['email' => 'admin.nt@pnmls.cd'],
             [
-                'matricule_pnmls'           => 'PNM-NT-001',
                 'nom'                       => 'ADMIN',
                 'postnom'                   => 'NT',
                 'prenom'                    => 'Système',

@@ -14,17 +14,7 @@ use App\Traits\Syncable;
 class Agent extends Authenticatable
 {
     use Syncable;
-    // Génération automatique du matricule PNMLS
-    protected static function booted()
-    {
-        static::creating(function ($agent) {
-            if (empty($agent->matricule_pnmls)) {
-                $lastId = self::max('id') ?? 0;
-                $nextNumber = $lastId + 1;
-                $agent->matricule_pnmls = 'PNMLS-' . str_pad($nextNumber, 6, '0', STR_PAD_LEFT);
-            }
-        });
-    }
+
     const NIVEAUX_ETUDES = [
         'PP3',
         'PP4',
@@ -53,7 +43,6 @@ class Agent extends Authenticatable
     ];
 
     protected $fillable = [
-        'matricule_pnmls',
         'matricule_etat',
         'provenance_matricule',
         'nom',

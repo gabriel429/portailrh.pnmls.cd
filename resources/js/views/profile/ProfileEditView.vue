@@ -138,10 +138,6 @@
                   <input type="text" class="form-control" :value="agent.postnom" disabled>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label fw-bold">Matricule PNMLS</label>
-                  <input type="text" class="form-control" :value="agent.matricule_pnmls || 'N/A'" disabled>
-                </div>
-                <div class="col-md-6 mb-3">
                   <label class="form-label fw-bold">Date de naissance</label>
                   <input type="text" class="form-control" :value="formatDate(agent.date_naissance) || 'N/A'" disabled>
                 </div>

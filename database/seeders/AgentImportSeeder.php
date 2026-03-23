@@ -105,8 +105,8 @@ class AgentImportSeeder extends Seeder
         foreach ($agents as $row) {
             [$idAgent, $matriculeEtat, $nom, $postnom, $prenom, $sexe, $anneeNaissance, $telephone, $emailPrive, $emailPro, $organe, $fonction, $posteActuel, $departement, $gradeEtat, $institutionOrigine, $niveauEtudes, $domaineEtudes, $anneeEngagement, $dateEmbauche, $statut] = $row;
 
-            // Skip if agent with this matricule_pnmls already exists
-            if (Agent::where('matricule_pnmls', $idAgent)->exists()) {
+            // Skip if agent with this id already exists
+            if (Agent::where('nom', trim($nom))->where('prenom', trim($prenom))->exists()) {
                 $skipped++;
                 continue;
             }
@@ -147,7 +147,6 @@ class AgentImportSeeder extends Seeder
             }
 
             Agent::create([
-                'matricule_pnmls'           => $idAgent,
                 'matricule_etat'            => $matriculeEtatClean,
                 'nom'                       => trim($nom),
                 'postnom'                   => trim($postnom) ?: null,

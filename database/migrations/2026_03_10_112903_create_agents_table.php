@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('agents', function (Blueprint $table) {
             $table->id();
-            $table->string('matricule_pnmls')->unique()->comment('Matricule PNMLS (PNM-XXXXXX)');
             $table->string('matricule_etat')->nullable()->unique()->comment('Matricule État');
             $table->string('nom');
             $table->string('prenom');
