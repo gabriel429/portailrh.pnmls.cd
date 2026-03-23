@@ -137,7 +137,7 @@
 {{-- ─── Statistiques principales ─── --}}
 @php
 $primary = [
-    ['label' => 'Agents enregistrés', 'value' => $stats['agents'],      'icon' => 'fa-users',         'acc' => '#3b5de7', 'acc-bg' => '#eef1fc', 'route' => 'rh.agents.index'],
+    ['label' => 'Agents enregistrés', 'value' => $stats['agents'],      'icon' => 'fa-users',         'acc' => '#3b5de7', 'acc-bg' => '#eef1fc', 'route' => 'admin.dashboard'],
     ['label' => 'Provinces',          'value' => $stats['provinces'],   'icon' => 'fa-map-marked-alt','acc' => '#0ea5e9', 'acc-bg' => '#e0f2fe', 'route' => 'admin.provinces.index'],
     ['label' => 'Départements',       'value' => $stats['departments'], 'icon' => 'fa-building',      'acc' => '#6366f1', 'acc-bg' => '#ede9fe', 'route' => 'admin.departments.index'],
     ['label' => 'Fonctions / Postes', 'value' => $stats['fonctions'],   'icon' => 'fa-briefcase',     'acc' => '#7c3aed', 'acc-bg' => '#f3eeff', 'route' => 'admin.fonctions.index'],
@@ -264,8 +264,8 @@ $quickActions = [
         'desc'   => 'Affecter des agents à leurs fonctions dans les structures administratives.',
         'icon'   => 'fa-user-tie',
         'acc'    => '#3b5de7', 'acc-bg' => '#eef1fc',
-        'create' => 'rh.affectations.create',
-        'list'   => 'rh.affectations.index',
+        'create' => null,
+        'list'   => 'admin.dashboard',
     ],[
         'title'  => 'Journaux système',
         'desc'   => 'Diagnostiquer les erreurs et surveiller l\'activité du serveur.',
