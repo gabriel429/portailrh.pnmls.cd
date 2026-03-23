@@ -214,6 +214,11 @@ Route::get('/login', function () {
     return view('spa');
 })->name('login');
 
+// ── Minimal POST test (remove after debugging) ──
+Route::post('/api/post-test', function (\Illuminate\Http\Request $request) {
+    return response()->json(['ok' => true, 'got' => $request->all()]);
+})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
+
 // ── API Login via web middleware (bypasses Sanctum stateful middleware) ──
 Route::post('/api/login', function (\Illuminate\Http\Request $request) {
     try {
@@ -257,7 +262,7 @@ Route::post('/api/login', function (\Illuminate\Http\Request $request) {
             'message' => 'Erreur serveur: ' . $e->getMessage(),
         ], 500);
     }
-});
+})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
 // Named dashboard route — points to SPA
 Route::get('/dashboard', function () {
