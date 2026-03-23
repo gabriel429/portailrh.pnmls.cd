@@ -26,7 +26,7 @@
               <small v-if="agent.fonction" class="opacity-75 mt-1 d-block">{{ agent.fonction }}</small>
             </div>
           </div>
-          <div class="d-flex gap-2 flex-wrap">
+          <div class="d-flex gap-2 flex-wrap no-print">
             <button class="btn btn-light btn-sm" @click="printAgent">
               <i class="fas fa-print me-1"></i> Imprimer
             </button>
@@ -43,7 +43,7 @@
       <div class="row">
         <!-- Main column with tabs -->
         <div class="col-lg-8">
-          <ul class="nav nav-tabs mb-3" role="tablist">
+          <ul class="nav nav-tabs mb-3 no-print" role="tablist">
             <li class="nav-item" role="presentation">
               <button class="nav-link" :class="{ active: activeTab === 'informations' }" @click="activeTab = 'informations'" type="button">
                 <i class="fas fa-user me-1"></i> Informations
@@ -77,7 +77,7 @@
           <div class="tab-content">
 
             <!-- TAB 1: INFORMATIONS -->
-            <div v-if="activeTab === 'informations'">
+            <div v-if="printing || activeTab === 'informations'">
               <!-- Informations personnelles -->
               <div class="card border-0 shadow-sm mb-3">
                 <div class="card-header bg-light border-bottom">
@@ -225,7 +225,7 @@
             </div>
 
             <!-- TAB 2: DEMANDES -->
-            <div v-if="activeTab === 'demandes'">
+            <div v-if="printing || activeTab === 'demandes'">
               <div class="card border-0 shadow-sm">
                 <div class="card-header bg-light border-bottom">
                   <h5 class="mb-0"><i class="fas fa-file-signature me-2 text-primary"></i>Demandes ({{ requestsCount }})</h5>
@@ -274,7 +274,7 @@
             </div>
 
             <!-- TAB 3: PARCOURS -->
-            <div v-if="activeTab === 'parcours'">
+            <div v-if="printing || activeTab === 'parcours'">
               <div class="card border-0 shadow-sm">
                 <div class="card-header bg-light border-bottom d-flex justify-content-between align-items-center">
                   <h5 class="mb-0"><i class="fas fa-route me-2 text-primary"></i>Parcours et Carriere</h5>
@@ -328,7 +328,7 @@
             </div>
 
             <!-- TAB 4: DOCUMENTS -->
-            <div v-if="activeTab === 'documents'">
+            <div v-if="printing || activeTab === 'documents'">
               <div class="card border-0 shadow-sm">
                 <div class="card-header bg-light border-bottom">
                   <div class="d-flex justify-content-between align-items-center">
@@ -368,7 +368,7 @@
             </div>
 
             <!-- TAB 5: MESSAGES -->
-            <div v-if="activeTab === 'messages'">
+            <div v-if="printing || activeTab === 'messages'">
               <!-- Message history -->
               <div class="card border-0 shadow-sm">
                 <div class="card-header bg-light border-bottom">
@@ -408,7 +408,7 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="col-lg-4">
+        <div class="col-lg-4 no-print">
           <!-- Resume rapide -->
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-light border-bottom">
@@ -490,7 +490,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { get, remove } from '@/api/agents'
@@ -507,6 +507,7 @@ const agent = ref(null)
 const activeTab = ref('informations')
 const showDeleteModal = ref(false)
 const deleting = ref(false)
+const printing = ref(false)
 
 // Document types config
 const docTypes = [
@@ -579,7 +580,11 @@ function getDocsByType(type) {
 }
 
 function printAgent() {
-    window.print()
+    printing.value = true
+    nextTick(() => {
+        window.print()
+        printing.value = false
+    })
 }
 
 // Fetch
@@ -720,6 +725,31 @@ onMounted(() => {
     .table th, .table td {
         padding: 0.4rem 0.5rem;
         font-size: 0.85rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .agent-header {
+        background: #0077B5 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    .agent-header::after { display: none; }
+
+    .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
+
+    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; margin-bottom: 12px; }
+    .card-header { padding: 10px 15px; }
+    .card-body { padding: 10px 15px; }
+
+    .tab-content > div { margin-bottom: 15px; }
+
+    /* Section titles for print */
+    .tab-content > div > .card > .card-header h5 {
+        font-size: 1rem;
     }
 }
 </style>

@@ -436,3 +436,49 @@ body {
 body.is-offline .navbar-main {
     top: 36px;
 }
+
+/* ── PRINT STYLES ── */
+@media print {
+    /* Hide chrome: navbar, footer, toasts, banners, dropdowns */
+    .navbar-main,
+    .footer,
+    .toast-container,
+    .offline-banner,
+    .reconnected-banner,
+    #pwa-update-banner,
+    .dropdown-menu { display: none !important; }
+
+    /* Reset page background */
+    body {
+        background: #fff !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Full width content */
+    .main-content,
+    .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+
+    /* Hide elements marked as no-print */
+    .no-print { display: none !important; }
+
+    /* Ensure cards print properly */
+    .card {
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+
+    /* Ensure badges print with color */
+    .badge {
+        border: 1px solid #999 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+}
