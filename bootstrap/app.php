@@ -4,7 +4,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 
-return Application::configure(basePath: dirname(__DIR__))
+$app = Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -48,3 +48,10 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
     })->create();
+
+// Allow desktop app to redirect storage to a writable location (e.g. %APPDATA%)
+if ($storagePath = env('APP_STORAGE_PATH')) {
+    $app->useStoragePath($storagePath);
+}
+
+return $app;

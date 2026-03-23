@@ -175,6 +175,14 @@ function stopMariaDb(paths) {
 // Env Setup
 // ═══════════════════════════════════════════════════════
 function setupDesktopEnv() {
+    // In packaged mode, C:\Program Files is read-only.
+    // Redirect all writable paths to %APPDATA%/Portail RH PNMLS/
+    const WRITABLE_ROOT = isDev
+        ? PROJECT_ROOT
+        : path.join(app.getPath('userData'))
+
+    console.log(`[Env] Writable root: ${WRITABLE_ROOT}`)
+
     // Ensure storage subdirectories exist (Laravel requires them)
     const storageDirs = [
         'storage/app/public',
@@ -184,21 +192,15 @@ function setupDesktopEnv() {
         'storage/logs',
     ]
     for (const dir of storageDirs) {
-        const fullPath = path.join(PROJECT_ROOT, dir)
+        const fullPath = path.join(WRITABLE_ROOT, dir)
         if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true })
     }
 
     // Ensure bootstrap/cache exists
-    const bootstrapCache = path.join(PROJECT_ROOT, 'bootstrap', 'cache')
+    const bootstrapCache = path.join(WRITABLE_ROOT, 'bootstrap', 'cache')
     if (!fs.existsSync(bootstrapCache)) fs.mkdirSync(bootstrapCache, { recursive: true })
 
-    const envPath = path.join(PROJECT_ROOT, '.env')
-    const envBackup = path.join(PROJECT_ROOT, '.env.web-backup')
-
-    if (fs.existsSync(envPath)) {
-        const existing = fs.readFileSync(envPath, 'utf-8')
-        if (!existing.includes('APP_DESKTOP=true')) fs.copyFileSync(envPath, envBackup)
-    }
+    const envPath = path.join(WRITABLE_ROOT, '.env')
 
     let appKey = ''
     if (fs.existsSync(envPath)) {
@@ -207,6 +209,9 @@ function setupDesktopEnv() {
     }
     if (!appKey) appKey = 'base64:' + crypto.randomBytes(32).toString('base64')
 
+    // Build storage path with forward slashes for Laravel/PHP
+    const storagePath = path.join(WRITABLE_ROOT, 'storage').replace(/\\/g, '/')
+
     const envContent = `# Desktop Environment - Auto-generated
 APP_DESKTOP=true
 APP_NAME="Portail RH PNMLS"
@@ -214,6 +219,7 @@ APP_ENV=local
 APP_KEY=${appKey}
 APP_DEBUG=false
 APP_URL=http://127.0.0.1:${APP_PORT}
+APP_STORAGE_PATH=${storagePath}
 SYNC_SERVER_URL=https://deeppink-rhinoceros-934330.hostingersite.com
 SYNC_ENABLED=true
 SYNC_INTERVAL_MINUTES=5
@@ -228,11 +234,44 @@ QUEUE_CONNECTION=sync
 CACHE_STORE=file
 FILESYSTEM_DISK=local
 LOG_CHANNEL=single
+LOG_PATH=${storagePath}/logs/laravel.log
 SANCTUM_STATEFUL_DOMAINS=127.0.0.1:${APP_PORT}
 SESSION_DOMAIN=127.0.0.1
 MAIL_MAILER=log
 `
     fs.writeFileSync(envPath, envContent, 'utf-8')
+
+    // In packaged mode, symlink .env from WRITABLE_ROOT into PROJECT_ROOT
+    // so Laravel can find it. Also symlink storage and bootstrap/cache.
+    if (!isDev) {
+        const projectEnv = path.join(PROJECT_ROOT, '.env')
+        try { fs.unlinkSync(projectEnv) } catch {}
+        try { fs.copyFileSync(envPath, projectEnv) } catch (e) {
+            console.warn(`[Env] Could not copy .env to PROJECT_ROOT: ${e.message}`)
+        }
+
+        // Create junction points for storage and bootstrap/cache
+        const projectStorage = path.join(PROJECT_ROOT, 'storage')
+        const writableStorage = path.join(WRITABLE_ROOT, 'storage')
+        if (!fs.existsSync(projectStorage)) {
+            try { fs.symlinkSync(writableStorage, projectStorage, 'junction') } catch (e) {
+                console.warn(`[Env] Could not create storage junction: ${e.message}`)
+            }
+        }
+
+        const projectBootstrapCache = path.join(PROJECT_ROOT, 'bootstrap', 'cache')
+        const writableBootstrapCache = path.join(WRITABLE_ROOT, 'bootstrap', 'cache')
+        if (!fs.existsSync(projectBootstrapCache)) {
+            try {
+                const bootstrapDir = path.join(PROJECT_ROOT, 'bootstrap')
+                if (!fs.existsSync(bootstrapDir)) fs.mkdirSync(bootstrapDir, { recursive: true })
+                fs.symlinkSync(writableBootstrapCache, projectBootstrapCache, 'junction')
+            } catch (e) {
+                console.warn(`[Env] Could not create bootstrap/cache junction: ${e.message}`)
+            }
+        }
+    }
+
     console.log(`[Env] Desktop .env written.`)
 }
 
