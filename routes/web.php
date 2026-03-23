@@ -214,6 +214,51 @@ Route::get('/login', function () {
     return view('spa');
 })->name('login');
 
+// ── API Login via web middleware (bypasses Sanctum stateful middleware) ──
+Route::post('/api/login', function (\Illuminate\Http\Request $request) {
+    try {
+        $request->validate([
+            'email' => 'required|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = \App\Models\User::where('email', $request->email)->first();
+
+        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Identifiants incorrects.'], 401);
+        }
+
+        \Illuminate\Support\Facades\Auth::login($user, $request->boolean('remember'));
+
+        try {
+            $request->session()->regenerate();
+        } catch (\Throwable $e) {
+            \Log::warning('Session regenerate failed: ' . $e->getMessage());
+        }
+
+        try {
+            $user->load(['agent', 'role']);
+        } catch (\Throwable $e) {
+            \Log::warning('User relations load failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => 'Connexion reussie.',
+            'user' => $user,
+        ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'message' => $e->getMessage(),
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Throwable $e) {
+        \Log::error('Login error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+        return response()->json([
+            'message' => 'Erreur serveur: ' . $e->getMessage(),
+        ], 500);
+    }
+});
+
 // Named dashboard route — points to SPA
 Route::get('/dashboard', function () {
     return view('spa');

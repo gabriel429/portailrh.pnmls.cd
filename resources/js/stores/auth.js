@@ -55,7 +55,11 @@ export const useAuthStore = defineStore('auth', {
                 throw e
             }
             try {
-                await client.post('/login', { email, password })
+                // Use axios directly (not client) because login is now a web route
+                await axios.post('/api/login', { email, password }, {
+                    withCredentials: true,
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                })
             } catch (e) {
                 e._step = 'api-login'
                 throw e

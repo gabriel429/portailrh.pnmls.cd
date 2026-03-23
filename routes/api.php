@@ -20,8 +20,7 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Api\SyncController;
 
-// Public
-Route::post('/login', [AuthController::class, 'login']);
+// Public (login moved to routes/web.php to bypass Sanctum stateful middleware)
 
 // Ultra-minimal diagnostic - remove after debugging
 Route::get('/login-test', function () {
