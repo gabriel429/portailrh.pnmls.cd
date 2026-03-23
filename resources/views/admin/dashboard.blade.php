@@ -260,13 +260,6 @@ $quickActions = [
         'create' => 'admin.fonctions.create',
         'list'   => 'admin.fonctions.index',
     ],[
-        'title'  => 'Affectations',
-        'desc'   => 'Affecter des agents à leurs fonctions dans les structures administratives.',
-        'icon'   => 'fa-user-tie',
-        'acc'    => '#3b5de7', 'acc-bg' => '#eef1fc',
-        'create' => null,
-        'list'   => 'admin.dashboard',
-    ],[
         'title'  => 'Journaux système',
         'desc'   => 'Diagnostiquer les erreurs et surveiller l\'activité du serveur.',
         'icon'   => 'fa-scroll',
