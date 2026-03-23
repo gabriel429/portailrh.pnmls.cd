@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // RH Agents (role-protected)
     Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN')->group(function () {
+        Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index']);
         Route::get('agents/export', [ApiAgentController::class, 'export']);
         Route::get('agents/form-options', [ApiAgentController::class, 'formOptions']);
         Route::apiResource('agents', ApiAgentController::class);

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 10;
+const CACHE_VERSION = 11;
 const CACHE_NAME = 'pnmls-rh-v' + CACHE_VERSION;
 const API_CACHE_NAME = 'pnmls-api-v1';
 const OFFLINE_URL = '/offline.html';
