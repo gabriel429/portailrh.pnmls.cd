@@ -23,90 +23,26 @@ use App\Http\Controllers\Api\SyncController;
 // Public
 Route::post('/login', [AuthController::class, 'login']);
 
-// Diagnostic - remove after debugging
-Route::get('/login-test', function (Request $request) {
-    $steps = [];
-
-    // Step 1: Check if users exist (raw DB, no model boot)
+// Ultra-minimal diagnostic - remove after debugging
+Route::get('/login-test', function () {
     try {
-        $count = \DB::table('users')->count();
-        $steps['step1_user_count'] = $count;
-        if ($count > 0) {
-            $user = \DB::table('users')->first();
-            $steps['step1_first_user'] = [
-                'id' => $user->id,
-                'email' => $user->email,
-                'has_password' => !empty($user->password),
-                'password_length' => strlen($user->password ?? ''),
-                'agent_id' => $user->agent_id ?? null,
-                'role_id' => $user->role_id ?? null,
-            ];
+        $r = ['ok' => true];
+        $r['users'] = \DB::table('users')->count();
+        $r['columns'] = \Schema::getColumnListing('users');
+        if ($r['users'] > 0) {
+            $u = \DB::table('users')->select('id', 'email', 'role_id')->first();
+            $r['first_user'] = (array) $u;
         }
+        $r['app_url'] = config('app.url');
+        $r['session_driver'] = config('session.driver');
+        return response()->json($r);
     } catch (\Throwable $e) {
-        $steps['step1_user_count'] = 'FAIL: ' . $e->getMessage();
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => basename($e->getFile()),
+            'line' => $e->getLine(),
+        ], 500);
     }
-
-    // Step 2: Check users table columns (sync migration?)
-    try {
-        $columns = \Schema::getColumnListing('users');
-        $steps['step2_users_columns'] = $columns;
-        $steps['step2_has_deleted_at'] = in_array('deleted_at', $columns);
-        $steps['step2_has_uuid'] = in_array('uuid', $columns);
-    } catch (\Throwable $e) {
-        $steps['step2_columns'] = 'FAIL: ' . $e->getMessage();
-    }
-
-    // Step 3: Test User model boot (Syncable trait)
-    try {
-        $user = \App\Models\User::first();
-        $steps['step3_model_boot'] = $user ? 'ok (id=' . $user->id . ')' : 'ok (no users found via model)';
-    } catch (\Throwable $e) {
-        $steps['step3_model_boot'] = 'FAIL: ' . $e->getMessage();
-    }
-
-    // Step 4: Test password verification (if user exists)
-    try {
-        $user = \DB::table('users')->first();
-        if ($user && $user->password) {
-            $steps['step4_password_starts'] = substr($user->password, 0, 7);
-            $steps['step4_is_bcrypt'] = str_starts_with($user->password, '$2y$');
-        } else {
-            $steps['step4_password'] = 'no user or no password';
-        }
-    } catch (\Throwable $e) {
-        $steps['step4_password'] = 'FAIL: ' . $e->getMessage();
-    }
-
-    // Step 5: Check related tables (agent, role)
-    try {
-        $user = \DB::table('users')->first();
-        if ($user) {
-            if ($user->agent_id) {
-                $agent = \DB::table('agents')->find($user->agent_id);
-                $steps['step5_agent'] = $agent ? 'ok' : 'MISSING agent_id=' . $user->agent_id;
-            } else {
-                $steps['step5_agent'] = 'agent_id is null';
-            }
-            if ($user->role_id) {
-                $role = \DB::table('roles')->find($user->role_id);
-                $steps['step5_role'] = $role ? 'ok (' . ($role->nom_role ?? 'unnamed') . ')' : 'MISSING role_id=' . $user->role_id;
-            } else {
-                $steps['step5_role'] = 'role_id is null';
-            }
-        }
-    } catch (\Throwable $e) {
-        $steps['step5_relations'] = 'FAIL: ' . $e->getMessage();
-    }
-
-    // Step 6: Config
-    $steps['step6_session_driver'] = config('session.driver');
-    $steps['step6_session_domain'] = config('session.domain') ?: '(null)';
-    $steps['step6_same_site'] = config('session.same_site');
-    $steps['step6_secure_cookie'] = config('session.secure_cookie');
-    $steps['step6_app_url'] = config('app.url');
-    $steps['step6_stateful_domains'] = config('sanctum.stateful');
-
-    return response()->json($steps);
 });
 
 Route::get('/health-check', function () {

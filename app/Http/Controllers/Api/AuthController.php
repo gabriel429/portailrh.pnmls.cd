@@ -27,18 +27,24 @@ class AuthController extends Controller
             }
 
             $user = Auth::user();
-            $user->load(['agent', 'role']);
+
+            // Safely load relations - don't crash if they fail
+            try {
+                $user->load(['agent', 'role']);
+            } catch (\Throwable $e) {
+                \Log::warning('User relations load failed: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'message' => 'Connexion reussie.',
                 'user' => $user,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            throw $e; // Let Laravel handle validation errors normally
+            throw $e;
         } catch (\Throwable $e) {
             \Log::error('API login error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
             return response()->json([
-                'message' => 'Erreur serveur lors de la connexion: ' . $e->getMessage(),
+                'message' => 'Erreur serveur: ' . $e->getMessage(),
             ], 500);
         }
     }
