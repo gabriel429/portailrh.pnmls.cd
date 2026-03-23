@@ -123,9 +123,13 @@ async function handleLogin() {
         } else {
             const serverMsg = e.response?.data?.message
             const status = e.response?.status
-            errorMessage.value = serverMsg
-                ? `Erreur ${status}: ${serverMsg}`
-                : 'Erreur de connexion. Veuillez reessayer.'
+            if (serverMsg) {
+                errorMessage.value = `Erreur ${status}: ${serverMsg}`
+            } else if (e.response) {
+                errorMessage.value = `Erreur ${status}: reponse non-JSON du serveur`
+            } else {
+                errorMessage.value = `Erreur reseau: ${e.message || 'impossible de contacter le serveur'}`
+            }
         }
     } finally {
         loading.value = false
