@@ -121,7 +121,11 @@ async function handleLogin() {
         } else if (e.response?.status === 401) {
             errorMessage.value = 'Identifiants incorrects.'
         } else {
-            errorMessage.value = 'Erreur de connexion. Veuillez reessayer.'
+            const serverMsg = e.response?.data?.message
+            const status = e.response?.status
+            errorMessage.value = serverMsg
+                ? `Erreur ${status}: ${serverMsg}`
+                : 'Erreur de connexion. Veuillez reessayer.'
         }
     } finally {
         loading.value = false

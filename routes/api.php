@@ -27,38 +27,84 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::get('/login-test', function (Request $request) {
     $steps = [];
 
-    // Step 1: Check if a test user exists
+    // Step 1: Check if users exist (raw DB, no model boot)
+    try {
+        $count = \DB::table('users')->count();
+        $steps['step1_user_count'] = $count;
+        if ($count > 0) {
+            $user = \DB::table('users')->first();
+            $steps['step1_first_user'] = [
+                'id' => $user->id,
+                'email' => $user->email,
+                'has_password' => !empty($user->password),
+                'password_length' => strlen($user->password ?? ''),
+                'agent_id' => $user->agent_id ?? null,
+                'role_id' => $user->role_id ?? null,
+            ];
+        }
+    } catch (\Throwable $e) {
+        $steps['step1_user_count'] = 'FAIL: ' . $e->getMessage();
+    }
+
+    // Step 2: Check users table columns (sync migration?)
+    try {
+        $columns = \Schema::getColumnListing('users');
+        $steps['step2_users_columns'] = $columns;
+        $steps['step2_has_deleted_at'] = in_array('deleted_at', $columns);
+        $steps['step2_has_uuid'] = in_array('uuid', $columns);
+    } catch (\Throwable $e) {
+        $steps['step2_columns'] = 'FAIL: ' . $e->getMessage();
+    }
+
+    // Step 3: Test User model boot (Syncable trait)
     try {
         $user = \App\Models\User::first();
-        $steps['step1_user_exists'] = $user ? 'ok (id=' . $user->id . ', email=' . $user->email . ')' : 'FAIL: no users in DB';
+        $steps['step3_model_boot'] = $user ? 'ok (id=' . $user->id . ')' : 'ok (no users found via model)';
     } catch (\Throwable $e) {
-        $steps['step1_user_exists'] = 'FAIL: ' . $e->getMessage();
+        $steps['step3_model_boot'] = 'FAIL: ' . $e->getMessage();
     }
 
-    // Step 2: Test Auth::attempt with fake credentials (should fail gracefully)
+    // Step 4: Test password verification (if user exists)
     try {
-        $result = \Auth::attempt(['email' => 'test@nonexistent.com', 'password' => 'wrong']);
-        $steps['step2_auth_attempt'] = 'ok (returned false as expected)';
+        $user = \DB::table('users')->first();
+        if ($user && $user->password) {
+            $steps['step4_password_starts'] = substr($user->password, 0, 7);
+            $steps['step4_is_bcrypt'] = str_starts_with($user->password, '$2y$');
+        } else {
+            $steps['step4_password'] = 'no user or no password';
+        }
     } catch (\Throwable $e) {
-        $steps['step2_auth_attempt'] = 'FAIL: ' . $e->getMessage();
+        $steps['step4_password'] = 'FAIL: ' . $e->getMessage();
     }
 
-    // Step 3: Test session
+    // Step 5: Check related tables (agent, role)
     try {
-        $request->session()->put('_health', true);
-        $request->session()->forget('_health');
-        $steps['step3_session'] = 'ok';
+        $user = \DB::table('users')->first();
+        if ($user) {
+            if ($user->agent_id) {
+                $agent = \DB::table('agents')->find($user->agent_id);
+                $steps['step5_agent'] = $agent ? 'ok' : 'MISSING agent_id=' . $user->agent_id;
+            } else {
+                $steps['step5_agent'] = 'agent_id is null';
+            }
+            if ($user->role_id) {
+                $role = \DB::table('roles')->find($user->role_id);
+                $steps['step5_role'] = $role ? 'ok (' . ($role->nom_role ?? 'unnamed') . ')' : 'MISSING role_id=' . $user->role_id;
+            } else {
+                $steps['step5_role'] = 'role_id is null';
+            }
+        }
     } catch (\Throwable $e) {
-        $steps['step3_session'] = 'FAIL: ' . $e->getMessage();
+        $steps['step5_relations'] = 'FAIL: ' . $e->getMessage();
     }
 
-    // Step 4: Check SANCTUM_STATEFUL_DOMAINS
-    $steps['step4_stateful_domains'] = config('sanctum.stateful');
-
-    // Step 5: Check session config
-    $steps['step5_session_domain'] = config('session.domain') ?: '(null)';
-    $steps['step5_same_site'] = config('session.same_site');
-    $steps['step5_secure'] = config('session.secure_cookie') ?? '(null)';
+    // Step 6: Config
+    $steps['step6_session_driver'] = config('session.driver');
+    $steps['step6_session_domain'] = config('session.domain') ?: '(null)';
+    $steps['step6_same_site'] = config('session.same_site');
+    $steps['step6_secure_cookie'] = config('session.secure_cookie');
+    $steps['step6_app_url'] = config('app.url');
+    $steps['step6_stateful_domains'] = config('sanctum.stateful');
 
     return response()->json($steps);
 });
