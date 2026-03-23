@@ -219,8 +219,23 @@ Route::post('/api/post-test', function (\Illuminate\Http\Request $request) {
     return response()->json(['ok' => true, 'got' => $request->all()]);
 })->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
-// ── API Login — raw DB, minimal, no Eloquent model boot ──
+// ── API Login — with fatal error capture ──
 Route::post('/api/login', function (\Illuminate\Http\Request $request) {
+    // Capture PHP fatal errors that try/catch cannot catch
+    register_shutdown_function(function () {
+        $error = error_get_last();
+        if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
+            if (!headers_sent()) {
+                header('Content-Type: application/json', true, 500);
+            }
+            echo json_encode([
+                'message' => 'FATAL: ' . $error['message'],
+                'file' => basename($error['file']),
+                'line' => $error['line'],
+            ]);
+        }
+    });
+
     try {
         $email = $request->input('email');
         $password = $request->input('password');
@@ -229,7 +244,6 @@ Route::post('/api/login', function (\Illuminate\Http\Request $request) {
             return response()->json(['message' => 'Email et mot de passe requis.'], 422);
         }
 
-        // Raw DB — no Eloquent, no Syncable trait
         $dbUser = \DB::table('users')->where('email', $email)->first();
 
         if (!$dbUser) {
@@ -240,19 +254,14 @@ Route::post('/api/login', function (\Illuminate\Http\Request $request) {
             return response()->json(['message' => 'Identifiants incorrects.'], 401);
         }
 
-        // Build user data manually (no model serialization)
+        // Build response from raw DB (no Eloquent serialization)
         $roleName = null;
         if ($dbUser->role_id) {
             $role = \DB::table('roles')->find($dbUser->role_id);
             $roleName = $role->nom_role ?? null;
         }
 
-        $agent = null;
-        if (property_exists($dbUser, 'agent_id') && $dbUser->agent_id) {
-            $agent = \DB::table('agents')->find($dbUser->agent_id);
-        }
-
-        // Auth::login with try/catch (session write may crash on some hosts)
+        // Session login (wrapped — may crash)
         try {
             $user = \App\Models\User::find($dbUser->id);
             \Illuminate\Support\Facades\Auth::login($user, $request->boolean('remember'));
@@ -269,11 +278,9 @@ Route::post('/api/login', function (\Illuminate\Http\Request $request) {
                 'email' => $dbUser->email,
                 'role_id' => $dbUser->role_id,
                 'role' => $roleName ? ['nom_role' => $roleName] : null,
-                'agent' => $agent ? (array) $agent : null,
             ],
         ]);
     } catch (\Throwable $e) {
-        \Log::error('Login: ' . $e->getMessage());
         return response()->json(['message' => 'Erreur: ' . $e->getMessage()], 500);
     }
 })->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
