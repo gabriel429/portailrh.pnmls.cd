@@ -219,48 +219,62 @@ Route::post('/api/post-test', function (\Illuminate\Http\Request $request) {
     return response()->json(['ok' => true, 'got' => $request->all()]);
 })->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
-// ── API Login via web middleware (bypasses Sanctum stateful middleware) ──
+// ── API Login — raw DB, minimal, no Eloquent model boot ──
 Route::post('/api/login', function (\Illuminate\Http\Request $request) {
     try {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required|string',
-        ]);
+        $email = $request->input('email');
+        $password = $request->input('password');
 
-        $user = \App\Models\User::where('email', $request->email)->first();
+        if (!$email || !$password) {
+            return response()->json(['message' => 'Email et mot de passe requis.'], 422);
+        }
 
-        if (!$user || !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+        // Raw DB — no Eloquent, no Syncable trait
+        $dbUser = \DB::table('users')->where('email', $email)->first();
+
+        if (!$dbUser) {
             return response()->json(['message' => 'Identifiants incorrects.'], 401);
         }
 
-        \Illuminate\Support\Facades\Auth::login($user, $request->boolean('remember'));
-
-        try {
-            $request->session()->regenerate();
-        } catch (\Throwable $e) {
-            \Log::warning('Session regenerate failed: ' . $e->getMessage());
+        if (!\Illuminate\Support\Facades\Hash::check($password, $dbUser->password)) {
+            return response()->json(['message' => 'Identifiants incorrects.'], 401);
         }
 
+        // Build user data manually (no model serialization)
+        $roleName = null;
+        if ($dbUser->role_id) {
+            $role = \DB::table('roles')->find($dbUser->role_id);
+            $roleName = $role->nom_role ?? null;
+        }
+
+        $agent = null;
+        if (property_exists($dbUser, 'agent_id') && $dbUser->agent_id) {
+            $agent = \DB::table('agents')->find($dbUser->agent_id);
+        }
+
+        // Auth::login with try/catch (session write may crash on some hosts)
         try {
-            $user->load(['agent', 'role']);
+            $user = \App\Models\User::find($dbUser->id);
+            \Illuminate\Support\Facades\Auth::login($user, $request->boolean('remember'));
+            $request->session()->regenerate();
         } catch (\Throwable $e) {
-            \Log::warning('User relations load failed: ' . $e->getMessage());
+            \Log::warning('Auth/session: ' . $e->getMessage());
         }
 
         return response()->json([
             'message' => 'Connexion reussie.',
-            'user' => $user,
+            'user' => [
+                'id' => $dbUser->id,
+                'name' => $dbUser->name,
+                'email' => $dbUser->email,
+                'role_id' => $dbUser->role_id,
+                'role' => $roleName ? ['nom_role' => $roleName] : null,
+                'agent' => $agent ? (array) $agent : null,
+            ],
         ]);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'message' => $e->getMessage(),
-            'errors' => $e->errors(),
-        ], 422);
     } catch (\Throwable $e) {
-        \Log::error('Login error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
-        return response()->json([
-            'message' => 'Erreur serveur: ' . $e->getMessage(),
-        ], 500);
+        \Log::error('Login: ' . $e->getMessage());
+        return response()->json(['message' => 'Erreur: ' . $e->getMessage()], 500);
     }
 })->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class]);
 
