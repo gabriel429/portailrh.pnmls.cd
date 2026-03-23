@@ -121,23 +121,8 @@ async function handleLogin() {
         } else if (e.response?.status === 401) {
             errorMessage.value = 'Identifiants incorrects.'
         } else {
-            const step = e._step || '?'
-            const status = e.response?.status
-            let detail = ''
-            if (e.response?.data?.message) {
-                detail = e.response.data.message
-            } else if (typeof e.response?.data === 'string') {
-                // HTML response — extract useful part
-                const html = e.response.data
-                const titleMatch = html.match(/<title>(.*?)<\/title>/i)
-                const msgMatch = html.match(/class="message"[^>]*>(.*?)</si) || html.match(/<h[12][^>]*>(.*?)<\/h/i)
-                detail = titleMatch?.[1] || msgMatch?.[1] || html.substring(0, 150)
-            } else if (!e.response) {
-                detail = e.message || 'impossible de contacter le serveur'
-            } else {
-                detail = 'reponse vide'
-            }
-            errorMessage.value = `[${step}] Erreur ${status || 'reseau'}: ${detail}`
+            errorMessage.value = e.response?.data?.message
+                || 'Erreur de connexion. Veuillez reessayer.'
         }
     } finally {
         loading.value = false

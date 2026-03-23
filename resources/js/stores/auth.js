@@ -48,33 +48,8 @@ export const useAuthStore = defineStore('auth', {
             }
         },
         async login(email, password) {
-            // Step 1: CSRF cookie
-            try {
-                await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-            } catch (e) {
-                e._step = 'csrf-cookie'
-                throw e
-            }
-            // Step 2: POST test (minimal, no auth)
-            try {
-                await axios.post('/api/post-test', { ping: true }, {
-                    withCredentials: true,
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                })
-            } catch (e) {
-                e._step = 'post-test'
-                throw e
-            }
-            // Step 3: Actual login
-            try {
-                await axios.post('/api/login', { email, password }, {
-                    withCredentials: true,
-                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-                })
-            } catch (e) {
-                e._step = 'api-login'
-                throw e
-            }
+            await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
+            await client.post('/login', { email, password })
             await this.fetchUser()
         },
         async logout() {

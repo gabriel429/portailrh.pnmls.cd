@@ -20,55 +20,8 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Api\SyncController;
 
-// Public (login moved to routes/web.php to bypass Sanctum stateful middleware)
-
-// Ultra-minimal diagnostic - remove after debugging
-Route::get('/login-test', function () {
-    try {
-        $r = ['ok' => true];
-        $r['users'] = \DB::table('users')->count();
-        $r['columns'] = \Schema::getColumnListing('users');
-        if ($r['users'] > 0) {
-            $u = \DB::table('users')->select('id', 'email', 'role_id')->first();
-            $r['first_user'] = (array) $u;
-        }
-        $r['app_url'] = config('app.url');
-        $r['session_driver'] = config('session.driver');
-        return response()->json($r);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'error' => $e->getMessage(),
-            'file' => basename($e->getFile()),
-            'line' => $e->getLine(),
-        ], 500);
-    }
-});
-
-Route::get('/health-check', function () {
-    $checks = [];
-    try {
-        \DB::connection()->getPdo();
-        $checks['database'] = 'ok';
-    } catch (\Throwable $e) {
-        $checks['database'] = 'FAIL: ' . $e->getMessage();
-    }
-    try {
-        $hasUsersTable = \Schema::hasTable('users');
-        $checks['users_table'] = $hasUsersTable ? 'ok' : 'MISSING';
-    } catch (\Throwable $e) {
-        $checks['users_table'] = 'FAIL: ' . $e->getMessage();
-    }
-    try {
-        $hasSessionsTable = \Schema::hasTable('sessions');
-        $checks['sessions_table'] = $hasSessionsTable ? 'ok' : 'MISSING';
-    } catch (\Throwable $e) {
-        $checks['sessions_table'] = 'FAIL: ' . $e->getMessage();
-    }
-    $checks['session_driver'] = config('session.driver');
-    $checks['php_version'] = PHP_VERSION;
-    $checks['laravel_version'] = app()->version();
-    return response()->json($checks);
-});
+// Public
+Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
 
 // Sync status (public, for online detection)
 Route::get('/sync/status', [SyncController::class, 'status']);
