@@ -55,6 +55,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
@@ -66,7 +67,7 @@ const ui = useUiStore()
 const notifStore = useNotificationStore()
 const router = useRouter()
 
-const navItems = [
+const baseNavItems = [
     { route: 'admin.dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
     { route: 'admin.organes.index', icon: 'fas fa-sitemap', label: 'Organes' },
     { route: 'admin.departments.index', icon: 'fas fa-building', label: 'Departements' },
@@ -83,6 +84,14 @@ const navItems = [
     { route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Deploiement' },
     { route: 'admin.logs', icon: 'fas fa-scroll', label: 'Journaux' },
 ]
+
+const navItems = computed(() => {
+    const items = [...baseNavItems]
+    if (auth.isSuperAdmin) {
+        items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })
+    }
+    return items
+})
 
 async function handleLogout() {
     notifStore.stopPolling()

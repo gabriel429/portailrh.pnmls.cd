@@ -18,6 +18,7 @@ use App\Models\Organe;
 use App\Models\Permission;
 use App\Models\DocumentTravail;
 use App\Models\CategorieDocument;
+use App\Models\AuditLog;
 use App\Services\NotificationService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +27,40 @@ use Illuminate\Http\Request;
 
 class ParametresController extends Controller
 {
+    /**
+     * Record an audit log entry.
+     */
+    private function recordAudit(string $action, string $tableName, $recordId, ?array $before = null, ?array $after = null): void
+    {
+        $user = request()->user();
+        if (!$user) return;
+
+        // Exclude sensitive fields from audit data
+        $sensitive = ['password', 'remember_token'];
+        if ($before) {
+            $before = array_diff_key($before, array_flip($sensitive));
+        }
+        if ($after) {
+            $after = array_diff_key($after, array_flip($sensitive));
+        }
+
+        try {
+            AuditLog::create([
+                'user_id'       => $user->id,
+                'user_name'     => $user->name,
+                'table_name'    => $tableName,
+                'record_id'     => $recordId,
+                'action'        => $action,
+                'donnees_avant' => $before,
+                'donnees_apres' => $after,
+                'ip_address'    => request()->ip(),
+                'user_agent'    => request()->userAgent(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::warning('Audit log failed: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Tableau de bord des paramètres.
      */
@@ -122,7 +157,7 @@ class ParametresController extends Controller
 
                 $connectedUsers = $sessions->map(function ($session) use ($users) {
                     $user = $users->get($session->user_id);
-                    if (!$user || !$user->agent) return null;
+                    if (!$user || !$user->agent || $user->is_super_admin) return null;
 
                     return (object) [
                         'user' => $user,
@@ -164,7 +199,7 @@ class ParametresController extends Controller
             'permissions' => Permission::count(),
             'organes'     => Schema::hasTable('organes') ? Organe::count() : 0,
             'agents'      => Agent::count(),
-            'users'       => User::count(),
+            'users'       => User::where('is_super_admin', false)->count(),
         ];
 
         $statsByOrgane = [];
@@ -228,7 +263,7 @@ class ParametresController extends Controller
 
                 $connectedUsers = $sessions->map(function ($session) use ($users) {
                     $user = $users->get($session->user_id);
-                    if (!$user || !$user->agent) return null;
+                    if (!$user || !$user->agent || $user->is_super_admin) return null;
                     return [
                         'id' => $user->id,
                         'nom_complet' => trim(($user->agent->prenom ?? '') . ' ' . ($user->agent->nom ?? $user->name)),
@@ -1300,11 +1335,13 @@ class ParametresController extends Controller
             'telephone_officiel' => 'nullable|string|max:50',
         ]);
         $province = Province::create($validated);
+        $this->recordAudit('CREATE', 'provinces', $province->id, null, $province->toArray());
         return response()->json($province, 201);
     }
 
     public function apiProvincesUpdate(Request $request, Province $province)
     {
+        $before = $province->toArray();
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:provinces,code,' . $province->id,
             'nom' => 'required|string|max:255|unique:provinces,nom,' . $province->id,
@@ -1317,6 +1354,7 @@ class ParametresController extends Controller
             'telephone_officiel' => 'nullable|string|max:50',
         ]);
         $province->update($validated);
+        $this->recordAudit('UPDATE', 'provinces', $province->id, $before, $province->fresh()->toArray());
         return response()->json($province);
     }
 
@@ -1325,7 +1363,9 @@ class ParametresController extends Controller
         if ($province->agents()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des agents sont rattaches a cette province.'], 422);
         }
+        $before = $province->toArray();
         $province->delete();
+        $this->recordAudit('DELETE', 'provinces', $province->id, $before);
         return response()->json(['message' => 'Province supprimee.']);
     }
 
@@ -1349,11 +1389,13 @@ class ParametresController extends Controller
             'libelle' => 'required|string|max:255',
         ]);
         $grade = Grade::create($validated);
+        $this->recordAudit('CREATE', 'grades', $grade->id, null, $grade->toArray());
         return response()->json($grade, 201);
     }
 
     public function apiGradesUpdate(Request $request, Grade $grade)
     {
+        $before = $grade->toArray();
         $validated = $request->validate([
             'categorie' => 'required|in:A,B,C',
             'nom_categorie' => 'required|string|max:255',
@@ -1361,6 +1403,7 @@ class ParametresController extends Controller
             'libelle' => 'required|string|max:255',
         ]);
         $grade->update($validated);
+        $this->recordAudit('UPDATE', 'grades', $grade->id, $before, $grade->fresh()->toArray());
         return response()->json($grade);
     }
 
@@ -1369,7 +1412,9 @@ class ParametresController extends Controller
         if ($grade->agents()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des agents utilisent ce grade.'], 422);
         }
+        $before = $grade->toArray();
         $grade->delete();
+        $this->recordAudit('DELETE', 'grades', $grade->id, $before);
         return response()->json(['message' => 'Grade supprime.']);
     }
 
@@ -1394,16 +1439,19 @@ class ParametresController extends Controller
             'description' => 'nullable|string',
         ]);
         $role = Role::create($validated);
+        $this->recordAudit('CREATE', 'roles', $role->id, null, $role->toArray());
         return response()->json($role, 201);
     }
 
     public function apiRolesUpdate(Request $request, Role $role)
     {
+        $before = $role->toArray();
         $validated = $request->validate([
             'nom_role' => 'required|string|max:255|unique:roles,nom_role,' . $role->id,
             'description' => 'nullable|string',
         ]);
         $role->update($validated);
+        $this->recordAudit('UPDATE', 'roles', $role->id, $before, $role->fresh()->toArray());
         return response()->json($role);
     }
 
@@ -1412,7 +1460,9 @@ class ParametresController extends Controller
         if ($role->agents()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des agents utilisent ce role.'], 422);
         }
+        $before = $role->toArray();
         $role->delete();
+        $this->recordAudit('DELETE', 'roles', $role->id, $before);
         return response()->json(['message' => 'Role supprime.']);
     }
 
@@ -1438,17 +1488,20 @@ class ParametresController extends Controller
             'description' => 'nullable|string',
         ]);
         $dept = Department::create($validated);
+        $this->recordAudit('CREATE', 'departments', $dept->id, null, $dept->toArray());
         return response()->json($dept, 201);
     }
 
     public function apiDepartmentsUpdate(Request $request, Department $department)
     {
+        $before = $department->toArray();
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:departments,code,' . $department->id,
             'nom' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
         $department->update($validated);
+        $this->recordAudit('UPDATE', 'departments', $department->id, $before, $department->fresh()->toArray());
         return response()->json($department);
     }
 
@@ -1457,7 +1510,9 @@ class ParametresController extends Controller
         if ($department->sections()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des sections sont rattachees a ce departement.'], 422);
         }
+        $before = $department->toArray();
         $department->delete();
+        $this->recordAudit('DELETE', 'departments', $department->id, $before);
         return response()->json(['message' => 'Departement supprime.']);
     }
 
@@ -1488,11 +1543,13 @@ class ParametresController extends Controller
             'description' => 'nullable|string',
         ]);
         $fonction = Fonction::create($validated);
+        $this->recordAudit('CREATE', 'fonctions', $fonction->id, null, $fonction->toArray());
         return response()->json($fonction, 201);
     }
 
     public function apiFonctionsUpdate(Request $request, Fonction $fonction)
     {
+        $before = $fonction->toArray();
         $validated = $request->validate([
             'nom' => 'required|string|max:255',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL,TOUS',
@@ -1501,6 +1558,7 @@ class ParametresController extends Controller
             'description' => 'nullable|string',
         ]);
         $fonction->update($validated);
+        $this->recordAudit('UPDATE', 'fonctions', $fonction->id, $before, $fonction->fresh()->toArray());
         return response()->json($fonction);
     }
 
@@ -1509,7 +1567,9 @@ class ParametresController extends Controller
         if (Schema::hasTable('affectations') && Affectation::where('fonction_id', $fonction->id)->exists()) {
             return response()->json(['message' => 'Impossible: des affectations utilisent cette fonction.'], 422);
         }
+        $before = $fonction->toArray();
         $fonction->delete();
+        $this->recordAudit('DELETE', 'fonctions', $fonction->id, $before);
         return response()->json(['message' => 'Fonction supprimee.']);
     }
 
@@ -1537,11 +1597,13 @@ class ParametresController extends Controller
             'department_id' => 'nullable|exists:departments,id',
         ]);
         $section = Section::create($validated);
+        $this->recordAudit('CREATE', 'sections', $section->id, null, $section->toArray());
         return response()->json($section->load('department'), 201);
     }
 
     public function apiSectionsUpdate(Request $request, Section $section)
     {
+        $before = $section->toArray();
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:sections,code,' . $section->id,
             'nom' => 'required|string|max:255',
@@ -1550,6 +1612,7 @@ class ParametresController extends Controller
             'department_id' => 'nullable|exists:departments,id',
         ]);
         $section->update($validated);
+        $this->recordAudit('UPDATE', 'sections', $section->id, $before, $section->fresh()->toArray());
         return response()->json($section->load('department'));
     }
 
@@ -1558,7 +1621,9 @@ class ParametresController extends Controller
         if ($section->cellules()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des cellules sont rattachees a cette section.'], 422);
         }
+        $before = $section->toArray();
         $section->delete();
+        $this->recordAudit('DELETE', 'sections', $section->id, $before);
         return response()->json(['message' => 'Section supprimee.']);
     }
 
@@ -1585,11 +1650,13 @@ class ParametresController extends Controller
             'section_id' => 'required|exists:sections,id',
         ]);
         $cellule = Cellule::create($validated);
+        $this->recordAudit('CREATE', 'cellules', $cellule->id, null, $cellule->toArray());
         return response()->json($cellule->load('section'), 201);
     }
 
     public function apiCellulesUpdate(Request $request, Cellule $cellule)
     {
+        $before = $cellule->toArray();
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:cellules,code,' . $cellule->id,
             'nom' => 'required|string|max:255',
@@ -1597,6 +1664,7 @@ class ParametresController extends Controller
             'section_id' => 'required|exists:sections,id',
         ]);
         $cellule->update($validated);
+        $this->recordAudit('UPDATE', 'cellules', $cellule->id, $before, $cellule->fresh()->toArray());
         return response()->json($cellule->load('section'));
     }
 
@@ -1605,7 +1673,9 @@ class ParametresController extends Controller
         if ($cellule->affectations()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des affectations utilisent cette cellule.'], 422);
         }
+        $before = $cellule->toArray();
         $cellule->delete();
+        $this->recordAudit('DELETE', 'cellules', $cellule->id, $before);
         return response()->json(['message' => 'Cellule supprimee.']);
     }
 
@@ -1633,11 +1703,13 @@ class ParametresController extends Controller
             'province_id' => 'required|exists:provinces,id',
         ]);
         $localite = Localite::create($validated);
+        $this->recordAudit('CREATE', 'localites', $localite->id, null, $localite->toArray());
         return response()->json($localite->load('province'), 201);
     }
 
     public function apiLocalitesUpdate(Request $request, Localite $localite)
     {
+        $before = $localite->toArray();
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:localites,code,' . $localite->id,
             'nom' => 'required|string|max:255',
@@ -1646,6 +1718,7 @@ class ParametresController extends Controller
             'province_id' => 'required|exists:provinces,id',
         ]);
         $localite->update($validated);
+        $this->recordAudit('UPDATE', 'localites', $localite->id, $before, $localite->fresh()->toArray());
         return response()->json($localite->load('province'));
     }
 
@@ -1654,7 +1727,9 @@ class ParametresController extends Controller
         if ($localite->affectations()->count() > 0) {
             return response()->json(['message' => 'Impossible de supprimer: des affectations utilisent cette localite.'], 422);
         }
+        $before = $localite->toArray();
         $localite->delete();
+        $this->recordAudit('DELETE', 'localites', $localite->id, $before);
         return response()->json(['message' => 'Localite supprimee.']);
     }
 
@@ -1682,11 +1757,13 @@ class ParametresController extends Controller
             'actif' => 'boolean',
         ]);
         $organe = Organe::create($validated);
+        $this->recordAudit('CREATE', 'organes', $organe->id, null, $organe->toArray());
         return response()->json($organe, 201);
     }
 
     public function apiOrganesUpdate(Request $request, Organe $organe)
     {
+        $before = $organe->toArray();
         $validated = $request->validate([
             'code' => 'required|string|max:10|unique:organes,code,' . $organe->id,
             'nom' => 'required|string|max:255',
@@ -1695,18 +1772,21 @@ class ParametresController extends Controller
             'actif' => 'boolean',
         ]);
         $organe->update($validated);
+        $this->recordAudit('UPDATE', 'organes', $organe->id, $before, $organe->fresh()->toArray());
         return response()->json($organe);
     }
 
     public function apiOrganesDestroy(Organe $organe)
     {
+        $before = $organe->toArray();
         $organe->delete();
+        $this->recordAudit('DELETE', 'organes', $organe->id, $before);
         return response()->json(['message' => 'Organe supprime.']);
     }
 
     public function apiUtilisateursIndex(Request $request)
     {
-        $q = User::with(['agent', 'role'])->orderByDesc('id');
+        $q = User::with(['agent', 'role'])->where('is_super_admin', false)->orderByDesc('id');
         if ($request->search) {
             $q->where('name', 'like', "%{$request->search}%")
               ->orWhere('email', 'like', "%{$request->search}%");
@@ -1723,6 +1803,9 @@ class ParametresController extends Controller
 
     public function apiUtilisateursShow(User $user)
     {
+        if ($user->is_super_admin) {
+            return response()->json(['message' => 'Utilisateur non trouve.'], 404);
+        }
         return response()->json($user->load(['agent', 'role']));
     }
 
@@ -1742,11 +1825,13 @@ class ParametresController extends Controller
             'agent_id' => $agent->id,
             'role_id' => $validated['role_id'],
         ]);
+        $this->recordAudit('CREATE', 'users', $user->id, null, $user->toArray());
         return response()->json($user->load(['agent', 'role']), 201);
     }
 
     public function apiUtilisateursUpdate(Request $request, User $user)
     {
+        $before = $user->toArray();
         $validated = $request->validate([
             'role_id' => 'required|exists:roles,id',
             'password' => 'nullable|string|min:6|confirmed',
@@ -1756,15 +1841,21 @@ class ParametresController extends Controller
             $user->password = bcrypt($validated['password']);
         }
         $user->save();
+        $this->recordAudit('UPDATE', 'users', $user->id, $before, $user->fresh()->toArray());
         return response()->json($user->load(['agent', 'role']));
     }
 
     public function apiUtilisateursDestroy(Request $request, User $user)
     {
+        if ($user->is_super_admin) {
+            return response()->json(['message' => 'Cet utilisateur ne peut pas etre supprime.'], 403);
+        }
         if ($user->id === $request->user()->id) {
             return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 422);
         }
+        $before = $user->toArray();
         $user->delete();
+        $this->recordAudit('DELETE', 'users', $user->id, $before);
         return response()->json(['message' => 'Utilisateur supprime.']);
     }
 
@@ -1800,11 +1891,13 @@ class ParametresController extends Controller
             'actif' => $validated['actif'] ?? true,
             'uploaded_by' => $request->user()->id,
         ]);
+        $this->recordAudit('CREATE', 'documents_travail', $doc->id, null, $doc->toArray());
         return response()->json($doc, 201);
     }
 
     public function apiDocsTravailUpdate(Request $request, DocumentTravail $documentTravail)
     {
+        $before = $documentTravail->toArray();
         $validated = $request->validate([
             'titre' => 'required|string|max:255',
             'description' => 'nullable|string',
@@ -1817,12 +1910,15 @@ class ParametresController extends Controller
             $data['fichier'] = $request->file('fichier')->store('documents-travail', 'public');
         }
         $documentTravail->update($data);
+        $this->recordAudit('UPDATE', 'documents_travail', $documentTravail->id, $before, $documentTravail->fresh()->toArray());
         return response()->json($documentTravail);
     }
 
     public function apiDocsTravailDestroy(DocumentTravail $documentTravail)
     {
+        $before = $documentTravail->toArray();
         $documentTravail->delete();
+        $this->recordAudit('DELETE', 'documents_travail', $documentTravail->id, $before);
         return response()->json(['message' => 'Document supprime.']);
     }
 
@@ -1845,23 +1941,28 @@ class ParametresController extends Controller
             'actif' => 'boolean',
         ]);
         $cat = CategorieDocument::create($validated);
+        $this->recordAudit('CREATE', 'categories_documents', $cat->id, null, $cat->toArray());
         return response()->json($cat, 201);
     }
 
     public function apiCategoriesDocsUpdate(Request $request, CategorieDocument $categorieDocument)
     {
+        $before = $categorieDocument->toArray();
         $validated = $request->validate([
             'nom' => 'required|string|max:255|unique:categorie_documents,nom,' . $categorieDocument->id,
             'icone' => 'nullable|string|max:50',
             'actif' => 'boolean',
         ]);
         $categorieDocument->update($validated);
+        $this->recordAudit('UPDATE', 'categories_documents', $categorieDocument->id, $before, $categorieDocument->fresh()->toArray());
         return response()->json($categorieDocument);
     }
 
     public function apiCategoriesDocsDestroy(CategorieDocument $categorieDocument)
     {
+        $before = $categorieDocument->toArray();
         $categorieDocument->delete();
+        $this->recordAudit('DELETE', 'categories_documents', $categorieDocument->id, $before);
         return response()->json(['message' => 'Categorie supprimee.']);
     }
 
@@ -1937,11 +2038,13 @@ class ParametresController extends Controller
             'remarque' => 'nullable|string',
         ]);
         $affectation = Affectation::create($validated);
+        $this->recordAudit('CREATE', 'affectations', $affectation->id, null, $affectation->toArray());
         return response()->json($affectation->load(['agent', 'fonction']), 201);
     }
 
     public function apiAffectationsUpdate(Request $request, Affectation $affectation)
     {
+        $before = $affectation->toArray();
         $validated = $request->validate([
             'agent_id' => 'required|exists:agents,id',
             'fonction_id' => 'required|exists:fonctions,id',
@@ -1958,12 +2061,15 @@ class ParametresController extends Controller
             'remarque' => 'nullable|string',
         ]);
         $affectation->update($validated);
+        $this->recordAudit('UPDATE', 'affectations', $affectation->id, $before, $affectation->fresh()->toArray());
         return response()->json($affectation->load(['agent', 'fonction']));
     }
 
     public function apiAffectationsDestroy(Affectation $affectation)
     {
+        $before = $affectation->toArray();
         $affectation->delete();
+        $this->recordAudit('DELETE', 'affectations', $affectation->id, $before);
         return response()->json(['message' => 'Affectation supprimee.']);
     }
 }

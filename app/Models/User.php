@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'agent_id',
         'role_id',
+        'is_super_admin',
     ];
 
     /**
@@ -35,6 +36,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'is_super_admin',
     ];
 
     /**
@@ -47,6 +49,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_super_admin' => 'boolean',
         ];
     }
 
@@ -86,10 +89,20 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if user is a SuperAdmin.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->is_super_admin;
+    }
+
+    /**
      * Check if user has full admin access to RH settings.
      */
     public function hasAdminAccess(): bool
     {
+        if ($this->isSuperAdmin()) return true;
+
         return $this->hasRole([
             'Section ressources humaines',
             'Chef Section RH',
@@ -103,6 +116,8 @@ class User extends Authenticatable
      */
     public function isAdminNT(): bool
     {
+        if ($this->isSuperAdmin()) return true;
+
         return $this->hasRole([
             'Section Nouvelle Technologie',
             'Chef Section Nouvelle Technologie',

@@ -21,6 +21,11 @@ class RoleMiddleware
             return $next($request);
         }
 
+        // SuperAdmin bypasses all role checks
+        if ($user->is_super_admin) {
+            return $next($request);
+        }
+
         // Check if user has any of the required roles
         $hasRole = false;
         foreach ($roles as $role) {

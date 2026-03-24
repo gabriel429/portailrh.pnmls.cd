@@ -30,6 +30,16 @@ class AuthController extends Controller
             }
 
             $user = Auth::user();
+
+            // SuperAdmin bypasses concurrent session limits
+            if ($user->is_super_admin) {
+                try { $request->session()->regenerate(); } catch (\Throwable $e) {}
+                return response()->json([
+                    'message' => 'Connexion reussie.',
+                    'user' => $user,
+                ]);
+            }
+
             $currentUA = $request->userAgent() ?? '';
             $currentIsMobile = $this->isMobile($currentUA);
 
@@ -98,6 +108,13 @@ class AuthController extends Controller
         $user = $request->user();
         $user->load(['agent', 'role']);
 
-        return response()->json($user);
+        $data = $user->toArray();
+
+        // Expose super admin flag only to the super admin themselves
+        if ($user->is_super_admin) {
+            $data['is_super_admin'] = true;
+        }
+
+        return response()->json($data);
     }
 }

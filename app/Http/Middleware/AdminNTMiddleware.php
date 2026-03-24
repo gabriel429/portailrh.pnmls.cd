@@ -12,7 +12,19 @@ class AdminNTMiddleware
     {
         $user = $request->user();
 
-        if (!$user || !$user->role) {
+        if (!$user) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Acces refuse.'], 403);
+            }
+            abort(403, 'Accès refusé.');
+        }
+
+        // SuperAdmin bypasses all role checks
+        if ($user->is_super_admin) {
+            return $next($request);
+        }
+
+        if (!$user->role) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Acces refuse.'], 403);
             }

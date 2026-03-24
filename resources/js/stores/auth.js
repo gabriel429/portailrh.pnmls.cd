@@ -21,6 +21,7 @@ export const useAuthStore = defineStore('auth', {
             ].includes(role)
         },
         isAdminNT(state) {
+            if (state.user?.is_super_admin) return true
             const role = state.user?.role?.nom_role?.toLowerCase()
             return [
                 'section nouvelle technologie',
@@ -28,11 +29,15 @@ export const useAuthStore = defineStore('auth', {
                 'chef de section nouvelle technologie',
             ].includes(role)
         },
+        isSuperAdmin(state) {
+            return !!state.user?.is_super_admin
+        },
         isSEN(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
             return role === 'sen'
         },
         hasAdminAccess(state) {
+            if (state.user?.is_super_admin) return true
             return this.isRH || this.isAdminNT || this.isSEN
         },
     },

@@ -27,9 +27,10 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'api/*',
         ]);
         $middleware->alias([
-            'role'     => \App\Http\Middleware\RoleMiddleware::class,
-            'permission' => \App\Http\Middleware\PermissionMiddleware::class,
-            'admin.nt' => \App\Http\Middleware\AdminNTMiddleware::class,
+            'role'        => \App\Http\Middleware\RoleMiddleware::class,
+            'permission'  => \App\Http\Middleware\PermissionMiddleware::class,
+            'admin.nt'    => \App\Http\Middleware\AdminNTMiddleware::class,
+            'super.admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

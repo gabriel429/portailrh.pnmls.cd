@@ -363,6 +363,7 @@ const routes = [
             { path: 'categories-documents/create', name: 'admin.categories-documents.create', component: () => import('@/views/admin/categories-documents/CategorieDocFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'categories-documents/:id/edit', name: 'admin.categories-documents.edit', component: () => import('@/views/admin/categories-documents/CategorieDocFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'logs', name: 'admin.logs', component: () => import('@/views/admin/AdminLogsView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
+            { path: 'audit-logs', name: 'admin.audit-logs', component: () => import('@/views/admin/AuditLogView.vue'), meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' } },
         ],
     },
 
@@ -408,6 +409,10 @@ router.beforeEach(async (to) => {
 
     if (to.meta.adminNT && !auth.isAdminNT) {
         return { name: 'dashboard' }
+    }
+
+    if (to.meta.superAdmin && !auth.isSuperAdmin) {
+        return { name: 'admin.dashboard' }
     }
 })
 
