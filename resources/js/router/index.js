@@ -323,7 +323,7 @@ const routes = [
                 path: 'deployment',
                 name: 'admin.deployment.index',
                 component: () => import('@/views/admin/deployment/DeploymentView.vue'),
-                meta: { auth: true, adminNT: true, layout: 'admin' },
+                meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' },
             },
             // CRUD entities
             { path: 'provinces', name: 'admin.provinces.index', component: () => import('@/views/admin/provinces/ProvinceListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },

@@ -81,13 +81,13 @@ const baseNavItems = [
     { route: 'admin.documents-travail.index', icon: 'fas fa-file-alt', label: 'Documents de travail' },
     { route: 'admin.categories-documents.index', icon: 'fas fa-tags', label: 'Categories Documents' },
     { route: 'admin.utilisateurs.index', icon: 'fas fa-users-cog', label: 'Utilisateurs' },
-    { route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Deploiement' },
     { route: 'admin.logs', icon: 'fas fa-scroll', label: 'Journaux' },
 ]
 
 const navItems = computed(() => {
     const items = [...baseNavItems]
     if (auth.isSuperAdmin) {
+        items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Deploiement' })
         items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })
     }
     return items
