@@ -63,13 +63,16 @@
 
             <div class="mb-3">
               <label for="type_poste" class="form-label fw-bold">Type de poste</label>
-              <input
-                id="type_poste"
-                v-model="form.type_poste"
-                type="text"
-                class="form-control"
-                placeholder="Ex: Direction, Coordination, Support"
-              >
+              <select id="type_poste" v-model="form.type_poste" class="form-select">
+                <option value="">-- Selectionnez --</option>
+                <option value="departement">Departement (SEN)</option>
+                <option value="section">Section (SEN)</option>
+                <option value="service_rattache">Service rattache (SEN)</option>
+                <option value="province">Province (SEP)</option>
+                <option value="local">Local (SEL)</option>
+                <option value="appui">Appui (tous niveaux)</option>
+              </select>
+              <small class="text-muted">Determine ou cette fonction apparait lors de l'affectation d'un agent.</small>
             </div>
 
             <div class="mb-3">
