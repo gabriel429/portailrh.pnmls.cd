@@ -1,0 +1,1 @@
+import{i as e}from"./app-BdqeNxo0.js";function t(t={}){return e.get(`/taches`,{params:t})}function n(t){return e.get(`/taches/${t}`)}function r(){return e.get(`/taches/create`)}function i(t){return e.post(`/taches`,t)}function a(t,n){return e.put(`/taches/${t}/statut`,n)}function o(t,n){return e.post(`/taches/${t}/commentaire`,n)}export{t as a,r as i,i as n,a as o,n as r,o as t};

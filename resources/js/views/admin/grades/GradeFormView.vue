@@ -45,7 +45,7 @@
 
             <!-- Nom categorie -->
             <div class="col-md-6">
-              <label for="nom_categorie" class="form-label">Nom de la categorie</label>
+              <label for="nom_categorie" class="form-label">Nom de la categorie <span class="text-danger">*</span></label>
               <input
                 id="nom_categorie"
                 v-model="form.nom_categorie"
@@ -53,6 +53,7 @@
                 class="form-control"
                 :class="{ 'is-invalid': errors.nom_categorie }"
                 placeholder="Ex: Cadres de direction"
+                required
               />
               <div v-if="errors.nom_categorie" class="invalid-feedback">{{ errors.nom_categorie[0] }}</div>
             </div>
@@ -126,20 +127,13 @@ const form = ref({
 async function loadGrade() {
   loadingData.value = true
   try {
-    // No individual GET endpoint; load from list and find by id
-    const { data } = await client.get('/admin/grades')
-    const allGrades = data.data || []
-    const grade = allGrades.find(g => g.id === Number(route.params.id))
-    if (grade) {
-      form.value = {
-        categorie: grade.categorie || '',
-        nom_categorie: grade.nom_categorie || '',
-        ordre: grade.ordre ?? null,
-        libelle: grade.libelle || '',
-      }
-    } else {
-      alert('Grade introuvable.')
-      router.push('/admin/grades')
+    const { data } = await client.get(`/admin/grades/${route.params.id}`)
+    const grade = data.data || data
+    form.value = {
+      categorie: grade.categorie || '',
+      nom_categorie: grade.nom_categorie || '',
+      ordre: grade.ordre ?? null,
+      libelle: grade.libelle || '',
     }
   } catch (e) {
     console.error('Erreur chargement grade:', e)

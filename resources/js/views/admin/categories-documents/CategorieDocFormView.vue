@@ -88,7 +88,7 @@ async function fetchCategorie() {
   error.value = null
   try {
     const response = await client.get(`/admin/categories-documents/${route.params.id}`)
-    const cat = response.data.data
+    const cat = response.data.data || response.data
     form.value = {
       nom: cat.nom || '',
       icone: cat.icone || '',

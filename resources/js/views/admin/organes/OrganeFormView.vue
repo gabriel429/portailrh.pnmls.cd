@@ -36,8 +36,8 @@
             </div>
 
             <div class="col-md-6 mb-3">
-              <label for="sigle" class="form-label">Sigle</label>
-              <input type="text" id="sigle" v-model="form.sigle" class="form-control" :class="{ 'is-invalid': validationErrors.sigle }">
+              <label for="sigle" class="form-label">Sigle <span class="text-danger">*</span></label>
+              <input type="text" id="sigle" v-model="form.sigle" class="form-control" :class="{ 'is-invalid': validationErrors.sigle }" required>
             </div>
           </div>
 
@@ -96,7 +96,7 @@ async function fetchOrgane() {
   error.value = null
   try {
     const response = await client.get(`/admin/organes/${route.params.id}`)
-    const organe = response.data.data
+    const organe = response.data.data || response.data
     form.value = {
       code: organe.code || '',
       nom: organe.nom || '',

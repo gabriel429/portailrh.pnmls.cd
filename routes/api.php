@@ -124,6 +124,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Grades
         Route::get('grades', [ParametresController::class, 'apiGradesIndex']);
+        Route::get('grades/{grade}', [ParametresController::class, 'apiGradesShow']);
         Route::post('grades', [ParametresController::class, 'apiGradesStore']);
         Route::put('grades/{grade}', [ParametresController::class, 'apiGradesUpdate']);
         Route::delete('grades/{grade}', [ParametresController::class, 'apiGradesDestroy']);

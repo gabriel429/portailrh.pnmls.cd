@@ -107,7 +107,7 @@ async function fetchDocument() {
   error.value = null
   try {
     const response = await client.get(`/admin/documents-travail/${route.params.id}`)
-    const doc = response.data.data
+    const doc = response.data.data || response.data
     form.value = {
       titre: doc.titre || '',
       description: doc.description || '',

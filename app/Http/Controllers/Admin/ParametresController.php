@@ -1322,6 +1322,9 @@ class ParametresController extends Controller
 
     public function apiProvincesDestroy(Province $province)
     {
+        if ($province->agents()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des agents sont rattaches a cette province.'], 422);
+        }
         $province->delete();
         return response()->json(['message' => 'Province supprimee.']);
     }
@@ -1330,6 +1333,11 @@ class ParametresController extends Controller
     {
         $grades = Grade::orderBy('ordre')->get();
         return response()->json(['data' => $grades, 'grouped' => $grades->groupBy('categorie')]);
+    }
+
+    public function apiGradesShow(Grade $grade)
+    {
+        return response()->json($grade);
     }
 
     public function apiGradesStore(Request $request)
@@ -1358,6 +1366,9 @@ class ParametresController extends Controller
 
     public function apiGradesDestroy(Grade $grade)
     {
+        if ($grade->agents()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des agents utilisent ce grade.'], 422);
+        }
         $grade->delete();
         return response()->json(['message' => 'Grade supprime.']);
     }
@@ -1443,6 +1454,9 @@ class ParametresController extends Controller
 
     public function apiDepartmentsDestroy(Department $department)
     {
+        if ($department->sections()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des sections sont rattachees a ce departement.'], 422);
+        }
         $department->delete();
         return response()->json(['message' => 'Departement supprime.']);
     }
@@ -1541,6 +1555,9 @@ class ParametresController extends Controller
 
     public function apiSectionsDestroy(Section $section)
     {
+        if ($section->cellules()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des cellules sont rattachees a cette section.'], 422);
+        }
         $section->delete();
         return response()->json(['message' => 'Section supprimee.']);
     }
@@ -1585,6 +1602,9 @@ class ParametresController extends Controller
 
     public function apiCellulesDestroy(Cellule $cellule)
     {
+        if ($cellule->affectations()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des affectations utilisent cette cellule.'], 422);
+        }
         $cellule->delete();
         return response()->json(['message' => 'Cellule supprimee.']);
     }
@@ -1631,6 +1651,9 @@ class ParametresController extends Controller
 
     public function apiLocalitesDestroy(Localite $localite)
     {
+        if ($localite->affectations()->count() > 0) {
+            return response()->json(['message' => 'Impossible de supprimer: des affectations utilisent cette localite.'], 422);
+        }
         $localite->delete();
         return response()->json(['message' => 'Localite supprimee.']);
     }
@@ -1708,7 +1731,7 @@ class ParametresController extends Controller
         $validated = $request->validate([
             'agent_id' => 'required|exists:agents,id|unique:users,agent_id',
             'role_id' => 'required|exists:roles,id',
-            'password' => 'required|string|min:6',
+            'password' => 'required|string|min:6|confirmed',
         ]);
         $agent = Agent::findOrFail($validated['agent_id']);
         $email = $agent->email ?: strtolower(str_replace(' ', '.', trim($agent->prenom ?? 'agent') . '.' . trim($agent->nom ?? $agent->id))) . '@pnmls.cd';
@@ -1726,7 +1749,7 @@ class ParametresController extends Controller
     {
         $validated = $request->validate([
             'role_id' => 'required|exists:roles,id',
-            'password' => 'nullable|string|min:6',
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
         $user->role_id = $validated['role_id'];
         if (!empty($validated['password'])) {
