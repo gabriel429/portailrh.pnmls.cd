@@ -11,6 +11,19 @@ use App\Models\Institution;
 
 class DeploymentController extends Controller
 {
+    private function deployResponse(array $output_messages, array $error_messages, bool $success)
+    {
+        if (request()->expectsJson() || request()->ajax()) {
+            $message = implode("\n", array_merge($output_messages, $error_messages));
+            return response()->json(['success' => $success, 'message' => $message], $success ? 200 : 422);
+        }
+
+        return redirect()->route('admin.deployment.index')
+            ->with('output_messages', $output_messages)
+            ->with('error_messages', $error_messages)
+            ->with('success', $success);
+    }
+
     /**
      * Show deployment page
      */
@@ -39,10 +52,7 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -65,10 +75,7 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -103,9 +110,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "✅ Table organes créée!";
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur lors de la création de la table: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "✅ Table organes existe déjà";
@@ -146,9 +151,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "✅ Données insérées avec succès!";
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur lors de l'insertion des données: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "✅ Les organes existent déjà ($existingCount enregistrements)";
@@ -180,10 +183,7 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -227,15 +227,11 @@ class DeploymentController extends Controller
                     }
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur lors de l'ajout des colonnes: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $error_messages[] = "❌ La table users n'existe pas";
-                return redirect()->route('admin.deployment.index')
-                    ->with('error_messages', $error_messages)
-                    ->with('output_messages', $output_messages);
+                return $this->deployResponse($output_messages, $error_messages, false);
             }
 
             // Step 2: Verify structure
@@ -255,10 +251,7 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -293,9 +286,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "✅ Table institution_categories créée!";
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur création institution_categories: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "✅ Table institution_categories existe déjà";
@@ -327,9 +318,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "✅ Table institutions créée!";
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur création institutions: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "✅ Table institutions existe déjà";
@@ -354,18 +343,14 @@ class DeploymentController extends Controller
                         $output_messages[] = "✅ Colonne institution_id ajoutée!";
                     } catch (\Exception $e) {
                         $error_messages[] = "❌ Erreur ajout institution_id: " . $e->getMessage();
-                        return redirect()->route('admin.deployment.index')
-                            ->with('error_messages', $error_messages)
-                            ->with('output_messages', $output_messages);
+                        return $this->deployResponse($output_messages, $error_messages, false);
                     }
                 } else {
                     $output_messages[] = "✅ Colonne institution_id existe déjà";
                 }
             } else {
                 $error_messages[] = "❌ La table agents n'existe pas";
-                return redirect()->route('admin.deployment.index')
-                    ->with('error_messages', $error_messages)
-                    ->with('output_messages', $output_messages);
+                return $this->deployResponse($output_messages, $error_messages, false);
             }
 
             // Step 4: Seed institutions data
@@ -380,9 +365,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "✅ Données insérées avec succès!";
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur lors du seeding: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "✅ Les institutions existent déjà ($existingCatCount catégories)";
@@ -415,10 +398,7 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -453,9 +433,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "✅ Table messages créée!";
                 } catch (\Exception $e) {
                     $error_messages[] = "❌ Erreur lors de la création de la table: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "✅ Table messages existe déjà";
@@ -478,10 +456,7 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -515,9 +490,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "Table communiques creee!";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur lors de la creation de la table: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "Table communiques existe deja";
@@ -537,10 +510,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     public function deployTaches()
@@ -574,9 +544,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "Table taches creee!";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur table taches: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "Table taches existe deja";
@@ -600,9 +568,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "Table tache_commentaires creee!";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur table tache_commentaires: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "Table tache_commentaires existe deja";
@@ -623,10 +589,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     public function deployPlanTravail()
@@ -668,9 +631,7 @@ class DeploymentController extends Controller
                     $output_messages[] = "Table activite_plans creee!";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur table activite_plans: " . $e->getMessage();
-                    return redirect()->route('admin.deployment.index')
-                        ->with('error_messages', $error_messages)
-                        ->with('output_messages', $output_messages);
+                    return $this->deployResponse($output_messages, $error_messages, false);
                 }
             } else {
                 $output_messages[] = "Table activite_plans existe deja";
@@ -690,10 +651,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -765,10 +723,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -795,10 +750,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -856,10 +808,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -929,10 +878,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -1031,10 +977,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -1078,10 +1021,7 @@ class DeploymentController extends Controller
             $error_messages[] = "ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 
     /**
@@ -1115,9 +1055,6 @@ class DeploymentController extends Controller
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();
         }
 
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
+        return $this->deployResponse($output_messages, $error_messages, $success);
     }
 }
