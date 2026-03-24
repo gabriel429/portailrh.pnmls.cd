@@ -17,6 +17,56 @@ class AuthController extends Controller
         return (bool) preg_match('/Mobile|Android|iPhone|iPad|iPod|webOS|BlackBerry|Opera Mini|IEMobile/i', $ua);
     }
 
+    /**
+     * Extract device model from a user-agent string.
+     */
+    private function parseDeviceModel(string $ua): string
+    {
+        if (preg_match('/iPhone/i', $ua)) {
+            if (preg_match('/iPhone OS ([\d_]+)/i', $ua, $m)) {
+                return 'iPhone (iOS ' . str_replace('_', '.', $m[1]) . ')';
+            }
+            return 'iPhone';
+        }
+
+        if (preg_match('/iPad/i', $ua)) {
+            return 'iPad';
+        }
+
+        if (preg_match('/Android/i', $ua)) {
+            if (preg_match('/;\s*([^;)]+)\s+Build/i', $ua, $m)) {
+                return trim($m[1]);
+            }
+            if (preg_match('/Android\s[\d.]+;\s*([^;)]+)/i', $ua, $m)) {
+                return trim($m[1]);
+            }
+            return 'Android';
+        }
+
+        // Desktop
+        if (preg_match('/Edg\/([\d.]+)/i', $ua)) {
+            $model = 'Microsoft Edge';
+        } elseif (preg_match('/Chrome\/([\d.]+)/i', $ua)) {
+            $model = 'Google Chrome';
+        } elseif (preg_match('/Firefox\/([\d.]+)/i', $ua)) {
+            $model = 'Mozilla Firefox';
+        } elseif (preg_match('/Safari\/([\d.]+)/i', $ua) && !preg_match('/Chrome/i', $ua)) {
+            $model = 'Safari';
+        } else {
+            $model = 'Navigateur';
+        }
+
+        if (preg_match('/Windows NT/i', $ua)) {
+            $model .= ' (Windows)';
+        } elseif (preg_match('/Macintosh/i', $ua)) {
+            $model .= ' (Mac)';
+        } elseif (preg_match('/Linux/i', $ua)) {
+            $model .= ' (Linux)';
+        }
+
+        return $model;
+    }
+
     public function login(Request $request)
     {
         try {
@@ -77,9 +127,11 @@ class AuthController extends Controller
                     $request->session()->regenerateToken();
 
                     $deviceType = $currentIsMobile ? 'téléphone' : 'ordinateur';
+                    $deviceModel = $this->parseDeviceModel($session->user_agent ?? '');
+                    $deviceInfo = $deviceModel ? "{$deviceType} ({$deviceModel})" : $deviceType;
 
                     return response()->json([
-                        'message' => "Votre compte est déjà connecté sur un autre {$deviceType}. Veuillez vous déconnecter de l'autre appareil ou contacter la Section Nouvelle Technologie.",
+                        'message' => "Votre compte est déjà connecté sur un autre {$deviceInfo}. Veuillez vous déconnecter de l'autre appareil ou contacter la Section Nouvelle Technologie.",
                     ], 409);
                 }
             }
