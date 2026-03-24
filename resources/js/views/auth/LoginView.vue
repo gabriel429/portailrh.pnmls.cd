@@ -23,8 +23,9 @@
           <p>Accédez à votre espace personnel</p>
         </div>
 
-        <div v-if="errorMessage" class="alert alert-danger alert-dismissible fade show">
-          <i class="fas fa-exclamation-circle me-2"></i>{{ errorMessage }}
+        <div v-if="errorMessage" class="alert alert-dismissible fade show"
+             :class="errorType === 'session' ? 'alert-warning' : 'alert-danger'">
+          <i :class="errorType === 'session' ? 'fas fa-desktop me-2' : 'fas fa-exclamation-circle me-2'"></i>{{ errorMessage }}
           <button type="button" class="btn-close" @click="errorMessage = ''"></button>
         </div>
 
@@ -103,11 +104,13 @@ const form = reactive({ email: '', password: '', remember: false })
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
+const errorType = ref('')
 const errors = ref({})
 
 async function handleLogin() {
     loading.value = true
     errorMessage.value = ''
+    errorType.value = ''
     errors.value = {}
 
     try {
@@ -124,6 +127,9 @@ async function handleLogin() {
             errorMessage.value = e.response.data.message || 'Erreur de validation.'
         } else if (e.response?.status === 401) {
             errorMessage.value = 'Identifiants incorrects.'
+        } else if (e.response?.status === 409) {
+            errorType.value = 'session'
+            errorMessage.value = e.response.data.message
         } else {
             errorMessage.value = e.response?.data?.message
                 || 'Erreur de connexion. Veuillez reessayer.'
@@ -428,6 +434,15 @@ async function handleLogin() {
     border: none;
     background: #fef2f2;
     color: #dc2626;
+    margin-bottom: 1.25rem;
+}
+
+.alert-warning {
+    border-radius: 12px;
+    font-size: .85rem;
+    border: none;
+    background: #fffbeb;
+    color: #b45309;
     margin-bottom: 1.25rem;
 }
 

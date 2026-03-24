@@ -5,9 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
+    /**
+     * Detect if a user-agent string comes from a mobile device.
+     */
+    private function isMobile(string $ua): bool
+    {
+        return (bool) preg_match('/Mobile|Android|iPhone|iPad|iPod|webOS|BlackBerry|Opera Mini|IEMobile/i', $ua);
+    }
+
     public function login(Request $request)
     {
         try {
@@ -20,13 +29,39 @@ class AuthController extends Controller
                 return response()->json(['message' => 'Identifiants incorrects.'], 401);
             }
 
+            $user = Auth::user();
+            $currentUA = $request->userAgent() ?? '';
+            $currentIsMobile = $this->isMobile($currentUA);
+
+            // Check existing active sessions for this user (same device type)
+            $existingSessions = DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('last_activity', '>=', now()->subMinutes(config('session.lifetime', 120))->timestamp)
+                ->get(['id', 'user_agent', 'ip_address']);
+
+            foreach ($existingSessions as $session) {
+                $sessionIsMobile = $this->isMobile($session->user_agent ?? '');
+
+                // Same device type already has an active session → block
+                if ($sessionIsMobile === $currentIsMobile) {
+                    // Log the user back out since Auth::attempt already logged them in
+                    Auth::guard('web')->logout();
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+
+                    $deviceType = $currentIsMobile ? 'téléphone' : 'ordinateur';
+
+                    return response()->json([
+                        'message' => "Votre compte est déjà connecté sur un autre {$deviceType}. Veuillez vous déconnecter de l'autre appareil ou contacter la Section Nouvelle Technologie.",
+                    ], 409);
+                }
+            }
+
             try {
                 $request->session()->regenerate();
             } catch (\Throwable $e) {
                 \Log::warning('Session regenerate failed: ' . $e->getMessage());
             }
-
-            $user = Auth::user();
 
             // Safely load relations - don't crash if they fail
             try {
