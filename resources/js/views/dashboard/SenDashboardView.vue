@@ -60,6 +60,10 @@
 
     <LoadingSpinner v-if="loading" message="Chargement du tableau de bord executif..." />
 
+    <div v-else-if="loadError" class="alert alert-warning mx-3">
+      <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
+    </div>
+
     <template v-else>
       <!-- ═══ QUICK ACTIONS ═══ -->
       <div class="sen-section">
@@ -534,12 +538,14 @@ function formatTime(iso) {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+const loadError = ref(null)
+
 onMounted(async () => {
   try {
     const { data: result } = await client.get('/dashboard/executive')
     data.value = result
   } catch (e) {
-    console.error('Erreur chargement dashboard executif:', e)
+    loadError.value = e.response?.data?.message || 'Impossible de charger le tableau de bord executif.'
   } finally {
     loading.value = false
   }

@@ -58,7 +58,6 @@
                 <th>Code</th>
                 <th>Nom</th>
                 <th>Section</th>
-                <th class="text-center">Agents</th>
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
@@ -80,9 +79,6 @@
                     <i class="fas fa-sitemap me-1"></i>{{ c.section.nom }}
                   </span>
                   <span v-else class="text-muted">-</span>
-                </td>
-                <td class="text-center">
-                  <span class="agent-count-badge">{{ c.agents_count ?? 0 }}</span>
                 </td>
                 <td class="text-end">
                   <div class="d-inline-flex gap-1">

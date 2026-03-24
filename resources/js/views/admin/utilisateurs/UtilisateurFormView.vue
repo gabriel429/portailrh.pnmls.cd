@@ -136,7 +136,7 @@ async function fetchUtilisateur() {
       client.get(`/admin/utilisateurs/${route.params.id}`),
       client.get('/admin/utilisateurs/form-data'),
     ])
-    const user = userResponse.data.data
+    const user = userResponse.data.data || userResponse.data
     editUser.value = user
     roles.value = formDataResponse.data.roles || []
     form.value = {

@@ -1693,7 +1693,7 @@ class ParametresController extends Controller
 
     public function apiUtilisateursFormData()
     {
-        $agentsWithoutUser = Agent::whereDoesntHave('user')->orderBy('nom')->get(['id', 'nom', 'prenom']);
+        $agentsWithoutUser = Agent::whereDoesntHave('user')->orderBy('nom')->get(['id', 'nom', 'postnom', 'prenom']);
         $roles = Role::orderBy('nom_role')->get(['id', 'nom_role']);
         return response()->json(['agents' => $agentsWithoutUser, 'roles' => $roles]);
     }

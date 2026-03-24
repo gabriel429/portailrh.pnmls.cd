@@ -112,8 +112,12 @@ async function handleLogin() {
 
     try {
         await auth.login(form.email, form.password)
-        const redirect = route.query.redirect || '/dashboard'
-        router.push(redirect)
+        const redirect = route.query.redirect
+        if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
+            router.push(redirect)
+        } else {
+            router.push('/dashboard')
+        }
     } catch (e) {
         if (e.response?.status === 422) {
             errors.value = e.response.data.errors || {}

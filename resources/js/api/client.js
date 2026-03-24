@@ -37,8 +37,14 @@ client.interceptors.response.use(
             auth.clearUser()
             router.push({ name: 'login' })
         }
+        if (error.response?.status === 403) {
+            const ui = useUiStore()
+            ui.addToast('Acces refuse — vous n\'avez pas les permissions necessaires', 'danger', 5000)
+        }
         if (error.response?.status === 419) {
-            window.location.reload()
+            const auth = useAuthStore()
+            auth.clearUser()
+            router.push({ name: 'login' })
         }
         return Promise.reject(error)
     }

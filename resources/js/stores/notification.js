@@ -18,6 +18,7 @@ export const useNotificationStore = defineStore('notification', {
             }
         },
         startPolling() {
+            if (this.polling) return
             this.fetch()
             this.polling = setInterval(() => {
                 if (navigator.onLine) this.fetch()

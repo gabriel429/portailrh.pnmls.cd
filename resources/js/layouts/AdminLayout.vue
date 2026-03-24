@@ -58,10 +58,12 @@
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import { useNotificationStore } from '@/stores/notification'
 import AppToast from '@/components/common/AppToast.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
+const notifStore = useNotificationStore()
 const router = useRouter()
 
 const navItems = [
@@ -83,6 +85,7 @@ const navItems = [
 ]
 
 async function handleLogout() {
+    notifStore.stopPolling()
     await auth.logout()
     router.push({ name: 'login' })
 }

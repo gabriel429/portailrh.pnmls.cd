@@ -43,6 +43,10 @@
       <LoadingSpinner message="Chargement du tableau de bord..." />
     </div>
 
+    <div v-else-if="loadError" class="alert alert-warning mx-3">
+      <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
+    </div>
+
     <template v-else>
       <!-- Quick Actions -->
       <div class="dash-section-header">
@@ -161,11 +165,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
-import SenDashboardView from '@/views/dashboard/SenDashboardView.vue'
+const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenDashboardView.vue'))
 
 const auth = useAuthStore()
 const loading = ref(true)
@@ -225,13 +229,15 @@ function formatTime(iso) {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+const loadError = ref(null)
+
 onMounted(async () => {
   try {
     const { data } = await client.get('/dashboard')
     stats.value = data.stats || data
     activities.value = data.activities || []
-  } catch {
-    // API not yet available
+  } catch (e) {
+    loadError.value = e.response?.data?.message || 'Impossible de charger les donnees du tableau de bord.'
   } finally {
     loading.value = false
   }

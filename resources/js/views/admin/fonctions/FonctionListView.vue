@@ -67,7 +67,7 @@
               <tr>
                 <th>Nom</th>
                 <th>Niveau administratif</th>
-                <th>Organe</th>
+                <th>Type de poste</th>
                 <th style="width:110px">Actions</th>
               </tr>
             </thead>
@@ -79,7 +79,7 @@
                     {{ niveauLabel(f.niveau_administratif) }}
                   </span>
                 </td>
-                <td>{{ f.organe?.nom || f.type_poste || '-' }}</td>
+                <td>{{ f.type_poste || '-' }}</td>
                 <td>
                   <div class="d-flex gap-1">
                     <router-link

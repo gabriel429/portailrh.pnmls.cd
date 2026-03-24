@@ -60,7 +60,7 @@
                 <th>Nom</th>
                 <th>Departement</th>
                 <th>Type</th>
-                <th>Agents</th>
+                <th>Cellules</th>
                 <th style="width:110px">Actions</th>
               </tr>
             </thead>

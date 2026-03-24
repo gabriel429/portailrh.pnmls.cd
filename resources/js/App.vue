@@ -11,8 +11,17 @@
     Connexion retablie
   </div>
 
-  <component :is="layout">
-    <router-view />
+  <!-- Global loading during initial auth check -->
+  <div v-if="auth.loading" class="app-loading">
+    <div class="spinner-border text-primary" role="status"></div>
+  </div>
+
+  <component v-else :is="layout">
+    <router-view v-slot="{ Component }">
+      <transition name="page-fade" mode="out-in">
+        <component :is="Component" />
+      </transition>
+    </router-view>
   </component>
 </template>
 
@@ -20,11 +29,13 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useOnlineStatus } from '@/composables/useOnlineStatus'
+import { useAuthStore } from '@/stores/auth'
 import AppLayout from './layouts/AppLayout.vue'
 import AdminLayout from './layouts/AdminLayout.vue'
 import GuestLayout from './layouts/GuestLayout.vue'
 
 const route = useRoute()
+const auth = useAuthStore()
 const { isOnline } = useOnlineStatus()
 
 const layouts = {
@@ -49,3 +60,20 @@ watch(isOnline, (val) => {
     document.body.classList.toggle('is-offline', !val)
 }, { immediate: true })
 </script>
+
+<style>
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity .2s ease;
+}
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+}
+.app-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+</style>

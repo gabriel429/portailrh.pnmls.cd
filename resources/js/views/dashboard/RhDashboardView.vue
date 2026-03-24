@@ -54,6 +54,10 @@
 
     <LoadingSpinner v-if="loading" message="Chargement du tableau de bord RH..." />
 
+    <div v-else-if="loadError" class="alert alert-warning mx-3">
+      <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
+    </div>
+
     <template v-else>
       <!-- ACTIONS RAPIDES -->
       <div class="rh-section">
@@ -510,12 +514,14 @@ function formatTime(iso) {
   return dd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+const loadError = ref(null)
+
 onMounted(async () => {
   try {
     const { data: result } = await client.get('/rh/dashboard')
     d.value = result
   } catch (e) {
-    console.error('Erreur chargement dashboard RH:', e)
+    loadError.value = e.response?.data?.message || 'Impossible de charger le tableau de bord RH.'
   } finally {
     loading.value = false
   }
