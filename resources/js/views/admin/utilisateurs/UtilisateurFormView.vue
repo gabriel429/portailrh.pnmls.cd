@@ -52,7 +52,7 @@
             <select id="role_id" v-model="form.role_id" class="form-select" :class="{ 'is-invalid': validationErrors.role_id }" required>
               <option value="">-- Selectionner un role --</option>
               <option v-for="role in roles" :key="role.id" :value="role.id">
-                {{ role.nom }}
+                {{ role.nom_role }}
               </option>
             </select>
           </div>

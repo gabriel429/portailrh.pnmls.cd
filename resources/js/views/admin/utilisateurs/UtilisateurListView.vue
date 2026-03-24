@@ -89,7 +89,7 @@
                 </td>
                 <td>
                   <span v-if="user.role" class="role-badge">
-                    {{ user.role.nom }}
+                    {{ user.role.nom_role }}
                   </span>
                   <span v-else class="text-muted" style="font-size: .85rem;">-</span>
                 </td>
