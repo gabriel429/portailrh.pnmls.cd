@@ -49,9 +49,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         });
     })->create();
 
-// Allow desktop app to redirect storage to a writable location (e.g. %APPDATA%)
+// Allow desktop app to redirect writable paths to %APPDATA%
+// env() works here because PHP inherits process environment variables via getenv()
 if ($storagePath = env('APP_STORAGE_PATH')) {
     $app->useStoragePath($storagePath);
+}
+if ($bootstrapCachePath = env('APP_BOOTSTRAP_CACHE_PATH')) {
+    $app->useBootstrapPath(dirname($bootstrapCachePath));
 }
 
 return $app;
