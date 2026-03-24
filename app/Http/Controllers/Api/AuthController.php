@@ -110,13 +110,18 @@ class AuthController extends Controller
             $currentUA = $request->userAgent() ?? '';
             $currentIsMobile = $this->isMobile($currentUA);
 
+            // Clean up expired sessions for this user first
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->where('last_activity', '<', now()->subMinutes(config('session.lifetime', 120))->timestamp)
+                ->delete();
+
             // Check existing active sessions for this user (same device type)
             // Exclude current session — Auth::attempt() already assigned user_id to it
             $currentSessionId = session()->getId();
             $existingSessions = DB::table('sessions')
                 ->where('user_id', $user->id)
                 ->where('id', '!=', $currentSessionId)
-                ->where('last_activity', '>=', now()->subMinutes(config('session.lifetime', 120))->timestamp)
                 ->get(['id', 'user_agent', 'ip_address']);
 
             foreach ($existingSessions as $session) {
@@ -168,9 +173,15 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $userId = Auth::id();
+        $sessionId = session()->getId();
+
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
+        // Explicitly remove the session from database to prevent ghost sessions
+        DB::table('sessions')->where('id', $sessionId)->delete();
 
         return response()->json(['message' => 'Deconnexion reussie.']);
     }
