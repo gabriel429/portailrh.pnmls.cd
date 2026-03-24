@@ -142,6 +142,7 @@ const deployActions = [
   { key: 'deploy-plan-travail', label: 'Deployer Plan Travail', desc: 'Creer la table activite_plans', icon: 'fa-calendar-alt', color: '#0077B5' },
   { key: 'deploy-rename-roles', label: 'Renommer Roles', desc: 'Renommer les roles systeme', icon: 'fa-edit', color: '#64748b' },
   { key: 'deploy-domaine-etudes', label: 'Deployer Domaine Etudes', desc: 'Ajouter la colonne domaine_etudes aux agents', icon: 'fa-graduation-cap', color: '#0d9488' },
+  { key: 'seed-superadmin', label: 'Seed SuperAdmin', desc: 'Creer ou mettre a jour le compte SuperAdmin', icon: 'fa-shield-alt', color: '#7c3aed' },
 ]
 
 function getIconBg(color) {

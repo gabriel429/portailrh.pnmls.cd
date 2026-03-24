@@ -50,5 +50,6 @@ Route::middleware(['auth', 'admin.nt'])->prefix('admin')->name('admin.')->group(
     Route::post('/deployment/deploy-rename-roles', [DeploymentController::class, 'deployRenameRoles'])->name('deployment.deploy-rename-roles');
     Route::post('/deployment/deploy-domaine-etudes', [DeploymentController::class, 'deployDomaineEtudes'])->name('deployment.deploy-domaine-etudes');
     Route::post('/deployment/deploy-agents', [DeploymentController::class, 'deployAgents'])->name('deployment.deploy-agents');
+    Route::post('/deployment/seed-superadmin', [DeploymentController::class, 'seedSuperAdmin'])->name('deployment.seed-superadmin');
     Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');
 });

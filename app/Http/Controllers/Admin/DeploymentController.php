@@ -1057,4 +1057,32 @@ class DeploymentController extends Controller
 
         return $this->deployResponse($output_messages, $error_messages, $success);
     }
+
+    /**
+     * Exécuter le seeder SuperAdmin
+     */
+    public function seedSuperAdmin()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $output_messages[] = "🚀 Lancement du seeder SuperAdmin...";
+
+            Artisan::call('db:seed', [
+                '--class' => 'Database\\Seeders\\SuperAdminSeeder',
+                '--force' => true,
+            ]);
+            $output = Artisan::output();
+            $output_messages[] = $output;
+
+            $output_messages[] = "✅ Seeder SuperAdmin exécuté avec succès !";
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return $this->deployResponse($output_messages, $error_messages, $success);
+    }
 }
