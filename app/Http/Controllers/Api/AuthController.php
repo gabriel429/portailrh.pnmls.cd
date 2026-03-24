@@ -111,8 +111,11 @@ class AuthController extends Controller
             $currentIsMobile = $this->isMobile($currentUA);
 
             // Check existing active sessions for this user (same device type)
+            // Exclude current session — Auth::attempt() already assigned user_id to it
+            $currentSessionId = session()->getId();
             $existingSessions = DB::table('sessions')
                 ->where('user_id', $user->id)
+                ->where('id', '!=', $currentSessionId)
                 ->where('last_activity', '>=', now()->subMinutes(config('session.lifetime', 120))->timestamp)
                 ->get(['id', 'user_agent', 'ip_address']);
 
