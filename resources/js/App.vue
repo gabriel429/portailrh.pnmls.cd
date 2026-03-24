@@ -23,6 +23,15 @@
       </transition>
     </router-view>
   </component>
+
+  <!-- Bouton flottant Webmail -->
+  <a v-if="auth.isAuthenticated"
+     href="https://camulus.o2switch.net:2096/"
+     target="_blank"
+     rel="noopener noreferrer"
+     class="webmail-fab text-decoration-none">
+    <i class="fas fa-at me-2"></i> Webmail professionnel
+  </a>
 </template>
 
 <script setup>
@@ -75,5 +84,24 @@ watch(isOnline, (val) => {
   align-items: center;
   justify-content: center;
   min-height: 100vh;
+}
+.webmail-fab {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  z-index: 1050;
+  background: linear-gradient(135deg, #0077B5, #005a87);
+  color: #fff;
+  border-radius: 50px;
+  padding: 14px 24px;
+  box-shadow: 0 4px 15px rgba(0,119,181,0.4);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.webmail-fab:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(0,119,181,0.5);
+  color: #fff;
 }
 </style>
