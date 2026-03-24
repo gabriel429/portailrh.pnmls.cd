@@ -1859,6 +1859,70 @@ class ParametresController extends Controller
         return response()->json(['message' => 'Utilisateur supprime.']);
     }
 
+    /**
+     * SuperAdmin: list all users with IP and frozen status visible
+     */
+    public function apiSuperAdminUtilisateurs(Request $request)
+    {
+        $q = User::with(['agent', 'role'])->where('is_super_admin', false)->orderByDesc('id');
+        if ($request->search) {
+            $search = $request->search;
+            $q->where(function ($query) use ($search) {
+                $query->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+        if ($request->frozen === 'true') {
+            $q->where('is_frozen', true);
+        }
+        $users = $q->paginate($request->per_page ?? 15);
+
+        // Expose is_frozen, last_login_ip, last_login_at (normally hidden or not shown)
+        $users->getCollection()->transform(function ($user) {
+            $data = $user->toArray();
+            $data['is_frozen'] = (bool) $user->is_frozen;
+            $data['last_login_ip'] = $user->last_login_ip;
+            $data['last_login_at'] = $user->last_login_at?->format('d/m/Y H:i');
+            return $data;
+        });
+
+        return response()->json($users);
+    }
+
+    /**
+     * SuperAdmin: freeze a user account
+     */
+    public function apiUtilisateurFreeze(User $user)
+    {
+        if ($user->is_super_admin) {
+            return response()->json(['message' => 'Action non autorisee.'], 403);
+        }
+
+        $user->update(['is_frozen' => true]);
+
+        // Kill all active sessions for this user
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        $this->recordAudit('UPDATE', 'users', $user->id, ['is_frozen' => false], ['is_frozen' => true]);
+
+        return response()->json(['message' => "Le compte de {$user->name} a ete gele."]);
+    }
+
+    /**
+     * SuperAdmin: unfreeze a user account
+     */
+    public function apiUtilisateurUnfreeze(User $user)
+    {
+        if ($user->is_super_admin) {
+            return response()->json(['message' => 'Action non autorisee.'], 403);
+        }
+
+        $user->update(['is_frozen' => false]);
+        $this->recordAudit('UPDATE', 'users', $user->id, ['is_frozen' => true], ['is_frozen' => false]);
+
+        return response()->json(['message' => "Le compte de {$user->name} a ete degele."]);
+    }
+
     public function apiDocsTravailIndex(Request $request)
     {
         $q = DocumentTravail::with('uploader')->orderByDesc('created_at');

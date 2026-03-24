@@ -31,6 +31,23 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
+            // Check if account is frozen
+            if ($user->is_frozen) {
+                Auth::guard('web')->logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+
+                return response()->json([
+                    'message' => 'Votre compte a été gelé. Veuillez contacter la Section Nouvelle Technologie.',
+                ], 403);
+            }
+
+            // Record login IP and timestamp
+            $user->update([
+                'last_login_ip' => $request->ip(),
+                'last_login_at' => now(),
+            ]);
+
             // SuperAdmin bypasses concurrent session limits
             if ($user->is_super_admin) {
                 try { $request->session()->regenerate(); } catch (\Throwable $e) {}

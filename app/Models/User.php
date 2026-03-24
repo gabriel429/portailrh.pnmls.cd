@@ -26,6 +26,9 @@ class User extends Authenticatable
         'agent_id',
         'role_id',
         'is_super_admin',
+        'is_frozen',
+        'last_login_ip',
+        'last_login_at',
     ];
 
     /**
@@ -50,6 +53,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_super_admin' => 'boolean',
+            'is_frozen' => 'boolean',
+            'last_login_at' => 'datetime',
         ];
     }
 

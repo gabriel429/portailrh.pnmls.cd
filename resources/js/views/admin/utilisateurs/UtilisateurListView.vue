@@ -70,7 +70,9 @@
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th>Agent lie</th>
+                <th v-if="auth.isSuperAdmin">Derniere connexion</th>
+                <th v-if="auth.isSuperAdmin">IP</th>
+                <th v-if="auth.isSuperAdmin">Statut</th>
                 <th class="text-end">Actions</th>
               </tr>
             </thead>
@@ -89,18 +91,43 @@
                 </td>
                 <td>
                   <span v-if="user.role" class="role-badge">
-                    {{ user.role.nom_role }}
+                    {{ user.role?.nom_role || user.role }}
                   </span>
                   <span v-else class="text-muted" style="font-size: .85rem;">-</span>
                 </td>
-                <td>
-                  <span v-if="user.agent" style="color: #1e293b; font-size: .85rem;">
-                    {{ `${user.agent.nom} ${user.agent.postnom || ''} ${user.agent.prenom || ''}`.trim() }}
-                  </span>
+                <td v-if="auth.isSuperAdmin">
+                  <span style="font-size: .8rem; color: #475569;">{{ user.last_login_at || '-' }}</span>
+                </td>
+                <td v-if="auth.isSuperAdmin">
+                  <code v-if="user.last_login_ip" style="font-size: .78rem; background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">{{ user.last_login_ip }}</code>
                   <span v-else class="text-muted" style="font-size: .85rem;">-</span>
+                </td>
+                <td v-if="auth.isSuperAdmin">
+                  <span v-if="user.is_frozen" class="frozen-badge">
+                    <i class="fas fa-snowflake me-1"></i>Gele
+                  </span>
+                  <span v-else class="active-badge">
+                    <i class="fas fa-check-circle me-1"></i>Actif
+                  </span>
                 </td>
                 <td class="text-end">
                   <div class="d-inline-flex gap-1">
+                    <button
+                      v-if="auth.isSuperAdmin && user.is_frozen"
+                      class="action-btn action-btn-success"
+                      @click="toggleFreeze(user)"
+                      title="Degeler le compte"
+                    >
+                      <i class="fas fa-fire"></i>
+                    </button>
+                    <button
+                      v-if="auth.isSuperAdmin && !user.is_frozen"
+                      class="action-btn action-btn-freeze"
+                      @click="toggleFreeze(user)"
+                      title="Geler le compte"
+                    >
+                      <i class="fas fa-snowflake"></i>
+                    </button>
                     <router-link
                       :to="{ name: 'admin.utilisateurs.edit', params: { id: user.id } }"
                       class="action-btn"
@@ -155,6 +182,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const utilisateurs = ref([])
 const loading = ref(false)
@@ -204,7 +234,8 @@ async function fetchUtilisateurs(page = 1) {
   loading.value = true
   error.value = null
   try {
-    const response = await client.get('/admin/utilisateurs', {
+    const endpoint = auth.isSuperAdmin ? '/superadmin/utilisateurs' : '/admin/utilisateurs'
+    const response = await client.get(endpoint, {
       params: { search: search.value, page },
     })
     utilisateurs.value = response.data.data
@@ -239,6 +270,20 @@ async function deleteUtilisateur(user) {
     fetchUtilisateurs(pagination.value.currentPage)
   } catch (e) {
     error.value = e.response?.data?.message || 'Erreur lors de la suppression.'
+  }
+}
+
+async function toggleFreeze(user) {
+  const action = user.is_frozen ? 'degeler' : 'geler'
+  if (!confirm(`Etes-vous sur de vouloir ${action} le compte de ${user.name} ?`)) return
+  try {
+    const endpoint = user.is_frozen
+      ? `/superadmin/utilisateurs/${user.id}/unfreeze`
+      : `/superadmin/utilisateurs/${user.id}/freeze`
+    await client.post(endpoint)
+    fetchUtilisateurs(pagination.value.currentPage)
+  } catch (e) {
+    error.value = e.response?.data?.message || `Erreur lors du ${action} du compte.`
   }
 }
 
@@ -436,6 +481,36 @@ onMounted(() => fetchUtilisateurs())
   border-color: #ef4444;
   color: #ef4444;
   background: #fef2f2;
+}
+.action-btn-freeze:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #eff6ff;
+}
+.action-btn-success:hover {
+  border-color: #059669;
+  color: #059669;
+  background: #ecfdf5;
+}
+
+/* ── Status Badges ── */
+.frozen-badge {
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #bfdbfe;
+}
+.active-badge {
+  background: #ecfdf5;
+  color: #059669;
+  font-size: .75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1fae5;
 }
 
 /* ── Empty State ── */

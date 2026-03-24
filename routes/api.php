@@ -219,12 +219,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('fonctions-by-organe/{code}', [ParametresController::class, 'getAllFonctionsByOrgane']);
     });
 
-    // SuperAdmin routes (audit logs)
+    // SuperAdmin routes (audit logs + user management)
     Route::middleware('super.admin')->prefix('superadmin')->group(function () {
         Route::get('audit-logs', [AuditLogController::class, 'index']);
         Route::get('audit-logs/tables', [AuditLogController::class, 'tables']);
         Route::get('audit-logs/users', [AuditLogController::class, 'users']);
         Route::get('audit-logs/{auditLog}', [AuditLogController::class, 'show']);
         Route::post('audit-logs/{auditLog}/revert', [AuditLogController::class, 'revert']);
+
+        Route::get('utilisateurs', [ParametresController::class, 'apiSuperAdminUtilisateurs']);
+        Route::post('utilisateurs/{user}/freeze', [ParametresController::class, 'apiUtilisateurFreeze']);
+        Route::post('utilisateurs/{user}/unfreeze', [ParametresController::class, 'apiUtilisateurUnfreeze']);
     });
 });
