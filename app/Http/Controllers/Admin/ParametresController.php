@@ -1459,6 +1459,11 @@ class ParametresController extends Controller
         return response()->json($q->paginate($request->per_page ?? 30));
     }
 
+    public function apiFonctionsShow(Fonction $fonction)
+    {
+        return response()->json($fonction);
+    }
+
     public function apiFonctionsStore(Request $request)
     {
         $validated = $request->validate([
@@ -1503,6 +1508,11 @@ class ParametresController extends Controller
         return response()->json($q->paginate($request->per_page ?? 25));
     }
 
+    public function apiSectionsShow(Section $section)
+    {
+        return response()->json($section->load('department'));
+    }
+
     public function apiSectionsStore(Request $request)
     {
         $validated = $request->validate([
@@ -1544,6 +1554,11 @@ class ParametresController extends Controller
         return response()->json($q->paginate($request->per_page ?? 25));
     }
 
+    public function apiCellulesShow(Cellule $cellule)
+    {
+        return response()->json($cellule->load('section.department'));
+    }
+
     public function apiCellulesStore(Request $request)
     {
         $validated = $request->validate([
@@ -1581,6 +1596,11 @@ class ParametresController extends Controller
             $q->where('nom', 'like', "%{$request->search}%");
         }
         return response()->json($q->paginate($request->per_page ?? 25));
+    }
+
+    public function apiLocalitesShow(Localite $localite)
+    {
+        return response()->json($localite->load('province'));
     }
 
     public function apiLocalitesStore(Request $request)

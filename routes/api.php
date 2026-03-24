@@ -144,24 +144,28 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Fonctions
         Route::get('fonctions', [ParametresController::class, 'apiFonctionsIndex']);
+        Route::get('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsShow']);
         Route::post('fonctions', [ParametresController::class, 'apiFonctionsStore']);
         Route::put('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsUpdate']);
         Route::delete('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsDestroy']);
 
         // Sections
         Route::get('sections', [ParametresController::class, 'apiSectionsIndex']);
+        Route::get('sections/{section}', [ParametresController::class, 'apiSectionsShow']);
         Route::post('sections', [ParametresController::class, 'apiSectionsStore']);
         Route::put('sections/{section}', [ParametresController::class, 'apiSectionsUpdate']);
         Route::delete('sections/{section}', [ParametresController::class, 'apiSectionsDestroy']);
 
         // Cellules
         Route::get('cellules', [ParametresController::class, 'apiCellulesIndex']);
+        Route::get('cellules/{cellule}', [ParametresController::class, 'apiCellulesShow']);
         Route::post('cellules', [ParametresController::class, 'apiCellulesStore']);
         Route::put('cellules/{cellule}', [ParametresController::class, 'apiCellulesUpdate']);
         Route::delete('cellules/{cellule}', [ParametresController::class, 'apiCellulesDestroy']);
 
         // Localites
         Route::get('localites', [ParametresController::class, 'apiLocalitesIndex']);
+        Route::get('localites/{localite}', [ParametresController::class, 'apiLocalitesShow']);
         Route::post('localites', [ParametresController::class, 'apiLocalitesStore']);
         Route::put('localites/{localite}', [ParametresController::class, 'apiLocalitesUpdate']);
         Route::delete('localites/{localite}', [ParametresController::class, 'apiLocalitesDestroy']);
