@@ -90,6 +90,7 @@
                   <th class="border-0 text-muted small fw-semibold py-3">Role</th>
                   <th class="border-0 text-muted small fw-semibold py-3">Province</th>
                   <th class="border-0 text-muted small fw-semibold py-3">Derniere activite</th>
+                  <th v-if="auth.isSuperAdmin" class="border-0 text-muted small fw-semibold py-3">Appareil</th>
                   <th class="border-0 text-muted small fw-semibold py-3 pe-4">IP</th>
                 </tr>
               </thead>
@@ -107,6 +108,12 @@
                     <span class="activity-indicator">
                       <span class="activity-dot"></span>
                       {{ formatTime(u.last_activity) }}
+                    </span>
+                  </td>
+                  <td v-if="auth.isSuperAdmin">
+                    <span class="device-badge" :class="u.device_type === 'Telephone' ? 'device-mobile' : u.device_type === 'Tablette' ? 'device-tablet' : 'device-desktop'">
+                      <i class="fas me-1" :class="u.device_type === 'Telephone' ? 'fa-mobile-alt' : u.device_type === 'Tablette' ? 'fa-tablet-alt' : 'fa-desktop'"></i>
+                      {{ u.device_model || u.device_type }}
                     </span>
                   </td>
                   <td class="pe-4"><code class="ip-badge">{{ u.ip_address }}</code></td>
@@ -144,6 +151,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
 
 const loading = ref(true)
 const stats = ref({})
@@ -454,6 +464,28 @@ onMounted(async () => {
   padding: 3px 8px;
   border-radius: 6px;
   font-size: .75rem;
+}
+.device-badge {
+  font-size: .73rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+.device-mobile {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+.device-tablet {
+  background: #ede9fe;
+  color: #5b21b6;
+  border: 1px solid #c4b5fd;
+}
+.device-desktop {
+  background: #e0f2fe;
+  color: #075985;
+  border: 1px solid #bae6fd;
 }
 .empty-state {
   text-align: center;

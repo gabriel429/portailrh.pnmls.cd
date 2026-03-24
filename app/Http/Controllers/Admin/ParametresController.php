@@ -28,6 +28,63 @@ use Illuminate\Http\Request;
 class ParametresController extends Controller
 {
     /**
+     * Parse user-agent to extract device type and model.
+     */
+    private function parseDevice(string $ua): array
+    {
+        $type = 'Ordinateur';
+        $model = '';
+
+        if (preg_match('/iPhone/i', $ua)) {
+            $type = 'Telephone';
+            if (preg_match('/iPhone OS ([\d_]+)/i', $ua, $m)) {
+                $model = 'iPhone (iOS ' . str_replace('_', '.', $m[1]) . ')';
+            } else {
+                $model = 'iPhone';
+            }
+        } elseif (preg_match('/iPad/i', $ua)) {
+            $type = 'Tablette';
+            $model = 'iPad';
+        } elseif (preg_match('/Android/i', $ua)) {
+            if (preg_match('/Mobile/i', $ua)) {
+                $type = 'Telephone';
+            } else {
+                $type = 'Tablette';
+            }
+            if (preg_match('/;\s*([^;)]+)\s+Build/i', $ua, $m)) {
+                $model = trim($m[1]);
+            } elseif (preg_match('/Android\s[\d.]+;\s*([^;)]+)/i', $ua, $m)) {
+                $model = trim($m[1]);
+            } else {
+                $model = 'Android';
+            }
+        } else {
+            // Desktop browser detection
+            if (preg_match('/Edg\/([\d.]+)/i', $ua)) {
+                $model = 'Microsoft Edge';
+            } elseif (preg_match('/Chrome\/([\d.]+)/i', $ua)) {
+                $model = 'Google Chrome';
+            } elseif (preg_match('/Firefox\/([\d.]+)/i', $ua)) {
+                $model = 'Mozilla Firefox';
+            } elseif (preg_match('/Safari\/([\d.]+)/i', $ua) && !preg_match('/Chrome/i', $ua)) {
+                $model = 'Safari';
+            } else {
+                $model = 'Navigateur';
+            }
+
+            if (preg_match('/Windows NT/i', $ua)) {
+                $model .= ' (Windows)';
+            } elseif (preg_match('/Macintosh/i', $ua)) {
+                $model .= ' (Mac)';
+            } elseif (preg_match('/Linux/i', $ua)) {
+                $model .= ' (Linux)';
+            }
+        }
+
+        return ['type' => $type, 'model' => $model];
+    }
+
+    /**
      * Record an audit log entry.
      */
     private function recordAudit(string $action, string $tableName, $recordId, ?array $before = null, ?array $after = null): void
@@ -264,6 +321,10 @@ class ParametresController extends Controller
                 $connectedUsers = $sessions->map(function ($session) use ($users) {
                     $user = $users->get($session->user_id);
                     if (!$user || !$user->agent || $user->is_super_admin) return null;
+
+                    $ua = $session->user_agent ?? '';
+                    $device = $this->parseDevice($ua);
+
                     return [
                         'id' => $user->id,
                         'nom_complet' => trim(($user->agent->prenom ?? '') . ' ' . ($user->agent->nom ?? $user->name)),
@@ -271,6 +332,8 @@ class ParametresController extends Controller
                         'role' => $user->role?->nom_role ?? 'Agent',
                         'last_activity' => \Carbon\Carbon::createFromTimestamp($session->last_activity)->toIso8601String(),
                         'ip_address' => $session->ip_address,
+                        'device_type' => $device['type'],
+                        'device_model' => $device['model'],
                     ];
                 })->filter()->unique('id')->values();
             } catch (\Exception $e) {
