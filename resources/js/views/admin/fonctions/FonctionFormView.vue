@@ -65,14 +65,22 @@
               <label for="type_poste" class="form-label fw-bold">Type de poste</label>
               <select id="type_poste" v-model="form.type_poste" class="form-select">
                 <option value="">-- Selectionnez --</option>
-                <option value="departement">Departement (SEN)</option>
-                <option value="section">Section (SEN)</option>
-                <option value="service_rattache">Service rattache (SEN)</option>
-                <option value="province">Province (SEP)</option>
-                <option value="local">Local (SEL)</option>
-                <option value="appui">Appui (tous niveaux)</option>
+                <optgroup label="SEN - Secretariat Executif National">
+                  <option value="direction">Direction (SEN)</option>
+                  <option value="service_rattache">Service rattache (SEN)</option>
+                  <option value="département">Departement (SEN)</option>
+                  <option value="section">Section (SEN)</option>
+                  <option value="cellule">Cellule (SEN)</option>
+                </optgroup>
+                <optgroup label="SEP / SEL">
+                  <option value="province">Province (SEP)</option>
+                  <option value="local">Local (SEL)</option>
+                </optgroup>
+                <optgroup label="Transversal">
+                  <option value="appui">Appui (tous niveaux)</option>
+                </optgroup>
               </select>
-              <small class="text-muted">Determine ou cette fonction apparait lors de l'affectation d'un agent.</small>
+              <small class="text-muted">Determine ou cette fonction apparait lors de l'affectation d'un agent. Choisissez le niveau structurel du poste.</small>
             </div>
 
             <div class="mb-3">

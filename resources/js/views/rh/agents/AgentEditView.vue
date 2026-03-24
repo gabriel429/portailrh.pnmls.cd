@@ -453,24 +453,30 @@ const visibleFonctions = computed(() => {
     const niveau = currentNiveau.value
     if (!niveau) return formOptions.fonctions
 
-    let typePoste = null
+    let allowedTypes = []
     if (niveau === 'SEN') {
         if (typeRattachement.value === 'service_rattache') {
-            typePoste = 'service_rattache'
+            allowedTypes = ['service_rattache', 'direction']
         } else if (typeRattachement.value === 'departement') {
-            typePoste = form.section_id ? 'section' : 'departement'
+            if (form.section_id) {
+                allowedTypes = ['section', 'cellule']
+            } else {
+                allowedTypes = ['département', 'departement', 'direction']
+            }
+        } else {
+            allowedTypes = ['direction']
         }
     } else if (niveau === 'SEP') {
-        typePoste = 'province'
+        allowedTypes = ['province']
     } else if (niveau === 'SEL') {
-        typePoste = 'local'
+        allowedTypes = ['local']
     }
 
     return formOptions.fonctions.filter(f => {
         const matchNiveau = f.niveau_administratif === niveau || f.niveau_administratif === 'TOUS'
         if (!matchNiveau) return false
-        if (typePoste) {
-            return f.type_poste === typePoste || f.type_poste === 'appui'
+        if (allowedTypes.length) {
+            return allowedTypes.includes(f.type_poste) || f.type_poste === 'appui'
         }
         return true
     })
