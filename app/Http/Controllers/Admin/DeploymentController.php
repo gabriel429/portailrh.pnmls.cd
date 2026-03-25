@@ -13,23 +13,8 @@ class DeploymentController extends Controller
 {
     private function deployResponse(array $output_messages, array $error_messages, bool $success)
     {
-        if (request()->expectsJson() || request()->ajax()) {
-            $message = implode("\n", array_merge($output_messages, $error_messages));
-            return response()->json(['success' => $success, 'message' => $message], $success ? 200 : 422);
-        }
-
-        return redirect()->route('admin.deployment.index')
-            ->with('output_messages', $output_messages)
-            ->with('error_messages', $error_messages)
-            ->with('success', $success);
-    }
-
-    /**
-     * Show deployment page
-     */
-    public function index()
-    {
-        return view('admin.deployment');
+        $message = implode("\n", array_merge($output_messages, $error_messages));
+        return response()->json(['success' => $success, 'message' => $message], $success ? 200 : 422);
     }
 
     /**

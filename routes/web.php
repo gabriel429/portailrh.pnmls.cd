@@ -10,7 +10,6 @@
 // ──────────────────────────────────────────────────────────────
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\DeploymentController;
 use App\Http\Controllers\DocumentTravailController;
 
@@ -31,11 +30,6 @@ Route::post('/logout', function (\Illuminate\Http\Request $request) {
 Route::get('/documents-travail/{documentTravail}/download', [DocumentTravailController::class, 'download'])
     ->middleware('auth')
     ->name('documents-travail.download');
-
-// ── Admin server-side POST actions ───────────────────────────
-Route::middleware(['auth', 'admin.nt'])->prefix('admin')->name('admin.')->group(function () {
-    Route::post('/logs/clear', [ParametresController::class, 'logsClear'])->name('logs.clear');
-});
 
 // ── Deployment actions (SuperAdmin only) ─────────────────────
 Route::middleware(['auth', 'super.admin'])->prefix('admin/deployment')->name('admin.deployment.')->group(function () {
