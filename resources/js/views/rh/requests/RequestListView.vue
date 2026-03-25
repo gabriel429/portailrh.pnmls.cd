@@ -38,6 +38,78 @@
       </div>
     </div>
 
+    <!-- Status filter cards (always visible, like documents page) -->
+    <div class="req-filter-grid">
+      <button
+        class="req-filter-card req-filter-all"
+        :class="{ active: !filters.statut }"
+        @click="setStatut('')"
+      >
+        <div class="req-filter-icon"><i class="fas fa-th-large"></i></div>
+        <div class="req-filter-info">
+          <div class="req-filter-name">Toutes</div>
+          <div class="req-filter-count">{{ meta.total }} demande{{ meta.total > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+      <button
+        class="req-filter-card req-filter-warning"
+        :class="{ active: filters.statut === 'en_attente' }"
+        @click="setStatut('en_attente')"
+      >
+        <div class="req-filter-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div class="req-filter-info">
+          <div class="req-filter-name">En attente</div>
+          <div class="req-filter-count">A traiter</div>
+        </div>
+      </button>
+      <button
+        class="req-filter-card req-filter-success"
+        :class="{ active: filters.statut === 'approuvé' }"
+        @click="setStatut('approuvé')"
+      >
+        <div class="req-filter-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="req-filter-info">
+          <div class="req-filter-name">Approuvee</div>
+          <div class="req-filter-count">Validees</div>
+        </div>
+      </button>
+      <button
+        class="req-filter-card req-filter-danger"
+        :class="{ active: filters.statut === 'rejeté' }"
+        @click="setStatut('rejeté')"
+      >
+        <div class="req-filter-icon"><i class="fas fa-times-circle"></i></div>
+        <div class="req-filter-info">
+          <div class="req-filter-name">Rejetee</div>
+          <div class="req-filter-count">Refusees</div>
+        </div>
+      </button>
+      <button
+        class="req-filter-card req-filter-secondary"
+        :class="{ active: filters.statut === 'annulé' }"
+        @click="setStatut('annulé')"
+      >
+        <div class="req-filter-icon"><i class="fas fa-ban"></i></div>
+        <div class="req-filter-info">
+          <div class="req-filter-name">Annulee</div>
+          <div class="req-filter-count">Annulees</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Section header when filtered -->
+    <div v-if="filters.statut" class="req-section-header">
+      <div class="req-section-title">
+        <i :class="statusIcon(filters.statut)" :style="{ color: statusColor(filters.statut) }"></i>
+        {{ statusLabel(filters.statut) }}
+        <span class="req-section-badge">{{ meta.total }} demande{{ meta.total > 1 ? 's' : '' }}</span>
+      </div>
+      <button class="req-back-btn" @click="setStatut('')">
+        <i class="fas fa-arrow-left"></i> Tous les statuts
+      </button>
+    </div>
+
+    <!-- Loading spinner (initial load only) -->
     <div v-if="loading" class="text-center py-5">
       <div class="spinner-border text-success" role="status">
         <span class="visually-hidden">Chargement...</span>
@@ -46,77 +118,6 @@
     </div>
 
     <template v-else>
-      <!-- Status filter cards -->
-      <div class="req-filter-grid">
-        <button
-          class="req-filter-card req-filter-all"
-          :class="{ active: !filters.statut }"
-          @click="setStatut('')"
-        >
-          <div class="req-filter-icon"><i class="fas fa-th-large"></i></div>
-          <div class="req-filter-info">
-            <div class="req-filter-name">Toutes</div>
-            <div class="req-filter-count">{{ meta.total }} demande{{ meta.total > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-        <button
-          class="req-filter-card req-filter-warning"
-          :class="{ active: filters.statut === 'en_attente' }"
-          @click="setStatut('en_attente')"
-        >
-          <div class="req-filter-icon"><i class="fas fa-hourglass-half"></i></div>
-          <div class="req-filter-info">
-            <div class="req-filter-name">En attente</div>
-            <div class="req-filter-count">A traiter</div>
-          </div>
-        </button>
-        <button
-          class="req-filter-card req-filter-success"
-          :class="{ active: filters.statut === 'approuvé' }"
-          @click="setStatut('approuvé')"
-        >
-          <div class="req-filter-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="req-filter-info">
-            <div class="req-filter-name">Approuvee</div>
-            <div class="req-filter-count">Validees</div>
-          </div>
-        </button>
-        <button
-          class="req-filter-card req-filter-danger"
-          :class="{ active: filters.statut === 'rejeté' }"
-          @click="setStatut('rejeté')"
-        >
-          <div class="req-filter-icon"><i class="fas fa-times-circle"></i></div>
-          <div class="req-filter-info">
-            <div class="req-filter-name">Rejetee</div>
-            <div class="req-filter-count">Refusees</div>
-          </div>
-        </button>
-        <button
-          class="req-filter-card req-filter-secondary"
-          :class="{ active: filters.statut === 'annulé' }"
-          @click="setStatut('annulé')"
-        >
-          <div class="req-filter-icon"><i class="fas fa-ban"></i></div>
-          <div class="req-filter-info">
-            <div class="req-filter-name">Annulee</div>
-            <div class="req-filter-count">Annulees</div>
-          </div>
-        </button>
-      </div>
-
-      <!-- Section header when filtered -->
-      <div v-if="filters.statut" class="req-section-header">
-        <div class="req-section-title">
-          <i :class="statusIcon(filters.statut)" :style="{ color: statusColor(filters.statut) }"></i>
-          {{ statusLabel(filters.statut) }}
-          <span class="req-section-badge">{{ meta.total }} demande{{ meta.total > 1 ? 's' : '' }}</span>
-        </div>
-        <button class="req-back-btn" @click="setStatut('')">
-          <i class="fas fa-arrow-left"></i> Tous les statuts
-        </button>
-      </div>
-
       <!-- Request cards grid -->
       <div v-if="requests.length" class="req-grid" :class="{ 'req-filtering': filtering }">
         <div v-for="req in requests" :key="req.id" class="req-card">
@@ -246,6 +247,7 @@ const ui = useUiStore()
 const isRH = computed(() => auth.hasAdminAccess)
 const loading = ref(true)
 const filtering = ref(false)
+const initialLoadDone = ref(false)
 const requests = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
 const filters = ref({ statut: '', type: '' })
@@ -265,8 +267,8 @@ const paginationPages = computed(() => {
 })
 
 async function loadRequests(page = 1) {
-  // Only show full-page spinner on initial load, not on filter changes
-  if (requests.value.length === 0 && !filtering.value) {
+  // Only show full-page spinner on very first load
+  if (!initialLoadDone.value) {
     loading.value = true
   }
   filtering.value = true
@@ -282,6 +284,7 @@ async function loadRequests(page = 1) {
   } finally {
     loading.value = false
     filtering.value = false
+    initialLoadDone.value = true
   }
 }
 
