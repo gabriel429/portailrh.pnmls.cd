@@ -16,49 +16,50 @@
       </div>
     </div>
 
+    <!-- Category cards (always visible) -->
+    <div class="dt-cat-grid">
+      <button class="dt-cat-all" :class="{ active: !categorie }" @click="setCategorie('')">
+        <div class="dt-cat-icon"><i class="fas fa-th-large"></i></div>
+        <div class="dt-cat-info">
+          <div class="dt-cat-name">Toutes</div>
+          <div class="dt-cat-count">{{ totalDocs }} document{{ totalDocs > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+      <button
+        v-for="cat in categories"
+        :key="cat.id"
+        class="dt-cat-card"
+        :class="{ active: categorie === cat.nom }"
+        @click="setCategorie(cat.nom)"
+      >
+        <div class="dt-cat-icon"><i class="fas" :class="cat.icone || 'fa-folder'"></i></div>
+        <div class="dt-cat-info">
+          <div class="dt-cat-name">{{ cat.nom }}</div>
+          <div class="dt-cat-count">{{ categoryCounts[cat.nom] || 0 }} document{{ (categoryCounts[cat.nom] || 0) > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Section header when filtered -->
+    <div v-if="categorie" class="dt-section-header">
+      <div class="dt-section-title">
+        <i class="fas fa-folder-open" style="color:#ea580c;"></i>
+        {{ categorie }}
+        <span class="dt-section-badge">{{ meta.total }} document{{ meta.total > 1 ? 's' : '' }}</span>
+      </div>
+      <button class="dt-back-btn" @click="setCategorie('')">
+        <i class="fas fa-arrow-left"></i> Toutes les categories
+      </button>
+    </div>
+
+    <!-- Loading spinner (initial load only) -->
     <div v-if="loading" class="text-center py-5">
       <LoadingSpinner message="Chargement des documents..." />
     </div>
 
     <template v-else>
-      <!-- Category cards -->
-      <div class="dt-cat-grid">
-        <button class="dt-cat-all" :class="{ active: !categorie }" @click="setCategorie('')">
-          <div class="dt-cat-icon"><i class="fas fa-th-large"></i></div>
-          <div class="dt-cat-info">
-            <div class="dt-cat-name">Toutes</div>
-            <div class="dt-cat-count">{{ totalDocs }} document{{ totalDocs > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-        <button
-          v-for="cat in categories"
-          :key="cat.id"
-          class="dt-cat-card"
-          :class="{ active: categorie === cat.nom }"
-          @click="setCategorie(cat.nom)"
-        >
-          <div class="dt-cat-icon"><i class="fas" :class="cat.icone || 'fa-folder'"></i></div>
-          <div class="dt-cat-info">
-            <div class="dt-cat-name">{{ cat.nom }}</div>
-            <div class="dt-cat-count">{{ categoryCounts[cat.nom] || 0 }} document{{ (categoryCounts[cat.nom] || 0) > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-      </div>
-
-      <!-- Section header when filtered -->
-      <div v-if="categorie" class="dt-section-header">
-        <div class="dt-section-title">
-          <i class="fas fa-folder-open" style="color:#ea580c;"></i>
-          {{ categorie }}
-          <span class="dt-section-badge">{{ meta.total }} document{{ meta.total > 1 ? 's' : '' }}</span>
-        </div>
-        <button class="dt-back-btn" @click="setCategorie('')">
-          <i class="fas fa-arrow-left"></i> Toutes les categories
-        </button>
-      </div>
-
       <!-- Document grid -->
-      <div v-if="documents.length" class="dt-grid">
+      <div v-if="documents.length" class="dt-grid" :class="{ 'dt-filtering': filtering }">
         <div v-for="doc in documents" :key="doc.id" class="dt-card">
           <div class="dt-card-top">
             <div class="dt-card-icon" :class="iconClass(doc.type_fichier)">
@@ -132,6 +133,8 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
 const loading = ref(true)
+const filtering = ref(false)
+const initialLoadDone = ref(false)
 const documents = ref([])
 const categories = ref([])
 const categoryCounts = ref({})
@@ -150,7 +153,10 @@ const paginationPages = computed(() => {
 })
 
 async function loadDocuments(page = 1) {
-  loading.value = true
+  if (!initialLoadDone.value) {
+    loading.value = true
+  }
+  filtering.value = true
   try {
     const params = { page }
     if (categorie.value) params.categorie = categorie.value
@@ -164,6 +170,8 @@ async function loadDocuments(page = 1) {
     ui.addToast('Erreur lors du chargement des documents.', 'danger')
   } finally {
     loading.value = false
+    filtering.value = false
+    initialLoadDone.value = true
   }
 }
 
@@ -278,6 +286,9 @@ onMounted(() => loadDocuments())
 .dt-card-dl:hover { background: #ea580c; color: #fff; border-color: #ea580c; }
 
 .dt-empty { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
+
+/* ── Filtering overlay ── */
+.dt-filtering { opacity: 0.4; pointer-events: none; transition: opacity .2s; }
 .dt-empty-icon {
   width: 64px; height: 64px; border-radius: 50%; background: #f3f4f6;
   display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; color: #d1d5db;
