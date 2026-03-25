@@ -22,11 +22,6 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'profile.show' }">
-                <i class="fas fa-id-badge nav-icon"></i> Mon Profil
-              </router-link>
-            </li>
-            <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'requests.index' }">
                 <i class="fas fa-paper-plane nav-icon"></i> Demandes
               </router-link>
