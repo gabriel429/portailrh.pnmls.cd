@@ -152,13 +152,13 @@
               <i class="fas fa-clock me-1"></i>{{ formatDateTime(req.created_at) }}
             </span>
             <div class="req-card-actions">
-              <router-link
-                :to="{ name: 'requests.show', params: { id: req.id } }"
+              <button
                 class="req-act-btn req-act-view"
                 title="Details"
+                @click="openDetail(req.id)"
               >
                 <i class="fas fa-eye"></i> Voir
-              </router-link>
+              </button>
               <router-link
                 v-if="isRH"
                 :to="{ name: 'requests.edit', params: { id: req.id } }"
@@ -231,6 +231,120 @@
       @confirm="handleDelete"
       @cancel="showDeleteModal = false"
     />
+
+    <!-- Detail modal -->
+    <teleport to="body">
+      <div v-if="showDetailModal" class="rdm-overlay" @click.self="showDetailModal = false">
+        <div class="rdm-dialog">
+          <!-- Header -->
+          <div class="rdm-header">
+            <div class="rdm-header-left">
+              <h5 class="rdm-title"><i class="fas fa-file-alt me-2"></i>Demande <template v-if="detailRequest">#{{ detailRequest.id }}</template></h5>
+            </div>
+            <button class="rdm-close" @click="showDetailModal = false"><i class="fas fa-times"></i></button>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="detailLoading" class="rdm-loading">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="text-muted mt-2 mb-0">Chargement...</p>
+          </div>
+
+          <!-- Body -->
+          <div v-else-if="detailRequest" class="rdm-body">
+            <!-- Status badge -->
+            <div class="rdm-status-row">
+              <span :class="'rdm-status-badge rdm-st-' + detailRequest.statut">
+                <i :class="statusIcon(detailRequest.statut)" class="me-1"></i>
+                {{ statusLabel(detailRequest.statut) }}
+              </span>
+              <span class="rdm-date-badge">
+                <i class="fas fa-clock me-1"></i>{{ formatDateTime(detailRequest.created_at) }}
+              </span>
+            </div>
+
+            <!-- Info cards -->
+            <div class="rdm-info-grid">
+              <div class="rdm-info-card">
+                <div class="rdm-info-icon rdm-ic-blue"><i class="fas fa-user"></i></div>
+                <div>
+                  <div class="rdm-info-label">Agent</div>
+                  <div class="rdm-info-value">{{ detailRequest.agent?.prenom }} {{ detailRequest.agent?.nom }}</div>
+                  <div v-if="detailRequest.agent?.poste_actuel" class="rdm-info-sub">{{ detailRequest.agent.poste_actuel }}</div>
+                </div>
+              </div>
+              <div class="rdm-info-card">
+                <div class="rdm-info-icon rdm-ic-teal"><i class="fas fa-tag"></i></div>
+                <div>
+                  <div class="rdm-info-label">Type</div>
+                  <div class="rdm-info-value">{{ formatType(detailRequest.type) }}</div>
+                </div>
+              </div>
+              <div class="rdm-info-card">
+                <div class="rdm-info-icon rdm-ic-purple"><i class="fas fa-calendar-alt"></i></div>
+                <div>
+                  <div class="rdm-info-label">Periode</div>
+                  <div class="rdm-info-value">
+                    {{ formatDate(detailRequest.date_debut) }}
+                    <template v-if="detailRequest.date_fin"> - {{ formatDate(detailRequest.date_fin) }}</template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div v-if="detailRequest.description" class="rdm-section">
+              <h6 class="rdm-section-title"><i class="fas fa-align-left me-2"></i>Description</h6>
+              <p class="rdm-desc">{{ detailRequest.description }}</p>
+            </div>
+
+            <!-- Remarques RH -->
+            <div v-if="detailRequest.remarques" class="rdm-section">
+              <h6 class="rdm-section-title"><i class="fas fa-comment-alt me-2"></i>Remarques RH</h6>
+              <div class="rdm-remark">
+                <i class="fas fa-quote-left rdm-remark-icon"></i>
+                <p class="mb-0">{{ detailRequest.remarques }}</p>
+              </div>
+            </div>
+
+            <!-- Lettre de demande -->
+            <div v-if="detailRequest.lettre_demande" class="rdm-section">
+              <h6 class="rdm-section-title"><i class="fas fa-paperclip me-2"></i>Lettre de demande</h6>
+              <div class="rdm-file">
+                <div class="rdm-file-icon"><i class="fas fa-file-alt"></i></div>
+                <span class="rdm-file-name">{{ fileName(detailRequest.lettre_demande) }}</span>
+                <a :href="storageUrl(detailRequest.lettre_demande)" target="_blank" class="rdm-file-dl">
+                  <i class="fas fa-download me-1"></i> Telecharger
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer actions -->
+          <div v-if="detailRequest && !detailLoading" class="rdm-footer">
+            <button class="rdm-btn rdm-btn-outline" @click="printDetail">
+              <i class="fas fa-print me-1"></i> Imprimer
+            </button>
+            <div class="d-flex gap-2">
+              <router-link
+                v-if="detailIsRH"
+                :to="{ name: 'requests.edit', params: { id: detailRequest.id } }"
+                class="rdm-btn rdm-btn-warning"
+              >
+                <i class="fas fa-edit me-1"></i> Modifier
+              </router-link>
+              <button
+                v-if="detailIsRH || (detailIsOwner && detailRequest.statut === 'en_attente')"
+                class="rdm-btn rdm-btn-danger"
+                @click="showDetailModal = false; confirmDelete(detailRequest)"
+              >
+                <i class="fas fa-trash me-1"></i> Supprimer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -238,7 +352,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { list, remove } from '@/api/requests'
+import { list, get, remove } from '@/api/requests'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const auth = useAuthStore()
@@ -255,6 +369,13 @@ const filters = ref({ statut: '', type: '' })
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
 const deleting = ref(false)
+
+// Show modal
+const showDetailModal = ref(false)
+const detailLoading = ref(false)
+const detailRequest = ref(null)
+const detailIsRH = ref(false)
+const detailIsOwner = ref(false)
 
 const paginationPages = computed(() => {
   const pages = []
@@ -395,6 +516,37 @@ async function handleDelete() {
   } finally {
     deleting.value = false
   }
+}
+
+// Show detail modal
+async function openDetail(id) {
+  showDetailModal.value = true
+  detailLoading.value = true
+  detailRequest.value = null
+  try {
+    const { data } = await get(id)
+    detailRequest.value = data.data
+    detailIsRH.value = data.isRH
+    detailIsOwner.value = data.isOwner
+  } catch (err) {
+    showDetailModal.value = false
+    ui.addToast('Erreur lors du chargement de la demande.', 'danger')
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function fileName(path) {
+  if (!path) return ''
+  return path.split('/').pop()
+}
+
+function storageUrl(path) {
+  return '/storage/' + path
+}
+
+function printDetail() {
+  window.print()
 }
 
 onMounted(() => {
@@ -885,6 +1037,117 @@ onMounted(() => {
   transition: opacity .2s;
 }
 
+/* ── Detail modal ── */
+.rdm-overlay {
+  position: fixed; inset: 0; z-index: 1060;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: rdmFadeIn .2s;
+}
+@keyframes rdmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.rdm-dialog {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 620px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 24px 48px rgba(0,0,0,.18);
+  animation: rdmSlideUp .25s ease-out;
+  overflow: hidden;
+}
+@keyframes rdmSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.rdm-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.5rem;
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #fff;
+}
+.rdm-title { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.rdm-close {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  background: rgba(255,255,255,.15); color: #fff; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .2s;
+}
+.rdm-close:hover { background: rgba(255,255,255,.3); }
+.rdm-loading { padding: 3rem; text-align: center; }
+.rdm-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+
+/* Status row */
+.rdm-status-row { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.rdm-status-badge {
+  display: inline-flex; align-items: center; padding: .35rem .9rem;
+  border-radius: 8px; font-size: .78rem; font-weight: 700;
+}
+.rdm-st-en_attente { background: #fef3c7; color: #92400e; }
+.rdm-st-approuvé { background: #dcfce7; color: #166534; }
+.rdm-st-rejeté { background: #fee2e2; color: #991b1b; }
+.rdm-st-annulé { background: #f1f5f9; color: #475569; }
+.rdm-date-badge { font-size: .75rem; color: #94a3b8; }
+
+/* Info grid */
+.rdm-info-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; margin-bottom: 1.1rem; }
+.rdm-info-card {
+  display: flex; align-items: flex-start; gap: .75rem;
+  padding: .85rem 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9;
+}
+.rdm-info-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .85rem; flex-shrink: 0;
+}
+.rdm-ic-blue { background: #dbeafe; color: #2563eb; }
+.rdm-ic-teal { background: #ccfbf1; color: #0d9488; }
+.rdm-ic-purple { background: #ede9fe; color: #7c3aed; }
+.rdm-info-label { font-size: .68rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: .5px; }
+.rdm-info-value { font-size: .85rem; font-weight: 700; color: #1e293b; margin-top: .1rem; }
+.rdm-info-sub { font-size: .75rem; color: #94a3b8; }
+
+/* Sections */
+.rdm-section { margin-bottom: 1rem; }
+.rdm-section-title { font-size: .82rem; font-weight: 700; color: #334155; margin-bottom: .5rem; }
+.rdm-desc { font-size: .85rem; line-height: 1.7; color: #334155; white-space: pre-wrap; margin: 0; background: #f8fafc; border-radius: 10px; padding: .85rem 1rem; }
+.rdm-remark {
+  background: #eff6ff; border-left: 4px solid #0077B5;
+  border-radius: 0 10px 10px 0; padding: .85rem 1rem;
+  position: relative; font-size: .85rem; color: #334155; line-height: 1.6;
+}
+.rdm-remark-icon { position: absolute; top: .4rem; left: .6rem; color: #93c5fd; font-size: .65rem; }
+
+/* File */
+.rdm-file {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .75rem 1rem; background: #f8fafc; border-radius: 10px; border: 1px solid #f1f5f9;
+}
+.rdm-file-icon {
+  width: 36px; height: 36px; border-radius: 8px; background: #dbeafe; color: #2563eb;
+  display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0;
+}
+.rdm-file-name { flex: 1; font-weight: 600; font-size: .82rem; color: #1e293b; word-break: break-all; }
+.rdm-file-dl {
+  display: inline-flex; align-items: center; padding: .3rem .7rem;
+  border-radius: 8px; font-size: .75rem; font-weight: 600;
+  background: #fff; color: #0077B5; border: 1px solid #e2e8f0;
+  text-decoration: none; transition: all .2s;
+}
+.rdm-file-dl:hover { background: #f0f9ff; border-color: #0077B5; }
+
+/* Footer */
+.rdm-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .85rem 1.5rem; border-top: 1px solid #f1f5f9;
+  background: #fafafa; flex-wrap: wrap; gap: .5rem;
+}
+.rdm-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: none; cursor: pointer; text-decoration: none; transition: all .2s;
+}
+.rdm-btn-outline { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.rdm-btn-outline:hover { background: #f8fafc; color: #334155; }
+.rdm-btn-warning { background: #d97706; color: #fff; }
+.rdm-btn-warning:hover { background: #b45309; }
+.rdm-btn-danger { background: #ef4444; color: #fff; }
+.rdm-btn-danger:hover { background: #dc2626; }
+
 /* ── Mobile responsive ── */
 @media (max-width: 576px) {
   .req-hero {
@@ -931,5 +1194,14 @@ onMounted(() => {
     flex: 1;
     justify-content: center;
   }
+  /* Modal responsive */
+  .rdm-overlay { padding: .5rem; }
+  .rdm-dialog { max-height: 95vh; border-radius: 14px; }
+  .rdm-header { padding: .85rem 1rem; }
+  .rdm-body { padding: 1rem; }
+  .rdm-footer { padding: .75rem 1rem; flex-direction: column; align-items: stretch; }
+  .rdm-footer > * { width: 100%; }
+  .rdm-footer .d-flex { flex-direction: column; }
+  .rdm-btn { justify-content: center; }
 }
 </style>
