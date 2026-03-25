@@ -142,23 +142,23 @@
 
         {{-- Status filter tabs --}}
         <div class="req-tabs" id="statusTabs">
-            <button class="req-tab active" data-statut="">
+            <button type="button" class="req-tab active" data-statut="">
                 <i class="fas fa-th-large"></i> Toutes
                 <span class="tab-count">{{ $counts['total'] ?? $requests->total() }}</span>
             </button>
-            <button class="req-tab" data-statut="en_attente">
+            <button type="button" class="req-tab" data-statut="en_attente">
                 <i class="fas fa-clock"></i> En attente
                 <span class="tab-count">{{ $counts['en_attente'] ?? 0 }}</span>
             </button>
-            <button class="req-tab" data-statut="approuvé">
+            <button type="button" class="req-tab" data-statut="approuvé">
                 <i class="fas fa-check-circle"></i> Approuvées
                 <span class="tab-count">{{ $counts['approuve'] ?? 0 }}</span>
             </button>
-            <button class="req-tab" data-statut="rejeté">
+            <button type="button" class="req-tab" data-statut="rejeté">
                 <i class="fas fa-times-circle"></i> Rejetées
                 <span class="tab-count">{{ $counts['rejete'] ?? 0 }}</span>
             </button>
-            <button class="req-tab" data-statut="annulé">
+            <button type="button" class="req-tab" data-statut="annulé">
                 <i class="fas fa-ban"></i> Annulées
                 <span class="tab-count">{{ $counts['annule'] ?? 0 }}</span>
             </button>
@@ -167,16 +167,16 @@
         {{-- Type filter tabs (for RH) --}}
         @if($isRH ?? false)
         <div class="req-tabs" id="typeTabs" style="margin-top:-0.5rem;">
-            <button class="req-tab active" data-type="" style="font-size:.82rem;padding:.4rem .9rem;">
+            <button type="button" class="req-tab active" data-type="" style="font-size:.82rem;padding:.4rem .9rem;">
                 <i class="fas fa-layer-group"></i> Tous types
             </button>
-            <button class="req-tab" data-type="congé" style="font-size:.82rem;padding:.4rem .9rem;">
+            <button type="button" class="req-tab" data-type="congé" style="font-size:.82rem;padding:.4rem .9rem;">
                 <i class="fas fa-umbrella-beach"></i> Congé
             </button>
-            <button class="req-tab" data-type="absence" style="font-size:.82rem;padding:.4rem .9rem;">
+            <button type="button" class="req-tab" data-type="absence" style="font-size:.82rem;padding:.4rem .9rem;">
                 <i class="fas fa-user-slash"></i> Absence
             </button>
-            <button class="req-tab" data-type="permission" style="font-size:.82rem;padding:.4rem .9rem;">
+            <button type="button" class="req-tab" data-type="permission" style="font-size:.82rem;padding:.4rem .9rem;">
                 <i class="fas fa-hand-paper"></i> Permission
             </button>
         </div>
@@ -191,33 +191,33 @@
 
 @section('js')
 <script>
-(function() {
+document.addEventListener('DOMContentLoaded', function() {
     var dataContainer = document.getElementById('requestsData');
-    var statusTabs = document.getElementById('statusTabs');
-    var typeTabs = document.getElementById('typeTabs');
+    if (!dataContainer) return;
+
     var baseUrl = '{{ route("requests.index") }}';
-    var currentStatut = '{{ request("statut", "") }}';
-    var currentType = '{{ request("type", "") }}';
+    var currentStatut = '';
+    var currentType = '';
 
     function loadData(url) {
-        dataContainer.classList.add('req-loading');
+        dataContainer.style.opacity = '0.4';
+        dataContainer.style.pointerEvents = 'none';
 
-        fetch(url, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/html'
-            },
-            credentials: 'same-origin'
-        })
-        .then(function(r) { return r.text(); })
-        .then(function(html) {
-            dataContainer.innerHTML = html;
-            dataContainer.classList.remove('req-loading');
-            bindPagination();
-        })
-        .catch(function() {
-            dataContainer.classList.remove('req-loading');
-        });
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        xhr.setRequestHeader('Accept', 'text/html');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4) {
+                dataContainer.style.opacity = '1';
+                dataContainer.style.pointerEvents = '';
+                if (xhr.status === 200) {
+                    dataContainer.innerHTML = xhr.responseText;
+                    bindPagination();
+                }
+            }
+        };
+        xhr.send();
     }
 
     function buildUrl() {
@@ -227,39 +227,38 @@
         return baseUrl + (params.length ? '?' + params.join('&') : '');
     }
 
-    // Status tab clicks
-    if (statusTabs) {
-        statusTabs.addEventListener('click', function(e) {
-            var tab = e.target.closest('.req-tab');
-            if (!tab) return;
+    // Bind status tab clicks
+    document.querySelectorAll('#statusTabs .req-tab').forEach(function(tab) {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
             // Update active style
-            statusTabs.querySelectorAll('.req-tab').forEach(function(t) { t.classList.remove('active'); });
-            tab.classList.add('active');
+            document.querySelectorAll('#statusTabs .req-tab').forEach(function(t) {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
 
-            // Load filtered data
-            currentStatut = tab.getAttribute('data-statut');
-            var url = buildUrl();
-            loadData(url);
-            history.replaceState(null, '', url);
+            currentStatut = this.getAttribute('data-statut') || '';
+            loadData(buildUrl());
         });
-    }
+    });
 
-    // Type tab clicks
-    if (typeTabs) {
-        typeTabs.addEventListener('click', function(e) {
-            var tab = e.target.closest('.req-tab');
-            if (!tab) return;
+    // Bind type tab clicks
+    document.querySelectorAll('#typeTabs .req-tab').forEach(function(tab) {
+        tab.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            typeTabs.querySelectorAll('.req-tab').forEach(function(t) { t.classList.remove('active'); });
-            tab.classList.add('active');
+            document.querySelectorAll('#typeTabs .req-tab').forEach(function(t) {
+                t.classList.remove('active');
+            });
+            this.classList.add('active');
 
-            currentType = tab.getAttribute('data-type');
-            var url = buildUrl();
-            loadData(url);
-            history.replaceState(null, '', url);
+            currentType = this.getAttribute('data-type') || '';
+            loadData(buildUrl());
         });
-    }
+    });
 
     // Intercept pagination clicks
     function bindPagination() {
@@ -267,12 +266,11 @@
             link.addEventListener('click', function(e) {
                 e.preventDefault();
                 loadData(this.href);
-                history.replaceState(null, '', this.href);
             });
         });
     }
 
     bindPagination();
-})();
+});
 </script>
 @endsection
