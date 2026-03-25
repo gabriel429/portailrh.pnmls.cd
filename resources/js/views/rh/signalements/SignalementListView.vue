@@ -10,9 +10,9 @@
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
-              <router-link :to="{ name: 'signalements.create' }" class="btn-rh main">
+              <button class="btn-rh main" @click="openCreateModal">
                 <i class="fas fa-plus me-1"></i> Nouveau signalement
-              </router-link>
+              </button>
             </div>
           </div>
         </div>
@@ -143,9 +143,9 @@
           <i class="fas fa-triangle-exclamation fa-4x text-muted mb-3 d-block"></i>
           <h5 class="text-muted">Aucun signalement</h5>
           <p class="text-muted">Aucun incident n'a encore ete signale.</p>
-          <router-link :to="{ name: 'signalements.create' }" class="btn btn-primary mt-2">
+          <button class="btn btn-primary mt-2" @click="openCreateModal">
             <i class="fas fa-plus me-2"></i>Creer un signalement
-          </router-link>
+          </button>
         </div>
       </div>
 
@@ -160,12 +160,83 @@
       />
     </div>
   </div>
+
+  <!-- Create signalement modal -->
+  <teleport to="body">
+    <div v-if="showCreateModal" class="scm-overlay" @click.self="closeCreateModal">
+      <div class="scm-dialog">
+        <div class="scm-header">
+          <div>
+            <h4 class="scm-title"><i class="fas fa-plus-circle me-2"></i>Nouveau signalement</h4>
+            <p class="scm-sub">Declarer un incident et fixer sa severite initiale.</p>
+          </div>
+          <button class="scm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
+        </div>
+
+        <div class="scm-body">
+          <div v-if="Object.keys(createErrors).length" class="scm-errors">
+            <strong>Erreurs de validation</strong>
+            <ul>
+              <li v-for="(msgs, field) in createErrors" :key="field">{{ Array.isArray(msgs) ? msgs[0] : msgs }}</li>
+            </ul>
+          </div>
+
+          <form @submit.prevent="handleCreate" id="createSignalementForm">
+            <div class="scm-form-grid">
+              <div class="scm-field">
+                <label class="scm-label">Agent <span class="text-danger">*</span></label>
+                <select v-model="createForm.agent_id" class="scm-select" required>
+                  <option value="">Selectionner un agent</option>
+                  <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
+                    ({{ ag.id_agent }}) {{ ag.prenom }} {{ ag.nom }}
+                  </option>
+                </select>
+              </div>
+              <div class="scm-field">
+                <label class="scm-label">Type <span class="text-danger">*</span></label>
+                <input v-model="createForm.type" type="text" class="scm-input" placeholder="Ex: Retard, Absence..." required>
+              </div>
+              <div class="scm-field">
+                <label class="scm-label">Severite <span class="text-danger">*</span></label>
+                <div class="scm-severity-cards">
+                  <label v-for="sev in severiteOptions" :key="sev.value"
+                    class="scm-sev-card" :class="{ active: createForm.severite === sev.value, [sev.cls]: true }">
+                    <input type="radio" v-model="createForm.severite" :value="sev.value" class="d-none">
+                    <i :class="sev.icon" class="scm-sev-icon"></i>
+                    <span>{{ sev.label }}</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div class="scm-field mt-3">
+              <label class="scm-label">Description <span class="text-danger">*</span></label>
+              <textarea v-model="createForm.description" class="scm-textarea" rows="4" placeholder="Decrivez l'incident en detail..." required></textarea>
+            </div>
+
+            <div class="scm-field mt-3">
+              <label class="scm-label">Observations</label>
+              <textarea v-model="createForm.observations" class="scm-textarea" rows="3" placeholder="Remarques supplementaires (optionnel)"></textarea>
+            </div>
+          </form>
+        </div>
+
+        <div class="scm-footer">
+          <button type="submit" form="createSignalementForm" class="scm-btn-save" :disabled="createSubmitting">
+            <span v-if="createSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+            <i v-else class="fas fa-save me-1"></i> Creer le signalement
+          </button>
+          <button class="scm-btn-cancel" @click="closeCreateModal">Annuler</button>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
-import { list, remove } from '@/api/signalements'
+import { list, remove, create, getAgents } from '@/api/signalements'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
@@ -269,69 +340,174 @@ async function handleDelete() {
 }
 
 onMounted(() => loadSignalements())
+
+// ── Create modal ──
+const showCreateModal = ref(false)
+const createSubmitting = ref(false)
+const createErrors = ref({})
+const createAgents = ref([])
+const severiteOptions = [
+    { value: 'basse', label: 'Basse', icon: 'fas fa-arrow-down', cls: 'sev-basse' },
+    { value: 'moyenne', label: 'Moyenne', icon: 'fas fa-minus', cls: 'sev-moyenne' },
+    { value: 'haute', label: 'Haute', icon: 'fas fa-arrow-up', cls: 'sev-haute' },
+]
+
+function defaultCreateForm() {
+    return { agent_id: '', type: '', description: '', observations: '', severite: '' }
+}
+const createForm = ref(defaultCreateForm())
+
+async function openCreateModal() {
+    createForm.value = defaultCreateForm()
+    createErrors.value = {}
+    showCreateModal.value = true
+    if (createAgents.value.length === 0) {
+        try {
+            const { data } = await getAgents()
+            createAgents.value = data.data
+        } catch {
+            ui.addToast('Erreur lors du chargement des agents.', 'danger')
+        }
+    }
+}
+
+function closeCreateModal() { showCreateModal.value = false }
+
+async function handleCreate() {
+    createErrors.value = {}
+    createSubmitting.value = true
+    try {
+        await create(createForm.value)
+        ui.addToast('Signalement cree avec succes.', 'success')
+        closeCreateModal()
+        await loadSignalements(meta.value.current_page)
+    } catch (err) {
+        if (err.response?.status === 422) {
+            createErrors.value = err.response.data.errors || {}
+        } else {
+            ui.addToast(err.response?.data?.message || 'Erreur lors de la creation.', 'danger')
+        }
+    } finally {
+        createSubmitting.value = false
+    }
+}
 </script>
 
 <style scoped>
+/* ── Create Modal (scm-*) ── */
+.scm-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: scmFadeIn .2s ease;
+}
+@keyframes scmFadeIn { from { opacity: 0 } to { opacity: 1 } }
+@keyframes scmSlideUp { from { opacity: 0; transform: translateY(24px) } to { opacity: 1; transform: translateY(0) } }
+
+.scm-dialog {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 580px;
+  box-shadow: 0 24px 48px rgba(0,0,0,.18);
+  animation: scmSlideUp .25s ease;
+  display: flex; flex-direction: column; max-height: 90vh;
+}
+
+.scm-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  border-radius: 18px 18px 0 0; color: #fff;
+}
+.scm-title { font-size: 1.1rem; font-weight: 700; margin: 0; }
+.scm-sub { font-size: .78rem; opacity: .85; margin: .2rem 0 0; }
+.scm-close {
+  background: rgba(255,255,255,.15); border: none; color: #fff;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .2s; flex-shrink: 0;
+}
+.scm-close:hover { background: rgba(255,255,255,.3); }
+
+.scm-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+
+.scm-errors {
+  background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;
+  padding: .75rem 1rem; margin-bottom: 1rem; font-size: .82rem; color: #991b1b;
+}
+.scm-errors ul { margin: .3rem 0 0; padding-left: 1.2rem; }
+.scm-errors li { margin-bottom: .15rem; }
+
+.scm-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+.scm-form-grid > .scm-field:last-child { grid-column: 1 / -1; }
+
+.scm-field { display: flex; flex-direction: column; }
+.scm-label { font-size: .78rem; font-weight: 600; color: #475569; margin-bottom: .3rem; }
+
+.scm-input, .scm-select, .scm-textarea {
+  border: 1.5px solid #e2e8f0; border-radius: 10px; padding: .55rem .75rem;
+  font-size: .85rem; color: #1e293b; background: #fff; transition: border-color .2s;
+  width: 100%;
+}
+.scm-input:focus, .scm-select:focus, .scm-textarea:focus {
+  outline: none; border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.1);
+}
+.scm-textarea { resize: vertical; min-height: 60px; }
+
+/* Severity cards */
+.scm-severity-cards { display: flex; gap: .5rem; }
+.scm-sev-card {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: .25rem;
+  padding: .6rem .4rem; border-radius: 10px; border: 2px solid #e2e8f0;
+  cursor: pointer; transition: all .2s; font-size: .75rem; font-weight: 600;
+  background: #fff;
+}
+.scm-sev-icon { font-size: 1rem; }
+.scm-sev-card.sev-basse { color: #22c55e; }
+.scm-sev-card.sev-moyenne { color: #f59e0b; }
+.scm-sev-card.sev-haute { color: #ef4444; }
+.scm-sev-card:hover { border-color: #94a3b8; }
+.scm-sev-card.active.sev-basse { border-color: #22c55e; background: #f0fdf4; }
+.scm-sev-card.active.sev-moyenne { border-color: #f59e0b; background: #fffbeb; }
+.scm-sev-card.active.sev-haute { border-color: #ef4444; background: #fef2f2; }
+
+.scm-footer {
+  display: flex; gap: .75rem; justify-content: flex-end;
+  padding: .85rem 1.5rem; border-top: 1px solid #f3f4f6;
+}
+.scm-btn-save {
+  padding: .5rem 1.2rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+  border: none; background: #dc2626; color: #fff; cursor: pointer; transition: all .2s;
+}
+.scm-btn-save:hover:not(:disabled) { background: #b91c1c; }
+.scm-btn-save:disabled { opacity: .6; cursor: not-allowed; }
+.scm-btn-cancel {
+  padding: .5rem 1.2rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all .2s;
+}
+.scm-btn-cancel:hover { background: #f3f4f6; }
+
 /* ── Mobile responsive styles ── */
 @media (max-width: 768px) {
-  .rh-hero .row {
-    text-align: center;
-  }
-  .rh-hero .col-lg-4 {
-    text-align: center;
-  }
-  .hero-tools {
-    justify-content: center;
-    display: flex;
-  }
-  .rh-title {
-    font-size: 1.3rem;
-  }
-  .rh-sub {
-    font-size: 0.85rem;
-  }
+  .rh-hero .row { text-align: center; }
+  .rh-hero .col-lg-4 { text-align: center; }
+  .hero-tools { justify-content: center; display: flex; }
+  .rh-title { font-size: 1.3rem; }
+  .rh-sub { font-size: 0.85rem; }
+  .dash-panel .row .col-auto { flex: 1 1 100%; }
+  .rh-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .rh-table { font-size: 0.82rem; }
+  .rh-table th, .rh-table td { padding: 0.5rem 0.4rem; white-space: nowrap; }
+  .rh-table th:nth-child(2), .rh-table td:nth-child(2),
+  .rh-table th:nth-child(5), .rh-table td:nth-child(5) { display: none; }
+  .btn-group .btn { padding: 0.25rem 0.4rem; font-size: 0.75rem; }
+  .pagination { flex-wrap: wrap; gap: 2px; }
+  .page-link { padding: 0.25rem 0.5rem; font-size: 0.78rem; }
 
-  /* Filters: stack vertically */
-  .dash-panel .row .col-auto {
-    flex: 1 1 100%;
-  }
-
-  /* Table compact */
-  .rh-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .rh-table {
-    font-size: 0.82rem;
-  }
-  .rh-table th,
-  .rh-table td {
-    padding: 0.5rem 0.4rem;
-    white-space: nowrap;
-  }
-
-  /* Hide Type (2nd col) and Date (5th col) */
-  .rh-table th:nth-child(2),
-  .rh-table td:nth-child(2),
-  .rh-table th:nth-child(5),
-  .rh-table td:nth-child(5) {
-    display: none;
-  }
-
-  /* Compact action buttons */
-  .btn-group .btn {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.75rem;
-  }
-
-  /* Pagination */
-  .pagination {
-    flex-wrap: wrap;
-    gap: 2px;
-  }
-  .page-link {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.78rem;
-  }
+  .scm-dialog { max-width: 100%; border-radius: 14px; }
+  .scm-header { padding: 1rem; border-radius: 14px 14px 0 0; }
+  .scm-body { padding: 1rem; }
+  .scm-form-grid { grid-template-columns: 1fr; }
+  .scm-severity-cards { gap: .35rem; }
+  .scm-footer { padding: .75rem 1rem; }
 }
 </style>
