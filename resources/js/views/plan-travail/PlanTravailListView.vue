@@ -18,9 +18,9 @@
           </div>
         </div>
         <div class="pt-hero-actions">
-          <router-link v-if="canEdit" :to="{ name: 'plan-travail.create' }" class="pt-hero-btn">
+          <button v-if="canEdit" class="pt-hero-btn" @click="openCreateModal">
             <i class="fas fa-plus-circle me-1"></i> Nouvelle activite
-          </router-link>
+          </button>
           <div class="pt-hero-filters">
             <select v-model="filters.annee" class="pt-filter-select" @change="loadPlan">
               <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
@@ -172,19 +172,146 @@
         <template v-else>
           <h5>Aucune activite pour l'annee {{ filters.annee }}</h5>
           <p>Le plan de travail n'a pas encore d'activites enregistrees.</p>
-          <router-link v-if="canEdit" :to="{ name: 'plan-travail.create' }" class="pt-hero-btn mt-3" style="display:inline-flex;">
+          <button v-if="canEdit" class="pt-hero-btn mt-3" style="display:inline-flex;" @click="openCreateModal">
             <i class="fas fa-plus-circle me-1"></i> Creer la premiere activite
-          </router-link>
+          </button>
         </template>
       </div>
     </template>
+
+    <!-- Create Modal -->
+    <teleport to="body">
+      <div v-if="showCreateModal" class="ptm-overlay" @click.self="closeCreateModal">
+        <div class="ptm-dialog">
+          <div class="ptm-header">
+            <div class="ptm-header-icon"><i class="fas fa-plus-circle"></i></div>
+            <div>
+              <h4 class="ptm-title">Nouvelle activite</h4>
+              <p class="ptm-subtitle">Ajouter une activite au plan de travail</p>
+            </div>
+            <button class="ptm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
+          </div>
+
+          <form @submit.prevent="handleCreateSubmit" class="ptm-body">
+            <!-- Titre -->
+            <div class="ptm-field">
+              <label class="ptm-label">Titre <span class="ptm-req">*</span></label>
+              <input v-model="createForm.titre" type="text" class="ptm-input" :class="{ 'ptm-err': createErrors.titre }" placeholder="Titre de l'activite" maxlength="255">
+              <span v-if="createErrors.titre" class="ptm-err-msg">{{ createErrors.titre[0] }}</span>
+            </div>
+
+            <!-- Niveau administratif -->
+            <div class="ptm-field">
+              <label class="ptm-label">Niveau administratif <span class="ptm-req">*</span></label>
+              <div class="ptm-card-row">
+                <button v-for="n in niveauOptions" :key="n.value" type="button" class="ptm-opt-card" :class="{ active: createForm.niveau_administratif === n.value }" @click="createForm.niveau_administratif = n.value; onNiveauChange()">
+                  {{ n.label }}
+                </button>
+              </div>
+              <span v-if="createErrors.niveau_administratif" class="ptm-err-msg">{{ createErrors.niveau_administratif[0] }}</span>
+            </div>
+
+            <!-- Departement (SEN) -->
+            <div v-if="createForm.niveau_administratif === 'SEN'" class="ptm-field">
+              <label class="ptm-label">Departement</label>
+              <select v-model="createForm.departement_id" class="ptm-input">
+                <option value="">-- Choisir --</option>
+                <option v-for="d in createDepartments" :key="d.id" :value="d.id">{{ d.nom }}</option>
+              </select>
+            </div>
+
+            <!-- Province (SEP / SEL) -->
+            <div v-if="createForm.niveau_administratif === 'SEP' || createForm.niveau_administratif === 'SEL'" class="ptm-field">
+              <label class="ptm-label">Province</label>
+              <select v-model="createForm.province_id" class="ptm-input">
+                <option value="">-- Choisir --</option>
+                <option v-for="p in createProvinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
+              </select>
+            </div>
+
+            <!-- Localite (SEL) -->
+            <div v-if="createForm.niveau_administratif === 'SEL'" class="ptm-field">
+              <label class="ptm-label">Localite</label>
+              <select v-model="createForm.localite_id" class="ptm-input">
+                <option value="">-- Choisir --</option>
+                <option v-for="l in createLocalites" :key="l.id" :value="l.id">{{ l.nom }}</option>
+              </select>
+            </div>
+
+            <!-- Row: Annee + Trimestre -->
+            <div class="ptm-row">
+              <div class="ptm-field ptm-half">
+                <label class="ptm-label">Annee <span class="ptm-req">*</span></label>
+                <input v-model.number="createForm.annee" type="number" class="ptm-input" min="2020" max="2040">
+                <span v-if="createErrors.annee" class="ptm-err-msg">{{ createErrors.annee[0] }}</span>
+              </div>
+              <div class="ptm-field ptm-half">
+                <label class="ptm-label">Trimestre</label>
+                <select v-model="createForm.trimestre" class="ptm-input">
+                  <option v-for="t in trimestreOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Statut + Pourcentage -->
+            <div class="ptm-row">
+              <div class="ptm-field ptm-half">
+                <label class="ptm-label">Statut <span class="ptm-req">*</span></label>
+                <select v-model="createForm.statut" class="ptm-input">
+                  <option v-for="s in statutOptions" :key="s.value" :value="s.value">{{ s.label }}</option>
+                </select>
+                <span v-if="createErrors.statut" class="ptm-err-msg">{{ createErrors.statut[0] }}</span>
+              </div>
+              <div class="ptm-field ptm-half">
+                <label class="ptm-label">Pourcentage</label>
+                <input v-model.number="createForm.pourcentage" type="number" class="ptm-input" min="0" max="100">
+              </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="ptm-row">
+              <div class="ptm-field ptm-half">
+                <label class="ptm-label">Date debut</label>
+                <input v-model="createForm.date_debut" type="date" class="ptm-input">
+              </div>
+              <div class="ptm-field ptm-half">
+                <label class="ptm-label">Date fin</label>
+                <input v-model="createForm.date_fin" type="date" class="ptm-input">
+              </div>
+            </div>
+
+            <!-- Description -->
+            <div class="ptm-field">
+              <label class="ptm-label">Description</label>
+              <textarea v-model="createForm.description" class="ptm-input ptm-textarea" rows="3" placeholder="Description de l'activite..."></textarea>
+            </div>
+
+            <!-- Observations -->
+            <div class="ptm-field">
+              <label class="ptm-label">Observations</label>
+              <textarea v-model="createForm.observations" class="ptm-input ptm-textarea" rows="2" placeholder="Observations (facultatif)..."></textarea>
+            </div>
+
+            <!-- Footer -->
+            <div class="ptm-footer">
+              <button type="button" class="ptm-btn-cancel" @click="closeCreateModal">Annuler</button>
+              <button type="submit" class="ptm-btn-submit" :disabled="createSubmitting">
+                <i v-if="createSubmitting" class="fas fa-spinner fa-spin me-1"></i>
+                <i v-else class="fas fa-plus-circle me-1"></i>
+                {{ createSubmitting ? 'Creation...' : 'Creer l\'activite' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
-import { list } from '@/api/planTravail'
+import { list, create, getCreateData } from '@/api/planTravail'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
@@ -292,6 +419,101 @@ function formatShortDate(dateStr) {
 function formatDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+/* ── Create modal ── */
+const showCreateModal = ref(false)
+const createSubmitting = ref(false)
+const createErrors = ref({})
+const createDepartments = ref([])
+const createProvinces = ref([])
+const createLocalites = ref([])
+
+const niveauOptions = [
+  { value: 'SEN', label: 'SEN (National)' },
+  { value: 'SEP', label: 'SEP (Provincial)' },
+  { value: 'SEL', label: 'SEL (Local)' },
+]
+const statutOptions = [
+  { value: 'planifiee', label: 'Planifiee' },
+  { value: 'en_cours', label: 'En cours' },
+  { value: 'terminee', label: 'Terminee' },
+]
+const trimestreOptions = [
+  { value: '', label: 'Annuel' },
+  { value: 'T1', label: 'T1 (Jan-Mar)' },
+  { value: 'T2', label: 'T2 (Avr-Jun)' },
+  { value: 'T3', label: 'T3 (Jul-Sep)' },
+  { value: 'T4', label: 'T4 (Oct-Dec)' },
+]
+
+function defaultCreateForm() {
+  return {
+    titre: '',
+    niveau_administratif: '',
+    departement_id: '',
+    province_id: '',
+    localite_id: '',
+    annee: new Date().getFullYear(),
+    trimestre: '',
+    statut: 'planifiee',
+    pourcentage: 0,
+    date_debut: '',
+    date_fin: '',
+    description: '',
+    observations: '',
+  }
+}
+const createForm = ref(defaultCreateForm())
+
+async function openCreateModal() {
+  createForm.value = defaultCreateForm()
+  createErrors.value = {}
+  showCreateModal.value = true
+  try {
+    const { data } = await getCreateData()
+    createDepartments.value = data.departments || []
+    createProvinces.value = data.provinces || []
+    createLocalites.value = data.localites || []
+  } catch { /* ignore */ }
+}
+
+function closeCreateModal() {
+  showCreateModal.value = false
+}
+
+function onNiveauChange() {
+  if (createForm.value.niveau_administratif !== 'SEN') createForm.value.departement_id = ''
+  if (createForm.value.niveau_administratif !== 'SEP' && createForm.value.niveau_administratif !== 'SEL') createForm.value.province_id = ''
+  if (createForm.value.niveau_administratif !== 'SEL') createForm.value.localite_id = ''
+}
+
+async function handleCreateSubmit() {
+  createSubmitting.value = true
+  createErrors.value = {}
+  try {
+    const payload = { ...createForm.value }
+    if (!payload.trimestre) delete payload.trimestre
+    if (!payload.departement_id) delete payload.departement_id
+    if (!payload.province_id) delete payload.province_id
+    if (!payload.localite_id) delete payload.localite_id
+    if (!payload.date_debut) delete payload.date_debut
+    if (!payload.date_fin) delete payload.date_fin
+    if (!payload.description) delete payload.description
+    if (!payload.observations) delete payload.observations
+    await create(payload)
+    ui.addToast('Activite creee avec succes !', 'success')
+    showCreateModal.value = false
+    loadPlan()
+  } catch (err) {
+    if (err.response?.status === 422) {
+      createErrors.value = err.response.data.errors || {}
+    } else {
+      ui.addToast('Erreur lors de la creation.', 'danger')
+    }
+  } finally {
+    createSubmitting.value = false
+  }
 }
 
 onMounted(() => loadPlan())
@@ -485,5 +707,101 @@ onMounted(() => loadPlan())
   .pt-card-footer { flex-direction: column; align-items: flex-start; gap: .5rem; }
   .pt-card-actions { width: 100%; }
   .pt-act-btn { flex: 1; justify-content: center; }
+}
+
+/* ── Create Modal (ptm-*) ── */
+.ptm-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: ptmFadeIn .2s ease;
+}
+@keyframes ptmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.ptm-dialog {
+  background: #fff; border-radius: 20px; width: 100%; max-width: 620px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,.25);
+  animation: ptmSlideUp .25s ease;
+}
+@keyframes ptmSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+.ptm-header {
+  display: flex; align-items: center; gap: .8rem;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6;
+  background: linear-gradient(135deg, #faf5ff 0%, #f5f3ff 100%);
+  border-radius: 20px 20px 0 0;
+}
+.ptm-header-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.ptm-title { font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0; }
+.ptm-subtitle { font-size: .78rem; color: #64748b; margin: 0; }
+.ptm-close {
+  margin-left: auto; background: none; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; color: #94a3b8;
+  transition: all .2s; font-size: 1rem;
+}
+.ptm-close:hover { background: #fee2e2; color: #ef4444; }
+
+.ptm-body { padding: 1.25rem 1.5rem; }
+
+.ptm-field { margin-bottom: 1rem; }
+.ptm-label { display: block; font-size: .8rem; font-weight: 600; color: #374151; margin-bottom: .35rem; }
+.ptm-req { color: #ef4444; }
+
+.ptm-input {
+  width: 100%; padding: .55rem .8rem; border: 1.5px solid #e2e8f0;
+  border-radius: 10px; font-size: .85rem; color: #1e293b;
+  background: #f8fafc; transition: all .2s;
+}
+.ptm-input:focus { outline: none; border-color: #7c3aed; background: #fff; box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+.ptm-input.ptm-err { border-color: #ef4444; }
+.ptm-textarea { resize: vertical; min-height: 60px; }
+
+.ptm-err-msg { display: block; font-size: .72rem; color: #ef4444; margin-top: .25rem; }
+
+.ptm-row { display: flex; gap: .75rem; }
+.ptm-half { flex: 1; min-width: 0; }
+
+.ptm-card-row { display: flex; gap: .5rem; flex-wrap: wrap; }
+.ptm-opt-card {
+  padding: .45rem .85rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #f8fafc; color: #64748b;
+  cursor: pointer; transition: all .2s;
+}
+.ptm-opt-card:hover { border-color: #7c3aed; color: #7c3aed; }
+.ptm-opt-card.active { background: linear-gradient(135deg, #7c3aed, #6d28d9); border-color: #7c3aed; color: #fff; }
+
+.ptm-footer {
+  display: flex; gap: .75rem; justify-content: flex-end;
+  padding-top: 1rem; border-top: 1px solid #f3f4f6; margin-top: .5rem;
+}
+.ptm-btn-cancel {
+  padding: .55rem 1.2rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all .2s;
+}
+.ptm-btn-cancel:hover { background: #f3f4f6; }
+.ptm-btn-submit {
+  padding: .55rem 1.5rem; border-radius: 10px; font-size: .82rem; font-weight: 700;
+  border: none; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: #fff;
+  cursor: pointer; transition: all .2s;
+}
+.ptm-btn-submit:hover { box-shadow: 0 4px 16px rgba(124,58,237,.3); }
+.ptm-btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+@media (max-width: 576px) {
+  .ptm-dialog { max-width: 100%; border-radius: 16px; }
+  .ptm-header { padding: 1rem 1.1rem; border-radius: 16px 16px 0 0; }
+  .ptm-body { padding: 1rem 1.1rem; }
+  .ptm-row { flex-direction: column; gap: 0; }
+  .ptm-card-row { flex-direction: column; }
+  .ptm-opt-card { text-align: center; }
+  .ptm-footer { flex-direction: column; }
+  .ptm-btn-cancel, .ptm-btn-submit { width: 100%; text-align: center; }
 }
 </style>
