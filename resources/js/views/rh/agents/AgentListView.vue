@@ -474,6 +474,9 @@
 
             <!-- Footer -->
             <div class="asm-footer">
+              <button class="asm-btn-print" @click="printAgentFiche">
+                <i class="fas fa-print me-1"></i> Imprimer
+              </button>
               <router-link :to="{ name: 'rh.agents.edit', params: { id: selectedAgent.id } }" class="asm-btn-edit" @click="closeAgentModal">
                 <i class="fas fa-edit me-1"></i> Modifier
               </router-link>
@@ -638,6 +641,142 @@ async function goToAgent(id) {
 }
 
 function closeAgentModal() { showAgentModal.value = false }
+
+function printAgentFiche() {
+    const a = selectedAgent.value
+    if (!a) return
+
+    const sexeLabel = a.sexe === 'M' ? 'Masculin' : a.sexe === 'F' ? 'Feminin' : (a.sexe || 'N/A')
+    const provinceName = a.province ? (a.province.nom_province || a.province.nom) : 'N/A'
+    const deptName = a.departement ? a.departement.nom : 'N/A'
+    const gradeName = a.grade ? a.grade.libelle : 'N/A'
+    const anciennete = a.anciennete != null ? a.anciennete + ' an' + (a.anciennete > 1 ? 's' : '') : 'N/A'
+
+    const photoHtml = a.photo
+        ? `<img src="/${a.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #0077B5;">`
+        : `<div style="width:90px;height:90px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#0077B5;border:3px solid #0077B5;">${(a.prenom || '').charAt(0).toUpperCase()}${(a.nom || '').charAt(0).toUpperCase()}</div>`
+
+    const affRows = (a.affectations || [])
+        .sort((x, y) => new Date(y.date_debut) - new Date(x.date_debut))
+        .map(aff => `<tr>
+            <td>${aff.fonction ? aff.fonction.nom : 'N/A'}</td>
+            <td>${aff.niveau_administratif || 'N/A'}</td>
+            <td>${aff.department ? aff.department.nom : '-'}</td>
+            <td>${aff.province ? (aff.province.nom || aff.province.nom_province) : '-'}</td>
+            <td>${sm_formatDate(aff.date_debut)}</td>
+            <td>${aff.date_fin ? sm_formatDate(aff.date_fin) : (aff.actif ? 'En cours' : '-')}</td>
+        </tr>`).join('')
+
+    const reqRows = (a.requests || [])
+        .sort((x, y) => new Date(y.created_at) - new Date(x.created_at))
+        .map(r => `<tr>
+            <td>${capitalize(r.type)}</td>
+            <td>${r.description ? r.description.substring(0, 60) : '-'}</td>
+            <td>${sm_formatDate(r.date_debut)} - ${sm_formatDate(r.date_fin)}</td>
+            <td>${r.statut === 'en_attente' ? 'En attente' : r.statut === 'approuve' ? 'Approuve' : r.statut === 'rejete' ? 'Rejete' : 'Annule'}</td>
+        </tr>`).join('')
+
+    const html = `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche Agent - ${a.prenom} ${a.nom}</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:12px;color:#1e293b;padding:20px 30px;}
+.header{display:flex;align-items:center;gap:20px;border-bottom:3px solid #0077B5;padding-bottom:15px;margin-bottom:20px;}
+.header-info h1{font-size:20px;color:#0077B5;margin-bottom:4px;}
+.header-info .badges span{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-right:5px;}
+.badge-id{background:#e2e8f0;color:#475569;}
+.badge-organe{background:#dbeafe;color:#1e40af;}
+.badge-actif{background:#dcfce7;color:#166534;}
+.badge-suspendu{background:#fef9c3;color:#854d0e;}
+.section{margin-bottom:18px;}
+.section h2{font-size:13px;color:#0077B5;border-bottom:1.5px solid #e2e8f0;padding-bottom:4px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;}
+.info-item .label{font-size:10px;color:#94a3b8;font-weight:500;display:block;}
+.info-item .value{font-size:12px;}
+table{width:100%;border-collapse:collapse;font-size:11px;}
+th{background:#f1f5f9;color:#475569;text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;}
+td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
+.stats{display:flex;gap:12px;margin-top:10px;}
+.stat{flex:1;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 4px;}
+.stat-val{font-size:18px;font-weight:800;color:#1e293b;display:block;}
+.stat-lbl{font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;}
+.footer{margin-top:24px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px;}
+@media print{body{padding:10px 20px;} @page{margin:10mm;}}
+</style></head><body>
+<div class="header">
+    ${photoHtml}
+    <div class="header-info">
+        <h1>${a.prenom} ${a.postnom || ''} ${a.nom}</h1>
+        <div>${a.fonction || ''}</div>
+        <div class="badges" style="margin-top:4px;">
+            <span class="badge-id">${a.id_agent}</span>
+            ${a.organe ? `<span class="badge-organe">${a.organe}</span>` : ''}
+            <span class="${a.statut === 'actif' ? 'badge-actif' : 'badge-suspendu'}">${capitalize(a.statut || '')}</span>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Informations personnelles</h2>
+    <div class="info-grid">
+        <div class="info-item"><span class="label">Prenom</span><span class="value">${a.prenom || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Post-nom</span><span class="value">${a.postnom || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Nom</span><span class="value">${a.nom || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Date naissance</span><span class="value">${sm_formatDate(a.date_naissance)}</span></div>
+        <div class="info-item"><span class="label">Lieu naissance</span><span class="value">${a.lieu_naissance || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Sexe</span><span class="value">${sexeLabel}</span></div>
+        <div class="info-item"><span class="label">Situation familiale</span><span class="value">${a.situation_familiale || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Enfants</span><span class="value">${a.nombre_enfants ?? 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Telephone</span><span class="value">${a.telephone || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Email prive</span><span class="value">${a.email_prive || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Email pro</span><span class="value">${a.email_professionnel || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Adresse</span><span class="value">${a.adresse || 'N/A'}</span></div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Informations professionnelles</h2>
+    <div class="info-grid">
+        <div class="info-item"><span class="label">Organe</span><span class="value" style="font-weight:700;">${a.organe || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Fonction</span><span class="value" style="font-weight:700;">${a.fonction || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Date embauche</span><span class="value">${sm_formatDate(a.date_embauche)}</span></div>
+        <div class="info-item"><span class="label">Province</span><span class="value">${provinceName}</span></div>
+        <div class="info-item"><span class="label">Departement</span><span class="value">${deptName}</span></div>
+        <div class="info-item"><span class="label">Anciennete</span><span class="value">${anciennete}</span></div>
+        <div class="info-item"><span class="label">Matricule Etat</span><span class="value">${a.matricule_etat || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Grade Etat</span><span class="value">${gradeName}</span></div>
+        <div class="info-item"><span class="label">Niveau etudes</span><span class="value">${a.niveau_etudes || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Domaine etudes</span><span class="value">${a.domaine_etudes || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Annee engagement</span><span class="value">${a.annee_engagement_programme || 'N/A'}</span></div>
+    </div>
+    <div class="stats">
+        <div class="stat"><span class="stat-val">${(a.documents || []).length}</span><span class="stat-lbl">Documents</span></div>
+        <div class="stat"><span class="stat-val">${(a.requests || []).length}</span><span class="stat-lbl">Demandes</span></div>
+        <div class="stat"><span class="stat-val">${(a.affectations || []).length}</span><span class="stat-lbl">Affectations</span></div>
+        <div class="stat"><span class="stat-val">${(a.messages || []).length}</span><span class="stat-lbl">Messages</span></div>
+    </div>
+</div>
+
+${affRows ? `<div class="section">
+    <h2>Parcours / Affectations</h2>
+    <table><thead><tr><th>Fonction</th><th>Niveau</th><th>Departement</th><th>Province</th><th>Debut</th><th>Fin</th></tr></thead>
+    <tbody>${affRows}</tbody></table>
+</div>` : ''}
+
+${reqRows ? `<div class="section">
+    <h2>Demandes</h2>
+    <table><thead><tr><th>Type</th><th>Description</th><th>Periode</th><th>Statut</th></tr></thead>
+    <tbody>${reqRows}</tbody></table>
+</div>` : ''}
+
+<div class="footer">Fiche generee le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} - Portail RH PNMLS</div>
+</body></html>`
+
+    const w = window.open('', '_blank')
+    w.document.write(html)
+    w.document.close()
+    w.onload = () => { w.print() }
+}
 
 // Fetch agents
 async function fetchAgents() {
@@ -1087,6 +1226,12 @@ onMounted(() => {
   text-decoration: none; transition: all .2s;
 }
 .asm-btn-edit:hover { background: #d97706; color: #fff; }
+.asm-btn-print {
+  padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: none; background: #0077B5; color: #fff; cursor: pointer;
+  transition: all .2s;
+}
+.asm-btn-print:hover { background: #005885; }
 .asm-btn-close {
   padding: .45rem 1.2rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
   border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer;
