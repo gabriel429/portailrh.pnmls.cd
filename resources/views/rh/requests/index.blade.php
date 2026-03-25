@@ -4,6 +4,79 @@
 
 @section('css')
 <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+<style>
+    /* ── Status Tabs (same style as documents category tabs) ── */
+    .req-tabs {
+        display: flex;
+        gap: .5rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.5rem;
+    }
+    .req-tab {
+        display: inline-flex;
+        align-items: center;
+        gap: .4rem;
+        padding: .5rem 1.1rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: .88rem;
+        border: 2px solid #e9ecef;
+        background: #fff;
+        color: #6c757d;
+        cursor: pointer;
+        transition: all .2s;
+    }
+    .req-tab:hover { border-color: #0077B5; color: #0077B5; }
+    .req-tab.active {
+        background: linear-gradient(135deg, #0077B5, #005a87);
+        color: #fff;
+        border-color: transparent;
+    }
+    .req-tab .tab-count {
+        background: rgba(0,0,0,.08);
+        padding: .1rem .5rem;
+        border-radius: 12px;
+        font-size: .75rem;
+    }
+    .req-tab.active .tab-count {
+        background: rgba(255,255,255,.25);
+    }
+
+    /* ── Stats pills ── */
+    .req-stats {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    .req-stat {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        background: #fff;
+        border: 1px solid #e9ecef;
+        border-radius: 12px;
+        padding: .65rem 1.1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,.04);
+        flex: 1;
+        min-width: 120px;
+    }
+    .req-stat-icon {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: .95rem;
+    }
+    .req-stat-val { font-weight: 800; font-size: 1.2rem; color: #1a1a2e; }
+    .req-stat-label { font-size: .75rem; color: #6c757d; }
+
+    /* ── Loading fade ── */
+    .req-loading {
+        opacity: 0.4;
+        pointer-events: none;
+        transition: opacity .2s;
+    }
+</style>
 @endsection
 
 @section('content')
@@ -35,42 +108,77 @@
             </div>
         @endif
 
+        {{-- Stats pills --}}
+        <div class="req-stats">
+            <div class="req-stat">
+                <div class="req-stat-icon" style="background:#e8f4fd;color:#0077B5;"><i class="fas fa-list"></i></div>
+                <div>
+                    <div class="req-stat-val" id="statTotal">{{ $counts['total'] ?? $requests->total() }}</div>
+                    <div class="req-stat-label">Total</div>
+                </div>
+            </div>
+            <div class="req-stat">
+                <div class="req-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-clock"></i></div>
+                <div>
+                    <div class="req-stat-val">{{ $counts['en_attente'] ?? 0 }}</div>
+                    <div class="req-stat-label">En attente</div>
+                </div>
+            </div>
+            <div class="req-stat">
+                <div class="req-stat-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
+                <div>
+                    <div class="req-stat-val">{{ $counts['approuve'] ?? 0 }}</div>
+                    <div class="req-stat-label">Approuvées</div>
+                </div>
+            </div>
+            <div class="req-stat">
+                <div class="req-stat-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-times-circle"></i></div>
+                <div>
+                    <div class="req-stat-val">{{ $counts['rejete'] ?? 0 }}</div>
+                    <div class="req-stat-label">Rejetées</div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Status filter tabs --}}
+        <div class="req-tabs" id="statusTabs">
+            <button class="req-tab active" data-statut="">
+                <i class="fas fa-th-large"></i> Toutes
+                <span class="tab-count">{{ $counts['total'] ?? $requests->total() }}</span>
+            </button>
+            <button class="req-tab" data-statut="en_attente">
+                <i class="fas fa-clock"></i> En attente
+                <span class="tab-count">{{ $counts['en_attente'] ?? 0 }}</span>
+            </button>
+            <button class="req-tab" data-statut="approuvé">
+                <i class="fas fa-check-circle"></i> Approuvées
+                <span class="tab-count">{{ $counts['approuve'] ?? 0 }}</span>
+            </button>
+            <button class="req-tab" data-statut="rejeté">
+                <i class="fas fa-times-circle"></i> Rejetées
+                <span class="tab-count">{{ $counts['rejete'] ?? 0 }}</span>
+            </button>
+            <button class="req-tab" data-statut="annulé">
+                <i class="fas fa-ban"></i> Annulées
+                <span class="tab-count">{{ $counts['annule'] ?? 0 }}</span>
+            </button>
+        </div>
+
+        {{-- Type filter tabs (for RH) --}}
         @if($isRH ?? false)
-        <div class="rh-toolbar">
-            <div class="rh-filters">
-                <form id="filterForm" method="GET" action="{{ route('requests.index') }}" class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label">Statut</label>
-                        <select name="statut" class="form-select">
-                            <option value="">Tous</option>
-                            <option value="en_attente" {{ request('statut') === 'en_attente' ? 'selected' : '' }}>En attente</option>
-                            <option value="approuvé" {{ request('statut') === 'approuvé' ? 'selected' : '' }}>Approuvé</option>
-                            <option value="rejeté" {{ request('statut') === 'rejeté' ? 'selected' : '' }}>Rejeté</option>
-                            <option value="annulé" {{ request('statut') === 'annulé' ? 'selected' : '' }}>Annulé</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Type</label>
-                        <select name="type" class="form-select">
-                            <option value="">Tous</option>
-                            <option value="congé" {{ request('type') === 'congé' ? 'selected' : '' }}>Congé</option>
-                            <option value="absence" {{ request('type') === 'absence' ? 'selected' : '' }}>Absence</option>
-                            <option value="permission" {{ request('type') === 'permission' ? 'selected' : '' }}>Permission</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4 d-flex align-items-end gap-2">
-                        <button type="submit" class="btn btn-outline-primary w-100">
-                            <i class="fas fa-filter me-2"></i> Filtrer
-                        </button>
-                        <button type="button" id="resetFilters" class="btn btn-outline-secondary w-100">
-                            <i class="fas fa-redo me-2"></i> Réinitialiser
-                        </button>
-                    </div>
-                </form>
-            </div>
-            <div class="text-muted small d-none d-lg-block" id="totalCount">
-                Total visible: {{ $requests->total() }}
-            </div>
+        <div class="req-tabs" id="typeTabs" style="margin-top:-0.5rem;">
+            <button class="req-tab active" data-type="" style="font-size:.82rem;padding:.4rem .9rem;">
+                <i class="fas fa-layer-group"></i> Tous types
+            </button>
+            <button class="req-tab" data-type="congé" style="font-size:.82rem;padding:.4rem .9rem;">
+                <i class="fas fa-umbrella-beach"></i> Congé
+            </button>
+            <button class="req-tab" data-type="absence" style="font-size:.82rem;padding:.4rem .9rem;">
+                <i class="fas fa-user-slash"></i> Absence
+            </button>
+            <button class="req-tab" data-type="permission" style="font-size:.82rem;padding:.4rem .9rem;">
+                <i class="fas fa-hand-paper"></i> Permission
+            </button>
         </div>
         @endif
 
@@ -84,14 +192,15 @@
 @section('js')
 <script>
 (function() {
-    const dataContainer = document.getElementById('requestsData');
-    const filterForm = document.getElementById('filterForm');
-    const resetBtn = document.getElementById('resetFilters');
-    const totalCount = document.getElementById('totalCount');
+    var dataContainer = document.getElementById('requestsData');
+    var statusTabs = document.getElementById('statusTabs');
+    var typeTabs = document.getElementById('typeTabs');
+    var baseUrl = '{{ route("requests.index") }}';
+    var currentStatut = '{{ request("statut", "") }}';
+    var currentType = '{{ request("type", "") }}';
 
     function loadData(url) {
-        dataContainer.style.opacity = '0.5';
-        dataContainer.style.pointerEvents = 'none';
+        dataContainer.classList.add('req-loading');
 
         fetch(url, {
             headers: {
@@ -100,44 +209,55 @@
             },
             credentials: 'same-origin'
         })
-        .then(function(response) { return response.text(); })
+        .then(function(r) { return r.text(); })
         .then(function(html) {
             dataContainer.innerHTML = html;
-            dataContainer.style.opacity = '1';
-            dataContainer.style.pointerEvents = '';
+            dataContainer.classList.remove('req-loading');
             bindPagination();
-            // Update total count if present in response
-            var match = html.match(/sur\s+(\d+)\s+demandes/);
-            if (match && totalCount) {
-                totalCount.textContent = 'Total visible: ' + match[1];
-            }
         })
         .catch(function() {
-            dataContainer.style.opacity = '1';
-            dataContainer.style.pointerEvents = '';
+            dataContainer.classList.remove('req-loading');
         });
     }
 
-    // AJAX filter form
-    if (filterForm) {
-        filterForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            var formData = new FormData(filterForm);
-            var params = new URLSearchParams(formData).toString();
-            var url = filterForm.action + '?' + params;
+    function buildUrl() {
+        var params = [];
+        if (currentStatut) params.push('statut=' + encodeURIComponent(currentStatut));
+        if (currentType) params.push('type=' + encodeURIComponent(currentType));
+        return baseUrl + (params.length ? '?' + params.join('&') : '');
+    }
+
+    // Status tab clicks
+    if (statusTabs) {
+        statusTabs.addEventListener('click', function(e) {
+            var tab = e.target.closest('.req-tab');
+            if (!tab) return;
+
+            // Update active style
+            statusTabs.querySelectorAll('.req-tab').forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+
+            // Load filtered data
+            currentStatut = tab.getAttribute('data-statut');
+            var url = buildUrl();
             loadData(url);
             history.replaceState(null, '', url);
         });
     }
 
-    // Reset filters
-    if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
-            if (filterForm) {
-                filterForm.querySelectorAll('select').forEach(function(s) { s.value = ''; });
-            }
-            loadData('{{ route("requests.index") }}');
-            history.replaceState(null, '', '{{ route("requests.index") }}');
+    // Type tab clicks
+    if (typeTabs) {
+        typeTabs.addEventListener('click', function(e) {
+            var tab = e.target.closest('.req-tab');
+            if (!tab) return;
+
+            typeTabs.querySelectorAll('.req-tab').forEach(function(t) { t.classList.remove('active'); });
+            tab.classList.add('active');
+
+            currentType = tab.getAttribute('data-type');
+            var url = buildUrl();
+            loadData(url);
+            history.replaceState(null, '', url);
         });
     }
 

@@ -21,29 +21,40 @@ class RequestController extends Controller
         $user = auth()->user();
         $agent = $user->agent ?? null;
         $isRH = $user->hasAdminAccess();
-        $requestsQuery = RequestModel::with(['agent']);
+
+        $baseQuery = RequestModel::with(['agent']);
 
         // Seuls les RH voient toutes les demandes, les autres ne voient que les leurs
         if (!$isRH) {
-            $requestsQuery->where('agent_id', $agent?->id);
+            $baseQuery->where('agent_id', $agent?->id);
         }
+
+        // Counts per status (before applying status filter)
+        $allForCounts = (clone $baseQuery);
+        $counts = [
+            'total' => (clone $allForCounts)->count(),
+            'en_attente' => (clone $allForCounts)->where('statut', 'en_attente')->count(),
+            'approuve' => (clone $allForCounts)->where('statut', 'approuvé')->count(),
+            'rejete' => (clone $allForCounts)->where('statut', 'rejeté')->count(),
+            'annule' => (clone $allForCounts)->where('statut', 'annulé')->count(),
+        ];
 
         // Filtres
         if ($request->filled('statut')) {
-            $requestsQuery->where('statut', $request->input('statut'));
+            $baseQuery->where('statut', $request->input('statut'));
         }
         if ($request->filled('type')) {
-            $requestsQuery->where('type', $request->input('type'));
+            $baseQuery->where('type', $request->input('type'));
         }
 
-        $requests = $requestsQuery->latest()->paginate(15)->withQueryString();
+        $requests = $baseQuery->latest()->paginate(15)->withQueryString();
 
         // Si requête AJAX, retourner seulement le partial table
         if ($request->ajax()) {
             return view('rh.requests.partials.table', compact('requests', 'isRH'));
         }
 
-        return view('rh.requests.index', compact('requests', 'isRH'));
+        return view('rh.requests.index', compact('requests', 'isRH', 'counts'));
     }
 
     /**
