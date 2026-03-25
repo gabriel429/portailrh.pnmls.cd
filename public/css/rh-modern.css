@@ -18,7 +18,7 @@
     background:
         radial-gradient(700px 340px at 6% 0%, rgba(8, 145, 178, 0.12), transparent 60%),
         radial-gradient(700px 340px at 94% 5%, rgba(15, 118, 110, 0.12), transparent 58%),
-        var(--ui-bg);
+        transparent;
     min-height: calc(100vh - 120px);
     padding: 2.5rem 0 3rem;
     font-family: 'Manrope', sans-serif;

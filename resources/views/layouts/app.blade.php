@@ -49,7 +49,7 @@
             top: 0; left: 0; right: 0; bottom: 0;
             background: url('{{ asset("images/logo-pnmls.png") }}') center center / 380px no-repeat;
             filter: blur(2px);
-            opacity: 0.07;
+            opacity: 0.08;
             z-index: 0;
             pointer-events: none;
         }
