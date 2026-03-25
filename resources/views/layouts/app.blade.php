@@ -40,18 +40,17 @@
             background: transparent;
             color: var(--text-dark);
             padding-top: 0;
-            position: relative;
             min-height: 100vh;
         }
 
-        body::before {
-            content: '';
+        /* Logo watermark */
+        .bg-watermark {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: url('{{ asset("images/logo-pnmls.png") }}') center center / 400px no-repeat;
-            filter: blur(3px);
-            opacity: 0.06;
-            z-index: -1;
+            background: url('{{ asset("images/logo-pnmls.png") }}') center center / 380px no-repeat;
+            filter: blur(2px);
+            opacity: 0.07;
+            z-index: 0;
             pointer-events: none;
         }
 
@@ -535,6 +534,9 @@
     @yield('css')
 </head>
 <body>
+    <!-- Logo watermark background -->
+    <div class="bg-watermark" aria-hidden="true"></div>
+
     <!-- Navbar -->
     @if(auth()->check())
     @php
