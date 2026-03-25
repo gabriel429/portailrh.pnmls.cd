@@ -1,4 +1,4 @@
-const CACHE_VERSION = 12;
+const CACHE_VERSION = 13;
 const CACHE_NAME = 'pnmls-rh-v' + CACHE_VERSION;
 const API_CACHE_NAME = 'pnmls-api-v1';
 const OFFLINE_URL = '/offline.html';
@@ -13,9 +13,13 @@ const APP_SHELL = [
     '/images/pnmls.jpeg',
     '/images/icons/icon-192x192.png',
     '/images/icons/icon-512x512.png',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
-    'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
+    '/vendor/bootstrap/bootstrap.min.css',
+    '/vendor/bootstrap/bootstrap.bundle.min.js',
+    '/vendor/fontawesome/css/all.min.css',
+    '/vendor/fontawesome/webfonts/fa-solid-900.woff2',
+    '/vendor/fontawesome/webfonts/fa-regular-400.woff2',
+    '/vendor/fontawesome/webfonts/fa-brands-400.woff2',
+    '/css/rh-modern.css'
 ];
 
 // URLs to NEVER cache

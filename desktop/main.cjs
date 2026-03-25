@@ -29,6 +29,7 @@ let isOnline = false
 let isSyncing = false
 let lastSyncAt = null
 let syncConfig = null
+let desktopEnvVars = {}  // Env vars to pass to PHP processes
 
 // ═══════════════════════════════════════════════════════
 // PHP Server
@@ -65,6 +66,11 @@ function waitForPort(port, host = '127.0.0.1', timeout = 15000) {
     })
 }
 
+// Helper: build env object for PHP processes
+function getPhpEnv() {
+    return { ...process.env, ...desktopEnvVars }
+}
+
 async function startPhpServer() {
     const phpPath = getPhpPath()
     const publicDir = path.join(PROJECT_ROOT, 'public')
@@ -72,7 +78,7 @@ async function startPhpServer() {
 
     phpProcess = spawn(phpPath, ['-S', `127.0.0.1:${APP_PORT}`, '-t', publicDir], {
         cwd: PROJECT_ROOT,
-        env: { ...process.env, APP_ENV: 'local' },
+        env: getPhpEnv(),
         stdio: ['ignore', 'pipe', 'pipe'],
         windowsHide: true,
     })
@@ -196,12 +202,12 @@ function setupDesktopEnv() {
         if (!fs.existsSync(fullPath)) fs.mkdirSync(fullPath, { recursive: true })
     }
 
-    // Ensure bootstrap/cache exists
+    // Ensure bootstrap/cache exists in writable root
     const bootstrapCache = path.join(WRITABLE_ROOT, 'bootstrap', 'cache')
     if (!fs.existsSync(bootstrapCache)) fs.mkdirSync(bootstrapCache, { recursive: true })
 
+    // Recover or generate APP_KEY
     const envPath = path.join(WRITABLE_ROOT, '.env')
-
     let appKey = ''
     if (fs.existsSync(envPath)) {
         const match = fs.readFileSync(envPath, 'utf-8').match(/^APP_KEY=(.+)$/m)
@@ -211,68 +217,46 @@ function setupDesktopEnv() {
 
     // Build storage path with forward slashes for Laravel/PHP
     const storagePath = path.join(WRITABLE_ROOT, 'storage').replace(/\\/g, '/')
+    const bootstrapCachePath = bootstrapCache.replace(/\\/g, '/')
 
-    const envContent = `# Desktop Environment - Auto-generated
-APP_DESKTOP=true
-APP_NAME="Portail RH PNMLS"
-APP_ENV=local
-APP_KEY=${appKey}
-APP_DEBUG=false
-APP_URL=http://127.0.0.1:${APP_PORT}
-APP_STORAGE_PATH=${storagePath}
-SYNC_SERVER_URL=https://deeppink-rhinoceros-934330.hostingersite.com
-SYNC_ENABLED=true
-SYNC_INTERVAL_MINUTES=5
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=${DB_PORT}
-DB_DATABASE=${DB_NAME}
-DB_USERNAME=root
-DB_PASSWORD=
-SESSION_DRIVER=database
-QUEUE_CONNECTION=sync
-CACHE_STORE=file
-FILESYSTEM_DISK=local
-LOG_CHANNEL=single
-LOG_PATH=${storagePath}/logs/laravel.log
-SANCTUM_STATEFUL_DOMAINS=127.0.0.1:${APP_PORT}
-SESSION_DOMAIN=127.0.0.1
-MAIL_MAILER=log
-`
-    fs.writeFileSync(envPath, envContent, 'utf-8')
-
-    // In packaged mode, symlink .env from WRITABLE_ROOT into PROJECT_ROOT
-    // so Laravel can find it. Also symlink storage and bootstrap/cache.
-    if (!isDev) {
-        const projectEnv = path.join(PROJECT_ROOT, '.env')
-        try { fs.unlinkSync(projectEnv) } catch {}
-        try { fs.copyFileSync(envPath, projectEnv) } catch (e) {
-            console.warn(`[Env] Could not copy .env to PROJECT_ROOT: ${e.message}`)
-        }
-
-        // Create junction points for storage and bootstrap/cache
-        const projectStorage = path.join(PROJECT_ROOT, 'storage')
-        const writableStorage = path.join(WRITABLE_ROOT, 'storage')
-        if (!fs.existsSync(projectStorage)) {
-            try { fs.symlinkSync(writableStorage, projectStorage, 'junction') } catch (e) {
-                console.warn(`[Env] Could not create storage junction: ${e.message}`)
-            }
-        }
-
-        const projectBootstrapCache = path.join(PROJECT_ROOT, 'bootstrap', 'cache')
-        const writableBootstrapCache = path.join(WRITABLE_ROOT, 'bootstrap', 'cache')
-        if (!fs.existsSync(projectBootstrapCache)) {
-            try {
-                const bootstrapDir = path.join(PROJECT_ROOT, 'bootstrap')
-                if (!fs.existsSync(bootstrapDir)) fs.mkdirSync(bootstrapDir, { recursive: true })
-                fs.symlinkSync(writableBootstrapCache, projectBootstrapCache, 'junction')
-            } catch (e) {
-                console.warn(`[Env] Could not create bootstrap/cache junction: ${e.message}`)
-            }
-        }
+    // Store env vars to pass directly to PHP processes
+    // This avoids needing to write .env into read-only C:\Program Files
+    desktopEnvVars = {
+        APP_DESKTOP: 'true',
+        APP_NAME: 'Portail RH PNMLS',
+        APP_ENV: 'local',
+        APP_KEY: appKey,
+        APP_DEBUG: 'true',
+        APP_URL: `http://127.0.0.1:${APP_PORT}`,
+        APP_STORAGE_PATH: storagePath,
+        APP_BOOTSTRAP_CACHE_PATH: bootstrapCachePath,
+        SYNC_SERVER_URL: 'https://deeppink-rhinoceros-934330.hostingersite.com',
+        SYNC_ENABLED: 'true',
+        SYNC_INTERVAL_MINUTES: '5',
+        DB_CONNECTION: 'mysql',
+        DB_HOST: '127.0.0.1',
+        DB_PORT: String(DB_PORT),
+        DB_DATABASE: DB_NAME,
+        DB_USERNAME: 'root',
+        DB_PASSWORD: '',
+        SESSION_DRIVER: 'database',
+        QUEUE_CONNECTION: 'sync',
+        CACHE_STORE: 'file',
+        FILESYSTEM_DISK: 'local',
+        LOG_CHANNEL: 'single',
+        LOG_PATH: `${storagePath}/logs/laravel.log`,
+        SANCTUM_STATEFUL_DOMAINS: `127.0.0.1:${APP_PORT}`,
+        SESSION_DOMAIN: '127.0.0.1',
+        MAIL_MAILER: 'log',
     }
 
-    console.log(`[Env] Desktop .env written.`)
+    // Also write .env to WRITABLE_ROOT for reference
+    const envLines = Object.entries(desktopEnvVars)
+        .map(([k, v]) => v.includes(' ') ? `${k}="${v}"` : `${k}=${v}`)
+        .join('\n')
+    fs.writeFileSync(envPath, `# Desktop Environment - Auto-generated\n${envLines}\n`, 'utf-8')
+
+    console.log(`[Env] Desktop env configured with ${Object.keys(desktopEnvVars).length} vars.`)
 }
 
 // ═══════════════════════════════════════════════════════
@@ -286,7 +270,7 @@ function initSyncEngine() {
         intervalMs: 300000,
     }
 
-    const metaFile = path.join(PROJECT_ROOT, 'storage', 'sync_meta.json')
+    const metaFile = path.join(desktopEnvVars.APP_STORAGE_PATH || path.join(PROJECT_ROOT, 'storage'), 'sync_meta.json').replace(/\//g, path.sep)
     if (fs.existsSync(metaFile)) {
         try { lastSyncAt = JSON.parse(fs.readFileSync(metaFile, 'utf-8')).last_sync_at || null } catch {}
     }
@@ -324,7 +308,7 @@ async function runSync() {
         // Simplified: just log for now, full sync logic in sync modules
         console.log('[Sync] Running sync cycle...')
         lastSyncAt = new Date().toISOString()
-        const metaFile = path.join(PROJECT_ROOT, 'storage', 'sync_meta.json')
+        const metaFile = path.join(desktopEnvVars.APP_STORAGE_PATH || path.join(PROJECT_ROOT, 'storage'), 'sync_meta.json').replace(/\//g, path.sep)
         fs.writeFileSync(metaFile, JSON.stringify({ last_sync_at: lastSyncAt }, null, 2), 'utf-8')
         broadcastSyncStatus({ status: 'synced', message: `Synchronise` })
     } catch (err) {
@@ -409,6 +393,7 @@ function runArtisan(command, phpPath) {
     try {
         const output = execSync(`"${phpPath}" "${artisanPath}" ${command}`, {
             cwd: PROJECT_ROOT, stdio: 'pipe', windowsHide: true, timeout: 60000,
+            env: getPhpEnv(),
         })
         console.log(`[Artisan] ${output.toString().trim()}`)
         return true
@@ -443,7 +428,6 @@ async function boot() {
         runArtisan('db:seed --force', phpPath)
 
         updateSplash(70, 'Optimisation...')
-        runArtisan('storage:link', phpPath)
         runArtisan('config:clear', phpPath)
         runArtisan('route:clear', phpPath)
         runArtisan('view:clear', phpPath)

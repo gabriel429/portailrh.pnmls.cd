@@ -15,10 +15,10 @@
     <meta name="apple-mobile-web-app-title" content="PNMLS RH">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/icons/pnmls-180.png') }}">
 
-    <!-- Bootstrap 5 -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Bootstrap 5 (local) -->
+    <link href="{{ asset('vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+    <!-- FontAwesome (local) -->
+    <link rel="stylesheet" href="{{ asset('vendor/fontawesome/css/all.min.css') }}">
 
     <style>
         :root {
@@ -729,8 +729,8 @@
         <p class="mb-0">&copy; 2026 Portail RH PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
     </footer>
 
-    <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Bootstrap JS (local) -->
+    <script src="{{ asset('vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
 
     @yield('js')
     @stack('scripts')
@@ -832,5 +832,19 @@
         setInterval(loadNotifs, 30000);
     })();
     </script>
+{{-- Bouton flottant Webmail --}}
+<a href="https://camulus.o2switch.net:2096/" target="_blank" rel="noopener noreferrer"
+   class="text-decoration-none"
+   style="position: fixed; bottom: 30px; right: 30px; z-index: 1050;
+          background: linear-gradient(135deg, #0077B5, #005a87);
+          color: #fff; border-radius: 50px; padding: 14px 24px;
+          box-shadow: 0 4px 15px rgba(0,119,181,0.4);
+          font-weight: 600; font-size: 0.95rem;
+          transition: transform 0.2s, box-shadow 0.2s;"
+   onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 20px rgba(0,119,181,0.5)'"
+   onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 15px rgba(0,119,181,0.4)'">
+    <i class="fas fa-at me-2"></i> Webmail professionnel
+</a>
+
 </body>
 </html>
