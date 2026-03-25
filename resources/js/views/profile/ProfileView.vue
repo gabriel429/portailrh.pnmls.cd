@@ -50,9 +50,9 @@
           </div>
 
           <div class="profile-actions">
-            <router-link :to="{ name: 'profile.edit' }" class="btn btn-edit-profile">
+            <button class="btn btn-edit-profile" @click="openEditModal">
               <i class="fas fa-pen me-2"></i>Modifier mon profil
-            </router-link>
+            </button>
           </div>
         </div>
 
@@ -479,12 +479,94 @@
 
       </div>
     </div>
+
+    <!-- Edit Profile Modal -->
+    <teleport to="body">
+      <div v-if="showEditModal" class="pem-overlay" @click.self="closeEditModal">
+        <div class="pem-dialog">
+          <div class="pem-header">
+            <div class="pem-header-icon"><i class="fas fa-pen"></i></div>
+            <div>
+              <h4 class="pem-title">Modifier mon profil</h4>
+              <p class="pem-subtitle">Mettre a jour vos informations personnelles</p>
+            </div>
+            <button class="pem-close" @click="closeEditModal"><i class="fas fa-times"></i></button>
+          </div>
+
+          <form @submit.prevent="handleEditSubmit" class="pem-body">
+            <!-- Photo -->
+            <div class="pem-photo-section">
+              <div class="pem-photo-wrap" @click="triggerPhotoInput">
+                <img v-if="editPhotoPreview" :src="editPhotoPreview" alt="Preview" class="pem-photo-img">
+                <img v-else-if="agent.photo" :src="'/' + agent.photo" :alt="agent.prenom" class="pem-photo-img">
+                <span v-else class="pem-photo-initials">{{ initials }}</span>
+                <div class="pem-photo-overlay">
+                  <i class="fas fa-camera"></i>
+                </div>
+              </div>
+              <input ref="editPhotoInput" type="file" accept="image/*" style="display:none" @change="onEditPhotoChange">
+              <div class="pem-photo-hint">Cliquez pour changer la photo</div>
+              <span v-if="editErrors.photo" class="pem-err-msg">{{ editErrors.photo[0] }}</span>
+            </div>
+
+            <!-- Read-only info banner -->
+            <div class="pem-readonly-banner">
+              <i class="fas fa-lock me-2"></i>
+              <div>
+                <strong>{{ agent.prenom }} {{ agent.postnom || '' }} {{ agent.nom }}</strong>
+                <div class="pem-readonly-sub">{{ agent.fonction || agent.poste_actuel || '' }} &middot; {{ agent.organe || '' }}</div>
+              </div>
+            </div>
+
+            <!-- Telephone -->
+            <div class="pem-field">
+              <label class="pem-label"><i class="fas fa-phone me-1"></i> Telephone</label>
+              <input v-model="editForm.telephone" type="text" class="pem-input" :class="{ 'pem-err': editErrors.telephone }" placeholder="+243 ...">
+              <span v-if="editErrors.telephone" class="pem-err-msg">{{ editErrors.telephone[0] }}</span>
+            </div>
+
+            <!-- Email prive -->
+            <div class="pem-field">
+              <label class="pem-label"><i class="fas fa-envelope-open me-1"></i> Email prive</label>
+              <input v-model="editForm.email_prive" type="email" class="pem-input" :class="{ 'pem-err': editErrors.email_prive }" placeholder="email@exemple.com">
+              <span v-if="editErrors.email_prive" class="pem-err-msg">{{ editErrors.email_prive[0] }}</span>
+            </div>
+
+            <!-- Adresse -->
+            <div class="pem-field">
+              <label class="pem-label"><i class="fas fa-map-marker-alt me-1"></i> Adresse</label>
+              <textarea v-model="editForm.adresse" class="pem-input pem-textarea" rows="2" :class="{ 'pem-err': editErrors.adresse }" placeholder="Adresse complete"></textarea>
+              <span v-if="editErrors.adresse" class="pem-err-msg">{{ editErrors.adresse[0] }}</span>
+            </div>
+
+            <!-- Info note -->
+            <div class="pem-info-note">
+              <i class="fas fa-info-circle me-1"></i>
+              Les informations professionnelles (nom, fonction, organe, etc.) ne peuvent etre modifiees que par l'administration RH.
+            </div>
+
+            <!-- Footer -->
+            <div class="pem-footer">
+              <button type="button" class="pem-btn-cancel" @click="closeEditModal">Annuler</button>
+              <button type="submit" class="pem-btn-submit" :disabled="editSubmitting">
+                <i v-if="editSubmitting" class="fas fa-spinner fa-spin me-1"></i>
+                <i v-else class="fas fa-save me-1"></i>
+                {{ editSubmitting ? 'Enregistrement...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { getProfile } from '@/api/profile'
+import { getProfile, updateProfile } from '@/api/profile'
+import { useUiStore } from '@/stores/ui'
+
+const ui = useUiStore()
 
 const loading = ref(true)
 const error = ref(null)
@@ -578,6 +660,72 @@ async function fetchProfile() {
     error.value = err.response?.data?.message || 'Impossible de charger le profil.'
   } finally {
     loading.value = false
+  }
+}
+
+/* ── Edit Modal ── */
+const showEditModal = ref(false)
+const editSubmitting = ref(false)
+const editErrors = ref({})
+const editForm = ref({ telephone: '', email_prive: '', adresse: '' })
+const editPhotoFile = ref(null)
+const editPhotoPreview = ref(null)
+const editPhotoInput = ref(null)
+
+function openEditModal() {
+  editErrors.value = {}
+  editPhotoFile.value = null
+  editPhotoPreview.value = null
+  if (agent.value) {
+    editForm.value = {
+      telephone: agent.value.telephone || '',
+      email_prive: agent.value.email_prive || '',
+      adresse: agent.value.adresse || '',
+    }
+  }
+  showEditModal.value = true
+}
+
+function closeEditModal() { showEditModal.value = false }
+
+function onEditPhotoChange(event) {
+  const file = event.target.files[0]
+  if (file) {
+    editPhotoFile.value = file
+    const reader = new FileReader()
+    reader.onload = (e) => { editPhotoPreview.value = e.target.result }
+    reader.readAsDataURL(file)
+  }
+}
+
+function triggerPhotoInput() {
+  editPhotoInput.value?.click()
+}
+
+async function handleEditSubmit() {
+  editSubmitting.value = true
+  editErrors.value = {}
+  try {
+    const formData = new FormData()
+    formData.append('telephone', editForm.value.telephone || '')
+    formData.append('adresse', editForm.value.adresse || '')
+    formData.append('email_prive', editForm.value.email_prive || '')
+    if (editPhotoFile.value) {
+      formData.append('photo', editPhotoFile.value)
+    }
+    const { data } = await updateProfile(formData)
+    agent.value = data.agent
+    if (data.stats) stats.value = data.stats
+    ui.addToast(data.message || 'Profil mis a jour avec succes !', 'success')
+    showEditModal.value = false
+  } catch (err) {
+    if (err.response?.status === 422) {
+      editErrors.value = err.response.data.errors || {}
+    } else {
+      ui.addToast('Erreur lors de la mise a jour.', 'danger')
+    }
+  } finally {
+    editSubmitting.value = false
   }
 }
 
@@ -847,5 +995,121 @@ onMounted(fetchProfile)
   .profile-avatar { width: 110px; height: 110px; }
   .profile-identity { padding: 1rem; }
   .profile-actions { padding: 0 1rem 1rem; }
+}
+
+/* ── Edit Profile Modal (pem-*) ── */
+.pem-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: pemFadeIn .2s ease;
+}
+@keyframes pemFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.pem-dialog {
+  background: #fff; border-radius: 20px; width: 100%; max-width: 520px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,.25);
+  animation: pemSlideUp .25s ease;
+}
+@keyframes pemSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+.pem-header {
+  display: flex; align-items: center; gap: .8rem;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+  border-radius: 20px 20px 0 0;
+}
+.pem-header-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: linear-gradient(135deg, #0077B5, #005a8c);
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; flex-shrink: 0;
+}
+.pem-title { font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0; }
+.pem-subtitle { font-size: .78rem; color: #64748b; margin: 0; }
+.pem-close {
+  margin-left: auto; background: none; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; color: #94a3b8;
+  transition: all .2s; font-size: 1rem;
+}
+.pem-close:hover { background: #fee2e2; color: #ef4444; }
+
+.pem-body { padding: 1.25rem 1.5rem; }
+
+/* Photo section */
+.pem-photo-section { text-align: center; margin-bottom: 1.25rem; }
+.pem-photo-wrap {
+  width: 100px; height: 100px; border-radius: 50%; margin: 0 auto .5rem;
+  position: relative; cursor: pointer; overflow: hidden;
+  border: 3px solid #e2e8f0; transition: border-color .2s;
+  background: #e9ecef; display: flex; align-items: center; justify-content: center;
+}
+.pem-photo-wrap:hover { border-color: #0077B5; }
+.pem-photo-img { width: 100%; height: 100%; object-fit: cover; }
+.pem-photo-initials { font-size: 2rem; font-weight: 700; color: #0077B5; }
+.pem-photo-overlay {
+  position: absolute; inset: 0; background: rgba(0,0,0,.4);
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 1.2rem; opacity: 0; transition: opacity .2s;
+}
+.pem-photo-wrap:hover .pem-photo-overlay { opacity: 1; }
+.pem-photo-hint { font-size: .72rem; color: #94a3b8; }
+
+/* Readonly banner */
+.pem-readonly-banner {
+  display: flex; align-items: center; gap: .6rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;
+  padding: .75rem 1rem; margin-bottom: 1.25rem;
+  font-size: .85rem; color: #475569;
+}
+.pem-readonly-banner i { color: #94a3b8; font-size: .9rem; }
+.pem-readonly-banner strong { color: #1e293b; }
+.pem-readonly-sub { font-size: .75rem; color: #94a3b8; margin-top: .1rem; }
+
+.pem-field { margin-bottom: 1rem; }
+.pem-label { display: block; font-size: .8rem; font-weight: 600; color: #374151; margin-bottom: .35rem; }
+
+.pem-input {
+  width: 100%; padding: .55rem .8rem; border: 1.5px solid #e2e8f0;
+  border-radius: 10px; font-size: .85rem; color: #1e293b;
+  background: #f8fafc; transition: all .2s;
+}
+.pem-input:focus { outline: none; border-color: #0077B5; background: #fff; box-shadow: 0 0 0 3px rgba(0,119,181,.1); }
+.pem-input.pem-err { border-color: #ef4444; }
+.pem-textarea { resize: vertical; min-height: 60px; }
+
+.pem-err-msg { display: block; font-size: .72rem; color: #ef4444; margin-top: .25rem; }
+
+.pem-info-note {
+  background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px;
+  padding: .65rem .85rem; font-size: .76rem; color: #92400e;
+  margin-bottom: 1rem;
+}
+
+.pem-footer {
+  display: flex; gap: .75rem; justify-content: flex-end;
+  padding-top: 1rem; border-top: 1px solid #f3f4f6;
+}
+.pem-btn-cancel {
+  padding: .55rem 1.2rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer; transition: all .2s;
+}
+.pem-btn-cancel:hover { background: #f3f4f6; }
+.pem-btn-submit {
+  padding: .55rem 1.5rem; border-radius: 10px; font-size: .82rem; font-weight: 700;
+  border: none; background: linear-gradient(135deg, #0077B5, #005a8c); color: #fff;
+  cursor: pointer; transition: all .2s;
+}
+.pem-btn-submit:hover { box-shadow: 0 4px 16px rgba(0,119,181,.3); }
+.pem-btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+
+@media (max-width: 576px) {
+  .pem-dialog { max-width: 100%; border-radius: 16px; }
+  .pem-header { padding: 1rem 1.1rem; border-radius: 16px 16px 0 0; }
+  .pem-body { padding: 1rem 1.1rem; }
+  .pem-footer { flex-direction: column; }
+  .pem-btn-cancel, .pem-btn-submit { width: 100%; text-align: center; }
 }
 </style>
