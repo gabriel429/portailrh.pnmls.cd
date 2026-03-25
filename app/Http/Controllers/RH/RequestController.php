@@ -16,7 +16,7 @@ class RequestController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index(Request $request)
     {
         $user = auth()->user();
         $agent = $user->agent ?? null;
@@ -28,7 +28,21 @@ class RequestController extends Controller
             $requestsQuery->where('agent_id', $agent?->id);
         }
 
-        $requests = $requestsQuery->latest()->paginate(15);
+        // Filtres
+        if ($request->filled('statut')) {
+            $requestsQuery->where('statut', $request->input('statut'));
+        }
+        if ($request->filled('type')) {
+            $requestsQuery->where('type', $request->input('type'));
+        }
+
+        $requests = $requestsQuery->latest()->paginate(15)->withQueryString();
+
+        // Si requête AJAX, retourner seulement le partial table
+        if ($request->ajax()) {
+            return view('rh.requests.partials.table', compact('requests', 'isRH'));
+        }
+
         return view('rh.requests.index', compact('requests', 'isRH'));
     }
 
