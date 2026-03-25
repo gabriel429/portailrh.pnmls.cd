@@ -7,9 +7,9 @@
           <h2><i class="fas fa-folder-open me-2"></i>Gestion Electronique de Documents</h2>
           <p>Organisez, consultez et gerez vos documents en toute simplicite</p>
         </div>
-        <router-link :to="{ name: 'documents.create' }" class="doc-upload-btn">
+        <button class="doc-upload-btn" @click="openUploadModal">
           <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
-        </router-link>
+        </button>
       </div>
       <div class="doc-hero-stats">
         <div>
@@ -147,9 +147,9 @@
       <template v-else>
         <h5>Aucun document trouve</h5>
         <p>Vous n'avez pas encore de documents dans votre dossier. Commencez par uploader votre premier document.</p>
-        <router-link :to="{ name: 'documents.create' }" class="doc-upload-action">
+        <button class="doc-upload-action" @click="openUploadModal">
           <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
-        </router-link>
+        </button>
       </template>
     </div>
 
@@ -328,13 +328,101 @@
         </div>
       </div>
     </teleport>
+
+    <!-- Upload modal -->
+    <teleport to="body">
+      <div v-if="showUploadModal" class="dum-overlay" @click.self="closeUploadModal">
+        <div class="dum-dialog">
+          <!-- Header -->
+          <div class="dum-header">
+            <h5 class="dum-title"><i class="fas fa-cloud-upload-alt me-2"></i>Uploader un Document</h5>
+            <button class="dum-close" @click="closeUploadModal"><i class="fas fa-times"></i></button>
+          </div>
+
+          <!-- Body -->
+          <div class="dum-body">
+            <form @submit.prevent="handleUploadSubmit" enctype="multipart/form-data">
+
+              <!-- File upload zone -->
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-file me-1 text-muted"></i> Fichier <span class="text-danger">*</span></label>
+                <div
+                  v-if="!uploadFilePreview"
+                  class="dum-upload-zone"
+                  @click="uploadFileInput.click()"
+                  @dragover.prevent="uploadIsDragging = true"
+                  @dragleave="uploadIsDragging = false"
+                  @drop.prevent="uploadHandleDrop"
+                  :class="{ dragging: uploadIsDragging }"
+                >
+                  <i class="fas fa-cloud-upload-alt dum-upload-icon"></i>
+                  <div class="fw-semibold small">Glissez votre fichier ici ou cliquez pour parcourir</div>
+                  <div class="text-muted" style="font-size:.7rem;">Tous formats acceptes - Max 10 Mo</div>
+                </div>
+                <div v-else class="dum-file-preview">
+                  <div class="dum-file-icon-box"><i class="fas fa-file-alt"></i></div>
+                  <div class="dum-file-info">
+                    <div class="dum-file-name">{{ uploadFilePreview.name }}</div>
+                    <div class="dum-file-size">{{ uploadFilePreview.size }} &middot; {{ uploadFilePreview.ext }}</div>
+                  </div>
+                  <button type="button" class="dum-file-remove" @click="uploadRemoveFile"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <input ref="uploadFileInput" type="file" class="d-none" @change="uploadHandleFileSelect">
+                <div v-if="uploadErrors.fichier" class="dum-error">{{ uploadErrors.fichier[0] }}</div>
+              </div>
+
+              <!-- Nom document -->
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-tag me-1 text-muted"></i> Nom du document <span class="text-danger">*</span></label>
+                <input type="text" v-model="uploadForm.nom_document" class="dum-input" :class="{ 'is-invalid': uploadErrors.nom_document }" placeholder="Ex: Carte d'identite, Diplome, Contrat...">
+                <div v-if="uploadErrors.nom_document" class="dum-error">{{ uploadErrors.nom_document[0] }}</div>
+              </div>
+
+              <!-- Categorie -->
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-folder me-1 text-muted"></i> Categorie</label>
+                <div class="dum-cat-grid">
+                  <div
+                    v-for="c in categoryOptions" :key="c.value"
+                    class="dum-cat-card"
+                    :class="{ active: uploadForm.categories_document_id === c.value }"
+                    @click="uploadForm.categories_document_id = uploadForm.categories_document_id === c.value ? '' : c.value"
+                  >
+                    <i :class="c.icon" class="dum-cat-icon"></i>
+                    <span class="dum-cat-label">{{ c.label }}</span>
+                  </div>
+                </div>
+                <div v-if="uploadErrors.categories_document_id" class="dum-error">{{ uploadErrors.categories_document_id[0] }}</div>
+              </div>
+
+              <!-- Description -->
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-muted fw-normal">(optionnel)</span></label>
+                <textarea v-model="uploadForm.description" rows="2" class="dum-input dum-textarea" :class="{ 'is-invalid': uploadErrors.description }" placeholder="Ajoutez une description..."></textarea>
+                <div v-if="uploadErrors.description" class="dum-error">{{ uploadErrors.description[0] }}</div>
+              </div>
+
+              <!-- Footer -->
+              <div class="dum-footer">
+                <button type="button" class="dum-btn dum-btn-cancel" @click="closeUploadModal">Annuler</button>
+                <button type="submit" class="dum-btn dum-btn-submit" :disabled="uploadSubmitting">
+                  <span v-if="uploadSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                  <i v-else class="fas fa-cloud-upload-alt me-1"></i>
+                  Uploader
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { list, get, download, remove } from '@/api/documents'
+import { list, get, create, download, remove } from '@/api/documents'
 import { useUiStore } from '@/stores/ui'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
@@ -360,6 +448,87 @@ const showDetailModal = ref(false)
 const detailLoading = ref(false)
 const detailDoc = ref(null)
 const detailFileMeta = ref({ size: 0, extension: '', exists: false })
+
+// Upload modal
+const showUploadModal = ref(false)
+const uploadSubmitting = ref(false)
+const uploadErrors = ref({})
+const uploadIsDragging = ref(false)
+const uploadSelectedFile = ref(null)
+const uploadFilePreview = ref(null)
+const uploadFileInput = ref(null)
+
+const categoryOptions = [
+  { value: 'identite', label: 'Identite', icon: 'fas fa-id-card' },
+  { value: 'parcours', label: 'Parcours', icon: 'fas fa-graduation-cap' },
+  { value: 'carriere', label: 'Carriere', icon: 'fas fa-briefcase' },
+  { value: 'mission', label: 'Mission', icon: 'fas fa-plane' },
+]
+
+function defaultUploadForm() {
+  return { nom_document: '', categories_document_id: '', description: '' }
+}
+const uploadForm = ref(defaultUploadForm())
+
+function openUploadModal() {
+  uploadForm.value = defaultUploadForm()
+  uploadErrors.value = {}
+  uploadSelectedFile.value = null
+  uploadFilePreview.value = null
+  showUploadModal.value = true
+}
+
+function closeUploadModal() {
+  showUploadModal.value = false
+}
+
+function uploadHandleFileSelect(event) {
+  const file = event.target.files[0]
+  if (file) uploadSetFile(file)
+}
+
+function uploadHandleDrop(event) {
+  uploadIsDragging.value = false
+  const file = event.dataTransfer.files[0]
+  if (file) uploadSetFile(file)
+}
+
+function uploadSetFile(file) {
+  uploadSelectedFile.value = file
+  const sizeMb = (file.size / 1024 / 1024).toFixed(2)
+  const ext = file.name.split('.').pop().toUpperCase()
+  uploadFilePreview.value = { name: file.name, size: sizeMb + ' Mo', ext }
+}
+
+function uploadRemoveFile() {
+  uploadSelectedFile.value = null
+  uploadFilePreview.value = null
+  if (uploadFileInput.value) uploadFileInput.value.value = ''
+}
+
+async function handleUploadSubmit() {
+  uploadErrors.value = {}
+  uploadSubmitting.value = true
+  const formData = new FormData()
+  formData.append('nom_document', uploadForm.value.nom_document)
+  if (uploadForm.value.categories_document_id) formData.append('categories_document_id', uploadForm.value.categories_document_id)
+  if (uploadForm.value.description) formData.append('description', uploadForm.value.description)
+  if (uploadSelectedFile.value) formData.append('fichier', uploadSelectedFile.value)
+  try {
+    await create(formData)
+    ui.addToast('Document uploade avec succes.', 'success')
+    showUploadModal.value = false
+    await fetchDocuments(1)
+  } catch (err) {
+    if (err.response?.status === 422) {
+      uploadErrors.value = err.response.data.errors || {}
+    } else {
+      ui.addToast(err.response?.data?.message || 'Erreur lors de l\'upload.', 'danger')
+    }
+  } finally {
+    uploadSubmitting.value = false
+  }
+}
 
 const visiblePages = computed(() => {
   const pages = []
@@ -1321,5 +1490,116 @@ onMounted(() => {
   .ddm-info-grid { grid-template-columns: 1fr; }
   .ddm-footer { padding: .75rem 1rem; flex-direction: column; align-items: stretch; }
   .ddm-btn { justify-content: center; width: 100%; }
+}
+
+/* ── Upload modal (dum-*) ── */
+.dum-overlay {
+  position: fixed; inset: 0; z-index: 1060;
+  background: rgba(0,0,0,.55);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: dumFadeIn .2s;
+}
+@keyframes dumFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.dum-dialog {
+  background: #fff; border-radius: 18px; width: 100%; max-width: 580px;
+  max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 24px 48px rgba(0,0,0,.18);
+  animation: dumSlideUp .25s ease-out;
+  overflow: hidden;
+}
+@keyframes dumSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.dum-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem 1.5rem;
+  background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
+  color: #fff;
+}
+.dum-title { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.dum-close {
+  width: 32px; height: 32px; border-radius: 8px; border: none;
+  background: rgba(255,255,255,.15); color: #fff; font-size: .9rem;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background .2s;
+}
+.dum-close:hover { background: rgba(255,255,255,.3); }
+.dum-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+
+.dum-label { display: block; font-size: .82rem; font-weight: 600; color: #475569; margin-bottom: .3rem; }
+.dum-input {
+  width: 100%; border-radius: 10px; border: 1px solid #e2e8f0; padding: .5rem .75rem;
+  font-size: .85rem; transition: border-color .2s, box-shadow .2s;
+}
+.dum-input:focus { outline: none; border-color: #0077B5; box-shadow: 0 0 0 3px rgba(0,119,181,.1); }
+.dum-input.is-invalid { border-color: #ef4444; }
+.dum-textarea { resize: vertical; min-height: 60px; }
+.dum-error { font-size: .75rem; color: #ef4444; margin-top: .2rem; }
+
+/* Upload zone */
+.dum-upload-zone {
+  border: 2px dashed #bde0f5; border-radius: 14px; padding: 1.5rem; text-align: center;
+  cursor: pointer; transition: all .2s; background: #f8fbfe;
+}
+.dum-upload-zone:hover, .dum-upload-zone.dragging { border-color: #0077B5; background: #e8f4fd; }
+.dum-upload-icon { font-size: 2rem; color: #0077B5; margin-bottom: .4rem; display: block; }
+
+/* File preview */
+.dum-file-preview {
+  display: flex; align-items: center; gap: .7rem; padding: .8rem 1rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+}
+.dum-file-icon-box {
+  width: 36px; height: 36px; border-radius: 10px; background: #e8f4fd; color: #0077B5;
+  display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0;
+}
+.dum-file-info { flex: 1; min-width: 0; }
+.dum-file-name { font-weight: 600; font-size: .82rem; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dum-file-size { font-size: .7rem; color: #94a3b8; }
+.dum-file-remove {
+  width: 28px; height: 28px; border-radius: 6px; background: #fef2f2; color: #ef4444;
+  border: 1px solid #fecaca; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: .7rem; padding: 0;
+}
+.dum-file-remove:hover { background: #fee2e2; }
+
+/* Category grid */
+.dum-cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+.dum-cat-card {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  padding: .7rem .3rem; border-radius: 10px; border: 2px solid #e2e8f0;
+  cursor: pointer; transition: all .2s; background: #fff;
+}
+.dum-cat-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
+.dum-cat-card.active { border-color: #0077B5; background: #e8f4fd; }
+.dum-cat-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
+.dum-cat-card.active .dum-cat-icon { color: #0077B5; }
+.dum-cat-label { font-size: .68rem; font-weight: 600; color: #64748b; }
+.dum-cat-card.active .dum-cat-label { color: #0077B5; }
+
+/* Footer */
+.dum-footer {
+  display: flex; align-items: center; justify-content: flex-end; gap: .6rem;
+  padding-top: 1rem; margin-top: .5rem; border-top: 1px solid #f1f5f9;
+}
+.dum-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .5rem 1.1rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+  border: none; cursor: pointer; transition: all .2s;
+}
+.dum-btn-cancel { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.dum-btn-cancel:hover { background: #f8fafc; color: #334155; }
+.dum-btn-submit { background: linear-gradient(135deg, #0077B5, #005a87); color: #fff; }
+.dum-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,119,181,.3); }
+.dum-btn-submit:disabled { opacity: .6; transform: none; }
+
+/* Upload modal mobile */
+@media (max-width: 576px) {
+  .dum-overlay { padding: .5rem; }
+  .dum-dialog { max-height: 95vh; border-radius: 14px; }
+  .dum-header { padding: .85rem 1rem; }
+  .dum-body { padding: 1rem; }
+  .dum-cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .dum-footer { flex-direction: column; align-items: stretch; }
+  .dum-btn { justify-content: center; }
 }
 </style>
