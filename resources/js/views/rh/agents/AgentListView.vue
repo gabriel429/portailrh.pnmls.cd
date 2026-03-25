@@ -283,6 +283,206 @@
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
     />
+
+    <!-- Agent Show Modal -->
+    <teleport to="body">
+      <div v-if="showAgentModal" class="asm-overlay" @click.self="closeAgentModal">
+        <div class="asm-dialog">
+          <!-- Loading -->
+          <div v-if="agentModalLoading" class="asm-loading">
+            <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+            <p class="mt-2 text-muted">Chargement du profil...</p>
+          </div>
+
+          <template v-else-if="selectedAgent">
+            <!-- Header -->
+            <div class="asm-header">
+              <div class="asm-header-left">
+                <div v-if="selectedAgent.photo" class="asm-avatar">
+                  <img :src="'/' + selectedAgent.photo" :alt="selectedAgent.nom" class="asm-avatar-img">
+                </div>
+                <div v-else class="asm-avatar asm-avatar-initials">
+                  {{ getInitials(selectedAgent) }}
+                </div>
+                <div>
+                  <h4 class="asm-name">{{ selectedAgent.prenom }} {{ selectedAgent.nom }}</h4>
+                  <div class="asm-badges">
+                    <span class="asm-badge asm-badge-id">{{ selectedAgent.id_agent }}</span>
+                    <span v-if="selectedAgent.organe" class="asm-badge asm-badge-organe">{{ selectedAgent.organe }}</span>
+                    <span v-if="selectedAgent.statut === 'actif'" class="asm-badge asm-badge-ok">Actif</span>
+                    <span v-else-if="selectedAgent.statut === 'suspendu'" class="asm-badge asm-badge-warn">Suspendu</span>
+                    <span v-else class="asm-badge asm-badge-neutral">{{ capitalize(selectedAgent.statut) }}</span>
+                  </div>
+                  <div v-if="selectedAgent.fonction" class="asm-fonction">{{ selectedAgent.fonction }}</div>
+                </div>
+              </div>
+              <button class="asm-close" @click="closeAgentModal"><i class="fas fa-times"></i></button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="asm-tabs">
+              <button class="asm-tab" :class="{ active: agentTab === 'informations' }" @click="agentTab = 'informations'">
+                <i class="fas fa-user me-1"></i> Infos
+              </button>
+              <button class="asm-tab" :class="{ active: agentTab === 'demandes' }" @click="agentTab = 'demandes'">
+                <i class="fas fa-file-signature me-1"></i> Demandes
+                <span v-if="sm_pendingRequestsCount > 0" class="asm-tab-badge warn">{{ sm_pendingRequestsCount }}</span>
+              </button>
+              <button class="asm-tab" :class="{ active: agentTab === 'parcours' }" @click="agentTab = 'parcours'">
+                <i class="fas fa-route me-1"></i> Parcours
+              </button>
+              <button class="asm-tab" :class="{ active: agentTab === 'documents' }" @click="agentTab = 'documents'">
+                <i class="fas fa-folder me-1"></i> Docs
+                <span v-if="sm_documentsCount > 0" class="asm-tab-badge">{{ sm_documentsCount }}</span>
+              </button>
+              <button class="asm-tab" :class="{ active: agentTab === 'messages' }" @click="agentTab = 'messages'">
+                <i class="fas fa-envelope me-1"></i> Msgs
+                <span v-if="sm_unreadMessagesCount > 0" class="asm-tab-badge warn">{{ sm_unreadMessagesCount }}</span>
+              </button>
+            </div>
+
+            <!-- Tab content -->
+            <div class="asm-body">
+
+              <!-- TAB: Informations -->
+              <div v-if="agentTab === 'informations'">
+                <div class="asm-section-title"><i class="fas fa-user me-1"></i> Informations personnelles</div>
+                <div class="asm-info-grid">
+                  <div class="asm-info-item"><span class="asm-info-label">Prenom</span><span class="asm-info-value">{{ selectedAgent.prenom }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Post-nom</span><span class="asm-info-value">{{ selectedAgent.postnom || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Nom</span><span class="asm-info-value">{{ selectedAgent.nom }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Date naissance</span><span class="asm-info-value">{{ sm_formatDate(selectedAgent.date_naissance) }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Lieu naissance</span><span class="asm-info-value">{{ selectedAgent.lieu_naissance || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Sexe</span><span class="asm-info-value">{{ selectedAgent.sexe === 'M' ? 'Masculin' : selectedAgent.sexe === 'F' ? 'Feminin' : (selectedAgent.sexe || 'N/A') }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Situation familiale</span><span class="asm-info-value">{{ selectedAgent.situation_familiale || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Enfants</span><span class="asm-info-value">{{ selectedAgent.nombre_enfants ?? 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Telephone</span><span class="asm-info-value">{{ selectedAgent.telephone || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Email prive</span><span class="asm-info-value">{{ selectedAgent.email_prive || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Email pro</span><span class="asm-info-value">{{ selectedAgent.email_professionnel || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Adresse</span><span class="asm-info-value">{{ selectedAgent.adresse || 'N/A' }}</span></div>
+                </div>
+
+                <div class="asm-section-title mt-3"><i class="fas fa-briefcase me-1"></i> Informations professionnelles</div>
+                <div class="asm-info-grid">
+                  <div class="asm-info-item"><span class="asm-info-label">Organe</span><span class="asm-info-value fw-bold">{{ selectedAgent.organe || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Fonction</span><span class="asm-info-value fw-bold">{{ selectedAgent.fonction || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Date embauche</span><span class="asm-info-value">{{ sm_formatDate(selectedAgent.date_embauche) }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Province</span><span class="asm-info-value">{{ selectedAgent.province ? (selectedAgent.province.nom_province || selectedAgent.province.nom) : 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Departement</span><span class="asm-info-value">{{ selectedAgent.departement ? selectedAgent.departement.nom : 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Anciennete</span><span class="asm-info-value">{{ selectedAgent.anciennete !== null && selectedAgent.anciennete !== undefined ? selectedAgent.anciennete + ' an' + (selectedAgent.anciennete > 1 ? 's' : '') : 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Matricule Etat</span><span class="asm-info-value">{{ selectedAgent.matricule_etat || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Grade Etat</span><span class="asm-info-value">{{ selectedAgent.grade ? selectedAgent.grade.libelle : 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Niveau etudes</span><span class="asm-info-value">{{ selectedAgent.niveau_etudes || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Domaine etudes</span><span class="asm-info-value">{{ selectedAgent.domaine_etudes || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Annee engagement</span><span class="asm-info-value">{{ selectedAgent.annee_engagement_programme || 'N/A' }}</span></div>
+                </div>
+
+                <!-- Stats row -->
+                <div class="asm-stats-row mt-3">
+                  <div class="asm-stat"><span class="asm-stat-val">{{ sm_documentsCount }}</span><span class="asm-stat-lbl">Documents</span></div>
+                  <div class="asm-stat"><span class="asm-stat-val">{{ sm_requestsCount }}</span><span class="asm-stat-lbl">Demandes</span></div>
+                  <div class="asm-stat"><span class="asm-stat-val text-warning">{{ sm_pendingRequestsCount }}</span><span class="asm-stat-lbl">En attente</span></div>
+                  <div class="asm-stat"><span class="asm-stat-val">{{ sm_affectationsCount }}</span><span class="asm-stat-lbl">Affectations</span></div>
+                  <div class="asm-stat"><span class="asm-stat-val">{{ sm_messagesCount }}</span><span class="asm-stat-lbl">Messages</span></div>
+                </div>
+              </div>
+
+              <!-- TAB: Demandes -->
+              <div v-if="agentTab === 'demandes'">
+                <template v-if="sm_requestsCount > 0">
+                  <div v-for="req in sm_sortedRequests" :key="req.id" class="asm-req-card">
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <strong>{{ capitalize(req.type) }}</strong>
+                        <div class="text-muted small">{{ sm_truncate(req.description, 80) }}</div>
+                        <div class="text-muted small mt-1">{{ sm_formatDate(req.date_debut) }} - {{ sm_formatDate(req.date_fin) }}</div>
+                      </div>
+                      <span v-if="req.statut === 'en_attente'" class="asm-badge asm-badge-warn">En attente</span>
+                      <span v-else-if="req.statut === 'approuve'" class="asm-badge asm-badge-ok">Approuve</span>
+                      <span v-else-if="req.statut === 'rejete'" class="asm-badge asm-badge-err">Rejete</span>
+                      <span v-else class="asm-badge asm-badge-neutral">Annule</span>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="asm-empty"><i class="fas fa-file-signature fa-2x mb-2"></i><p>Aucune demande</p></div>
+              </div>
+
+              <!-- TAB: Parcours -->
+              <div v-if="agentTab === 'parcours'">
+                <template v-if="sm_affectationsCount > 0">
+                  <div v-for="aff in sm_sortedAffectations" :key="aff.id" class="asm-timeline-item">
+                    <div class="asm-tl-dot" :class="aff.actif ? 'active' : ''"></div>
+                    <div class="d-flex justify-content-between align-items-start">
+                      <div>
+                        <strong>{{ aff.fonction ? aff.fonction.nom : 'Non definie' }}</strong>
+                        <div class="d-flex gap-1 mt-1 flex-wrap">
+                          <span class="asm-badge asm-badge-organe" style="font-size:.65rem;">{{ aff.niveau_administratif }}</span>
+                          <span class="asm-badge asm-badge-neutral" style="font-size:.65rem;">{{ capitalize(aff.niveau || '') }}</span>
+                        </div>
+                        <div v-if="aff.department" class="text-muted small mt-1"><i class="fas fa-building me-1"></i>{{ aff.department.nom }}</div>
+                        <div v-if="aff.province" class="text-muted small"><i class="fas fa-map-marker-alt me-1"></i>{{ aff.province.nom || aff.province.nom_province }}</div>
+                        <div v-if="aff.remarque" class="text-muted small fst-italic mt-1">{{ aff.remarque }}</div>
+                      </div>
+                      <div class="text-end">
+                        <span v-if="aff.actif" class="asm-badge asm-badge-ok">En cours</span>
+                        <span v-else class="asm-badge asm-badge-neutral">Termine</span>
+                        <div class="text-muted small mt-1">{{ sm_formatDate(aff.date_debut) }}<template v-if="aff.date_fin"> - {{ sm_formatDate(aff.date_fin) }}</template><template v-else-if="aff.actif"> - Auj.</template></div>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="asm-empty"><i class="fas fa-route fa-2x mb-2"></i><p>Aucune affectation</p></div>
+              </div>
+
+              <!-- TAB: Documents -->
+              <div v-if="agentTab === 'documents'">
+                <template v-if="sm_documentsCount > 0">
+                  <div v-for="dt in sm_docTypes" :key="dt.type" class="mb-3">
+                    <div class="asm-section-title" style="font-size:.8rem;">
+                      <i class="fas me-1" :class="[dt.icon, dt.color]"></i> {{ dt.label }}
+                      <span class="asm-badge asm-badge-neutral" style="font-size:.6rem;">{{ sm_getDocsByType(dt.type).length }}</span>
+                    </div>
+                    <div v-if="sm_getDocsByType(dt.type).length > 0">
+                      <div v-for="doc in sm_getDocsByType(dt.type)" :key="doc.id" class="asm-doc-item">
+                        <strong>{{ doc.description }}</strong>
+                        <small class="text-muted ms-2">{{ sm_formatDateTime(doc.created_at) }}</small>
+                      </div>
+                    </div>
+                    <p v-else class="text-muted small ms-3">Aucun</p>
+                  </div>
+                </template>
+                <div v-else class="asm-empty"><i class="fas fa-folder fa-2x mb-2"></i><p>Aucun document</p></div>
+              </div>
+
+              <!-- TAB: Messages -->
+              <div v-if="agentTab === 'messages'">
+                <template v-if="sm_messagesCount > 0">
+                  <div v-for="msg in sm_sortedMessages" :key="msg.id" class="asm-msg-card" :class="{ unread: !msg.lu }">
+                    <div class="d-flex justify-content-between align-items-start mb-1">
+                      <div>
+                        <strong>{{ msg.sujet }}</strong>
+                        <div class="text-muted small"><i class="fas fa-user me-1"></i>{{ msg.sender ? msg.sender.name : 'Systeme' }} &bull; {{ sm_formatDateTime(msg.created_at) }}</div>
+                      </div>
+                      <span v-if="!msg.lu" class="asm-badge asm-badge-warn">Non lu</span>
+                    </div>
+                    <p class="mb-0 small">{{ msg.contenu }}</p>
+                  </div>
+                </template>
+                <div v-else class="asm-empty"><i class="fas fa-envelope fa-2x mb-2"></i><p>Aucun message</p></div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="asm-footer">
+              <router-link :to="{ name: 'rh.agents.edit', params: { id: selectedAgent.id } }" class="asm-btn-edit" @click="closeAgentModal">
+                <i class="fas fa-edit me-1"></i> Modifier
+              </router-link>
+              <button class="asm-btn-close" @click="closeAgentModal">Fermer</button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -290,7 +490,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { list, remove, exportCsv, getFormOptions } from '@/api/agents'
+import { list, get, remove, exportCsv, getFormOptions } from '@/api/agents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
@@ -361,9 +561,83 @@ function isOrganeNational(label) {
     return label && label.toLowerCase().includes('national')
 }
 
-function goToAgent(id) {
-    router.push({ name: 'rh.agents.show', params: { id } })
+/* ── Agent Show Modal ── */
+const showAgentModal = ref(false)
+const agentModalLoading = ref(false)
+const selectedAgent = ref(null)
+const agentTab = ref('informations')
+
+const sm_documentsCount = computed(() => selectedAgent.value?.documents?.length || 0)
+const sm_requestsCount = computed(() => selectedAgent.value?.requests?.length || 0)
+const sm_pendingRequestsCount = computed(() =>
+    (selectedAgent.value?.requests || []).filter(r => r.statut === 'en_attente').length
+)
+const sm_affectationsCount = computed(() => selectedAgent.value?.affectations?.length || 0)
+const sm_messagesCount = computed(() => selectedAgent.value?.messages?.length || 0)
+const sm_unreadMessagesCount = computed(() =>
+    (selectedAgent.value?.messages || []).filter(m => !m.lu).length
+)
+const sm_sortedRequests = computed(() =>
+    [...(selectedAgent.value?.requests || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+)
+const sm_sortedAffectations = computed(() =>
+    [...(selectedAgent.value?.affectations || [])].sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))
+)
+const sm_sortedMessages = computed(() =>
+    [...(selectedAgent.value?.messages || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+)
+
+const sm_docTypes = [
+    { type: 'identite', label: 'Identite', icon: 'fa-id-card', color: 'text-danger' },
+    { type: 'parcours', label: 'Parcours', icon: 'fa-graduation-cap', color: 'text-info' },
+    { type: 'carriere', label: 'Carriere', icon: 'fa-briefcase', color: 'text-warning' },
+    { type: 'mission', label: 'Missions', icon: 'fa-plane', color: 'text-success' },
+]
+
+function sm_getDocsByType(type) {
+    return (selectedAgent.value?.documents || []).filter(d => d.type === type)
 }
+
+function sm_formatDate(dateStr) {
+    if (!dateStr) return 'N/A'
+    try {
+        const d = new Date(dateStr)
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    } catch { return dateStr }
+}
+
+function sm_formatDateTime(dateStr) {
+    if (!dateStr) return 'N/A'
+    try {
+        const d = new Date(dateStr)
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+            ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    } catch { return dateStr }
+}
+
+function sm_truncate(str, length) {
+    if (!str) return ''
+    return str.length > length ? str.substring(0, length) + '...' : str
+}
+
+async function goToAgent(id) {
+    selectedAgent.value = null
+    agentTab.value = 'informations'
+    showAgentModal.value = true
+    agentModalLoading.value = true
+    try {
+        const { data } = await get(id)
+        selectedAgent.value = data.agent
+    } catch (err) {
+        console.error('Error fetching agent:', err)
+        ui.addToast('Erreur lors du chargement de l\'agent', 'danger')
+        showAgentModal.value = false
+    } finally {
+        agentModalLoading.value = false
+    }
+}
+
+function closeAgentModal() { showAgentModal.value = false }
 
 // Fetch agents
 async function fetchAgents() {
@@ -669,5 +943,168 @@ onMounted(() => {
         padding: .35rem .25rem;
         font-size: .72rem;
     }
+}
+
+/* ── Agent Show Modal (asm-*) ── */
+.asm-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+  animation: asmFadeIn .2s ease;
+}
+@keyframes asmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.asm-dialog {
+  background: #fff; border-radius: 20px; width: 100%; max-width: 720px;
+  max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,.25);
+  animation: asmSlideUp .25s ease;
+}
+@keyframes asmSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+.asm-loading { text-align: center; padding: 3rem; }
+
+.asm-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6;
+  background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
+  border-radius: 20px 20px 0 0; color: #fff;
+}
+.asm-header-left { display: flex; align-items: center; gap: .8rem; }
+.asm-avatar {
+  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid rgba(255,255,255,.3); overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.asm-avatar-img { width: 100%; height: 100%; object-fit: cover; }
+.asm-avatar-initials { background: rgba(255,255,255,.15); font-size: 1.2rem; font-weight: 700; color: #fff; }
+.asm-name { font-size: 1.05rem; font-weight: 700; margin: 0; }
+.asm-badges { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .2rem; }
+.asm-badge { padding: .15rem .5rem; border-radius: 6px; font-size: .68rem; font-weight: 600; }
+.asm-badge-id { background: rgba(255,255,255,.2); color: #fff; }
+.asm-badge-organe { background: #0ea5e9; color: #fff; }
+.asm-badge-ok { background: #22c55e; color: #fff; }
+.asm-badge-warn { background: #f59e0b; color: #fff; }
+.asm-badge-err { background: #ef4444; color: #fff; }
+.asm-badge-neutral { background: #e2e8f0; color: #64748b; }
+.asm-fonction { font-size: .78rem; opacity: .8; margin-top: .2rem; }
+.asm-close {
+  background: rgba(255,255,255,.15); border: none; cursor: pointer;
+  width: 34px; height: 34px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; color: #fff;
+  transition: all .2s; font-size: .95rem; flex-shrink: 0;
+}
+.asm-close:hover { background: rgba(255,255,255,.3); }
+
+/* Tabs */
+.asm-tabs {
+  display: flex; border-bottom: 1px solid #f3f4f6;
+  padding: 0 1rem; overflow-x: auto; background: #f8fafc;
+}
+.asm-tab {
+  padding: .65rem .8rem; border: none; background: none;
+  font-size: .78rem; font-weight: 600; color: #64748b;
+  cursor: pointer; white-space: nowrap; border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.asm-tab:hover { color: #0077B5; }
+.asm-tab.active { color: #0077B5; border-bottom-color: #0077B5; }
+.asm-tab-badge {
+  display: inline-block; min-width: 16px; padding: 0 4px; border-radius: 8px;
+  font-size: .6rem; font-weight: 700; text-align: center; margin-left: 3px;
+  background: #e2e8f0; color: #64748b;
+}
+.asm-tab-badge.warn { background: #f59e0b; color: #fff; }
+
+/* Body */
+.asm-body { padding: 1.25rem 1.5rem; max-height: 55vh; overflow-y: auto; }
+
+.asm-section-title {
+  font-size: .82rem; font-weight: 700; color: #0077B5;
+  padding-bottom: .3rem; border-bottom: 1px solid #f3f4f6; margin-bottom: .6rem;
+}
+
+.asm-info-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem;
+}
+.asm-info-item { padding: .3rem 0; }
+.asm-info-label { display: block; font-size: .68rem; color: #94a3b8; font-weight: 500; }
+.asm-info-value { font-size: .82rem; color: #1e293b; }
+
+.asm-stats-row {
+  display: flex; gap: .5rem; padding: .75rem; background: #f8fafc;
+  border-radius: 10px; border: 1px solid #e2e8f0;
+}
+.asm-stat { flex: 1; text-align: center; }
+.asm-stat-val { display: block; font-size: 1.1rem; font-weight: 800; color: #1e293b; }
+.asm-stat-lbl { font-size: .62rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
+
+/* Request cards */
+.asm-req-card {
+  border-left: 3px solid #0077B5; background: #f8fafc;
+  border-radius: 6px; padding: .65rem .85rem; margin-bottom: .5rem;
+}
+
+/* Timeline */
+.asm-timeline-item {
+  position: relative; padding-left: 24px; padding-bottom: .75rem;
+  border-left: 2px solid #e5e5e5; margin-left: 6px;
+}
+.asm-timeline-item:last-child { border-left-color: transparent; }
+.asm-tl-dot {
+  position: absolute; left: -7px; top: 4px;
+  width: 12px; height: 12px; border-radius: 50%;
+  background: #6c757d; border: 2px solid #fff;
+}
+.asm-tl-dot.active { background: #22c55e; }
+
+/* Doc items */
+.asm-doc-item {
+  padding: .35rem .5rem; border-bottom: 1px solid #f3f4f6;
+  font-size: .82rem;
+}
+
+/* Message cards */
+.asm-msg-card {
+  border-left: 3px solid #0077B5; background: #f8fafc;
+  border-radius: 6px; padding: .65rem .85rem; margin-bottom: .5rem;
+}
+.asm-msg-card.unread { border-left-color: #f59e0b; background: #fffef5; }
+
+/* Empty state */
+.asm-empty { text-align: center; padding: 2rem; color: #94a3b8; }
+.asm-empty i { opacity: .5; display: block; }
+.asm-empty p { margin: 0; font-size: .85rem; }
+
+/* Footer */
+.asm-footer {
+  display: flex; gap: .75rem; justify-content: flex-end;
+  padding: .85rem 1.5rem; border-top: 1px solid #f3f4f6;
+}
+.asm-btn-edit {
+  padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: none; background: #f59e0b; color: #fff; cursor: pointer;
+  text-decoration: none; transition: all .2s;
+}
+.asm-btn-edit:hover { background: #d97706; color: #fff; }
+.asm-btn-close {
+  padding: .45rem 1.2rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer;
+  transition: all .2s;
+}
+.asm-btn-close:hover { background: #f3f4f6; }
+
+@media (max-width: 576px) {
+  .asm-dialog { max-width: 100%; border-radius: 16px; }
+  .asm-header { padding: 1rem; border-radius: 16px 16px 0 0; flex-direction: column; gap: .5rem; }
+  .asm-close { position: absolute; top: .75rem; right: .75rem; }
+  .asm-body { padding: 1rem; max-height: 50vh; }
+  .asm-info-grid { grid-template-columns: repeat(2, 1fr); }
+  .asm-stats-row { flex-wrap: wrap; }
+  .asm-stat { min-width: 30%; }
+  .asm-footer { padding: .75rem 1rem; }
+  .asm-tabs { padding: 0 .5rem; }
+  .asm-tab { padding: .5rem .6rem; font-size: .72rem; }
+  .asm-tab i { display: none; }
 }
 </style>
