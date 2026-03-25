@@ -118,7 +118,7 @@
       </div>
 
       <!-- Request cards grid -->
-      <div v-if="requests.length" class="req-grid">
+      <div v-if="requests.length" class="req-grid" :class="{ 'req-filtering': filtering }">
         <div v-for="req in requests" :key="req.id" class="req-card">
           <div class="req-card-top">
             <div class="req-card-status-icon" :class="statusIconClass(req.statut)">
@@ -245,6 +245,7 @@ const ui = useUiStore()
 
 const isRH = computed(() => auth.hasAdminAccess)
 const loading = ref(true)
+const filtering = ref(false)
 const requests = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
 const filters = ref({ statut: '', type: '' })
@@ -264,7 +265,11 @@ const paginationPages = computed(() => {
 })
 
 async function loadRequests(page = 1) {
-  loading.value = true
+  // Only show full-page spinner on initial load, not on filter changes
+  if (requests.value.length === 0 && !filtering.value) {
+    loading.value = true
+  }
+  filtering.value = true
   try {
     const params = { page }
     if (filters.value.statut) params.statut = filters.value.statut
@@ -276,6 +281,7 @@ async function loadRequests(page = 1) {
     ui.addToast('Erreur lors du chargement des demandes.', 'danger')
   } finally {
     loading.value = false
+    filtering.value = false
   }
 }
 
@@ -867,6 +873,13 @@ onMounted(() => {
   font-size: 1.5rem;
   margin: 0 auto 1rem;
   color: #d1d5db;
+}
+
+/* ── Filtering overlay ── */
+.req-filtering {
+  opacity: 0.4;
+  pointer-events: none;
+  transition: opacity .2s;
 }
 
 /* ── Mobile responsive ── */
