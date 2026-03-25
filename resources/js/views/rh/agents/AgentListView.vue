@@ -76,13 +76,8 @@
         </div>
       </section>
 
-      <!-- Loading state -->
-      <LoadingSpinner v-if="loading" message="Chargement des agents..." />
-
-      <!-- Content -->
-      <template v-else>
-        <!-- Stats -->
-        <div v-if="stats.total > 0" class="kpi-grid mb-4">
+      <!-- Stats (always visible once loaded) -->
+      <div v-if="stats.total > 0 && !loading" class="kpi-grid mb-4">
           <div class="kpi-card">
             <div class="kpi-value">{{ stats.total }}</div>
             <div class="kpi-label">Total agents</div>
@@ -101,6 +96,11 @@
           </div>
         </div>
 
+      <!-- Loading spinner (initial load only) -->
+      <LoadingSpinner v-if="loading" message="Chargement des agents..." />
+
+      <template v-else>
+        <div :class="{ 'ag-filtering': filtering }">
         <!-- Agents grouped by organe -->
         <template v-if="agentsByOrgane.length > 0">
           <div
@@ -220,6 +220,7 @@
             <i class="fas fa-user-plus me-1"></i> Ajouter un agent
           </router-link>
         </div>
+        </div>
       </template>
     </div>
 
@@ -298,6 +299,8 @@ const ui = useUiStore()
 
 // State
 const loading = ref(true)
+const filtering = ref(false)
+const initialLoadDone = ref(false)
 const agentsByOrgane = ref([])
 const stats = ref({ total: 0, sen: 0, sep: 0, sel: 0 })
 const provinces = ref([])
@@ -364,7 +367,10 @@ function goToAgent(id) {
 
 // Fetch agents
 async function fetchAgents() {
-    loading.value = true
+    if (!initialLoadDone.value) {
+        loading.value = true
+    }
+    filtering.value = true
     try {
         const params = {}
         if (filters.search) params.search = filters.search
@@ -381,6 +387,8 @@ async function fetchAgents() {
         ui.addToast('Erreur lors du chargement des agents', 'danger')
     } finally {
         loading.value = false
+        filtering.value = false
+        initialLoadDone.value = true
     }
 }
 
@@ -476,6 +484,9 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* ── Filtering overlay ── */
+.ag-filtering { opacity: 0.4; pointer-events: none; transition: opacity .2s; }
+
 /* ── KPI cards ── */
 .kpi-grid {
     display: grid;
