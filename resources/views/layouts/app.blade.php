@@ -31,28 +31,12 @@
             --border-color: #E5E5E5;
         }
 
-        html {
-            background-color: var(--secondary-color);
-        }
-
         body {
             font-family: 'Segoe UI', 'Roboto', sans-serif;
-            background: transparent;
+            background-color: var(--secondary-color);
             color: var(--text-dark);
             padding-top: 0;
             min-height: 100vh;
-            isolation: isolate;
-        }
-
-        /* Logo watermark */
-        .bg-watermark {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: url('{{ asset("images/logo-pnmls.png") }}') center center / 380px no-repeat;
-            filter: blur(2px);
-            opacity: 0.08;
-            z-index: -1;
-            pointer-events: none;
         }
 
         /* ──────────────────────────────────────
@@ -535,8 +519,12 @@
     @yield('css')
 </head>
 <body>
-    <!-- Logo watermark background -->
-    <div class="bg-watermark" aria-hidden="true"></div>
+    <!-- Logo watermark -->
+    <img src="{{ asset('images/logo-pnmls.png') }}" alt=""
+         aria-hidden="true"
+         style="position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+                width:380px;height:auto;opacity:0.07;filter:blur(2px);
+                z-index:9999;pointer-events:none;">
 
     <!-- Navbar -->
     @if(auth()->check())
