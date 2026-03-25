@@ -224,7 +224,8 @@ class PointageController extends Controller
         }
 
         // Agents list for filter dropdown
-        $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom', 'postnom', 'id_agent']);
+        $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom', 'postnom'])
+            ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
         return response()->json([
             'days' => $days,

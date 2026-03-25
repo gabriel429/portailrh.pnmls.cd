@@ -65,7 +65,8 @@ class TacheController extends Controller
             ->where('departement_id', $agent->departement_id)
             ->where('id', '!=', $agent->id)
             ->orderBy('nom')
-            ->get(['id', 'id_agent', 'nom', 'prenom']);
+            ->get(['id', 'nom', 'prenom'])
+            ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
         return response()->json([
             'data' => $agentsDuDepartement,

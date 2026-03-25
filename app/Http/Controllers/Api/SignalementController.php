@@ -111,7 +111,8 @@ class SignalementController extends Controller
      */
     public function agents(): JsonResponse
     {
-        $agents = Agent::actifs()->orderBy('nom')->get(['id', 'id_agent', 'nom', 'prenom']);
+        $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom'])
+            ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
         return response()->json(['data' => $agents]);
     }
