@@ -56,6 +56,30 @@
         </div>
       </div>
       <div class="dash-action-grid">
+        <button
+          class="dash-action-card"
+          @click="openRequestModal"
+        >
+          <div class="dash-action-icon" style="background:#e0f2fe;color:#0077B5;">
+            <i class="fas fa-plus-circle"></i>
+          </div>
+          <div class="dash-action-info">
+            <div class="dash-action-name">Nouvelle demande</div>
+            <div class="dash-action-desc">Conge, attestation...</div>
+          </div>
+        </button>
+        <button
+          class="dash-action-card"
+          @click="openUploadModal"
+        >
+          <div class="dash-action-icon" style="background:#d1fae5;color:#059669;">
+            <i class="fas fa-cloud-upload-alt"></i>
+          </div>
+          <div class="dash-action-info">
+            <div class="dash-action-name">Uploader document</div>
+            <div class="dash-action-desc">Ajouter un fichier</div>
+          </div>
+        </button>
         <router-link
           v-for="action in quickActions"
           :key="action.to"
@@ -120,9 +144,9 @@
         <div class="dash-empty-icon"><i class="fas fa-inbox"></i></div>
         <h5>Aucune activite recente</h5>
         <p>Vos dernieres actions et notifications apparaitront ici.</p>
-        <router-link to="/requests/create" class="dash-action-btn">
+        <button class="dash-action-btn" @click="openRequestModal">
           <i class="fas fa-plus me-1"></i>Nouvelle demande
-        </router-link>
+        </button>
       </div>
 
       <!-- Info Cards -->
@@ -161,17 +185,163 @@
         </div>
       </div>
     </template>
+
+    <!-- Request Create Modal -->
+    <teleport to="body">
+      <div v-if="showRequestModal" class="rcm-overlay" @click.self="closeRequestModal">
+        <div class="rcm-dialog">
+          <div class="rcm-header">
+            <h5 class="rcm-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Demande</h5>
+            <button class="rcm-close" @click="closeRequestModal"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="rcm-body">
+            <form @submit.prevent="handleReqSubmit" enctype="multipart/form-data">
+              <div v-if="currentAgent && !isRH" class="rcm-agent-banner">
+                <div class="rcm-agent-avatar">{{ agentInitials(currentAgent) }}</div>
+                <div>
+                  <div class="fw-semibold small">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">{{ currentAgent.id_agent }}</div>
+                </div>
+              </div>
+              <div v-if="isRH" class="mb-3">
+                <label class="rcm-label">Agent <span class="text-danger">*</span></label>
+                <select v-model="reqForm.agent_id" class="rcm-input" :class="{ 'is-invalid': reqErrors.agent_id }">
+                  <option value="">-- Selectionner un agent --</option>
+                  <option v-for="a in reqAgents" :key="a.id" :value="a.id">{{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})</option>
+                </select>
+                <div v-if="reqErrors.agent_id" class="rcm-error">{{ reqErrors.agent_id[0] }}</div>
+              </div>
+              <label class="rcm-label">Type de demande <span class="text-danger">*</span></label>
+              <div class="rcm-type-grid">
+                <div v-for="t in reqTypeOptions" :key="t.value" class="rcm-type-card" :class="{ active: reqForm.type === t.value }" @click="reqForm.type = t.value">
+                  <i :class="t.icon" class="rcm-type-icon"></i>
+                  <span class="rcm-type-label">{{ t.label }}</span>
+                </div>
+              </div>
+              <div v-if="reqErrors.type" class="rcm-error mb-2">{{ reqErrors.type[0] }}</div>
+              <div class="rcm-row mt-3">
+                <div class="rcm-col">
+                  <label class="rcm-label"><i class="fas fa-calendar-alt me-1 text-muted"></i> Date debut <span class="text-danger">*</span></label>
+                  <input type="date" v-model="reqForm.date_debut" class="rcm-input" :class="{ 'is-invalid': reqErrors.date_debut }">
+                  <div v-if="reqErrors.date_debut" class="rcm-error">{{ reqErrors.date_debut[0] }}</div>
+                </div>
+                <div class="rcm-col">
+                  <label class="rcm-label"><i class="fas fa-calendar-check me-1 text-muted"></i> Date fin <span class="text-muted fw-normal">(optionnel)</span></label>
+                  <input type="date" v-model="reqForm.date_fin" class="rcm-input" :class="{ 'is-invalid': reqErrors.date_fin }" :min="reqForm.date_debut">
+                  <div v-if="reqErrors.date_fin" class="rcm-error">{{ reqErrors.date_fin[0] }}</div>
+                </div>
+              </div>
+              <div class="mt-3">
+                <label class="rcm-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-danger">*</span></label>
+                <textarea v-model="reqForm.description" rows="3" class="rcm-input rcm-textarea" :class="{ 'is-invalid': reqErrors.description }" placeholder="Decrivez le motif de votre demande..."></textarea>
+                <div v-if="reqErrors.description" class="rcm-error">{{ reqErrors.description[0] }}</div>
+              </div>
+              <div class="mt-3">
+                <label class="rcm-label"><i class="fas fa-paperclip me-1 text-muted"></i> Lettre de demande <span class="text-muted fw-normal">(optionnel)</span></label>
+                <div v-if="!reqFilePreview" class="rcm-upload-zone" @click="reqFileInput.click()" @dragover.prevent="reqIsDragging = true" @dragleave="reqIsDragging = false" @drop.prevent="reqHandleDrop" :class="{ dragging: reqIsDragging }">
+                  <i class="fas fa-cloud-upload-alt rcm-upload-icon"></i>
+                  <div class="fw-semibold small">Glissez ou cliquez pour parcourir</div>
+                  <div class="text-muted" style="font-size:.7rem;">PDF, DOC, DOCX, JPG, PNG - Max 5 Mo</div>
+                </div>
+                <div v-else class="rcm-file-preview">
+                  <div class="rcm-file-icon-box"><i class="fas fa-file-alt"></i></div>
+                  <div class="rcm-file-info">
+                    <div class="rcm-file-name">{{ reqFilePreview.name }}</div>
+                    <div class="rcm-file-size">{{ reqFilePreview.size }}</div>
+                  </div>
+                  <button type="button" class="rcm-file-remove" @click="reqRemoveFile"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <input ref="reqFileInput" type="file" class="d-none" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="reqHandleFileSelect">
+                <div v-if="reqErrors.lettre_demande" class="rcm-error">{{ reqErrors.lettre_demande[0] }}</div>
+              </div>
+              <div class="rcm-footer">
+                <button type="button" class="rcm-btn rcm-btn-cancel" @click="closeRequestModal">Annuler</button>
+                <button type="submit" class="rcm-btn rcm-btn-submit" :disabled="reqSubmitting">
+                  <span v-if="reqSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                  <i v-else class="fas fa-paper-plane me-1"></i> Soumettre
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- Document Upload Modal -->
+    <teleport to="body">
+      <div v-if="showUploadModal" class="dum-overlay" @click.self="closeUploadModal">
+        <div class="dum-dialog">
+          <div class="dum-header">
+            <h5 class="dum-title"><i class="fas fa-cloud-upload-alt me-2"></i>Uploader un Document</h5>
+            <button class="dum-close" @click="closeUploadModal"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="dum-body">
+            <form @submit.prevent="handleUplSubmit" enctype="multipart/form-data">
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-file me-1 text-muted"></i> Fichier <span class="text-danger">*</span></label>
+                <div v-if="!uplFilePreview" class="dum-upload-zone" @click="uplFileInput.click()" @dragover.prevent="uplIsDragging = true" @dragleave="uplIsDragging = false" @drop.prevent="uplHandleDrop" :class="{ dragging: uplIsDragging }">
+                  <i class="fas fa-cloud-upload-alt dum-upload-icon"></i>
+                  <div class="fw-semibold small">Glissez votre fichier ici ou cliquez pour parcourir</div>
+                  <div class="text-muted" style="font-size:.7rem;">Tous formats acceptes - Max 10 Mo</div>
+                </div>
+                <div v-else class="dum-file-preview">
+                  <div class="dum-file-icon-box"><i class="fas fa-file-alt"></i></div>
+                  <div class="dum-file-info">
+                    <div class="dum-file-name">{{ uplFilePreview.name }}</div>
+                    <div class="dum-file-size">{{ uplFilePreview.size }} &middot; {{ uplFilePreview.ext }}</div>
+                  </div>
+                  <button type="button" class="dum-file-remove" @click="uplRemoveFile"><i class="fas fa-trash-alt"></i></button>
+                </div>
+                <input ref="uplFileInput" type="file" class="d-none" @change="uplHandleFileSelect">
+                <div v-if="uplErrors.fichier" class="dum-error">{{ uplErrors.fichier[0] }}</div>
+              </div>
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-tag me-1 text-muted"></i> Nom du document <span class="text-danger">*</span></label>
+                <input type="text" v-model="uplForm.nom_document" class="dum-input" :class="{ 'is-invalid': uplErrors.nom_document }" placeholder="Ex: Carte d'identite, Diplome, Contrat...">
+                <div v-if="uplErrors.nom_document" class="dum-error">{{ uplErrors.nom_document[0] }}</div>
+              </div>
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-folder me-1 text-muted"></i> Categorie</label>
+                <div class="dum-cat-grid">
+                  <div v-for="c in uplCatOptions" :key="c.value" class="dum-cat-card" :class="{ active: uplForm.categories_document_id === c.value }" @click="uplForm.categories_document_id = uplForm.categories_document_id === c.value ? '' : c.value">
+                    <i :class="c.icon" class="dum-cat-icon"></i>
+                    <span class="dum-cat-label">{{ c.label }}</span>
+                  </div>
+                </div>
+                <div v-if="uplErrors.categories_document_id" class="dum-error">{{ uplErrors.categories_document_id[0] }}</div>
+              </div>
+              <div class="mb-3">
+                <label class="dum-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-muted fw-normal">(optionnel)</span></label>
+                <textarea v-model="uplForm.description" rows="2" class="dum-input dum-textarea" :class="{ 'is-invalid': uplErrors.description }" placeholder="Ajoutez une description..."></textarea>
+                <div v-if="uplErrors.description" class="dum-error">{{ uplErrors.description[0] }}</div>
+              </div>
+              <div class="dum-footer">
+                <button type="button" class="dum-btn dum-btn-cancel" @click="closeUploadModal">Annuler</button>
+                <button type="submit" class="dum-btn dum-btn-submit" :disabled="uplSubmitting">
+                  <span v-if="uplSubmitting" class="spinner-border spinner-border-sm me-1"></span>
+                  <i v-else class="fas fa-cloud-upload-alt me-1"></i> Uploader
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
+import { create as createRequest } from '@/api/requests'
+import { create as createDocument } from '@/api/documents'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenDashboardView.vue'))
 
 const auth = useAuthStore()
+const ui = useUiStore()
 const loading = ref(true)
 const stats = ref({})
 const activities = ref([])
@@ -186,8 +356,6 @@ const today = computed(() => {
 })
 
 const quickActions = [
-  { to: '/requests/create', label: 'Nouvelle demande', desc: 'Conge, attestation...', icon: 'fa-plus-circle', color: '#0077B5', bg: '#e0f2fe' },
-  { to: '/documents/create', label: 'Uploader document', desc: 'Ajouter un fichier', icon: 'fa-cloud-upload-alt', color: '#059669', bg: '#d1fae5' },
   { to: '/plan-travail', label: 'Plan de travail', desc: 'Consulter ou creer', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/profile', label: 'Mon profil', desc: 'Voir mes infos', icon: 'fa-user-circle', color: '#7c3aed', bg: '#ede9fe' },
 ]
@@ -230,6 +398,132 @@ function formatTime(iso) {
 }
 
 const loadError = ref(null)
+
+// ── Request Create Modal ──
+const showRequestModal = ref(false)
+const reqSubmitting = ref(false)
+const reqErrors = ref({})
+const reqIsDragging = ref(false)
+const reqSelectedFile = ref(null)
+const reqFilePreview = ref(null)
+const reqFileInput = ref(null)
+const reqAgents = ref([])
+const isRH = computed(() => auth.hasAdminAccess)
+const currentAgent = computed(() => auth.agent)
+
+const reqTypeOptions = [
+  { value: 'conge', label: 'Conge', icon: 'fas fa-umbrella-beach' },
+  { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
+  { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
+  { value: 'formation', label: 'Formation', icon: 'fas fa-graduation-cap' },
+  { value: 'renforcement_capacites', label: 'Renforcement', icon: 'fas fa-chart-line' },
+]
+
+function defaultReqForm() {
+  return { agent_id: currentAgent.value?.id || '', type: '', date_debut: '', date_fin: '', description: '' }
+}
+const reqForm = ref(defaultReqForm())
+
+async function openRequestModal() {
+  reqForm.value = defaultReqForm()
+  reqErrors.value = {}
+  reqSelectedFile.value = null
+  reqFilePreview.value = null
+  showRequestModal.value = true
+  if (isRH.value && !reqAgents.value.length) {
+    try {
+      const { data } = await client.get('/agents', { params: { actifs: 1 } })
+      reqAgents.value = data.data ?? data
+    } catch {}
+  }
+}
+
+function closeRequestModal() { showRequestModal.value = false }
+
+function reqHandleFileSelect(e) { const f = e.target.files[0]; if (f) reqSetFile(f) }
+function reqHandleDrop(e) { reqIsDragging.value = false; const f = e.dataTransfer.files[0]; if (f) reqSetFile(f) }
+function reqSetFile(file) {
+  reqSelectedFile.value = file
+  reqFilePreview.value = { name: file.name, size: (file.size / 1024 / 1024).toFixed(2) + ' Mo' }
+}
+function reqRemoveFile() { reqSelectedFile.value = null; reqFilePreview.value = null; if (reqFileInput.value) reqFileInput.value.value = '' }
+
+function agentInitials(a) { return a ? ((a.prenom || '').charAt(0) + (a.nom || '').charAt(0)).toUpperCase() : '' }
+
+async function handleReqSubmit() {
+  reqErrors.value = {}
+  reqSubmitting.value = true
+  const fd = new FormData()
+  fd.append('type', reqForm.value.type)
+  fd.append('description', reqForm.value.description)
+  fd.append('date_debut', reqForm.value.date_debut)
+  if (reqForm.value.date_fin) fd.append('date_fin', reqForm.value.date_fin)
+  if (isRH.value && reqForm.value.agent_id) fd.append('agent_id', reqForm.value.agent_id)
+  if (reqSelectedFile.value) fd.append('lettre_demande', reqSelectedFile.value)
+  try {
+    await createRequest(fd)
+    ui.addToast('Demande creee avec succes.', 'success')
+    showRequestModal.value = false
+  } catch (err) {
+    if (err.response?.status === 422) reqErrors.value = err.response.data.errors || {}
+    else ui.addToast(err.response?.data?.message || 'Erreur lors de la creation.', 'danger')
+  } finally { reqSubmitting.value = false }
+}
+
+// ── Document Upload Modal ──
+const showUploadModal = ref(false)
+const uplSubmitting = ref(false)
+const uplErrors = ref({})
+const uplIsDragging = ref(false)
+const uplSelectedFile = ref(null)
+const uplFilePreview = ref(null)
+const uplFileInput = ref(null)
+
+const uplCatOptions = [
+  { value: 'identite', label: 'Identite', icon: 'fas fa-id-card' },
+  { value: 'parcours', label: 'Parcours', icon: 'fas fa-graduation-cap' },
+  { value: 'carriere', label: 'Carriere', icon: 'fas fa-briefcase' },
+  { value: 'mission', label: 'Mission', icon: 'fas fa-plane' },
+]
+
+function defaultUplForm() { return { nom_document: '', categories_document_id: '', description: '' } }
+const uplForm = ref(defaultUplForm())
+
+function openUploadModal() {
+  uplForm.value = defaultUplForm()
+  uplErrors.value = {}
+  uplSelectedFile.value = null
+  uplFilePreview.value = null
+  showUploadModal.value = true
+}
+function closeUploadModal() { showUploadModal.value = false }
+
+function uplHandleFileSelect(e) { const f = e.target.files[0]; if (f) uplSetFile(f) }
+function uplHandleDrop(e) { uplIsDragging.value = false; const f = e.dataTransfer.files[0]; if (f) uplSetFile(f) }
+function uplSetFile(file) {
+  uplSelectedFile.value = file
+  const ext = file.name.split('.').pop().toUpperCase()
+  uplFilePreview.value = { name: file.name, size: (file.size / 1024 / 1024).toFixed(2) + ' Mo', ext }
+}
+function uplRemoveFile() { uplSelectedFile.value = null; uplFilePreview.value = null; if (uplFileInput.value) uplFileInput.value.value = '' }
+
+async function handleUplSubmit() {
+  uplErrors.value = {}
+  uplSubmitting.value = true
+  const fd = new FormData()
+  fd.append('nom_document', uplForm.value.nom_document)
+  if (uplForm.value.categories_document_id) fd.append('categories_document_id', uplForm.value.categories_document_id)
+  if (uplForm.value.description) fd.append('description', uplForm.value.description)
+  if (uplSelectedFile.value) fd.append('fichier', uplSelectedFile.value)
+  try {
+    await createDocument(fd)
+    ui.addToast('Document uploade avec succes.', 'success')
+    showUploadModal.value = false
+  } catch (err) {
+    if (err.response?.status === 422) uplErrors.value = err.response.data.errors || {}
+    else ui.addToast(err.response?.data?.message || 'Erreur lors de l\'upload.', 'danger')
+  } finally { uplSubmitting.value = false }
+}
 
 onMounted(async () => {
   try {
@@ -380,5 +674,114 @@ onMounted(async () => {
   .dash-stat-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-activity-grid { grid-template-columns: 1fr; }
   .dash-info-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Request Create Modal (rcm-*) ── */
+.rcm-overlay { position: fixed; inset: 0; z-index: 1060; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: rcmFadeIn .2s; }
+@keyframes rcmFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.rcm-dialog { background: #fff; border-radius: 18px; width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,.18); animation: rcmSlideUp .25s ease-out; overflow: hidden; }
+@keyframes rcmSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.rcm-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.5rem; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; }
+.rcm-title { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.rcm-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: rgba(255,255,255,.15); color: #fff; font-size: .9rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; }
+.rcm-close:hover { background: rgba(255,255,255,.3); }
+.rcm-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+.rcm-label { display: block; font-size: .82rem; font-weight: 600; color: #475569; margin-bottom: .3rem; }
+.rcm-input { width: 100%; border-radius: 10px; border: 1px solid #e2e8f0; padding: .5rem .75rem; font-size: .85rem; transition: border-color .2s, box-shadow .2s; }
+.rcm-input:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,.1); }
+.rcm-input.is-invalid { border-color: #ef4444; }
+.rcm-textarea { resize: vertical; min-height: 70px; }
+.rcm-error { font-size: .75rem; color: #ef4444; margin-top: .2rem; }
+.rcm-agent-banner { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 1rem; }
+.rcm-agent-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #059669, #047857); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+.rcm-type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; margin-bottom: .5rem; }
+.rcm-type-card { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .7rem .3rem; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; transition: all .2s; background: #fff; }
+.rcm-type-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
+.rcm-type-card.active { border-color: #059669; background: #ecfdf5; }
+.rcm-type-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
+.rcm-type-card.active .rcm-type-icon { color: #059669; }
+.rcm-type-label { font-size: .68rem; font-weight: 600; color: #64748b; }
+.rcm-type-card.active .rcm-type-label { color: #059669; }
+.rcm-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+.rcm-upload-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 1.2rem; text-align: center; cursor: pointer; transition: all .2s; }
+.rcm-upload-zone:hover, .rcm-upload-zone.dragging { border-color: #059669; background: #ecfdf5; }
+.rcm-upload-icon { font-size: 1.5rem; color: #059669; margin-bottom: .3rem; display: block; }
+.rcm-file-preview { display: flex; align-items: center; gap: .6rem; padding: .7rem .85rem; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; }
+.rcm-file-icon-box { width: 32px; height: 32px; border-radius: 8px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
+.rcm-file-info { flex: 1; min-width: 0; }
+.rcm-file-name { font-weight: 600; font-size: .8rem; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rcm-file-size { font-size: .68rem; color: #94a3b8; }
+.rcm-file-remove { width: 28px; height: 28px; border-radius: 6px; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: .7rem; padding: 0; }
+.rcm-file-remove:hover { background: #fee2e2; }
+.rcm-footer { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; padding-top: 1rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; }
+.rcm-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .5rem 1.1rem; border-radius: 10px; font-size: .82rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; }
+.rcm-btn-cancel { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.rcm-btn-cancel:hover { background: #f8fafc; color: #334155; }
+.rcm-btn-submit { background: linear-gradient(135deg, #059669, #047857); color: #fff; }
+.rcm-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(5,150,105,.3); }
+.rcm-btn-submit:disabled { opacity: .6; transform: none; }
+
+@media (max-width: 576px) {
+  .rcm-overlay { padding: .5rem; }
+  .rcm-dialog { max-height: 95vh; border-radius: 14px; }
+  .rcm-header { padding: .85rem 1rem; }
+  .rcm-body { padding: 1rem; }
+  .rcm-type-grid { grid-template-columns: repeat(3, 1fr); }
+  .rcm-row { grid-template-columns: 1fr; }
+  .rcm-footer { flex-direction: column; align-items: stretch; }
+  .rcm-btn { justify-content: center; }
+}
+@media (max-width: 449.98px) { .rcm-type-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ── Document Upload Modal (dum-*) ── */
+.dum-overlay { position: fixed; inset: 0; z-index: 1060; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: dumFadeIn .2s; }
+@keyframes dumFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.dum-dialog { background: #fff; border-radius: 18px; width: 100%; max-width: 580px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,.18); animation: dumSlideUp .25s ease-out; overflow: hidden; }
+@keyframes dumSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.dum-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.5rem; background: linear-gradient(135deg, #0077B5 0%, #005a87 100%); color: #fff; }
+.dum-title { margin: 0; font-size: 1.05rem; font-weight: 700; }
+.dum-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: rgba(255,255,255,.15); color: #fff; font-size: .9rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; }
+.dum-close:hover { background: rgba(255,255,255,.3); }
+.dum-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
+.dum-label { display: block; font-size: .82rem; font-weight: 600; color: #475569; margin-bottom: .3rem; }
+.dum-input { width: 100%; border-radius: 10px; border: 1px solid #e2e8f0; padding: .5rem .75rem; font-size: .85rem; transition: border-color .2s, box-shadow .2s; }
+.dum-input:focus { outline: none; border-color: #0077B5; box-shadow: 0 0 0 3px rgba(0,119,181,.1); }
+.dum-input.is-invalid { border-color: #ef4444; }
+.dum-textarea { resize: vertical; min-height: 60px; }
+.dum-error { font-size: .75rem; color: #ef4444; margin-top: .2rem; }
+.dum-upload-zone { border: 2px dashed #bde0f5; border-radius: 14px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all .2s; background: #f8fbfe; }
+.dum-upload-zone:hover, .dum-upload-zone.dragging { border-color: #0077B5; background: #e8f4fd; }
+.dum-upload-icon { font-size: 2rem; color: #0077B5; margin-bottom: .4rem; display: block; }
+.dum-file-preview { display: flex; align-items: center; gap: .7rem; padding: .8rem 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+.dum-file-icon-box { width: 36px; height: 36px; border-radius: 10px; background: #e8f4fd; color: #0077B5; display: flex; align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0; }
+.dum-file-info { flex: 1; min-width: 0; }
+.dum-file-name { font-weight: 600; font-size: .82rem; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dum-file-size { font-size: .7rem; color: #94a3b8; }
+.dum-file-remove { width: 28px; height: 28px; border-radius: 6px; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: .7rem; padding: 0; }
+.dum-file-remove:hover { background: #fee2e2; }
+.dum-cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
+.dum-cat-card { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .7rem .3rem; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; transition: all .2s; background: #fff; }
+.dum-cat-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
+.dum-cat-card.active { border-color: #0077B5; background: #e8f4fd; }
+.dum-cat-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
+.dum-cat-card.active .dum-cat-icon { color: #0077B5; }
+.dum-cat-label { font-size: .68rem; font-weight: 600; color: #64748b; }
+.dum-cat-card.active .dum-cat-label { color: #0077B5; }
+.dum-footer { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; padding-top: 1rem; margin-top: .5rem; border-top: 1px solid #f1f5f9; }
+.dum-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .5rem 1.1rem; border-radius: 10px; font-size: .82rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; }
+.dum-btn-cancel { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
+.dum-btn-cancel:hover { background: #f8fafc; color: #334155; }
+.dum-btn-submit { background: linear-gradient(135deg, #0077B5, #005a87); color: #fff; }
+.dum-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,119,181,.3); }
+.dum-btn-submit:disabled { opacity: .6; transform: none; }
+
+@media (max-width: 576px) {
+  .dum-overlay { padding: .5rem; }
+  .dum-dialog { max-height: 95vh; border-radius: 14px; }
+  .dum-header { padding: .85rem 1rem; }
+  .dum-body { padding: 1rem; }
+  .dum-cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .dum-footer { flex-direction: column; align-items: stretch; }
+  .dum-btn { justify-content: center; }
 }
 </style>
