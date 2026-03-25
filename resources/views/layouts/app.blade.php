@@ -31,9 +31,13 @@
             --border-color: #E5E5E5;
         }
 
+        html {
+            background-color: var(--secondary-color);
+        }
+
         body {
             font-family: 'Segoe UI', 'Roboto', sans-serif;
-            background-color: var(--secondary-color);
+            background: transparent;
             color: var(--text-dark);
             padding-top: 0;
             position: relative;
