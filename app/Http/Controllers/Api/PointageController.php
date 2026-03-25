@@ -368,9 +368,27 @@ class PointageController extends Controller
         }
 
         // Sub-filter options for hierarchical drill-down
-        $nationalDepartments = Department::whereNull('province_id')
+        // SEN structures: group national departments by type (direction, departement, service rattache)
+        $allNational = Department::whereNull('province_id')
             ->orderBy('nom')
             ->get(['id', 'code', 'nom']);
+
+        $senStructures = [];
+        foreach ($allNational as $dept) {
+            if (in_array($dept->code, ['DIR'])) {
+                $group = 'Direction';
+            } elseif (str_starts_with($dept->code, 'D')) {
+                $group = 'Departements';
+            } else {
+                $group = 'Attaches';
+            }
+            $senStructures[] = [
+                'id' => $dept->id,
+                'code' => $dept->code,
+                'nom' => $dept->nom,
+                'group' => $group,
+            ];
+        }
 
         $allProvinces = Province::orderBy('nom')
             ->get(['id', 'code', 'nom']);
@@ -382,7 +400,7 @@ class PointageController extends Controller
             'month' => $month,
             'date_debut' => $dateDebut->format('Y-m-d'),
             'date_fin' => $dateFin->format('Y-m-d'),
-            'national_departments' => $nationalDepartments,
+            'sen_structures' => $senStructures,
             'provinces' => $allProvinces,
         ]);
     }

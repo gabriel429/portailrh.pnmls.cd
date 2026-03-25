@@ -41,16 +41,25 @@
           </div>
         </div>
 
-        <!-- Sub-filter dropdown (department or province) -->
+        <!-- Sub-filter dropdown (structure or province) -->
         <transition name="pm-subfilter-slide">
           <div v-if="selectedOrgane && subFilterType" class="pm-subfilter-bar">
             <div class="pm-subfilter-label">
-              <i class="fas" :class="subFilterType === 'department' ? 'fa-sitemap' : 'fa-map-marked-alt'"></i>
+              <i class="fas" :class="subFilterType === 'structure' ? 'fa-sitemap' : 'fa-map-marked-alt'"></i>
               {{ subFilterLabel }}
             </div>
             <select v-model="selectedSubFilter" @change="onSubFilterChange" class="pm-subfilter-select">
-              <option value="">Tous les {{ subFilterType === 'department' ? 'departements' : 'provinces' }}</option>
-              <option v-for="opt in subFilterOptions" :key="opt.id" :value="opt.id">{{ opt.nom }}</option>
+              <option value="">Toutes les {{ subFilterType === 'structure' ? 'structures' : 'provinces' }}</option>
+              <!-- SEN: grouped by Direction / Departments / Attaches -->
+              <template v-if="subFilterType === 'structure'">
+                <optgroup v-for="grp in senGroups" :key="grp.label" :label="grp.label">
+                  <option v-for="s in grp.items" :key="s.id" :value="s.id">{{ s.nom }}</option>
+                </optgroup>
+              </template>
+              <!-- SEP/SEL: flat list of provinces -->
+              <template v-else>
+                <option v-for="p in allProvinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
+              </template>
             </select>
             <button v-if="selectedSubFilter" @click="selectedSubFilter = ''; onSubFilterChange()" class="pm-subfilter-clear">
               <i class="fas fa-times"></i>
@@ -290,7 +299,7 @@ const dateFin = ref('')
 // Sub-filter state
 const selectedDepartment = ref('')
 const selectedProvince = ref('')
-const nationalDepartments = ref([])
+const senStructures = ref([])
 const allProvinces = ref([])
 
 const organeOptions = [
@@ -339,38 +348,51 @@ const kpiCards = computed(() => {
 
 const subFilterType = computed(() => {
   if (!selectedOrgane.value) return null
-  if (selectedOrgane.value.includes('National')) return 'department'
+  if (selectedOrgane.value.includes('National')) return 'structure'
   return 'province'
 })
 
 const subFilterLabel = computed(() => {
-  if (subFilterType.value === 'department') return 'Departement'
+  if (subFilterType.value === 'structure') return 'Structure'
   if (subFilterType.value === 'province') return 'Province'
   return ''
 })
 
-const subFilterOptions = computed(() => {
-  if (subFilterType.value === 'department') return nationalDepartments.value
-  if (subFilterType.value === 'province') return allProvinces.value
-  return []
+/** Group SEN structures by their group field for optgroups */
+const senGroups = computed(() => {
+  const groups = {}
+  for (const s of senStructures.value) {
+    if (!groups[s.group]) groups[s.group] = []
+    groups[s.group].push(s)
+  }
+  // Fixed order: Direction, Departements, Attaches
+  const ordered = []
+  if (groups['Direction']) ordered.push({ label: 'Direction', items: groups['Direction'] })
+  if (groups['Departements']) ordered.push({ label: 'Departements', items: groups['Departements'] })
+  if (groups['Attaches']) ordered.push({ label: 'Attaches / Services rattaches', items: groups['Attaches'] })
+  return ordered
 })
 
 const selectedSubFilter = computed({
   get() {
-    if (subFilterType.value === 'department') return selectedDepartment.value
+    if (subFilterType.value === 'structure') return selectedDepartment.value
     if (subFilterType.value === 'province') return selectedProvince.value
     return ''
   },
   set(val) {
-    if (subFilterType.value === 'department') selectedDepartment.value = val
+    if (subFilterType.value === 'structure') selectedDepartment.value = val
     else if (subFilterType.value === 'province') selectedProvince.value = val
   }
 })
 
 const activeSubFilterName = computed(() => {
   if (!selectedSubFilter.value) return ''
-  const opt = subFilterOptions.value.find(o => o.id == selectedSubFilter.value)
-  return opt?.nom || ''
+  if (subFilterType.value === 'structure') {
+    const s = senStructures.value.find(o => o.id == selectedSubFilter.value)
+    return s?.nom || ''
+  }
+  const p = allProvinces.value.find(o => o.id == selectedSubFilter.value)
+  return p?.nom || ''
 })
 
 /* ─── Helpers ─── */
@@ -448,7 +470,7 @@ async function fetchMonthly() {
     statsByOrgane.value = data.stats_by_organe || null
     dateDebut.value = data.date_debut || ''
     dateFin.value = data.date_fin || ''
-    nationalDepartments.value = data.national_departments || []
+    senStructures.value = data.sen_structures || []
     allProvinces.value = data.provinces || []
   } catch {
     ui.addToast('Erreur lors du chargement du rapport mensuel.', 'danger')
@@ -555,6 +577,8 @@ onMounted(() => {
 .pm-subfilter-select:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); }
 .pm-subfilter-select:focus { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); box-shadow: 0 0 0 2px rgba(255,255,255,.1); }
 .pm-subfilter-select option { background: #1e293b; color: #f1f5f9; }
+.pm-subfilter-select optgroup { font-weight: 700; color: #94a3b8; font-style: normal; padding-top: .3rem; }
+.pm-subfilter-select optgroup option { font-weight: 600; color: #f1f5f9; padding-left: .5rem; }
 .pm-subfilter-clear {
   background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
   color: rgba(255,255,255,.7); border-radius: 6px;
