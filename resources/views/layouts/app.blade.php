@@ -41,6 +41,7 @@
             color: var(--text-dark);
             padding-top: 0;
             min-height: 100vh;
+            isolation: isolate;
         }
 
         /* Logo watermark */
@@ -50,7 +51,7 @@
             background: url('{{ asset("images/logo-pnmls.png") }}') center center / 380px no-repeat;
             filter: blur(2px);
             opacity: 0.08;
-            z-index: 0;
+            z-index: -1;
             pointer-events: none;
         }
 
