@@ -40,6 +40,23 @@
             </button>
           </div>
         </div>
+
+        <!-- Sub-filter dropdown (department or province) -->
+        <transition name="pm-subfilter-slide">
+          <div v-if="selectedOrgane && subFilterType" class="pm-subfilter-bar">
+            <div class="pm-subfilter-label">
+              <i class="fas" :class="subFilterType === 'department' ? 'fa-sitemap' : 'fa-map-marked-alt'"></i>
+              {{ subFilterLabel }}
+            </div>
+            <select v-model="selectedSubFilter" @change="onSubFilterChange" class="pm-subfilter-select">
+              <option value="">Tous les {{ subFilterType === 'department' ? 'departements' : 'provinces' }}</option>
+              <option v-for="opt in subFilterOptions" :key="opt.id" :value="opt.id">{{ opt.nom }}</option>
+            </select>
+            <button v-if="selectedSubFilter" @click="selectedSubFilter = ''; onSubFilterChange()" class="pm-subfilter-clear">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        </transition>
       </section>
 
       <LoadingSpinner v-if="loading" message="Chargement du rapport mensuel..." />
@@ -108,6 +125,10 @@
           <div class="pm-filter-indicator">
             <span class="pm-filter-dot" :style="{ background: organeColor(selectedOrgane) }"></span>
             Filtrage : <strong>{{ organeOptions.find(o => o.value === selectedOrgane)?.label || selectedOrgane }}</strong>
+            <template v-if="activeSubFilterName">
+              <i class="fas fa-chevron-right mx-1" style="font-size:.6rem;opacity:.5"></i>
+              <strong>{{ activeSubFilterName }}</strong>
+            </template>
           </div>
           <button @click="clearOrgane" class="pm-filter-clear-btn">
             <i class="fas fa-times me-1"></i> Effacer le filtre
@@ -149,7 +170,7 @@
                       </div>
                       <div>
                         <div class="pm-agent-name">{{ stat.agent?.prenom }} {{ stat.agent?.nom }}</div>
-                        <div class="pm-agent-dept">{{ stat.agent?.department?.nom || '' }}</div>
+                        <div class="pm-agent-dept">{{ stat.agent?.departement?.nom || '' }}</div>
                       </div>
                     </div>
                   </td>
@@ -266,6 +287,12 @@ const statsByOrgane = ref(null)
 const dateDebut = ref('')
 const dateFin = ref('')
 
+// Sub-filter state
+const selectedDepartment = ref('')
+const selectedProvince = ref('')
+const nationalDepartments = ref([])
+const allProvinces = ref([])
+
 const organeOptions = [
   { value: 'Secretariat Executif National', label: 'National', code: 'SEN', color: '#0077B5', icon: 'fa-landmark' },
   { value: 'Secretariat Executif Provincial', label: 'Provincial', code: 'SEP', color: '#0ea5e9', icon: 'fa-map-marked-alt' },
@@ -306,6 +333,44 @@ const kpiCards = computed(() => {
     { icon: 'fa-user-times', value: globalStats.value.total_absent, label: 'Absences cumulees', bg: '#fee2e2', fg: '#dc2626' },
     { icon: 'fa-chart-line', value: globalStats.value.average_attendance, suffix: '%', label: 'Taux moyen', bg: rateColor(globalStats.value.average_attendance) + '18', fg: rateColor(globalStats.value.average_attendance) },
   ]
+})
+
+/* ─── Sub-filter logic ─── */
+
+const subFilterType = computed(() => {
+  if (!selectedOrgane.value) return null
+  if (selectedOrgane.value.includes('National')) return 'department'
+  return 'province'
+})
+
+const subFilterLabel = computed(() => {
+  if (subFilterType.value === 'department') return 'Departement'
+  if (subFilterType.value === 'province') return 'Province'
+  return ''
+})
+
+const subFilterOptions = computed(() => {
+  if (subFilterType.value === 'department') return nationalDepartments.value
+  if (subFilterType.value === 'province') return allProvinces.value
+  return []
+})
+
+const selectedSubFilter = computed({
+  get() {
+    if (subFilterType.value === 'department') return selectedDepartment.value
+    if (subFilterType.value === 'province') return selectedProvince.value
+    return ''
+  },
+  set(val) {
+    if (subFilterType.value === 'department') selectedDepartment.value = val
+    else if (subFilterType.value === 'province') selectedProvince.value = val
+  }
+})
+
+const activeSubFilterName = computed(() => {
+  if (!selectedSubFilter.value) return ''
+  const opt = subFilterOptions.value.find(o => o.id == selectedSubFilter.value)
+  return opt?.nom || ''
 })
 
 /* ─── Helpers ─── */
@@ -353,11 +418,19 @@ function avatarColor(name) {
 
 function filterByOrgane(organe) {
   selectedOrgane.value = organe
+  selectedDepartment.value = ''
+  selectedProvince.value = ''
   fetchMonthly()
 }
 
 function clearOrgane() {
   selectedOrgane.value = ''
+  selectedDepartment.value = ''
+  selectedProvince.value = ''
+  fetchMonthly()
+}
+
+function onSubFilterChange() {
   fetchMonthly()
 }
 
@@ -366,6 +439,8 @@ async function fetchMonthly() {
   try {
     const params = { month: selectedMonth.value }
     if (selectedOrgane.value) params.organe = selectedOrgane.value
+    if (selectedDepartment.value) params.department_id = selectedDepartment.value
+    if (selectedProvince.value) params.province_id = selectedProvince.value
 
     const { data } = await pointagesApi.monthly(params)
     agentStats.value = data.agent_stats || []
@@ -373,6 +448,8 @@ async function fetchMonthly() {
     statsByOrgane.value = data.stats_by_organe || null
     dateDebut.value = data.date_debut || ''
     dateFin.value = data.date_fin || ''
+    nationalDepartments.value = data.national_departments || []
+    allProvinces.value = data.provinces || []
   } catch {
     ui.addToast('Erreur lors du chargement du rapport mensuel.', 'danger')
   } finally {
@@ -385,6 +462,8 @@ async function exportExcel() {
   try {
     const params = { month: selectedMonth.value }
     if (selectedOrgane.value) params.organe = selectedOrgane.value
+    if (selectedDepartment.value) params.department_id = selectedDepartment.value
+    if (selectedProvince.value) params.province_id = selectedProvince.value
     const response = await pointagesApi.exportMonthly(params)
 
     const url = window.URL.createObjectURL(new Blob([response.data]))
@@ -454,6 +533,49 @@ onMounted(() => {
   display: inline-block; flex-shrink: 0;
 }
 .pm-pill.active .pm-pill-dot { box-shadow: 0 0 0 2px rgba(0,0,0,.15); }
+
+/* ── Sub-filter dropdown bar ── */
+.pm-subfilter-bar {
+  display: flex; align-items: center; gap: .6rem;
+  margin-top: .8rem; padding: .5rem .8rem;
+  background: rgba(255,255,255,.08); backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,.15); border-radius: 12px;
+}
+.pm-subfilter-label {
+  color: rgba(255,255,255,.75); font-size: .78rem; font-weight: 600;
+  white-space: nowrap; display: flex; align-items: center; gap: .4rem;
+}
+.pm-subfilter-select {
+  flex: 1; max-width: 280px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
+  color: #fff; border-radius: 8px; padding: .35rem .65rem;
+  font-size: .82rem; font-weight: 600; outline: none; cursor: pointer;
+  transition: all .2s ease; appearance: auto;
+}
+.pm-subfilter-select:hover { background: rgba(255,255,255,.18); border-color: rgba(255,255,255,.3); }
+.pm-subfilter-select:focus { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.4); box-shadow: 0 0 0 2px rgba(255,255,255,.1); }
+.pm-subfilter-select option { background: #1e293b; color: #f1f5f9; }
+.pm-subfilter-clear {
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+  color: rgba(255,255,255,.7); border-radius: 6px;
+  width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+  font-size: .7rem; cursor: pointer; transition: all .2s;
+}
+.pm-subfilter-clear:hover { background: rgba(220,38,38,.3); color: #fff; border-color: rgba(220,38,38,.4); }
+
+/* Sub-filter slide transition */
+.pm-subfilter-slide-enter-active,
+.pm-subfilter-slide-leave-active {
+  transition: all .3s cubic-bezier(.4,0,.2,1); overflow: hidden;
+}
+.pm-subfilter-slide-enter-from,
+.pm-subfilter-slide-leave-to {
+  opacity: 0; max-height: 0; margin-top: 0; padding-top: 0; padding-bottom: 0;
+}
+.pm-subfilter-slide-enter-to,
+.pm-subfilter-slide-leave-from {
+  opacity: 1; max-height: 60px;
+}
 
 /* ── Organe overview cards ── */
 .pm-organes {
@@ -697,6 +819,8 @@ onMounted(() => {
   .pm-kpi-icon-wrap { width: 40px; height: 40px; font-size: .9rem; }
   .pm-organe-pills { gap: .3rem; }
   .pm-pill { font-size: .72rem; padding: .28rem .65rem; }
+  .pm-subfilter-bar { flex-wrap: wrap; }
+  .pm-subfilter-select { max-width: 100%; flex: 1 1 100%; }
 
   /* Table compact */
   .pm-tbl thead th { font-size: .6rem; padding: .5rem .3rem; }

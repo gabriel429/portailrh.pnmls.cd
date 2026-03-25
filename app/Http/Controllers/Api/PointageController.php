@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pointage;
 use App\Models\Agent;
 use App\Models\Department;
+use App\Models\Province;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -253,11 +254,19 @@ class PointageController extends Controller
 
         $organeFilter = $request->query('organe');
 
-        $query = Pointage::with(['agent'])
+        $query = Pointage::with(['agent.departement', 'agent.province'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
 
         if ($organeFilter) {
             $query->whereHas('agent', fn($q) => $q->where('organe', $organeFilter));
+        }
+
+        if ($request->filled('department_id')) {
+            $query->whereHas('agent', fn($q) => $q->where('departement_id', $request->query('department_id')));
+        }
+
+        if ($request->filled('province_id')) {
+            $query->whereHas('agent', fn($q) => $q->where('province_id', $request->query('province_id')));
         }
 
         $pointages = $query->orderBy('date_pointage', 'desc')->get();
@@ -324,7 +333,7 @@ class PointageController extends Controller
             'sel' => 'Secretariat Executif Local',
         ];
 
-        $allPointages = Pointage::with(['agent'])
+        $allPointages = Pointage::with(['agent.departement', 'agent.province'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin])
             ->get();
 
@@ -358,6 +367,14 @@ class PointageController extends Controller
             ];
         }
 
+        // Sub-filter options for hierarchical drill-down
+        $nationalDepartments = Department::whereNull('province_id')
+            ->orderBy('nom')
+            ->get(['id', 'code', 'nom']);
+
+        $allProvinces = Province::orderBy('nom')
+            ->get(['id', 'code', 'nom']);
+
         return response()->json([
             'agent_stats' => $agentStats,
             'global_stats' => $globalStats,
@@ -365,6 +382,8 @@ class PointageController extends Controller
             'month' => $month,
             'date_debut' => $dateDebut->format('Y-m-d'),
             'date_fin' => $dateFin->format('Y-m-d'),
+            'national_departments' => $nationalDepartments,
+            'provinces' => $allProvinces,
         ]);
     }
 
@@ -468,10 +487,20 @@ class PointageController extends Controller
         $dateDebut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
         $dateFin = $dateDebut->copy()->endOfMonth();
 
-        $pointages = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin])
-            ->orderBy('date_pointage', 'desc')
-            ->get();
+        $query = Pointage::with(['agent'])
+            ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+
+        if ($request->filled('organe')) {
+            $query->whereHas('agent', fn($q) => $q->where('organe', $request->query('organe')));
+        }
+        if ($request->filled('department_id')) {
+            $query->whereHas('agent', fn($q) => $q->where('departement_id', $request->query('department_id')));
+        }
+        if ($request->filled('province_id')) {
+            $query->whereHas('agent', fn($q) => $q->where('province_id', $request->query('province_id')));
+        }
+
+        $pointages = $query->orderBy('date_pointage', 'desc')->get();
 
         $pointagesByAgent = $pointages->groupBy('agent_id');
 
