@@ -30,82 +30,83 @@
       </div>
     </div>
 
+    <!-- Status filter cards (always visible) -->
+    <div class="pt-filter-grid">
+      <button class="pt-filter-card pt-filter-all" :class="{ active: !filters.statut && !filters.trimestre }" @click="setFilter('', '')">
+        <div class="pt-filter-icon"><i class="fas fa-th-large"></i></div>
+        <div class="pt-filter-info">
+          <div class="pt-filter-name">Toutes</div>
+          <div class="pt-filter-count">{{ stats.total }} activite{{ stats.total > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+      <button class="pt-filter-card pt-filter-planned" :class="{ active: filters.statut === 'planifiee' }" @click="setFilter('planifiee', '')">
+        <div class="pt-filter-icon"><i class="fas fa-clock"></i></div>
+        <div class="pt-filter-info">
+          <div class="pt-filter-name">Planifiees</div>
+          <div class="pt-filter-count">{{ stats.planifiee }} activite{{ stats.planifiee > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+      <button class="pt-filter-card pt-filter-progress" :class="{ active: filters.statut === 'en_cours' }" @click="setFilter('en_cours', '')">
+        <div class="pt-filter-icon"><i class="fas fa-spinner"></i></div>
+        <div class="pt-filter-info">
+          <div class="pt-filter-name">En cours</div>
+          <div class="pt-filter-count">{{ stats.en_cours }} activite{{ stats.en_cours > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+      <button class="pt-filter-card pt-filter-done" :class="{ active: filters.statut === 'terminee' }" @click="setFilter('terminee', '')">
+        <div class="pt-filter-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="pt-filter-info">
+          <div class="pt-filter-name">Terminees</div>
+          <div class="pt-filter-count">{{ stats.terminee }} activite{{ stats.terminee > 1 ? 's' : '' }}</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Trimester filter (always visible) -->
+    <div class="pt-trim-bar">
+      <button
+        v-for="t in trimestres" :key="t.value"
+        class="pt-trim-btn"
+        :class="{ active: filters.trimestre === t.value }"
+        @click="setFilter(filters.statut, t.value)"
+      >
+        {{ t.label }}
+      </button>
+    </div>
+
+    <!-- Global progress bar -->
+    <div v-if="stats.total > 0" class="pt-progress-bar">
+      <div class="pt-progress-header">
+        <span class="pt-progress-label">Progression globale</span>
+        <span class="pt-progress-val">{{ stats.avg_pourcentage }}%</span>
+      </div>
+      <div class="pt-progress-track">
+        <div class="pt-progress-fill" :style="{ width: stats.avg_pourcentage + '%' }"></div>
+      </div>
+    </div>
+
+    <!-- Section header when filtered -->
+    <div v-if="filters.statut || filters.trimestre" class="pt-section-header">
+      <div class="pt-section-title">
+        <i class="fas fa-filter" style="color:#7c3aed;"></i>
+        <span v-if="filters.statut">{{ statutLabel(filters.statut) }}</span>
+        <span v-if="filters.statut && filters.trimestre"> &middot; </span>
+        <span v-if="filters.trimestre">{{ triLabel(filters.trimestre) }}</span>
+        <span class="pt-section-badge">{{ flatActivites.length }} activite{{ flatActivites.length > 1 ? 's' : '' }}</span>
+      </div>
+      <button class="pt-back-btn" @click="setFilter('', '')">
+        <i class="fas fa-arrow-left"></i> Tout afficher
+      </button>
+    </div>
+
+    <!-- Loading spinner (initial load only) -->
     <div v-if="loading" class="text-center py-5">
       <LoadingSpinner message="Chargement du plan de travail..." />
     </div>
 
     <template v-else>
-      <!-- Status filter cards -->
-      <div class="pt-filter-grid">
-        <button class="pt-filter-card pt-filter-all" :class="{ active: !filters.statut && !filters.trimestre }" @click="setFilter('', '')">
-          <div class="pt-filter-icon"><i class="fas fa-th-large"></i></div>
-          <div class="pt-filter-info">
-            <div class="pt-filter-name">Toutes</div>
-            <div class="pt-filter-count">{{ stats.total }} activite{{ stats.total > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-        <button class="pt-filter-card pt-filter-planned" :class="{ active: filters.statut === 'planifiee' }" @click="setFilter('planifiee', '')">
-          <div class="pt-filter-icon"><i class="fas fa-clock"></i></div>
-          <div class="pt-filter-info">
-            <div class="pt-filter-name">Planifiees</div>
-            <div class="pt-filter-count">{{ stats.planifiee }} activite{{ stats.planifiee > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-        <button class="pt-filter-card pt-filter-progress" :class="{ active: filters.statut === 'en_cours' }" @click="setFilter('en_cours', '')">
-          <div class="pt-filter-icon"><i class="fas fa-spinner"></i></div>
-          <div class="pt-filter-info">
-            <div class="pt-filter-name">En cours</div>
-            <div class="pt-filter-count">{{ stats.en_cours }} activite{{ stats.en_cours > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-        <button class="pt-filter-card pt-filter-done" :class="{ active: filters.statut === 'terminee' }" @click="setFilter('terminee', '')">
-          <div class="pt-filter-icon"><i class="fas fa-check-circle"></i></div>
-          <div class="pt-filter-info">
-            <div class="pt-filter-name">Terminees</div>
-            <div class="pt-filter-count">{{ stats.terminee }} activite{{ stats.terminee > 1 ? 's' : '' }}</div>
-          </div>
-        </button>
-      </div>
-
-      <!-- Trimester filter -->
-      <div class="pt-trim-bar">
-        <button
-          v-for="t in trimestres" :key="t.value"
-          class="pt-trim-btn"
-          :class="{ active: filters.trimestre === t.value }"
-          @click="setFilter(filters.statut, t.value)"
-        >
-          {{ t.label }}
-        </button>
-      </div>
-
-      <!-- Global progress bar -->
-      <div v-if="stats.total > 0" class="pt-progress-bar">
-        <div class="pt-progress-header">
-          <span class="pt-progress-label">Progression globale</span>
-          <span class="pt-progress-val">{{ stats.avg_pourcentage }}%</span>
-        </div>
-        <div class="pt-progress-track">
-          <div class="pt-progress-fill" :style="{ width: stats.avg_pourcentage + '%' }"></div>
-        </div>
-      </div>
-
-      <!-- Section header when filtered -->
-      <div v-if="filters.statut || filters.trimestre" class="pt-section-header">
-        <div class="pt-section-title">
-          <i class="fas fa-filter" style="color:#7c3aed;"></i>
-          <span v-if="filters.statut">{{ statutLabel(filters.statut) }}</span>
-          <span v-if="filters.statut && filters.trimestre"> &middot; </span>
-          <span v-if="filters.trimestre">{{ triLabel(filters.trimestre) }}</span>
-          <span class="pt-section-badge">{{ flatActivites.length }} activite{{ flatActivites.length > 1 ? 's' : '' }}</span>
-        </div>
-        <button class="pt-back-btn" @click="setFilter('', '')">
-          <i class="fas fa-arrow-left"></i> Tout afficher
-        </button>
-      </div>
-
       <!-- Activity cards -->
-      <div v-if="flatActivites.length" class="pt-grid">
+      <div v-if="flatActivites.length" class="pt-grid" :class="{ 'pt-filtering': filtering }">
         <div v-for="a in flatActivites" :key="a.id" class="pt-card">
           <div class="pt-card-top">
             <div class="pt-card-status-icon" :class="statutIconClass(a.statut)">
@@ -188,6 +189,8 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
 const loading = ref(true)
+const filtering = ref(false)
+const initialLoadDone = ref(false)
 const groupees = ref({})
 const stats = ref({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 })
 const canEdit = ref(false)
@@ -218,7 +221,10 @@ const flatActivites = computed(() => {
 })
 
 async function loadPlan() {
-  loading.value = true
+  if (!initialLoadDone.value) {
+    loading.value = true
+  }
+  filtering.value = true
   try {
     const params = { annee: filters.value.annee }
     if (filters.value.trimestre) params.trimestre = filters.value.trimestre
@@ -231,6 +237,8 @@ async function loadPlan() {
     ui.addToast('Erreur lors du chargement du plan de travail.', 'danger')
   } finally {
     loading.value = false
+    filtering.value = false
+    initialLoadDone.value = true
   }
 }
 
@@ -457,6 +465,9 @@ onMounted(() => loadPlan())
 
 /* ── Empty state ── */
 .pt-empty { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
+
+/* ── Filtering overlay ── */
+.pt-filtering { opacity: 0.4; pointer-events: none; transition: opacity .2s; }
 .pt-empty-icon {
   width: 64px; height: 64px; border-radius: 50%; background: #f3f4f6;
   display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin: 0 auto 1rem; color: #d1d5db;
