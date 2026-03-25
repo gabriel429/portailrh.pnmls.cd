@@ -1,1 +1,0 @@
-@extends('rh.affectations.form')
