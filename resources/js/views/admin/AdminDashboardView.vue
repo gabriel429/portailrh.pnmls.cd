@@ -190,7 +190,6 @@ const quickLinks = [
   { to: '/admin/sections', label: 'Sections', icon: 'fa-layer-group', color: '#0ea5e9' },
   { to: '/admin/cellules', label: 'Cellules', icon: 'fa-th', color: '#6366f1' },
   { to: '/admin/localites', label: 'Localites', icon: 'fa-map-pin', color: '#0d9488' },
-  { to: '/admin/documents-travail', label: 'Docs Travail', icon: 'fa-folder-open', color: '#0ea5e9' },
   { to: '/admin/categories-documents', label: 'Categories Docs', icon: 'fa-tags', color: '#f59e0b' },
   { to: '/admin/deployment', label: 'Deploiement', icon: 'fa-rocket', color: '#0077B5' },
   { to: '/admin/logs', label: 'Logs systeme', icon: 'fa-file-alt', color: '#64748b' },

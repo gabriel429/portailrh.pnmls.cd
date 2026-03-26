@@ -78,7 +78,6 @@ const baseNavItems = [
     { route: 'admin.fonctions.index', icon: 'fas fa-briefcase', label: 'Fonctions' },
     { route: 'admin.grades.index', icon: 'fas fa-layer-group', label: 'Grades' },
     { route: 'admin.roles.index', icon: 'fas fa-user-shield', label: 'Roles' },
-    { route: 'admin.documents-travail.index', icon: 'fas fa-file-alt', label: 'Documents de travail' },
     { route: 'admin.categories-documents.index', icon: 'fas fa-tags', label: 'Categories Documents' },
     { route: 'admin.utilisateurs.index', icon: 'fas fa-users-cog', label: 'Utilisateurs' },
     { route: 'admin.logs', icon: 'fas fa-scroll', label: 'Journaux' },
