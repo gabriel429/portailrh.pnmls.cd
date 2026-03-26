@@ -343,8 +343,8 @@ async function fetchData() {
   loading.value = true
   try {
     const [affRes, optRes] = await Promise.all([
-      client.get(`/admin/affectations`, { params: { page: 1, per_page: 9999 } }),
-      client.get('/admin/affectations/form-data'),
+      client.get(`/affectations`, { params: { page: 1, per_page: 9999 } }),
+      client.get('/affectations/form-data'),
     ])
 
     // Find the affectation by ID from paginated data
@@ -389,7 +389,7 @@ async function submitForm() {
   }
 
   try {
-    const { data } = await client.put(`/admin/affectations/${route.params.id}`, payload)
+    const { data } = await client.put(`/affectations/${route.params.id}`, payload)
     affectation.value = data
     ui.addToast('Affectation modifiee avec succes', 'success')
     router.push({ name: 'rh.affectations.index' })

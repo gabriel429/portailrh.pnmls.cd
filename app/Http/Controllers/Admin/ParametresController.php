@@ -1049,7 +1049,7 @@ class ParametresController extends Controller
     public function apiAffectationsFormData()
     {
         return response()->json([
-            'agents' => Agent::orderBy('nom')->get(['id', 'nom', 'prenom']),
+            'agents' => Agent::orderBy('nom')->get(['id', 'id_agent', 'nom', 'prenom']),
             'fonctions' => Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']),
             'departments' => Department::orderBy('nom')->get(['id', 'nom', 'code']),
             'sections' => Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']),

@@ -110,6 +110,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Communiques
         Route::apiResource('communiques', CommuniqueController::class);
+
+        // Affectations
+        Route::get('affectations', [ParametresController::class, 'apiAffectationsIndex']);
+        Route::get('affectations/form-data', [ParametresController::class, 'apiAffectationsFormData']);
+        Route::post('affectations', [ParametresController::class, 'apiAffectationsStore']);
+        Route::put('affectations/{affectation}', [ParametresController::class, 'apiAffectationsUpdate']);
+        Route::delete('affectations/{affectation}', [ParametresController::class, 'apiAffectationsDestroy']);
     });
 
     // Admin NT (Chef Section Nouvelle Technologie)
@@ -200,13 +207,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('categories-documents', [ParametresController::class, 'apiCategoriesDocsStore']);
         Route::put('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsUpdate']);
         Route::delete('categories-documents/{categorieDocument}', [ParametresController::class, 'apiCategoriesDocsDestroy']);
-
-        // Affectations
-        Route::get('affectations', [ParametresController::class, 'apiAffectationsIndex']);
-        Route::get('affectations/form-data', [ParametresController::class, 'apiAffectationsFormData']);
-        Route::post('affectations', [ParametresController::class, 'apiAffectationsStore']);
-        Route::put('affectations/{affectation}', [ParametresController::class, 'apiAffectationsUpdate']);
-        Route::delete('affectations/{affectation}', [ParametresController::class, 'apiAffectationsDestroy']);
 
         // Logs
         Route::get('logs', [ParametresController::class, 'apiLogs']);

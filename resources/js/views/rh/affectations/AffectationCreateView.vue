@@ -323,7 +323,7 @@ function onProvinceChange() {
 async function fetchOptions() {
   loadingOptions.value = true
   try {
-    const { data } = await client.get('/admin/affectations/form-data')
+    const { data } = await client.get('/affectations/form-data')
     options.agents = data.agents || []
     options.fonctions = data.fonctions || []
     options.departments = data.departments || []
@@ -352,7 +352,7 @@ async function submitForm() {
   }
 
   try {
-    await client.post('/admin/affectations', payload)
+    await client.post('/affectations', payload)
     ui.addToast('Affectation creee avec succes', 'success')
     router.push({ name: 'rh.affectations.index' })
   } catch (err) {

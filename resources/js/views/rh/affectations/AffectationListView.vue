@@ -363,7 +363,7 @@ async function fetchAffectations() {
   try {
     const params = { page: currentPage.value }
     if (search.value) params.search = search.value
-    const { data } = await client.get('/admin/affectations', { params })
+    const { data } = await client.get('/affectations', { params })
     affectations.value = data.data || []
     total.value = data.total || 0
     currentPage.value = data.current_page || 1
@@ -404,7 +404,7 @@ async function doDelete() {
   if (!affToDelete.value) return
   deleting.value = true
   try {
-    await client.delete(`/admin/affectations/${affToDelete.value.id}`)
+    await client.delete(`/affectations/${affToDelete.value.id}`)
     ui.addToast('Affectation supprimee avec succes', 'success')
     showDeleteModal.value = false
     affToDelete.value = null
@@ -499,7 +499,7 @@ async function openCreateModal() {
   if (options.agents.length === 0) {
     createLoadingData.value = true
     try {
-      const { data } = await client.get('/admin/affectations/form-data')
+      const { data } = await client.get('/affectations/form-data')
       options.agents = data.agents || []
       options.fonctions = data.fonctions || []
       options.departments = data.departments || []
@@ -507,7 +507,10 @@ async function openCreateModal() {
       options.cellules = data.cellules || []
       options.provinces = data.provinces || []
       options.localites = data.localites || []
-    } catch { /* ignore */ }
+    } catch (err) {
+      console.error('Error loading form data:', err)
+      ui.addToast('Erreur lors du chargement des donnees du formulaire.', 'danger')
+    }
     finally { createLoadingData.value = false }
   }
 }
@@ -544,7 +547,7 @@ async function handleCreateSubmit() {
     for (const [k, v] of Object.entries(createForm.value)) {
       if (v !== '' && v !== null) payload[k] = v
     }
-    await client.post('/admin/affectations', payload)
+    await client.post('/affectations', payload)
     ui.addToast('Affectation creee avec succes !', 'success')
     showCreateModal.value = false
     fetchAffectations()
