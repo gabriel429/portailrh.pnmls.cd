@@ -8,37 +8,27 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
-// Progressive Web App Setup - Service Worker Disabled During Deployment
-console.log('PWA: Service Worker temporarily disabled for clean deployment')
+// Progressive Web App Setup - Service Worker Re-enabled
+console.log('🚀 PWA: Service Worker re-enabled after clean deployment')
 
-// Force cleanup of existing service workers and caches
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(registrations => {
-        registrations.forEach(registration => {
-            console.log('Unregistering old service worker...')
-            registration.unregister()
-        })
-    })
-}
+// Service Worker Registration with proper error handling
+import { registerSW } from 'virtual:pwa-register'
 
-// Clear all caches to prevent conflicts
-if ('caches' in window) {
-    caches.keys().then(cacheNames => {
-        console.log('Clearing all caches:', cacheNames.length, 'caches')
-        Promise.all(
-            cacheNames.map(cacheName => {
-                console.log('Deleting cache:', cacheName)
-                return caches.delete(cacheName)
-            })
-        ).then(() => {
-            console.log('All caches cleared successfully')
-        })
-    })
-}
-
-// TODO: Re-enable service worker after deployment is confirmed working:
-// import { registerSW } from 'virtual:pwa-register'
-// const updateSW = registerSW({ registerType: 'autoUpdate' })
+const updateSW = registerSW({
+    onNeedRefresh() {
+        console.log('📱 PWA: New version available, updating...')
+        updateSW(true)
+    },
+    onOfflineReady() {
+        console.log('📱 PWA: App ready for offline use')
+    },
+    onRegistered(r) {
+        console.log('✅ PWA: Service Worker registered successfully')
+    },
+    onRegisterError(error) {
+        console.error('❌ PWA: Service Worker registration failed:', error)
+    }
+})
 
 const app = createApp(App)
 app.use(createPinia())
