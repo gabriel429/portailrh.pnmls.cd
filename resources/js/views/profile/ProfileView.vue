@@ -735,7 +735,8 @@ onMounted(fetchProfile)
 <style scoped>
 /* Cover & Avatar */
 .profile-cover {
-  background: linear-gradient(135deg, #0077B5 0%, #005885 50%, #00394f 100%);
+  background: url('/images/pnmls.jpeg') center/cover no-repeat, linear-gradient(135deg, rgba(0,119,181,0.15) 0%, rgba(0,88,133,0.25) 50%, rgba(0,57,79,0.35) 100%);
+  background-blend-mode: overlay;
   height: 200px;
   border-radius: 16px 16px 0 0;
   position: relative;
@@ -744,13 +745,11 @@ onMounted(fetchProfile)
 .profile-cover::after {
     content: '';
     position: absolute;
-    right: -20px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 200px;
-    height: 200px;
-    background: url('/images/pnmls.jpeg') center/contain no-repeat;
-    opacity: 0.10;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.2) 100%);
     pointer-events: none;
 }
 .profile-cover .cover-pattern {
