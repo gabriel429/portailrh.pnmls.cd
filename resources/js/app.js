@@ -8,6 +8,13 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
+// Initialize Offline Services for PWA functionality
+import './services/offlineStorage'
+import './services/cacheService'
+import './services/syncService'
+
+console.log('🗄️ Offline services initialized for PWA pointage system')
+
 // Progressive Web App Setup - Service Worker Re-enabled
 console.log('🚀 PWA: Service Worker re-enabled after clean deployment')
 

@@ -242,7 +242,7 @@ const routes = [
     {
         path: '/rh/pointages/create',
         name: 'rh.pointages.create',
-        component: () => import('@/views/rh/pointages/PointageCreateView.vue'),
+        component: () => import('@/views/rh/pointages/PointageCreateViewOffline.vue'),
         meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
     {
