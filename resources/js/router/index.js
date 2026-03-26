@@ -356,9 +356,9 @@ const routes = [
             { path: 'utilisateurs', name: 'admin.utilisateurs.index', component: () => import('@/views/admin/utilisateurs/UtilisateurListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'utilisateurs/create', name: 'admin.utilisateurs.create', component: () => import('@/views/admin/utilisateurs/UtilisateurFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'utilisateurs/:id/edit', name: 'admin.utilisateurs.edit', component: () => import('@/views/admin/utilisateurs/UtilisateurFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
-            { path: 'documents-travail', name: 'admin.documents-travail.index', component: () => import('@/views/admin/documents-travail/DocTravailListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
-            { path: 'documents-travail/create', name: 'admin.documents-travail.create', component: () => import('@/views/admin/documents-travail/DocTravailFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
-            { path: 'documents-travail/:id/edit', name: 'admin.documents-travail.edit', component: () => import('@/views/admin/documents-travail/DocTravailFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
+            { path: 'documents-travail', name: 'admin.documents-travail.index', component: () => import('@/views/admin/documents-travail/DocTravailListView.vue'), meta: { auth: true, docsTravail: true, layout: 'admin' } },
+            { path: 'documents-travail/create', name: 'admin.documents-travail.create', component: () => import('@/views/admin/documents-travail/DocTravailFormView.vue'), meta: { auth: true, docsTravail: true, layout: 'admin' } },
+            { path: 'documents-travail/:id/edit', name: 'admin.documents-travail.edit', component: () => import('@/views/admin/documents-travail/DocTravailFormView.vue'), meta: { auth: true, docsTravail: true, layout: 'admin' } },
             { path: 'categories-documents', name: 'admin.categories-documents.index', component: () => import('@/views/admin/categories-documents/CategorieDocListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'categories-documents/create', name: 'admin.categories-documents.create', component: () => import('@/views/admin/categories-documents/CategorieDocFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'categories-documents/:id/edit', name: 'admin.categories-documents.edit', component: () => import('@/views/admin/categories-documents/CategorieDocFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
@@ -408,6 +408,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.adminNT && !auth.isAdminNT) {
+        return { name: 'dashboard' }
+    }
+
+    if (to.meta.docsTravail && !auth.canManageDocsTravail) {
         return { name: 'dashboard' }
     }
 

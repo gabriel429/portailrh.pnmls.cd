@@ -194,12 +194,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursUpdate']);
         Route::delete('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursDestroy']);
 
-        // Documents de Travail
+        // Documents de Travail (read-only via admin)
         Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
         Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
+    });
+
+    // Documents de Travail CRUD (SEN + NT + RH)
+    Route::middleware('role:SEN,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
         Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
         Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
         Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);
+    });
 
         // Categories Documents
         Route::get('categories-documents', [ParametresController::class, 'apiCategoriesDocsIndex']);
