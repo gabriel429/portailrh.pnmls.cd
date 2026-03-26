@@ -23,3 +23,38 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# PWA Configuration for Hostinger
+# Fix MIME types to prevent 'text/html' errors
+AddType application/javascript .js
+AddType text/css .css
+AddType application/json .json
+AddType application/manifest+json .webmanifest
+AddType image/png .png
+AddType image/svg+xml .svg
+AddType font/woff2 .woff2
+
+# PWA Cache Control
+<FilesMatch "\.(js|css|png|svg|woff2)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+
+# Service Worker and Manifest - No Cache
+<FilesMatch "(sw\.js|manifest\.json|manifest\.webmanifest|workbox-.+\.js)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+</FilesMatch>
+
+# Security Headers
+Header always set X-Content-Type-Options nosniff
+Header always set X-Frame-Options DENY
+Header always set X-XSS-Protection "1; mode=block"
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/css
+    AddOutputFilterByType DEFLATE application/javascript
+    AddOutputFilterByType DEFLATE application/json
+    AddOutputFilterByType DEFLATE text/html
+</IfModule>
