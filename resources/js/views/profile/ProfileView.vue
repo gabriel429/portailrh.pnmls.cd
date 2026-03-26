@@ -22,7 +22,9 @@
         <!-- Main Profile Card -->
         <div class="profile-main-card">
           <div class="profile-cover">
-            <div class="cover-pattern"></div>
+            <div class="cover-pattern">
+              <img src="/images/pnmls.jpeg" alt="PNMLS" class="cover-image">
+            </div>
           </div>
           <div class="profile-avatar-wrap">
             <div class="profile-avatar">
@@ -735,27 +737,36 @@ onMounted(fetchProfile)
 <style scoped>
 /* Cover & Avatar */
 .profile-cover {
-  background: url('/images/pnmls.jpeg') center/cover no-repeat, linear-gradient(135deg, rgba(0,119,181,0.15) 0%, rgba(0,88,133,0.25) 50%, rgba(0,57,79,0.35) 100%);
-  background-blend-mode: overlay;
+  background: linear-gradient(135deg, #0077B5 0%, #005885 50%, #00394f 100%);
   height: 200px;
   border-radius: 16px 16px 0 0;
   position: relative;
   overflow: hidden;
 }
+.profile-cover .cover-pattern {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.cover-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.85;
+  mix-blend-mode: overlay;
+}
 .profile-cover::after {
     content: '';
     position: absolute;
-    right: 0;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    background: linear-gradient(135deg, transparent 0%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.2) 100%);
+    inset: 0;
+    background: linear-gradient(135deg, rgba(0,119,181,0.2) 0%, rgba(0,57,79,0.4) 100%);
     pointer-events: none;
-}
-.profile-cover .cover-pattern {
-  position: absolute; inset: 0;
-  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-  border-radius: 16px 16px 0 0;
+    z-index: 1;
 }
 .profile-main-card {
   background: #fff;
