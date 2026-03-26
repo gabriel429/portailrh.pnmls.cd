@@ -197,14 +197,6 @@ Route::middleware('auth:sanctum')->group(function () {
         // Documents de Travail (read-only via admin)
         Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
         Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
-    });
-
-    // Documents de Travail CRUD (SEN + RH)
-    Route::middleware('role:SEN,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
-        Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
-        Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
-        Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);
-    });
 
         // Categories Documents
         Route::get('categories-documents', [ParametresController::class, 'apiCategoriesDocsIndex']);
@@ -222,6 +214,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Fonctions by organe (used by forms)
         Route::get('fonctions-by-organe/{code}', [ParametresController::class, 'getAllFonctionsByOrgane']);
+    });
+
+    // Documents de Travail CRUD (SEN + RH)
+    Route::middleware('role:SEN,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
+        Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
+        Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
+        Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);
     });
 
     // SuperAdmin routes (audit logs + user management)
