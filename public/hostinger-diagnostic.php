@@ -45,9 +45,54 @@ function serveAsset($file) {
     $assetsDir = $_SERVER['DOCUMENT_ROOT'] . '/build/assets/';
     $filePath = $assetsDir . basename($file);
 
+    // Debug info pour diagnostic
+    if (isset($_GET['debug'])) {
+        header('Content-Type: text/plain');
+        echo "DEBUG INFO:\n";
+        echo "Requested file: " . $file . "\n";
+        echo "Document root: " . $_SERVER['DOCUMENT_ROOT'] . "\n";
+        echo "Assets dir: " . $assetsDir . "\n";
+        echo "Full path: " . $filePath . "\n";
+        echo "File exists: " . (file_exists($filePath) ? 'YES' : 'NO') . "\n";
+        echo "Realpath assets: " . realpath($assetsDir) . "\n";
+        echo "Realpath file: " . realpath($filePath) . "\n";
+
+        if (file_exists($assetsDir)) {
+            echo "Files in assets dir:\n";
+            $files = scandir($assetsDir);
+            foreach($files as $f) {
+                if ($f !== '.' && $f !== '..') {
+                    echo "  - " . $f . "\n";
+                }
+            }
+        } else {
+            echo "Assets directory does not exist!\n";
+        }
+        exit;
+    }
+
     // Sécurité : vérifier que le fichier existe et est dans le bon dossier
-    if (!file_exists($filePath) || strpos(realpath($filePath), realpath($assetsDir)) !== 0) {
-        http_response_code(404);
+    if (!file_exists($filePath)) {
+        // Essayer avec le fichier directement dans /build/
+        $altPath = $_SERVER['DOCUMENT_ROOT'] . '/build/' . basename($file);
+        if (file_exists($altPath)) {
+            $filePath = $altPath;
+        } else {
+            http_response_code(404);
+            header('Content-Type: text/plain');
+            echo "File not found: " . $filePath . "\nAlternate path tried: " . $altPath;
+            return false;
+        }
+    }
+
+    // Vérification sécurité
+    $assetsRealPath = realpath($assetsDir);
+    $fileRealPath = realpath($filePath);
+
+    if ($assetsRealPath && $fileRealPath && strpos($fileRealPath, $assetsRealPath) !== 0) {
+        http_response_code(403);
+        header('Content-Type: text/plain');
+        echo "Security violation: file outside assets directory";
         return false;
     }
 
@@ -67,6 +112,7 @@ function serveAsset($file) {
     header('Content-Length: ' . filesize($filePath));
     header('Cache-Control: public, max-age=31536000');
     header('X-Served-By: PHP-MIME-Fix');
+    header('X-Original-File: ' . basename($file));
 
     readfile($filePath);
     return true;
@@ -322,7 +368,7 @@ if ($action === 'test' && !empty($_GET['url'])) {
             ];
 
             const fixUrls = assets.map(asset =>
-                `${baseUrl}<?= basename(__FILE__) ?>?action=serve&file=${asset}`
+                `${baseUrl}/<?= basename(__FILE__) ?>?action=serve&file=${asset}`
             );
 
             fixDiv.innerHTML = `
@@ -333,6 +379,7 @@ if ($action === 'test' && !empty($_GET['url'])) {
                             <strong>${asset}:</strong><br>
                             <span class="highlight">${fixUrls[i]}</span>
                             <button onclick="testRepairUrl('${fixUrls[i]}')" style="margin-left: 10px; padding: 5px 10px;">Tester</button>
+                            <button onclick="window.open('${fixUrls[i]}&debug=1', '_blank')" style="margin-left: 5px; padding: 5px 10px; background: #6c757d;">Debug</button>
                         </div>
                     `).join('')}
                 </div>
