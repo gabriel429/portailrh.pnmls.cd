@@ -25,14 +25,31 @@
 </IfModule>
 
 # PWA Configuration for Hostinger
-# Fix MIME types to prevent 'text/html' errors
-AddType application/javascript .js
-AddType text/css .css
-AddType application/json .json
-AddType application/manifest+json .webmanifest
-AddType image/png .png
-AddType image/svg+xml .svg
-AddType font/woff2 .woff2
+# FORCE MIME types to prevent 'text/html' errors
+<FilesMatch "\.(js)$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.(css)$">
+    ForceType text/css
+</FilesMatch>
+<FilesMatch "\.(json)$">
+    ForceType application/json
+</FilesMatch>
+<FilesMatch "\.(webmanifest)$">
+    ForceType application/manifest+json
+</FilesMatch>
+<FilesMatch "\.(png)$">
+    ForceType image/png
+</FilesMatch>
+<FilesMatch "\.(svg)$">
+    ForceType image/svg+xml
+</FilesMatch>
+<FilesMatch "\.(woff2)$">
+    ForceType font/woff2
+</FilesMatch>
+<FilesMatch "\.(ico)$">
+    ForceType image/x-icon
+</FilesMatch>
 
 # PWA Cache Control
 <FilesMatch "\.(js|css|png|svg|woff2)$">
