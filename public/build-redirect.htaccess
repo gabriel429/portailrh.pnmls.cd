@@ -1,0 +1,11 @@
+# HOSTINGER LARAVEL VITE FIX
+# Redirects Vite asset requests to correct location
+RewriteEngine On
+
+# Redirect /public/build/* to /build/*
+RewriteCond %{REQUEST_URI} ^/public/build/(.*)$
+RewriteRule ^public/build/(.*)$ /build/$1 [R=301,L]
+
+# Handle build requests directly
+RewriteCond %{REQUEST_URI} ^/build/(.*)$
+RewriteRule ^build/(.*)$ /hostinger-diagnostic.php?action=serve&file=$1 [L,QSA]
