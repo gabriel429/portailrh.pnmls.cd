@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>🛠️ Test PHP MIME Fix - Portail RH</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test { margin: 15px 0; padding: 15px; border-left: 4px solid #ccc; background: #f9f9f9; }
+        .success { border-color: #28a745; background: #d4edda; color: #155724; }
+        .error { border-color: #dc3545; background: #f8d7da; color: #721c24; }
+        .warning { border-color: #ffc107; background: #fff3cd; color: #856404; }
+        .info { border-color: #17a2b8; background: #d1ecf1; color: #0c5460; }
+        .code { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; margin: 10px 0; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .emergency { background: #dc3545; }
+        .emergency:hover { background: #c82333; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🛠️ Test Solution PHP Anti-MIME</h1>
+        <p><strong>Objectif :</strong> Contourner les problèmes MIME de Hostinger avec du PHP qui force les bons headers.</p>
+
+        <div id="status" class="test info">
+            <strong>STATUS :</strong> En attente de test...
+        </div>
+
+        <h2>🔍 Tests Disponibles</h2>
+
+        <button onclick="testPhpAssetServer()">🔧 Tester serve-asset.php</button>
+        <button onclick="testEmergencyMethods()">🚨 Tester méthodes d'urgence</button>
+        <button onclick="testDirectAssets()">📁 Tester assets directs</button>
+        <button onclick="generateEmergencyCode()" class="emergency">⚡ Générer code d'urgence</button>
+
+        <div id="results"></div>
+
+        <div id="emergency-code" style="display: none;">
+            <h2>🚨 CODE D'URGENCE - Si tout échoue</h2>
+            <p>Vous pouvez forcer le chargement des CSS/JS via ces URLs de secours :</p>
+            <div class="code" id="emergency-urls"></div>
+        </div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            console.log(`[PHP Test] ${message}`);
+        }
+
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `test ${type}`;
+            status.innerHTML = `<strong>STATUS :</strong> ${message}`;
+        }
+
+        async function testUrl(url, expectedMime) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                const contentType = response.headers.get('content-type') || 'unknown';
+
+                if (response.status === 200) {
+                    if (contentType.includes(expectedMime)) {
+                        return { success: true, mime: contentType };
+                    } else {
+                        return { success: false, mime: contentType, error: 'Wrong MIME type' };
+                    }
+                } else {
+                    return { success: false, error: `HTTP ${response.status}` };
+                }
+            } catch (error) {
+                return { success: false, error: error.message };
+            }
+        }
+
+        async function testPhpAssetServer() {
+            log('🔧 Test du système PHP serve-asset.php...', 'info');
+            updateStatus('Test du serveur PHP en cours...', 'warning');
+
+            const tests = [
+                { url: '/build/serve-asset.php?file=app-CwcRsQhl.css', mime: 'text/css' },
+                { url: '/build/serve-asset.php?file=app-Bi-CZn0p.js', mime: 'application/javascript' },
+                { url: '/build/serve-asset.php?file=ui-BHVFKrWF.js', mime: 'application/javascript' }
+            ];
+
+            let successCount = 0;
+            for (const test of tests) {
+                const result = await testUrl(test.url, test.mime);
+                if (result.success) {
+                    log(`✅ PHP OK: ${test.url} → ${result.mime}`, 'success');
+                    successCount++;
+                } else {
+                    log(`❌ PHP FAIL: ${test.url} → ${result.error || result.mime}`, 'error');
+                }
+            }
+
+            if (successCount === tests.length) {
+                updateStatus('Solution PHP fonctionne parfaitement !', 'success');
+                log('🎉 SOLUTION PHP VALIDÉE - Vous pouvez utiliser serve-asset.php', 'success');
+            } else {
+                updateStatus(`Problèmes PHP détectés (${successCount}/${tests.length})`, 'error');
+            }
+        }
+
+        async function testEmergencyMethods() {
+            log('🚨 Test des méthodes d\'urgence spécifiques...', 'info');
+
+            const tests = [
+                { url: '/build/emergency-css.php', mime: 'text/css', name: 'CSS Emergency' },
+                { url: '/build/emergency-js.php?file=app-Bi-CZn0p.js', mime: 'application/javascript', name: 'JS Emergency' }
+            ];
+
+            for (const test of tests) {
+                const result = await testUrl(test.url, test.mime);
+                if (result.success) {
+                    log(`✅ ${test.name} OK: ${result.mime}`, 'success');
+                } else {
+                    log(`❌ ${test.name} FAIL: ${result.error || result.mime}`, 'error');
+                }
+            }
+        }
+
+        async function testDirectAssets() {
+            log('📁 Test des assets directs (méthode normale)...', 'info');
+
+            const tests = [
+                { url: '/build/assets/app-CwcRsQhl.css', mime: 'text/css' },
+                { url: '/build/assets/app-Bi-CZn0p.js', mime: 'application/javascript' }
+            ];
+
+            for (const test of tests) {
+                const result = await testUrl(test.url, test.mime);
+                if (result.success) {
+                    log(`✅ Asset direct OK: ${test.url}`, 'success');
+                } else {
+                    log(`❌ Asset direct FAIL: ${test.url} → ${result.error || result.mime}`, 'error');
+                }
+            }
+        }
+
+        function generateEmergencyCode() {
+            log('⚡ Génération du code d\'urgence...', 'warning');
+
+            const domain = window.location.origin;
+            const emergencyDiv = document.getElementById('emergency-code');
+            const urlsDiv = document.getElementById('emergency-urls');
+
+            urlsDiv.innerHTML = `
+<strong>URLs de secours à utiliser dans votre HTML :</strong><br><br>
+<!-- CSS via PHP --><br>
+&lt;link rel="stylesheet" href="${domain}/build/emergency-css.php"&gt;<br><br>
+<!-- JS via PHP --><br>
+&lt;script src="${domain}/build/emergency-js.php?file=app-Bi-CZn0p.js"&gt;&lt;/script&gt;<br>
+&lt;script src="${domain}/build/emergency-js.php?file=ui-BHVFKrWF.js"&gt;&lt;/script&gt;<br>
+&lt;script src="${domain}/build/emergency-js.php?file=runtime-core.esm-bundler-DnwlI2lq.js"&gt;&lt;/script&gt;<br><br>
+<strong>Ou via serve-asset.php :</strong><br>
+&lt;link rel="stylesheet" href="${domain}/build/serve-asset.php?file=app-CwcRsQhl.css"&gt;<br>
+&lt;script src="${domain}/build/serve-asset.php?file=app-Bi-CZn0p.js"&gt;&lt;/script&gt;
+            `;
+
+            emergencyDiv.style.display = 'block';
+            log('⚡ Code d\'urgence généré ! Voir ci-dessous.', 'success');
+            updateStatus('Code d\'urgence disponible', 'warning');
+        }
+
+        // Auto-start basic test
+        document.addEventListener('DOMContentLoaded', () => {
+            log('🛠️ Page de test PHP chargée', 'info');
+            updateStatus('Prêt pour les tests', 'info');
+        });
+    </script>
+</body>
+</html>
