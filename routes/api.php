@@ -199,8 +199,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
     });
 
-    // Documents de Travail CRUD (SEN + NT + RH)
-    Route::middleware('role:SEN,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
+    // Documents de Travail CRUD (SEN + RH)
+    Route::middleware('role:SEN,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
         Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
         Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
         Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);

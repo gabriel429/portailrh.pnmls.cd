@@ -38,7 +38,7 @@ export const useAuthStore = defineStore('auth', {
         },
         canManageDocsTravail(state) {
             if (state.user?.is_super_admin) return true
-            return this.isAdminNT || this.isSEN || this.isRH
+            return this.isSEN || this.isRH
         },
         hasAdminAccess(state) {
             if (state.user?.is_super_admin) return true
