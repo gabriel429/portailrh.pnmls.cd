@@ -23,25 +23,38 @@
               <i class="fas fa-user me-2"></i> Demandeur
             </h6>
 
-            <!-- Current agent banner -->
-            <div v-if="currentAgent" class="agent-banner mb-3">
-              <div class="agent-avatar">{{ initials(currentAgent) }}</div>
-              <div>
-                <div class="fw-semibold small">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
-                <div class="text-muted" style="font-size:.75rem;">{{ currentAgent.id_agent }}</div>
+            <!-- Agent connecté (non-RH): affiché comme présélectionné -->
+            <div v-if="!isRH && currentAgent" class="agent-selected-banner mb-4">
+              <div class="d-flex align-items-center gap-3">
+                <div class="agent-avatar">{{ initials(currentAgent) }}</div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
+                  <div class="text-muted small">Matricule: {{ currentAgent.id_agent }}</div>
+                </div>
+                <div class="agent-status">
+                  <i class="fas fa-check-circle text-success me-1"></i>
+                  <span class="small fw-semibold text-success">Demandeur</span>
+                </div>
               </div>
             </div>
 
-            <!-- RH: select agent -->
+            <!-- RH: sélection d'agent -->
             <div v-if="isRH" class="mb-4">
-              <label class="form-label fw-semibold">Agent <span class="text-danger">*</span></label>
+              <label class="form-label fw-semibold">
+                <i class="fas fa-users me-1 text-muted"></i>
+                Sélectionner l'agent <span class="text-danger">*</span>
+              </label>
               <select v-model="form.agent_id" class="form-select" :class="{ 'is-invalid': errors.agent_id }">
-                <option value="">-- Selectionner un agent --</option>
+                <option value="">-- Choisir un agent pour cette demande --</option>
                 <option v-for="a in agents" :key="a.id" :value="a.id">
                   {{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})
                 </option>
               </select>
               <div v-if="errors.agent_id" class="invalid-feedback d-block">{{ errors.agent_id[0] }}</div>
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                En tant qu'administrateur RH, vous pouvez créer une demande au nom d'un autre agent.
+              </div>
             </div>
 
             <!-- Section: Type -->
@@ -240,18 +253,25 @@ async function handleSubmit() {
   formData.append('description', form.value.description)
   formData.append('date_debut', form.value.date_debut)
   if (form.value.date_fin) formData.append('date_fin', form.value.date_fin)
-  if (isRH.value && form.value.agent_id) formData.append('agent_id', form.value.agent_id)
+
+  // Toujours envoyer agent_id:
+  // - Pour RH: l'agent sélectionné (ou connecté par défaut)
+  // - Pour agents normaux: l'agent connecté obligatoirement
+  if (form.value.agent_id) {
+    formData.append('agent_id', form.value.agent_id)
+  }
+
   if (selectedFile.value) formData.append('lettre_demande', selectedFile.value)
 
   try {
     await create(formData)
-    ui.addToast('Demande creee avec succes.', 'success')
+    ui.addToast('Demande créée avec succès.', 'success')
     router.push({ name: 'requests.index' })
   } catch (err) {
     if (err.response?.status === 422) {
       errors.value = err.response.data.errors || {}
     } else {
-      ui.addToast(err.response?.data?.message || 'Erreur lors de la creation.', 'danger')
+      ui.addToast(err.response?.data?.message || 'Erreur lors de la création.', 'danger')
     }
   } finally {
     submitting.value = false
@@ -281,9 +301,38 @@ onMounted(async () => {
 .section-title { font-weight: 700; font-size: .92rem; color: #1e293b; padding-bottom: .5rem; border-bottom: 2px solid #f1f5f9; }
 .section-title i { color: #0077B5; }
 
-/* Agent banner */
+/* Agent banners */
 .agent-banner { display: flex; align-items: center; gap: .75rem; padding: .85rem 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; }
 .agent-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0077B5, #005a87); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
+
+/* Agent sélectionné (pour agents non-RH) */
+.agent-selected-banner {
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 2px solid #0077B5;
+  border-radius: 16px;
+  position: relative;
+}
+.agent-selected-banner::before {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #0077B5, #0ea5e9);
+  border-radius: 16px;
+  z-index: -1;
+  opacity: 0.1;
+}
+.agent-status {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: 8px;
+}
 
 /* Type grid */
 .type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem; }
