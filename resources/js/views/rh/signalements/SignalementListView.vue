@@ -184,13 +184,12 @@
           <form @submit.prevent="handleCreate" id="createSignalementForm">
             <div class="scm-form-grid">
               <div class="scm-field">
-                <label class="scm-label">Agent <span class="text-danger">*</span></label>
-                <select v-model="createForm.agent_id" class="scm-select" required>
-                  <option value="">Selectionner un agent</option>
-                  <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
-                    ({{ ag.id_agent }}) {{ ag.prenom }} {{ ag.nom }}
-                  </option>
-                </select>
+                <label class="scm-label">Agent</label>
+                <div class="scm-agent-info">
+                  <i class="fas fa-user-circle me-1"></i>
+                  {{ auth.agent?.prenom }} {{ auth.agent?.nom }}
+                  <small class="text-muted ms-1">({{ auth.agent?.id_agent }})</small>
+                </div>
               </div>
               <div class="scm-field">
                 <label class="scm-label">Type <span class="text-danger">*</span></label>
@@ -236,11 +235,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
-import { list, remove, create, getAgents } from '@/api/signalements'
+import { useAuthStore } from '@/stores/auth'
+import { list, remove, create } from '@/api/signalements'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
+const auth = useAuthStore()
 const loading = ref(true)
 const signalements = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
@@ -345,7 +346,6 @@ onMounted(() => loadSignalements())
 const showCreateModal = ref(false)
 const createSubmitting = ref(false)
 const createErrors = ref({})
-const createAgents = ref([])
 const severiteOptions = [
     { value: 'basse', label: 'Basse', icon: 'fas fa-arrow-down', cls: 'sev-basse' },
     { value: 'moyenne', label: 'Moyenne', icon: 'fas fa-minus', cls: 'sev-moyenne' },
@@ -353,7 +353,7 @@ const severiteOptions = [
 ]
 
 function defaultCreateForm() {
-    return { agent_id: '', type: '', description: '', observations: '', severite: '' }
+    return { type: '', description: '', observations: '', severite: '' }
 }
 const createForm = ref(defaultCreateForm())
 
@@ -361,14 +361,6 @@ async function openCreateModal() {
     createForm.value = defaultCreateForm()
     createErrors.value = {}
     showCreateModal.value = true
-    if (createAgents.value.length === 0) {
-        try {
-            const { data } = await getAgents()
-            createAgents.value = data.data
-        } catch {
-            ui.addToast('Erreur lors du chargement des agents.', 'danger')
-        }
-    }
 }
 
 function closeCreateModal() { showCreateModal.value = false }
@@ -377,7 +369,7 @@ async function handleCreate() {
     createErrors.value = {}
     createSubmitting.value = true
     try {
-        await create(createForm.value)
+        await create({ ...createForm.value, agent_id: auth.agent?.id })
         ui.addToast('Signalement cree avec succes.', 'success')
         closeCreateModal()
         await loadSignalements(meta.value.current_page)
@@ -452,6 +444,11 @@ async function handleCreate() {
   outline: none; border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.1);
 }
 .scm-textarea { resize: vertical; min-height: 60px; }
+
+.scm-agent-info {
+  padding: .55rem .75rem; border-radius: 10px; font-size: .85rem;
+  background: #f8fafc; border: 1.5px solid #e2e8f0; color: #1e293b; font-weight: 600;
+}
 
 /* Severity cards */
 .scm-severity-cards { display: flex; gap: .5rem; }
