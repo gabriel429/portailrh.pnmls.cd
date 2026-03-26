@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>🔍 Diagnostic MIME Types - Portail RH</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test { margin: 15px 0; padding: 15px; border-left: 4px solid #ccc; background: #f9f9f9; }
+        .success { border-color: #28a745; background: #d4edda; color: #155724; }
+        .error { border-color: #dc3545; background: #f8d7da; color: #721c24; }
+        .warning { border-color: #ffc107; background: #fff3cd; color: #856404; }
+        .log { background: #f8f9fa; padding: 15px; border-radius: 5px; font-family: monospace; margin: 10px 0; max-height: 300px; overflow-y: auto; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .info { background: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnostic MIME Types Hostinger</h1>
+        <p>Cette page diagnostique pourquoi les fichiers CSS/JS retournent 'text/html' au lieu de leurs MIME types corrects.</p>
+
+        <button onclick="runFullDiagnostic()">🔍 Lancer diagnostic complet</button>
+        <button onclick="testAssets()">📁 Tester accès assets</button>
+        <button onclick="checkHtaccess()">⚙️ Vérifier .htaccess</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `test ${type}`;
+            div.innerHTML = `<strong>[${new Date().toLocaleTimeString()}]</strong> ${message}`;
+            results.appendChild(div);
+            console.log(`[Diagnostic] ${message}`);
+        }
+
+        async function testAssetAccess(url, expectedType) {
+            try {
+                const response = await fetch(url, { method: 'HEAD' });
+                const contentType = response.headers.get('content-type') || 'unknown';
+                const status = response.status;
+
+                if (status === 200) {
+                    if (contentType.includes(expectedType)) {
+                        log(`✅ ${url} → ${contentType} (CORRECT)`, 'success');
+                        return true;
+                    } else {
+                        log(`❌ ${url} → ${contentType} (ATTENDU: ${expectedType})`, 'error');
+                        return false;
+                    }
+                } else {
+                    log(`🚫 ${url} → Status ${status} (FICHIER INTROUVABLE)`, 'error');
+                    return false;
+                }
+            } catch (error) {
+                log(`💥 ${url} → Erreur: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function testAssets() {
+            log('🔍 Test d\'accès aux assets critiques...', 'info');
+
+            // Test des assets principaux qui posent problème
+            const assets = [
+                { url: '/build/assets/app-CwcRsQhl.css', type: 'text/css' },
+                { url: '/build/assets/app-Bi-CZn0p.js', type: 'application/javascript' },
+                { url: '/build/assets/ui-BHVFKrWF.js', type: 'application/javascript' },
+                { url: '/build/assets/runtime-core.esm-bundler-DnwlI2lq.js', type: 'application/javascript' },
+                { url: '/build/manifest.json', type: 'application/json' }
+            ];
+
+            let successCount = 0;
+            for (const asset of assets) {
+                const success = await testAssetAccess(asset.url, asset.type);
+                if (success) successCount++;
+                await new Promise(resolve => setTimeout(resolve, 100)); // Pause entre requêtes
+            }
+
+            if (successCount === assets.length) {
+                log(`🎉 TOUS LES ASSETS FONCTIONNENT (${successCount}/${assets.length})`, 'success');
+            } else {
+                log(`⚠️ PROBLÈMES DÉTECTÉS: ${successCount}/${assets.length} assets fonctionnent`, 'warning');
+            }
+        }
+
+        async function checkHtaccess() {
+            log('⚙️ Vérification configuration .htaccess...', 'info');
+
+            try {
+                // Test d'accès au .htaccess (devrait retourner 403 ou 500)
+                const response = await fetch('/build/.htaccess');
+                if (response.status === 403 || response.status === 500) {
+                    log('✅ .htaccess détecté sur le serveur', 'success');
+                } else if (response.status === 404) {
+                    log('❌ .htaccess MANQUANT dans /build/', 'error');
+                } else {
+                    log(`⚠️ .htaccess status inattendu: ${response.status}`, 'warning');
+                }
+            } catch (error) {
+                log(`✅ .htaccess probablement présent (erreur d'accès normale)`, 'info');
+            }
+
+            // Test indirect: un fichier CSS devrait avoir le bon MIME type si .htaccess fonctionne
+            const testResult = await testAssetAccess('/build/assets/app-CwcRsQhl.css', 'text/css');
+            if (!testResult) {
+                log('💡 SOLUTIONS POSSIBLES:', 'warning');
+                log('1. Vérifiez que public/build/.htaccess est uploadé', 'info');
+                log('2. Contactez Hostinger pour activer mod_headers/mod_rewrite', 'info');
+                log('3. Essayez de renommer .htaccess en .htaccess.txt puis .htaccess', 'info');
+            }
+        }
+
+        async function runFullDiagnostic() {
+            document.getElementById('results').innerHTML = '';
+            log('🚀 DÉBUT DU DIAGNOSTIC COMPLET', 'info');
+
+            // 1. Info environnement
+            log(`🌐 URL actuelle: ${window.location.href}`, 'info');
+            log(`🕒 Timestamp: ${new Date().toISOString()}`, 'info');
+            log(`💻 User Agent: ${navigator.userAgent}`, 'info');
+
+            // 2. Test service workers (nettoyés?)
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                if (registrations.length === 0) {
+                    log('✅ Service workers nettoyés', 'success');
+                } else {
+                    log(`⚠️ ${registrations.length} service worker(s) encore actifs`, 'warning');
+                }
+            }
+
+            // 3. Test caches
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                if (cacheNames.length === 0) {
+                    log('✅ Caches nettoyés', 'success');
+                } else {
+                    log(`⚠️ ${cacheNames.length} cache(s) encore présents: ${cacheNames.join(', ')}`, 'warning');
+                }
+            }
+
+            // 4. Test assets
+            await testAssets();
+
+            // 5. Test .htaccess
+            await checkHtaccess();
+
+            log('✅ DIAGNOSTIC TERMINÉ', 'success');
+            log('📋 RÉSUMÉ DES ACTIONS À PRENDRE:', 'info');
+            log('- Si les assets retournent "text/html": .htaccess ne fonctionne pas', 'info');
+            log('- Si Status 404: fichiers mal uploadés ou mauvais path', 'info');
+            log('- Si .htaccess manquant: uploader public/build/.htaccess', 'info');
+        }
+
+        // Auto-run au chargement
+        document.addEventListener('DOMContentLoaded', () => {
+            log('📋 Page de diagnostic chargée', 'success');
+            log('💡 Cliquez sur "Lancer diagnostic complet" pour analyser', 'info');
+        });
+    </script>
+</body>
+</html>
