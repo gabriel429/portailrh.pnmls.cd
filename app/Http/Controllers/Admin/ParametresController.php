@@ -1048,14 +1048,21 @@ class ParametresController extends Controller
 
     public function apiAffectationsFormData()
     {
+        $agents = Schema::hasTable('agents')
+            ? Agent::orderBy('nom')->get(['id', 'nom', 'prenom'])->map(function ($a) {
+                $a->id_agent = $a->id_agent;
+                return $a;
+            })
+            : [];
+
         return response()->json([
-            'agents' => Agent::orderBy('nom')->get(['id', 'id_agent', 'nom', 'prenom']),
-            'fonctions' => Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']),
-            'departments' => Department::orderBy('nom')->get(['id', 'nom', 'code']),
-            'sections' => Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']),
-            'cellules' => Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']),
-            'provinces' => Province::orderBy('nom')->get(['id', 'nom', 'code']),
-            'localites' => Localite::orderBy('nom')->get(['id', 'nom', 'code', 'province_id']),
+            'agents' => $agents,
+            'fonctions' => Schema::hasTable('fonctions') ? Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']) : [],
+            'departments' => Schema::hasTable('departments') ? Department::orderBy('nom')->get(['id', 'nom', 'code']) : [],
+            'sections' => Schema::hasTable('sections') ? Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']) : [],
+            'cellules' => Schema::hasTable('cellules') ? Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']) : [],
+            'provinces' => Schema::hasTable('provinces') ? Province::orderBy('nom')->get(['id', 'nom', 'code']) : [],
+            'localites' => Schema::hasTable('localites') ? Localite::orderBy('nom')->get(['id', 'nom', 'code', 'province_id']) : [],
         ]);
     }
 
