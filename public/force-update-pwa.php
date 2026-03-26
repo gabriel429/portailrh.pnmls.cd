@@ -10,28 +10,28 @@ $FORCE_UPDATE = true;
 $DELETE_OLD_FILES = true;
 $DEBUG_MODE = isset($_GET['debug']);
 
-// Structure des fichiers PWA
+// Structure des fichiers PWA - CHEMINS CORRIGÉS PAR DIAGNOSTIC
 $PWA_FILES = [
     [
-        'source' => '/build/assets/app--hCqS3r6.js',
+        'source' => '/public/build/assets/app--hCqS3r6.js',
         'target' => '/public/build/assets/app--hCqS3r6.js',
         'type' => 'js',
         'critical' => true
     ],
     [
-        'source' => '/build/sw.js',
+        'source' => '/public/build/sw.js',
         'target' => '/public/build/sw.js',
         'type' => 'js',
         'critical' => true
     ],
     [
-        'source' => '/build/workbox-8c29f6e4.js',
+        'source' => '/public/build/workbox-8c29f6e4.js',
         'target' => '/public/build/workbox-8c29f6e4.js',
         'type' => 'js',
         'critical' => true
     ],
     [
-        'source' => '/build/manifest.webmanifest',
+        'source' => '/public/build/manifest.webmanifest',
         'target' => '/public/build/manifest.webmanifest',
         'type' => 'json',
         'critical' => true
