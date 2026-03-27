@@ -182,12 +182,19 @@ body {
 .notif-see-all { font-size: .8rem !important; font-weight: 600; color: #0077B5 !important; padding: .6rem 1rem !important; }
 
 /* ── MODALS Z-INDEX FIX ── */
-/* Ensure all Bootstrap modals appear above navbar (z-index: 1050) */
+/* Ensure all Bootstrap modals appear above navbar (Bootstrap navbar default: z-index 1030) */
 .modal-backdrop {
-    z-index: 1055 !important;
+    z-index: 1900 !important;
 }
 .modal {
-    z-index: 1060 !important;
+    z-index: 2000 !important;
+}
+.modal.show,
+.modal.fade.show {
+    z-index: 2000 !important;
+}
+.modal-dialog {
+    z-index: 2001 !important;
 }
 /* Custom overlays should be higher */
 .asm-overlay,
@@ -196,7 +203,7 @@ body {
 .pcm-overlay,
 .ptm-overlay,
 .modal-backdrop-custom {
-    z-index: 1070 !important;
+    z-index: 2100 !important;
 }
 
 /* ── GLOBAL ── */
