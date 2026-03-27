@@ -2,10 +2,10 @@
   <div
     v-if="show"
     class="modal fade show"
-    style="display: block; background: rgba(0,0,0,0.5);"
+    style="display: block; background: rgba(0,0,0,0.5); z-index: 2000 !important;"
     @click="handleBackdropClick"
   >
-    <div class="modal-dialog modal-xl" @click.stop>
+    <div class="modal-dialog modal-xl" style="z-index: 2001 !important;" @click.stop>
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
