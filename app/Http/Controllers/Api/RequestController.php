@@ -66,6 +66,7 @@ class RequestController extends Controller
         $rules = [
             'type' => 'required|string',
             'description' => 'required|string',
+            'motivation' => 'nullable|string',
             'date_debut' => 'required|date',
             'date_fin' => 'nullable|date|after_or_equal:date_debut',
             'lettre_demande' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
@@ -74,6 +75,11 @@ class RequestController extends Controller
         // RH can select any agent; regular users submit for themselves
         if ($isRH) {
             $rules['agent_id'] = 'required|exists:agents,id';
+        }
+
+        // Motivation required for renforcement_capacites
+        if ($request->input('type') === 'renforcement_capacites') {
+            $rules['motivation'] = 'required|string|min:50';
         }
 
         $validated = $request->validate($rules);

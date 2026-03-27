@@ -117,6 +117,23 @@
               <div v-if="errors.description" class="invalid-feedback d-block">{{ errors.description[0] }}</div>
             </div>
 
+            <!-- Motivation (only for renforcement_capacites) -->
+            <div v-if="form.type === 'renforcement_capacites'" class="mb-4">
+              <label class="form-label fw-semibold">
+                <i class="fas fa-lightbulb me-1 text-muted"></i> Motivation liée à votre fonction/poste <span class="text-danger">*</span>
+              </label>
+              <textarea
+                v-model="form.motivation" rows="5"
+                class="form-control" :class="{ 'is-invalid': errors.motivation }"
+                placeholder="Expliquez en quoi ce renforcement des capacités est lié à votre fonction actuelle et comment il contribuera à améliorer vos compétences dans votre poste... (minimum 50 caractères)"
+              ></textarea>
+              <div v-if="errors.motivation" class="invalid-feedback d-block">{{ errors.motivation[0] }}</div>
+              <div class="form-text">
+                <i class="fas fa-info-circle me-1"></i>
+                Détaillez comment cette formation/renforcement est pertinent pour votre rôle actuel et vos responsabilités.
+              </div>
+            </div>
+
             <!-- Section: File upload -->
             <h6 class="section-title mt-4">
               <i class="fas fa-paperclip me-2"></i> Lettre de demande
@@ -198,6 +215,7 @@ const form = ref({
   date_debut: '',
   date_fin: '',
   description: '',
+  motivation: '',
 })
 
 const agents = ref([])

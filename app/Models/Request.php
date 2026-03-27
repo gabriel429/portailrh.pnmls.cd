@@ -17,6 +17,7 @@ class Request extends Model
         'agent_id',
         'type',
         'description',
+        'motivation',
         'date_debut',
         'date_fin',
         'statut',

@@ -417,6 +417,17 @@
                 <div v-if="createErrors.description" class="rcm-error">{{ createErrors.description[0] }}</div>
               </div>
 
+              <!-- Motivation (only for renforcement_capacites) -->
+              <div v-if="createForm.type === 'renforcement_capacites'" class="mt-3">
+                <label class="rcm-label"><i class="fas fa-lightbulb me-1 text-muted"></i> Motivation liée à votre fonction/poste <span class="text-danger">*</span></label>
+                <textarea v-model="createForm.motivation" rows="4" class="rcm-input rcm-textarea" :class="{ 'is-invalid': createErrors.motivation }" placeholder="Expliquez en quoi ce renforcement est lié à votre fonction actuelle... (min. 50 caractères)"></textarea>
+                <div v-if="createErrors.motivation" class="rcm-error">{{ createErrors.motivation[0] }}</div>
+                <div class="text-muted" style="font-size:.7rem;margin-top:.25rem;">
+                  <i class="fas fa-info-circle me-1"></i>
+                  Détaillez comment cette formation/renforcement contribuera à votre rôle.
+                </div>
+              </div>
+
               <!-- File upload -->
               <div class="mt-3">
                 <label class="rcm-label"><i class="fas fa-paperclip me-1 text-muted"></i> Lettre de demande <span class="text-muted fw-normal">(optionnel)</span></label>
@@ -524,7 +535,7 @@ const typeOptions = [
 ]
 
 function defaultCreateForm() {
-  return { agent_id: currentAgent.value?.id || '', type: '', date_debut: '', date_fin: '', description: '' }
+  return { agent_id: currentAgent.value?.id || '', type: '', date_debut: '', date_fin: '', description: '', motivation: '' }
 }
 const createForm = ref(defaultCreateForm())
 
@@ -575,6 +586,7 @@ async function handleCreateSubmit() {
   const formData = new FormData()
   formData.append('type', createForm.value.type)
   formData.append('description', createForm.value.description)
+  if (createForm.value.motivation) formData.append('motivation', createForm.value.motivation)
   formData.append('date_debut', createForm.value.date_debut)
   if (createForm.value.date_fin) formData.append('date_fin', createForm.value.date_fin)
   if (isRH.value && createForm.value.agent_id) formData.append('agent_id', createForm.value.agent_id)
