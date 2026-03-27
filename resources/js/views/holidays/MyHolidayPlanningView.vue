@@ -1,5 +1,6 @@
 <template>
-  <div class="rh-modern">
+  <div class="rh-modern page-with-watermark">
+    <div class="watermark-logo"></div>
     <div class="rh-shell">
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
@@ -280,6 +281,31 @@ onMounted(() => loadPlanning())
 </script>
 
 <style scoped>
+.page-with-watermark {
+  position: relative;
+  overflow: hidden;
+  min-height: 100vh;
+}
+
+.watermark-logo {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  height: 420px;
+  background: url('/images/logo-pnmls.png') center / contain no-repeat;
+  opacity: 0.04;
+  filter: blur(2px) grayscale(30%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.rh-shell {
+  position: relative;
+  z-index: 1;
+}
+
 .stat-card-mini {
   padding: 1rem;
   border-radius: 10px;
