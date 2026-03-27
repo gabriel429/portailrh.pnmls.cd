@@ -181,6 +181,24 @@ body {
 .notif-empty { text-align: center; padding: 1.5rem 1rem; color: #9ca3af; font-size: .82rem; }
 .notif-see-all { font-size: .8rem !important; font-weight: 600; color: #0077B5 !important; padding: .6rem 1rem !important; }
 
+/* ── MODALS Z-INDEX FIX ── */
+/* Ensure all Bootstrap modals appear above navbar (z-index: 1050) */
+.modal-backdrop {
+    z-index: 1055 !important;
+}
+.modal {
+    z-index: 1060 !important;
+}
+/* Custom overlays should be higher */
+.asm-overlay,
+.rcm-overlay,
+.dum-overlay,
+.pcm-overlay,
+.ptm-overlay,
+.modal-backdrop-custom {
+    z-index: 1070 !important;
+}
+
 /* ── GLOBAL ── */
 .card { border: 1px solid var(--border-color); border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
 .card-header { background-color: white; border-bottom: 1px solid var(--border-color); padding: 20px; font-weight: 600; }
