@@ -30,9 +30,9 @@
             <button class="btn btn-light btn-sm" @click="printAgent">
               <i class="fas fa-print me-1"></i> Imprimer
             </button>
-            <router-link :to="{ name: 'rh.agents.edit', params: { id: agent.id } }" class="btn btn-warning btn-sm">
+            <button class="btn btn-warning btn-sm" @click="openEditModal">
               <i class="fas fa-edit me-1"></i> Modifier
-            </router-link>
+            </button>
             <router-link :to="{ name: 'rh.agents.index' }" class="btn btn-outline-light btn-sm">
               <i class="fas fa-arrow-left me-1"></i> Retour
             </router-link>
@@ -465,9 +465,9 @@
               <h5 class="mb-0"><i class="fas fa-cog me-2 text-primary"></i>Actions</h5>
             </div>
             <div class="card-body">
-              <router-link :to="{ name: 'rh.agents.edit', params: { id: agent.id } }" class="btn btn-warning btn-sm w-100 mb-2">
+              <button class="btn btn-warning btn-sm w-100 mb-2" @click="openEditModal">
                 <i class="fas fa-edit me-2"></i> Modifier
-              </router-link>
+              </button>
               <button class="btn btn-danger btn-sm w-100" @click="confirmDelete">
                 <i class="fas fa-trash me-2"></i> Supprimer
               </button>
@@ -486,6 +486,14 @@
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
     />
+
+    <!-- Agent Edit Modal -->
+    <AgentEditModal
+      :show="showEditModal"
+      :agent-id="editAgentId"
+      @close="closeEditModal"
+      @updated="onAgentUpdated"
+    />
   </div>
 </template>
 
@@ -496,6 +504,7 @@ import { useUiStore } from '@/stores/ui'
 import { get, remove } from '@/api/agents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import AgentEditModal from '@/components/agents/AgentEditModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -508,6 +517,25 @@ const activeTab = ref('informations')
 const showDeleteModal = ref(false)
 const deleting = ref(false)
 const printing = ref(false)
+const showEditModal = ref(false)
+const editAgentId = ref(null)
+
+function openEditModal() {
+    if (agent.value) {
+        editAgentId.value = agent.value.id
+        showEditModal.value = true
+    }
+}
+
+function closeEditModal() {
+    showEditModal.value = false
+    editAgentId.value = null
+}
+
+function onAgentUpdated() {
+    closeEditModal()
+    fetchAgent()
+}
 
 // Document types config
 const docTypes = [

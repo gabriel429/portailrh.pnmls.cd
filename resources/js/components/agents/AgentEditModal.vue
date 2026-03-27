@@ -67,15 +67,15 @@
                 </div>
               </div>
 
-              <!-- Section 1: Identité -->
+              <!-- Section 1: Identite -->
               <div class="form-section">
                 <div class="form-section-header">
                   <div class="form-section-icon" style="background:linear-gradient(135deg,#0077B5,#00a0dc)">
                     <i class="fas fa-id-card"></i>
                   </div>
                   <div>
-                    <h6>Identité de l'agent</h6>
-                    <small>Nom, prénom, post-nom et état civil</small>
+                    <h6>Identite de l'agent</h6>
+                    <small>Nom, prenom, post-nom et etat civil</small>
                   </div>
                 </div>
                 <div class="row g-3">
@@ -83,93 +83,135 @@
                     <label class="form-label fw-medium">ID Agent</label>
                     <p class="form-control-plaintext fw-bold text-primary">{{ agent.id_agent }}</p>
                   </div>
-                  <div class="col-md-6">
-                    <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.nom }" id="nom" v-model="form.nom" required>
+                  <div class="col-md-4">
+                    <label for="ed_nom" class="form-label">Nom <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.nom }" id="ed_nom" v-model="form.nom" required>
                     <div v-if="errors.nom" class="invalid-feedback">{{ errors.nom[0] }}</div>
                   </div>
-                  <div class="col-md-6">
-                    <label for="postnom" class="form-label">Post-nom</label>
-                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.postnom }" id="postnom" v-model="form.postnom">
+                  <div class="col-md-4">
+                    <label for="ed_postnom" class="form-label">Post-nom</label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.postnom }" id="ed_postnom" v-model="form.postnom">
                     <div v-if="errors.postnom" class="invalid-feedback">{{ errors.postnom[0] }}</div>
                   </div>
-                  <div class="col-md-6">
-                    <label for="prenom" class="form-label">Prénom <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.prenom }" id="prenom" v-model="form.prenom" required>
+                  <div class="col-md-4">
+                    <label for="ed_prenom" class="form-label">Prenom <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.prenom }" id="ed_prenom" v-model="form.prenom" required>
                     <div v-if="errors.prenom" class="invalid-feedback">{{ errors.prenom[0] }}</div>
                   </div>
-                  <div class="col-md-4">
-                    <label for="sexe" class="form-label">Sexe <span class="text-danger">*</span></label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.sexe }" id="sexe" v-model="form.sexe" required>
+                  <div class="col-md-3">
+                    <label for="ed_sexe" class="form-label">Sexe <span class="text-danger">*</span></label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.sexe }" id="ed_sexe" v-model="form.sexe" required>
                       <option value="M">Masculin</option>
-                      <option value="F">Féminin</option>
+                      <option value="F">Feminin</option>
                     </select>
                     <div v-if="errors.sexe" class="invalid-feedback">{{ errors.sexe[0] }}</div>
                   </div>
-                  <div class="col-md-4">
-                    <label for="annee_naissance" class="form-label">Année de naissance <span class="text-danger">*</span></label>
-                    <input type="number" min="1945" max="2100" class="form-control" :class="{ 'is-invalid': errors.annee_naissance }" id="annee_naissance" v-model.number="form.annee_naissance" required>
+                  <div class="col-md-3">
+                    <label for="ed_annee_naissance" class="form-label">Annee de naissance <span class="text-danger">*</span></label>
+                    <input type="number" min="1945" max="2100" class="form-control" :class="{ 'is-invalid': errors.annee_naissance }" id="ed_annee_naissance" v-model.number="form.annee_naissance" required>
                     <div v-if="errors.annee_naissance" class="invalid-feedback">{{ errors.annee_naissance[0] }}</div>
                   </div>
-                  <div class="col-md-4">
-                    <label for="date_naissance" class="form-label">Date de naissance</label>
-                    <input type="date" class="form-control" :class="{ 'is-invalid': errors.date_naissance }" id="date_naissance" v-model="form.date_naissance">
+                  <div class="col-md-3">
+                    <label for="ed_date_naissance" class="form-label">Date de naissance</label>
+                    <input type="date" class="form-control" :class="{ 'is-invalid': errors.date_naissance }" id="ed_date_naissance" v-model="form.date_naissance">
                     <div v-if="errors.date_naissance" class="invalid-feedback">{{ errors.date_naissance[0] }}</div>
                   </div>
-                  <div class="col-md-6">
-                    <label for="lieu_naissance" class="form-label">Lieu de naissance <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.lieu_naissance }" id="lieu_naissance" v-model="form.lieu_naissance" required>
+                  <div class="col-md-3">
+                    <label for="ed_lieu_naissance" class="form-label">Lieu de naissance <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.lieu_naissance }" id="ed_lieu_naissance" v-model="form.lieu_naissance" required>
                     <div v-if="errors.lieu_naissance" class="invalid-feedback">{{ errors.lieu_naissance[0] }}</div>
                   </div>
-                  <div class="col-md-6">
-                    <label for="situation_familiale" class="form-label">Situation familiale</label>
-                    <select class="form-select" id="situation_familiale" v-model="form.situation_familiale">
-                      <option value="">-- Sélectionner --</option>
-                      <option value="celibataire">Célibataire</option>
-                      <option value="marie">Marié(e)</option>
-                      <option value="divorce">Divorcé(e)</option>
+                  <div class="col-md-4">
+                    <label for="ed_situation_familiale" class="form-label">Situation familiale</label>
+                    <select class="form-select" id="ed_situation_familiale" v-model="form.situation_familiale">
+                      <option value="">-- Selectionner --</option>
+                      <option value="celibataire">Celibataire</option>
+                      <option value="marie">Marie(e)</option>
+                      <option value="divorce">Divorce(e)</option>
                       <option value="veuf">Veuf/Veuve</option>
                     </select>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="ed_nombre_enfants" class="form-label">Nombre d'enfants</label>
+                    <input type="number" min="0" class="form-control" id="ed_nombre_enfants" v-model.number="form.nombre_enfants">
                   </div>
                 </div>
               </div>
 
-              <!-- Section 2: Coordonnées -->
+              <!-- Section 2: Coordonnees -->
               <div class="form-section">
                 <div class="form-section-header">
                   <div class="form-section-icon" style="background:linear-gradient(135deg,#10b981,#059669)">
                     <i class="fas fa-address-book"></i>
                   </div>
                   <div>
-                    <h6>Coordonnées</h6>
-                    <small>E-mails, téléphone et adresse</small>
+                    <h6>Coordonnees</h6>
+                    <small>E-mails, telephone et adresse</small>
                   </div>
                 </div>
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label for="email_professionnel" class="form-label">E-mail institutionnel</label>
-                    <input type="email" class="form-control" :class="{ 'is-invalid': errors.email_professionnel }" id="email_professionnel" v-model="form.email_professionnel">
+                    <label for="ed_email_professionnel" class="form-label">E-mail institutionnel</label>
+                    <input type="email" class="form-control" :class="{ 'is-invalid': errors.email_professionnel }" id="ed_email_professionnel" v-model="form.email_professionnel">
                     <div v-if="errors.email_professionnel" class="invalid-feedback">{{ errors.email_professionnel[0] }}</div>
                   </div>
                   <div class="col-md-6">
-                    <label for="email_prive" class="form-label">E-mail privé</label>
-                    <input type="email" class="form-control" :class="{ 'is-invalid': errors.email_prive }" id="email_prive" v-model="form.email_prive">
+                    <label for="ed_email_prive" class="form-label">E-mail prive</label>
+                    <input type="email" class="form-control" :class="{ 'is-invalid': errors.email_prive }" id="ed_email_prive" v-model="form.email_prive">
                     <div v-if="errors.email_prive" class="invalid-feedback">{{ errors.email_prive[0] }}</div>
                   </div>
                   <div class="col-md-6">
-                    <label for="telephone" class="form-label">Téléphone</label>
-                    <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone }" id="telephone" v-model="form.telephone">
+                    <label for="ed_telephone" class="form-label">Telephone</label>
+                    <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone }" id="ed_telephone" v-model="form.telephone">
                     <div v-if="errors.telephone" class="invalid-feedback">{{ errors.telephone[0] }}</div>
                   </div>
                   <div class="col-md-6">
-                    <label for="adresse" class="form-label">Adresse</label>
-                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.adresse }" id="adresse" v-model="form.adresse">
+                    <label for="ed_adresse" class="form-label">Adresse</label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.adresse }" id="ed_adresse" v-model="form.adresse">
                     <div v-if="errors.adresse" class="invalid-feedback">{{ errors.adresse[0] }}</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Section 3: Fonction et Organe -->
+              <!-- Section 3: Matricule & Grade -->
+              <div class="form-section">
+                <div class="form-section-header">
+                  <div class="form-section-icon" style="background:linear-gradient(135deg,#f59e0b,#d97706)">
+                    <i class="fas fa-id-badge"></i>
+                  </div>
+                  <div>
+                    <h6>Matricule & Grade</h6>
+                    <small>Matricule de l'Etat, provenance et grade</small>
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-4">
+                    <label for="ed_matricule_etat" class="form-label">Matricule de l'Etat</label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.matricule_etat }" id="ed_matricule_etat" v-model="form.matricule_etat" placeholder="Laisser vide si inconnu">
+                    <div v-if="errors.matricule_etat" class="invalid-feedback">{{ errors.matricule_etat[0] }}</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="ed_institution_id" class="form-label">Provenance matricule</label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.institution_id }" id="ed_institution_id" v-model="form.institution_id">
+                      <option value="">-- Selectionner une institution --</option>
+                      <optgroup v-for="cat in formOptions.institutionCategories" :key="cat.id" :label="cat.nom">
+                        <option v-for="inst in cat.institutions" :key="inst.id" :value="inst.id">{{ inst.nom }}</option>
+                      </optgroup>
+                    </select>
+                    <div v-if="errors.institution_id" class="invalid-feedback">{{ errors.institution_id[0] }}</div>
+                  </div>
+                  <div class="col-md-4">
+                    <label for="ed_grade_id" class="form-label">Grade de l'Etat</label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.grade_id }" id="ed_grade_id" v-model="form.grade_id">
+                      <option value="">-- Selectionner un grade --</option>
+                      <option v-for="g in formOptions.grades" :key="g.id" :value="g.id">{{ g.libelle }} ({{ g.categorie }})</option>
+                    </select>
+                    <div v-if="errors.grade_id" class="invalid-feedback">{{ errors.grade_id[0] }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 4: Affectation & Fonction -->
               <div class="form-section">
                 <div class="form-section-header">
                   <div class="form-section-icon" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">
@@ -177,60 +219,119 @@
                   </div>
                   <div>
                     <h6>Affectation & Fonction</h6>
-                    <small>Organe, département et fonction</small>
+                    <small>Organe, departement/service, section et fonction</small>
                   </div>
                 </div>
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label for="organe" class="form-label">Organe <span class="text-danger">*</span></label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.organe }" id="organe" v-model="form.organe" required @change="syncPanels">
-                      <option value="">-- Sélectionner un organe --</option>
+                    <label for="ed_organe" class="form-label">Organe <span class="text-danger">*</span></label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.organe }" id="ed_organe" v-model="form.organe" required @change="syncPanels">
+                      <option value="">-- Selectionner un organe --</option>
                       <option v-for="o in formOptions.organeOptions" :key="o" :value="o">{{ o }}</option>
                     </select>
                     <div v-if="errors.organe" class="invalid-feedback">{{ errors.organe[0] }}</div>
                   </div>
 
-                  <!-- Département pour SEN -->
+                  <!-- SEN: Rattachement -->
                   <div v-if="currentNiveau === 'SEN'" class="col-md-6">
-                    <label for="departement_id" class="form-label">Département</label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.departement_id }" id="departement_id" v-model="form.departement_id" @change="syncSection">
-                      <option value="">-- Sélectionner un département --</option>
+                    <label class="form-label">Rattachement</label>
+                    <div class="d-flex gap-2">
+                      <div class="flex-fill">
+                        <input type="radio" class="btn-check" id="ed_ratt_dept" value="departement" v-model="typeRattachement" @change="syncPanels">
+                        <label class="btn btn-outline-primary btn-sm w-100" for="ed_ratt_dept">
+                          <i class="fas fa-building me-1"></i> Departement
+                        </label>
+                      </div>
+                      <div class="flex-fill">
+                        <input type="radio" class="btn-check" id="ed_ratt_service" value="service_rattache" v-model="typeRattachement" @change="syncPanels">
+                        <label class="btn btn-outline-warning btn-sm w-100" for="ed_ratt_service">
+                          <i class="fas fa-link me-1"></i> Service rattache
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Departement (SEN) -->
+                  <div v-if="currentNiveau === 'SEN' && typeRattachement === 'departement'" class="col-md-6">
+                    <label for="ed_departement_id" class="form-label">Departement</label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.departement_id }" id="ed_departement_id" v-model="form.departement_id" @change="syncSection">
+                      <option value="">-- Selectionner un departement --</option>
                       <option v-for="d in formOptions.departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
                     </select>
                     <div v-if="errors.departement_id" class="invalid-feedback">{{ errors.departement_id[0] }}</div>
                   </div>
 
-                  <!-- Province pour SEP/SEL -->
+                  <!-- Section (after departement) -->
+                  <div v-if="currentNiveau === 'SEN' && typeRattachement === 'departement' && form.departement_id" class="col-md-6">
+                    <label for="ed_section_id" class="form-label">Section</label>
+                    <select class="form-select" id="ed_section_id" v-model="form.section_id" @change="filterFonctions">
+                      <option value="">-- Aucune (niveau departement) --</option>
+                      <option v-for="s in filteredSections" :key="s.id" :value="s.id">{{ s.nom }}</option>
+                    </select>
+                    <small class="text-muted">Laissez vide pour Directeur, Chef de departement, Assistant ou Secretaire.</small>
+                  </div>
+
+                  <!-- Province (SEP/SEL) -->
                   <div v-if="currentNiveau === 'SEP' || currentNiveau === 'SEL'" class="col-md-6">
-                    <label for="province_id" class="form-label">Province</label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="province_id" v-model="form.province_id">
-                      <option value="">-- Sélectionner une province --</option>
-                      <option v-for="p in formOptions.provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom }}</option>
+                    <label for="ed_province_id" class="form-label">Province</label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="ed_province_id" v-model="form.province_id">
+                      <option value="">-- Selectionner une province --</option>
+                      <option v-for="p in formOptions.provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom || ('Province ' + p.id) }}</option>
                     </select>
                     <div v-if="errors.province_id" class="invalid-feedback">{{ errors.province_id[0] }}</div>
                   </div>
 
+                  <!-- Fonction -->
                   <div class="col-md-6">
-                    <label for="fonction" class="form-label">Fonction <span class="text-danger">*</span></label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.fonction }" id="fonction" v-model="form.fonction" required>
-                      <option value="">-- Sélectionner une fonction --</option>
-                      <option v-for="f in visibleFonctions" :key="f.id" :value="f.nom">{{ f.nom }}</option>
+                    <label for="ed_fonction" class="form-label">Fonction / Poste <span class="text-danger">*</span></label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.fonction }" id="ed_fonction" v-model="form.fonction" required>
+                      <option value="">-- Selectionner une fonction --</option>
+                      <option v-for="f in visibleFonctions" :key="f.id" :value="f.nom">{{ f.nom }}{{ f.est_chef ? ' *' : '' }}</option>
                     </select>
                     <div v-if="errors.fonction" class="invalid-feedback">{{ errors.fonction[0] }}</div>
-                  </div>
-
-                  <div class="col-md-6">
-                    <label for="niveau_etudes" class="form-label">Niveau d'études <span class="text-danger">*</span></label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.niveau_etudes }" id="niveau_etudes" v-model="form.niveau_etudes" required>
-                      <option value="">-- Sélectionner --</option>
-                      <option v-for="n in formOptions.niveauxEtudes" :key="n" :value="n">{{ n }}</option>
-                    </select>
-                    <div v-if="errors.niveau_etudes" class="invalid-feedback">{{ errors.niveau_etudes[0] }}</div>
                   </div>
                 </div>
               </div>
 
-              <!-- Section 4: Statut -->
+              <!-- Section 5: Formation & Engagement -->
+              <div class="form-section">
+                <div class="form-section-header">
+                  <div class="form-section-icon" style="background:linear-gradient(135deg,#ec4899,#be185d)">
+                    <i class="fas fa-graduation-cap"></i>
+                  </div>
+                  <div>
+                    <h6>Formation & Engagement</h6>
+                    <small>Niveau d'etudes, domaine et dates d'engagement</small>
+                  </div>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label for="ed_niveau_etudes" class="form-label">Niveau d'etudes <span class="text-danger">*</span></label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.niveau_etudes }" id="ed_niveau_etudes" v-model="form.niveau_etudes" required>
+                      <option value="">-- Selectionner --</option>
+                      <option v-for="n in formOptions.niveauxEtudes" :key="n" :value="n">{{ n }}</option>
+                    </select>
+                    <div v-if="errors.niveau_etudes" class="invalid-feedback">{{ errors.niveau_etudes[0] }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="ed_domaine_etudes" class="form-label">Domaine d'etudes</label>
+                    <input type="text" class="form-control" :class="{ 'is-invalid': errors.domaine_etudes }" id="ed_domaine_etudes" v-model="form.domaine_etudes" placeholder="Ex: Sciences informatiques, Droit...">
+                    <div v-if="errors.domaine_etudes" class="invalid-feedback">{{ errors.domaine_etudes[0] }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="ed_annee_engagement_programme" class="form-label">Annee d'engagement <span class="text-danger">*</span></label>
+                    <input type="number" min="1950" max="2100" class="form-control" :class="{ 'is-invalid': errors.annee_engagement_programme }" id="ed_annee_engagement_programme" v-model.number="form.annee_engagement_programme" required>
+                    <div v-if="errors.annee_engagement_programme" class="invalid-feedback">{{ errors.annee_engagement_programme[0] }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label for="ed_date_embauche" class="form-label">Date d'embauche <small class="text-muted">(optionnel)</small></label>
+                    <input type="date" class="form-control" :class="{ 'is-invalid': errors.date_embauche }" id="ed_date_embauche" v-model="form.date_embauche">
+                    <div v-if="errors.date_embauche" class="invalid-feedback">{{ errors.date_embauche[0] }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Section 6: Statut -->
               <div class="form-section">
                 <div class="form-section-header">
                   <div class="form-section-icon" style="background:linear-gradient(135deg,#ef4444,#dc2626)">
@@ -243,18 +344,13 @@
                 </div>
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label for="statut" class="form-label">Statut <span class="text-danger">*</span></label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.statut }" id="statut" v-model="form.statut" required>
+                    <label for="ed_statut" class="form-label">Statut <span class="text-danger">*</span></label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.statut }" id="ed_statut" v-model="form.statut" required>
                       <option value="actif">Actif</option>
                       <option value="suspendu">Suspendu</option>
                       <option value="ancien">Ancien</option>
                     </select>
                     <div v-if="errors.statut" class="invalid-feedback">{{ errors.statut[0] }}</div>
-                  </div>
-                  <div class="col-md-6">
-                    <label for="annee_engagement_programme" class="form-label">Année d'engagement <span class="text-danger">*</span></label>
-                    <input type="number" min="1950" max="2100" class="form-control" :class="{ 'is-invalid': errors.annee_engagement_programme }" id="annee_engagement_programme" v-model.number="form.annee_engagement_programme" required>
-                    <div v-if="errors.annee_engagement_programme" class="invalid-feedback">{{ errors.annee_engagement_programme[0] }}</div>
                   </div>
                 </div>
               </div>
@@ -288,7 +384,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { get, update, getFormOptions } from '@/api/agents'
 
@@ -307,7 +403,7 @@ const emit = defineEmits(['close', 'updated'])
 
 const ui = useUiStore()
 
-// État
+// State
 const loading = ref(false)
 const submitting = ref(false)
 const errors = ref({})
@@ -377,16 +473,47 @@ const currentNiveau = computed(() => {
   return organeToNiveau[normalized] || ''
 })
 
+const filteredSections = computed(() => {
+  if (!form.departement_id) return []
+  return formOptions.sections.filter(
+    s => s.type === 'section' && String(s.department_id) === String(form.departement_id)
+  )
+})
+
 const visibleFonctions = computed(() => {
   const niveau = currentNiveau.value
   if (!niveau) return formOptions.fonctions
 
+  let allowedTypes = []
+  if (niveau === 'SEN') {
+    if (typeRattachement.value === 'service_rattache') {
+      allowedTypes = ['service_rattache', 'direction']
+    } else if (typeRattachement.value === 'departement') {
+      if (form.section_id) {
+        allowedTypes = ['section', 'cellule']
+      } else {
+        allowedTypes = ['département', 'departement', 'direction']
+      }
+    } else {
+      allowedTypes = ['direction']
+    }
+  } else if (niveau === 'SEP') {
+    allowedTypes = ['province']
+  } else if (niveau === 'SEL') {
+    allowedTypes = ['local']
+  }
+
   return formOptions.fonctions.filter(f => {
-    return f.niveau_administratif === niveau || f.niveau_administratif === 'TOUS'
+    const matchNiveau = f.niveau_administratif === niveau || f.niveau_administratif === 'TOUS'
+    if (!matchNiveau) return false
+    if (allowedTypes.length) {
+      return allowedTypes.includes(f.type_poste) || f.type_poste === 'appui'
+    }
+    return true
   })
 })
 
-// Méthodes
+// Methods
 function handlePhotoChange(event) {
   photoFile.value = event.target.files[0] || null
 }
@@ -408,6 +535,12 @@ function syncPanels() {
 
 function syncSection() {
   form.section_id = ''
+}
+
+function filterFonctions() {
+  if (form.fonction && !visibleFonctions.value.find(f => f.nom === form.fonction)) {
+    form.fonction = ''
+  }
 }
 
 // Populate form from agent data
@@ -439,7 +572,7 @@ function populateForm(agentData) {
   form.date_embauche = agentData.date_embauche ? agentData.date_embauche.substring(0, 10) : ''
   form.statut = agentData.statut || 'actif'
 
-  // Déterminer le type de rattachement pour SEN
+  // Determine rattachement type for SEN
   const orgKey = (form.organe || '').trim().toLowerCase()
   const niveau = organeToNiveau[orgKey] || organeToNiveau[normalizeStr(form.organe || '')] || ''
   if (niveau === 'SEN') {
@@ -495,7 +628,7 @@ async function submitForm() {
 
   try {
     await update(props.agentId, formData)
-    ui.addToast('Agent modifié avec succès', 'success')
+    ui.addToast('Agent modifie avec succes', 'success')
     emit('updated')
     emit('close')
   } catch (err) {
