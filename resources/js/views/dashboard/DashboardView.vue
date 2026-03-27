@@ -58,7 +58,7 @@
       <div class="dash-action-grid">
         <button
           class="dash-action-card"
-          @click="openRequestModal"
+          @click="$router.push('/requests/create')"
         >
           <div class="dash-action-icon" style="background:#e0f2fe;color:#0077B5;">
             <i class="fas fa-plus-circle"></i>
@@ -144,7 +144,7 @@
         <div class="dash-empty-icon"><i class="fas fa-inbox"></i></div>
         <h5>Aucune activite recente</h5>
         <p>Vos dernieres actions et notifications apparaitront ici.</p>
-        <button class="dash-action-btn" @click="openRequestModal">
+        <button class="dash-action-btn" @click="$router.push('/requests/create')">
           <i class="fas fa-plus me-1"></i>Nouvelle demande
         </button>
       </div>
@@ -185,93 +185,6 @@
         </div>
       </div>
     </template>
-
-    <!-- Request Create Modal -->
-    <teleport to="body">
-      <div v-if="showRequestModal" class="rcm-overlay" @click.self="closeRequestModal">
-        <div class="rcm-dialog">
-          <div class="rcm-header">
-            <h5 class="rcm-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Demande</h5>
-            <button class="rcm-close" @click="closeRequestModal"><i class="fas fa-times"></i></button>
-          </div>
-          <div class="rcm-body">
-            <form @submit.prevent="handleReqSubmit" enctype="multipart/form-data">
-              <div v-if="currentAgent && !isRH" class="rcm-agent-banner">
-                <div class="rcm-agent-avatar">{{ agentInitials(currentAgent) }}</div>
-                <div>
-                  <div class="fw-semibold small">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
-                  <div class="text-muted" style="font-size:.75rem;">{{ currentAgent.id_agent }}</div>
-                </div>
-              </div>
-              <div v-if="isRH" class="mb-3">
-                <label class="rcm-label">Agent <span class="text-danger">*</span></label>
-                <select v-model="reqForm.agent_id" class="rcm-input" :class="{ 'is-invalid': reqErrors.agent_id }">
-                  <option value="">-- Selectionner un agent --</option>
-                  <option v-for="a in reqAgents" :key="a.id" :value="a.id">{{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})</option>
-                </select>
-                <div v-if="reqErrors.agent_id" class="rcm-error">{{ reqErrors.agent_id[0] }}</div>
-              </div>
-              <label class="rcm-label">Type de demande <span class="text-danger">*</span></label>
-              <div class="rcm-type-grid">
-                <div v-for="t in reqTypeOptions" :key="t.value" class="rcm-type-card" :class="{ active: reqForm.type === t.value }" @click="reqForm.type = t.value">
-                  <i :class="t.icon" class="rcm-type-icon"></i>
-                  <span class="rcm-type-label">{{ t.label }}</span>
-                </div>
-              </div>
-              <div v-if="reqErrors.type" class="rcm-error mb-2">{{ reqErrors.type[0] }}</div>
-              <div class="rcm-row mt-3">
-                <div class="rcm-col">
-                  <label class="rcm-label"><i class="fas fa-calendar-alt me-1 text-muted"></i> Date debut <span class="text-danger">*</span></label>
-                  <input type="date" v-model="reqForm.date_debut" class="rcm-input" :class="{ 'is-invalid': reqErrors.date_debut }">
-                  <div v-if="reqErrors.date_debut" class="rcm-error">{{ reqErrors.date_debut[0] }}</div>
-                </div>
-                <div class="rcm-col">
-                  <label class="rcm-label"><i class="fas fa-calendar-check me-1 text-muted"></i> Date fin <span class="text-muted fw-normal">(optionnel)</span></label>
-                  <input type="date" v-model="reqForm.date_fin" class="rcm-input" :class="{ 'is-invalid': reqErrors.date_fin }" :min="reqForm.date_debut">
-                  <div v-if="reqErrors.date_fin" class="rcm-error">{{ reqErrors.date_fin[0] }}</div>
-                </div>
-              </div>
-              <div class="mt-3">
-                <label class="rcm-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-danger">*</span></label>
-                <textarea v-model="reqForm.description" rows="3" class="rcm-input rcm-textarea" :class="{ 'is-invalid': reqErrors.description }" placeholder="Decrivez le motif de votre demande..."></textarea>
-                <div v-if="reqErrors.description" class="rcm-error">{{ reqErrors.description[0] }}</div>
-              </div>
-              <div v-if="reqForm.type === 'renforcement_capacites'" class="mt-3">
-                <label class="rcm-label"><i class="fas fa-lightbulb me-1 text-muted"></i> Motivation liée à votre fonction/poste <span class="text-danger">*</span></label>
-                <textarea v-model="reqForm.motivation" rows="4" class="rcm-input rcm-textarea" :class="{ 'is-invalid': reqErrors.motivation }" placeholder="Expliquez en quoi ce renforcement des capacités est lié à votre fonction actuelle et comment il contribuera à améliorer vos compétences dans votre poste... (minimum 50 caractères)"></textarea>
-                <div v-if="reqErrors.motivation" class="rcm-error">{{ reqErrors.motivation[0] }}</div>
-                <div class="text-muted small mt-1"><i class="fas fa-info-circle me-1"></i>Détaillez comment cette formation/renforcement est pertinent pour votre rôle actuel et vos responsabilités.</div>
-              </div>
-              <div class="mt-3">
-                <label class="rcm-label"><i class="fas fa-paperclip me-1 text-muted"></i> Lettre de demande <span class="text-muted fw-normal">(optionnel)</span></label>
-                <div v-if="!reqFilePreview" class="rcm-upload-zone" @click="reqFileInput.click()" @dragover.prevent="reqIsDragging = true" @dragleave="reqIsDragging = false" @drop.prevent="reqHandleDrop" :class="{ dragging: reqIsDragging }">
-                  <i class="fas fa-cloud-upload-alt rcm-upload-icon"></i>
-                  <div class="fw-semibold small">Glissez ou cliquez pour parcourir</div>
-                  <div class="text-muted" style="font-size:.7rem;">PDF, DOC, DOCX, JPG, PNG - Max 5 Mo</div>
-                </div>
-                <div v-else class="rcm-file-preview">
-                  <div class="rcm-file-icon-box"><i class="fas fa-file-alt"></i></div>
-                  <div class="rcm-file-info">
-                    <div class="rcm-file-name">{{ reqFilePreview.name }}</div>
-                    <div class="rcm-file-size">{{ reqFilePreview.size }}</div>
-                  </div>
-                  <button type="button" class="rcm-file-remove" @click="reqRemoveFile"><i class="fas fa-trash-alt"></i></button>
-                </div>
-                <input ref="reqFileInput" type="file" class="d-none" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="reqHandleFileSelect">
-                <div v-if="reqErrors.lettre_demande" class="rcm-error">{{ reqErrors.lettre_demande[0] }}</div>
-              </div>
-              <div class="rcm-footer">
-                <button type="button" class="rcm-btn rcm-btn-cancel" @click="closeRequestModal">Annuler</button>
-                <button type="submit" class="rcm-btn rcm-btn-submit" :disabled="reqSubmitting">
-                  <span v-if="reqSubmitting" class="spinner-border spinner-border-sm me-1"></span>
-                  <i v-else class="fas fa-paper-plane me-1"></i> Soumettre
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </teleport>
 
     <!-- Document Upload Modal -->
     <teleport to="body">
@@ -340,7 +253,6 @@
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { create as createRequest } from '@/api/requests'
 import { create as createDocument } from '@/api/documents'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -406,77 +318,6 @@ function formatTime(iso) {
 }
 
 const loadError = ref(null)
-
-// ── Request Create Modal ──
-const showRequestModal = ref(false)
-const reqSubmitting = ref(false)
-const reqErrors = ref({})
-const reqIsDragging = ref(false)
-const reqSelectedFile = ref(null)
-const reqFilePreview = ref(null)
-const reqFileInput = ref(null)
-const reqAgents = ref([])
-const isRH = computed(() => auth.hasAdminAccess)
-const currentAgent = computed(() => auth.agent)
-
-const reqTypeOptions = [
-  { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
-  { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
-  { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'renforcement_capacites', label: 'Renforcement des Capacités', icon: 'fas fa-graduation-cap' },
-]
-
-function defaultReqForm() {
-  return { agent_id: currentAgent.value?.id || '', type: '', date_debut: '', date_fin: '', description: '', motivation: '' }
-}
-const reqForm = ref(defaultReqForm())
-
-async function openRequestModal() {
-  reqForm.value = defaultReqForm()
-  reqErrors.value = {}
-  reqSelectedFile.value = null
-  reqFilePreview.value = null
-  showRequestModal.value = true
-  if (isRH.value && !reqAgents.value.length) {
-    try {
-      const { data } = await client.get('/agents', { params: { actifs: 1 } })
-      reqAgents.value = data.data ?? data
-    } catch {}
-  }
-}
-
-function closeRequestModal() { showRequestModal.value = false }
-
-function reqHandleFileSelect(e) { const f = e.target.files[0]; if (f) reqSetFile(f) }
-function reqHandleDrop(e) { reqIsDragging.value = false; const f = e.dataTransfer.files[0]; if (f) reqSetFile(f) }
-function reqSetFile(file) {
-  reqSelectedFile.value = file
-  reqFilePreview.value = { name: file.name, size: (file.size / 1024 / 1024).toFixed(2) + ' Mo' }
-}
-function reqRemoveFile() { reqSelectedFile.value = null; reqFilePreview.value = null; if (reqFileInput.value) reqFileInput.value.value = '' }
-
-function agentInitials(a) { return a ? ((a.prenom || '').charAt(0) + (a.nom || '').charAt(0)).toUpperCase() : '' }
-
-async function handleReqSubmit() {
-  reqErrors.value = {}
-  reqSubmitting.value = true
-  const fd = new FormData()
-  fd.append('type', reqForm.value.type)
-  fd.append('description', reqForm.value.description)
-  fd.append('date_debut', reqForm.value.date_debut)
-  if (reqForm.value.date_fin) fd.append('date_fin', reqForm.value.date_fin)
-  if (reqForm.value.motivation) fd.append('motivation', reqForm.value.motivation)
-  if (isRH.value && reqForm.value.agent_id) fd.append('agent_id', reqForm.value.agent_id)
-  if (reqSelectedFile.value) fd.append('lettre_demande', reqSelectedFile.value)
-  try {
-    await createRequest(fd)
-    ui.addToast('Demande creee avec succes.', 'success')
-    showRequestModal.value = false
-  } catch (err) {
-    if (err.response?.status === 422) reqErrors.value = err.response.data.errors || {}
-    else ui.addToast(err.response?.data?.message || 'Erreur lors de la creation.', 'danger')
-  } finally { reqSubmitting.value = false }
-}
 
 // ── Document Upload Modal ──
 const showUploadModal = ref(false)
@@ -683,63 +524,6 @@ onMounted(async () => {
   .dash-activity-grid { grid-template-columns: 1fr; }
   .dash-info-grid { grid-template-columns: 1fr; }
 }
-
-/* ── Request Create Modal (rcm-*) ── */
-.rcm-overlay { position: fixed; inset: 0; z-index: 1060; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: rcmFadeIn .2s; }
-@keyframes rcmFadeIn { from { opacity: 0; } to { opacity: 1; } }
-.rcm-dialog { background: #fff; border-radius: 18px; width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 48px rgba(0,0,0,.18); animation: rcmSlideUp .25s ease-out; overflow: hidden; }
-@keyframes rcmSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-.rcm-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.5rem; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: #fff; }
-.rcm-title { margin: 0; font-size: 1.05rem; font-weight: 700; }
-.rcm-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: rgba(255,255,255,.15); color: #fff; font-size: .9rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background .2s; }
-.rcm-close:hover { background: rgba(255,255,255,.3); }
-.rcm-body { padding: 1.25rem 1.5rem; overflow-y: auto; flex: 1; }
-.rcm-label { display: block; font-size: .82rem; font-weight: 600; color: #475569; margin-bottom: .3rem; }
-.rcm-input { width: 100%; border-radius: 10px; border: 1px solid #e2e8f0; padding: .5rem .75rem; font-size: .85rem; transition: border-color .2s, box-shadow .2s; }
-.rcm-input:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 3px rgba(5,150,105,.1); }
-.rcm-input.is-invalid { border-color: #ef4444; }
-.rcm-textarea { resize: vertical; min-height: 70px; }
-.rcm-error { font-size: .75rem; color: #ef4444; margin-top: .2rem; }
-.rcm-agent-banner { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 1rem; }
-.rcm-agent-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #059669, #047857); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
-.rcm-type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: .5rem; }
-.rcm-type-card { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .7rem .3rem; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; transition: all .2s; background: #fff; }
-.rcm-type-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
-.rcm-type-card.active { border-color: #059669; background: #ecfdf5; }
-.rcm-type-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
-.rcm-type-card.active .rcm-type-icon { color: #059669; }
-.rcm-type-label { font-size: .68rem; font-weight: 600; color: #64748b; }
-.rcm-type-card.active .rcm-type-label { color: #059669; }
-.rcm-row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
-.rcm-upload-zone { border: 2px dashed #d1d5db; border-radius: 12px; padding: 1.2rem; text-align: center; cursor: pointer; transition: all .2s; }
-.rcm-upload-zone:hover, .rcm-upload-zone.dragging { border-color: #059669; background: #ecfdf5; }
-.rcm-upload-icon { font-size: 1.5rem; color: #059669; margin-bottom: .3rem; display: block; }
-.rcm-file-preview { display: flex; align-items: center; gap: .6rem; padding: .7rem .85rem; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; }
-.rcm-file-icon-box { width: 32px; height: 32px; border-radius: 8px; background: #dcfce7; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0; }
-.rcm-file-info { flex: 1; min-width: 0; }
-.rcm-file-name { font-weight: 600; font-size: .8rem; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rcm-file-size { font-size: .68rem; color: #94a3b8; }
-.rcm-file-remove { width: 28px; height: 28px; border-radius: 6px; background: #fef2f2; color: #ef4444; border: 1px solid #fecaca; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: .7rem; padding: 0; }
-.rcm-file-remove:hover { background: #fee2e2; }
-.rcm-footer { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; padding-top: 1rem; margin-top: 1rem; border-top: 1px solid #f1f5f9; }
-.rcm-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .5rem 1.1rem; border-radius: 10px; font-size: .82rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; }
-.rcm-btn-cancel { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
-.rcm-btn-cancel:hover { background: #f8fafc; color: #334155; }
-.rcm-btn-submit { background: linear-gradient(135deg, #059669, #047857); color: #fff; }
-.rcm-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(5,150,105,.3); }
-.rcm-btn-submit:disabled { opacity: .6; transform: none; }
-
-@media (max-width: 576px) {
-  .rcm-overlay { padding: .5rem; }
-  .rcm-dialog { max-height: 95vh; border-radius: 14px; }
-  .rcm-header { padding: .85rem 1rem; }
-  .rcm-body { padding: 1rem; }
-  .rcm-type-grid { grid-template-columns: repeat(3, 1fr); }
-  .rcm-row { grid-template-columns: 1fr; }
-  .rcm-footer { flex-direction: column; align-items: stretch; }
-  .rcm-btn { justify-content: center; }
-}
-@media (max-width: 449.98px) { .rcm-type-grid { grid-template-columns: repeat(2, 1fr); } }
 
 /* ── Document Upload Modal (dum-*) ── */
 .dum-overlay { position: fixed; inset: 0; z-index: 1060; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; padding: 1rem; animation: dumFadeIn .2s; }
