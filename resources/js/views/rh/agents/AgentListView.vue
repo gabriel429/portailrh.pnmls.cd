@@ -14,9 +14,9 @@
               <button type="button" class="btn-rh main" style="background:#28a745;border-color:#28a745;" @click="showExportModal = true">
                 <i class="fas fa-file-csv me-1"></i> Exporter
               </button>
-              <router-link :to="{ name: 'rh.agents.create' }" class="btn-rh main">
+              <button type="button" class="btn-rh main" @click="showCreateModal = true">
                 <i class="fas fa-user-plus me-1"></i> Ajouter un agent
-              </router-link>
+              </button>
             </div>
           </div>
         </div>
@@ -494,6 +494,13 @@
       @close="closeEditModal"
       @updated="onAgentUpdated"
     />
+
+    <!-- Agent Create Modal -->
+    <AgentCreateModal
+      :show="showCreateModal"
+      @close="closeCreateModal"
+      @created="onAgentCreated"
+    />
   </div>
 </template>
 
@@ -505,6 +512,7 @@ import { list, get, remove, exportCsv, getFormOptions } from '@/api/agents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AgentEditModal from '@/components/agents/AgentEditModal.vue'
+import AgentCreateModal from '@/components/agents/AgentCreateModal.vue'
 
 const router = useRouter()
 const ui = useUiStore()
@@ -545,6 +553,9 @@ const exportFilters = reactive({
 // Edit modal
 const showEditModal = ref(false)
 const agentToEdit = ref(null)
+
+// Create modal
+const showCreateModal = ref(false)
 
 const showExportProvince = computed(() => {
     const val = exportFilters.organe
@@ -811,6 +822,15 @@ function onAgentUpdated() {
         // Refresh the selected agent in the modal
         goToAgent(selectedAgent.value.id)
     }
+}
+
+function closeCreateModal() {
+    showCreateModal.value = false
+}
+
+function onAgentCreated() {
+    closeCreateModal()
+    fetchAgents() // Refresh the list
 }
 
 // Fetch agents
