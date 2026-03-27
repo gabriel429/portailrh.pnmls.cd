@@ -26,6 +26,20 @@ Thumbs.db
 .env.web-backup
 /storage/sync_meta.json
 
+# Scripts de diagnostic et déploiement (SÉCURITÉ)
+*diagnostic*.php
+*fix-*.php
+hostinger-*.php
+force-update-*.php
+patch-*.php
+emergency-*.php
+deploy-*.php
+sync-*.php
+test-*.html
+*.backup
+*.bak
+*.tmp
+
 # PWA Service Worker builds (tracked for deployment)
 # /public/sw.js
 # /public/workbox-*.js

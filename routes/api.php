@@ -26,7 +26,8 @@ use App\Http\Controllers\RH\HolidayController;
 use App\Http\Controllers\RH\AgentStatusController;
 
 // Public
-Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
+Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])
+    ->middleware('throttle:5,1'); // Max 5 tentatives par minute
 
 // Sync status (public, for online detection)
 Route::get('/sync/status', [SyncController::class, 'status']);
