@@ -187,6 +187,9 @@
       </div>
     </nav>
 
+    <!-- Watermark logo -->
+    <div class="watermark-logo"></div>
+
     <!-- Content -->
     <div class="container-fluid main-content">
       <AppToast />
@@ -256,3 +259,24 @@ onUnmounted(() => {
     notifStore.stopPolling()
 })
 </script>
+
+<style scoped>
+.watermark-logo {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 420px;
+  height: 420px;
+  background: url('/images/logo-pnmls.png') center / contain no-repeat;
+  opacity: 0.04;
+  filter: blur(2px) grayscale(30%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.main-content {
+  position: relative;
+  z-index: 1;
+}
+</style>
