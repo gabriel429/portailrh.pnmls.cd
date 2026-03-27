@@ -15,7 +15,7 @@
 /node_modules
 /public/hot
 /public/storage
-/public/build
+# /public/build
 /storage/*.key
 /storage/pail
 /vendor
@@ -26,7 +26,7 @@ Thumbs.db
 .env.web-backup
 /storage/sync_meta.json
 
-# PWA Service Worker builds
-/public/sw.js
-/public/workbox-*.js
-/public/manifest.webmanifest
+# PWA Service Worker builds (tracked for deployment)
+# /public/sw.js
+# /public/workbox-*.js
+# /public/manifest.webmanifest
