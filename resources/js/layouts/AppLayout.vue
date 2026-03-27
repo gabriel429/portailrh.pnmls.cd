@@ -41,6 +41,11 @@
                 <i class="fas fa-file-invoice nav-icon"></i> Docs Travail
               </router-link>
             </li>
+            <li class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'mon-planning-conges' }">
+                <i class="fas fa-calendar-alt nav-icon"></i> Conges
+              </router-link>
+            </li>
           </ul>
 
           <ul class="navbar-nav align-items-lg-center">

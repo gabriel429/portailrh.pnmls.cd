@@ -189,7 +189,7 @@ class AuthController extends Controller
     public function user(Request $request)
     {
         $user = $request->user();
-        $user->load(['agent', 'role']);
+        $user->load(['agent.departement', 'agent.province', 'role']);
 
         $data = $user->toArray();
 

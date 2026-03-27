@@ -184,6 +184,14 @@ const routes = [
         meta: { auth: true },
     },
 
+    // Planning conges de ma structure
+    {
+        path: '/mon-planning-conges',
+        name: 'mon-planning-conges',
+        component: () => import('@/views/holidays/MyHolidayPlanningView.vue'),
+        meta: { auth: true },
+    },
+
     // Messages
     {
         path: '/messages/:id',

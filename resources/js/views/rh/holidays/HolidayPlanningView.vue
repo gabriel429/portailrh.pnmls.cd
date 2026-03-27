@@ -328,6 +328,15 @@ const canValidate = computed(() => {
 })
 
 // Méthodes
+async function loadDepartments() {
+  try {
+    const response = await client.get('/api/departments')
+    departments.value = response.data.departments || response.data || []
+  } catch (error) {
+    console.error('Erreur chargement départements:', error)
+  }
+}
+
 async function loadPlannings(page = 1) {
   loading.value = true
   try {
@@ -340,8 +349,8 @@ async function loadPlannings(page = 1) {
     plannings.value = response.data.plannings
     stats.value = response.data.stats
 
-    if (departments.value.length === 0) {
-      departments.value = response.data.departments || []
+    if (departments.value.length === 0 && response.data.departments?.length) {
+      departments.value = response.data.departments
     }
   } catch (error) {
     console.error('Erreur chargement plannings:', error)
@@ -425,6 +434,7 @@ watch(() => viewMode.value, (newMode) => {
 
 // Initialisation
 onMounted(() => {
+  loadDepartments()
   loadPlannings()
 })
 </script>

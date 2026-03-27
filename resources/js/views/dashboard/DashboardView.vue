@@ -356,6 +356,7 @@ const today = computed(() => {
 })
 
 const quickActions = [
+  { to: '/mon-planning-conges', label: 'Planning conges', desc: 'Conges de ma structure', icon: 'fa-calendar-alt', color: '#0d9488', bg: '#ccfbf1' },
   { to: '/documents-travail', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
   { to: '/plan-travail', label: 'Plan de travail', desc: 'Consulter ou creer', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/profile', label: 'Mon profil', desc: 'Voir mes infos', icon: 'fa-user-circle', color: '#7c3aed', bg: '#ede9fe' },

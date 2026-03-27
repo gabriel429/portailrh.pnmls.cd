@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Api\SyncController;
+use App\Http\Controllers\Api\MyHolidayPlanningController;
 use App\Http\Controllers\RH\HolidayPlanningController;
 use App\Http\Controllers\RH\HolidayController;
 use App\Http\Controllers\RH\AgentStatusController;
@@ -85,6 +86,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Absences
     Route::get('mes-absences', [ApiProfileController::class, 'mesAbsences']);
 
+    // Mon Planning Congés (tous les agents authentifiés)
+    Route::get('mon-planning-conges', [MyHolidayPlanningController::class, 'index']);
+
     // Documents de Travail
     Route::get('documents-travail', [DocumentTravailController::class, 'index']);
     Route::get('documents-travail/{doc}/download', [DocumentTravailController::class, 'download']);
@@ -122,6 +126,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('affectations/{affectation}', [ParametresController::class, 'apiAffectationsDestroy']);
 
         // Gestion des Congés et Planning
+        // Départements (lecture seule pour filtres congés)
+        Route::get('departments', function () {
+            return response()->json(\App\Models\Department::orderBy('nom')->get(['id', 'code', 'nom']));
+        });
         // Planning des Congés
         Route::get('holiday-plannings', [HolidayPlanningController::class, 'index']);
         Route::get('holiday-plannings/calendar', [HolidayPlanningController::class, 'calendar']);
