@@ -330,7 +330,7 @@ const canValidate = computed(() => {
 // Méthodes
 async function loadDepartments() {
   try {
-    const response = await client.get('/api/departments')
+    const response = await client.get('/departments')
     departments.value = response.data.departments || response.data || []
   } catch (error) {
     console.error('Erreur chargement départements:', error)
@@ -345,7 +345,7 @@ async function loadPlannings(page = 1) {
       page
     }
 
-    const response = await client.get('/api/holiday-plannings', { params })
+    const response = await client.get('/holiday-plannings', { params })
     plannings.value = response.data.plannings
     stats.value = response.data.stats
 
@@ -380,7 +380,7 @@ async function validatePlanning(planning) {
   if (!confirm('Êtes-vous sûr de vouloir valider ce planning ?')) return
 
   try {
-    await client.post(`/api/holiday-plannings/${planning.id}/validate`)
+    await client.post(`/holiday-plannings/${planning.id}/validate`)
     ui.addToast('Planning validé avec succès', 'success')
     loadPlannings()
   } catch (error) {
@@ -395,7 +395,7 @@ async function exportData() {
       format: 'csv'
     }
 
-    const response = await client.get('/api/holiday-plannings/export', {
+    const response = await client.get('/holiday-plannings/export', {
       params,
       responseType: 'blob'
     })

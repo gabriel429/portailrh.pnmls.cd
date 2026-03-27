@@ -349,7 +349,7 @@ async function submitForm() {
       periods_fermeture: form.value.periods_fermeture.filter(p => p.start && p.end)
     }
 
-    const response = await client.post('/api/holiday-plannings', formData)
+    const response = await client.post('/holiday-plannings', formData)
 
     ui.addToast('Planning créé avec succès', 'success')
     emit('created', response.data.planning)

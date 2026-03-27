@@ -252,7 +252,7 @@ async function loadCalendarData() {
       ...props.filters
     }
 
-    const response = await client.get('/api/holiday-plannings/calendar', { params })
+    const response = await client.get('/holiday-plannings/calendar', { params })
     events.value = response.data.events || []
   } catch (error) {
     console.error('Erreur chargement calendrier:', error)

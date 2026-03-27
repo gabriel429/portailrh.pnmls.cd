@@ -439,7 +439,7 @@ async function saveChanges() {
       periods_fermeture: editForm.value.periods_fermeture.filter(p => p.start && p.end)
     }
 
-    const response = await client.put(`/api/holiday-plannings/${props.planning.id}`, formData)
+    const response = await client.put(`/holiday-plannings/${props.planning.id}`, formData)
 
     ui.addToast('Planning mis à jour avec succès', 'success')
     editMode.value = false
@@ -467,7 +467,7 @@ async function validatePlanning() {
   submitting.value = true
 
   try {
-    await client.post(`/api/holiday-plannings/${props.planning.id}/validate`)
+    await client.post(`/holiday-plannings/${props.planning.id}/validate`)
     ui.addToast('Planning validé avec succès', 'success')
     emit('updated')
   } catch (error) {

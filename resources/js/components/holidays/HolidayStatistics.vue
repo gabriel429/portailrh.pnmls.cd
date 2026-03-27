@@ -329,7 +329,7 @@ async function loadStatistics() {
       ...props.filters
     }
 
-    const response = await client.get('/api/holiday-plannings/statistiques', { params })
+    const response = await client.get('/holiday-plannings/statistiques', { params })
     statistiques.value = response.data.statistiques || {}
     globalStats.value = response.data.global || {}
 
