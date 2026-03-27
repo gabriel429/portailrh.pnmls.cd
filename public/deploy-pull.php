@@ -55,7 +55,23 @@ if (is_dir($gitDir)) {
 }
 
 echo "\n─────────────────────────────\n";
-echo "=== Directory listing (public/build/) ===\n";
+
+// Sync public/build/ → public_html/build/ (Hostinger uses public_html, git uses public/)
+$gitBuildDir = $root . '/public/build';
+$webBuildDir = $publicDir . '/build';
+
+if ($gitBuildDir !== $webBuildDir && is_dir($gitBuildDir)) {
+    echo "=== Sync build: public/ → public_html/ ===\n";
+    // Remove old build in public_html
+    echo shell_exec("rm -rf " . escapeshellarg($webBuildDir) . " 2>&1");
+    // Copy fresh build from git's public/
+    echo shell_exec("cp -r " . escapeshellarg($gitBuildDir) . " " . escapeshellarg($webBuildDir) . " 2>&1");
+    echo "✅ Build synced to public_html/build/\n\n";
+} else {
+    echo "ℹ️ public/ = public_html/, no sync needed.\n\n";
+}
+
+echo "=== Directory listing (public_html/build/) ===\n";
 $buildDir = $publicDir . '/build';
 if (is_dir($buildDir)) {
     $files = scandir($buildDir);
