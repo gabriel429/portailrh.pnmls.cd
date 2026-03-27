@@ -145,6 +145,30 @@ class RequestController extends Controller
             ], 403);
         }
 
+        // For "renforcement_capacites" requests, only specific roles can approve
+        if ($demande->type === 'renforcement_capacites') {
+            $agent = $user->agent;
+            if (!$agent) {
+                return response()->json([
+                    'message' => 'Votre compte n\'est pas associé à un agent.',
+                ], 403);
+            }
+
+            $fonction = strtolower($agent->fonction ?? '');
+            $poste = strtolower($agent->poste_actuel ?? '');
+
+            // Check if agent is Chef de Section or Chef de Cellule for Renforcement des Capacités
+            $isChefSection = str_contains($fonction, 'chef de section') || str_contains($poste, 'chef de section');
+            $isChefCellule = str_contains($fonction, 'chef de cellule') || str_contains($poste, 'chef de cellule');
+            $isRenforcement = str_contains($fonction, 'renforcement') || str_contains($poste, 'renforcement');
+
+            if (!($isRenforcement && ($isChefSection || $isChefCellule))) {
+                return response()->json([
+                    'message' => 'Seuls les Chefs de Section ou Chefs de Cellule Renforcement des Capacités peuvent traiter ce type de demande.',
+                ], 403);
+            }
+        }
+
         $validated = $httpRequest->validate([
             'statut' => 'required|in:en_attente,approuvé,rejeté,annulé',
             'remarques' => 'nullable|string',

@@ -517,11 +517,10 @@ const createFileInput = ref(null)
 const currentAgent = computed(() => auth.agent)
 
 const typeOptions = [
-  { value: 'conge', label: 'Conge', icon: 'fas fa-umbrella-beach' },
+  { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
   { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
   { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'formation', label: 'Formation', icon: 'fas fa-graduation-cap' },
-  { value: 'renforcement_capacites', label: 'Renforcement', icon: 'fas fa-chart-line' },
+  { value: 'renforcement_capacites', label: 'Renforcement des Capacités', icon: 'fas fa-graduation-cap' },
 ]
 
 function defaultCreateForm() {
