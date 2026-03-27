@@ -236,6 +236,12 @@
                 <textarea v-model="reqForm.description" rows="3" class="rcm-input rcm-textarea" :class="{ 'is-invalid': reqErrors.description }" placeholder="Decrivez le motif de votre demande..."></textarea>
                 <div v-if="reqErrors.description" class="rcm-error">{{ reqErrors.description[0] }}</div>
               </div>
+              <div v-if="reqForm.type === 'renforcement_capacites'" class="mt-3">
+                <label class="rcm-label"><i class="fas fa-lightbulb me-1 text-muted"></i> Motivation liée à votre fonction/poste <span class="text-danger">*</span></label>
+                <textarea v-model="reqForm.motivation" rows="4" class="rcm-input rcm-textarea" :class="{ 'is-invalid': reqErrors.motivation }" placeholder="Expliquez en quoi ce renforcement des capacités est lié à votre fonction actuelle et comment il contribuera à améliorer vos compétences dans votre poste... (minimum 50 caractères)"></textarea>
+                <div v-if="reqErrors.motivation" class="rcm-error">{{ reqErrors.motivation[0] }}</div>
+                <div class="text-muted small mt-1"><i class="fas fa-info-circle me-1"></i>Détaillez comment cette formation/renforcement est pertinent pour votre rôle actuel et vos responsabilités.</div>
+              </div>
               <div class="mt-3">
                 <label class="rcm-label"><i class="fas fa-paperclip me-1 text-muted"></i> Lettre de demande <span class="text-muted fw-normal">(optionnel)</span></label>
                 <div v-if="!reqFilePreview" class="rcm-upload-zone" @click="reqFileInput.click()" @dragover.prevent="reqIsDragging = true" @dragleave="reqIsDragging = false" @drop.prevent="reqHandleDrop" :class="{ dragging: reqIsDragging }">
@@ -414,15 +420,14 @@ const isRH = computed(() => auth.hasAdminAccess)
 const currentAgent = computed(() => auth.agent)
 
 const reqTypeOptions = [
-  { value: 'conge', label: 'Conge', icon: 'fas fa-umbrella-beach' },
+  { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
   { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
   { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'formation', label: 'Formation', icon: 'fas fa-graduation-cap' },
-  { value: 'renforcement_capacites', label: 'Renforcement', icon: 'fas fa-chart-line' },
+  { value: 'renforcement_capacites', label: 'Renforcement des Capacités', icon: 'fas fa-graduation-cap' },
 ]
 
 function defaultReqForm() {
-  return { agent_id: currentAgent.value?.id || '', type: '', date_debut: '', date_fin: '', description: '' }
+  return { agent_id: currentAgent.value?.id || '', type: '', date_debut: '', date_fin: '', description: '', motivation: '' }
 }
 const reqForm = ref(defaultReqForm())
 
@@ -460,6 +465,7 @@ async function handleReqSubmit() {
   fd.append('description', reqForm.value.description)
   fd.append('date_debut', reqForm.value.date_debut)
   if (reqForm.value.date_fin) fd.append('date_fin', reqForm.value.date_fin)
+  if (reqForm.value.motivation) fd.append('motivation', reqForm.value.motivation)
   if (isRH.value && reqForm.value.agent_id) fd.append('agent_id', reqForm.value.agent_id)
   if (reqSelectedFile.value) fd.append('lettre_demande', reqSelectedFile.value)
   try {
@@ -696,7 +702,7 @@ onMounted(async () => {
 .rcm-error { font-size: .75rem; color: #ef4444; margin-top: .2rem; }
 .rcm-agent-banner { display: flex; align-items: center; gap: .75rem; padding: .75rem 1rem; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; margin-bottom: 1rem; }
 .rcm-agent-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #059669, #047857); color: #fff; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; }
-.rcm-type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .5rem; margin-bottom: .5rem; }
+.rcm-type-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: .5rem; }
 .rcm-type-card { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .7rem .3rem; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; transition: all .2s; background: #fff; }
 .rcm-type-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
 .rcm-type-card.active { border-color: #059669; background: #ecfdf5; }
