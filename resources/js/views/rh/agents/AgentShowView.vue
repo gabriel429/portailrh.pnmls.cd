@@ -8,8 +8,8 @@
       <div class="agent-header">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
           <div class="d-flex align-items-center gap-3">
-            <div v-if="agent.photo" class="agent-avatar-lg">
-              <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:80px;height:80px;object-fit:cover;border:3px solid rgba(255,255,255,0.3);">
+            <div v-if="agent.photo && !agent._photoError" class="agent-avatar-lg">
+              <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:80px;height:80px;object-fit:cover;border:3px solid rgba(255,255,255,0.3);" @error="agent._photoError = true">
             </div>
             <div v-else class="rounded-circle d-flex align-items-center justify-content-center" style="width:80px;height:80px;background:rgba(255,255,255,0.15);">
               <i class="fas fa-user fa-2x"></i>

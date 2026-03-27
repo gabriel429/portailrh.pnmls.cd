@@ -28,7 +28,7 @@
           </div>
           <div class="profile-avatar-wrap">
             <div class="profile-avatar">
-              <img v-if="agent.photo" :src="'/' + agent.photo" :alt="agent.prenom">
+              <img v-if="agent.photo && !agent._photoError" :src="'/' + agent.photo" :alt="agent.prenom" @error="agent._photoError = true">
               <span v-else class="avatar-initials">{{ initials }}</span>
             </div>
           </div>
@@ -500,7 +500,7 @@
             <div class="pem-photo-section">
               <div class="pem-photo-wrap" @click="triggerPhotoInput">
                 <img v-if="editPhotoPreview" :src="editPhotoPreview" alt="Preview" class="pem-photo-img">
-                <img v-else-if="agent.photo" :src="'/' + agent.photo" :alt="agent.prenom" class="pem-photo-img">
+                <img v-else-if="agent.photo && !agent._photoError" :src="'/' + agent.photo" :alt="agent.prenom" class="pem-photo-img" @error="agent._photoError = true">
                 <span v-else class="pem-photo-initials">{{ initials }}</span>
                 <div class="pem-photo-overlay">
                   <i class="fas fa-camera"></i>

@@ -147,8 +147,8 @@
                     >
                       <td>
                         <div class="d-flex align-items-center gap-2">
-                          <div v-if="agent.photo" class="agent-avatar">
-                            <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;">
+                          <div v-if="agent.photo && !agent._photoError" class="agent-avatar">
+                            <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;" @error="agent._photoError = true">
                           </div>
                           <div v-else class="agent-avatar-initials rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:0.75rem;font-weight:700;">
                             {{ getInitials(agent) }}
@@ -298,8 +298,8 @@
             <!-- Header -->
             <div class="asm-header">
               <div class="asm-header-left">
-                <div v-if="selectedAgent.photo" class="asm-avatar">
-                  <img :src="'/' + selectedAgent.photo" :alt="selectedAgent.nom" class="asm-avatar-img">
+                <div v-if="selectedAgent.photo && !selectedAgent._photoError" class="asm-avatar">
+                  <img :src="'/' + selectedAgent.photo" :alt="selectedAgent.nom" class="asm-avatar-img" @error="selectedAgent._photoError = true">
                 </div>
                 <div v-else class="asm-avatar asm-avatar-initials">
                   {{ getInitials(selectedAgent) }}

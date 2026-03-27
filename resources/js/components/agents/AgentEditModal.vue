@@ -52,8 +52,8 @@
                 </div>
                 <div class="row g-3 align-items-center">
                   <div class="col-auto">
-                    <div v-if="agent.photo" class="position-relative">
-                      <img :src="'/' + agent.photo" :alt="agent.prenom" class="rounded-circle" style="width:80px;height:80px;object-fit:cover;">
+                    <div v-if="agent.photo && !agent._photoError" class="position-relative">
+                      <img :src="'/' + agent.photo" :alt="agent.prenom" class="rounded-circle" style="width:80px;height:80px;object-fit:cover;" @error="agent._photoError = true">
                     </div>
                     <div v-else class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width:80px;height:80px;">
                       <i class="fas fa-user fa-2x text-muted"></i>

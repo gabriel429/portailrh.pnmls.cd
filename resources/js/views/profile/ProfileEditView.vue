@@ -50,8 +50,8 @@
               <div v-if="photoPreview" class="mb-3">
                 <img :src="photoPreview" alt="Preview" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
               </div>
-              <div v-else-if="agent.photo" class="mb-3">
-                <img :src="'/' + agent.photo" :alt="agent.prenom" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;">
+              <div v-else-if="agent.photo && !agent._photoError" class="mb-3">
+                <img :src="'/' + agent.photo" :alt="agent.prenom" class="rounded-circle" style="width: 120px; height: 120px; object-fit: cover;" @error="agent._photoError = true">
               </div>
               <div v-else class="rounded-circle bg-light d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 120px; height: 120px;">
                 <span style="font-size: 2.5rem; font-weight: 700; color: #0077B5;">{{ initials }}</span>
