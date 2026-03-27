@@ -143,6 +143,7 @@ const deployActions = [
   { key: 'deploy-rename-roles', label: 'Renommer Roles', desc: 'Renommer les roles systeme', icon: 'fa-edit', color: '#64748b' },
   { key: 'deploy-domaine-etudes', label: 'Deployer Domaine Etudes', desc: 'Ajouter la colonne domaine_etudes aux agents', icon: 'fa-graduation-cap', color: '#0d9488' },
   { key: 'seed-superadmin', label: 'Seed SuperAdmin', desc: 'Creer ou mettre a jour le compte SuperAdmin', icon: 'fa-shield-alt', color: '#7c3aed' },
+  { key: 'deploy-holidays', label: 'Deployer Conges & Statuts', desc: 'Creer les tables holiday_plannings, agent_statuses et holidays', icon: 'fa-umbrella-beach', color: '#0ea5e9' },
 ]
 
 function getIconBg(color) {

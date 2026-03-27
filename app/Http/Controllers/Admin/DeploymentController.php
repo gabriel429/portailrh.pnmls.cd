@@ -1070,4 +1070,124 @@ class DeploymentController extends Controller
 
         return $this->deployResponse($output_messages, $error_messages, $success);
     }
+
+    /**
+     * Deploy Holiday Tables (holiday_plannings, agent_statuses, holidays)
+     */
+    public function deployHolidays()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            // ── 1. Table holiday_plannings ──
+            if (!Schema::hasTable('holiday_plannings')) {
+                Schema::create('holiday_plannings', function (Blueprint $table) {
+                    $table->id();
+                    $table->year('annee');
+                    $table->string('type_structure');
+                    $table->unsignedBigInteger('structure_id');
+                    $table->string('nom_structure');
+                    $table->integer('jours_conge_totaux')->default(30);
+                    $table->integer('jours_utilises')->default(0);
+                    $table->json('periods_fermeture')->nullable();
+                    $table->text('notes')->nullable();
+                    $table->boolean('valide')->default(false);
+                    $table->unsignedBigInteger('created_by');
+                    $table->unsignedBigInteger('validated_by')->nullable();
+                    $table->timestamp('validated_at')->nullable();
+                    $table->timestamps();
+
+                    $table->index(['annee', 'type_structure']);
+                    $table->index(['structure_id', 'type_structure']);
+                    $table->unique(['annee', 'type_structure', 'structure_id'], 'unique_planning_structure');
+
+                    $table->foreign('created_by')->references('id')->on('agents')->onDelete('cascade');
+                    $table->foreign('validated_by')->references('id')->on('agents')->onDelete('set null');
+                });
+                $output_messages[] = "✅ Table 'holiday_plannings' créée avec succès.";
+            } else {
+                $output_messages[] = "ℹ️ Table 'holiday_plannings' existe déjà.";
+            }
+
+            // ── 2. Table agent_statuses ──
+            if (!Schema::hasTable('agent_statuses')) {
+                Schema::create('agent_statuses', function (Blueprint $table) {
+                    $table->id();
+                    $table->unsignedBigInteger('agent_id');
+                    $table->enum('statut', ['disponible', 'en_conge', 'en_mission', 'suspendu', 'en_formation']);
+                    $table->date('date_debut');
+                    $table->date('date_fin')->nullable();
+                    $table->string('motif')->nullable();
+                    $table->text('commentaire')->nullable();
+                    $table->string('document_joint')->nullable();
+                    $table->boolean('actuel')->default(true);
+                    $table->unsignedBigInteger('created_by');
+                    $table->unsignedBigInteger('approved_by')->nullable();
+                    $table->timestamp('approved_at')->nullable();
+                    $table->timestamps();
+
+                    $table->index(['agent_id', 'actuel']);
+                    $table->index(['agent_id', 'date_debut', 'date_fin']);
+                    $table->index('statut');
+
+                    $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade');
+                    $table->foreign('created_by')->references('id')->on('agents')->onDelete('cascade');
+                    $table->foreign('approved_by')->references('id')->on('agents')->onDelete('set null');
+                });
+                $output_messages[] = "✅ Table 'agent_statuses' créée avec succès.";
+            } else {
+                $output_messages[] = "ℹ️ Table 'agent_statuses' existe déjà.";
+            }
+
+            // ── 3. Table holidays ──
+            if (!Schema::hasTable('holidays')) {
+                Schema::create('holidays', function (Blueprint $table) {
+                    $table->id();
+                    $table->unsignedBigInteger('agent_id');
+                    $table->unsignedBigInteger('holiday_planning_id')->nullable();
+                    $table->date('date_debut');
+                    $table->date('date_fin');
+                    $table->integer('nombre_jours');
+                    $table->enum('type_conge', ['annuel', 'maladie', 'maternite', 'paternite', 'urgence', 'special']);
+                    $table->enum('statut_demande', ['en_attente', 'approuve', 'refuse', 'annule']);
+                    $table->text('motif')->nullable();
+                    $table->text('commentaire_refus')->nullable();
+                    $table->string('document_medical')->nullable();
+                    $table->boolean('report_possible')->default(false);
+                    $table->date('date_retour_prevu');
+                    $table->date('date_retour_effectif')->nullable();
+                    $table->unsignedBigInteger('demande_par');
+                    $table->unsignedBigInteger('approuve_par')->nullable();
+                    $table->timestamp('approuve_le')->nullable();
+                    $table->unsignedBigInteger('refuse_par')->nullable();
+                    $table->timestamp('refuse_le')->nullable();
+                    $table->timestamps();
+
+                    $table->index(['agent_id', 'date_debut', 'date_fin']);
+                    $table->index(['date_debut', 'date_fin']);
+                    $table->index(['statut_demande', 'type_conge']);
+                    $table->index('holiday_planning_id');
+
+                    $table->foreign('agent_id')->references('id')->on('agents')->onDelete('cascade');
+                    $table->foreign('holiday_planning_id')->references('id')->on('holiday_plannings')->onDelete('set null');
+                    $table->foreign('demande_par')->references('id')->on('agents')->onDelete('cascade');
+                    $table->foreign('approuve_par')->references('id')->on('agents')->onDelete('set null');
+                    $table->foreign('refuse_par')->references('id')->on('agents')->onDelete('set null');
+                });
+                $output_messages[] = "✅ Table 'holidays' créée avec succès.";
+            } else {
+                $output_messages[] = "ℹ️ Table 'holidays' existe déjà.";
+            }
+
+            $output_messages[] = "";
+            $output_messages[] = "🎉 Déploiement du module Congés terminé !";
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = "❌ ERREUR: " . $e->getMessage();
+        }
+
+        return $this->deployResponse($output_messages, $error_messages, $success);
+    }
 }
