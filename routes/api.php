@@ -20,6 +20,9 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Api\SyncController;
+use App\Http\Controllers\RH\HolidayPlanningController;
+use App\Http\Controllers\RH\HolidayController;
+use App\Http\Controllers\RH\AgentStatusController;
 
 // Public
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login']);
@@ -117,6 +120,46 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('affectations', [ParametresController::class, 'apiAffectationsStore']);
         Route::put('affectations/{affectation}', [ParametresController::class, 'apiAffectationsUpdate']);
         Route::delete('affectations/{affectation}', [ParametresController::class, 'apiAffectationsDestroy']);
+
+        // Gestion des Congés et Planning
+        // Planning des Congés
+        Route::get('holiday-plannings', [HolidayPlanningController::class, 'index']);
+        Route::get('holiday-plannings/calendar', [HolidayPlanningController::class, 'calendar']);
+        Route::get('holiday-plannings/statistiques', [HolidayPlanningController::class, 'statistiques']);
+        Route::get('holiday-plannings/export', [HolidayPlanningController::class, 'export']);
+        Route::post('holiday-plannings', [HolidayPlanningController::class, 'store']);
+        Route::get('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'show']);
+        Route::put('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'update']);
+        Route::post('holiday-plannings/{holidayPlanning}/validate', [HolidayPlanningController::class, 'validate']);
+        Route::delete('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'destroy']);
+
+        // Congés Individuels
+        Route::get('holidays', [HolidayController::class, 'index']);
+        Route::get('holidays/pending', [HolidayController::class, 'pending']);
+        Route::get('holidays/active', [HolidayController::class, 'active']);
+        Route::post('holidays', [HolidayController::class, 'store']);
+        Route::get('holidays/{holiday}', [HolidayController::class, 'show']);
+        Route::put('holidays/{holiday}', [HolidayController::class, 'update']);
+        Route::post('holidays/{holiday}/approve', [HolidayController::class, 'approve']);
+        Route::post('holidays/{holiday}/refuse', [HolidayController::class, 'refuse']);
+        Route::post('holidays/{holiday}/cancel', [HolidayController::class, 'cancel']);
+        Route::post('holidays/{holiday}/mark-returned', [HolidayController::class, 'markReturned']);
+
+        // Statuts des Agents
+        Route::get('agent-statuses', [AgentStatusController::class, 'index']);
+        Route::get('agent-statuses/current', [AgentStatusController::class, 'current']);
+        Route::get('agent-statuses/statistics', [AgentStatusController::class, 'statistics']);
+        Route::get('agent-statuses/available', [AgentStatusController::class, 'available']);
+        Route::get('agent-statuses/absence-report', [AgentStatusController::class, 'absenceReport']);
+        Route::post('agent-statuses', [AgentStatusController::class, 'store']);
+        Route::get('agent-statuses/{agentStatus}', [AgentStatusController::class, 'show']);
+        Route::post('agent-statuses/{agentStatus}/approve', [AgentStatusController::class, 'approve']);
+        Route::put('agent-statuses/{agentStatus}/extend', [AgentStatusController::class, 'extend']);
+
+        // Utilitaires Planning
+        Route::get('agents/{agent}/holidays/stats', [HolidayController::class, 'agentStats']);
+        Route::get('agents/{agent}/statuses/history', [AgentStatusController::class, 'history']);
+        Route::get('agents/{agent}/availability', [HolidayController::class, 'checkAvailability']);
     });
 
     // Admin NT (Chef Section Nouvelle Technologie)

@@ -115,6 +115,87 @@
         </div>
       </div>
 
+      <!-- STATUTS DES AGENTS -->
+      <div class="rh-section">
+        <div class="rh-section-head">
+          <div class="rh-section-icon" style="background:#fef3c7;color:#d97706;">
+            <i class="fas fa-user-clock"></i>
+          </div>
+          <div>
+            <h3 class="rh-section-title">Statuts des agents</h3>
+            <p class="rh-section-sub">Agents en congé, mission, formation ou suspension</p>
+          </div>
+        </div>
+        <div class="as-grid">
+          <div
+            v-for="st in statusCards"
+            :key="st.key"
+            class="as-card"
+            :class="{ 'as-card-open': expandedStatus === st.key }"
+            :style="{ borderTop: '4px solid ' + st.color }"
+          >
+            <div class="as-card-header" @click="toggleStatus(st.key)">
+              <div class="as-card-left">
+                <div class="as-card-badge" :style="{ background: st.bg, color: st.color }">
+                  <i class="fas" :class="st.icon"></i>
+                </div>
+                <div>
+                  <div class="as-card-label">{{ st.label }}</div>
+                  <div class="as-card-count" :style="{ color: st.color }">
+                    {{ agentStatusCount(st.key) }}
+                    <span class="as-card-count-unit">agent{{ agentStatusCount(st.key) > 1 ? 's' : '' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="as-card-toggle" :class="{ open: expandedStatus === st.key }">
+                <i class="fas fa-chevron-down"></i>
+              </div>
+            </div>
+
+            <!-- Expanded agent list -->
+            <div v-if="expandedStatus === st.key" class="as-card-body">
+              <div v-if="agentStatusList(st.key).length" class="as-agent-list">
+                <div v-for="agent in agentStatusList(st.key)" :key="agent.id" class="as-agent-row">
+                  <div class="as-agent-avatar" :style="{ background: st.color }">
+                    {{ agentInitials(agent) }}
+                  </div>
+                  <div class="as-agent-info">
+                    <div class="as-agent-name">{{ agent.prenom }} {{ agent.nom }}</div>
+                    <div class="as-agent-meta">
+                      <span v-if="agent.id_agent" class="as-agent-tag">
+                        <i class="fas fa-id-badge me-1"></i>{{ agent.id_agent }}
+                      </span>
+                      <span v-if="agent.organe" class="as-agent-tag">
+                        <i class="fas fa-building me-1"></i>{{ agent.organe }}
+                      </span>
+                      <span v-if="agent.poste" class="as-agent-tag">
+                        <i class="fas fa-briefcase me-1"></i>{{ agent.poste }}
+                      </span>
+                    </div>
+                    <div class="as-agent-dates">
+                      <i class="fas fa-calendar-alt me-1"></i>
+                      {{ formatShortDate(agent.date_debut) }}
+                      <template v-if="agent.date_fin">
+                        <i class="fas fa-arrow-right mx-1" style="font-size:.55rem;opacity:.5;"></i>
+                        {{ formatShortDate(agent.date_fin) }}
+                      </template>
+                      <span v-else class="as-no-end">En cours</span>
+                    </div>
+                    <div v-if="agent.motif" class="as-agent-motif">
+                      <i class="fas fa-comment me-1"></i>{{ agent.motif }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="as-empty">
+                <i class="fas fa-check-circle"></i>
+                <span>Aucun agent {{ st.label.toLowerCase() }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- EFFECTIFS PAR ORGANE -->
       <div class="rh-section">
         <div class="rh-section-head">
@@ -417,6 +498,7 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 const quickActions = [
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Consulter et gerer les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/rh/agents/create', label: 'Nouvel agent', desc: 'Creer une fiche agent', icon: 'fa-user-plus', color: '#059669', bg: '#d1fae5' },
+  { to: '/rh/holidays/planning', label: 'Gestion des congés', desc: 'Planning et statuts des agents', icon: 'fa-calendar-alt', color: '#10b981', bg: '#ecfdf5' },
   { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des presences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gerer les demandes', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
@@ -515,6 +597,37 @@ function formatTime(iso) {
 }
 
 const loadError = ref(null)
+
+// Agent statuses
+const expandedStatus = ref(null)
+
+const statusCards = [
+  { key: 'en_conge', label: 'En congé', icon: 'fa-umbrella-beach', color: '#0ea5e9', bg: '#e0f2fe' },
+  { key: 'en_mission', label: 'En mission', icon: 'fa-plane-departure', color: '#8b5cf6', bg: '#ede9fe' },
+  { key: 'en_formation', label: 'En formation', icon: 'fa-graduation-cap', color: '#f59e0b', bg: '#fef3c7' },
+  { key: 'suspendu', label: 'Suspendu', icon: 'fa-user-slash', color: '#ef4444', bg: '#fee2e2' },
+]
+
+function toggleStatus(key) {
+  expandedStatus.value = expandedStatus.value === key ? null : key
+}
+
+function agentStatusCount(key) {
+  return d.value.agent_statuses?.counts?.[key] ?? 0
+}
+
+function agentStatusList(key) {
+  return d.value.agent_statuses?.details?.[key] ?? []
+}
+
+function agentInitials(agent) {
+  return ((agent.prenom || '').charAt(0) + (agent.nom || '').charAt(0)).toUpperCase()
+}
+
+function formatShortDate(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
 
 onMounted(async () => {
   try {
@@ -771,6 +884,76 @@ onMounted(async () => {
 .sev-moyenne { background: #fef3c7; color: #d97706; }
 .sev-haute { background: #fee2e2; color: #dc2626; }
 
+/* AGENT STATUS CARDS */
+.as-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.as-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  overflow: hidden; transition: all .25s;
+}
+.as-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.06); }
+.as-card-open { box-shadow: 0 8px 32px rgba(0,0,0,.1); }
+.as-card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem; cursor: pointer; transition: background .15s;
+}
+.as-card-header:hover { background: #fafbfc; }
+.as-card-left { display: flex; align-items: center; gap: .75rem; }
+.as-card-badge {
+  width: 42px; height: 42px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;
+}
+.as-card-label { font-size: .78rem; font-weight: 600; color: #64748b; }
+.as-card-count { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+.as-card-count-unit { font-size: .68rem; font-weight: 600; opacity: .6; }
+.as-card-toggle {
+  width: 28px; height: 28px; border-radius: 8px; background: #f1f5f9;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .65rem; color: #94a3b8; transition: all .2s;
+}
+.as-card-toggle.open { transform: rotate(180deg); background: #e2e8f0; }
+
+.as-card-body {
+  border-top: 1px solid #f1f5f9; max-height: 320px; overflow-y: auto;
+  animation: asSlideDown .2s ease;
+}
+@keyframes asSlideDown { from { opacity: 0; max-height: 0; } to { opacity: 1; max-height: 320px; } }
+
+.as-agent-list { padding: .5rem; }
+.as-agent-row {
+  display: flex; align-items: flex-start; gap: .65rem;
+  padding: .65rem .6rem; border-radius: 10px; transition: background .15s;
+}
+.as-agent-row:hover { background: #f8fafc; }
+.as-agent-avatar {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: .65rem; font-weight: 700;
+}
+.as-agent-info { flex: 1; min-width: 0; }
+.as-agent-name { font-size: .82rem; font-weight: 700; color: #1e293b; line-height: 1.2; }
+.as-agent-meta { display: flex; flex-wrap: wrap; gap: .35rem; margin-top: .25rem; }
+.as-agent-tag {
+  display: inline-flex; align-items: center; font-size: .65rem; font-weight: 600;
+  padding: .1rem .45rem; border-radius: 5px; background: #f1f5f9; color: #64748b;
+}
+.as-agent-dates {
+  font-size: .68rem; color: #94a3b8; margin-top: .25rem;
+  display: flex; align-items: center; gap: .15rem;
+}
+.as-no-end {
+  font-size: .6rem; font-weight: 600; background: #fef3c7; color: #d97706;
+  padding: .05rem .35rem; border-radius: 4px; margin-left: .25rem;
+}
+.as-agent-motif {
+  font-size: .68rem; color: #94a3b8; margin-top: .2rem; font-style: italic;
+  display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden;
+}
+.as-empty {
+  display: flex; flex-direction: column; align-items: center; gap: .4rem;
+  padding: 1.5rem; color: #cbd5e1; font-size: .82rem;
+}
+.as-empty i { font-size: 1.2rem; color: #d1fae5; }
+
 /* RESPONSIVE */
 @media (max-width: 1100px) {
   .rh-hero-inner { flex-direction: column; align-items: flex-start; }
@@ -783,6 +966,7 @@ onMounted(async () => {
   .rh-presence-row { grid-template-columns: 1fr; }
   .rh-two-cols { grid-template-columns: 1fr; }
   .rh-recent-grid { grid-template-columns: 1fr; }
+  .as-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 767.98px) {
   .rh-dashboard { padding: 0 .5rem 1.5rem; }
@@ -799,6 +983,7 @@ onMounted(async () => {
   .rh-metric { padding: .85rem; }
   .rh-metric-val { font-size: 1.4rem; }
   .rh-organe-grid { grid-template-columns: 1fr; }
+  .as-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 575.98px) {
   .rh-hero-kpis { border-radius: 12px; }

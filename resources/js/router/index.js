@@ -304,6 +304,32 @@ const routes = [
         meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
     },
 
+    // RH Gestion des Congés
+    {
+        path: '/rh/holidays/planning',
+        name: 'rh.holidays.planning',
+        component: () => import('@/views/rh/holidays/HolidayPlanningView.vue'),
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+    },
+    {
+        path: '/rh/holidays/planning/:id/edit',
+        name: 'rh.holidays.planning-edit',
+        component: () => import('@/views/rh/holidays/HolidayPlanningEditView.vue'),
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+    },
+    {
+        path: '/rh/holidays/requests',
+        name: 'rh.holidays.requests',
+        component: () => import('@/views/rh/holidays/HolidayRequestsView.vue'),
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+    },
+    {
+        path: '/rh/holidays/statuses',
+        name: 'rh.holidays.statuses',
+        component: () => import('@/views/rh/holidays/AgentStatusView.vue'),
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+    },
+
     // ── Admin Routes ──
     {
         path: '/admin',

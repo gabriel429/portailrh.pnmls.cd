@@ -151,9 +151,9 @@
               <router-link :to="{ name: 'plan-travail.show', params: { id: a.id } }" class="pt-act-btn pt-act-view">
                 <i class="fas fa-eye"></i> Voir
               </router-link>
-              <router-link v-if="canEdit" :to="{ name: 'plan-travail.edit', params: { id: a.id } }" class="pt-act-btn pt-act-edit">
+              <button v-if="canEdit" class="pt-act-btn pt-act-edit" @click="openEditModal(a.id)">
                 <i class="fas fa-edit"></i> Modifier
-              </router-link>
+              </button>
             </div>
           </div>
         </div>
@@ -305,6 +305,14 @@
         </div>
       </div>
     </teleport>
+
+    <!-- Edit modal -->
+    <PlanTravailEditModal
+      :show="showEditModal"
+      :plan-travail-id="editingPlanTravailId"
+      @close="closeEditModal"
+      @updated="handlePlanTravailUpdated"
+    />
   </div>
 </template>
 
@@ -313,6 +321,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { list, create, getCreateData } from '@/api/planTravail'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
 
 const ui = useUiStore()
 const loading = ref(true)
@@ -429,6 +438,10 @@ const createDepartments = ref([])
 const createProvinces = ref([])
 const createLocalites = ref([])
 
+/* ── Edit modal ── */
+const showEditModal = ref(false)
+const editingPlanTravailId = ref(null)
+
 const niveauOptions = [
   { value: 'SEN', label: 'SEN (National)' },
   { value: 'SEP', label: 'SEP (Provincial)' },
@@ -514,6 +527,21 @@ async function handleCreateSubmit() {
   } finally {
     createSubmitting.value = false
   }
+}
+
+// Edit modal functions
+function openEditModal(planTravailId) {
+  editingPlanTravailId.value = planTravailId
+  showEditModal.value = true
+}
+
+function closeEditModal() {
+  showEditModal.value = false
+  editingPlanTravailId.value = null
+}
+
+function handlePlanTravailUpdated() {
+  loadPlan()
 }
 
 onMounted(() => loadPlan())

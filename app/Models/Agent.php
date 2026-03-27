@@ -186,6 +186,24 @@ class Agent extends Authenticatable
         return $this->hasMany(ActivitePlan::class, 'createur_id');
     }
 
+    public function holidays(): HasMany
+    {
+        return $this->hasMany(Holiday::class);
+    }
+
+    public function agentStatuses(): HasMany
+    {
+        return $this->hasMany(AgentStatus::class);
+    }
+
+    public function currentStatus(): ?AgentStatus
+    {
+        return $this->agentStatuses()
+                    ->where('actuel', true)
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+    }
+
     // Scopes
     public function scopeActifs($query)
     {

@@ -159,14 +159,14 @@
               >
                 <i class="fas fa-eye"></i> Voir
               </button>
-              <router-link
+              <button
                 v-if="isRH"
-                :to="{ name: 'requests.edit', params: { id: req.id } }"
                 class="req-act-btn req-act-edit"
                 title="Modifier"
+                @click="openEditModal(req.id)"
               >
                 <i class="fas fa-edit"></i> Modifier
-              </router-link>
+              </button>
               <button
                 v-if="canDelete(req)"
                 class="req-act-btn req-act-delete"
@@ -326,13 +326,13 @@
               <i class="fas fa-print me-1"></i> Imprimer
             </button>
             <div class="d-flex gap-2">
-              <router-link
+              <button
                 v-if="detailIsRH"
-                :to="{ name: 'requests.edit', params: { id: detailRequest.id } }"
                 class="rdm-btn rdm-btn-warning"
+                @click="openEditModal(detailRequest.id)"
               >
                 <i class="fas fa-edit me-1"></i> Modifier
-              </router-link>
+              </button>
               <button
                 v-if="detailIsRH || (detailIsOwner && detailRequest.statut === 'en_attente')"
                 class="rdm-btn rdm-btn-danger"
@@ -459,6 +459,14 @@
         </div>
       </div>
     </teleport>
+
+    <!-- Edit modal -->
+    <RequestEditModal
+      :show="showEditModal"
+      :request-id="editingRequestId"
+      @close="closeEditModal"
+      @updated="handleRequestUpdated"
+    />
   </div>
 </template>
 
@@ -469,6 +477,7 @@ import { useUiStore } from '@/stores/ui'
 import { list, get, create, remove } from '@/api/requests'
 import client from '@/api/client'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import RequestEditModal from '@/components/requests/RequestEditModal.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -491,6 +500,10 @@ const detailLoading = ref(false)
 const detailRequest = ref(null)
 const detailIsRH = ref(false)
 const detailIsOwner = ref(false)
+
+// Edit modal
+const showEditModal = ref(false)
+const editingRequestId = ref(null)
 
 // Create modal
 const showCreateModal = ref(false)
@@ -753,6 +766,27 @@ function storageUrl(path) {
 
 function printDetail() {
   window.print()
+}
+
+// Edit modal functions
+function openEditModal(requestId) {
+  editingRequestId.value = requestId
+  showEditModal.value = true
+}
+
+function closeEditModal() {
+  showEditModal.value = false
+  editingRequestId.value = null
+}
+
+function handleRequestUpdated(updatedRequest) {
+  // Refresh the requests list to show updated data
+  loadRequests(meta.value.current_page)
+
+  // Also update the detail modal if it's for the same request
+  if (detailRequest.value && detailRequest.value.id === updatedRequest.id) {
+    detailRequest.value = { ...detailRequest.value, ...updatedRequest }
+  }
 }
 
 onMounted(() => {

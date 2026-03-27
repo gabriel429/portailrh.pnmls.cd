@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agent;
+use App\Models\AgentStatus;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
 use App\Models\Signalement;
@@ -134,6 +135,37 @@ class RhDashboardController extends Controller
             ->limit(5)
             ->get(['id', 'titre', 'urgence', 'created_at']);
 
+        // ─── STATUTS AGENTS ───
+        $agentStatusCounts = AgentStatus::actuel()
+            ->select('statut', DB::raw('COUNT(*) as total'))
+            ->groupBy('statut')
+            ->pluck('total', 'statut')
+            ->toArray();
+
+        $agentStatusDetails = [];
+        $statusTypes = ['en_conge', 'en_mission', 'suspendu', 'en_formation'];
+        foreach ($statusTypes as $statut) {
+            $agents = AgentStatus::actuel()
+                ->byStatut($statut)
+                ->with(['agent:id,nom,prenom,id_agent,organe,sexe,poste_actuel'])
+                ->orderBy('date_debut', 'desc')
+                ->get()
+                ->map(fn($s) => [
+                    'id' => $s->id,
+                    'agent_id' => $s->agent_id,
+                    'nom' => $s->agent?->nom,
+                    'prenom' => $s->agent?->prenom,
+                    'id_agent' => $s->agent?->id_agent,
+                    'organe' => $s->agent?->organe,
+                    'poste' => $s->agent?->poste_actuel,
+                    'sexe' => $s->agent?->sexe,
+                    'date_debut' => $s->date_debut,
+                    'date_fin' => $s->date_fin,
+                    'motif' => $s->motif,
+                ]);
+            $agentStatusDetails[$statut] = $agents;
+        }
+
         return response()->json([
             'agents' => [
                 'total' => $agentsTotal,
@@ -177,6 +209,16 @@ class RhDashboardController extends Controller
                 'actifs' => $communiquesActifs,
                 'urgents' => $communiquesUrgents,
                 'recent' => $recentCommuniques,
+            ],
+            'agent_statuses' => [
+                'counts' => [
+                    'en_conge' => $agentStatusCounts['en_conge'] ?? 0,
+                    'en_mission' => $agentStatusCounts['en_mission'] ?? 0,
+                    'suspendu' => $agentStatusCounts['suspendu'] ?? 0,
+                    'en_formation' => $agentStatusCounts['en_formation'] ?? 0,
+                    'disponible' => $agentStatusCounts['disponible'] ?? 0,
+                ],
+                'details' => $agentStatusDetails,
             ],
         ]);
     }

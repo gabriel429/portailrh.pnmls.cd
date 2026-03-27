@@ -90,13 +90,13 @@
                     >
                       <i class="fas fa-eye"></i>
                     </router-link>
-                    <router-link
-                      :to="{ name: 'signalements.edit', params: { id: s.id } }"
+                    <button
                       class="btn btn-outline-warning"
                       title="Modifier"
+                      @click="openEditModal(s.id)"
                     >
                       <i class="fas fa-edit"></i>
-                    </router-link>
+                    </button>
                     <button
                       class="btn btn-outline-danger"
                       title="Supprimer"
@@ -230,6 +230,14 @@
       </div>
     </div>
   </teleport>
+
+  <!-- Edit modal -->
+  <SignalementEditModal
+    :show="showEditModal"
+    :signalement-id="editingSignalementId"
+    @close="closeEditModal"
+    @updated="handleSignalementUpdated"
+  />
 </template>
 
 <script setup>
@@ -239,6 +247,7 @@ import { useAuthStore } from '@/stores/auth'
 import { list, remove, create } from '@/api/signalements'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import SignalementEditModal from '@/components/signalements/SignalementEditModal.vue'
 
 const ui = useUiStore()
 const auth = useAuthStore()
@@ -250,6 +259,10 @@ const filters = ref({ severite: '', statut: '' })
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
 const deleting = ref(false)
+
+// Edit modal
+const showEditModal = ref(false)
+const editingSignalementId = ref(null)
 
 const paginationPages = computed(() => {
   const pages = []
@@ -338,6 +351,22 @@ async function handleDelete() {
   } finally {
     deleting.value = false
   }
+}
+
+// Edit modal functions
+function openEditModal(signalementId) {
+  editingSignalementId.value = signalementId
+  showEditModal.value = true
+}
+
+function closeEditModal() {
+  showEditModal.value = false
+  editingSignalementId.value = null
+}
+
+function handleSignalementUpdated(updatedSignalement) {
+  // Refresh the signalements list to show updated data
+  loadSignalements(meta.value.current_page)
 }
 
 onMounted(() => loadSignalements())

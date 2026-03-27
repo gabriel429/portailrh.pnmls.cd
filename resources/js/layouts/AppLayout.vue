@@ -61,6 +61,11 @@
                     </router-link>
                   </li>
                   <li>
+                    <router-link class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Congés
+                    </router-link>
+                  </li>
+                  <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
                       <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiques
                     </router-link>

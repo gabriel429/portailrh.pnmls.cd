@@ -477,15 +477,23 @@
               <button class="asm-btn-print" @click="printAgentFiche">
                 <i class="fas fa-print me-1"></i> Imprimer
               </button>
-              <router-link :to="{ name: 'rh.agents.edit', params: { id: selectedAgent.id } }" class="asm-btn-edit" @click="closeAgentModal">
+              <button class="asm-btn-edit" @click="openEditModal">
                 <i class="fas fa-edit me-1"></i> Modifier
-              </router-link>
+              </button>
               <button class="asm-btn-close" @click="closeAgentModal">Fermer</button>
             </div>
           </template>
         </div>
       </div>
     </teleport>
+
+    <!-- Agent Edit Modal -->
+    <AgentEditModal
+      :show="showEditModal"
+      :agent-id="agentToEdit"
+      @close="closeEditModal"
+      @updated="onAgentUpdated"
+    />
   </div>
 </template>
 
@@ -496,6 +504,7 @@ import { useUiStore } from '@/stores/ui'
 import { list, get, remove, exportCsv, getFormOptions } from '@/api/agents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import AgentEditModal from '@/components/agents/AgentEditModal.vue'
 
 const router = useRouter()
 const ui = useUiStore()
@@ -532,6 +541,10 @@ const exportFilters = reactive({
     province_id: '',
     departement_id: '',
 })
+
+// Edit modal
+const showEditModal = ref(false)
+const agentToEdit = ref(null)
 
 const showExportProvince = computed(() => {
     const val = exportFilters.organe
@@ -776,6 +789,28 @@ ${reqRows ? `<div class="section">
     w.document.write(html)
     w.document.close()
     w.onload = () => { w.print() }
+}
+
+// Edit Modal functions
+function openEditModal() {
+    if (selectedAgent.value) {
+        agentToEdit.value = selectedAgent.value.id
+        showEditModal.value = true
+    }
+}
+
+function closeEditModal() {
+    showEditModal.value = false
+    agentToEdit.value = null
+}
+
+function onAgentUpdated() {
+    closeEditModal()
+    fetchAgents() // Refresh the list
+    if (selectedAgent.value) {
+        // Refresh the selected agent in the modal
+        goToAgent(selectedAgent.value.id)
+    }
 }
 
 // Fetch agents
