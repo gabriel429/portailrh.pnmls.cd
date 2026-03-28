@@ -408,6 +408,39 @@ class ExecutiveDashboardController extends Controller
                 'count' => $p->agents_count,
             ]);
 
+        // ─── STATUTS AGENTS (AgentStatus) ─── [NOUVEAU - CRITIQUE POUR SEN]
+        $agentStatusCounts = AgentStatus::actuel()
+            ->select('statut', DB::raw('COUNT(*) as total'))
+            ->groupBy('statut')
+            ->pluck('total', 'statut')
+            ->toArray();
+
+        // Détails par statut (limité à 10 par catégorie pour performance)
+        $agentStatusDetails = [];
+        $statusTypes = ['en_conge', 'en_mission', 'suspendu', 'en_formation', 'disponible'];
+        foreach ($statusTypes as $statut) {
+            $agents = AgentStatus::actuel()
+                ->byStatut($statut)
+                ->with(['agent:id,nom,prenom,id_agent,organe,sexe,poste_actuel'])
+                ->orderBy('date_debut', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(fn($s) => [
+                    'id' => $s->id,
+                    'agent_id' => $s->agent_id,
+                    'nom' => $s->agent?->nom,
+                    'prenom' => $s->agent?->prenom,
+                    'id_agent' => $s->agent?->id_agent,
+                    'organe' => $s->agent?->organe,
+                    'poste' => $s->agent?->poste_actuel,
+                    'sexe' => $s->agent?->sexe,
+                    'date_debut' => $s->date_debut,
+                    'date_fin' => $s->date_fin,
+                    'motif' => $s->motif,
+                ]);
+            $agentStatusDetails[$statut] = $agents;
+        }
+
         // ─── SECTIONS & DÉPARTEMENTS ───
         $sectionsTotal = Section::count();
         $departementsTotal = Department::count();
@@ -558,6 +591,16 @@ class ExecutiveDashboardController extends Controller
                 'sections_total' => $sectionsTotal,
                 'departements_total' => $departementsTotal,
                 'institutions_total' => $institutionsTotal,
+            ],
+            'agent_statuses' => [
+                'counts' => [
+                    'en_conge' => $agentStatusCounts['en_conge'] ?? 0,
+                    'en_mission' => $agentStatusCounts['en_mission'] ?? 0,
+                    'suspendu' => $agentStatusCounts['suspendu'] ?? 0,
+                    'en_formation' => $agentStatusCounts['en_formation'] ?? 0,
+                    'disponible' => $agentStatusCounts['disponible'] ?? 0,
+                ],
+                'details' => $agentStatusDetails,
             ],
         ]);
     }
