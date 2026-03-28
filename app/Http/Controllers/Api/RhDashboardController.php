@@ -10,6 +10,13 @@ use App\Models\Pointage;
 use App\Models\Signalement;
 use App\Models\Document;
 use App\Models\Communique;
+use App\Models\Holiday;
+use App\Models\HolidayPlanning;
+use App\Models\Affectation;
+use App\Models\ActivitePlan;
+use App\Models\Tache;
+use App\Models\Grade;
+use App\Models\Province;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -166,6 +173,129 @@ class RhDashboardController extends Controller
             $agentStatusDetails[$statut] = $agents;
         }
 
+        // ─── CONGÉS (HOLIDAY) ─── [NOUVEAU - CRITIQUE POUR RH]
+        $currentYear = $now->year;
+
+        $holidaysTotal = Holiday::count();
+        $holidaysPending = Holiday::pending()->count();
+        $holidaysApproved = Holiday::approved()->count();
+        $holidaysActiveToday = Holiday::active($now)->count();
+
+        // Prochains retours de congé (7 prochains jours)
+        $next7Days = $now->copy()->addDays(7);
+        $upcomingReturns = Holiday::approved()
+            ->whereBetween('date_retour_prevu', [$now->toDateString(), $next7Days->toDateString()])
+            ->with('agent:id,nom,prenom,organe')
+            ->orderBy('date_retour_prevu')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'date_retour_prevu', 'type_conge', 'nombre_jours']);
+
+        // Taux d'utilisation congés
+        $holidayPlanningStats = HolidayPlanning::where('annee', $currentYear)
+            ->selectRaw('
+                COUNT(*) as total_plannings,
+                SUM(jours_utilises) as total_utilises,
+                SUM(jours_conge_totaux) as total_conge_totaux
+            ')
+            ->first();
+
+        $tauxUtilisationConges = 0;
+        if ($holidayPlanningStats && $holidayPlanningStats->total_conge_totaux > 0) {
+            $tauxUtilisationConges = round(
+                ($holidayPlanningStats->total_utilises / $holidayPlanningStats->total_conge_totaux) * 100,
+                1
+            );
+        }
+
+        // ─── AFFECTATIONS ─── [NOUVEAU - GESTION MOBILITÉ]
+        $affectationsActives = Affectation::where('actif', true)->count();
+
+        $agentsSansAffectation = Agent::actifs()
+            ->whereDoesntHave('affectations', fn($q) => $q->where('actif', true))
+            ->count();
+
+        // Mobilité récente (30 derniers jours)
+        $mobiliteRecente = Affectation::where('date_debut', '>=', $now->copy()->subDays(30))
+            ->with('agent:id,nom,prenom', 'fonction:id,nom')
+            ->orderByDesc('date_debut')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'fonction_id', 'niveau_administratif', 'date_debut']);
+
+        // ─── PLAN DE TRAVAIL ─── [NOUVEAU]
+        $planTotal = ActivitePlan::parAnnee($currentYear)->count();
+        $planTerminee = ActivitePlan::parAnnee($currentYear)->terminee()->count();
+        $planEnCours = ActivitePlan::parAnnee($currentYear)->enCours()->count();
+        $avgCompletionPlan = ActivitePlan::parAnnee($currentYear)->avg('pourcentage') ?? 0;
+
+        // ─── TÂCHES RH ─── [NOUVEAU]
+        $tachesTotal = Tache::count();
+        $tachesEnCours = Tache::enCours()->count();
+        $tachesTerminee = Tache::terminee()->count();
+        $tachesOverdue = Tache::where('statut', '!=', 'terminee')
+            ->whereNotNull('date_echeance')
+            ->where('date_echeance', '<', $now->toDateString())
+            ->count();
+
+        // Tâches récentes
+        $recentTaches = Tache::orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'titre', 'statut', 'priorite', 'date_echeance', 'created_at']);
+
+        // ─── GRADES & COMPÉTENCES ─── [NOUVEAU]
+        $gradesDistribution = Grade::withCount('agents')
+            ->orderBy('ordre')
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($g) => [
+                'nom' => $g->nom,
+                'count' => $g->agents_count,
+            ]);
+
+        $domainesEtudes = Agent::actifs()
+            ->select('domaine_etudes', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('domaine_etudes')
+            ->groupBy('domaine_etudes')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get()
+            ->map(fn($d) => [
+                'domaine' => $d->domaine_etudes,
+                'count' => $d->count,
+            ]);
+
+        // ─── GÉOGRAPHIE ─── [NOUVEAU]
+        $agentsByProvince = Province::withCount([
+                'agents' => fn($q) => $q->actifs()
+            ])
+            ->orderByDesc('agents_count')
+            ->limit(10)
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($p) => [
+                'nom' => $p->nom,
+                'code' => $p->code,
+                'count' => $p->agents_count,
+            ]);
+
+        // ─── KPIs AVANCÉS ─── [NOUVEAU]
+        $totalRequestsTraitees = RequestModel::whereIn('statut', ['approuve', 'rejete'])->count();
+        $tauxApprobation = 0;
+        if ($totalRequestsTraitees > 0) {
+            $tauxApprobation = round(($requestsApproved / $totalRequestsTraitees) * 100, 1);
+        }
+
+        // Évolution effectifs (3 derniers mois)
+        $evolutionEffectifs = [];
+        for ($i = 2; $i >= 0; $i--) {
+            $monthStart = $now->copy()->subMonths($i)->startOfMonth();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+
+            $effectif = Agent::where('created_at', '<=', $monthEnd)->count();
+
+            $evolutionEffectifs[] = [
+                'mois' => $monthStart->format('M Y'),
+                'effectif' => $effectif,
+            ];
+        }
+
         return response()->json([
             'agents' => [
                 'total' => $agentsTotal,
@@ -173,14 +303,19 @@ class RhDashboardController extends Controller
                 'suspendus' => $agentsSuspendus,
                 'anciens' => $agentsAnciens,
                 'new_this_month' => $newAgentsMonth,
+                'sans_affectation' => $agentsSansAffectation,
                 'by_sexe' => $agentsBySexe,
                 'by_organe' => $agentsByOrgane,
+                'by_grade' => $gradesDistribution,
+                'by_province' => $agentsByProvince,
+                'evolution_mensuelle' => $evolutionEffectifs,
             ],
             'requests' => [
                 'total' => $requestsTotal,
                 'en_attente' => $requestsPending,
                 'approuve' => $requestsApproved,
                 'rejete' => $requestsRejected,
+                'taux_approbation' => $tauxApprobation,
                 'by_type' => $requestsByType,
                 'recent' => $recentRequests,
             ],
@@ -219,6 +354,38 @@ class RhDashboardController extends Controller
                     'disponible' => $agentStatusCounts['disponible'] ?? 0,
                 ],
                 'details' => $agentStatusDetails,
+            ],
+            // ──────────────────────────────────────────
+            // ✨ NOUVELLES DONNÉES - VISION RH COMPLÈTE ✨
+            // ──────────────────────────────────────────
+            'holidays' => [
+                'total' => $holidaysTotal,
+                'pending' => $holidaysPending,
+                'approved' => $holidaysApproved,
+                'active_today' => $holidaysActiveToday,
+                'upcoming_returns' => $upcomingReturns,
+                'taux_utilisation_pct' => $tauxUtilisationConges,
+            ],
+            'affectations' => [
+                'actives' => $affectationsActives,
+                'agents_sans_affectation' => $agentsSansAffectation,
+                'mobilite_30_jours' => $mobiliteRecente,
+            ],
+            'plan_travail' => [
+                'total' => $planTotal,
+                'en_cours' => $planEnCours,
+                'terminee' => $planTerminee,
+                'avg_completion' => round($avgCompletionPlan, 0),
+            ],
+            'taches' => [
+                'total' => $tachesTotal,
+                'en_cours' => $tachesEnCours,
+                'terminee' => $tachesTerminee,
+                'overdue' => $tachesOverdue,
+                'recent' => $recentTaches,
+            ],
+            'formations' => [
+                'domaines_etudes' => $domainesEtudes,
             ],
         ]);
     }
