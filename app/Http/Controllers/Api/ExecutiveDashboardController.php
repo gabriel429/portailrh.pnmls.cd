@@ -353,9 +353,7 @@ class ExecutiveDashboardController extends Controller
 
         // ─── MESSAGES & NOTIFICATIONS ───
         $messagesNonLus = Message::where('lu', false)->count();
-        $notificationsNonLues = NotificationPortail::where('lu', false)
-            ->where('priorite', 'haute')
-            ->count();
+        $notificationsNonLues = NotificationPortail::where('lu', false)->count();
 
         // ─── GRADES & STRUCTURE RH ───
         $gradesDistribution = Grade::withCount('agents')
