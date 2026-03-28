@@ -281,17 +281,17 @@ class ExecutiveDashboardController extends Controller
         // Planning congés annuel (taux utilisation)
         $holidayPlanningStats = HolidayPlanning::where('annee', $currentYear)
             ->selectRaw('
-                COUNT(*) as total_agents,
+                COUNT(*) as total_plannings,
                 SUM(jours_utilises) as total_utilises,
-                SUM(jours_disponibles) as total_disponibles,
+                SUM(jours_conge_totaux) as total_conge_totaux,
                 AVG(jours_utilises) as avg_utilises
             ')
             ->first();
 
         $tauxUtilisationConges = 0;
-        if ($holidayPlanningStats && $holidayPlanningStats->total_disponibles > 0) {
+        if ($holidayPlanningStats && $holidayPlanningStats->total_conge_totaux > 0) {
             $tauxUtilisationConges = round(
-                ($holidayPlanningStats->total_utilises / $holidayPlanningStats->total_disponibles) * 100,
+                ($holidayPlanningStats->total_utilises / $holidayPlanningStats->total_conge_totaux) * 100,
                 1
             );
         }
@@ -530,9 +530,9 @@ class ExecutiveDashboardController extends Controller
                 'by_organe' => $holidaysByOrgane,
                 'taux_utilisation_pct' => $tauxUtilisationConges,
                 'planning_stats' => [
-                    'total_agents' => $holidayPlanningStats->total_agents ?? 0,
+                    'total_plannings' => $holidayPlanningStats->total_plannings ?? 0,
                     'total_jours_utilises' => $holidayPlanningStats->total_utilises ?? 0,
-                    'total_jours_disponibles' => $holidayPlanningStats->total_disponibles ?? 0,
+                    'total_jours_conge_totaux' => $holidayPlanningStats->total_conge_totaux ?? 0,
                     'avg_jours_utilises' => round($holidayPlanningStats->avg_utilises ?? 0, 1),
                 ],
             ],
