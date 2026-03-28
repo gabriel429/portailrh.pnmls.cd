@@ -422,12 +422,6 @@ class ExecutiveDashboardController extends Controller
             ]);
 
         // ─── INDICATEURS PERFORMANCE AVANCÉS ───
-        // Délai moyen de traitement des demandes
-        $avgDelaiTraitement = RequestModel::whereNotNull('date_traitement')
-            ->selectRaw('AVG(DATEDIFF(date_traitement, created_at)) as avg_days')
-            ->value('avg_days');
-        $avgDelaiTraitement = round($avgDelaiTraitement ?? 0, 1);
-
         // Taux d'approbation demandes
         $totalRequestsTraitees = RequestModel::whereIn('statut', ['approuve', 'rejete'])->count();
         $tauxApprobation = 0;
@@ -470,7 +464,6 @@ class ExecutiveDashboardController extends Controller
                 'approuve' => $requestsApproved,
                 'rejete' => $requestsRejected,
                 'recent_pending' => $recentPendingRequests,
-                'avg_delai_traitement_jours' => $avgDelaiTraitement,
                 'taux_approbation' => $tauxApprobation,
             ],
             'attendance' => [
