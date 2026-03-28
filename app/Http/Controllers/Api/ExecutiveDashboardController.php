@@ -11,6 +11,20 @@ use App\Models\Tache;
 use App\Models\ActivitePlan;
 use App\Models\Communique;
 use App\Models\Document;
+use App\Models\Holiday;
+use App\Models\HolidayPlanning;
+use App\Models\AgentStatus;
+use App\Models\Affectation;
+use App\Models\AuditLog;
+use App\Models\NotificationPortail;
+use App\Models\Message;
+use App\Models\Grade;
+use App\Models\Fonction;
+use App\Models\Section;
+use App\Models\Department;
+use App\Models\Province;
+use App\Models\Localite;
+use App\Models\Institution;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -203,6 +217,240 @@ class ExecutiveDashboardController extends Controller
 
         // ─── DOCUMENTS ───
         $documentsTotal = Document::count();
+        $documentsValides = Document::where('statut', 'valide')->count();
+        $documentsExpires = Document::where('statut', 'expiré')->count();
+        $documentsRejetes = Document::where('statut', 'rejeté')->count();
+
+        // Documents par type (utilise le champ 'type' de la table documents)
+        $documentsByType = Document::select('type', DB::raw('COUNT(*) as count'))
+            ->groupBy('type')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get()
+            ->map(fn($doc) => [
+                'type' => $doc->type,
+                'count' => $doc->count,
+            ]);
+
+        // ─── CONGÉS (HOLIDAYS) ─── [PRIORITÉ 1]
+        $holidaysTotal = Holiday::count();
+        $holidaysPending = Holiday::pending()->count();
+        $holidaysApproved = Holiday::approved()->count();
+
+        // Congés actifs aujourd'hui
+        $holidaysActiveToday = Holiday::active($now)->count();
+        $agentsEnCongeToday = Holiday::active($now)
+            ->with('agent:id,nom,prenom,organe,fonction_id')
+            ->get()
+            ->map(fn($h) => [
+                'id' => $h->id,
+                'agent' => $h->agent ? $h->agent->prenom . ' ' . $h->agent->nom : 'N/A',
+                'organe' => $h->agent->organe ?? 'N/A',
+                'type' => $h->getTypeCongeLabel(),
+                'date_debut' => $h->date_debut->format('Y-m-d'),
+                'date_fin' => $h->date_fin->format('Y-m-d'),
+                'date_retour_prevu' => $h->date_retour_prevu?->format('Y-m-d'),
+            ]);
+
+        // Prochains congés (30 jours)
+        $next30Days = $now->copy()->addDays(30);
+        $upcomingHolidays = Holiday::approved()
+            ->whereBetween('date_debut', [$now->toDateString(), $next30Days->toDateString()])
+            ->with('agent:id,nom,prenom,organe')
+            ->orderBy('date_debut')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'date_debut', 'date_fin', 'type_conge', 'nombre_jours']);
+
+        // Congés par organe
+        $holidaysByOrgane = [];
+        foreach ($organes as $code => $nom) {
+            $holidaysByOrgane[$code] = [
+                'active_today' => Holiday::active($now)
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom))
+                    ->count(),
+                'pending' => Holiday::pending()
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom))
+                    ->count(),
+                'approved_this_year' => Holiday::approved()
+                    ->forYear($currentYear)
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom))
+                    ->count(),
+            ];
+        }
+
+        // Planning congés annuel (taux utilisation)
+        $holidayPlanningStats = HolidayPlanning::where('annee', $currentYear)
+            ->selectRaw('
+                COUNT(*) as total_agents,
+                SUM(jours_utilises) as total_utilises,
+                SUM(jours_disponibles) as total_disponibles,
+                AVG(jours_utilises) as avg_utilises
+            ')
+            ->first();
+
+        $tauxUtilisationConges = 0;
+        if ($holidayPlanningStats && $holidayPlanningStats->total_disponibles > 0) {
+            $tauxUtilisationConges = round(
+                ($holidayPlanningStats->total_utilises / $holidayPlanningStats->total_disponibles) * 100,
+                1
+            );
+        }
+
+        // ─── AFFECTATIONS ─── [PRIORITÉ 1]
+        $affectationsTotal = Affectation::count();
+        $affectationsActives = Affectation::where('actif', true)->count();
+
+        // Postes vacants (fonctions sans affectation active)
+        $fonctionsTotal = Fonction::count();
+        $fonctionsAvecAffectation = Affectation::where('actif', true)
+            ->distinct('fonction_id')
+            ->count('fonction_id');
+        $postesVacants = $fonctionsTotal - $fonctionsAvecAffectation;
+
+        // Agents sans affectation active
+        $agentsSansAffectation = Agent::actifs()
+            ->whereDoesntHave('affectations', fn($q) => $q->where('actif', true))
+            ->count();
+
+        // Mobilité récente (changements affectation 30 derniers jours)
+        $mobiliteRecente = Affectation::where('date_debut', '>=', $now->copy()->subDays(30))
+            ->with('agent:id,nom,prenom', 'fonction:id,nom')
+            ->orderByDesc('date_debut')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'fonction_id', 'niveau_administratif', 'date_debut']);
+
+        // Affectations par niveau administratif
+        $affectationsByNiveau = [];
+        foreach (['SEN', 'SEP', 'SEL'] as $niveau) {
+            $affectationsByNiveau[strtolower($niveau)] = Affectation::where('actif', true)
+                ->where('niveau_administratif', $niveau)
+                ->count();
+        }
+
+        // ─── AUDIT & SÉCURITÉ ─── [PRIORITÉ 1]
+        $auditTotal = AuditLog::count();
+        $auditLast24h = AuditLog::where('created_at', '>=', $now->copy()->subHours(24))->count();
+
+        // Actions sensibles récentes (7 derniers jours)
+        $actionsSensibles = AuditLog::whereIn('action', [
+                'delete', 'update_sensitive', 'login_failed', 'permissions_changed', 'role_assigned'
+            ])
+            ->where('created_at', '>=', $now->copy()->subDays(7))
+            ->with('user:id,name,email')
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get(['id', 'user_id', 'action', 'auditable_type', 'auditable_id', 'created_at']);
+
+        // Comptes gelés récents
+        $comptesGeles = DB::table('users')
+            ->where('is_frozen', true)
+            ->count();
+
+        // Connexions échouées (dernières 24h)
+        $connexionsEchouees = AuditLog::where('action', 'login_failed')
+            ->where('created_at', '>=', $now->copy()->subHours(24))
+            ->count();
+
+        // ─── MESSAGES & NOTIFICATIONS ───
+        $messagesNonLus = Message::where('lu', false)->count();
+        $notificationsNonLues = NotificationPortail::where('lu', false)
+            ->where('priorite', 'haute')
+            ->count();
+
+        // ─── GRADES & STRUCTURE RH ───
+        $gradesDistribution = Grade::withCount('agents')
+            ->orderBy('ordre')
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($g) => [
+                'nom' => $g->nom,
+                'count' => $g->agents_count,
+            ]);
+
+        // ─── FORMATIONS & COMPÉTENCES ───
+        // Domaines d'études distribution
+        $domainesEtudes = Agent::actifs()
+            ->select('domaine_etudes', DB::raw('COUNT(*) as count'))
+            ->whereNotNull('domaine_etudes')
+            ->groupBy('domaine_etudes')
+            ->orderByDesc('count')
+            ->limit(10)
+            ->get()
+            ->map(fn($d) => [
+                'domaine' => $d->domaine_etudes,
+                'count' => $d->count,
+            ]);
+
+        // ─── INSTITUTIONS & PARTENARIATS ───
+        $institutionsTotal = Institution::count();
+        $agentsByInstitution = Institution::withCount('agents')
+            ->orderByDesc('agents_count')
+            ->limit(10)
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($i) => [
+                'nom' => $i->nom,
+                'count' => $i->agents_count,
+            ]);
+
+        // ─── GÉOGRAPHIE ───
+        $provincesTotal = Province::count();
+        $provincesAvecAgents = Agent::actifs()
+            ->distinct('province_id')
+            ->whereNotNull('province_id')
+            ->count('province_id');
+
+        $agentsByProvince = Province::withCount([
+                'agents' => fn($q) => $q->actifs()
+            ])
+            ->orderByDesc('agents_count')
+            ->limit(10)
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($p) => [
+                'nom' => $p->nom,
+                'code' => $p->code,
+                'count' => $p->agents_count,
+            ]);
+
+        // ─── SECTIONS & DÉPARTEMENTS ───
+        $sectionsTotal = Section::count();
+        $departementsTotal = Department::count();
+
+        $agentsBySection = Section::withCount('agents')
+            ->orderByDesc('agents_count')
+            ->limit(10)
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($s) => [
+                'nom' => $s->nom,
+                'count' => $s->agents_count,
+            ]);
+
+        // ─── INDICATEURS PERFORMANCE AVANCÉS ───
+        // Délai moyen de traitement des demandes
+        $avgDelaiTraitement = RequestModel::whereNotNull('date_traitement')
+            ->selectRaw('AVG(DATEDIFF(date_traitement, created_at)) as avg_days')
+            ->value('avg_days');
+        $avgDelaiTraitement = round($avgDelaiTraitement ?? 0, 1);
+
+        // Taux d'approbation demandes
+        $totalRequestsTraitees = RequestModel::whereIn('statut', ['approuve', 'rejete'])->count();
+        $tauxApprobation = 0;
+        if ($totalRequestsTraitees > 0) {
+            $tauxApprobation = round(($requestsApproved / $totalRequestsTraitees) * 100, 1);
+        }
+
+        // Évolution mensuelle effectifs (3 derniers mois)
+        $evolutionEffectifs = [];
+        for ($i = 2; $i >= 0; $i--) {
+            $monthStart = $now->copy()->subMonths($i)->startOfMonth();
+            $monthEnd = $monthStart->copy()->endOfMonth();
+
+            // Approximation: agents créés jusqu'à la fin du mois
+            $effectif = Agent::where('created_at', '<=', $monthEnd)->count();
+
+            $evolutionEffectifs[] = [
+                'mois' => $monthStart->format('M Y'),
+                'effectif' => $effectif,
+            ];
+        }
 
         return response()->json([
             'agents' => [
@@ -210,7 +458,13 @@ class ExecutiveDashboardController extends Controller
                 'actifs' => $agentsActifs,
                 'suspendus' => $agentsSuspendus,
                 'anciens' => $agentsAnciens,
+                'sans_affectation' => $agentsSansAffectation,
                 'by_organe' => $agentsByOrgane,
+                'by_grade' => $gradesDistribution,
+                'by_province' => $agentsByProvince,
+                'by_section' => $agentsBySection,
+                'by_institution' => $agentsByInstitution,
+                'evolution_mensuelle' => $evolutionEffectifs,
             ],
             'requests' => [
                 'total' => $requestsTotal,
@@ -218,6 +472,8 @@ class ExecutiveDashboardController extends Controller
                 'approuve' => $requestsApproved,
                 'rejete' => $requestsRejected,
                 'recent_pending' => $recentPendingRequests,
+                'avg_delai_traitement_jours' => $avgDelaiTraitement,
+                'taux_approbation' => $tauxApprobation,
             ],
             'attendance' => [
                 'today_present' => $todayPresent,
@@ -256,6 +512,61 @@ class ExecutiveDashboardController extends Controller
             ],
             'documents' => [
                 'total' => $documentsTotal,
+                'valides' => $documentsValides,
+                'expires' => $documentsExpires,
+                'rejetes' => $documentsRejetes,
+                'by_type' => $documentsByType,
+            ],
+            // ──────────────────────────────────────────
+            // ✨ NOUVELLES DONNÉES - VISION 360° SEN ✨
+            // ──────────────────────────────────────────
+            'holidays' => [
+                'total' => $holidaysTotal,
+                'pending' => $holidaysPending,
+                'approved' => $holidaysApproved,
+                'active_today' => $holidaysActiveToday,
+                'agents_en_conge_today' => $agentsEnCongeToday,
+                'upcoming_30_days' => $upcomingHolidays,
+                'by_organe' => $holidaysByOrgane,
+                'taux_utilisation_pct' => $tauxUtilisationConges,
+                'planning_stats' => [
+                    'total_agents' => $holidayPlanningStats->total_agents ?? 0,
+                    'total_jours_utilises' => $holidayPlanningStats->total_utilises ?? 0,
+                    'total_jours_disponibles' => $holidayPlanningStats->total_disponibles ?? 0,
+                    'avg_jours_utilises' => round($holidayPlanningStats->avg_utilises ?? 0, 1),
+                ],
+            ],
+            'affectations' => [
+                'total' => $affectationsTotal,
+                'actives' => $affectationsActives,
+                'postes_vacants' => $postesVacants,
+                'agents_sans_affectation' => $agentsSansAffectation,
+                'mobilite_30_jours' => $mobiliteRecente,
+                'by_niveau' => $affectationsByNiveau,
+            ],
+            'audit' => [
+                'total' => $auditTotal,
+                'last_24h' => $auditLast24h,
+                'actions_sensibles' => $actionsSensibles,
+                'comptes_geles' => $comptesGeles,
+                'connexions_echouees_24h' => $connexionsEchouees,
+            ],
+            'notifications' => [
+                'messages_non_lus' => $messagesNonLus,
+                'notifications_prioritaires' => $notificationsNonLues,
+            ],
+            'formations' => [
+                'domaines_etudes' => $domainesEtudes,
+            ],
+            'geographie' => [
+                'provinces_total' => $provincesTotal,
+                'provinces_avec_agents' => $provincesAvecAgents,
+                'agents_by_province' => $agentsByProvince,
+            ],
+            'structure' => [
+                'sections_total' => $sectionsTotal,
+                'departements_total' => $departementsTotal,
+                'institutions_total' => $institutionsTotal,
             ],
         ]);
     }

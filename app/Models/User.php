@@ -113,6 +113,7 @@ class User extends Authenticatable
             'Chef Section RH',
             'RH National',
             'RH Provincial',
+            'SEN',
         ]);
     }
 

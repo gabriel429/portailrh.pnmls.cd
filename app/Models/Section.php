@@ -29,6 +29,21 @@ class Section extends Model
         return $this->hasMany(Affectation::class);
     }
 
+    /**
+     * Get agents assigned to this section (via active affectations)
+     */
+    public function agents()
+    {
+        return $this->hasManyThrough(
+            Agent::class,
+            Affectation::class,
+            'section_id',   // Foreign key on affectations table
+            'id',           // Foreign key on agents table
+            'id',           // Local key on sections table
+            'agent_id'      // Local key on affectations table
+        )->where('affectations.actif', true);
+    }
+
     /** Uniquement les sections de département */
     public function scopeSections($query)
     {

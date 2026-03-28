@@ -392,6 +392,173 @@
         </div>
       </div>
 
+      <!-- ═══ CONGÉS & DISPONIBILITÉS ═══ [NOUVEAU] -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fef3c7;color:#f59e0b;">
+            <i class="fas fa-umbrella-beach"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Conges & Disponibilites</h3>
+            <p class="sen-section-sub">{{ data.holidays?.active_today ?? 0 }} agents en conge aujourd'hui — {{ data.holidays?.pending ?? 0 }} demandes en attente</p>
+          </div>
+        </div>
+        <div class="sen-holidays-grid">
+          <!-- Stats congés -->
+          <div class="sen-holiday-stats-card">
+            <div class="sen-holiday-stat-item">
+              <div class="sen-holiday-stat-icon" style="background:#dcfce7;color:#16a34a;">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div>
+                <div class="sen-holiday-stat-val">{{ data.holidays?.approved ?? 0 }}</div>
+                <div class="sen-holiday-stat-lbl">Approuves</div>
+              </div>
+            </div>
+            <div class="sen-holiday-stat-item">
+              <div class="sen-holiday-stat-icon" style="background:#fef3c7;color:#d97706;">
+                <i class="fas fa-clock"></i>
+              </div>
+              <div>
+                <div class="sen-holiday-stat-val">{{ data.holidays?.pending ?? 0 }}</div>
+                <div class="sen-holiday-stat-lbl">En attente</div>
+              </div>
+            </div>
+            <div class="sen-holiday-stat-item">
+              <div class="sen-holiday-stat-icon" style="background:#e0f2fe;color:#0077B5;">
+                <i class="fas fa-percent"></i>
+              </div>
+              <div>
+                <div class="sen-holiday-stat-val">{{ data.holidays?.taux_utilisation_pct ?? 0 }}%</div>
+                <div class="sen-holiday-stat-lbl">Taux utilisation</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Agents en congé aujourd'hui -->
+          <div class="sen-holiday-list-card">
+            <div class="sen-holiday-list-head">
+              <i class="fas fa-user-clock"></i> En conge aujourd'hui ({{ data.holidays?.active_today ?? 0 }})
+            </div>
+            <div v-if="data.holidays?.agents_en_conge_today?.length" class="sen-holiday-list">
+              <div v-for="h in data.holidays.agents_en_conge_today.slice(0, 5)" :key="h.id" class="sen-holiday-item">
+                <div class="sen-holiday-item-agent">{{ h.agent }}</div>
+                <div class="sen-holiday-item-info">
+                  <span class="sen-holiday-badge">{{ h.type }}</span>
+                  <span class="sen-holiday-dates">{{ h.date_debut }} → {{ h.date_fin }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-else class="sen-recent-empty" style="padding:1.5rem;">
+              <i class="fas fa-check-circle"></i>
+              <span>Aucun agent en conge</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ AFFECTATIONS & POSTES VACANTS ═══ [NOUVEAU] -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fee2e2;color:#dc2626;">
+            <i class="fas fa-user-slash"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Affectations & Postes vacants</h3>
+            <p class="sen-section-sub">{{ data.affectations?.postes_vacants ?? 0 }} postes vacants — {{ data.affectations?.agents_sans_affectation ?? 0 }} agents sans affectation</p>
+          </div>
+        </div>
+        <div class="sen-affectations-row">
+          <div class="sen-affectation-card sen-affectation-alert">
+            <div class="sen-affectation-icon" style="background:#fee2e2;color:#dc2626;">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>
+              <div class="sen-affectation-val">{{ data.affectations?.postes_vacants ?? 0 }}</div>
+              <div class="sen-affectation-lbl">Postes vacants</div>
+            </div>
+          </div>
+          <div class="sen-affectation-card sen-affectation-warning">
+            <div class="sen-affectation-icon" style="background:#fef3c7;color:#d97706;">
+              <i class="fas fa-user-slash"></i>
+            </div>
+            <div>
+              <div class="sen-affectation-val">{{ data.affectations?.agents_sans_affectation ?? 0 }}</div>
+              <div class="sen-affectation-lbl">Agents sans affectation</div>
+            </div>
+          </div>
+          <div class="sen-affectation-card">
+            <div class="sen-affectation-icon" style="background:#e0f2fe;color:#0077B5;">
+              <i class="fas fa-exchange-alt"></i>
+            </div>
+            <div>
+              <div class="sen-affectation-val">{{ (data.affectations?.mobilite_30_jours ?? []).length }}</div>
+              <div class="sen-affectation-lbl">Mobilite (30j)</div>
+            </div>
+          </div>
+          <div class="sen-affectation-card">
+            <div class="sen-affectation-icon" style="background:#dcfce7;color:#16a34a;">
+              <i class="fas fa-briefcase"></i>
+            </div>
+            <div>
+              <div class="sen-affectation-val">{{ data.affectations?.actives ?? 0 }}</div>
+              <div class="sen-affectation-lbl">Affectations actives</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ AUDIT & SÉCURITÉ ═══ [NOUVEAU] -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fee2e2;color:#7f1d1d;">
+            <i class="fas fa-shield-alt"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Audit & Securite</h3>
+            <p class="sen-section-sub">{{ data.audit?.last_24h ?? 0 }} actions dernieres 24h — {{ data.audit?.comptes_geles ?? 0 }} comptes geles</p>
+          </div>
+        </div>
+        <div class="sen-audit-row">
+          <div class="sen-audit-card">
+            <div class="sen-audit-stat">
+              <div class="sen-audit-stat-icon" style="background:#fee2e2;color:#dc2626;">
+                <i class="fas fa-lock"></i>
+              </div>
+              <div>
+                <div class="sen-audit-stat-val">{{ data.audit?.comptes_geles ?? 0 }}</div>
+                <div class="sen-audit-stat-lbl">Comptes geles</div>
+              </div>
+            </div>
+            <div class="sen-audit-stat">
+              <div class="sen-audit-stat-icon" style="background:#fef3c7;color:#d97706;">
+                <i class="fas fa-user-times"></i>
+              </div>
+              <div>
+                <div class="sen-audit-stat-val">{{ data.audit?.connexions_echouees_24h ?? 0 }}</div>
+                <div class="sen-audit-stat-lbl">Echecs login 24h</div>
+              </div>
+            </div>
+          </div>
+          <div class="sen-audit-recent">
+            <div class="sen-audit-recent-head">Actions sensibles recentes</div>
+            <div v-if="(data.audit?.actions_sensibles ?? []).length" class="sen-audit-list">
+              <div v-for="a in (data.audit.actions_sensibles ?? []).slice(0, 5)" :key="a.id" class="sen-audit-list-item">
+                <div class="sen-audit-dot"></div>
+                <div class="sen-audit-list-info">
+                  <div class="sen-audit-list-action">{{ a.action }}</div>
+                  <div class="sen-audit-list-time">{{ formatTime(a.created_at) }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="sen-recent-empty" style="padding:1rem;">
+              <i class="fas fa-check-circle"></i>
+              <span>Aucune action</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ TACHES ═══ -->
       <div class="sen-section">
         <div class="sen-section-head">
@@ -803,6 +970,96 @@ onMounted(async () => {
 .sen-task-overdue { background: #fef2f2; color: #dc2626; }
 .sen-task-overdue .sen-task-count { color: #dc2626; }
 
+/* ═══════════ CONGÉS & DISPONIBILITÉS ═══════════ */
+.sen-holidays-grid { display: grid; grid-template-columns: 300px 1fr; gap: .75rem; }
+.sen-holiday-stats-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.2rem; display: flex; flex-direction: column; gap: .65rem;
+}
+.sen-holiday-stat-item {
+  display: flex; align-items: center; gap: .7rem; padding: .6rem;
+  background: #f8fafc; border-radius: 10px;
+}
+.sen-holiday-stat-icon {
+  width: 40px; height: 40px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: .9rem; flex-shrink: 0;
+}
+.sen-holiday-stat-val { font-size: 1.5rem; font-weight: 800; line-height: 1; color: #1e293b; }
+.sen-holiday-stat-lbl { font-size: .68rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .15rem; }
+
+.sen-holiday-list-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; overflow: hidden;
+}
+.sen-holiday-list-head {
+  padding: .9rem 1.1rem; background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+  font-size: .82rem; font-weight: 700; color: #1e293b;
+}
+.sen-holiday-list { max-height: 260px; overflow-y: auto; }
+.sen-holiday-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .7rem 1.1rem; border-bottom: 1px solid #f8fafc;
+}
+.sen-holiday-item:hover { background: #f0f9ff; }
+.sen-holiday-item-agent { font-size: .78rem; font-weight: 600; color: #1e293b; }
+.sen-holiday-item-info { display: flex; align-items: center; gap: .5rem; font-size: .7rem; color: #64748b; }
+.sen-holiday-badge {
+  background: #fef3c7; color: #d97706; padding: .15rem .45rem;
+  border-radius: 6px; font-weight: 600; font-size: .65rem;
+}
+.sen-holiday-dates { font-size: .68rem; }
+
+/* ═══════════ AFFECTATIONS & POSTES VACANTS ═══════════ */
+.sen-affectations-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.sen-affectation-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.2rem; display: flex; align-items: center; gap: .8rem;
+  transition: all .25s;
+}
+.sen-affectation-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-affectation-alert { border-left: 3px solid #dc2626; }
+.sen-affectation-warning { border-left: 3px solid #d97706; }
+.sen-affectation-icon {
+  width: 48px; height: 48px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0;
+}
+.sen-affectation-val { font-size: 1.75rem; font-weight: 800; line-height: 1; color: #1e293b; }
+.sen-affectation-lbl { font-size: .68rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .2rem; }
+
+/* ═══════════ AUDIT & SÉCURITÉ ═══════════ */
+.sen-audit-row { display: grid; grid-template-columns: 320px 1fr; gap: .75rem; }
+.sen-audit-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.2rem; display: flex; flex-direction: column; gap: .7rem;
+}
+.sen-audit-stat {
+  display: flex; align-items: center; gap: .75rem; padding: .65rem;
+  background: #f8fafc; border-radius: 10px;
+}
+.sen-audit-stat-icon {
+  width: 42px; height: 42px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0;
+}
+.sen-audit-stat-val { font-size: 1.6rem; font-weight: 800; line-height: 1; color: #1e293b; }
+.sen-audit-stat-lbl { font-size: .68rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .15rem; }
+
+.sen-audit-recent {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; overflow: hidden;
+}
+.sen-audit-recent-head {
+  padding: .9rem 1.1rem; background: #f8fafc; border-bottom: 1px solid #e5e7eb;
+  font-size: .82rem; font-weight: 700; color: #1e293b;
+}
+.sen-audit-list { max-height: 200px; overflow-y: auto; }
+.sen-audit-list-item {
+  display: flex; align-items: center; gap: .6rem; padding: .65rem 1.1rem;
+  border-bottom: 1px solid #f8fafc;
+}
+.sen-audit-list-item:hover { background: #fef2f2; }
+.sen-audit-dot { width: 8px; height: 8px; border-radius: 50%; background: #dc2626; flex-shrink: 0; }
+.sen-audit-list-info { flex: 1; min-width: 0; }
+.sen-audit-list-action { font-size: .76rem; font-weight: 600; color: #1e293b; }
+.sen-audit-list-time { font-size: .65rem; color: #94a3b8; margin-top: .1rem; }
+
 /* ═══════════ RESPONSIVE ═══════════ */
 @media (max-width: 1100px) {
   .sen-hero-inner { flex-direction: column; align-items: flex-start; }
@@ -815,6 +1072,9 @@ onMounted(async () => {
   .sen-presence-grid { grid-template-columns: repeat(2, 1fr); }
   .sen-plan-organe-grid { grid-template-columns: 1fr; }
   .sen-recent-grid { grid-template-columns: 1fr; }
+  .sen-holidays-grid { grid-template-columns: 1fr; }
+  .sen-affectations-row { grid-template-columns: repeat(2, 1fr); }
+  .sen-audit-row { grid-template-columns: 1fr; }
 }
 @media (max-width: 767.98px) {
   .sen-dashboard { padding: 0 .5rem 1.5rem; }
@@ -845,5 +1105,7 @@ onMounted(async () => {
   .sen-metrics { grid-template-columns: repeat(2, 1fr); }
   .sen-presence-grid { grid-template-columns: 1fr; }
   .sen-organe-stats { grid-template-columns: repeat(2, 1fr); }
+  .sen-affectations-row { grid-template-columns: 1fr; }
+  .sen-audit-row { grid-template-columns: 1fr; }
 }
 </style>
