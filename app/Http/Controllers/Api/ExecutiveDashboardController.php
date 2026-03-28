@@ -333,21 +333,21 @@ class ExecutiveDashboardController extends Controller
 
         // Actions sensibles récentes (7 derniers jours)
         $actionsSensibles = AuditLog::whereIn('action', [
-                'delete', 'update_sensitive', 'login_failed', 'permissions_changed', 'role_assigned'
+                'DELETE', 'UPDATE', 'CREATE'
             ])
             ->where('created_at', '>=', $now->copy()->subDays(7))
             ->with('user:id,name,email')
             ->orderByDesc('created_at')
             ->limit(10)
-            ->get(['id', 'user_id', 'action', 'auditable_type', 'auditable_id', 'created_at']);
+            ->get(['id', 'user_id', 'action', 'table_name', 'record_id', 'created_at']);
 
         // Comptes gelés récents
         $comptesGeles = DB::table('users')
             ->where('is_frozen', true)
             ->count();
 
-        // Connexions échouées (dernières 24h)
-        $connexionsEchouees = AuditLog::where('action', 'login_failed')
+        // Connexions échouées (dernières 24h) - basé sur les logs d'audit
+        $connexionsEchouees = AuditLog::where('action', 'LOGIN_FAILED')
             ->where('created_at', '>=', $now->copy()->subHours(24))
             ->count();
 
