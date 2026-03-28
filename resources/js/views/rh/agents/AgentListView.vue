@@ -3,98 +3,144 @@
     <div class="rh-list-shell">
 
       <!-- Hero section -->
-      <section class="rh-hero">
-        <div class="row g-2 align-items-center mb-3">
-          <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-users me-2"></i>Gestion des agents</h1>
-            <p class="rh-sub">Administrez les profils PNMLS, roles, statuts et informations administratives.</p>
-          </div>
-          <div class="col-lg-4">
-            <div class="hero-tools d-flex gap-2 justify-content-lg-end">
-              <button type="button" class="btn-rh main" style="background:#28a745;border-color:#28a745;" @click="showExportModal = true">
-                <i class="fas fa-file-csv me-1"></i> Exporter
-              </button>
-              <button type="button" class="btn-rh main" @click="showCreateModal = true">
-                <i class="fas fa-user-plus me-1"></i> Ajouter un agent
-              </button>
+      <section class="agents-hero">
+        <div class="container-fluid px-0">
+          <div class="row g-3 align-items-center mb-4">
+            <div class="col-lg-7">
+              <div class="hero-text">
+                <h1 class="hero-title">
+                  <div class="hero-icon-wrap">
+                    <i class="fas fa-users"></i>
+                  </div>
+                  Gestion des agents
+                </h1>
+                <p class="hero-subtitle">Gérez l'ensemble des agents PNMLS, leurs profils, statuts et affectations</p>
+              </div>
+            </div>
+            <div class="col-lg-5">
+              <div class="hero-actions">
+                <button type="button" class="hero-btn export" @click="showExportModal = true">
+                  <i class="fas fa-file-csv"></i>
+                  <span>Exporter CSV</span>
+                </button>
+                <button type="button" class="hero-btn create" @click="showCreateModal = true">
+                  <i class="fas fa-user-plus"></i>
+                  <span>Nouvel agent</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- Search bar -->
-        <div class="row">
-          <div class="col-lg-12">
+          <!-- Search bar -->
+          <div class="search-section mb-3">
             <form @submit.prevent="applySearch">
-              <div class="input-group">
+              <div class="search-wrapper">
+                <div class="search-icon">
+                  <i class="fas fa-search"></i>
+                </div>
                 <input
                   type="text"
                   v-model="searchInput"
-                  class="form-control"
-                  placeholder="Rechercher... (nom, email, matricule, province, grade, fonction, niveau etude)"
+                  class="search-input"
+                  placeholder="Rechercher par nom, email, matricule, province, grade..."
                 >
-                <button class="btn btn-primary" type="submit">
-                  <i class="fas fa-search"></i>
-                </button>
-                <button v-if="filters.search" class="btn btn-outline-secondary" type="button" @click="clearSearch">
+                <button v-if="filters.search" class="search-clear" type="button" @click="clearSearch">
                   <i class="fas fa-times"></i>
+                </button>
+                <button class="search-submit" type="submit">
+                  Rechercher
                 </button>
               </div>
             </form>
           </div>
-        </div>
 
-        <!-- Filters row -->
-        <div class="row mt-3 g-2">
-          <div class="col-md-3">
-            <select v-model="filters.organe" class="form-select form-select-sm" @change="fetchAgents">
-              <option value="">Tous les organes</option>
-              <option value="SEN">SEN - Secretariat Executif National</option>
-              <option value="SEP">SEP - Secretariat Executif Provincial</option>
-              <option value="SEL">SEL - Secretariat Executif Local</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <select v-model="filters.province_id" class="form-select form-select-sm" @change="fetchAgents">
-              <option value="">Toutes les provinces</option>
-              <option v-for="p in provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom }}</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <select v-model="filters.department_id" class="form-select form-select-sm" @change="fetchAgents">
-              <option value="">Tous les departements</option>
-              <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <select v-model="filters.statut" class="form-select form-select-sm" @change="fetchAgents">
-              <option value="">Tous les statuts</option>
-              <option value="actif">Actif</option>
-              <option value="suspendu">Suspendu</option>
-              <option value="ancien">Ancien</option>
-            </select>
+          <!-- Filters -->
+          <div class="filters-section">
+            <div class="row g-2">
+              <div class="col-md-3">
+                <div class="filter-group">
+                  <i class="fas fa-building filter-icon"></i>
+                  <select v-model="filters.organe" class="filter-select" @change="fetchAgents">
+                    <option value="">Tous les organes</option>
+                    <option value="SEN">SEN - National</option>
+                    <option value="SEP">SEP - Provincial</option>
+                    <option value="SEL">SEL - Local</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="filter-group">
+                  <i class="fas fa-map-marker-alt filter-icon"></i>
+                  <select v-model="filters.province_id" class="filter-select" @change="fetchAgents">
+                    <option value="">Toutes les provinces</option>
+                    <option v-for="p in provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="filter-group">
+                  <i class="fas fa-briefcase filter-icon"></i>
+                  <select v-model="filters.department_id" class="filter-select" @change="fetchAgents">
+                    <option value="">Tous les départements</option>
+                    <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-md-3">
+                <div class="filter-group">
+                  <i class="fas fa-check-circle filter-icon"></i>
+                  <select v-model="filters.statut" class="filter-select" @change="fetchAgents">
+                    <option value="">Tous les statuts</option>
+                    <option value="actif">Actif</option>
+                    <option value="suspendu">Suspendu</option>
+                    <option value="ancien">Ancien</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Stats (always visible once loaded) -->
-      <div v-if="stats.total > 0 && !loading" class="kpi-grid mb-4">
-          <div class="kpi-card">
-            <div class="kpi-value">{{ stats.total }}</div>
-            <div class="kpi-label">Total agents</div>
+      <!-- Stats Cards -->
+      <div v-if="stats.total > 0 && !loading" class="stats-cards">
+        <div class="stat-card total">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-value" style="color:#0077B5;">{{ stats.sen }}</div>
-            <div class="kpi-label">SEN</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-value" style="color:#0ea5e9;">{{ stats.sep }}</div>
-            <div class="kpi-label">SEP</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-value" style="color:#0d9488;">{{ stats.sel }}</div>
-            <div class="kpi-label">SEL</div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.total }}</div>
+            <div class="stat-label">Total agents</div>
           </div>
         </div>
+        <div class="stat-card sen">
+          <div class="stat-icon">
+            <i class="fas fa-building"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.sen }}</div>
+            <div class="stat-label">SEN</div>
+          </div>
+        </div>
+        <div class="stat-card sep">
+          <div class="stat-icon">
+            <i class="fas fa-landmark"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.sep }}</div>
+            <div class="stat-label">SEP</div>
+          </div>
+        </div>
+        <div class="stat-card sel">
+          <div class="stat-icon">
+            <i class="fas fa-city"></i>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.sel }}</div>
+            <div class="stat-label">SEL</div>
+          </div>
+        </div>
+      </div>
 
       <!-- Loading spinner (initial load only) -->
       <LoadingSpinner v-if="loading" message="Chargement des agents..." />
@@ -106,35 +152,30 @@
           <div
             v-for="organe in agentsByOrgane"
             :key="organe.label"
-            class="card mb-4 border-0 shadow-sm"
-            :style="{ borderTop: '4px solid ' + organe.color }"
+            class="agents-card"
           >
-            <div class="card-header border-0" :style="{ backgroundColor: organe.bg }">
-              <div class="d-flex align-items-center justify-content-between">
-                <div>
-                  <h5 class="card-title mb-0" :style="{ color: organe.color }">
-                    <i class="fas" :class="organe.icon" style="margin-right:0.5rem;"></i>{{ organe.label }}
-                  </h5>
-                  <small class="text-muted">{{ organe.agents.length }} agent{{ organe.agents.length > 1 ? 's' : '' }}</small>
-                </div>
+            <div class="agents-card-header" :data-organe="organe.label.toLowerCase().includes('national') ? 'sen' : organe.label.toLowerCase().includes('provincial') ? 'sep' : 'sel'">
+              <div class="organe-badge">
+                <i class="fas" :class="organe.icon"></i>
+              </div>
+              <div class="organe-info">
+                <h3 class="organe-title">{{ organe.label }}</h3>
+                <p class="organe-count">{{ organe.agents.length }} agent{{ organe.agents.length > 1 ? 's' : '' }}</p>
               </div>
             </div>
-            <div class="card-body p-0">
-              <div class="rh-table-wrap">
-                <table class="rh-table">
+            <div class="agents-card-body">
+              <div class="agents-table-wrapper">
+                <table class="agents-table">
                   <thead>
                     <tr>
-                      <th>Nom et Prenom</th>
-                      <th>Email prive</th>
-                      <th>Email professionnel</th>
-                      <th>Telephone</th>
+                      <th>Agent</th>
+                      <th>Contact</th>
                       <th>Poste</th>
-                      <th v-if="isOrganeNational(organe.label)">Departement/Service</th>
+                      <th v-if="isOrganeNational(organe.label)">Département</th>
                       <th v-else>Province</th>
-                      <th>Matricule de l'Etat</th>
-                      <th>Anciennete</th>
+                      <th>Matricule</th>
+                      <th>Ancienneté</th>
                       <th>Statut</th>
-                      <!-- <th style="width:100px;">Actions</th> -->
                     </tr>
                   </thead>
                   <tbody>
@@ -142,67 +183,61 @@
                       v-for="agent in organe.agents"
                       :key="agent.id"
                       class="agent-row"
-                      style="cursor:pointer;"
                       @click="goToAgent(agent.id)"
                     >
                       <td>
-                        <div class="d-flex align-items-center gap-2">
-                          <div v-if="agent.photo && !agent._photoError" class="agent-avatar">
-                            <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:32px;height:32px;object-fit:cover;" @error="agent._photoError = true">
+                        <div class="agent-cell">
+                          <div v-if="agent.photo && !agent._photoError" class="agent-photo">
+                            <img :src="'/' + agent.photo" :alt="agent.nom_complet" @error="agent._photoError = true">
                           </div>
-                          <div v-else class="agent-avatar-initials rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:32px;height:32px;font-size:0.75rem;font-weight:700;">
+                          <div v-else class="agent-initials">
                             {{ getInitials(agent) }}
                           </div>
-                          <span>{{ agent.prenom }} {{ agent.nom }}</span>
+                          <div class="agent-name">
+                            <strong>{{ agent.prenom }} {{ agent.nom }}</strong>
+                            <small v-if="agent.email_professionnel">{{ agent.email_professionnel }}</small>
+                          </div>
                         </div>
                       </td>
-                      <td>{{ agent.email_prive || 'N/A' }}</td>
-                      <td>{{ agent.email_professionnel || 'N/A' }}</td>
-                      <td>{{ agent.telephone || 'N/A' }}</td>
-                      <td>{{ agent.poste_actuel || 'N/A' }}</td>
+                      <td>
+                        <div class="contact-info">
+                          <div v-if="agent.telephone">
+                            <i class="fas fa-phone"></i> {{ agent.telephone }}
+                          </div>
+                          <div v-if="agent.email_prive" class="text-muted small">
+                            <i class="fas fa-envelope"></i> {{ agent.email_prive }}
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="poste-label">{{ agent.poste_actuel || 'Non défini' }}</span>
+                      </td>
                       <td v-if="isOrganeNational(organe.label)">
-                        {{ agent.departement ? agent.departement.nom : 'Service rattache au SEN' }}
+                        <span class="dept-label">{{ agent.departement ? agent.departement.nom : 'Service SEN' }}</span>
                       </td>
-                      <td v-else>{{ agent.province ? agent.province.nom : 'N/A' }}</td>
-                      <td>{{ agent.matricule_etat || 'N/A' }}</td>
+                      <td v-else>
+                        <span class="province-label">{{ agent.province ? agent.province.nom : 'N/A' }}</span>
+                      </td>
                       <td>
-                        <template v-if="agent.anciennete !== null">
+                        <code class="matricule-code">{{ agent.matricule_etat || 'N/A' }}</code>
+                      </td>
+                      <td>
+                        <div class="anciennete-badge" v-if="agent.anciennete !== null">
                           {{ agent.anciennete }} an{{ agent.anciennete > 1 ? 's' : '' }}
-                        </template>
-                        <template v-else>N/A</template>
+                        </div>
+                        <span v-else class="text-muted">N/A</span>
                       </td>
                       <td>
-                        <span v-if="agent.statut === 'actif'" class="rh-pill st-ok">Actif</span>
-                        <span v-else-if="agent.statut === 'suspendu'" class="rh-pill st-mid">Suspendu</span>
-                        <span v-else class="rh-pill st-neutral">{{ capitalize(agent.statut) }}</span>
+                        <span v-if="agent.statut === 'actif'" class="status-pill active">
+                          <i class="fas fa-check-circle"></i> Actif
+                        </span>
+                        <span v-else-if="agent.statut === 'suspendu'" class="status-pill suspended">
+                          <i class="fas fa-pause-circle"></i> Suspendu
+                        </span>
+                        <span v-else class="status-pill inactive">
+                          <i class="fas fa-times-circle"></i> {{ capitalize(agent.statut) }}
+                        </span>
                       </td>
-                      <!-- Actions column hidden
-                      <td @click.stop>
-                        <div class="btn-group btn-group-sm">
-                          <router-link
-                            :to="{ name: 'rh.agents.show', params: { id: agent.id } }"
-                            class="btn btn-outline-primary btn-sm"
-                            title="Voir"
-                          >
-                            <i class="fas fa-eye"></i>
-                          </router-link>
-                          <router-link
-                            :to="{ name: 'rh.agents.edit', params: { id: agent.id } }"
-                            class="btn btn-outline-warning btn-sm"
-                            title="Modifier"
-                          >
-                            <i class="fas fa-edit"></i>
-                          </router-link>
-                          <button
-                            class="btn btn-outline-danger btn-sm"
-                            title="Supprimer"
-                            @click="confirmDelete(agent)"
-                          >
-                            <i class="fas fa-trash"></i>
-                          </button>
-                        </div>
-                      </td>
-                      -->
                     </tr>
                   </tbody>
                 </table>
@@ -952,191 +987,707 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* ── Filtering overlay ── */
-.ag-filtering { opacity: 0.4; pointer-events: none; transition: opacity .2s; }
-
-/* ── KPI cards ── */
-.kpi-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: .75rem;
-}
-.kpi-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: .9rem;
-    text-align: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,.04);
-}
-.kpi-value {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #1e293b;
-    line-height: 1;
-}
-.kpi-label {
-    font-size: .72rem;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-    margin-top: .35rem;
+/* ═══════════════════════════════════════════
+   HERO SECTION
+   ═══════════════════════════════════════════ */
+.agents-hero {
+  background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
+  border-radius: 24px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 40px rgba(0, 119, 181, 0.15);
 }
 
-/* ── Card header organe ── */
-.card-header {
-    padding: .85rem 1rem;
-}
-.card-title {
-    font-weight: 800;
-    font-size: 1rem;
+.hero-text {
+  color: #fff;
 }
 
-/* ── Table ── */
-.rh-table-wrap {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-}
-.rh-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-.rh-table th, .rh-table td {
-    padding: .55rem .5rem;
-    border-bottom: 1px solid #f1f5f9;
-    vertical-align: middle;
-    font-size: .84rem;
-}
-.rh-table th {
-    font-size: .72rem;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-    background: #f8fafc;
-    white-space: nowrap;
-}
-.agent-row:hover {
-    background: #f0f9ff;
+.hero-title {
+  font-size: 2rem;
+  font-weight: 800;
+  margin: 0 0 0.5rem 0;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 
-/* ── Action buttons ── */
-.btn-group-sm .btn {
-    padding: .25rem .45rem;
-    font-size: .75rem;
+.hero-icon-wrap {
+  width: 56px;
+  height: 56px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
 }
 
-/* ── Form controls in hero ── */
-.rh-hero .form-control,
-.rh-hero .form-select {
-    border-radius: 10px;
-    font-size: .85rem;
-    border: 1.5px solid rgba(255,255,255,.25);
-    background: rgba(255,255,255,.15);
-    color: #fff;
-}
-.rh-hero .form-control::placeholder { color: rgba(255,255,255,.6); }
-.rh-hero .form-control:focus,
-.rh-hero .form-select:focus {
-    background: rgba(255,255,255,.25);
-    border-color: rgba(255,255,255,.5);
-    color: #fff;
-    box-shadow: none;
-}
-.rh-hero .form-select option { color: #333; background: #fff; }
-.rh-hero .btn-primary {
-    background: rgba(255,255,255,.2);
-    border: 1.5px solid rgba(255,255,255,.3);
-    color: #fff;
-}
-.rh-hero .btn-outline-secondary {
-    border-color: rgba(255,255,255,.3);
-    color: rgba(255,255,255,.8);
+.hero-subtitle {
+  font-size: 0.95rem;
+  margin: 0;
+  opacity: 0.9;
 }
 
-/* ── Modal ── */
-.modal-content { border-radius: 16px; overflow: hidden; }
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.hero-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: 12px;
+  border: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.hero-btn i {
+  font-size: 1rem;
+}
+
+.hero-btn.export {
+  background: #10b981;
+  color: #fff;
+}
+
+.hero-btn.export:hover {
+  background: #059669;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.hero-btn.create {
+  background: #fff;
+  color: #0077B5;
+}
+
+.hero-btn.create:hover {
+  background: #f0f9ff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(255,255,255,0.3);
+}
+
+/* Search Section */
+.search-section {
+  margin-top: 1.5rem;
+}
+
+.search-wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  border: 1.5px solid rgba(255,255,255,0.2);
+  padding: 0.5rem;
+  transition: all 0.3s;
+}
+
+.search-wrapper:focus-within {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.4);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.search-icon {
+  padding: 0 0.75rem;
+  color: rgba(255,255,255,0.8);
+  font-size: 1rem;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 0.95rem;
+  padding: 0.5rem;
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.search-clear {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+
+.search-clear:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.search-submit {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: #fff;
+  padding: 0.65rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-submit:hover {
+  background: rgba(255,255,255,0.3);
+}
+
+/* Filters Section */
+.filters-section {
+  margin-top: 1rem;
+}
+
+.filter-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.1);
+  border-radius: 12px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  overflow: hidden;
+  transition: all 0.3s;
+}
+
+.filter-group:hover {
+  background: rgba(255,255,255,0.15);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.filter-icon {
+  position: absolute;
+  left: 1rem;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.9rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.filter-select {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.filter-select option {
+  background: #fff;
+  color: #333;
+}
 
 /* ═══════════════════════════════════════════
-   Responsive
+   STATS CARDS
    ═══════════════════════════════════════════ */
-@media (max-width: 767.98px) {
-    /* KPI grid */
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: .5rem; }
-    .kpi-card { padding: .65rem .5rem; border-radius: 10px; }
-    .kpi-value { font-size: 1.2rem; }
-    .kpi-label { font-size: .65rem; }
-
-    /* Card header */
-    .card-header { padding: .65rem .75rem; }
-    .card-title { font-size: .88rem; }
-
-    /* Table — hide secondary columns on mobile */
-    .rh-table th:nth-child(3),
-    .rh-table td:nth-child(3),
-    .rh-table th:nth-child(4),
-    .rh-table td:nth-child(4),
-    .rh-table th:nth-child(7),
-    .rh-table td:nth-child(7),
-    .rh-table th:nth-child(8),
-    .rh-table td:nth-child(8) {
-        display: none;
-    }
-
-    .rh-table th, .rh-table td {
-        padding: .4rem .3rem;
-        font-size: .76rem;
-    }
-    .rh-table th { font-size: .65rem; }
-
-    /* Avatar */
-    .agent-avatar-initials,
-    .agent-avatar img {
-        width: 26px !important;
-        height: 26px !important;
-        font-size: .65rem !important;
-    }
-
-    /* Action buttons */
-    .btn-group-sm .btn {
-        padding: .2rem .35rem;
-        font-size: .68rem;
-    }
-
-    /* Hero filters */
-    .rh-hero .input-group {
-        flex-wrap: nowrap;
-    }
-    .rh-hero .form-control,
-    .rh-hero .form-select {
-        font-size: .8rem;
-    }
-
-    /* Modal */
-    .modal-dialog { margin: .75rem; }
-    .modal-header { padding: .75rem 1rem; }
-    .modal-header h5 { font-size: .95rem; }
-    .modal-body { padding: .9rem; }
-    .modal-footer { padding: .6rem .9rem; }
+.stats-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+  margin-bottom: 2rem;
 }
 
-@media (max-width: 575.98px) {
-    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .kpi-value { font-size: 1rem; }
+.stat-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
 
-    /* Hide even more columns on very small screens */
-    .rh-table th:nth-child(5),
-    .rh-table td:nth-child(5),
-    .rh-table th:nth-child(6),
-    .rh-table td:nth-child(6) {
-        display: none;
-    }
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--stat-color-1), var(--stat-color-2));
+}
 
-    .rh-table th, .rh-table td {
-        padding: .35rem .25rem;
-        font-size: .72rem;
-    }
+.stat-card.total {
+  --stat-color-1: #6366f1;
+  --stat-color-2: #8b5cf6;
+}
+
+.stat-card.sen {
+  --stat-color-1: #0077B5;
+  --stat-color-2: #005a87;
+}
+
+.stat-card.sep {
+  --stat-color-1: #0ea5e9;
+  --stat-color-2: #0284c7;
+}
+
+.stat-card.sel {
+  --stat-color-1: #10b981;
+  --stat-color-2: #059669;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+}
+
+.stat-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.stat-card.total .stat-icon {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+}
+
+.stat-card.sen .stat-icon {
+  background: linear-gradient(135deg, #0077B5, #005a87);
+  color: #fff;
+}
+
+.stat-card.sep .stat-icon {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
+}
+
+.stat-card.sel .stat-icon {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+
+.stat-content {
+  flex: 1;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(135deg, var(--stat-color-1), var(--stat-color-2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ═══════════════════════════════════════════
+   AGENTS CARDS
+   ═══════════════════════════════════════════ */
+.agents-card {
+  background: #fff;
+  border-radius: 20px;
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid rgba(0,0,0,0.04);
+  transition: all 0.3s;
+}
+
+.agents-card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+
+.agents-card-header {
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  position: relative;
+}
+
+.agents-card-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.agents-card-header[data-organe="sen"]::before {
+  background: linear-gradient(180deg, #0077B5, #005a87);
+}
+
+.agents-card-header[data-organe="sep"]::before {
+  background: linear-gradient(180deg, #0ea5e9, #0284c7);
+}
+
+.agents-card-header[data-organe="sel"]::before {
+  background: linear-gradient(180deg, #10b981, #059669);
+}
+
+.organe-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.agents-card-header[data-organe="sen"] .organe-badge {
+  background: linear-gradient(135deg, #0077B5, #005a87);
+  color: #fff;
+}
+
+.agents-card-header[data-organe="sep"] .organe-badge {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff;
+}
+
+.agents-card-header[data-organe="sel"] .organe-badge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+}
+
+.organe-info {
+  flex: 1;
+}
+
+.organe-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+  color: #1e293b;
+}
+
+.organe-count {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin: 0;
+  font-weight: 500;
+}
+
+.agents-card-body {
+  padding: 0;
+}
+
+.agents-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.agents-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.agents-table th {
+  background: #f8fafc;
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.agents-table td {
+  padding: 1.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.agent-row {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.agent-row:hover {
+  background: #f8fafc;
+}
+
+.agent-row:hover td:first-child {
+  color: #0077B5;
+}
+
+.agent-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+}
+
+.agent-photo,
+.agent-initials {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.agent-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agent-initials {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.agent-name {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.agent-name strong {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.95rem;
+}
+
+.agent-name small {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.contact-info div {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.contact-info i {
+  width: 16px;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.poste-label,
+.dept-label,
+.province-label {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.matricule-code {
+  background: #f1f5f9;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-family: 'Courier New', monospace;
+  color: #475569;
+  font-weight: 600;
+}
+
+.anciennete-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.35rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.status-pill i {
+  font-size: 0.8rem;
+}
+
+.status-pill.active {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.status-pill.suspended {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-pill.inactive {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* Empty State */
+.rh-list-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 3rem 2rem;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.rh-list-card i {
+  color: #cbd5e1;
+}
+
+/* Filtering Overlay */
+.ag-filtering {
+  opacity: 0.5;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .stats-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .agents-hero {
+    padding: 1.5rem;
+    border-radius: 20px;
+  }
+
+  .hero-title {
+    font-size: 1.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .hero-icon-wrap {
+    width: 48px;
+    height: 48px;
+    font-size: 1.2rem;
+  }
+
+  .hero-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .hero-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .stats-cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .stat-card {
+    padding: 1.25rem;
+  }
+
+  .agents-table th:nth-child(3),
+  .agents-table td:nth-child(3),
+  .agents-table th:nth-child(6),
+  .agents-table td:nth-child(6) {
+    display: none;
+  }
+
+  .agents-table th,
+  .agents-table td {
+    padding: 0.875rem;
+    font-size: 0.85rem;
+  }
+
+  .agent-photo,
+  .agent-initials {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 576px) {
+  .agents-table th:nth-child(2),
+  .agents-table td:nth-child(2),
+  .agents-table th:nth-child(5),
+  .agents-table td:nth-child(5) {
+    display: none;
+  }
+
+  .filter-select {
+    font-size: 0.8rem;
+  }
+
+  .search-input {
+    font-size: 0.85rem;
+  }
+}
+
+/* ═══════════════════════════════════════════
+   MODALS (keeping existing styles)
+   ═══════════════════════════════════════════ */
+.modal-content {
+  border-radius: 16px;
+  overflow: hidden;
 }
 
 /* ── Agent Show Modal (asm-*) ── */
