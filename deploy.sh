@@ -5,7 +5,7 @@ echo "🚀 Post-deployment script starting..."
 
 # 1. Create/recreate symlinks
 echo "📁 Creating symlinks..."
-rm -f build images
+rm -rf build images
 ln -sf public/build build
 ln -sf public/images images
 
