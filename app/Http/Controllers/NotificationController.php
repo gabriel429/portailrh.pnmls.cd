@@ -23,7 +23,7 @@ class NotificationController extends Controller
                 'couleur' => $n->couleur,
                 'lu' => $n->lu,
                 'temps' => $n->created_at->diffForHumans(),
-                'lien' => url('/notifications/' . $n->id . '/read'),
+                'lien' => '/notifications/' . $n->id . '/read',
             ]);
 
         return response()->json(['count' => $count, 'recent' => $recent]);
