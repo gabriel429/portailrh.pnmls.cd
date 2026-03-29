@@ -58,7 +58,7 @@
       <div class="dash-action-grid">
         <button
           class="dash-action-card"
-          @click="$router.push('/requests/create')"
+          @click="showRequestModal = true"
         >
           <div class="dash-action-icon" style="background:#e0f2fe;color:#0077B5;">
             <i class="fas fa-plus-circle"></i>
@@ -144,7 +144,7 @@
         <div class="dash-empty-icon"><i class="fas fa-inbox"></i></div>
         <h5>Aucune activite recente</h5>
         <p>Vos dernieres actions et notifications apparaitront ici.</p>
-        <button class="dash-action-btn" @click="$router.push('/requests/create')">
+        <button class="dash-action-btn" @click="showRequestModal = true">
           <i class="fas fa-plus me-1"></i>Nouvelle demande
         </button>
       </div>
@@ -185,6 +185,9 @@
         </div>
       </div>
     </template>
+
+    <!-- Request Create Modal -->
+    <RequestCreateModal :show="showRequestModal" @close="showRequestModal = false" @created="onRequestCreated" />
 
     <!-- Document Upload Modal -->
     <teleport to="body">
@@ -256,6 +259,7 @@ import { useUiStore } from '@/stores/ui'
 import { create as createDocument } from '@/api/documents'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import RequestCreateModal from '@/components/RequestCreateModal.vue'
 const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenDashboardView.vue'))
 
 const auth = useAuthStore()
@@ -319,6 +323,24 @@ function formatTime(iso) {
 
 const loadError = ref(null)
 
+// ── Request Create Modal ──
+const showRequestModal = ref(false)
+
+function onRequestCreated() {
+  // Reload dashboard stats
+  loadDashboard()
+}
+
+async function loadDashboard() {
+  try {
+    const { data } = await client.get('/dashboard')
+    stats.value = data.stats || data
+    activities.value = data.activities || []
+  } catch (e) {
+    loadError.value = e.response?.data?.message || 'Impossible de charger les donnees du tableau de bord.'
+  }
+}
+
 // ── Document Upload Modal ──
 const showUploadModal = ref(false)
 const uplSubmitting = ref(false)
@@ -375,15 +397,8 @@ async function handleUplSubmit() {
 }
 
 onMounted(async () => {
-  try {
-    const { data } = await client.get('/dashboard')
-    stats.value = data.stats || data
-    activities.value = data.activities || []
-  } catch (e) {
-    loadError.value = e.response?.data?.message || 'Impossible de charger les donnees du tableau de bord.'
-  } finally {
-    loading.value = false
-  }
+  await loadDashboard()
+  loading.value = false
 })
 </script>
 

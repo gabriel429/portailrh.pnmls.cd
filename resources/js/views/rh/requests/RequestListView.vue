@@ -347,129 +347,7 @@
     </teleport>
 
     <!-- Create modal -->
-    <teleport to="body">
-      <div v-if="showCreateModal" class="rcm-overlay" @click.self="closeCreateModal">
-        <div class="rcm-dialog">
-          <!-- Header -->
-          <div class="rcm-header">
-            <h5 class="rcm-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Demande</h5>
-            <button class="rcm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
-          </div>
-
-          <!-- Body -->
-          <div class="rcm-body">
-            <form @submit.prevent="handleCreateSubmit" enctype="multipart/form-data">
-
-              <!-- Agent banner -->
-              <div v-if="currentAgent && !isRH" class="rcm-agent-banner">
-                <div class="rcm-agent-avatar">{{ agentInitials(currentAgent) }}</div>
-                <div>
-                  <div class="fw-semibold small">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
-                  <div class="text-muted" style="font-size:.75rem;">{{ currentAgent.id_agent }}</div>
-                </div>
-              </div>
-
-              <!-- RH: select agent -->
-              <div v-if="isRH" class="mb-3">
-                <label class="rcm-label">Agent <span class="text-danger">*</span></label>
-                <select v-model="createForm.agent_id" class="rcm-input" :class="{ 'is-invalid': createErrors.agent_id }">
-                  <option value="">-- Selectionner un agent --</option>
-                  <option v-for="a in createAgents" :key="a.id" :value="a.id">
-                    {{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})
-                  </option>
-                </select>
-                <div v-if="createErrors.agent_id" class="rcm-error">{{ createErrors.agent_id[0] }}</div>
-              </div>
-
-              <!-- Type -->
-              <label class="rcm-label">Type de demande <span class="text-danger">*</span></label>
-              <div class="rcm-type-grid">
-                <div
-                  v-for="t in typeOptions" :key="t.value"
-                  class="rcm-type-card"
-                  :class="{ active: createForm.type === t.value }"
-                  @click="createForm.type = t.value"
-                >
-                  <i :class="t.icon" class="rcm-type-icon"></i>
-                  <span class="rcm-type-label">{{ t.label }}</span>
-                </div>
-              </div>
-              <div v-if="createErrors.type" class="rcm-error mb-2">{{ createErrors.type[0] }}</div>
-
-              <!-- Dates -->
-              <div class="rcm-row mt-3">
-                <div class="rcm-col">
-                  <label class="rcm-label"><i class="fas fa-calendar-alt me-1 text-muted"></i> Date debut <span class="text-danger">*</span></label>
-                  <input type="date" v-model="createForm.date_debut" class="rcm-input" :class="{ 'is-invalid': createErrors.date_debut }">
-                  <div v-if="createErrors.date_debut" class="rcm-error">{{ createErrors.date_debut[0] }}</div>
-                </div>
-                <div class="rcm-col">
-                  <label class="rcm-label"><i class="fas fa-calendar-check me-1 text-muted"></i> Date fin <span class="text-muted fw-normal">(optionnel)</span></label>
-                  <input type="date" v-model="createForm.date_fin" class="rcm-input" :class="{ 'is-invalid': createErrors.date_fin }" :min="createForm.date_debut">
-                  <div v-if="createErrors.date_fin" class="rcm-error">{{ createErrors.date_fin[0] }}</div>
-                </div>
-              </div>
-
-              <!-- Description -->
-              <div class="mt-3">
-                <label class="rcm-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-danger">*</span></label>
-                <textarea v-model="createForm.description" rows="3" class="rcm-input rcm-textarea" :class="{ 'is-invalid': createErrors.description }" placeholder="Decrivez le motif de votre demande..."></textarea>
-                <div v-if="createErrors.description" class="rcm-error">{{ createErrors.description[0] }}</div>
-              </div>
-
-              <!-- Motivation (only for renforcement_capacites) -->
-              <div v-if="createForm.type === 'renforcement_capacites'" class="mt-3">
-                <label class="rcm-label"><i class="fas fa-lightbulb me-1 text-muted"></i> Motivation liée à votre fonction/poste <span class="text-danger">*</span></label>
-                <textarea v-model="createForm.motivation" rows="4" class="rcm-input rcm-textarea" :class="{ 'is-invalid': createErrors.motivation }" placeholder="Expliquez en quoi ce renforcement est lié à votre fonction actuelle... (min. 50 caractères)"></textarea>
-                <div v-if="createErrors.motivation" class="rcm-error">{{ createErrors.motivation[0] }}</div>
-                <div class="text-muted" style="font-size:.7rem;margin-top:.25rem;">
-                  <i class="fas fa-info-circle me-1"></i>
-                  Détaillez comment cette formation/renforcement contribuera à votre rôle.
-                </div>
-              </div>
-
-              <!-- File upload -->
-              <div class="mt-3">
-                <label class="rcm-label"><i class="fas fa-paperclip me-1 text-muted"></i> Lettre de demande <span class="text-muted fw-normal">(optionnel)</span></label>
-                <div
-                  v-if="!createFilePreview"
-                  class="rcm-upload-zone"
-                  @click="createFileInput.click()"
-                  @dragover.prevent="createIsDragging = true"
-                  @dragleave="createIsDragging = false"
-                  @drop.prevent="createHandleDrop"
-                  :class="{ dragging: createIsDragging }"
-                >
-                  <i class="fas fa-cloud-upload-alt rcm-upload-icon"></i>
-                  <div class="fw-semibold small">Glissez ou cliquez pour parcourir</div>
-                  <div class="text-muted" style="font-size:.7rem;">PDF, DOC, DOCX, JPG, PNG - Max 5 Mo</div>
-                </div>
-                <div v-else class="rcm-file-preview">
-                  <div class="rcm-file-icon-box"><i class="fas fa-file-alt"></i></div>
-                  <div class="rcm-file-info">
-                    <div class="rcm-file-name">{{ createFilePreview.name }}</div>
-                    <div class="rcm-file-size">{{ createFilePreview.size }}</div>
-                  </div>
-                  <button type="button" class="rcm-file-remove" @click="createRemoveFile"><i class="fas fa-trash-alt"></i></button>
-                </div>
-                <input ref="createFileInput" type="file" class="d-none" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" @change="createHandleFileSelect">
-                <div v-if="createErrors.lettre_demande" class="rcm-error">{{ createErrors.lettre_demande[0] }}</div>
-              </div>
-
-              <!-- Footer -->
-              <div class="rcm-footer">
-                <button type="button" class="rcm-btn rcm-btn-cancel" @click="closeCreateModal">Annuler</button>
-                <button type="submit" class="rcm-btn rcm-btn-submit" :disabled="createSubmitting">
-                  <span v-if="createSubmitting" class="spinner-border spinner-border-sm me-1"></span>
-                  <i v-else class="fas fa-paper-plane me-1"></i>
-                  Soumettre
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </teleport>
+    <RequestCreateModal :show="showCreateModal" @close="closeCreateModal" @created="handleRequestCreated" />
 
     <!-- Edit modal -->
     <RequestEditModal
@@ -489,6 +367,7 @@ import { list, get, create, remove } from '@/api/requests'
 import client from '@/api/client'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import RequestEditModal from '@/components/requests/RequestEditModal.vue'
+import RequestCreateModal from '@/components/RequestCreateModal.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -518,6 +397,20 @@ const editingRequestId = ref(null)
 
 // Create modal
 const showCreateModal = ref(false)
+
+function openCreateModal() {
+  showCreateModal.value = true
+}
+
+function closeCreateModal() {
+  showCreateModal.value = false
+}
+
+async function handleRequestCreated() {
+  await loadRequests(1)
+}
+
+// Deprecated variables (kept for compatibility, not used with new RequestCreateModal component)
 const createSubmitting = ref(false)
 const createErrors = ref({})
 const createAgents = ref([])
@@ -539,73 +432,12 @@ function defaultCreateForm() {
 }
 const createForm = ref(defaultCreateForm())
 
-async function openCreateModal() {
-  createForm.value = defaultCreateForm()
-  createErrors.value = {}
-  createSelectedFile.value = null
-  createFilePreview.value = null
-  showCreateModal.value = true
-  if (isRH.value && !createAgents.value.length) {
-    try {
-      const { data } = await client.get('/agents', { params: { actifs: 1 } })
-      createAgents.value = data.data ?? data
-    } catch {}
-  }
-}
-
-function closeCreateModal() {
-  showCreateModal.value = false
-}
-
-function createHandleFileSelect(event) {
-  const file = event.target.files[0]
-  if (file) createSetFile(file)
-}
-
-function createHandleDrop(event) {
-  createIsDragging.value = false
-  const file = event.dataTransfer.files[0]
-  if (file) createSetFile(file)
-}
-
-function createSetFile(file) {
-  createSelectedFile.value = file
-  const sizeMb = (file.size / 1024 / 1024).toFixed(2)
-  createFilePreview.value = { name: file.name, size: sizeMb + ' Mo' }
-}
-
-function createRemoveFile() {
-  createSelectedFile.value = null
-  createFilePreview.value = null
-  if (createFileInput.value) createFileInput.value.value = ''
-}
-
-async function handleCreateSubmit() {
-  createErrors.value = {}
-  createSubmitting.value = true
-  const formData = new FormData()
-  formData.append('type', createForm.value.type)
-  formData.append('description', createForm.value.description)
-  if (createForm.value.motivation) formData.append('motivation', createForm.value.motivation)
-  formData.append('date_debut', createForm.value.date_debut)
-  if (createForm.value.date_fin) formData.append('date_fin', createForm.value.date_fin)
-  if (isRH.value && createForm.value.agent_id) formData.append('agent_id', createForm.value.agent_id)
-  if (createSelectedFile.value) formData.append('lettre_demande', createSelectedFile.value)
-  try {
-    await create(formData)
-    ui.addToast('Demande creee avec succes.', 'success')
-    showCreateModal.value = false
-    await loadRequests(1)
-  } catch (err) {
-    if (err.response?.status === 422) {
-      createErrors.value = err.response.data.errors || {}
-    } else {
-      ui.addToast(err.response?.data?.message || 'Erreur lors de la creation.', 'danger')
-    }
-  } finally {
-    createSubmitting.value = false
-  }
-}
+// Deprecated functions (not used with new component)
+function createHandleFileSelect(event) {}
+function createHandleDrop(event) {}
+function createSetFile(file) {}
+function createRemoveFile() {}
+async function handleCreateSubmit() {}
 
 const paginationPages = computed(() => {
   const pages = []
