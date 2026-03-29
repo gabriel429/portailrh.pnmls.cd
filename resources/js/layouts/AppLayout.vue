@@ -5,7 +5,7 @@
         <router-link class="navbar-brand" :to="{ name: 'dashboard' }">
           <img src="/images/logo-pnmls.png" alt="PNMLS">
           <div class="brand-text">
-            <div class="brand-title">Portail RH</div>
+            <div class="brand-title">E-PNMLS</div>
             <div class="brand-sub">PNMLS</div>
           </div>
         </router-link>
@@ -198,7 +198,7 @@
 
     <!-- Footer -->
     <footer class="footer mt-5">
-      <p class="mb-0">&copy; 2026 Portail RH PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
+      <p class="mb-0">&copy; 2026 E-PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
     </footer>
   </div>
 </template>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>404 - Page introuvable | Portail RH PNMLS</title>
+    <title>404 - Page introuvable | E-PNMLS</title>
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/icons/pnmls-32.png') }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/icons/pnmls-16.png') }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
@@ -292,7 +292,7 @@
 
         <div class="error-footer">
             <img src="{{ asset('images/logo-pnmls.png') }}" alt="PNMLS">
-            <span>&copy; {{ date('Y') }} PNMLS &mdash; Portail RH</span>
+            <span>&copy; {{ date('Y') }} PNMLS &mdash; E-PNMLS</span>
         </div>
     </div>
 

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Portail RH PNMLS</title>
+    <title>E-PNMLS</title>
 
     <!-- PWA Icons & Manifest -->
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('images/icons/pnmls-32.png') }}">

@@ -1,10 +1,10 @@
-# Portail RH PNMLS
+# E-PNMLS
 
 Gestion Intégrée des Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida
 
 ## 📋 Description
 
-Le Portail RH PNMLS est une application web complète dédiée à la gestion des ressources humaines. Elle offre :
+Le E-PNMLS est une application web complète dédiée à la gestion des ressources humaines. Elle offre :
 
 - 🔐 **Authentification** avec rôles et permissions
 - 📄 **Gestion Documentaire (GED)** - Upload et archivage des documents

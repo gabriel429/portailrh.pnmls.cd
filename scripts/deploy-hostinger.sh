@@ -5,7 +5,7 @@
 
 set -e  # Exit on any error
 
-echo "🚀 Déploiement PWA Portail RH PNMLS sur Hostinger"
+echo "🚀 Déploiement PWA E-PNMLS sur Hostinger"
 echo "=================================================="
 
 # Configuration

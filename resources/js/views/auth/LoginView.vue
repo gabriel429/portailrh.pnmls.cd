@@ -8,7 +8,7 @@
         <h1 class="brand-title">PNMLS</h1>
         <p class="brand-tagline">Programme National Multisectoriel<br>de Lutte contre le Sida</p>
         <div class="brand-separator"></div>
-        <p class="brand-portal">Portail des Ressources Humaines</p>
+        <p class="brand-portal">Système de Gestion des Ressources Humaines</p>
       </div>
     </div>
 

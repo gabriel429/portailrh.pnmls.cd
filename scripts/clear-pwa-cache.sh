@@ -3,7 +3,7 @@
 # Script de nettoyage cache PWA pour Hostinger
 # Usage: chmod +x clear-pwa-cache.sh && ./clear-pwa-cache.sh
 
-echo "🧹 Nettoyage cache PWA Portail RH PNMLS..."
+echo "🧹 Nettoyage cache PWA E-PNMLS..."
 
 # 1. Supprimer anciens builds
 echo "📦 Suppression anciens builds..."

@@ -6,7 +6,7 @@
       <div class="d-flex justify-content-between align-items-center">
         <div>
           <h2><i class="fas fa-user-plus me-2"></i> Nouvel Agent</h2>
-          <p>Enregistrer un nouvel agent au Portail RH PNMLS</p>
+          <p>Enregistrer un nouvel agent à E-PNMLS</p>
         </div>
         <router-link :to="{ name: 'rh.agents.index' }" class="btn btn-light btn-sm" style="border-radius:8px;font-weight:600;">
           <i class="fas fa-arrow-left me-1"></i> Retour

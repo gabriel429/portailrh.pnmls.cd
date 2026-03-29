@@ -33,8 +33,8 @@ export default defineConfig({
             },
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'index.html'],
             manifest: {
-                name: 'Portail RH PNMLS',
-                short_name: 'RH PNMLS',
+                name: 'E-PNMLS',
+                short_name: 'E-PNMLS',
                 description: 'Gestion Intégrée des Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida',
                 theme_color: '#0077B5',
                 background_color: '#ffffff',
