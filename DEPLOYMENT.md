@@ -216,9 +216,39 @@ tail -50 ~/logs/deeppink-rhinoceros-934330.hostingersite.com_error.log
 
 ### Erreur 404 sur Assets JS/CSS
 
-**Symptôme** : `app-*.js` et `router-*.js` retournent 404
+**Symptôme** : `app-*.js`, `app-*.css` retournent 404 ou HTML au lieu du fichier
 
-**Cause** : Fichiers build pas synchronisés ou git au mauvais endroit
+**Cause 1** : Fichiers build au mauvais endroit (à la racine au lieu de `public/build/`)
+
+**Solution** :
+
+```bash
+cd ~/domains/deeppink-rhinoceros-934330.hostingersite.com/public_html
+
+# Vérifier la structure
+ls -la | grep build
+
+# Si `build/` existe à la racine (MAUVAIS), le déplacer
+if [ -d build ] && [ -d public ]; then
+    mv build public/build
+fi
+
+# Vérifier que les fichiers sont maintenant dans le bon dossier
+ls -la public/build/assets/ | head -5
+```
+
+**Cause 2** : Problème de cache PWA/navigateur
+
+**Solution** :
+
+```bash
+# Sur le navigateur :
+# 1. DevTools (F12) → Application → Service Workers → Unregister
+# 2. DevTools → Application → Cache Storage → Supprimer tous les caches
+# 3. Hard refresh : Ctrl+Shift+R
+```
+
+**Cause 3** : Fichiers build pas synchronisés avec git
 
 **Solution** :
 
