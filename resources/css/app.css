@@ -452,9 +452,18 @@ body {
     }
 
     .navbar-main .nav-link {
+        font-size: 80%;
         padding: 0.75rem 1rem !important;
         border-radius: var(--radius-sm);
         margin: 2px 0;
+    }
+
+    .navbar-main .navbar-brand .brand-title {
+        font-size: 90%;
+    }
+
+    .navbar-main .navbar-brand .brand-sub {
+        font-size: 85%;
     }
 
     .nav-divider {
@@ -1515,6 +1524,19 @@ body {
 }
 
 @media (max-width: 575.98px) {
+    /* Navbar font sizes for mobile screens */
+    .navbar-main .nav-link {
+        font-size: 70%;
+    }
+
+    .navbar-main .navbar-brand .brand-title {
+        font-size: 80%;
+    }
+
+    .navbar-main .navbar-brand .brand-sub {
+        font-size: 75%;
+    }
+
     /* Extra compact for very small screens */
     .rh-hero { padding: 1rem .85rem; border-radius: 12px; }
     .rh-hero .rh-title { font-size: 1.05rem; }
