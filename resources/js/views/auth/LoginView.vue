@@ -84,7 +84,7 @@
 
         <div class="login-footer">
           <img src="/images/logo-pnmls.png" alt="PNMLS" class="footer-logo">
-          <span>PNMLS &middot; Portail RH</span>
+          <span>PNMLS &middot; E-PNMLS</span>
         </div>
       </div>
     </div>
