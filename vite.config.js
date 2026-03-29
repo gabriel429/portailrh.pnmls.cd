@@ -27,9 +27,11 @@ export default defineConfig({
                 globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
                 cleanupOutdatedCaches: true,
                 skipWaiting: true,
-                clientsClaim: true
+                clientsClaim: true,
+                navigateFallback: 'index.html',
+                navigateFallbackDenylist: [/^\/api\//]
             },
-            includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'index.html'],
             manifest: {
                 name: 'Portail RH PNMLS',
                 short_name: 'RH PNMLS',
