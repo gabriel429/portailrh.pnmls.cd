@@ -16,7 +16,8 @@
 /public/hot
 /public/storage
 # /public/build
-/public/build/assets/
+# Les assets buildés doivent être versionnés pour le déploiement Git sur Hostinger
+# /public/build/assets/
 /storage/*.key
 /storage/pail
 /vendor
