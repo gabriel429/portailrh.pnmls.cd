@@ -159,7 +159,7 @@
             <!-- User dropdown -->
             <li class="nav-item dropdown">
               <a class="nav-link nav-user-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                <img v-if="auth.agent?.photo" :src="'/storage/' + auth.agent.photo" alt="Photo" class="nav-user-photo">
+                <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="Photo" class="nav-user-photo">
                 <span v-else class="nav-user-avatar">{{ initials }}</span>
                 <span class="nav-user-name">{{ auth.agent?.prenom || auth.user?.name }}</span>
               </a>
@@ -242,6 +242,20 @@ const initials = computed(() => {
         return ((agent.prenom?.[0] || '') + (agent.nom?.[0] || '')).toUpperCase()
     }
     return (auth.user?.name?.[0] || 'U').toUpperCase()
+})
+
+const profilePhotoUrl = computed(() => {
+  const photo = auth.agent?.photo
+
+  if (!photo) {
+    return null
+  }
+
+  if (/^https?:\/\//i.test(photo) || photo.startsWith('/')) {
+    return photo
+  }
+
+  return `/${photo.replace(/^\/+/, '')}`
 })
 
 async function handleLogout() {
