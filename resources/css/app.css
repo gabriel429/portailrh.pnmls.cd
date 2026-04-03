@@ -387,8 +387,19 @@ body {
     transition: transform var(--transition-fast);
 }
 
-.nav-user-btn:hover .nav-user-avatar {
+.nav-user-btn:hover .nav-user-avatar,
+.nav-user-btn:hover .nav-user-photo {
     transform: scale(1.1);
+}
+
+.nav-user-photo {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
+    transition: transform var(--transition-fast);
 }
 
 .nav-user-name {

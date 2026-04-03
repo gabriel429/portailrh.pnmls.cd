@@ -159,7 +159,8 @@
             <!-- User dropdown -->
             <li class="nav-item dropdown">
               <a class="nav-link nav-user-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                <span class="nav-user-avatar">{{ initials }}</span>
+                <img v-if="auth.agent?.photo" :src="'/storage/' + auth.agent.photo" alt="Photo" class="nav-user-photo">
+                <span v-else class="nav-user-avatar">{{ initials }}</span>
                 <span class="nav-user-name">{{ auth.agent?.prenom || auth.user?.name }}</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
