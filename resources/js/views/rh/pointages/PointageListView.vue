@@ -468,7 +468,8 @@ async function cm_loadAgents() {
     cm_errors.value = []
     try {
         const { data } = await pointagesApi.agentsByDepartment({ department_id: cm_department.value, date: cm_date.value })
-        cm_agents.value = data.map(a => ({
+      const agentsData = data.data || data.agents || []
+      cm_agents.value = agentsData.map(a => ({
             ...a,
             heure_entree: a.pointage_existant?.heure_entree || '',
             heure_sortie: a.pointage_existant?.heure_sortie || '',

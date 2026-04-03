@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\RequestResource;
 use App\Models\Request as RequestModel;
 use App\Models\Agent;
 use App\Models\User;
@@ -10,7 +10,7 @@ use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class RequestController extends Controller
+class RequestController extends ApiController
 {
     /**
      * Display a paginated listing of requests.
@@ -41,16 +41,7 @@ class RequestController extends Controller
 
         $requests = $query->latest()->paginate(15);
 
-        return response()->json([
-            'data' => $requests->items(),
-            'meta' => [
-                'current_page' => $requests->currentPage(),
-                'last_page' => $requests->lastPage(),
-                'per_page' => $requests->perPage(),
-                'total' => $requests->total(),
-                'from' => $requests->firstItem(),
-                'to' => $requests->lastItem(),
-            ],
+        return $this->paginated($requests, RequestResource::class, [], [
             'isRH' => $isRH,
         ]);
     }
@@ -114,9 +105,11 @@ class RequestController extends Controller
             $user->id
         );
 
-        return response()->json([
+        $demande->load('agent');
+        $resource = RequestResource::make($demande);
+
+        return $this->resource($resource, [], [
             'message' => 'Demande créée avec succès.',
-            'data' => $demande->load('agent'),
         ], 201);
     }
 
@@ -129,8 +122,7 @@ class RequestController extends Controller
 
         $this->authorizeAccess($request->user(), $demande);
 
-        return response()->json([
-            'data' => $demande,
+        return $this->resource(RequestResource::make($demande), [], [
             'isRH' => $request->user()->hasAdminAccess(),
             'isOwner' => $request->user()->agent?->id === $demande->agent_id,
         ]);
@@ -208,9 +200,10 @@ class RequestController extends Controller
             }
         }
 
-        return response()->json([
+        $resource = RequestResource::make($demande->fresh()->load('agent'));
+
+        return $this->resource($resource, [], [
             'message' => 'Demande modifiée avec succès.',
-            'data' => $demande->fresh()->load('agent'),
         ]);
     }
 
@@ -235,7 +228,7 @@ class RequestController extends Controller
 
         $demande->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Demande supprimée avec succès.',
         ]);
     }

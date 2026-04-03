@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\TacheResource;
 use App\Models\Tache;
 use App\Models\TacheCommentaire;
 use App\Models\Agent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class TacheController extends Controller
+class TacheController extends ApiController
 {
     /**
      * Display listing of taches.
@@ -37,9 +37,17 @@ class TacheController extends Controller
                 ->get();
         }
 
-        return response()->json([
-            'mesTaches' => $mesTaches,
-            'tachesCreees' => $tachesCreees,
+        $mesTachesResource = TacheResource::collection($mesTaches)->resolve();
+        $tachesCreeesResource = TacheResource::collection($tachesCreees)->resolve();
+
+        return $this->success([
+            'mes_taches' => $mesTachesResource,
+            'taches_creees' => $tachesCreeesResource,
+        ], [
+            'isDirecteur' => $isDirecteur,
+        ], [
+            'mesTaches' => $mesTachesResource,
+            'tachesCreees' => $tachesCreeesResource,
             'isDirecteur' => $isDirecteur,
         ]);
     }
@@ -68,9 +76,7 @@ class TacheController extends Controller
             ->get(['id', 'nom', 'prenom'])
             ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
-        return response()->json([
-            'data' => $agentsDuDepartement,
-        ]);
+        return $this->success($agentsDuDepartement);
     }
 
     /**
@@ -105,9 +111,10 @@ class TacheController extends Controller
 
         $tache = Tache::create($validated);
 
-        return response()->json([
+        $resource = TacheResource::make($tache->load(['createur', 'agent']));
+
+        return $this->resource($resource, [], [
             'message' => 'Tache creee avec succes.',
-            'data' => $tache->load(['createur', 'agent']),
         ], 201);
     }
 
@@ -125,8 +132,10 @@ class TacheController extends Controller
 
         $tache->load(['createur', 'agent', 'commentaires.agent']);
 
-        return response()->json([
-            'data' => $tache,
+        return $this->resource(TacheResource::make($tache), [
+            'isCreateur' => $tache->createur_id === $agent->id,
+            'isAssigne' => $tache->agent_id === $agent->id,
+        ], [
             'isCreateur' => $tache->createur_id === $agent->id,
             'isAssigne' => $tache->agent_id === $agent->id,
         ]);
@@ -161,9 +170,10 @@ class TacheController extends Controller
 
         $tache->update(['statut' => $validated['statut']]);
 
-        return response()->json([
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'commentaires.agent']));
+
+        return $this->resource($resource, [], [
             'message' => 'Statut mis a jour avec succes.',
-            'data' => $tache->fresh()->load(['createur', 'agent', 'commentaires.agent']),
         ]);
     }
 
@@ -189,9 +199,10 @@ class TacheController extends Controller
             'contenu'  => $validated['contenu'],
         ]);
 
-        return response()->json([
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'commentaires.agent']));
+
+        return $this->resource($resource, [], [
             'message' => 'Commentaire ajoute.',
-            'data' => $tache->fresh()->load(['createur', 'agent', 'commentaires.agent']),
         ]);
     }
 }

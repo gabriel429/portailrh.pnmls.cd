@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\Request as RequestModel;
 use App\Models\Pointage;
@@ -29,7 +28,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class ExecutiveDashboardController extends Controller
+class ExecutiveDashboardController extends ApiController
 {
     public function index(Request $request)
     {
@@ -477,7 +476,7 @@ class ExecutiveDashboardController extends Controller
             ];
         }
 
-        return response()->json([
+        $payload = [
             'agents' => [
                 'total' => $agentsTotal,
                 'actifs' => $agentsActifs,
@@ -602,6 +601,8 @@ class ExecutiveDashboardController extends Controller
                 ],
                 'details' => $agentStatusDetails,
             ],
-        ]);
+        ];
+
+        return $this->success($payload, [], $payload);
     }
 }

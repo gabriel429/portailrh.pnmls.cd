@@ -2,11 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Services\SyncService;
 use Illuminate\Http\Request;
 
-class SyncController extends Controller
+class SyncController extends ApiController
 {
     public function __construct(
         protected SyncService $syncService
@@ -18,11 +17,13 @@ class SyncController extends Controller
      */
     public function status()
     {
-        return response()->json([
+        $payload = [
             'status' => 'online',
             'server_time' => now()->toIso8601String(),
             'version' => config('app.version', '1.0.0'),
-        ]);
+        ];
+
+        return $this->success($payload, [], $payload);
     }
 
     /**
@@ -44,7 +45,7 @@ class SyncController extends Controller
             $request->input('tables', [])
         );
 
-        return response()->json($result);
+        return $this->success($result, [], $result);
     }
 
     /**
@@ -61,7 +62,7 @@ class SyncController extends Controller
 
         $result = $this->syncService->push($request->all());
 
-        return response()->json($result);
+        return $this->success($result, [], $result);
     }
 
     /**
@@ -111,11 +112,13 @@ class SyncController extends Controller
             }
         }
 
-        return response()->json([
+        $payload = [
             'status' => 'uploaded',
             'uuid' => $uuid,
             'path' => $path,
-        ]);
+        ];
+
+        return $this->success($payload, [], $payload);
     }
 
     /**
@@ -140,7 +143,7 @@ class SyncController extends Controller
             }
         }
 
-        return response()->json(['data' => $data]);
+        return $this->success($data);
     }
 
     /**
@@ -175,7 +178,7 @@ class SyncController extends Controller
             }
         }
 
-        return response()->json(['marked' => $marked]);
+        return $this->success(['marked' => $marked], [], ['marked' => $marked]);
     }
 
     /**

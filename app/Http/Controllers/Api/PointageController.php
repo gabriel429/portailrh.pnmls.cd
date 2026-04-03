@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\PointageResource;
 use App\Models\Pointage;
 use App\Models\Agent;
 use App\Models\Department;
@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 
-class PointageController extends Controller
+class PointageController extends ApiController
 {
     /**
      * Display a paginated listing of pointages with optional filters.
@@ -56,7 +56,23 @@ class PointageController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate($request->input('per_page', 15));
 
-        return response()->json($pointages);
+        return response()->json([
+            'data' => PointageResource::collection($pointages->getCollection())->resolve(),
+            'meta' => [
+                'current_page' => $pointages->currentPage(),
+                'last_page' => $pointages->lastPage(),
+                'per_page' => $pointages->perPage(),
+                'total' => $pointages->total(),
+                'from' => $pointages->firstItem(),
+                'to' => $pointages->lastItem(),
+            ],
+            'current_page' => $pointages->currentPage(),
+            'last_page' => $pointages->lastPage(),
+            'per_page' => $pointages->perPage(),
+            'total' => $pointages->total(),
+            'from' => $pointages->firstItem(),
+            'to' => $pointages->lastItem(),
+        ]);
     }
 
     /**
@@ -124,7 +140,10 @@ class PointageController extends Controller
         if ($updated > 0) $parts[] = "{$updated} pointage(s) mis a jour";
         $message = count($parts) > 0 ? implode(', ', $parts) . '.' : 'Aucun pointage enregistre.';
 
-        return response()->json([
+        return $this->success([
+            'created' => $created,
+            'updated' => $updated,
+        ], [], [
             'message' => $message,
             'created' => $created,
             'updated' => $updated,
@@ -138,7 +157,13 @@ class PointageController extends Controller
     {
         $pointage->load('agent');
 
-        return response()->json($pointage);
+        $resource = PointageResource::make($pointage);
+        $resolved = $resource->resolve();
+
+        return response()->json(array_merge($resolved, [
+            'data' => $resolved,
+            'pointage' => $resolved,
+        ]));
     }
 
     /**
@@ -163,10 +188,14 @@ class PointageController extends Controller
         $pointage->update($validated);
         $pointage->load('agent');
 
-        return response()->json([
+        $resource = PointageResource::make($pointage);
+        $resolved = $resource->resolve();
+
+        return response()->json(array_merge($resolved, [
+            'data' => $resolved,
+            'pointage' => $resolved,
             'message' => 'Pointage modifie avec succes.',
-            'pointage' => $pointage,
-        ]);
+        ]));
     }
 
     /**
@@ -176,7 +205,7 @@ class PointageController extends Controller
     {
         $pointage->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Pointage supprime avec succes.',
         ]);
     }
@@ -228,7 +257,16 @@ class PointageController extends Controller
         $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom', 'postnom'])
             ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
-        return response()->json([
+        return $this->success([
+            'days' => $days,
+            'agents' => $agents,
+        ], [
+            'filters' => [
+                'date_debut' => $dateDebut,
+                'date_fin' => $dateFin,
+                'agent_id' => $agent_id,
+            ],
+        ], [
             'days' => $days,
             'agents' => $agents,
             'filters' => [
@@ -393,7 +431,15 @@ class PointageController extends Controller
         $allProvinces = Province::orderBy('nom')
             ->get(['id', 'code', 'nom']);
 
-        return response()->json([
+        return $this->success([
+            'agent_stats' => $agentStats,
+            'global_stats' => $globalStats,
+        ], [
+            'stats_by_organe' => $statsByOrgane,
+            'month' => $month,
+            'date_debut' => $dateDebut->format('Y-m-d'),
+            'date_fin' => $dateFin->format('Y-m-d'),
+        ], [
             'agent_stats' => $agentStats,
             'global_stats' => $globalStats,
             'stats_by_organe' => $statsByOrgane,
@@ -414,7 +460,7 @@ class PointageController extends Controller
         $date = $request->query('date');
 
         if (!$departmentId) {
-            return response()->json([]);
+            return $this->success([]);
         }
 
         $agents = Agent::actifs()
@@ -439,7 +485,7 @@ class PointageController extends Controller
             });
         }
 
-        return response()->json($agents);
+        return $this->success($agents, [], ['agents' => $agents]);
     }
 
     /**

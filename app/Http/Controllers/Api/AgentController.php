@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\AgentResource;
 use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Fonction;
@@ -18,7 +18,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
-class AgentController extends Controller
+class AgentController extends ApiController
 {
     /**
      * Organe labels used for grouping.
@@ -142,7 +142,7 @@ class AgentController extends Controller
                     'code' => $this->organeLabels[$organeKey]['code'] ?? '',
                 ];
             }
-            $agentsByOrgane[$organeKey]['agents'][] = $this->formatAgentForList($agent);
+            $agentsByOrgane[$organeKey]['agents'][] = AgentResource::make($agent)->resolve();
         }
 
         // Reorder: SEN, SEP, SEL first, then others
@@ -170,10 +170,14 @@ class AgentController extends Controller
             'sel' => $allAgents->where('organe', 'Secrétariat Exécutif Local')->count(),
         ];
 
-        return response()->json([
-            'agentsByOrgane' => array_values($ordered),
-            'stats' => $stats,
-        ]);
+        return $this->success(
+            array_values($ordered),
+            ['stats' => $stats],
+            [
+                'agentsByOrgane' => array_values($ordered),
+                'stats' => $stats,
+            ]
+        );
     }
 
     /**
@@ -250,9 +254,11 @@ class AgentController extends Controller
         $agent = Agent::create($validated);
         $agent->load(['role', 'province', 'departement', 'grade', 'institution']);
 
-        return response()->json([
+        $resource = AgentResource::make($agent);
+
+        return $this->resource($resource, [], [
             'message' => 'Agent cree avec succes',
-            'agent' => $agent,
+            'agent' => $resource->resolve(),
         ], 201);
     }
 
@@ -268,15 +274,11 @@ class AgentController extends Controller
             'messages.sender',
         ]);
 
-        // Add computed fields
-        $agentData = $agent->toArray();
-        $agentData['id_agent'] = $agent->id_agent;
-        $agentData['nom_complet'] = $agent->nom_complet;
-        $agentData['anciennete'] = $agent->annee_engagement_programme
-            ? (now()->year - $agent->annee_engagement_programme)
-            : null;
+        $resource = AgentResource::make($agent);
 
-        return response()->json(['agent' => $agentData]);
+        return $this->resource($resource, [], [
+            'agent' => $resource->resolve(),
+        ]);
     }
 
     /**
@@ -366,9 +368,11 @@ class AgentController extends Controller
         $agent->update($validated);
         $agent->load(['role', 'province', 'departement', 'grade', 'institution']);
 
-        return response()->json([
+        $resource = AgentResource::make($agent);
+
+        return $this->resource($resource, [], [
             'message' => 'Agent modifie avec succes',
-            'agent' => $agent,
+            'agent' => $resource->resolve(),
         ]);
     }
 
@@ -379,7 +383,7 @@ class AgentController extends Controller
     {
         $agent->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Agent supprime avec succes',
         ]);
     }
@@ -523,43 +527,4 @@ class AgentController extends Controller
         ]);
     }
 
-    /**
-     * Format an agent for the list view.
-     */
-    private function formatAgentForList(Agent $agent): array
-    {
-        return [
-            'id' => $agent->id,
-            'id_agent' => $agent->id_agent,
-            'nom' => $agent->nom,
-            'prenom' => $agent->prenom,
-            'postnom' => $agent->postnom,
-            'nom_complet' => $agent->nom_complet,
-            'email_prive' => $agent->email_prive,
-            'email_professionnel' => $agent->email_professionnel,
-            'telephone' => $agent->telephone,
-            'photo' => $agent->photo,
-            'organe' => $agent->organe,
-            'fonction' => $agent->fonction,
-            'poste_actuel' => $agent->poste_actuel,
-            'matricule_etat' => $agent->matricule_etat,
-            'annee_engagement_programme' => $agent->annee_engagement_programme,
-            'anciennete' => $agent->annee_engagement_programme
-                ? (now()->year - $agent->annee_engagement_programme)
-                : null,
-            'statut' => $agent->statut,
-            'province' => $agent->province ? [
-                'id' => $agent->province->id,
-                'nom' => $agent->province->nom_province ?? $agent->province->nom,
-            ] : null,
-            'departement' => $agent->departement ? [
-                'id' => $agent->departement->id,
-                'nom' => $agent->departement->nom,
-            ] : null,
-            'grade' => $agent->grade ? [
-                'id' => $agent->grade->id,
-                'libelle' => $agent->grade->libelle,
-            ] : null,
-        ];
-    }
 }

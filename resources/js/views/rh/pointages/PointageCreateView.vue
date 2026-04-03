@@ -220,7 +220,9 @@ async function loadAgents() {
             date: datePointage.value,
         })
 
-        agents.value = data.map(agent => ({
+      const agentsData = data.data || data.agents || []
+
+      agents.value = agentsData.map(agent => ({
             ...agent,
             selected: true,
             heure_entree: agent.pointage_existant?.heure_entree || '',

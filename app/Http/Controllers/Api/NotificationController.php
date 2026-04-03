@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\NotificationResource;
 use App\Models\NotificationPortail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class NotificationController extends Controller
+class NotificationController extends ApiController
 {
     /**
      * Display a listing of notifications for the authenticated user.
@@ -31,16 +31,7 @@ class NotificationController extends Controller
 
         $nonLuesCount = NotificationPortail::pourUser($user->id)->nonLues()->count();
 
-        return response()->json([
-            'data' => $notifications->items(),
-            'meta' => [
-                'current_page' => $notifications->currentPage(),
-                'last_page' => $notifications->lastPage(),
-                'per_page' => $notifications->perPage(),
-                'total' => $notifications->total(),
-                'from' => $notifications->firstItem(),
-                'to' => $notifications->lastItem(),
-            ],
+        return $this->paginated($notifications, NotificationResource::class, [], [
             'nonLuesCount' => $nonLuesCount,
         ]);
     }
@@ -61,7 +52,7 @@ class NotificationController extends Controller
             'lu_at' => now(),
         ]);
 
-        return response()->json([
+        return $this->success(null, ['lien' => $notif->lien], [
             'message' => 'Notification marquee comme lue.',
             'lien' => $notif->lien,
         ]);
@@ -80,7 +71,7 @@ class NotificationController extends Controller
 
         $notif->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Notification supprimee.',
         ]);
     }
@@ -94,7 +85,7 @@ class NotificationController extends Controller
             ->nonLues()
             ->update(['lu' => true, 'lu_at' => now()]);
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Toutes les notifications ont ete marquees comme lues.',
         ]);
     }

@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\MessageResource;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class MessageController extends Controller
+class MessageController extends ApiController
 {
     /**
      * Display a single message. Marks it as read automatically.
@@ -29,8 +29,12 @@ class MessageController extends Controller
 
         $message->load('sender');
 
-        return response()->json([
-            'data' => $message,
-        ]);
+        $resource = MessageResource::make($message);
+        $resolved = $resource->resolve();
+
+        return response()->json(array_merge($resolved, [
+            'data' => $resolved,
+            'message_resource' => $resolved,
+        ]));
     }
 }

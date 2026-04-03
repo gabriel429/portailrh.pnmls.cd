@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\SignalementResource;
 use App\Models\Signalement;
 use App\Models\Agent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class SignalementController extends Controller
+class SignalementController extends ApiController
 {
     /**
      * Display a paginated listing of signalements.
@@ -27,17 +27,7 @@ class SignalementController extends Controller
 
         $signalements = $query->latest()->paginate(15);
 
-        return response()->json([
-            'data' => $signalements->items(),
-            'meta' => [
-                'current_page' => $signalements->currentPage(),
-                'last_page' => $signalements->lastPage(),
-                'per_page' => $signalements->perPage(),
-                'total' => $signalements->total(),
-                'from' => $signalements->firstItem(),
-                'to' => $signalements->lastItem(),
-            ],
-        ]);
+        return $this->paginated($signalements, SignalementResource::class);
     }
 
     /**
@@ -55,9 +45,11 @@ class SignalementController extends Controller
 
         $signalement = Signalement::create($validated);
 
-        return response()->json([
+        $signalement->load('agent');
+        $resource = SignalementResource::make($signalement);
+
+        return $this->resource($resource, [], [
             'message' => 'Signalement cree avec succes.',
-            'data' => $signalement->load('agent'),
         ], 201);
     }
 
@@ -68,9 +60,7 @@ class SignalementController extends Controller
     {
         $signalement->load('agent');
 
-        return response()->json([
-            'data' => $signalement,
-        ]);
+        return $this->resource(SignalementResource::make($signalement));
     }
 
     /**
@@ -88,9 +78,10 @@ class SignalementController extends Controller
 
         $signalement->update($validated);
 
-        return response()->json([
+        $resource = SignalementResource::make($signalement->fresh()->load('agent'));
+
+        return $this->resource($resource, [], [
             'message' => 'Signalement modifie avec succes.',
-            'data' => $signalement->fresh()->load('agent'),
         ]);
     }
 
@@ -101,7 +92,7 @@ class SignalementController extends Controller
     {
         $signalement->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Signalement supprime avec succes.',
         ]);
     }
@@ -114,6 +105,6 @@ class SignalementController extends Controller
         $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom'])
             ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
-        return response()->json(['data' => $agents]);
+        return $this->success($agents);
     }
 }

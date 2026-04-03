@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\AgentStatus;
 use App\Models\Request as RequestModel;
@@ -21,7 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
-class RhDashboardController extends Controller
+class RhDashboardController extends ApiController
 {
     public function index(Request $request)
     {
@@ -296,7 +295,7 @@ class RhDashboardController extends Controller
             ];
         }
 
-        return response()->json([
+        $payload = [
             'agents' => [
                 'total' => $agentsTotal,
                 'actifs' => $agentsActifs,
@@ -387,6 +386,8 @@ class RhDashboardController extends Controller
             'formations' => [
                 'domaines_etudes' => $domainesEtudes,
             ],
-        ]);
+        ];
+
+        return $this->success($payload, [], $payload);
     }
 }

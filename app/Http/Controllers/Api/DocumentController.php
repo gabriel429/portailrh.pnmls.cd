@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\DocumentResource;
 use App\Models\Document;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
-class DocumentController extends Controller
+class DocumentController extends ApiController
 {
     /**
      * List paginated documents for the authenticated user's agent.
@@ -17,9 +17,7 @@ class DocumentController extends Controller
         $agent = $request->user()->agent;
 
         if (!$agent) {
-            return response()->json([
-                'data' => [],
-                'meta' => ['total' => 0],
+            return $this->success([], ['total' => 0], [
                 'stats' => [
                     'total' => 0,
                     'identite' => 0,
@@ -57,16 +55,7 @@ class DocumentController extends Controller
             'mission'  => $agent->documents()->where('type', 'mission')->count(),
         ];
 
-        return response()->json([
-            'data'  => $documents->items(),
-            'meta'  => [
-                'current_page' => $documents->currentPage(),
-                'last_page'    => $documents->lastPage(),
-                'per_page'     => $documents->perPage(),
-                'total'        => $documents->total(),
-                'from'         => $documents->firstItem(),
-                'to'           => $documents->lastItem(),
-            ],
+        return $this->paginated($documents, DocumentResource::class, [], [
             'stats' => $stats,
         ]);
     }
@@ -105,9 +94,11 @@ class DocumentController extends Controller
 
         $document->load('agent');
 
-        return response()->json([
-            'message'  => 'Document uploadé avec succès.',
-            'document' => $document,
+        $resource = DocumentResource::make($document);
+
+        return $this->resource($resource, [], [
+            'message' => 'Document uploadé avec succès.',
+            'document' => $resource->resolve(),
         ], 201);
     }
 
@@ -130,12 +121,20 @@ class DocumentController extends Controller
         $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
         $extension = pathinfo($document->fichier, PATHINFO_EXTENSION);
 
-        return response()->json([
-            'document' => $document,
-            'file_meta' => [
-                'size'      => $fileSize,
+        $resource = DocumentResource::make($document);
+
+        return $this->resource($resource, [
+            'file' => [
+                'size' => $fileSize,
                 'extension' => strtolower($extension),
-                'exists'    => file_exists($filePath),
+                'exists' => file_exists($filePath),
+            ],
+        ], [
+            'document' => $resource->resolve(),
+            'file_meta' => [
+                'size' => $fileSize,
+                'extension' => strtolower($extension),
+                'exists' => file_exists($filePath),
             ],
         ]);
     }
@@ -179,6 +178,6 @@ class DocumentController extends Controller
 
         $document->delete();
 
-        return response()->json(['message' => 'Document supprimé avec succès.']);
+        return $this->success(null, [], ['message' => 'Document supprimé avec succès.']);
     }
 }

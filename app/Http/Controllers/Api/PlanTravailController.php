@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\ActivitePlanResource;
 use App\Models\ActivitePlan;
 use App\Models\Agent;
 use App\Models\Affectation;
@@ -14,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
-class PlanTravailController extends Controller
+class PlanTravailController extends ApiController
 {
     /**
      * Check if user can manage PTA (create, edit, delete).
@@ -183,10 +183,24 @@ class PlanTravailController extends Controller
         $termineeCount = $activites->where('statut', 'terminee')->count();
         $avgPourcentage = $totalCount > 0 ? round($activites->avg('pourcentage')) : 0;
 
-        $activitesGroupees = $activites->groupBy(fn($a) => $a->trimestre ?? 'Annuel');
+        $resources = ActivitePlanResource::collection($activites)->resolve();
+        $activitesGroupees = collect($resources)->groupBy(fn($a) => $a['trimestre'] ?? 'Annuel')->toArray();
 
-        return response()->json([
-            'data' => $activites,
+        return $this->success($resources, [
+            'stats' => [
+                'total' => $totalCount,
+                'planifiee' => $planifieeCount,
+                'en_cours' => $enCoursCount,
+                'terminee' => $termineeCount,
+                'avg_pourcentage' => $avgPourcentage,
+            ],
+            'filters' => [
+                'annee' => (int) $annee,
+                'trimestre' => $trimestre,
+                'statut' => $statut,
+            ],
+            'canEdit' => $this->canManage(),
+        ], [
             'groupees' => $activitesGroupees,
             'stats' => [
                 'total' => $totalCount,
@@ -217,12 +231,14 @@ class PlanTravailController extends Controller
         $provinces = Province::orderBy('nom')->get(['id', 'nom']);
         $localites = class_exists(Localite::class) ? Localite::orderBy('nom')->get(['id', 'nom']) : collect();
 
-        return response()->json([
+        $payload = [
             'departments' => $departments,
             'provinces' => $provinces,
             'localites' => $localites,
             'annee' => now()->year,
-        ]);
+        ];
+
+        return $this->success($payload, [], $payload);
     }
 
     /**
@@ -262,9 +278,10 @@ class PlanTravailController extends Controller
             auth()->id()
         );
 
-        return response()->json([
+        $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'localite'));
+
+        return $this->resource($resource, [], [
             'message' => 'Activite creee avec succes.',
-            'data' => $activite->load('createur', 'departement', 'province', 'localite'),
         ], 201);
     }
 
@@ -275,8 +292,10 @@ class PlanTravailController extends Controller
     {
         $activitePlan->load('createur', 'departement', 'province', 'localite');
 
-        return response()->json([
-            'data' => $activitePlan,
+        return $this->resource(ActivitePlanResource::make($activitePlan), [
+            'canEdit' => $this->canManage(),
+            'canUpdateStatut' => $this->canUpdateStatut($activitePlan),
+        ], [
             'canEdit' => $this->canManage(),
             'canUpdateStatut' => $this->canUpdateStatut($activitePlan),
         ]);
@@ -317,9 +336,10 @@ class PlanTravailController extends Controller
             auth()->id()
         );
 
-        return response()->json([
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'localite'));
+
+        return $this->resource($resource, [], [
             'message' => 'Activite mise a jour.',
-            'data' => $activitePlan->fresh()->load('createur', 'departement', 'province', 'localite'),
         ]);
     }
 
@@ -334,7 +354,7 @@ class PlanTravailController extends Controller
 
         $activitePlan->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Activite supprimee.',
         ]);
     }
@@ -356,9 +376,10 @@ class PlanTravailController extends Controller
 
         $activitePlan->update($validated);
 
-        return response()->json([
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'localite'));
+
+        return $this->resource($resource, [], [
             'message' => 'Statut mis a jour.',
-            'data' => $activitePlan->fresh()->load('createur', 'departement', 'province', 'localite'),
         ]);
     }
 }

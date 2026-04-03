@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\AgentResource;
+use App\Http\Resources\PointageResource;
 use App\Models\Pointage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,7 +12,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
-class ProfileController extends Controller
+class ProfileController extends ApiController
 {
     /**
      * Return the authenticated user's agent profile with all relations.
@@ -47,8 +48,10 @@ class ProfileController extends Controller
             'demandes'    => $agent->requests()->count(),
         ];
 
-        return response()->json([
-            'agent' => $agent,
+        $resource = AgentResource::make($agent);
+
+        return $this->resource($resource, ['stats' => $stats], [
+            'agent' => $resource->resolve(),
             'stats' => $stats,
         ]);
     }
@@ -93,9 +96,11 @@ class ProfileController extends Controller
             'institution',
         ]);
 
-        return response()->json([
+        $resource = AgentResource::make($agent);
+
+        return $this->resource($resource, [], [
             'message' => 'Profil mis à jour avec succès.',
-            'agent'   => $agent,
+            'agent' => $resource->resolve(),
         ]);
     }
 
@@ -125,7 +130,7 @@ class ProfileController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Mot de passe modifié avec succès.',
         ]);
     }
@@ -153,31 +158,21 @@ class ProfileController extends Controller
             $totalAbsences = $query->count();
             $absencesPaginated = $query->orderByDesc('date_pointage')->paginate(20);
 
-            return response()->json([
-                'data' => $absencesPaginated->items(),
+            return $this->paginated($absencesPaginated, PointageResource::class, [], [
                 'totalAbsences' => $totalAbsences,
-                'meta' => [
-                    'current_page' => $absencesPaginated->currentPage(),
-                    'last_page' => $absencesPaginated->lastPage(),
-                    'per_page' => $absencesPaginated->perPage(),
-                    'total' => $absencesPaginated->total(),
-                    'from' => $absencesPaginated->firstItem(),
-                    'to' => $absencesPaginated->lastItem(),
-                ],
             ]);
         }
 
-        return response()->json([
-            'data' => [],
+        return $this->success([], [
+            'current_page' => 1,
+            'last_page' => 1,
+            'per_page' => 20,
+            'total' => 0,
+            'from' => null,
+            'to' => null,
             'totalAbsences' => 0,
-            'meta' => [
-                'current_page' => 1,
-                'last_page' => 1,
-                'per_page' => 20,
-                'total' => 0,
-                'from' => null,
-                'to' => null,
-            ],
+        ], [
+            'totalAbsences' => 0,
         ]);
     }
 }

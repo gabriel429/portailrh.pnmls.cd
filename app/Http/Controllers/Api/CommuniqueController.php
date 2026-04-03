@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\CommuniqueResource;
 use App\Models\Communique;
 use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class CommuniqueController extends Controller
+class CommuniqueController extends ApiController
 {
     /**
      * Display a paginated listing of communiques.
@@ -19,17 +19,7 @@ class CommuniqueController extends Controller
             ->latest()
             ->paginate(15);
 
-        return response()->json([
-            'data' => $communiques->items(),
-            'meta' => [
-                'current_page' => $communiques->currentPage(),
-                'last_page' => $communiques->lastPage(),
-                'per_page' => $communiques->perPage(),
-                'total' => $communiques->total(),
-                'from' => $communiques->firstItem(),
-                'to' => $communiques->lastItem(),
-            ],
-        ]);
+        return $this->paginated($communiques, CommuniqueResource::class);
     }
 
     /**
@@ -62,9 +52,11 @@ class CommuniqueController extends Controller
             );
         }
 
-        return response()->json([
+        $communique->load('auteur');
+        $resource = CommuniqueResource::make($communique);
+
+        return $this->resource($resource, [], [
             'message' => 'Communique publie avec succes.',
-            'data' => $communique->load('auteur'),
         ], 201);
     }
 
@@ -75,9 +67,7 @@ class CommuniqueController extends Controller
     {
         $communique->load('auteur');
 
-        return response()->json([
-            'data' => $communique,
-        ]);
+        return $this->resource(CommuniqueResource::make($communique));
     }
 
     /**
@@ -98,9 +88,10 @@ class CommuniqueController extends Controller
 
         $communique->update($validated);
 
-        return response()->json([
+        $resource = CommuniqueResource::make($communique->fresh()->load('auteur'));
+
+        return $this->resource($resource, [], [
             'message' => 'Communique mis a jour avec succes.',
-            'data' => $communique->fresh()->load('auteur'),
         ]);
     }
 
@@ -111,7 +102,7 @@ class CommuniqueController extends Controller
     {
         $communique->delete();
 
-        return response()->json([
+        return $this->success(null, [], [
             'message' => 'Communique supprime.',
         ]);
     }
