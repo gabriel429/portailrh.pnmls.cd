@@ -1,0 +1,80 @@
+# HOSTINGER ULTIMATE MIME FIX - PHP Fallback Solution
+# Primary: Try standard MIME directives
+# Fallback: Redirect to PHP script that forces correct headers
+
+RewriteEngine On
+
+# PRIMARY METHOD: Try standard ForceType (might work)
+<FilesMatch "\.(js)$">
+    ForceType application/javascript
+</FilesMatch>
+<FilesMatch "\.(css)$">
+    ForceType text/css
+</FilesMatch>
+<FilesMatch "\.(json)$">
+    ForceType application/json
+</FilesMatch>
+<FilesMatch "\.(webmanifest)$">
+    ForceType application/manifest+json
+</FilesMatch>
+<FilesMatch "\.(woff2)$">
+    ForceType font/woff2
+</FilesMatch>
+<FilesMatch "\.(png|jpg|jpeg|gif)$">
+    ForceType image/png
+</FilesMatch>
+<FilesMatch "\.(svg)$">
+    ForceType image/svg+xml
+</FilesMatch>
+<FilesMatch "\.(ico)$">
+    ForceType image/x-icon
+</FilesMatch>
+
+# FALLBACK METHOD: If ForceType fails, redirect to PHP script
+# This rule triggers when a CSS/JS file is requested but returns wrong MIME type
+
+# For CSS files in assets/ folder - redirect to PHP if needed
+RewriteCond %{REQUEST_URI} ^/build/assets/.+\.css$
+RewriteCond %{HTTP_ACCEPT} "text/css"
+RewriteRule ^assets/(.+\.css)$ serve-asset.php?file=$1 [L,QSA]
+
+# For JS files in assets/ folder - redirect to PHP if needed
+RewriteCond %{REQUEST_URI} ^/build/assets/.+\.js$
+RewriteCond %{HTTP_ACCEPT} "application/javascript,*/*"
+RewriteRule ^assets/(.+\.js)$ serve-asset.php?file=$1 [L,QSA]
+
+# For JSON files (manifest)
+RewriteCond %{REQUEST_URI} ^/build/assets/.+\.json$
+RewriteRule ^assets/(.+\.json)$ serve-asset.php?file=$1 [L,QSA]
+
+# For font files
+RewriteCond %{REQUEST_URI} ^/build/assets/.+\.(woff2|woff|ttf)$
+RewriteRule ^assets/(.+\.(woff2|woff|ttf))$ serve-asset.php?file=$1 [L,QSA]
+
+# For direct manifest.json access
+RewriteCond %{REQUEST_URI} ^/build/manifest\.json$
+RewriteRule ^manifest\.json$ serve-asset.php?file=../manifest.json [L,QSA]
+
+# Security: Block direct access to PHP files (except our serve-asset.php)
+<FilesMatch "\.php$">
+    <RequireAll>
+        Require all denied
+    </RequireAll>
+</FilesMatch>
+<FilesMatch "serve-asset\.php$">
+    <RequireAll>
+        Require all granted
+    </RequireAll>
+</FilesMatch>
+
+# Cache control
+<FilesMatch "\.(js|css|woff2|woff|png|svg|ico)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+</FilesMatch>
+<FilesMatch "manifest\.json$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
+
+# Security headers
+Header always set X-Content-Type-Options "nosniff"
+Header always set X-Frame-Options "DENY"
