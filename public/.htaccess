@@ -6,7 +6,8 @@
     RewriteEngine On
 
     # Definitive MIME fix: route build assets through standalone PHP script
-    # (bypasses Apache MIME config and route cache entirely)
+    # only when the static built file is not present in public/build/assets.
+    RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^build/assets/(.+)$ asset.php?f=$1 [L,QSA]
 
     # Handle Authorization Header

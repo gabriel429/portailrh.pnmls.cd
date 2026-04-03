@@ -13,9 +13,21 @@ if ($file === '' || strpos($file, '..') !== false || $file[0] === '/') {
     exit();
 }
 
-$path = dirname(__DIR__) . '/storage/app/build/assets/' . $file;
+$candidatePaths = [
+    dirname(__DIR__) . '/public/build/assets/' . $file,
+    dirname(__DIR__) . '/storage/app/build/assets/' . $file,
+];
 
-if (!is_file($path)) {
+$path = null;
+
+foreach ($candidatePaths as $candidatePath) {
+    if (is_file($candidatePath)) {
+        $path = $candidatePath;
+        break;
+    }
+}
+
+if ($path === null) {
     http_response_code(404);
     exit();
 }
