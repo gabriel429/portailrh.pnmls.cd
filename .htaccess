@@ -18,11 +18,22 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
-    # Serve static files from public/ if they exist there
+    # Serve static files from public/ if they exist there (DocumentRoot = repo root)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f
     RewriteRule ^(.*)$ public/$1 [L]
+
+    # Serve build/assets from repo build/ when DocumentRoot points to public/ (common Hostinger setup)
+    RewriteCond %{REQUEST_URI} ^/build/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{DOCUMENT_ROOT}/../build%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ ../build/$1 [L]
+
+    # Serve files directly from build/ if DocumentRoot is the repo root and file exists there
+    RewriteCond %{REQUEST_URI} ^/build/
+    RewriteCond %{DOCUMENT_ROOT}/build%{REQUEST_URI} -f
+    RewriteRule ^(.*)$ build/$1 [L]
 
     # Send Requests To Front Controller...
     RewriteCond %{REQUEST_FILENAME} !-d
