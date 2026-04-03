@@ -193,7 +193,7 @@ const typeOptions = [
   { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
   { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
   { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'renforcement_capacites', label: 'Formation', icon: 'fas fa-graduation-cap' },
+  { value: 'renforcement_capacites', label: 'Renforcement des capacités', icon: 'fas fa-graduation-cap' },
 ]
 
 function initials(agent) {

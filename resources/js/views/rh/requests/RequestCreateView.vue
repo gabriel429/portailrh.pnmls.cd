@@ -130,7 +130,7 @@
               <div v-if="errors.motivation" class="invalid-feedback d-block">{{ errors.motivation[0] }}</div>
               <div class="form-text">
                 <i class="fas fa-info-circle me-1"></i>
-                Détaillez comment cette formation/renforcement est pertinent pour votre rôle actuel et vos responsabilités.
+                Détaillez comment ce renforcement des capacités est pertinent pour votre rôle actuel et vos responsabilités.
               </div>
             </div>
 
