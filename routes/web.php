@@ -13,6 +13,51 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DeploymentController;
 use App\Http\Controllers\DocumentTravailController;
 
+// ── Build assets with correct MIME types (Hostinger fix) ─────
+Route::get('/build/assets/{file}', function (string $file) {
+    $path = public_path("build/assets/{$file}");
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $mimeTypes = [
+        'js'  => 'application/javascript',
+        'css' => 'text/css',
+        'json' => 'application/json',
+        'webmanifest' => 'application/manifest+json',
+        'woff2' => 'font/woff2',
+        'woff' => 'font/woff',
+        'ttf' => 'font/ttf',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'svg' => 'image/svg+xml',
+    ];
+    $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
+    return response()->file($path, [
+        'Content-Type' => $mime,
+        'Cache-Control' => 'public, max-age=31536000, immutable',
+    ]);
+})->where('file', '.*');
+
+Route::get('/build/{file}', function (string $file) {
+    $path = public_path("build/{$file}");
+    if (!file_exists($path) || !is_file($path)) {
+        abort(404);
+    }
+    $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $mimeTypes = [
+        'js'  => 'application/javascript',
+        'json' => 'application/json',
+        'webmanifest' => 'application/manifest+json',
+    ];
+    $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
+    $cache = in_array($file, ['sw.js']) ? 'no-cache' : 'public, max-age=31536000, immutable';
+    return response()->file($path, [
+        'Content-Type' => $mime,
+        'Cache-Control' => $cache,
+    ]);
+})->where('file', '[^/]+');
+
 // Named login route — required by Laravel auth middleware for redirect
 Route::get('/login', function () {
     return view('spa');
