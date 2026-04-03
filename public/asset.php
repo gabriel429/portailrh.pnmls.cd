@@ -13,7 +13,7 @@ if ($file === '' || strpos($file, '..') !== false || $file[0] === '/') {
     exit();
 }
 
-$path = __DIR__ . '/build/assets/' . $file;
+$path = dirname(__DIR__) . '/storage/app/build/assets/' . $file;
 
 if (!is_file($path)) {
     http_response_code(404);
