@@ -12,6 +12,21 @@ use App\Models\Institution;
 
 class DeploymentController extends Controller
 {
+    private function frontendBuildLogPath(): string
+    {
+        return storage_path('logs' . DIRECTORY_SEPARATOR . 'frontend-build.log');
+    }
+
+    private function frontendBuildPidPath(): string
+    {
+        return storage_path('app' . DIRECTORY_SEPARATOR . 'frontend-build.pid');
+    }
+
+    private function frontendBuildStatusPath(): string
+    {
+        return storage_path('app' . DIRECTORY_SEPARATOR . 'frontend-build.status');
+    }
+
     private function deployResponse(array $output_messages, array $error_messages, bool $success)
     {
         $message = implode("\n", array_merge($output_messages, $error_messages));
@@ -54,6 +69,43 @@ class DeploymentController extends Controller
         }
 
         return null;
+    }
+
+    public function buildFrontendStatus()
+    {
+        $pidPath = $this->frontendBuildPidPath();
+        $statusPath = $this->frontendBuildStatusPath();
+        $logPath = $this->frontendBuildLogPath();
+
+        $pid = is_file($pidPath) ? trim((string) file_get_contents($pidPath)) : null;
+        $status = is_file($statusPath) ? trim((string) file_get_contents($statusPath)) : 'idle';
+
+        $isRunning = false;
+        if ($pid) {
+            $isRunning = trim((string) shell_exec('kill -0 ' . escapeshellarg($pid) . ' 2>/dev/null; echo $?')) === '0';
+        }
+
+        if ($isRunning) {
+            $status = 'running';
+        } elseif ($status === 'running') {
+            $status = 'unknown';
+        }
+
+        $log = '';
+        if (is_file($logPath)) {
+            $content = (string) file_get_contents($logPath);
+            $lines = preg_split("/\r\n|\n|\r/", trim($content));
+            $log = implode("\n", array_slice(array_filter($lines, fn ($line) => $line !== ''), -40));
+        }
+
+        return response()->json([
+            'status' => $status,
+            'is_running' => $isRunning,
+            'pid' => $pid,
+            'log_path' => $logPath,
+            'log' => $log,
+            'updated_at' => now()->toIso8601String(),
+        ]);
     }
 
     /**
@@ -1082,9 +1134,9 @@ class DeploymentController extends Controller
                 throw new \RuntimeException('Le script de build frontend est introuvable.');
             }
 
-            $logPath = storage_path('logs' . DIRECTORY_SEPARATOR . 'frontend-build.log');
-            $pidPath = storage_path('app' . DIRECTORY_SEPARATOR . 'frontend-build.pid');
-            $statusPath = storage_path('app' . DIRECTORY_SEPARATOR . 'frontend-build.status');
+            $logPath = $this->frontendBuildLogPath();
+            $pidPath = $this->frontendBuildPidPath();
+            $statusPath = $this->frontendBuildStatusPath();
 
             if (is_file($pidPath)) {
                 $existingPid = trim((string) file_get_contents($pidPath));

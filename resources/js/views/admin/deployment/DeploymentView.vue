@@ -29,6 +29,34 @@
       <pre class="result-output">{{ result.output }}</pre>
     </div>
 
+    <div class="section-block">
+      <div class="section-header">
+        <div class="section-icon section-icon-modules">
+          <i class="fas fa-wave-square"></i>
+        </div>
+        <h6 class="section-title">Statut Du Build Frontend</h6>
+      </div>
+      <div class="build-status-card">
+        <div class="build-status-head">
+          <div>
+            <div class="build-status-label">Etat courant</div>
+            <div class="build-status-meta">
+              <span class="build-status-pill" :class="`status-${buildStatus.status}`">{{ buildStatusLabel }}</span>
+              <span v-if="buildStatus.pid" class="build-status-detail">PID: {{ buildStatus.pid }}</span>
+              <span v-if="buildStatus.updated_at" class="build-status-detail">Maj: {{ formatDateTime(buildStatus.updated_at) }}</span>
+            </div>
+          </div>
+          <button class="build-refresh-btn" @click="loadBuildStatus" :disabled="loadingBuildStatus">
+            <span v-if="loadingBuildStatus" class="spinner-border spinner-border-sm me-1"></span>
+            <i v-else class="fas fa-rotate-right me-1"></i>
+            Actualiser
+          </button>
+        </div>
+        <div class="build-status-path">{{ buildStatus.log_path || 'Journal non disponible' }}</div>
+        <pre class="build-status-log">{{ buildStatus.log || 'Aucun log disponible pour le moment.' }}</pre>
+      </div>
+    </div>
+
     <!-- Section: Deploiement -->
     <div class="section-block">
       <div class="section-header">
@@ -143,13 +171,16 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useUiStore } from '@/stores/ui'
 
 const ui = useUiStore()
 const running = ref(null)
 const result = ref(null)
+const buildStatus = ref({ status: 'idle', is_running: false, pid: null, log_path: '', log: '', updated_at: null })
+const loadingBuildStatus = ref(false)
+let buildStatusTimer = null
 
 const deployActions = [
   { key: 'deploy-organes', label: 'Deployer Organes', desc: 'Creer la table organes et seeder SEN/SEP/SEL', icon: 'fa-sitemap', color: '#8b5cf6' },
@@ -170,6 +201,48 @@ const deployActions = [
 
 function getIconBg(color) {
   return color + '15'
+}
+
+const buildStatusLabel = computed(() => {
+  const labels = {
+    idle: 'Inactif',
+    queued: 'En attente',
+    running: 'En cours',
+    success: 'Termine',
+    failed: 'Echec',
+    unknown: 'Inconnu',
+  }
+  return labels[buildStatus.value.status] || buildStatus.value.status
+})
+
+async function loadBuildStatus() {
+  loadingBuildStatus.value = true
+  try {
+    const res = await axios.get('/admin/deployment/build-frontend/status', {
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json',
+      },
+      withCredentials: true,
+    })
+    buildStatus.value = res.data
+  } catch (e) {
+    const msg = e.response?.data?.message || e.message
+    ui.addToast(typeof msg === 'string' ? msg : 'Impossible de lire le statut du build.', 'warning')
+  } finally {
+    loadingBuildStatus.value = false
+  }
+}
+
+function formatDateTime(value) {
+  if (!value) return ''
+  return new Date(value).toLocaleString('fr-FR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 async function runAction(action) {
@@ -200,8 +273,22 @@ async function runAction(action) {
     ui.addToast('Erreur lors de l\'execution', 'danger')
   } finally {
     running.value = null
+    await loadBuildStatus()
   }
 }
+
+onMounted(async () => {
+  await loadBuildStatus()
+  buildStatusTimer = window.setInterval(() => {
+    loadBuildStatus()
+  }, 5000)
+})
+
+onBeforeUnmount(() => {
+  if (buildStatusTimer) {
+    window.clearInterval(buildStatusTimer)
+  }
+})
 </script>
 
 <style scoped>
@@ -262,6 +349,102 @@ async function runAction(action) {
   color: #fff;
   background: rgba(255, 255, 255, .24);
   transform: translateY(-1px);
+}
+
+.build-status-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+}
+
+.build-status-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .75rem;
+}
+
+.build-status-label {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.build-status-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .35rem;
+}
+
+.build-status-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: .35rem .65rem;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.status-idle,
+.status-unknown {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.status-queued {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.status-running {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.status-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.status-failed {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.build-status-detail,
+.build-status-path {
+  color: #64748b;
+  font-size: .88rem;
+}
+
+.build-status-path {
+  margin-bottom: .75rem;
+  word-break: break-all;
+}
+
+.build-status-log {
+  margin: 0;
+  padding: .9rem;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #e2e8f0;
+  max-height: 320px;
+  overflow: auto;
+  font-size: .82rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.build-refresh-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 10px;
+  padding: .6rem .9rem;
+  font-weight: 700;
 }
 
 .page-hero-icon {

@@ -14,6 +14,16 @@ cd "$ROOT_DIR"
 
 mkdir -p "$ROOT_DIR/storage/app"
 
+on_exit() {
+  exit_code=$?
+  if [ "$exit_code" -eq 0 ]; then
+    echo "success" > "$STATUS_FILE"
+  else
+    echo "failed" > "$STATUS_FILE"
+  fi
+  rm -f "$LOCK_FILE"
+}
+
 if [ -f "$LOCK_FILE" ]; then
   EXISTING_PID="$(cat "$LOCK_FILE" 2>/dev/null || true)"
   if [ -n "$EXISTING_PID" ] && kill -0 "$EXISTING_PID" 2>/dev/null; then
@@ -23,7 +33,7 @@ if [ -f "$LOCK_FILE" ]; then
 fi
 
 echo $$ > "$LOCK_FILE"
-trap 'rm -f "$LOCK_FILE"' EXIT
+trap on_exit EXIT
 echo "running" > "$STATUS_FILE"
 
 echo "=== Verification de l environnement Node ==="
@@ -47,4 +57,3 @@ echo "=== Nettoyage final des caches Laravel ==="
 php artisan optimize:clear
 
 echo "=== Build frontend termine ==="
-echo "success" > "$STATUS_FILE"
