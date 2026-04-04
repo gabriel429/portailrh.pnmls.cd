@@ -11,6 +11,10 @@
           <small class="text-white-50">Actions de deploiement et maintenance</small>
         </div>
       </div>
+      <RouterLink :to="{ name: 'admin.agents.import' }" class="hero-action-btn">
+        <i class="fas fa-file-import me-2"></i>
+        Charger fichiers agents
+      </RouterLink>
     </div>
 
     <!-- Result Alert -->
@@ -218,6 +222,28 @@ async function runAction(action) {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.hero-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .25rem;
+  padding: .85rem 1.1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .16);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, .22);
+  backdrop-filter: blur(8px);
+  transition: transform .2s ease, background .2s ease;
+}
+
+.hero-action-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, .24);
+  transform: translateY(-1px);
 }
 
 .page-hero-icon {
