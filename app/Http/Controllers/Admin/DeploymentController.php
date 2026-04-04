@@ -20,13 +20,22 @@ class DeploymentController extends Controller
 
     private function runShellCommand(string $command): array
     {
-        $output = [];
-        $exitCode = 0;
+        $marker = '__PNMLS_EXIT_CODE__';
+        $rawOutput = shell_exec($command . " 2>&1; printf '\n{$marker}:%s' \$?");
 
-        exec($command . ' 2>&1', $output, $exitCode);
+        if ($rawOutput === null) {
+            return [
+                'output' => '',
+                'exit_code' => 1,
+            ];
+        }
+
+        $parts = explode($marker . ':', $rawOutput);
+        $output = $parts[0] ?? '';
+        $exitCode = isset($parts[1]) ? (int) trim($parts[1]) : 1;
 
         return [
-            'output' => trim(implode("\n", $output)),
+            'output' => trim($output),
             'exit_code' => $exitCode,
         ];
     }
