@@ -51,6 +51,12 @@
               </router-link>
             </li>
             <li class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'taches.index' }" title="Mes taches">
+                <i class="fas fa-tasks nav-icon"></i>
+                <span class="nav-link-label">Mes taches</span>
+              </router-link>
+            </li>
+            <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'plan-travail.index' }" title="Plan de travail">
                 <i class="fas fa-calendar-check nav-icon"></i>
                 <span class="nav-link-label">Plan travail</span>
