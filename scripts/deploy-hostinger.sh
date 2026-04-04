@@ -11,6 +11,7 @@ echo "=================================================="
 # Configuration
 DOMAIN="deeppink-rhinoceros-934330.hostingersite.com"
 BUILD_DIR="public/build"
+ROOT_BUILD_DIR="build"
 
 # 1. Vérification pré-déploiement
 echo "🔍 Vérification environnement..."
@@ -32,6 +33,7 @@ npm ci --production=false
 # 3. Nettoyage des anciens builds
 echo "🧹 Nettoyage anciens builds..."
 rm -rf "$BUILD_DIR"
+rm -rf "$ROOT_BUILD_DIR"
 rm -rf "public/manifest.json"
 rm -rf "public/sw.js"
 rm -rf "public/workbox-*.js"
@@ -48,6 +50,11 @@ if [ ! -d "$BUILD_DIR" ]; then
     exit 1
 fi
 
+if [ ! -d "$ROOT_BUILD_DIR" ]; then
+    echo "❌ Erreur: Répertoire build racine non synchronisé"
+    exit 1
+fi
+
 if [ ! -f "$BUILD_DIR/sw.js" ]; then
     echo "❌ Erreur: Service Worker non généré"
     exit 1
@@ -61,6 +68,7 @@ echo "📊 Assets générés:"
 echo "   - JavaScript: $JS_COUNT fichiers"
 echo "   - CSS: $CSS_COUNT fichiers"
 echo "   - Service Worker: ✅"
+echo "   - Mirror Hostinger: ✅"
 
 # 6. Création du fichier .htaccess pour assets
 echo "⚙️  Configuration serveur..."
@@ -123,7 +131,7 @@ echo ""
 echo "🎉 Build PWA terminé avec succès !"
 echo ""
 echo "📋 Instructions pour Hostinger:"
-echo "1. Uploader TOUT le répertoire public/build/ via cPanel File Manager"
+echo "1. Uploader ou déployer les répertoires build/ et public/build/"
 echo "2. Vérifier que les permissions sont 644 pour les fichiers"
 echo "3. Tester sur: https://$DOMAIN"
 echo ""

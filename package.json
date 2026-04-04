@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build:vite": "vite build",
+    "build:sync": "node scripts/sync-vite-build.mjs",
+    "build": "npm run build:vite && npm run build:sync",
     "preview": "vite preview",
     "pwa:install": "npm run build",
     "serve": "php -S localhost:8000 -t public"

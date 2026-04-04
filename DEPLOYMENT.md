@@ -169,6 +169,7 @@ Si SSH indisponible, utiliser FTP/SFTP avec FileZilla :
 
 - [ ] `npm run build` exécuté en local
 - [ ] Fichiers dans `public/build/` committés
+- [ ] Fichiers dans `build/` committés (mirror Hostinger)
 - [ ] Manifest PWA valide
 
 ### Base de Données
@@ -190,6 +191,8 @@ git log --oneline -5
 ### Vérifier Assets
 
 ```bash
+ls -lah build/
+ls -lah build/assets/ | head -20
 ls -lah public/build/
 ls -lah public/build/assets/ | head -20
 cat public/build/manifest.json | head
@@ -218,7 +221,7 @@ tail -50 ~/logs/deeppink-rhinoceros-934330.hostingersite.com_error.log
 
 **Symptôme** : `app-*.js`, `app-*.css` retournent 404 ou HTML au lieu du fichier
 
-**Cause 1** : Fichiers build au mauvais endroit (à la racine au lieu de `public/build/`)
+**Cause 1** : Fichiers build absents d'un des deux emplacements attendus (`build/` et `public/build/`)
 
 **Solution** :
 
@@ -226,16 +229,20 @@ tail -50 ~/logs/deeppink-rhinoceros-934330.hostingersite.com_error.log
 cd ~/domains/deeppink-rhinoceros-934330.hostingersite.com/public_html
 
 # Vérifier la structure
-ls -la | grep build
+ls -lah build
+ls -lah public/build
 
-# Si `build/` existe à la racine (MAUVAIS), le déplacer
-if [ -d build ] && [ -d public ]; then
-    mv build public/build
-fi
+# Si public/build est correct, recopier vers build pour Hostinger
+rm -rf build
+mkdir -p build
+cp -a public/build/. build/
 
-# Vérifier que les fichiers sont maintenant dans le bon dossier
-ls -la public/build/assets/ | head -5
+# Vérifier les fichiers critiques dans les deux emplacements
+ls -lah build/assets/ | head -5
+ls -lah public/build/assets/ | head -5
 ```
+
+**Prévention** : `npm run build` synchronise désormais automatiquement `public/build` vers `build` avant commit.
 
 **Cause 2** : Problème de cache PWA/navigateur
 
