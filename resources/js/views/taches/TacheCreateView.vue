@@ -103,6 +103,33 @@
                         placeholder="Details et instructions pour l'agent..."></textarea>
             </div>
 
+            <div class="col-12">
+              <label for="documents" class="form-label fw-bold">Documents joints</label>
+              <input
+                id="documents"
+                ref="documentsInput"
+                type="file"
+                class="form-control"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                @change="handleDocumentsChange"
+              >
+              <small class="text-muted d-block mt-1">
+                Vous pouvez joindre un ou plusieurs documents au moment de l'assignation.
+              </small>
+              <div v-if="selectedDocuments.length" class="task-file-list mt-2">
+                <div v-for="(file, index) in selectedDocuments" :key="file.name + index" class="task-file-item">
+                  <div>
+                    <strong>{{ file.name }}</strong>
+                    <small class="d-block text-muted">{{ formatFileSize(file.size) }}</small>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-danger" @click="removeDocument(index)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Boutons -->
             <div class="col-12 mt-3">
               <button type="submit" class="btn btn-primary" :disabled="submitting">
@@ -134,6 +161,8 @@ const errors = ref([])
 const agents = ref([])
 const activitesPta = ref([])
 const sourceEmetteurs = ref([])
+const selectedDocuments = ref([])
+const documentsInput = ref(null)
 const form = ref({
   agent_id: '',
   titre: '',
@@ -168,12 +197,21 @@ async function handleSubmit() {
   errors.value = []
   submitting.value = true
   try {
-    const payload = { ...form.value }
-    if (payload.source_type !== 'pta') {
-      payload.activite_plan_id = null
-    }
-    if (!payload.date_tache) delete payload.date_tache
-    if (!payload.date_echeance) delete payload.date_echeance
+    const payload = new FormData()
+    Object.entries(form.value).forEach(([key, value]) => {
+      if (key === 'activite_plan_id' && form.value.source_type !== 'pta') {
+        return
+      }
+
+      if (value !== null && value !== undefined && value !== '') {
+        payload.append(key, value)
+      }
+    })
+
+    selectedDocuments.value.forEach((file) => {
+      payload.append('documents[]', file)
+    })
+
     await create(payload)
     ui.addToast('Tache creee avec succes.', 'success')
     router.push({ name: 'taches.index' })
@@ -187,6 +225,26 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+function handleDocumentsChange(event) {
+  const files = Array.from(event.target.files || [])
+  selectedDocuments.value = files
+}
+
+function removeDocument(index) {
+  selectedDocuments.value.splice(index, 1)
+  if (documentsInput.value) {
+    const dataTransfer = new DataTransfer()
+    selectedDocuments.value.forEach((file) => dataTransfer.items.add(file))
+    documentsInput.value.files = dataTransfer.files
+  }
+}
+
+function formatFileSize(size) {
+  if (!size) return '0 Ko'
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} Mo`
+  return `${Math.round(size / 1024)} Ko`
 }
 
 
@@ -205,4 +263,20 @@ onMounted(() => loadAgents())
     .form-label { font-size: .82rem; }
     .btn { font-size: .85rem; }
 }
+
+  .task-file-list {
+    display: grid;
+    gap: .65rem;
+  }
+
+  .task-file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+    padding: .75rem .9rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+  }
 </style>

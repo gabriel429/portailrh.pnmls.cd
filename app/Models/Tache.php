@@ -22,11 +22,13 @@ class Tache extends Model
         'activite_plan_id',
         'priorite',
         'statut',
+        'pourcentage',
         'date_echeance',
         'date_tache',
     ];
 
     protected $casts = [
+        'pourcentage' => 'integer',
         'date_echeance' => 'date',
         'date_tache' => 'date',
     ];
@@ -49,6 +51,11 @@ class Tache extends Model
     public function commentaires(): HasMany
     {
         return $this->hasMany(TacheCommentaire::class);
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(TacheDocument::class)->latest();
     }
 
     public function scopeNouvelle($query)

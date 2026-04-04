@@ -4,11 +4,17 @@
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>Mes Taches</h1>
-            <p class="rh-sub">Espace des taches qui vous sont attribuees par votre direction, le SEN, le SEP ou le SEL.</p>
+            <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ pageTitle }}</h1>
+            <p class="rh-sub">{{ pageSubtitle }}</p>
           </div>
           <div v-if="isDirecteur" class="col-lg-4">
             <div class="hero-tools">
+              <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
+                <i class="fas fa-clipboard-list me-1"></i> Taches assignees par moi
+              </router-link>
+              <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
+                <i class="fas fa-arrow-left me-1"></i> Retour a mes taches
+              </router-link>
               <router-link :to="{ name: 'taches.create' }" class="btn-rh main">
                 <i class="fas fa-plus-circle me-1"></i> Nouvelle tache
               </router-link>
@@ -22,12 +28,25 @@
       </div>
 
       <template v-else>
-        <!-- Taches assignees a moi -->
         <div class="dash-panel mt-3">
           <header class="panel-head">
             <div>
-              <h3 class="panel-title"><i class="fas fa-clipboard-check me-2 text-primary"></i>Taches qui me sont assignees</h3>
-              <p class="panel-sub">Taches attribuees par votre directeur.</p>
+              <h3 class="panel-title">
+                <i :class="showAssignedByMe ? 'fas fa-clipboard-list me-2 text-success' : 'fas fa-clipboard-check me-2 text-primary'"></i>
+                {{ panelTitle }}
+              </h3>
+              <p class="panel-sub">{{ panelSubtitle }}</p>
+            </div>
+            <div class="task-filters">
+              <label for="source-filter" class="task-filter-label">Source</label>
+              <select id="source-filter" v-model="sourceFilter" class="form-select form-select-sm task-filter-select">
+                <option value="all">Toutes</option>
+                <option value="direction">Direction</option>
+                <option value="sen">SEN</option>
+                <option value="sep">SEP</option>
+                <option value="sel">SEL</option>
+                <option value="autre">Autre</option>
+              </select>
             </div>
           </header>
           <div class="table-responsive">
@@ -36,7 +55,7 @@
                 <tr>
                   <th>Titre</th>
                   <th>Origine</th>
-                  <th>De</th>
+                  <th>{{ showAssignedByMe ? 'Assigne a' : 'De' }}</th>
                   <th>Priorite</th>
                   <th>Statut</th>
                   <th>Echeance</th>
@@ -45,16 +64,17 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="t in mesTaches" :key="t.id">
+                <tr v-for="t in filteredTaches" :key="t.id">
                   <td>
                     <strong>{{ t.titre }}</strong>
                     <br v-if="t.description"><small v-if="t.description" class="text-muted">{{ truncate(t.description, 60) }}</small>
                   </td>
                   <td>
                     <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
+                    <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
                     <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
-                  <td>{{ t.createur?.nom_complet ?? '-' }}</td>
+                  <td>{{ showAssignedByMe ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
                   <td><span :class="statutBadge(t.statut)">{{ statutLabel(t.statut) }}</span></td>
                   <td>
@@ -71,10 +91,10 @@
                     </router-link>
                   </td>
                 </tr>
-                <tr v-if="!mesTaches.length">
+                <tr v-if="!filteredTaches.length">
                   <td colspan="8" class="text-center text-muted py-4">
                     <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                    Aucune tache assignee.
+                    {{ emptyStateText }}
                   </td>
                 </tr>
               </tbody>
@@ -88,20 +108,42 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { list } from '@/api/taches'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
+const route = useRoute()
 const ui = useUiStore()
 const loading = ref(true)
 const mesTaches = ref([])
+const tachesCreees = ref([])
 const isDirecteur = ref(false)
+const sourceFilter = ref('all')
+
+const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
+
+const pageTitle = computed(() => showAssignedByMe.value ? 'Taches assignees par moi' : 'Mes Taches')
+const pageSubtitle = computed(() => showAssignedByMe.value
+  ? 'Suivi des taches que vous attribuez aux agents de votre structure.'
+  : 'Espace des taches qui vous sont attribuees par votre direction, le SEN, le SEP ou le SEL.')
+const panelTitle = computed(() => showAssignedByMe.value ? 'Taches que j\'ai assignees' : 'Taches qui me sont assignees')
+const panelSubtitle = computed(() => showAssignedByMe.value
+  ? 'Liste des taches que vous avez affectees aux agents.'
+  : 'Taches attribuees par votre direction, le SEN, le SEP ou le SEL.')
+const emptyStateText = computed(() => showAssignedByMe.value ? 'Aucune tache assignee par vous pour ce filtre.' : 'Aucune tache assignee pour ce filtre.')
+
+const filteredTaches = computed(() => {
+  const items = showAssignedByMe.value ? tachesCreees.value : mesTaches.value
+  return items.filter((tache) => matchesSourceFilter(tache.source_emetteur))
+})
 
 async function loadTaches() {
   try {
     const { data } = await list()
     mesTaches.value = data.mesTaches
+    tachesCreees.value = data.tachesCreees
     isDirecteur.value = data.isDirecteur
   } catch {
     ui.addToast('Erreur lors du chargement des taches.', 'danger')
@@ -139,6 +181,26 @@ function sourceTypeLabel(sourceType) {
   return sourceType === 'pta' ? 'PTA' : 'Hors PTA'
 }
 
+function sourceEmetteurLabel(source) {
+  const map = {
+    directeur: 'Direction',
+    assistant_departement: 'Direction',
+    sen: 'SEN',
+    sep: 'SEP',
+    sel: 'SEL',
+    autre: 'Autre',
+  }
+  return map[source] || source
+}
+
+function matchesSourceFilter(source) {
+  if (sourceFilter.value === 'all') return true
+  if (sourceFilter.value === 'direction') {
+    return ['directeur', 'assistant_departement'].includes(source)
+  }
+  return source === sourceFilter.value
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -164,6 +226,8 @@ onMounted(() => loadTaches())
   .hero-tools {
     justify-content: center;
     display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
   }
   .rh-title {
     font-size: 1.3rem;
@@ -178,6 +242,10 @@ onMounted(() => loadTaches())
   }
   .panel-sub {
     font-size: 0.8rem;
+  }
+  .task-filters {
+    width: 100%;
+    justify-content: center;
   }
 
   /* Table compact */
@@ -210,5 +278,21 @@ onMounted(() => loadTaches())
   .dash-panel {
     margin-top: 0.75rem !important;
   }
+}
+
+.task-filters {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+}
+
+.task-filter-label {
+  font-size: .82rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.task-filter-select {
+  min-width: 150px;
 }
 </style>

@@ -78,6 +78,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('taches', TacheController::class)->except(['edit', 'update', 'destroy']);
     Route::put('taches/{tache}/statut', [TacheController::class, 'updateStatut']);
     Route::post('taches/{tache}/commentaire', [TacheController::class, 'addCommentaire']);
+    Route::get('taches/{tache}/documents/{document}/download', [TacheController::class, 'downloadDocument']);
 
     // Plan de Travail
     Route::get('plan-travail/create', [PlanTravailController::class, 'create']);

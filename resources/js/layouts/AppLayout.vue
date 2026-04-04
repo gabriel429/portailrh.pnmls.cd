@@ -54,7 +54,10 @@
               <router-link class="nav-link" active-class="active" :to="{ name: 'taches.index' }" title="Mes taches">
                 <i class="fas fa-tasks nav-icon"></i>
                 <span class="nav-link-label">Mes taches</span>
-                <span v-if="taskPendingCount > 0" class="nav-badge">{{ taskBadgeLabel }}</span>
+                <span v-if="taskNewCount > 0 || taskInProgressCount > 0" class="nav-badge-stack">
+                  <span v-if="taskNewCount > 0" class="nav-badge nav-badge-new">{{ taskNewBadgeLabel }}</span>
+                  <span v-if="taskInProgressCount > 0" class="nav-badge nav-badge-progress">{{ taskInProgressBadgeLabel }}</span>
+                </span>
               </router-link>
             </li>
             <li class="nav-item">
@@ -251,7 +254,8 @@ const router = useRouter()
 const route = useRoute()
 const isMobileNavOpen = ref(false)
 const profilePhotoIndex = ref(0)
-const taskPendingCount = ref(0)
+const taskNewCount = ref(0)
+const taskInProgressCount = ref(0)
 
 function closeMobileNav() {
   isMobileNavOpen.value = false
@@ -281,8 +285,12 @@ watch(() => route.fullPath, () => {
   })
 })
 
-const taskBadgeLabel = computed(() => {
-  return taskPendingCount.value > 99 ? '99+' : String(taskPendingCount.value)
+const taskNewBadgeLabel = computed(() => {
+  return taskNewCount.value > 99 ? '99+' : String(taskNewCount.value)
+})
+
+const taskInProgressBadgeLabel = computed(() => {
+  return taskInProgressCount.value > 99 ? '99+' : String(taskInProgressCount.value)
 })
 
 const initials = computed(() => {
@@ -339,9 +347,11 @@ function handleProfilePhotoError() {
 async function loadTaskSummary() {
   try {
     const { data } = await getTaskSummary()
-    taskPendingCount.value = Number(data.pendingAssignedCount ?? data.pending_assigned_count ?? 0)
+    taskNewCount.value = Number(data.newAssignedCount ?? data.new_assigned_count ?? 0)
+    taskInProgressCount.value = Number(data.inProgressAssignedCount ?? data.in_progress_assigned_count ?? 0)
   } catch {
-    taskPendingCount.value = 0
+    taskNewCount.value = 0
+    taskInProgressCount.value = 0
   }
 }
 
@@ -381,7 +391,8 @@ watch(() => auth.user?.id, (userId) => {
     return
   }
 
-  taskPendingCount.value = 0
+  taskNewCount.value = 0
+  taskInProgressCount.value = 0
 }, { immediate: true })
 </script>
 

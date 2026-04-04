@@ -6,9 +6,11 @@ use App\Http\Resources\TacheResource;
 use App\Models\ActivitePlan;
 use App\Models\Tache;
 use App\Models\TacheCommentaire;
+use App\Models\TacheDocument;
 use App\Models\Agent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class TacheController extends ApiController
 {
@@ -33,19 +35,24 @@ class TacheController extends ApiController
 
         if ($request->boolean('summary')) {
             $assignedCount = (clone $mesTachesQuery)->count();
-            $pendingAssignedCount = (clone $mesTachesQuery)
-                ->where('statut', '!=', 'terminee')
+            $newAssignedCount = (clone $mesTachesQuery)
+                ->where('statut', 'nouvelle')
+                ->count();
+            $inProgressAssignedCount = (clone $mesTachesQuery)
+                ->where('statut', 'en_cours')
                 ->count();
             $createdCount = (clone $tachesCreeesQuery)->count();
 
             return $this->success([
                 'assigned_count' => $assignedCount,
-                'pending_assigned_count' => $pendingAssignedCount,
+                'new_assigned_count' => $newAssignedCount,
+                'in_progress_assigned_count' => $inProgressAssignedCount,
                 'created_count' => $createdCount,
                 'is_directeur' => $isDirecteur,
             ], [], [
                 'assignedCount' => $assignedCount,
-                'pendingAssignedCount' => $pendingAssignedCount,
+                'newAssignedCount' => $newAssignedCount,
+                'inProgressAssignedCount' => $inProgressAssignedCount,
                 'createdCount' => $createdCount,
                 'isDirecteur' => $isDirecteur,
             ]);
@@ -55,6 +62,7 @@ class TacheController extends ApiController
             ? (clone $mesTachesQuery)
                 ->with('createur')
                 ->with('activitePlan')
+                ->with('documents.agent')
                 ->latest()
                 ->get()
             : collect();
@@ -62,7 +70,7 @@ class TacheController extends ApiController
         $tachesCreees = collect();
         if ($isDirecteur && $agent) {
             $tachesCreees = (clone $tachesCreeesQuery)
-                ->with(['agent', 'activitePlan'])
+                ->with(['agent', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get();
         }
@@ -132,8 +140,9 @@ class TacheController extends ApiController
             'activites_pta' => $activitesPta,
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
-                ['value' => 'assistant_departement', 'label' => 'Assistant du departement'],
-                ['value' => 'sen', 'label' => 'SEN / Coordination'],
+                ['value' => 'sen', 'label' => 'SEN'],
+                ['value' => 'sep', 'label' => 'SEP'],
+                ['value' => 'sel', 'label' => 'SEL'],
                 ['value' => 'autre', 'label' => 'Autre'],
             ],
         ]);
@@ -154,11 +163,13 @@ class TacheController extends ApiController
             'titre'         => 'required|string|max:255',
             'description'   => 'nullable|string',
             'source_type'   => 'required|in:pta,hors_pta',
-            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,autre',
+            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,sep,sel,autre',
             'activite_plan_id' => 'nullable|required_if:source_type,pta|exists:activite_plans,id',
             'priorite'      => 'required|in:normale,haute,urgente',
             'date_echeance' => 'nullable|date',
             'date_tache'    => 'nullable|date',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
         ]);
 
         $agent = $user->agent;
@@ -172,13 +183,18 @@ class TacheController extends ApiController
 
         $validated['createur_id'] = $agent->id;
         $validated['statut'] = 'nouvelle';
+        $validated['pourcentage'] = 0;
         if ($validated['source_type'] !== 'pta') {
             $validated['activite_plan_id'] = null;
         }
 
         $tache = Tache::create($validated);
 
-        $resource = TacheResource::make($tache->load(['createur', 'agent', 'activitePlan']));
+        foreach ($request->file('documents', []) as $uploadedFile) {
+            $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
+        }
+
+        $resource = TacheResource::make($tache->load(['createur', 'agent', 'activitePlan', 'documents.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Tache creee avec succes.',
@@ -197,7 +213,7 @@ class TacheController extends ApiController
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent']);
+        $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
 
         return $this->resource(TacheResource::make($tache), [
             'isCreateur' => $tache->createur_id === $agent->id,
@@ -223,11 +239,30 @@ class TacheController extends ApiController
         $validated = $request->validate([
             'statut'  => 'required|in:en_cours,terminee',
             'contenu' => 'required|string|max:1000',
+            'pourcentage' => 'required|integer|min:0|max:100',
+            'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
         ]);
+
+        $pourcentageChanged = (int) $validated['pourcentage'] !== (int) $tache->pourcentage;
+        $hasDocument = $request->hasFile('document');
+
+        if ($validated['statut'] === 'terminee' && !$hasDocument) {
+            return response()->json([
+                'message' => 'Le document final est obligatoire pour terminer la tache.',
+                'errors' => ['document' => ['Le document final est obligatoire pour terminer la tache.']],
+            ], 422);
+        }
+
+        if ($pourcentageChanged && !$hasDocument) {
+            return response()->json([
+                'message' => 'Un document justificatif est obligatoire lorsque vous modifiez la progression.',
+                'errors' => ['document' => ['Ajoutez un document justificatif pour modifier la progression.']],
+            ], 422);
+        }
 
         $ancienStatut = $tache->statut;
 
-        TacheCommentaire::create([
+        $commentaire = TacheCommentaire::create([
             'tache_id'       => $tache->id,
             'agent_id'       => $agent->id,
             'contenu'        => $validated['contenu'],
@@ -235,9 +270,26 @@ class TacheController extends ApiController
             'nouveau_statut' => $validated['statut'],
         ]);
 
-        $tache->update(['statut' => $validated['statut']]);
+        $nouveauPourcentage = $validated['statut'] === 'terminee'
+            ? 100
+            : $validated['pourcentage'];
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent']));
+        $tache->update([
+            'statut' => $validated['statut'],
+            'pourcentage' => $nouveauPourcentage,
+        ]);
+
+        if ($hasDocument) {
+            $this->storeDocumentForTache(
+                $tache,
+                $agent,
+                $request->file('document'),
+                $validated['statut'] === 'terminee' ? 'final' : 'progression',
+                $commentaire
+            );
+        }
+
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour avec succes.',
@@ -266,10 +318,55 @@ class TacheController extends ApiController
             'contenu'  => $validated['contenu'],
         ]);
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Commentaire ajoute.',
+        ]);
+    }
+
+    public function downloadDocument(Request $request, Tache $tache, TacheDocument $document)
+    {
+        $user = $request->user();
+        $agent = $user->agent;
+
+        if (!$agent || ($tache->createur_id !== $agent->id && $tache->agent_id !== $agent->id)) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        if ($document->tache_id !== $tache->id) {
+            return response()->json(['message' => 'Document introuvable pour cette tache.'], 404);
+        }
+
+        $filePath = public_path($document->fichier);
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'Fichier introuvable.'], 404);
+        }
+
+        return response()->download($filePath, $document->nom_original);
+    }
+
+    protected function storeDocumentForTache(Tache $tache, Agent $agent, $uploadedFile, string $typeDocument, ?TacheCommentaire $commentaire = null): TacheDocument
+    {
+        $extension = $uploadedFile->getClientOriginalExtension();
+        $filename = Str::uuid() . ($extension ? '.' . $extension : '');
+        $directory = public_path('uploads/taches');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $uploadedFile->move($directory, $filename);
+
+        return TacheDocument::create([
+            'tache_id' => $tache->id,
+            'agent_id' => $agent->id,
+            'tache_commentaire_id' => $commentaire?->id,
+            'type_document' => $typeDocument,
+            'titre' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
+            'fichier' => 'uploads/taches/' . $filename,
+            'nom_original' => $uploadedFile->getClientOriginalName(),
+            'mime_type' => $uploadedFile->getMimeType(),
+            'taille' => $uploadedFile->getSize(),
         ]);
     }
 }

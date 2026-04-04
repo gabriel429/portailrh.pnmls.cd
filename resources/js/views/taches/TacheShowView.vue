@@ -72,11 +72,54 @@
                       <span v-if="isOverdue" class="badge bg-danger ms-1">En retard</span>
                     </dd>
                   </template>
+
+                  <dt class="col-sm-4 text-muted">Progression</dt>
+                  <dd class="col-sm-8">
+                    <div class="task-progress-wrap">
+                      <div class="progress task-progress-bar">
+                        <div class="progress-bar" :class="tache.pourcentage >= 100 ? 'bg-success' : 'bg-primary'" :style="{ width: `${tache.pourcentage || 0}%` }"></div>
+                      </div>
+                      <strong>{{ tache.pourcentage || 0 }}%</strong>
+                    </div>
+                  </dd>
                 </dl>
 
                 <template v-if="tache.description">
                   <hr>
                   <div style="white-space: pre-wrap;">{{ tache.description }}</div>
+                </template>
+
+                <template v-if="documentsByType.initial.length || documentsByType.progression.length || documentsByType.final.length">
+                  <hr>
+                  <div class="task-doc-sections">
+                    <div v-if="documentsByType.initial.length">
+                      <h6 class="fw-bold mb-2">Documents d'assignation</h6>
+                      <div class="task-doc-list">
+                        <button v-for="doc in documentsByType.initial" :key="doc.id" type="button" class="task-doc-item" @click="downloadDocument(doc)">
+                          <i class="fas fa-paperclip"></i>
+                          <span>{{ doc.nom_original }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div v-if="documentsByType.progression.length" class="mt-3">
+                      <h6 class="fw-bold mb-2">Documents de progression</h6>
+                      <div class="task-doc-list">
+                        <button v-for="doc in documentsByType.progression" :key="doc.id" type="button" class="task-doc-item" @click="downloadDocument(doc)">
+                          <i class="fas fa-file-upload"></i>
+                          <span>{{ doc.nom_original }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <div v-if="documentsByType.final.length" class="mt-3">
+                      <h6 class="fw-bold mb-2">Documents finaux</h6>
+                      <div class="task-doc-list">
+                        <button v-for="doc in documentsByType.final" :key="doc.id" type="button" class="task-doc-item" @click="downloadDocument(doc)">
+                          <i class="fas fa-file-check"></i>
+                          <span>{{ doc.nom_original }}</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </template>
               </div>
             </div>
@@ -98,10 +141,30 @@
                         <option value="terminee">Terminee</option>
                       </select>
                     </div>
+                    <div class="col-md-4">
+                      <label for="pourcentage" class="form-label fw-bold">Progression (%) <span class="text-danger">*</span></label>
+                      <input v-model.number="statutForm.pourcentage" type="number" min="0" max="100" class="form-control" id="pourcentage" required>
+                    </div>
+                    <div class="col-md-4">
+                      <label for="document_statut" class="form-label fw-bold">Document justificatif</label>
+                      <input id="document_statut" ref="statusDocumentInput" type="file" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" @change="handleStatusDocumentChange">
+                    </div>
                     <div class="col-12">
                       <label for="contenu_statut" class="form-label fw-bold">Commentaire <span class="text-danger">*</span></label>
                       <textarea v-model="statutForm.contenu" class="form-control" id="contenu_statut" rows="3" required
                                 placeholder="Decrivez l'avancement ou le resultat..."></textarea>
+                    </div>
+                    <div class="col-12">
+                      <div class="alert alert-info py-2 mb-0 small">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Le document est obligatoire si vous passez la tache a Terminee ou si vous modifiez le pourcentage de progression.
+                      </div>
+                      <div v-if="statusDocumentName" class="task-inline-file mt-2">
+                        <span><i class="fas fa-file me-1"></i>{{ statusDocumentName }}</span>
+                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeStatusDocument">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
                     </div>
                     <div class="col-12">
                       <button type="submit" class="btn btn-warning" :disabled="updatingStatut">
@@ -163,6 +226,12 @@
                       <i class="fas fa-user me-1"></i>{{ comm.agent?.nom_complet }}
                       &bull; {{ formatDateTime(comm.created_at) }}
                     </small>
+                    <div v-if="comm.documents?.length" class="task-doc-list mt-2">
+                      <button v-for="doc in comm.documents" :key="doc.id" type="button" class="task-doc-item task-doc-item-sm" @click="downloadDocument(doc)">
+                        <i class="fas fa-paperclip"></i>
+                        <span>{{ doc.nom_original }}</span>
+                      </button>
+                    </div>
                   </div>
                 </template>
                 <div v-else class="text-center py-3 text-muted">
@@ -196,8 +265,10 @@ const isAssigne = ref(false)
 
 const updatingStatut = ref(false)
 const addingComment = ref(false)
+const statusDocument = ref(null)
+const statusDocumentInput = ref(null)
 
-const statutForm = ref({ statut: 'en_cours', contenu: '' })
+const statutForm = ref({ statut: 'en_cours', pourcentage: 0, contenu: '' })
 const commentForm = ref({ contenu: '' })
 
 const commentaires = computed(() => {
@@ -210,12 +281,28 @@ const isOverdue = computed(() => {
   return new Date(tache.value.date_echeance) < new Date()
 })
 
+const documentsByType = computed(() => {
+  const documents = tache.value?.documents || []
+  return {
+    initial: documents.filter((doc) => doc.type_document === 'initial'),
+    progression: documents.filter((doc) => doc.type_document === 'progression'),
+    final: documents.filter((doc) => doc.type_document === 'final'),
+  }
+})
+
+const statusDocumentName = computed(() => statusDocument.value?.name || '')
+
 async function loadTache() {
   try {
     const { data } = await get(route.params.id)
     tache.value = data.data
     isCreateur.value = data.isCreateur
     isAssigne.value = data.isAssigne
+    statutForm.value = {
+      statut: data.data.statut === 'nouvelle' ? 'en_cours' : data.data.statut,
+      pourcentage: data.data.pourcentage ?? 0,
+      contenu: '',
+    }
   } catch {
     ui.addToast('Tache introuvable.', 'danger')
     router.push({ name: 'taches.index' })
@@ -227,9 +314,22 @@ async function loadTache() {
 async function handleUpdateStatut() {
   updatingStatut.value = true
   try {
-    const { data } = await updateStatut(route.params.id, statutForm.value)
+    const payload = new FormData()
+    payload.append('statut', statutForm.value.statut)
+    payload.append('pourcentage', String(statutForm.value.pourcentage ?? 0))
+    payload.append('contenu', statutForm.value.contenu)
+    if (statusDocument.value) {
+      payload.append('document', statusDocument.value)
+    }
+
+    const { data } = await updateStatut(route.params.id, payload)
     tache.value = data.data
-    statutForm.value = { statut: 'en_cours', contenu: '' }
+    statutForm.value = {
+      statut: data.data.statut === 'nouvelle' ? 'en_cours' : data.data.statut,
+      pourcentage: data.data.pourcentage ?? 0,
+      contenu: '',
+    }
+    removeStatusDocument()
     ui.addToast('Statut mis a jour avec succes.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la mise a jour.', 'danger')
@@ -250,6 +350,22 @@ async function handleAddComment() {
   } finally {
     addingComment.value = false
   }
+}
+
+function handleStatusDocumentChange(event) {
+  statusDocument.value = event.target.files?.[0] || null
+}
+
+function removeStatusDocument() {
+  statusDocument.value = null
+  if (statusDocumentInput.value) {
+    statusDocumentInput.value.value = ''
+  }
+}
+
+function downloadDocument(document) {
+  if (!document?.download_url) return
+  window.open(document.download_url, '_blank')
 }
 
 function capitalize(str) {
@@ -287,8 +403,10 @@ function formatDateTime(dateStr) {
 function sourceEmetteurLabel(source) {
   const map = {
     directeur: 'Directeur',
-    assistant_departement: 'Assistant du departement',
-    sen: 'SEN / Coordination',
+    assistant_departement: 'Direction',
+    sen: 'SEN',
+    sep: 'SEP',
+    sel: 'SEL',
     autre: 'Autre',
   }
   return map[source] || source
@@ -298,6 +416,53 @@ onMounted(() => loadTache())
 </script>
 
 <style scoped>
+.task-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+
+.task-progress-bar {
+  flex: 1;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.task-doc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+}
+
+.task-doc-item {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border-radius: 999px;
+  padding: .45rem .8rem;
+  font-size: .82rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+}
+
+.task-doc-item-sm {
+  padding: .35rem .7rem;
+  font-size: .76rem;
+}
+
+.task-inline-file {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .7rem .85rem;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
 @media (max-width: 767.98px) {
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }
@@ -305,5 +470,6 @@ onMounted(() => loadTache())
     dl.row dt { font-size: .8rem; }
     dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
     .badge { font-size: .7rem; }
+  .task-progress-wrap { align-items: flex-start; flex-direction: column; }
 }
 </style>

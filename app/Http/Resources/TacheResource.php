@@ -22,6 +22,7 @@ class TacheResource extends JsonResource
             'source_emetteur' => $this->source_emetteur,
             'priorite' => $this->priorite,
             'statut' => $this->statut,
+            'pourcentage' => (int) ($this->pourcentage ?? 0),
             'date_echeance' => optional($this->date_echeance)?->toDateString(),
             'date_tache' => optional($this->date_tache)?->toDateString(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
@@ -56,8 +57,14 @@ class TacheResource extends JsonResource
                         'agent' => $commentaire->relationLoaded('agent') && $commentaire->agent
                             ? AgentResource::make($commentaire->agent)->resolve($request)
                             : null,
+                        'documents' => $commentaire->relationLoaded('documents')
+                            ? TacheDocumentResource::collection($commentaire->documents)->resolve($request)
+                            : [],
                     ];
                 })->values()->all();
+            }),
+            'documents' => $this->whenLoaded('documents', function () use ($request) {
+                return TacheDocumentResource::collection($this->documents)->resolve($request);
             }),
         ];
     }

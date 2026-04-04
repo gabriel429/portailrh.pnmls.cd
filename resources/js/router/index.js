@@ -130,6 +130,12 @@ const routes = [
         meta: { auth: true },
     },
     {
+        path: '/taches/assignees-par-moi',
+        name: 'taches.assigned-by-me',
+        component: () => import('@/views/taches/TacheListView.vue'),
+        meta: { auth: true },
+    },
+    {
         path: '/taches/create',
         name: 'taches.create',
         component: () => import('@/views/taches/TacheCreateView.vue'),
