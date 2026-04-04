@@ -42,15 +42,15 @@ class DeploymentController extends Controller
 
     private function resolveExecutable(string $command, array $fallbacks = []): ?string
     {
-        $resolved = trim((string) shell_exec("command -v {$command} 2>/dev/null"));
-        if ($resolved !== '') {
-            return $resolved;
-        }
-
         foreach ($fallbacks as $candidate) {
             if (is_file($candidate) && is_executable($candidate)) {
                 return $candidate;
             }
+        }
+
+        $resolved = trim((string) shell_exec("command -v {$command} 2>/dev/null"));
+        if ($resolved !== '') {
+            return $resolved;
         }
 
         return null;
@@ -1078,16 +1078,16 @@ class DeploymentController extends Controller
             $root = base_path();
 
             $nodePath = $this->resolveExecutable('node', [
-                '/opt/alt/alt-nodejs24/root/usr/bin/node',
                 '/opt/alt/alt-nodejs22/root/usr/bin/node',
                 '/opt/alt/alt-nodejs20/root/usr/bin/node',
                 '/opt/alt/alt-nodejs18/root/usr/bin/node',
+                '/opt/alt/alt-nodejs24/root/usr/bin/node',
             ]);
             $npmPath = $this->resolveExecutable('npm', [
-                '/opt/alt/alt-nodejs24/root/usr/bin/npm',
                 '/opt/alt/alt-nodejs22/root/usr/bin/npm',
                 '/opt/alt/alt-nodejs20/root/usr/bin/npm',
                 '/opt/alt/alt-nodejs18/root/usr/bin/npm',
+                '/opt/alt/alt-nodejs24/root/usr/bin/npm',
             ]);
 
             if ($npmPath === null || $nodePath === null) {
