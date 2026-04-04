@@ -79,6 +79,7 @@ Route::get('/documents-travail/{documentTravail}/download', [DocumentTravailCont
 // ── Deployment actions (SuperAdmin only) ─────────────────────
 Route::middleware(['auth', 'super.admin'])->prefix('admin/deployment')->name('admin.deployment.')->group(function () {
     Route::post('/git-pull', [DeploymentController::class, 'gitPull'])->name('git-pull');
+    Route::post('/build-frontend', [DeploymentController::class, 'buildFrontend'])->name('build-frontend');
     Route::post('/migrate', [DeploymentController::class, 'migrate'])->name('migrate');
     Route::post('/migrate-fresh', [DeploymentController::class, 'migrateFresh'])->name('migrate-fresh');
     Route::post('/deploy-organes', [DeploymentController::class, 'deployOrganes'])->name('deploy-organes');

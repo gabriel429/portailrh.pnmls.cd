@@ -74,6 +74,24 @@
           </div>
         </div>
 
+        <!-- Frontend Build -->
+        <div class="col-md-6 col-lg-4">
+          <div class="deploy-card">
+            <div class="deploy-card-icon" style="background: #fff7ed; color: #ea580c;">
+              <i class="fas fa-hammer"></i>
+            </div>
+            <div class="deploy-card-body">
+              <h6 class="deploy-card-title">Build Frontend</h6>
+              <p class="deploy-card-desc">Reconstruire les assets Vite puis vider les caches Laravel.</p>
+            </div>
+            <button class="deploy-btn" @click="runAction('build-frontend')" :disabled="running">
+              <span v-if="running === 'build-frontend'" class="spinner-border spinner-border-sm me-1"></span>
+              <i v-else class="fas fa-play me-1"></i>
+              Executer
+            </button>
+          </div>
+        </div>
+
         <!-- Migrate Fresh -->
         <div class="col-md-6 col-lg-4">
           <div class="deploy-card deploy-card-danger">

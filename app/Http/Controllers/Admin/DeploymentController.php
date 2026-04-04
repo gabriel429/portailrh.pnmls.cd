@@ -18,6 +18,19 @@ class DeploymentController extends Controller
         return response()->json(['success' => $success, 'message' => $message], $success ? 200 : 422);
     }
 
+    private function runShellCommand(string $command): array
+    {
+        $output = [];
+        $exitCode = 0;
+
+        exec($command . ' 2>&1', $output, $exitCode);
+
+        return [
+            'output' => trim(implode("\n", $output)),
+            'exit_code' => $exitCode,
+        ];
+    }
+
     /**
      * Exécute la commande php artisan migrate (applique les migrations sans perte de données)
      */
@@ -1022,6 +1035,66 @@ class DeploymentController extends Controller
 
         } catch (\Exception $e) {
             $error_messages[] = "ERREUR: " . $e->getMessage();
+        }
+
+        return $this->deployResponse($output_messages, $error_messages, $success);
+    }
+
+    /**
+     * Rebuild frontend assets with Vite and clear Laravel caches.
+     */
+    public function buildFrontend()
+    {
+        $output_messages = [];
+        $error_messages = [];
+        $success = false;
+
+        try {
+            $root = base_path();
+
+            $npmPath = trim((string) shell_exec('command -v npm 2>/dev/null'));
+            $nodePath = trim((string) shell_exec('command -v node 2>/dev/null'));
+
+            if ($npmPath === '' || $nodePath === '') {
+                throw new \RuntimeException('Node.js ou npm est introuvable sur le serveur.');
+            }
+
+            $quotedRoot = escapeshellarg($root);
+            $quotedNpm = escapeshellarg($npmPath);
+            $quotedNode = escapeshellarg($nodePath);
+
+            $output_messages[] = '=== Verification de l environnement Node ===';
+
+            $nodeVersion = $this->runShellCommand("{$quotedNode} -v");
+            $npmVersion = $this->runShellCommand("{$quotedNpm} -v");
+            $output_messages[] = $nodeVersion['output'] ?: '(version node indisponible)';
+            $output_messages[] = $npmVersion['output'] ?: '(version npm indisponible)';
+
+            $output_messages[] = '=== Installation des dependances frontend ===';
+            $install = $this->runShellCommand("cd {$quotedRoot} && {$quotedNpm} install");
+            $output_messages[] = $install['output'] ?: '(aucune sortie npm install)';
+            if ($install['exit_code'] !== 0) {
+                throw new \RuntimeException('npm install a echoue.');
+            }
+
+            $output_messages[] = '=== Build Vite ===';
+            $build = $this->runShellCommand("cd {$quotedRoot} && {$quotedNpm} run build");
+            $output_messages[] = $build['output'] ?: '(aucune sortie npm run build)';
+            if ($build['exit_code'] !== 0) {
+                throw new \RuntimeException('npm run build a echoue.');
+            }
+
+            $output_messages[] = '=== Nettoyage final des caches Laravel ===';
+            Artisan::call('optimize:clear');
+            $clearOutput = trim(Artisan::output());
+            if ($clearOutput !== '') {
+                $output_messages[] = $clearOutput;
+            }
+
+            $output_messages[] = '✅ Build frontend termine avec succes !';
+            $success = true;
+        } catch (\Exception $e) {
+            $error_messages[] = '❌ ERREUR: ' . $e->getMessage();
         }
 
         return $this->deployResponse($output_messages, $error_messages, $success);
