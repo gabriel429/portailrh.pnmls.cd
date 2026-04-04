@@ -23,18 +23,46 @@ class TacheController extends ApiController
         $agent = $user->agent;
         $isDirecteur = $user->hasRole('Directeur');
 
+        $mesTachesQuery = $agent
+            ? Tache::query()->parAgent($agent->id)
+            : Tache::query()->whereRaw('1 = 0');
+
+        $tachesCreeesQuery = ($isDirecteur && $agent)
+            ? Tache::query()->parCreateur($agent->id)
+            : Tache::query()->whereRaw('1 = 0');
+
+        if ($request->boolean('summary')) {
+            $assignedCount = (clone $mesTachesQuery)->count();
+            $pendingAssignedCount = (clone $mesTachesQuery)
+                ->where('statut', '!=', 'terminee')
+                ->count();
+            $createdCount = (clone $tachesCreeesQuery)->count();
+
+            return $this->success([
+                'assigned_count' => $assignedCount,
+                'pending_assigned_count' => $pendingAssignedCount,
+                'created_count' => $createdCount,
+                'is_directeur' => $isDirecteur,
+            ], [], [
+                'assignedCount' => $assignedCount,
+                'pendingAssignedCount' => $pendingAssignedCount,
+                'createdCount' => $createdCount,
+                'isDirecteur' => $isDirecteur,
+            ]);
+        }
+
         $mesTaches = $agent
-            ? Tache::with('createur')
+            ? (clone $mesTachesQuery)
+                ->with('createur')
                 ->with('activitePlan')
-                ->parAgent($agent->id)
                 ->latest()
                 ->get()
             : collect();
 
         $tachesCreees = collect();
         if ($isDirecteur && $agent) {
-            $tachesCreees = Tache::with(['agent', 'activitePlan'])
-                ->parCreateur($agent->id)
+            $tachesCreees = (clone $tachesCreeesQuery)
+                ->with(['agent', 'activitePlan'])
                 ->latest()
                 ->get();
         }

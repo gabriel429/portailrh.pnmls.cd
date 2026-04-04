@@ -618,7 +618,7 @@ const quickActions = [
   { to: '/rh/communiques/create', label: 'Nouveau communique', desc: 'Publier un communique', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Voir tous les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
-  { to: '/plan-travail', label: 'Plan de travail', desc: 'Suivi strategique', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
+  { to: '/plan-travail', label: 'PTA', desc: 'Suivi strategique annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/rh/pointages/monthly', label: 'Pointages', desc: 'Rapport mensuel', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gerer les demandes', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
 ]

@@ -54,12 +54,13 @@
               <router-link class="nav-link" active-class="active" :to="{ name: 'taches.index' }" title="Mes taches">
                 <i class="fas fa-tasks nav-icon"></i>
                 <span class="nav-link-label">Mes taches</span>
+                <span v-if="taskPendingCount > 0" class="nav-badge">{{ taskBadgeLabel }}</span>
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'plan-travail.index' }" title="Plan de travail">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'plan-travail.index' }" title="PTA">
                 <i class="fas fa-calendar-check nav-icon"></i>
-                <span class="nav-link-label">Plan travail</span>
+                <span class="nav-link-label">PTA</span>
               </router-link>
             </li>
             <li class="nav-item">
@@ -241,6 +242,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
+import { getSummary as getTaskSummary } from '@/api/taches'
 import AppToast from '@/components/common/AppToast.vue'
 
 const auth = useAuthStore()
@@ -249,6 +251,7 @@ const router = useRouter()
 const route = useRoute()
 const isMobileNavOpen = ref(false)
 const profilePhotoIndex = ref(0)
+const taskPendingCount = ref(0)
 
 function closeMobileNav() {
   isMobileNavOpen.value = false
@@ -267,11 +270,19 @@ function handleViewportChange() {
 watch(() => route.fullPath, () => {
   closeMobileNav()
 
+  if (auth.isAuthenticated) {
+    loadTaskSummary()
+  }
+
   document.querySelectorAll('.navbar-main .dropdown-menu.show').forEach((menu) => {
     menu.classList.remove('show')
     menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.classList.remove('show')
     menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.setAttribute('aria-expanded', 'false')
   })
+})
+
+const taskBadgeLabel = computed(() => {
+  return taskPendingCount.value > 99 ? '99+' : String(taskPendingCount.value)
 })
 
 const initials = computed(() => {
@@ -325,6 +336,15 @@ function handleProfilePhotoError() {
   profilePhotoIndex.value = profilePhotoCandidates.value.length
 }
 
+async function loadTaskSummary() {
+  try {
+    const { data } = await getTaskSummary()
+    taskPendingCount.value = Number(data.pendingAssignedCount ?? data.pending_assigned_count ?? 0)
+  } catch {
+    taskPendingCount.value = 0
+  }
+}
+
 async function handleLogout() {
   await auth.logout()
   notifStore.stopPolling()
@@ -334,6 +354,7 @@ async function handleLogout() {
 onMounted(() => {
   if (auth.isAuthenticated) {
     notifStore.startPolling()
+    loadTaskSummary()
   }
 
   window.addEventListener('resize', handleViewportChange)
@@ -352,6 +373,15 @@ watch(isMobileNavOpen, (value) => {
 
 watch(profilePhotoCandidates, () => {
   profilePhotoIndex.value = 0
+}, { immediate: true })
+
+watch(() => auth.user?.id, (userId) => {
+  if (userId) {
+    loadTaskSummary()
+    return
+  }
+
+  taskPendingCount.value = 0
 }, { immediate: true })
 </script>
 

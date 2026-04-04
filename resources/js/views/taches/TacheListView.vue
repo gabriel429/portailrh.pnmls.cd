@@ -5,7 +5,7 @@
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>Mes Taches</h1>
-            <p class="rh-sub">Suivi des taches assignees et creees.</p>
+            <p class="rh-sub">Espace des taches qui vous sont attribuees par votre direction, le SEN, le SEP ou le SEL.</p>
           </div>
           <div v-if="isDirecteur" class="col-lg-4">
             <div class="hero-tools">
@@ -82,65 +82,6 @@
           </div>
         </div>
 
-        <!-- Taches creees par moi (Directeur) -->
-        <div v-if="isDirecteur" class="dash-panel mt-3">
-          <header class="panel-head">
-            <div>
-              <h3 class="panel-title"><i class="fas fa-clipboard-list me-2 text-success"></i>Taches que j'ai assignees</h3>
-              <p class="panel-sub">Suivi des taches attribuees aux agents de votre departement.</p>
-            </div>
-          </header>
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead>
-                <tr>
-                  <th>Titre</th>
-                  <th>Origine</th>
-                  <th>Assigne a</th>
-                  <th>Priorite</th>
-                  <th>Statut</th>
-                  <th>Echeance</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="t in tachesCreees" :key="t.id">
-                  <td>
-                    <strong>{{ t.titre }}</strong>
-                    <br v-if="t.description"><small v-if="t.description" class="text-muted">{{ truncate(t.description, 60) }}</small>
-                  </td>
-                  <td>
-                    <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
-                    <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
-                  </td>
-                  <td>{{ t.agent?.nom_complet ?? '-' }}</td>
-                  <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
-                  <td><span :class="statutBadge(t.statut)">{{ statutLabel(t.statut) }}</span></td>
-                  <td>
-                    <template v-if="t.date_echeance">
-                      {{ formatDate(t.date_echeance) }}
-                      <br v-if="isOverdue(t)"><small v-if="isOverdue(t)" class="text-danger">En retard</small>
-                    </template>
-                    <span v-else class="text-muted">-</span>
-                  </td>
-                  <td>{{ formatDate(t.created_at) }}</td>
-                  <td>
-                    <router-link :to="{ name: 'taches.show', params: { id: t.id } }" class="btn btn-sm btn-outline-primary">
-                      <i class="fas fa-eye"></i>
-                    </router-link>
-                  </td>
-                </tr>
-                <tr v-if="!tachesCreees.length">
-                  <td colspan="8" class="text-center text-muted py-4">
-                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                    Aucune tache creee.
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
       </template>
     </div>
   </div>
@@ -155,14 +96,12 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 const ui = useUiStore()
 const loading = ref(true)
 const mesTaches = ref([])
-const tachesCreees = ref([])
 const isDirecteur = ref(false)
 
 async function loadTaches() {
   try {
     const { data } = await list()
     mesTaches.value = data.mesTaches
-    tachesCreees.value = data.tachesCreees
     isDirecteur.value = data.isDirecteur
   } catch {
     ui.addToast('Erreur lors du chargement des taches.', 'danger')

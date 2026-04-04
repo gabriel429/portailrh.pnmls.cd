@@ -4,6 +4,10 @@ export function list(params = {}) {
     return client.get('/taches', { params })
 }
 
+export function getSummary() {
+    return client.get('/taches', { params: { summary: 1 } })
+}
+
 export function get(id) {
     return client.get(`/taches/${id}`)
 }
