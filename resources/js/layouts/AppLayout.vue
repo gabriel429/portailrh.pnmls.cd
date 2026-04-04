@@ -177,7 +177,7 @@
 
             <li class="nav-item dropdown">
               <a class="nav-link nav-user-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="Photo" class="nav-user-photo">
+                <img v-if="currentProfilePhotoUrl" :src="currentProfilePhotoUrl" alt="Photo" class="nav-user-photo" @error="handleProfilePhotoError">
                 <span v-else class="nav-user-avatar">{{ initials }}</span>
                 <span class="nav-user-name">{{ auth.agent?.prenom || auth.user?.name }}</span>
               </a>
@@ -240,6 +240,7 @@ const notifStore = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 const isMobileNavOpen = ref(false)
+const profilePhotoIndex = ref(0)
 
 function closeMobileNav() {
   isMobileNavOpen.value = false
@@ -274,19 +275,47 @@ const initials = computed(() => {
   return (auth.user?.name?.[0] || 'U').toUpperCase()
 })
 
-const profilePhotoUrl = computed(() => {
+const profilePhotoCandidates = computed(() => {
   const photo = auth.agent?.photo
 
   if (!photo) {
-    return null
+    return []
   }
 
-  if (/^https?:\/\//i.test(photo) || photo.startsWith('/')) {
-    return photo
+  const trimmedPhoto = photo.trim()
+  const candidates = []
+
+  if (/^https?:\/\//i.test(trimmedPhoto)) {
+    candidates.push(trimmedPhoto)
+  } else {
+    const normalizedPhoto = trimmedPhoto.replace(/^\/+/, '')
+
+    candidates.push(`/${normalizedPhoto}`)
+
+    if (!normalizedPhoto.startsWith('storage/')) {
+      candidates.push(`/storage/${normalizedPhoto}`)
+    }
+
+    if (!normalizedPhoto.startsWith('uploads/') && !normalizedPhoto.includes('/')) {
+      candidates.push(`/uploads/profiles/${normalizedPhoto}`)
+    }
   }
 
-  return `/${photo.replace(/^\/+/, '')}`
+  return [...new Set(candidates)]
 })
+
+const currentProfilePhotoUrl = computed(() => {
+  return profilePhotoCandidates.value[profilePhotoIndex.value] || null
+})
+
+function handleProfilePhotoError() {
+  if (profilePhotoIndex.value < profilePhotoCandidates.value.length - 1) {
+    profilePhotoIndex.value += 1
+    return
+  }
+
+  profilePhotoIndex.value = profilePhotoCandidates.value.length
+}
 
 async function handleLogout() {
   await auth.logout()
@@ -312,6 +341,10 @@ onUnmounted(() => {
 watch(isMobileNavOpen, (value) => {
   document.body.classList.toggle('mobile-nav-open', value)
 })
+
+watch(profilePhotoCandidates, () => {
+  profilePhotoIndex.value = 0
+}, { immediate: true })
 </script>
 
 <style scoped>

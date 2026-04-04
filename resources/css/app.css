@@ -116,7 +116,7 @@ body {
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1),
                 0 1px 0 rgba(255, 255, 255, 0.1) inset;
-    padding: 0.75rem 0;
+    padding: 0.6rem 0;
     position: sticky;
     top: 0;
     z-index: 1050;
@@ -127,13 +127,13 @@ body {
 .navbar-main .navbar-brand {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.6rem;
     color: #fff !important;
     font-weight: 800;
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     letter-spacing: -0.5px;
     text-decoration: none;
-    padding: 0.25rem 0;
+    padding: 0.15rem 0;
     transition: transform var(--transition-fast);
 }
 
@@ -142,8 +142,8 @@ body {
 }
 
 .navbar-main .navbar-brand img {
-    height: 44px;
-    width: 44px;
+    height: 38px;
+    width: 38px;
     object-fit: contain;
     border-radius: var(--radius-md);
     background: rgba(255,255,255,0.15);
@@ -163,31 +163,31 @@ body {
 }
 
 .navbar-main .navbar-brand .brand-title {
-    font-size: 1.05rem;
+    font-size: 0.94rem;
     font-weight: 800;
     letter-spacing: -0.3px;
 }
 
 .navbar-main .navbar-brand .brand-sub {
-    font-size: 0.65rem;
+    font-size: 0.58rem;
     opacity: 0.75;
     font-weight: 500;
-    letter-spacing: 1px;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
 }
 
 /* Nav Links */
 .navbar-main .nav-link {
     color: rgba(255,255,255,0.85) !important;
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    padding: 0.625rem 1rem !important;
+    padding: 0.5rem 0.78rem !important;
     border-radius: var(--radius-md);
     transition: all var(--transition-base);
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin: 0 2px;
+    gap: 0.42rem;
+    margin: 0 1px;
     position: relative;
     backdrop-filter: blur(10px);
 }
@@ -226,9 +226,9 @@ body {
 }
 
 .navbar-main .nav-link .nav-icon {
-    width: 20px;
+    width: 16px;
     text-align: center;
-    font-size: 0.95rem;
+    font-size: 0.82rem;
     opacity: 0.9;
 }
 
@@ -269,7 +269,7 @@ body {
 /* Divider */
 .nav-divider {
     width: 1px;
-    height: 28px;
+    height: 24px;
     background: linear-gradient(180deg,
         rgba(255,255,255,0) 0%,
         rgba(255,255,255,0.3) 50%,
@@ -303,8 +303,8 @@ body {
 }
 
 .navbar-main .dropdown-item {
-    font-size: 0.875rem;
-    padding: 0.625rem 1rem;
+    font-size: 0.82rem;
+    padding: 0.55rem 0.85rem;
     border-radius: var(--radius-sm);
     color: var(--grey-700);
     display: flex;
@@ -321,13 +321,13 @@ body {
 }
 
 .navbar-main .dropdown-item .dd-icon {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: var(--radius-sm);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.875rem;
+    font-size: 0.78rem;
     flex-shrink: 0;
     transition: transform var(--transition-fast);
 }
@@ -354,9 +354,9 @@ body {
 .nav-user-btn {
     display: flex;
     align-items: center;
-    gap: 0.625rem;
+    gap: 0.5rem;
     color: rgba(255,255,255,0.95) !important;
-    padding: 0.5rem 1rem 0.5rem 0.5rem !important;
+    padding: 0.38rem 0.78rem 0.38rem 0.38rem !important;
     border-radius: var(--radius-full) !important;
     background: rgba(255,255,255,0.12);
     border: 1px solid rgba(255,255,255,0.2);
@@ -372,15 +372,15 @@ body {
 }
 
 .nav-user-avatar {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     background: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.2));
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 800;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #fff;
     flex-shrink: 0;
     box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
@@ -393,8 +393,8 @@ body {
 }
 
 .nav-user-photo {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
@@ -403,9 +403,9 @@ body {
 }
 
 .nav-user-name {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    max-width: 140px;
+    max-width: 116px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -660,8 +660,8 @@ body {
 /* ── Notification Bell ── */
 .nav-notif-btn {
     position: relative;
-    padding: 0.5rem 0.625rem !important;
-    font-size: 1.15rem;
+    padding: 0.42rem 0.55rem !important;
+    font-size: 1rem;
     color: rgba(255,255,255,0.85) !important;
     transition: all var(--transition-fast);
     border-radius: var(--radius-sm);
@@ -693,6 +693,28 @@ body {
     border: 2px solid var(--primary-700);
     box-shadow: 0 2px 8px rgba(239, 68, 68, 0.4);
     animation: notif-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@media (min-width: 992px) {
+    .navbar-main .container-fluid {
+        gap: 0.75rem;
+    }
+
+    .navbar-main .navbar-nav {
+        align-items: center;
+    }
+
+    .navbar-primary-nav {
+        gap: 0.12rem;
+    }
+
+    .navbar-secondary-nav {
+        gap: 0.2rem;
+    }
+
+    .navbar-main .dropdown-menu {
+        min-width: 220px;
+    }
 }
 
 @keyframes notif-pulse {
