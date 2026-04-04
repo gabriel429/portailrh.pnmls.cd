@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use App\Models\InstitutionCategorie;
 use App\Models\Institution;
 
@@ -27,11 +28,28 @@ class DeploymentController extends Controller
         $success = false;
 
         try {
-            $output_messages[] = "🚀 Lancement de la commande migrate...";
+            $output_messages[] = "🚀 Lancement des migrations en attente...";
+            $output_messages[] = "🧹 Purge des caches Laravel avant execution...";
+            Artisan::call('optimize:clear');
+            $clearOutput = trim(Artisan::output());
+            if ($clearOutput !== '') {
+                $output_messages[] = $clearOutput;
+            }
+
             Artisan::call('migrate', ['--force' => true]);
-            $output = Artisan::output();
-            $output_messages[] = $output;
-            $output_messages[] = "✅ Migration terminée !";
+            $migrateOutput = trim(Artisan::output());
+            if ($migrateOutput !== '') {
+                $output_messages[] = $migrateOutput;
+            }
+
+            $output_messages[] = "🧼 Purge finale des caches pour prendre en compte les changements...";
+            Artisan::call('optimize:clear');
+            $finalClearOutput = trim(Artisan::output());
+            if ($finalClearOutput !== '') {
+                $output_messages[] = $finalClearOutput;
+            }
+
+            $output_messages[] = "✅ Migrations et rafraichissement des caches termines !";
             $success = true;
         } catch (\Exception $e) {
             $error_messages[] = "❌ ERREUR: " . $e->getMessage();

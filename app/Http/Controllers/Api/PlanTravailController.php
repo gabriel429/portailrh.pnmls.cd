@@ -236,6 +236,11 @@ class PlanTravailController extends ApiController
             'provinces' => $provinces,
             'localites' => $localites,
             'annee' => now()->year,
+            'validation_options' => [
+                ['value' => 'direction', 'label' => 'Direction'],
+                ['value' => 'coordination_nationale', 'label' => 'Coordination nationale'],
+                ['value' => 'coordination_provinciale', 'label' => 'Coordination provinciale'],
+            ],
         ];
 
         return $this->success($payload, [], $payload);
@@ -252,8 +257,11 @@ class PlanTravailController extends ApiController
 
         $validated = $request->validate([
             'titre'                => 'required|string|max:255',
+            'objectif'             => 'nullable|string',
             'description'          => 'nullable|string',
+            'resultat_attendu'     => 'nullable|string',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'validation_niveau'    => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
             'departement_id'       => 'nullable|exists:departments,id',
             'province_id'          => 'nullable|exists:provinces,id',
             'localite_id'          => 'nullable|exists:localites,id',
@@ -290,7 +298,7 @@ class PlanTravailController extends ApiController
      */
     public function show(ActivitePlan $activitePlan): JsonResponse
     {
-        $activitePlan->load('createur', 'departement', 'province', 'localite');
+        $activitePlan->load(['createur', 'departement', 'province', 'localite', 'taches.agent']);
 
         return $this->resource(ActivitePlanResource::make($activitePlan), [
             'canEdit' => $this->canManage(),
@@ -312,8 +320,11 @@ class PlanTravailController extends ApiController
 
         $validated = $request->validate([
             'titre'                => 'required|string|max:255',
+            'objectif'             => 'nullable|string',
             'description'          => 'nullable|string',
+            'resultat_attendu'     => 'nullable|string',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'validation_niveau'    => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
             'departement_id'       => 'nullable|exists:departments,id',
             'province_id'          => 'nullable|exists:provinces,id',
             'localite_id'          => 'nullable|exists:localites,id',
@@ -376,7 +387,7 @@ class PlanTravailController extends ApiController
 
         $activitePlan->update($validated);
 
-        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'localite'));
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'localite', 'taches.agent'));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour.',

@@ -37,6 +37,16 @@
                 <input v-model="form.titre" type="text" class="form-control" id="titre" required>
               </div>
 
+              <div class="mb-3">
+                <label for="objectif" class="form-label fw-bold">Objectif strategique</label>
+                <textarea v-model="form.objectif" class="form-control" id="objectif" rows="2"></textarea>
+              </div>
+
+              <div class="mb-3">
+                <label for="resultat_attendu" class="form-label fw-bold">Resultat attendu</label>
+                <textarea v-model="form.resultat_attendu" class="form-control" id="resultat_attendu" rows="2"></textarea>
+              </div>
+
               <div class="row g-3">
                 <!-- Niveau administratif -->
                 <div class="col-md-4">
@@ -46,6 +56,16 @@
                     <option value="SEN">SEN (National)</option>
                     <option value="SEP">SEP (Provincial)</option>
                     <option value="SEL">SEL (Local)</option>
+                  </select>
+                </div>
+
+                <div class="col-md-4">
+                  <label for="validation_niveau" class="form-label fw-bold">Validation</label>
+                  <select v-model="form.validation_niveau" class="form-select" id="validation_niveau">
+                    <option value="">-- Choisir --</option>
+                    <option value="direction">Direction</option>
+                    <option value="coordination_nationale">Coordination nationale</option>
+                    <option value="coordination_provinciale">Coordination provinciale</option>
                   </select>
                 </div>
 
@@ -160,7 +180,9 @@ const errors = ref([])
 const formData = ref({ departments: [], provinces: [], localites: [] })
 const form = ref({
   titre: '',
+  objectif: '',
   niveau_administratif: '',
+  validation_niveau: '',
   departement_id: '',
   province_id: '',
   localite_id: '',
@@ -171,6 +193,7 @@ const form = ref({
   date_debut: '',
   date_fin: '',
   description: '',
+  resultat_attendu: '',
   observations: '',
 })
 
@@ -184,7 +207,9 @@ async function loadActivite() {
     formData.value = createResp.data
     form.value = {
       titre: a.titre || '',
+      objectif: a.objectif || '',
       niveau_administratif: a.niveau_administratif || '',
+      validation_niveau: a.validation_niveau || '',
       departement_id: a.departement_id || '',
       province_id: a.province_id || '',
       localite_id: a.localite_id || '',
@@ -195,6 +220,7 @@ async function loadActivite() {
       date_debut: a.date_debut ? a.date_debut.split('T')[0] : '',
       date_fin: a.date_fin ? a.date_fin.split('T')[0] : '',
       description: a.description || '',
+      resultat_attendu: a.resultat_attendu || '',
       observations: a.observations || '',
     }
   } catch {

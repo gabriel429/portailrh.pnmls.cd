@@ -17,13 +17,18 @@ class Tache extends Model
         'agent_id',
         'titre',
         'description',
+        'source_type',
+        'source_emetteur',
+        'activite_plan_id',
         'priorite',
         'statut',
         'date_echeance',
+        'date_tache',
     ];
 
     protected $casts = [
         'date_echeance' => 'date',
+        'date_tache' => 'date',
     ];
 
     public function createur(): BelongsTo
@@ -34,6 +39,11 @@ class Tache extends Model
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class, 'agent_id');
+    }
+
+    public function activitePlan(): BelongsTo
+    {
+        return $this->belongsTo(ActivitePlan::class, 'activite_plan_id');
     }
 
     public function commentaires(): HasMany

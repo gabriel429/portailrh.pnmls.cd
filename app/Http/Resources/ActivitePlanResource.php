@@ -12,8 +12,14 @@ class ActivitePlanResource extends JsonResource
         return [
             'id' => $this->id,
             'titre' => $this->titre,
+            'objectif' => $this->objectif,
             'description' => $this->description,
+            'resultat_attendu' => $this->resultat_attendu,
             'niveau_administratif' => $this->niveau_administratif,
+            'validation_niveau' => $this->validation_niveau,
+            'departement_id' => $this->departement_id,
+            'province_id' => $this->province_id,
+            'localite_id' => $this->localite_id,
             'annee' => $this->annee,
             'trimestre' => $this->trimestre,
             'statut' => $this->statut,
@@ -43,6 +49,20 @@ class ActivitePlanResource extends JsonResource
                     'id' => $this->localite->id,
                     'nom' => $this->localite->nom,
                 ];
+            }),
+            'taches' => $this->whenLoaded('taches', function () {
+                return $this->taches->map(function ($tache) {
+                    return [
+                        'id' => $tache->id,
+                        'titre' => $tache->titre,
+                        'statut' => $tache->statut,
+                        'priorite' => $tache->priorite,
+                        'agent' => $tache->relationLoaded('agent') && $tache->agent ? [
+                            'id' => $tache->agent->id,
+                            'nom_complet' => $tache->agent->prenom . ' ' . $tache->agent->nom,
+                        ] : null,
+                    ];
+                })->values()->all();
             }),
         ];
     }

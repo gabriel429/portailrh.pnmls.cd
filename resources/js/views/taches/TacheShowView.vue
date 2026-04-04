@@ -40,8 +40,24 @@
               </header>
               <div class="p-3">
                 <dl class="row mb-0">
+                  <dt class="col-sm-4 text-muted">Origine</dt>
+                  <dd class="col-sm-8">
+                    {{ tache.source_type === 'pta' ? 'Issue du PTA' : 'Hors PTA' }}
+                    <template v-if="tache.activite_plan">
+                      <br><small class="text-muted">{{ tache.activite_plan.titre }} - {{ tache.activite_plan.annee }}</small>
+                    </template>
+                  </dd>
+
+                  <dt class="col-sm-4 text-muted">Source</dt>
+                  <dd class="col-sm-8">{{ sourceEmetteurLabel(tache.source_emetteur) }}</dd>
+
                   <dt class="col-sm-4 text-muted">Creee par</dt>
                   <dd class="col-sm-8">{{ tache.createur?.nom_complet }}</dd>
+
+                  <template v-if="tache.date_tache">
+                    <dt class="col-sm-4 text-muted">Date de la tache</dt>
+                    <dd class="col-sm-8">{{ formatDate(tache.date_tache) }}</dd>
+                  </template>
 
                   <dt class="col-sm-4 text-muted">Assignee a</dt>
                   <dd class="col-sm-8">{{ tache.agent?.nom_complet }}</dd>
@@ -266,6 +282,16 @@ function formatDateTime(dateStr) {
   const d = new Date(dateStr)
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
     ' a ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function sourceEmetteurLabel(source) {
+  const map = {
+    directeur: 'Directeur',
+    assistant_departement: 'Assistant du departement',
+    sen: 'SEN / Coordination',
+    autre: 'Autre',
+  }
+  return map[source] || source
 }
 
 onMounted(() => loadTache())

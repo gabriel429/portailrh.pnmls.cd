@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\TacheResource;
+use App\Models\ActivitePlan;
 use App\Models\Tache;
 use App\Models\TacheCommentaire;
 use App\Models\Agent;
@@ -24,6 +25,7 @@ class TacheController extends ApiController
 
         $mesTaches = $agent
             ? Tache::with('createur')
+                ->with('activitePlan')
                 ->parAgent($agent->id)
                 ->latest()
                 ->get()
@@ -31,7 +33,7 @@ class TacheController extends ApiController
 
         $tachesCreees = collect();
         if ($isDirecteur && $agent) {
-            $tachesCreees = Tache::with('agent')
+            $tachesCreees = Tache::with(['agent', 'activitePlan'])
                 ->parCreateur($agent->id)
                 ->latest()
                 ->get();
@@ -74,9 +76,39 @@ class TacheController extends ApiController
             ->where('id', '!=', $agent->id)
             ->orderBy('nom')
             ->get(['id', 'nom', 'prenom'])
-            ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'nom' => $a->nom,
+                'prenom' => $a->prenom,
+                'id_agent' => $a->id_agent,
+            ]);
 
-        return $this->success($agentsDuDepartement);
+        $activitesPta = ActivitePlan::query()
+            ->where('annee', now()->year)
+            ->when($agent->departement_id, fn($query) => $query->where('departement_id', $agent->departement_id))
+            ->when(!$agent->departement_id && $agent->province_id, fn($query) => $query->where('province_id', $agent->province_id))
+            ->orderBy('titre')
+            ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+            ->map(function ($activite) {
+                return [
+                    'id' => $activite->id,
+                    'titre' => $activite->titre,
+                    'annee' => $activite->annee,
+                    'trimestre' => $activite->trimestre,
+                    'niveau_administratif' => $activite->niveau_administratif,
+                ];
+            });
+
+        return $this->success([
+            'agents' => $agentsDuDepartement,
+            'activites_pta' => $activitesPta,
+            'source_emetteurs' => [
+                ['value' => 'directeur', 'label' => 'Directeur'],
+                ['value' => 'assistant_departement', 'label' => 'Assistant du departement'],
+                ['value' => 'sen', 'label' => 'SEN / Coordination'],
+                ['value' => 'autre', 'label' => 'Autre'],
+            ],
+        ]);
     }
 
     /**
@@ -93,8 +125,12 @@ class TacheController extends ApiController
             'agent_id'      => 'required|exists:agents,id',
             'titre'         => 'required|string|max:255',
             'description'   => 'nullable|string',
+            'source_type'   => 'required|in:pta,hors_pta',
+            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,autre',
+            'activite_plan_id' => 'nullable|required_if:source_type,pta|exists:activite_plans,id',
             'priorite'      => 'required|in:normale,haute,urgente',
             'date_echeance' => 'nullable|date',
+            'date_tache'    => 'nullable|date',
         ]);
 
         $agent = $user->agent;
@@ -108,10 +144,13 @@ class TacheController extends ApiController
 
         $validated['createur_id'] = $agent->id;
         $validated['statut'] = 'nouvelle';
+        if ($validated['source_type'] !== 'pta') {
+            $validated['activite_plan_id'] = null;
+        }
 
         $tache = Tache::create($validated);
 
-        $resource = TacheResource::make($tache->load(['createur', 'agent']));
+        $resource = TacheResource::make($tache->load(['createur', 'agent', 'activitePlan']));
 
         return $this->resource($resource, [], [
             'message' => 'Tache creee avec succes.',
@@ -130,7 +169,7 @@ class TacheController extends ApiController
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $tache->load(['createur', 'agent', 'commentaires.agent']);
+        $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent']);
 
         return $this->resource(TacheResource::make($tache), [
             'isCreateur' => $tache->createur_id === $agent->id,
@@ -170,7 +209,7 @@ class TacheController extends ApiController
 
         $tache->update(['statut' => $validated['statut']]);
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'commentaires.agent']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour avec succes.',
@@ -199,7 +238,7 @@ class TacheController extends ApiController
             'contenu'  => $validated['contenu'],
         ]);
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'commentaires.agent']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Commentaire ajoute.',

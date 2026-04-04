@@ -30,6 +30,38 @@
           </div>
 
           <form @submit.prevent="handleSubmit" class="row g-3">
+            <div class="col-md-4">
+              <label for="source_type" class="form-label fw-bold">Origine <span class="text-danger">*</span></label>
+              <select v-model="form.source_type" class="form-select" id="source_type" required>
+                <option value="hors_pta">Hors PTA</option>
+                <option value="pta">Issue du PTA</option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label for="source_emetteur" class="form-label fw-bold">Source <span class="text-danger">*</span></label>
+              <select v-model="form.source_emetteur" class="form-select" id="source_emetteur" required>
+                <option v-for="source in sourceEmetteurs" :key="source.value" :value="source.value">
+                  {{ source.label }}
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label for="date_tache" class="form-label fw-bold">Date de la tache</label>
+              <input v-model="form.date_tache" type="date" class="form-control" id="date_tache">
+            </div>
+
+            <div v-if="form.source_type === 'pta'" class="col-12">
+              <label for="activite_plan_id" class="form-label fw-bold">Activite PTA liee <span class="text-danger">*</span></label>
+              <select v-model="form.activite_plan_id" class="form-select" id="activite_plan_id" required>
+                <option value="">-- Choisir une activite du PTA --</option>
+                <option v-for="activite in activitesPta" :key="activite.id" :value="activite.id">
+                  {{ activiteLabel(activite) }}
+                </option>
+              </select>
+            </div>
+
             <!-- Agent -->
             <div class="col-md-6">
               <label for="agent_id" class="form-label fw-bold">Assigner a <span class="text-danger">*</span></label>
@@ -100,18 +132,26 @@ const loadingAgents = ref(true)
 const submitting = ref(false)
 const errors = ref([])
 const agents = ref([])
+const activitesPta = ref([])
+const sourceEmetteurs = ref([])
 const form = ref({
   agent_id: '',
   titre: '',
   description: '',
+  source_type: 'hors_pta',
+  source_emetteur: 'directeur',
+  activite_plan_id: '',
   priorite: 'normale',
+  date_tache: '',
   date_echeance: '',
 })
 
 async function loadAgents() {
   try {
     const { data } = await getCreateData()
-    agents.value = data.data
+    agents.value = data.data.agents || []
+    activitesPta.value = data.data.activites_pta || []
+    sourceEmetteurs.value = data.data.source_emetteurs || []
   } catch (err) {
     if (err.response?.status === 403) {
       ui.addToast('Acces refuse. Seuls les directeurs peuvent creer des taches.', 'danger')
@@ -128,7 +168,13 @@ async function handleSubmit() {
   errors.value = []
   submitting.value = true
   try {
-    await create(form.value)
+    const payload = { ...form.value }
+    if (payload.source_type !== 'pta') {
+      payload.activite_plan_id = null
+    }
+    if (!payload.date_tache) delete payload.date_tache
+    if (!payload.date_echeance) delete payload.date_echeance
+    await create(payload)
     ui.addToast('Tache creee avec succes.', 'success')
     router.push({ name: 'taches.index' })
   } catch (err) {
@@ -143,6 +189,11 @@ async function handleSubmit() {
   }
 }
 
+
+function activiteLabel(activite) {
+  const trimestre = activite.trimestre ? ` (${activite.trimestre})` : ''
+  return `${activite.titre} - ${activite.annee}${trimestre}`
+}
 onMounted(() => loadAgents())
 </script>
 

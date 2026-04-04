@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use App\Traits\Syncable;
 
@@ -16,8 +17,11 @@ class ActivitePlan extends Model
     protected $fillable = [
         'createur_id',
         'titre',
+        'objectif',
         'description',
+        'resultat_attendu',
         'niveau_administratif',
+        'validation_niveau',
         'departement_id',
         'province_id',
         'localite_id',
@@ -55,6 +59,11 @@ class ActivitePlan extends Model
     public function localite(): BelongsTo
     {
         return $this->belongsTo(Localite::class, 'localite_id');
+    }
+
+    public function taches(): HasMany
+    {
+        return $this->hasMany(Tache::class, 'activite_plan_id');
     }
 
     public function scopePlanifiee($query)

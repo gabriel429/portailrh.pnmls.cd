@@ -64,7 +64,7 @@
             </div>
             <div class="deploy-card-body">
               <h6 class="deploy-card-title">Migration</h6>
-              <p class="deploy-card-desc">Executer les migrations en attente.</p>
+              <p class="deploy-card-desc">Executer les migrations en attente puis vider les caches Laravel.</p>
             </div>
             <button class="deploy-btn deploy-btn-green" @click="runAction('migrate')" :disabled="running">
               <span v-if="running === 'migrate'" class="spinner-border spinner-border-sm me-1"></span>

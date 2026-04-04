@@ -35,6 +35,7 @@
               <thead>
                 <tr>
                   <th>Titre</th>
+                  <th>Origine</th>
                   <th>De</th>
                   <th>Priorite</th>
                   <th>Statut</th>
@@ -48,6 +49,10 @@
                   <td>
                     <strong>{{ t.titre }}</strong>
                     <br v-if="t.description"><small v-if="t.description" class="text-muted">{{ truncate(t.description, 60) }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
+                    <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
                   <td>{{ t.createur?.nom_complet ?? '-' }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
@@ -67,7 +72,7 @@
                   </td>
                 </tr>
                 <tr v-if="!mesTaches.length">
-                  <td colspan="7" class="text-center text-muted py-4">
+                  <td colspan="8" class="text-center text-muted py-4">
                     <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                     Aucune tache assignee.
                   </td>
@@ -90,6 +95,7 @@
               <thead>
                 <tr>
                   <th>Titre</th>
+                  <th>Origine</th>
                   <th>Assigne a</th>
                   <th>Priorite</th>
                   <th>Statut</th>
@@ -103,6 +109,10 @@
                   <td>
                     <strong>{{ t.titre }}</strong>
                     <br v-if="t.description"><small v-if="t.description" class="text-muted">{{ truncate(t.description, 60) }}</small>
+                  </td>
+                  <td>
+                    <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
+                    <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
                   <td>{{ t.agent?.nom_complet ?? '-' }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
@@ -122,7 +132,7 @@
                   </td>
                 </tr>
                 <tr v-if="!tachesCreees.length">
-                  <td colspan="7" class="text-center text-muted py-4">
+                  <td colspan="8" class="text-center text-muted py-4">
                     <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
                     Aucune tache creee.
                   </td>
@@ -186,6 +196,10 @@ function statutLabel(statut) {
   return map[statut] || capitalize(statut)
 }
 
+function sourceTypeLabel(sourceType) {
+  return sourceType === 'pta' ? 'PTA' : 'Hors PTA'
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -240,10 +254,10 @@ onMounted(() => loadTaches())
   /* Hide De/Assigne (2nd), Echeance (5th), Date (6th) */
   .table th:nth-child(2),
   .table td:nth-child(2),
-  .table th:nth-child(5),
-  .table td:nth-child(5),
   .table th:nth-child(6),
-  .table td:nth-child(6) {
+  .table td:nth-child(6),
+  .table th:nth-child(7),
+  .table td:nth-child(7) {
     display: none;
   }
 

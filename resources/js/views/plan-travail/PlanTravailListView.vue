@@ -200,6 +200,16 @@
               <span v-if="createErrors.titre" class="ptm-err-msg">{{ createErrors.titre[0] }}</span>
             </div>
 
+            <div class="ptm-field">
+              <label class="ptm-label">Objectif strategique</label>
+              <textarea v-model="createForm.objectif" class="ptm-input ptm-textarea" rows="2" placeholder="Objectif strategique de l'activite"></textarea>
+            </div>
+
+            <div class="ptm-field">
+              <label class="ptm-label">Resultat attendu</label>
+              <textarea v-model="createForm.resultat_attendu" class="ptm-input ptm-textarea" rows="2" placeholder="Resultat attendu"></textarea>
+            </div>
+
             <!-- Niveau administratif -->
             <div class="ptm-field">
               <label class="ptm-label">Niveau administratif <span class="ptm-req">*</span></label>
@@ -251,6 +261,16 @@
                   <option v-for="t in trimestreOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
                 </select>
               </div>
+            </div>
+
+            <div class="ptm-field">
+              <label class="ptm-label">Validation</label>
+              <select v-model="createForm.validation_niveau" class="ptm-input">
+                <option value="">-- Choisir --</option>
+                <option value="direction">Direction</option>
+                <option value="coordination_nationale">Coordination nationale</option>
+                <option value="coordination_provinciale">Coordination provinciale</option>
+              </select>
             </div>
 
             <!-- Statut + Pourcentage -->
@@ -463,7 +483,9 @@ const trimestreOptions = [
 function defaultCreateForm() {
   return {
     titre: '',
+    objectif: '',
     niveau_administratif: '',
+    validation_niveau: '',
     departement_id: '',
     province_id: '',
     localite_id: '',
@@ -474,6 +496,7 @@ function defaultCreateForm() {
     date_debut: '',
     date_fin: '',
     description: '',
+    resultat_attendu: '',
     observations: '',
   }
 }

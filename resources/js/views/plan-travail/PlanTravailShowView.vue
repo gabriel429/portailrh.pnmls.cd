@@ -43,6 +43,12 @@
               </header>
               <div class="p-3">
                 <dl class="row mb-0">
+                  <dt class="col-sm-4 text-muted">Objectif</dt>
+                  <dd class="col-sm-8">{{ activite.objectif || 'Non renseigne' }}</dd>
+
+                  <dt class="col-sm-4 text-muted">Resultat attendu</dt>
+                  <dd class="col-sm-8">{{ activite.resultat_attendu || 'Non renseigne' }}</dd>
+
                   <dt class="col-sm-4 text-muted">Niveau</dt>
                   <dd class="col-sm-8">
                     {{ activite.niveau_administratif }}
@@ -53,6 +59,9 @@
 
                   <dt class="col-sm-4 text-muted">Annee</dt>
                   <dd class="col-sm-8">{{ activite.annee }}</dd>
+
+                  <dt class="col-sm-4 text-muted">Validation</dt>
+                  <dd class="col-sm-8">{{ validationLabel(activite.validation_niveau) }}</dd>
 
                   <dt class="col-sm-4 text-muted">Trimestre</dt>
                   <dd class="col-sm-8">{{ triLabel(activite.trimestre) }}</dd>
@@ -95,6 +104,25 @@
                   <hr>
                   <h6 class="fw-bold mb-2">Observations</h6>
                   <div style="white-space: pre-wrap;" class="text-muted">{{ activite.observations }}</div>
+                </template>
+
+                <template v-if="activite.taches?.length">
+                  <hr>
+                  <h6 class="fw-bold mb-2">Taches liees</h6>
+                  <div class="d-flex flex-column gap-2">
+                    <router-link
+                      v-for="tache in activite.taches"
+                      :key="tache.id"
+                      :to="{ name: 'taches.show', params: { id: tache.id } }"
+                      class="d-flex justify-content-between align-items-center text-decoration-none border rounded p-2"
+                    >
+                      <div>
+                        <strong class="text-dark">{{ tache.titre }}</strong>
+                        <div v-if="tache.agent?.nom_complet" class="small text-muted">{{ tache.agent.nom_complet }}</div>
+                      </div>
+                      <span :class="statutBadge(tache.statut)">{{ statutLabel(tache.statut) }}</span>
+                    </router-link>
+                  </div>
                 </template>
               </div>
             </div>
@@ -271,6 +299,15 @@ function formatDateTime(dateStr) {
   const d = new Date(dateStr)
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
     ' a ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function validationLabel(value) {
+  const map = {
+    direction: 'Direction',
+    coordination_nationale: 'Coordination nationale',
+    coordination_provinciale: 'Coordination provinciale',
+  }
+  return map[value] || 'Non renseigne'
 }
 
 onMounted(() => loadActivite())

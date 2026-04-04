@@ -18,11 +18,26 @@ class TacheResource extends JsonResource
             'id' => $this->id,
             'titre' => $this->titre,
             'description' => $this->description,
+            'source_type' => $this->source_type,
+            'source_emetteur' => $this->source_emetteur,
             'priorite' => $this->priorite,
             'statut' => $this->statut,
             'date_echeance' => optional($this->date_echeance)?->toDateString(),
+            'date_tache' => optional($this->date_tache)?->toDateString(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
+            'activite_plan' => $this->whenLoaded('activitePlan', function () {
+                if (!$this->activitePlan) {
+                    return null;
+                }
+
+                return [
+                    'id' => $this->activitePlan->id,
+                    'titre' => $this->activitePlan->titre,
+                    'annee' => $this->activitePlan->annee,
+                    'trimestre' => $this->activitePlan->trimestre,
+                ];
+            }),
             'createur' => $this->whenLoaded('createur', function () use ($request) {
                 return AgentResource::make($this->createur)->resolve($request);
             }),
