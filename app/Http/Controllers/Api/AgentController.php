@@ -7,15 +7,19 @@ use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Fonction;
 use App\Models\Grade;
+use App\Models\Institution;
 use App\Models\InstitutionCategorie;
 use App\Models\Organe;
 use App\Models\Province;
 use App\Models\Section;
+use App\Services\SpreadsheetImportReader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgentController extends ApiController
@@ -336,9 +340,9 @@ class AgentController extends ApiController
         // Normalize situation_familiale
         if (!empty($validated['situation_familiale'])) {
             $map = [
-                'celibataire' => 'celibataire', 'celibataire' => 'celibataire',
-                'marie' => 'marie', 'marie(e)' => 'marie',
-                'divorce' => 'divorce', 'divorce(e)' => 'divorce',
+                'celibataire' => 'célibataire',
+                'marie' => 'marié', 'marie(e)' => 'marié',
+                'divorce' => 'divorcé', 'divorce(e)' => 'divorcé',
                 'veuf' => 'veuf', 'veuf/veuve' => 'veuf', 'veuve' => 'veuf',
             ];
             $key = mb_strtolower(trim($validated['situation_familiale']));
@@ -525,6 +529,504 @@ class AgentController extends ApiController
             'fonctions' => $fonctions,
             'niveauxEtudes' => $niveauxEtudes,
         ]);
+    }
+
+    public function import(Request $request, SpreadsheetImportReader $reader): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|max:10240|mimes:xlsx,csv,txt',
+        ]);
+
+        $rows = $reader->read($request->file('file'));
+        if (count($rows) < 2) {
+            throw ValidationException::withMessages([
+                'file' => 'Le fichier doit contenir une ligne d\'en-tete et au moins une ligne de donnees.',
+            ]);
+        }
+
+        $headerIndexes = $this->resolveImportHeaderIndexes(array_shift($rows));
+        $requiredHeaders = ['nom', 'prenom', 'sexe', 'lieu_naissance', 'organe', 'fonction', 'niveau_etudes', 'annee_engagement_programme'];
+        $missingHeaders = array_values(array_filter($requiredHeaders, fn($header) => !array_key_exists($header, $headerIndexes)));
+
+        if ($missingHeaders) {
+            throw ValidationException::withMessages([
+                'file' => 'Colonnes obligatoires manquantes: ' . implode(', ', $missingHeaders) . '.',
+            ]);
+        }
+
+        if (!array_key_exists('annee_naissance', $headerIndexes) && !array_key_exists('date_naissance', $headerIndexes)) {
+            throw ValidationException::withMessages([
+                'file' => 'Le fichier doit contenir soit la colonne annee_naissance, soit la colonne date_naissance.',
+            ]);
+        }
+
+        $lookups = $this->buildImportLookups();
+        $imported = 0;
+        $skipped = 0;
+        $errors = [];
+
+        foreach ($rows as $index => $row) {
+            $rowNumber = $index + 2;
+
+            if ($this->isImportRowEmpty($row)) {
+                continue;
+            }
+
+            try {
+                $payload = $this->buildImportPayload($row, $headerIndexes, $lookups);
+                $validated = validator($payload, $this->importValidationRules())->validate();
+                $validated = $this->finalizeImportedPayload($validated);
+
+                DB::transaction(function () use ($validated) {
+                    Agent::create($validated);
+                });
+
+                $imported++;
+            } catch (ValidationException $exception) {
+                $skipped++;
+                foreach ($exception->errors() as $field => $messages) {
+                    foreach ($messages as $message) {
+                        $errors[] = [
+                            'row' => $rowNumber,
+                            'field' => $field,
+                            'message' => $message,
+                        ];
+                    }
+                }
+            } catch (\Throwable $exception) {
+                $skipped++;
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'field' => 'ligne',
+                    'message' => $exception->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'message' => $imported > 0
+                ? 'Import des agents termine.'
+                : 'Aucun agent n\'a pu etre importe.',
+            'summary' => [
+                'total_rows' => count($rows),
+                'imported' => $imported,
+                'skipped' => $skipped,
+            ],
+            'errors' => $errors,
+        ]);
+    }
+
+    public function importTemplate(): StreamedResponse
+    {
+        $filename = 'modele_import_agents.csv';
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function () {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            fputcsv($handle, [
+                'matricule_etat',
+                'nom',
+                'postnom',
+                'prenom',
+                'sexe',
+                'annee_naissance',
+                'date_naissance',
+                'lieu_naissance',
+                'situation_familiale',
+                'nombre_enfants',
+                'telephone',
+                'adresse',
+                'email_prive',
+                'email_professionnel',
+                'organe',
+                'fonction',
+                'province',
+                'departement',
+                'grade',
+                'institution',
+                'niveau_etudes',
+                'domaine_etudes',
+                'annee_engagement_programme',
+                'statut',
+            ], ';');
+
+            fputcsv($handle, [
+                'A12345',
+                'Mukendi',
+                'Kabeya',
+                'Jean',
+                'M',
+                '1988',
+                '1988-06-15',
+                'Kinshasa',
+                'marie',
+                '3',
+                '0812345678',
+                'Commune de la Gombe',
+                'jean@gmail.com',
+                'jean.mukendi@pnmls.cd',
+                'Secrétariat Exécutif National',
+                'Chef de division',
+                '',
+                'Administration',
+                'Directeur',
+                '',
+                'Licence',
+                'Gestion',
+                '2018',
+                'actif',
+            ], ';');
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function resolveImportHeaderIndexes(array $headers): array
+    {
+        $indexes = [];
+
+        foreach ($headers as $index => $header) {
+            $normalized = $this->normalizeImportHeader((string) $header);
+            $canonical = $this->headerAliases()[$normalized] ?? null;
+
+            if ($canonical && !array_key_exists($canonical, $indexes)) {
+                $indexes[$canonical] = $index;
+            }
+        }
+
+        return $indexes;
+    }
+
+    private function buildImportPayload(array $row, array $headerIndexes, array $lookups): array
+    {
+        $payload = [
+            'matricule_etat' => $this->importValue($row, $headerIndexes, 'matricule_etat'),
+            'nom' => $this->importValue($row, $headerIndexes, 'nom'),
+            'postnom' => $this->importValue($row, $headerIndexes, 'postnom'),
+            'prenom' => $this->importValue($row, $headerIndexes, 'prenom'),
+            'sexe' => $this->normalizeImportedSexe($this->importValue($row, $headerIndexes, 'sexe')),
+            'annee_naissance' => $this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_naissance')),
+            'date_naissance' => $this->normalizeImportedDate($this->importValue($row, $headerIndexes, 'date_naissance')),
+            'lieu_naissance' => $this->importValue($row, $headerIndexes, 'lieu_naissance'),
+            'situation_familiale' => $this->normalizeSituationFamiliale($this->importValue($row, $headerIndexes, 'situation_familiale')),
+            'nombre_enfants' => $this->normalizeImportedInteger($this->importValue($row, $headerIndexes, 'nombre_enfants')),
+            'telephone' => $this->importValue($row, $headerIndexes, 'telephone'),
+            'adresse' => $this->importValue($row, $headerIndexes, 'adresse'),
+            'email_prive' => $this->importValue($row, $headerIndexes, 'email_prive'),
+            'email_professionnel' => $this->importValue($row, $headerIndexes, 'email_professionnel'),
+            'organe' => $this->normalizeImportedOrgane($this->importValue($row, $headerIndexes, 'organe')),
+            'fonction' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'fonction'), $lookups['fonctions'], 'fonction'),
+            'province_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'province'), $lookups['provinces'], 'province'),
+            'departement_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'departement'), $lookups['departements'], 'departement'),
+            'grade_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'grade'), $lookups['grades'], 'grade'),
+            'institution_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'institution'), $lookups['institutions'], 'institution'),
+            'niveau_etudes' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'niveau_etudes'), $lookups['niveaux_etudes'], 'niveau_etudes'),
+            'domaine_etudes' => $this->importValue($row, $headerIndexes, 'domaine_etudes'),
+            'annee_engagement_programme' => $this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_engagement_programme')),
+            'statut' => $this->normalizeImportedStatut($this->importValue($row, $headerIndexes, 'statut')),
+        ];
+
+        if ($payload['matricule_etat'] === '') {
+            $payload['matricule_etat'] = null;
+        }
+
+        return $payload;
+    }
+
+    private function finalizeImportedPayload(array $validated): array
+    {
+        if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
+            $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
+        }
+
+        if (empty($validated['date_embauche']) && !empty($validated['annee_engagement_programme'])) {
+            $validated['date_embauche'] = $validated['annee_engagement_programme'] . '-01-01';
+        }
+
+        $validated['poste_actuel'] = $validated['fonction'] ?? null;
+
+        if (Schema::hasColumn('agents', 'email')) {
+            $validated['email'] = $validated['email_professionnel']
+                ?? $validated['email_prive']
+                ?? null;
+        }
+
+        if (!Schema::hasColumn('agents', 'domaine_etudes')) {
+            unset($validated['domaine_etudes']);
+        }
+
+        return $validated;
+    }
+
+    private function importValidationRules(): array
+    {
+        return [
+            'matricule_etat' => 'nullable|unique:agents,matricule_etat',
+            'nom' => 'required|string',
+            'prenom' => 'required|string',
+            'postnom' => 'nullable|string',
+            'email_prive' => 'nullable|email',
+            'email_professionnel' => 'nullable|email',
+            'annee_naissance' => 'required_without:date_naissance|nullable|integer|min:1945|max:2100',
+            'date_naissance' => 'required_without:annee_naissance|nullable|date',
+            'lieu_naissance' => 'required|string',
+            'sexe' => 'required|in:M,F',
+            'situation_familiale' => 'nullable|string',
+            'nombre_enfants' => 'nullable|integer|min:0',
+            'telephone' => 'nullable|string',
+            'adresse' => 'nullable|string',
+            'organe' => 'required|string|max:255',
+            'fonction' => 'required|exists:fonctions,nom',
+            'grade_id' => 'nullable|exists:grades,id',
+            'institution_id' => 'nullable|exists:institutions,id',
+            'niveau_etudes' => ['required', 'string', Rule::in(Agent::NIVEAUX_ETUDES)],
+            'domaine_etudes' => 'nullable|string|max:255',
+            'annee_engagement_programme' => 'required|integer|min:1950|max:2100',
+            'departement_id' => 'nullable|exists:departments,id',
+            'province_id' => 'nullable|exists:provinces,id',
+            'statut' => 'nullable|in:actif,suspendu,ancien',
+        ];
+    }
+
+    private function buildImportLookups(): array
+    {
+        $fonctions = Fonction::query()->pluck('nom')->all();
+        $departements = Department::query()->get(['id', 'nom']);
+        $provinces = Province::query()->get(['id', 'nom', 'nom_province']);
+        $grades = Schema::hasTable('grades') ? Grade::query()->get(['id', 'libelle', 'nom']) : collect();
+        $institutions = Schema::hasTable('institutions') ? Institution::query()->get(['id', 'nom']) : collect();
+
+        $niveauEtudes = [];
+        foreach (Agent::NIVEAUX_ETUDES as $niveau) {
+            $niveauEtudes[$this->normalizeImportHeader($niveau)] = $niveau;
+        }
+
+        return [
+            'fonctions' => collect($fonctions)->mapWithKeys(fn($nom) => [$this->normalizeImportHeader($nom) => $nom])->all(),
+            'departements' => $departements->mapWithKeys(fn($department) => [$this->normalizeImportHeader($department->nom) => $department->id])->all(),
+            'provinces' => $provinces->mapWithKeys(function ($province) {
+                $keys = [$this->normalizeImportHeader($province->nom_province ?? $province->nom) => $province->id];
+                if (!empty($province->nom)) {
+                    $keys[$this->normalizeImportHeader($province->nom)] = $province->id;
+                }
+                return $keys;
+            })->all(),
+            'grades' => collect($grades)->mapWithKeys(function ($grade) {
+                $keys = [];
+                if (!empty($grade->libelle)) {
+                    $keys[$this->normalizeImportHeader($grade->libelle)] = $grade->id;
+                }
+                if (!empty($grade->nom)) {
+                    $keys[$this->normalizeImportHeader($grade->nom)] = $grade->id;
+                }
+                return $keys;
+            })->all(),
+            'institutions' => collect($institutions)->mapWithKeys(fn($institution) => [$this->normalizeImportHeader($institution->nom) => $institution->id])->all(),
+            'niveaux_etudes' => $niveauEtudes,
+        ];
+    }
+
+    private function resolveLookupValue(mixed $value, array $lookup, string $field): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $key = $this->normalizeImportHeader((string) $value);
+        if (array_key_exists($key, $lookup)) {
+            return $lookup[$key];
+        }
+
+        throw ValidationException::withMessages([
+            $field => 'Valeur introuvable pour ' . $field . ' : ' . $value . '.',
+        ]);
+    }
+
+    private function importValue(array $row, array $headerIndexes, string $field): mixed
+    {
+        if (!array_key_exists($field, $headerIndexes)) {
+            return null;
+        }
+
+        $index = $headerIndexes[$field];
+        if (!array_key_exists($index, $row)) {
+            return null;
+        }
+
+        $value = $row[$index];
+        if (!is_string($value)) {
+            return $value;
+        }
+
+        $value = trim($value);
+        return $value === '' ? null : $value;
+    }
+
+    private function normalizeImportHeader(string $header): string
+    {
+        $header = Str::ascii($header);
+        $header = strtolower(trim($header));
+        $header = preg_replace('/[^a-z0-9]+/', '_', $header);
+        return trim((string) $header, '_');
+    }
+
+    private function headerAliases(): array
+    {
+        return [
+            'matricule' => 'matricule_etat',
+            'matricule_etat' => 'matricule_etat',
+            'nom' => 'nom',
+            'postnom' => 'postnom',
+            'post_nom' => 'postnom',
+            'prenom' => 'prenom',
+            'sexe' => 'sexe',
+            'annee_naissance' => 'annee_naissance',
+            'date_naissance' => 'date_naissance',
+            'lieu_naissance' => 'lieu_naissance',
+            'situation_familiale' => 'situation_familiale',
+            'etat_civil' => 'situation_familiale',
+            'nombre_enfants' => 'nombre_enfants',
+            'enfants' => 'nombre_enfants',
+            'telephone' => 'telephone',
+            'adresse' => 'adresse',
+            'email_prive' => 'email_prive',
+            'email_personnel' => 'email_prive',
+            'email_professionnel' => 'email_professionnel',
+            'email_pro' => 'email_professionnel',
+            'email_institutionnel' => 'email_professionnel',
+            'organe' => 'organe',
+            'fonction' => 'fonction',
+            'province' => 'province',
+            'departement' => 'departement',
+            'department' => 'departement',
+            'grade' => 'grade',
+            'grade_etat' => 'grade',
+            'institution' => 'institution',
+            'niveau_etudes' => 'niveau_etudes',
+            'domaine_etudes' => 'domaine_etudes',
+            'annee_engagement' => 'annee_engagement_programme',
+            'annee_engagement_programme' => 'annee_engagement_programme',
+            'statut' => 'statut',
+        ];
+    }
+
+    private function normalizeImportedSexe(mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = $this->normalizeImportHeader((string) $value);
+
+        return match ($normalized) {
+            'm', 'masculin', 'male', 'homme' => 'M',
+            'f', 'feminin', 'female', 'femme' => 'F',
+            default => $value,
+        };
+    }
+
+    private function normalizeImportedOrgane(mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = $this->normalizeImportHeader((string) $value);
+
+        return match ($normalized) {
+            'sen', 'secretariat_executif_national' => 'Secrétariat Exécutif National',
+            'sep', 'secretariat_executif_provincial' => 'Secrétariat Exécutif Provincial',
+            'sel', 'secretariat_executif_local' => 'Secrétariat Exécutif Local',
+            default => $value,
+        };
+    }
+
+    private function normalizeSituationFamiliale(mixed $value): mixed
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $normalized = $this->normalizeImportHeader((string) $value);
+
+        return match ($normalized) {
+            'celibataire' => 'célibataire',
+            'marie', 'marie_e' => 'marié',
+            'divorce', 'divorce_e' => 'divorcé',
+            'veuf', 'veuve', 'veuf_veuve' => 'veuf',
+            default => $value,
+        };
+    }
+
+    private function normalizeImportedStatut(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return 'actif';
+        }
+
+        $normalized = $this->normalizeImportHeader((string) $value);
+
+        return match ($normalized) {
+            'actif', 'active' => 'actif',
+            'suspendu', 'suspendue' => 'suspendu',
+            'ancien', 'ancienne', 'inactif', 'inactive' => 'ancien',
+            default => (string) $value,
+        };
+    }
+
+    private function normalizeImportedYear(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) preg_replace('/[^0-9]/', '', (string) $value);
+    }
+
+    private function normalizeImportedInteger(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return (int) preg_replace('/[^0-9]/', '', (string) $value);
+    }
+
+    private function normalizeImportedDate(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $value, $matches)) {
+            return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+        }
+
+        return $value;
+    }
+
+    private function isImportRowEmpty(array $row): bool
+    {
+        foreach ($row as $value) {
+            if ($value !== null && trim((string) $value) !== '') {
+                return false;
+            }
+        }
+
+        return true;
     }
 
 }

@@ -179,6 +179,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin NT (Chef Section Nouvelle Technologie)
     Route::middleware('admin.nt')->prefix('admin')->group(function () {
         Route::get('dashboard', [ParametresController::class, 'apiDashboard']);
+        Route::get('agents/import-template', [ApiAgentController::class, 'importTemplate']);
+        Route::post('agents/import', [ApiAgentController::class, 'import']);
 
         // Provinces
         Route::get('provinces', [ParametresController::class, 'apiProvincesIndex']);

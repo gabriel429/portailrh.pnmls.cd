@@ -181,6 +181,7 @@ const statCards = computed(() => [
 
 const quickLinks = [
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'fa-user-shield', color: '#059669' },
+  { to: '/admin/agents/import', label: 'Import agents', icon: 'fa-file-import', color: '#2563eb' },
   { to: '/admin/organes', label: 'Organes', icon: 'fa-sitemap', color: '#8b5cf6' },
   { to: '/admin/provinces', label: 'Provinces', icon: 'fa-map', color: '#d97706' },
   { to: '/admin/departments', label: 'Departements', icon: 'fa-building', color: '#7c3aed' },

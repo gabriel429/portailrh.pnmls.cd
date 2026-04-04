@@ -359,6 +359,12 @@ const routes = [
                 component: () => import('@/views/admin/deployment/DeploymentView.vue'),
                 meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' },
             },
+            {
+                path: 'agents/import',
+                name: 'admin.agents.import',
+                component: () => import('@/views/admin/agents/AgentImportView.vue'),
+                meta: { auth: true, adminNT: true, layout: 'admin' },
+            },
             // CRUD entities
             { path: 'provinces', name: 'admin.provinces.index', component: () => import('@/views/admin/provinces/ProvinceListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'provinces/create', name: 'admin.provinces.create', component: () => import('@/views/admin/provinces/ProvinceFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
