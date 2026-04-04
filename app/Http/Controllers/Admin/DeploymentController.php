@@ -1089,7 +1089,7 @@ class DeploymentController extends Controller
             $quotedNpm = escapeshellarg($npmPath);
             $quotedNode = escapeshellarg($nodePath);
             $binDir = escapeshellarg(dirname($npmPath));
-            $shellPrefix = "export PATH={$binDir}:$PATH;";
+            $shellPrefix = "export PATH={$binDir}:\$PATH;";
 
             $output_messages[] = '=== Verification de l environnement Node ===';
 
