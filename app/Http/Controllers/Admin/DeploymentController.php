@@ -1082,21 +1082,41 @@ class DeploymentController extends Controller
                 throw new \RuntimeException('Le script de build frontend est introuvable.');
             }
 
+            $logPath = storage_path('logs' . DIRECTORY_SEPARATOR . 'frontend-build.log');
+            $pidPath = storage_path('app' . DIRECTORY_SEPARATOR . 'frontend-build.pid');
+            $statusPath = storage_path('app' . DIRECTORY_SEPARATOR . 'frontend-build.status');
+
+            if (is_file($pidPath)) {
+                $existingPid = trim((string) file_get_contents($pidPath));
+                if ($existingPid !== '') {
+                    $isRunning = trim((string) shell_exec('kill -0 ' . escapeshellarg($existingPid) . ' 2>/dev/null; echo $?')) === '0';
+                    if ($isRunning) {
+                        return $this->deployResponse([
+                            '⏳ Un build frontend est deja en cours.',
+                            'PID: ' . $existingPid,
+                            'Consultez le journal: ' . $logPath,
+                        ], [], false);
+                    }
+                }
+            }
+
+            @mkdir(dirname($logPath), 0775, true);
+            @mkdir(dirname($statusPath), 0775, true);
+            file_put_contents($statusPath, 'queued');
+            file_put_contents($logPath, '');
+
             $quotedScript = escapeshellarg($scriptPath);
-            $build = $this->runShellCommand("bash {$quotedScript}");
-            $output_messages[] = $build['output'] ?: '(aucune sortie du script de build)';
-            if ($build['exit_code'] !== 0) {
-                throw new \RuntimeException('Le script de build frontend a echoue.');
+            $quotedLog = escapeshellarg($logPath);
+            $launchOutput = trim((string) shell_exec("nohup bash {$quotedScript} > {$quotedLog} 2>&1 < /dev/null & echo \$!"));
+
+            if ($launchOutput === '') {
+                throw new \RuntimeException('Impossible de lancer le build frontend en arriere-plan.');
             }
 
-            $output_messages[] = '=== Nettoyage final des caches Laravel ===';
-            Artisan::call('optimize:clear');
-            $clearOutput = trim(Artisan::output());
-            if ($clearOutput !== '') {
-                $output_messages[] = $clearOutput;
-            }
-
-            $output_messages[] = '✅ Build frontend termine avec succes !';
+            $output_messages[] = '🚀 Build frontend lance en arriere-plan.';
+            $output_messages[] = 'PID: ' . $launchOutput;
+            $output_messages[] = 'Journal: ' . $logPath;
+            $output_messages[] = 'Rechargez la page dans quelques instants pour verifier le resultat du site.';
             $success = true;
         } catch (\Exception $e) {
             $error_messages[] = '❌ ERREUR: ' . $e->getMessage();
