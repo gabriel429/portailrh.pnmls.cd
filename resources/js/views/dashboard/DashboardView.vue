@@ -4,7 +4,8 @@
     <!-- Hero -->
     <div class="dash-hero">
       <div class="dash-hero-avatar">
-        <i class="fas fa-user"></i>
+        <img v-if="currentProfilePhotoUrl" :src="currentProfilePhotoUrl" :alt="heroDisplayName" class="dash-hero-avatar-photo" @error="handleProfilePhotoError">
+        <span v-else class="dash-hero-avatar-fallback">{{ heroInitials }}</span>
       </div>
       <div class="dash-hero-text">
         <h2>Bienvenu(e), {{ auth.agent ? auth.agent.nom + ' ' + auth.agent.prenom : auth.user?.name || 'Utilisateur' }}</h2>
@@ -253,7 +254,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { create as createDocument } from '@/api/documents'
@@ -267,6 +268,62 @@ const ui = useUiStore()
 const loading = ref(true)
 const stats = ref({})
 const activities = ref([])
+const profilePhotoIndex = ref(0)
+
+const heroDisplayName = computed(() => {
+  return auth.agent ? `${auth.agent.nom || ''} ${auth.agent.prenom || ''}`.trim() : (auth.user?.name || 'Utilisateur')
+})
+
+const heroInitials = computed(() => {
+  const agent = auth.agent
+  if (agent) {
+    return ((agent.prenom?.[0] || '') + (agent.nom?.[0] || '')).toUpperCase() || 'U'
+  }
+
+  return (auth.user?.name?.[0] || 'U').toUpperCase()
+})
+
+const profilePhotoCandidates = computed(() => {
+  const photo = auth.agent?.photo
+
+  if (!photo) {
+    return []
+  }
+
+  const trimmedPhoto = photo.trim()
+  const candidates = []
+
+  if (/^https?:\/\//i.test(trimmedPhoto)) {
+    candidates.push(trimmedPhoto)
+  } else {
+    const normalizedPhoto = trimmedPhoto.replace(/^\/+/, '')
+
+    candidates.push(`/${normalizedPhoto}`)
+
+    if (!normalizedPhoto.startsWith('storage/')) {
+      candidates.push(`/storage/${normalizedPhoto}`)
+    }
+
+    if (!normalizedPhoto.startsWith('uploads/') && !normalizedPhoto.includes('/')) {
+      candidates.push(`/uploads/profiles/${normalizedPhoto}`)
+    }
+  }
+
+  return [...new Set(candidates)]
+})
+
+const currentProfilePhotoUrl = computed(() => {
+  return profilePhotoCandidates.value[profilePhotoIndex.value] || null
+})
+
+function handleProfilePhotoError() {
+  if (profilePhotoIndex.value < profilePhotoCandidates.value.length - 1) {
+    profilePhotoIndex.value += 1
+    return
+  }
+
+  profilePhotoIndex.value = profilePhotoCandidates.value.length
+}
 
 const today = computed(() => {
   return new Date().toLocaleDateString('fr-FR', {
@@ -400,6 +457,10 @@ onMounted(async () => {
   await loadDashboard()
   loading.value = false
 })
+
+watch(profilePhotoCandidates, () => {
+  profilePhotoIndex.value = 0
+}, { immediate: true })
 </script>
 
 <style scoped>
@@ -419,6 +480,23 @@ onMounted(async () => {
   background: rgba(255,255,255,.18); display: flex; align-items: center;
   justify-content: center; font-size: 1.3rem; flex-shrink: 0;
   border: 2px solid rgba(255,255,255,.15);
+  overflow: hidden;
+}
+.dash-hero-avatar-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dash-hero-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
 }
 .dash-hero-text { flex: 1; min-width: 150px; }
 .dash-hero-text h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 .2rem; }
