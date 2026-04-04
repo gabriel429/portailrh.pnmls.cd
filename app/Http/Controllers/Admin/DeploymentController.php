@@ -1077,48 +1077,16 @@ class DeploymentController extends Controller
         try {
             $root = base_path();
 
-            $nodePath = $this->resolveExecutable('node', [
-                '/opt/alt/alt-nodejs22/root/usr/bin/node',
-                '/opt/alt/alt-nodejs20/root/usr/bin/node',
-                '/opt/alt/alt-nodejs18/root/usr/bin/node',
-                '/opt/alt/alt-nodejs24/root/usr/bin/node',
-            ]);
-            $npmPath = $this->resolveExecutable('npm', [
-                '/opt/alt/alt-nodejs22/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs20/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs18/root/usr/bin/npm',
-                '/opt/alt/alt-nodejs24/root/usr/bin/npm',
-            ]);
-
-            if ($npmPath === null || $nodePath === null) {
-                throw new \RuntimeException('Node.js ou npm est introuvable sur le serveur.');
+            $scriptPath = $root . DIRECTORY_SEPARATOR . 'scripts' . DIRECTORY_SEPARATOR . 'hostinger-build-frontend.sh';
+            if (!is_file($scriptPath)) {
+                throw new \RuntimeException('Le script de build frontend est introuvable.');
             }
 
-            $quotedRoot = escapeshellarg($root);
-            $quotedNpm = escapeshellarg($npmPath);
-            $quotedNode = escapeshellarg($nodePath);
-            $binDir = escapeshellarg(dirname($npmPath));
-            $shellPrefix = "export PATH={$binDir}:\$PATH;";
-
-            $output_messages[] = '=== Verification de l environnement Node ===';
-
-            $nodeVersion = $this->runShellCommand("{$quotedNode} -v");
-            $npmVersion = $this->runShellCommand("{$quotedNpm} -v");
-            $output_messages[] = $nodeVersion['output'] ?: '(version node indisponible)';
-            $output_messages[] = $npmVersion['output'] ?: '(version npm indisponible)';
-
-            $output_messages[] = '=== Installation des dependances frontend ===';
-            $install = $this->runShellCommand("{$shellPrefix} cd {$quotedRoot} && {$quotedNpm} install --legacy-peer-deps");
-            $output_messages[] = $install['output'] ?: '(aucune sortie npm install)';
-            if ($install['exit_code'] !== 0) {
-                throw new \RuntimeException('npm install a echoue.');
-            }
-
-            $output_messages[] = '=== Build Vite ===';
-            $build = $this->runShellCommand("{$shellPrefix} cd {$quotedRoot} && {$quotedNpm} run build");
-            $output_messages[] = $build['output'] ?: '(aucune sortie npm run build)';
+            $quotedScript = escapeshellarg($scriptPath);
+            $build = $this->runShellCommand("bash {$quotedScript}");
+            $output_messages[] = $build['output'] ?: '(aucune sortie du script de build)';
             if ($build['exit_code'] !== 0) {
-                throw new \RuntimeException('npm run build a echoue.');
+                throw new \RuntimeException('Le script de build frontend a echoue.');
             }
 
             $output_messages[] = '=== Nettoyage final des caches Laravel ===';
