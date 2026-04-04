@@ -10,12 +10,28 @@
           </div>
         </router-link>
 
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain">
+        <button
+          class="navbar-toggler"
+          type="button"
+          :aria-expanded="isMobileNavOpen ? 'true' : 'false'"
+          aria-controls="navbarMain"
+          @click="toggleMobileNav"
+        >
           <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse" id="navbarMain">
-          <ul class="navbar-nav mx-auto">
+        <div class="collapse navbar-collapse" :class="{ show: isMobileNavOpen }" id="navbarMain">
+          <div class="mobile-nav-sheet-head d-lg-none">
+            <div>
+              <div class="mobile-nav-eyebrow">Navigation</div>
+              <div class="mobile-nav-title">E-PNMLS</div>
+            </div>
+            <button class="mobile-nav-close" type="button" aria-label="Fermer le menu" @click="closeMobileNav">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <ul class="navbar-nav mx-auto navbar-primary-nav">
             <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'dashboard' }">
                 <i class="fas fa-th-large nav-icon"></i> Accueil
@@ -48,12 +64,13 @@
             </li>
           </ul>
 
-          <ul class="navbar-nav align-items-lg-center">
-            <!-- Sync status (desktop only) -->
-            <li class="nav-item">
+          <div class="mobile-nav-divider d-lg-none"></div>
+
+          <ul class="navbar-nav align-items-lg-center navbar-secondary-nav">
+            <li class="nav-item d-none d-lg-flex">
               <SyncStatusBar />
             </li>
-            <!-- Admin dropdown -->
+
             <li v-if="auth.hasAdminAccess" class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 <i class="fas fa-shield-halved nav-icon"></i> Admin
@@ -67,7 +84,7 @@
                   </li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
-                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Congés
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Conges
                     </router-link>
                   </li>
                   <li>
@@ -109,7 +126,6 @@
 
             <div class="nav-divider d-none d-lg-block"></div>
 
-            <!-- Notification bell -->
             <li class="nav-item dropdown">
               <a class="nav-link nav-notif-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 <i class="fas fa-bell"></i>
@@ -127,20 +143,23 @@
                   </div>
                 </li>
                 <template v-if="notifStore.recent.length > 0">
-                  <li v-for="n in notifStore.recent" :key="n.id">
+                  <li v-for="notification in notifStore.recent" :key="notification.id">
                     <router-link
                       class="dropdown-item notif-item"
-                      :class="{ 'notif-unread': !n.lu }"
-                      :to="n.lien || '/notifications'"
+                      :class="{ 'notif-unread': !notification.lu }"
+                      :to="notification.lien || '/notifications'"
                     >
-                      <span class="notif-item-icon" :style="{ background: (n.couleur || '#0077B5') + '20', color: n.couleur || '#0077B5' }">
-                        <i :class="'fas ' + (n.icone || 'fa-bell')"></i>
+                      <span
+                        class="notif-item-icon"
+                        :style="{ background: (notification.couleur || '#0077B5') + '20', color: notification.couleur || '#0077B5' }"
+                      >
+                        <i :class="'fas ' + (notification.icone || 'fa-bell')"></i>
                       </span>
                       <span class="notif-item-content">
-                        <span class="notif-item-title">{{ n.titre }}</span>
-                        <span class="notif-item-time">{{ n.temps }}</span>
+                        <span class="notif-item-title">{{ notification.titre }}</span>
+                        <span class="notif-item-time">{{ notification.temps }}</span>
                       </span>
-                      <span v-if="!n.lu" class="notif-dot"></span>
+                      <span v-if="!notification.lu" class="notif-dot"></span>
                     </router-link>
                   </li>
                 </template>
@@ -156,7 +175,6 @@
               </ul>
             </li>
 
-            <!-- User dropdown -->
             <li class="nav-item dropdown">
               <a class="nav-link nav-user-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 <img v-if="profilePhotoUrl" :src="profilePhotoUrl" alt="Photo" class="nav-user-photo">
@@ -188,16 +206,21 @@
       </div>
     </nav>
 
-    <!-- Watermark logo -->
+    <button
+      v-if="auth.isAuthenticated && isMobileNavOpen"
+      class="mobile-nav-backdrop d-lg-none"
+      type="button"
+      aria-label="Fermer le menu"
+      @click="closeMobileNav"
+    ></button>
+
     <div class="watermark-logo"></div>
 
-    <!-- Content -->
     <div class="container-fluid main-content">
       <AppToast />
       <slot />
     </div>
 
-    <!-- Footer -->
     <footer class="footer mt-5">
       <p class="mb-0">&copy; 2026 E-PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
     </footer>
@@ -205,7 +228,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
@@ -216,32 +239,39 @@ const auth = useAuthStore()
 const notifStore = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
+const isMobileNavOpen = ref(false)
 
-// Close mobile navbar and dropdowns on route change
+function closeMobileNav() {
+  isMobileNavOpen.value = false
+}
+
+function toggleMobileNav() {
+  isMobileNavOpen.value = !isMobileNavOpen.value
+}
+
+function handleViewportChange() {
+  if (window.innerWidth >= 992) {
+    closeMobileNav()
+  }
+}
+
 watch(() => route.fullPath, () => {
-    const navbarEl = document.getElementById('navbarMain')
-    if (navbarEl && navbarEl.classList.contains('show')) {
-        const bsCollapse = window.bootstrap?.Collapse?.getInstance(navbarEl)
-        if (bsCollapse) {
-            bsCollapse.hide()
-        } else {
-            navbarEl.classList.remove('show')
-        }
-    }
-    // Close any open dropdowns
-    document.querySelectorAll('.navbar-main .dropdown-menu.show').forEach(menu => {
-        menu.classList.remove('show')
-        menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.classList.remove('show')
-        menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.setAttribute('aria-expanded', 'false')
-    })
+  closeMobileNav()
+
+  document.querySelectorAll('.navbar-main .dropdown-menu.show').forEach((menu) => {
+    menu.classList.remove('show')
+    menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.classList.remove('show')
+    menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.setAttribute('aria-expanded', 'false')
+  })
 })
 
 const initials = computed(() => {
-    const agent = auth.agent
-    if (agent) {
-        return ((agent.prenom?.[0] || '') + (agent.nom?.[0] || '')).toUpperCase()
-    }
-    return (auth.user?.name?.[0] || 'U').toUpperCase()
+  const agent = auth.agent
+  if (agent) {
+    return ((agent.prenom?.[0] || '') + (agent.nom?.[0] || '')).toUpperCase()
+  }
+
+  return (auth.user?.name?.[0] || 'U').toUpperCase()
 })
 
 const profilePhotoUrl = computed(() => {
@@ -259,19 +289,28 @@ const profilePhotoUrl = computed(() => {
 })
 
 async function handleLogout() {
-    await auth.logout()
-    notifStore.stopPolling()
-    router.push({ name: 'login' })
+  await auth.logout()
+  notifStore.stopPolling()
+  router.push({ name: 'login' })
 }
 
 onMounted(() => {
-    if (auth.isAuthenticated) {
-        notifStore.startPolling()
-    }
+  if (auth.isAuthenticated) {
+    notifStore.startPolling()
+  }
+
+  window.addEventListener('resize', handleViewportChange)
+  document.body.classList.toggle('mobile-nav-open', isMobileNavOpen.value)
 })
 
 onUnmounted(() => {
-    notifStore.stopPolling()
+  notifStore.stopPolling()
+  window.removeEventListener('resize', handleViewportChange)
+  document.body.classList.remove('mobile-nav-open')
+})
+
+watch(isMobileNavOpen, (value) => {
+  document.body.classList.toggle('mobile-nav-open', value)
 })
 </script>
 
