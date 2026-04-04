@@ -706,6 +706,12 @@ class AgentController extends ApiController
 
     private function buildImportPayload(array $row, array $headerIndexes, array $lookups): array
     {
+        $provinceValue = $this->importValue($row, $headerIndexes, 'province');
+        $fonctionValue = $this->importValue($row, $headerIndexes, 'fonction');
+        $institutionValue = $this->importValue($row, $headerIndexes, 'institution');
+        $niveauEtudesValue = $this->importValue($row, $headerIndexes, 'niveau_etudes');
+        $lieuNaissanceValue = $this->importValue($row, $headerIndexes, 'lieu_naissance');
+
         $payload = [
             'matricule_etat' => $this->importValue($row, $headerIndexes, 'matricule_etat'),
             'nom' => $this->importValue($row, $headerIndexes, 'nom'),
@@ -714,20 +720,20 @@ class AgentController extends ApiController
             'sexe' => $this->normalizeImportedSexe($this->importValue($row, $headerIndexes, 'sexe')),
             'annee_naissance' => $this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_naissance')),
             'date_naissance' => $this->normalizeImportedDate($this->importValue($row, $headerIndexes, 'date_naissance')),
-            'lieu_naissance' => $this->importValue($row, $headerIndexes, 'lieu_naissance'),
+            'lieu_naissance' => $lieuNaissanceValue ?? $provinceValue ?? 'Non renseigne',
             'situation_familiale' => $this->normalizeSituationFamiliale($this->importValue($row, $headerIndexes, 'situation_familiale')),
             'nombre_enfants' => $this->normalizeImportedInteger($this->importValue($row, $headerIndexes, 'nombre_enfants')),
             'telephone' => $this->importValue($row, $headerIndexes, 'telephone'),
             'adresse' => $this->importValue($row, $headerIndexes, 'adresse'),
-            'email_prive' => $this->importValue($row, $headerIndexes, 'email_prive'),
-            'email_professionnel' => $this->importValue($row, $headerIndexes, 'email_professionnel'),
+            'email_prive' => $this->normalizeImportedEmail($this->importValue($row, $headerIndexes, 'email_prive')),
+            'email_professionnel' => $this->normalizeImportedEmail($this->importValue($row, $headerIndexes, 'email_professionnel')),
             'organe' => $this->normalizeImportedOrgane($this->importValue($row, $headerIndexes, 'organe')),
-            'fonction' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'fonction'), $lookups['fonctions'], 'fonction'),
-            'province_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'province'), $lookups['provinces'], 'province'),
+            'fonction' => $this->normalizeImportedFonction($fonctionValue, $lookups['fonctions']),
+            'province_id' => $this->resolveLookupValue($provinceValue, $lookups['provinces'], 'province'),
             'departement_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'departement'), $lookups['departements'], 'departement'),
             'grade_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'grade'), $lookups['grades'], 'grade'),
-            'institution_id' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'institution'), $lookups['institutions'], 'institution'),
-            'niveau_etudes' => $this->resolveLookupValue($this->importValue($row, $headerIndexes, 'niveau_etudes'), $lookups['niveaux_etudes'], 'niveau_etudes'),
+            'institution_id' => $this->resolveOptionalLookupValue($institutionValue, $lookups['institutions']),
+            'niveau_etudes' => $this->resolveLookupValue($niveauEtudesValue, $lookups['niveaux_etudes'], 'niveau_etudes'),
             'domaine_etudes' => $this->importValue($row, $headerIndexes, 'domaine_etudes'),
             'annee_engagement_programme' => $this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_engagement_programme')),
             'statut' => $this->normalizeImportedStatut($this->importValue($row, $headerIndexes, 'statut')),
@@ -783,7 +789,7 @@ class AgentController extends ApiController
             'telephone' => 'nullable|string',
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
-            'fonction' => 'required|exists:fonctions,nom',
+            'fonction' => 'required|string|max:255',
             'grade_id' => 'nullable|exists:grades,id',
             'institution_id' => 'nullable|exists:institutions,id',
             'niveau_etudes' => ['required', 'string', Rule::in(Agent::NIVEAUX_ETUDES)],
@@ -807,6 +813,13 @@ class AgentController extends ApiController
         foreach (Agent::NIVEAUX_ETUDES as $niveau) {
             $niveauEtudes[$this->normalizeImportHeader($niveau)] = $niveau;
         }
+
+        $niveauEtudes['doctorat'] = 'Doctorat (PhD)';
+        $niveauEtudes['doctorat_phd'] = 'Doctorat (PhD)';
+        $niveauEtudes['diplome_d_etat'] = 'Diplôme d\'État';
+        $niveauEtudes['diplome_etat'] = 'Diplôme d\'État';
+        $niveauEtudes['diplome_d_etudes_superieures_des'] = 'Diplôme d\'Études Supérieures (DES)';
+        $niveauEtudes['des'] = 'Diplôme d\'Études Supérieures (DES)';
 
         return [
             'fonctions' => collect($fonctions)->mapWithKeys(fn($nom) => [$this->normalizeImportHeader($nom) => $nom])->all(),
@@ -847,6 +860,16 @@ class AgentController extends ApiController
         throw ValidationException::withMessages([
             $field => 'Valeur introuvable pour ' . $field . ' : ' . $value . '.',
         ]);
+    }
+
+    private function resolveOptionalLookupValue(mixed $value, array $lookup): mixed
+    {
+        if ($value === null || $value === '' || $lookup === []) {
+            return null;
+        }
+
+        $key = $this->normalizeImportHeader((string) $value);
+        return $lookup[$key] ?? null;
     }
 
     private function importValue(array $row, array $headerIndexes, string $field): mixed
@@ -987,7 +1010,14 @@ class AgentController extends ApiController
             return null;
         }
 
-        return (int) preg_replace('/[^0-9]/', '', (string) $value);
+        $value = trim((string) $value);
+
+        if (preg_match('/(19\d{2}|20\d{2}|2100)/', $value, $matches)) {
+            return (int) $matches[1];
+        }
+
+        $digits = preg_replace('/[^0-9]/', '', $value);
+        return $digits === '' ? null : (int) $digits;
     }
 
     private function normalizeImportedInteger(mixed $value): mixed
@@ -1011,11 +1041,61 @@ class AgentController extends ApiController
             return $value;
         }
 
-        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $value, $matches)) {
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/', $value, $matches)) {
             return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
         }
 
         return $value;
+    }
+
+    private function normalizeImportedEmail(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $value = str_replace([',', ';'], ' ', trim((string) $value));
+        $parts = preg_split('/\s+/', $value) ?: [];
+
+        foreach ($parts as $part) {
+            $candidate = trim($part);
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function normalizeImportedFonction(mixed $value, array $lookup): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $key = $this->normalizeImportHeader((string) $value);
+
+        $aliases = [
+            'secretaire_executif_provincial' => 'Secrétaire Exécutif Provincial (SEP)',
+            'chef_de_cellule_planification_et_suivi_evaluation' => 'Chef de Cellule — Planification, Suivi-Évaluation et Renforcement des Capacités',
+            'chef_de_cellule_planification_suivi_evaluation' => 'Chef de Cellule — Planification, Suivi-Évaluation et Renforcement des Capacités',
+            'chef_de_cellule_planification_suivi_evaluation_et_renforcement_des_capacites' => 'Chef de Cellule — Planification, Suivi-Évaluation et Renforcement des Capacités',
+            'chef_de_cellule_planification' => 'Chef de Cellule — Planification, Suivi-Évaluation et Renforcement des Capacités',
+            'chef_de_cellule_suivi_evaluation' => 'Chef de Cellule — Planification, Suivi-Évaluation et Renforcement des Capacités',
+            'chef_de_cellule_partenariat_et_appui_aux_secteurs' => 'Chef de Cellule Partenariat et Appui aux Secteurs',
+            'chef_de_cellule_administration_et_finances' => 'Chef de Cellule Administration et Finances (CAF)',
+            'secretaire_caissiere' => 'Secrétaire Caissier',
+            'secretaire_caissier' => 'Secrétaire Caissier',
+            'secretaire_econome' => 'Secrétaire Caissier',
+            'secretaire_econome_' => 'Secrétaire Caissier',
+            'technicienne_de_surface' => 'Technicien de Surface',
+            'sentinelle' => 'Sentinelle (Gardien)',
+            'gardier' => 'Sentinelle (Gardien)',
+        ];
+
+        $canonical = $aliases[$key] ?? ($lookup[$key] ?? trim((string) $value));
+
+        return $canonical;
     }
 
     private function isImportRowEmpty(array $row): bool

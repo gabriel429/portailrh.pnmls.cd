@@ -16,6 +16,7 @@ class Agent extends Authenticatable
     use Syncable;
 
     const NIVEAUX_ETUDES = [
+        'PP2',
         'PP3',
         'PP4',
         'PP5',
