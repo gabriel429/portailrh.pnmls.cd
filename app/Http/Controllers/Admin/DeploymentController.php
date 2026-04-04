@@ -1088,6 +1088,8 @@ class DeploymentController extends Controller
             $quotedRoot = escapeshellarg($root);
             $quotedNpm = escapeshellarg($npmPath);
             $quotedNode = escapeshellarg($nodePath);
+            $binDir = escapeshellarg(dirname($npmPath));
+            $shellPrefix = "export PATH={$binDir}:$PATH;";
 
             $output_messages[] = '=== Verification de l environnement Node ===';
 
@@ -1097,14 +1099,14 @@ class DeploymentController extends Controller
             $output_messages[] = $npmVersion['output'] ?: '(version npm indisponible)';
 
             $output_messages[] = '=== Installation des dependances frontend ===';
-            $install = $this->runShellCommand("cd {$quotedRoot} && {$quotedNpm} install");
+            $install = $this->runShellCommand("{$shellPrefix} cd {$quotedRoot} && {$quotedNpm} install --legacy-peer-deps");
             $output_messages[] = $install['output'] ?: '(aucune sortie npm install)';
             if ($install['exit_code'] !== 0) {
                 throw new \RuntimeException('npm install a echoue.');
             }
 
             $output_messages[] = '=== Build Vite ===';
-            $build = $this->runShellCommand("cd {$quotedRoot} && {$quotedNpm} run build");
+            $build = $this->runShellCommand("{$shellPrefix} cd {$quotedRoot} && {$quotedNpm} run build");
             $output_messages[] = $build['output'] ?: '(aucune sortie npm run build)';
             if ($build['exit_code'] !== 0) {
                 throw new \RuntimeException('npm run build a echoue.');
