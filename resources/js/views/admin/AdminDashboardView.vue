@@ -82,8 +82,8 @@
           <span class="connected-badge">{{ connectedUsers.length }} en ligne</span>
         </div>
         <div v-if="connectedUsers.length" class="card border-0 shadow-sm overflow-hidden" style="border-radius:14px;">
-          <div class="table-responsive">
-            <table class="table table-hover mb-0 align-middle">
+          <div class="table-responsive admin-users-table-wrap">
+            <table class="table table-hover mb-0 align-middle admin-users-table">
               <thead>
                 <tr style="background:#f8fafc;">
                   <th class="border-0 text-muted small fw-semibold py-3 ps-4">Nom</th>
@@ -96,27 +96,27 @@
               </thead>
               <tbody>
                 <tr v-for="u in connectedUsers" :key="u.id">
-                  <td class="ps-4">
+                  <td class="ps-4" data-label="Nom">
                     <div class="d-flex align-items-center gap-2">
                       <div class="user-avatar-sm">{{ getInitials(u.nom_complet) }}</div>
                       <span class="fw-semibold">{{ u.nom_complet }}</span>
                     </div>
                   </td>
-                  <td><span class="role-pill">{{ u.role }}</span></td>
-                  <td class="text-muted">{{ u.province || '-' }}</td>
-                  <td>
+                  <td data-label="Role"><span class="role-pill">{{ u.role }}</span></td>
+                  <td class="text-muted" data-label="Province">{{ u.province || '-' }}</td>
+                  <td data-label="Derniere activite">
                     <span class="activity-indicator">
                       <span class="activity-dot"></span>
                       {{ formatTime(u.last_activity) }}
                     </span>
                   </td>
-                  <td v-if="auth.isSuperAdmin">
+                  <td v-if="auth.isSuperAdmin" data-label="Appareil">
                     <span class="device-badge" :class="u.device_type === 'Telephone' ? 'device-mobile' : u.device_type === 'Tablette' ? 'device-tablet' : 'device-desktop'">
                       <i class="fas me-1" :class="u.device_type === 'Telephone' ? 'fa-mobile-alt' : u.device_type === 'Tablette' ? 'fa-tablet-alt' : 'fa-desktop'"></i>
                       {{ u.device_model || u.device_type }}
                     </span>
                   </td>
-                  <td class="pe-4"><code class="ip-badge">{{ u.ip_address }}</code></td>
+                  <td class="pe-4" data-label="IP"><code class="ip-badge">{{ u.ip_address }}</code></td>
                 </tr>
               </tbody>
             </table>
@@ -134,7 +134,7 @@
         <span>Acces rapide</span>
       </div>
       <div class="row g-3">
-        <div v-for="link in quickLinks" :key="link.to" class="col-6 col-md-4 col-lg-3">
+        <div v-for="link in quickLinks" :key="link.to" class="col-12 col-sm-6 col-md-4 col-lg-3">
           <router-link :to="link.to" class="quick-link-card">
             <div class="quick-link-icon" :style="{ background: link.color + '12', color: link.color }">
               <i :class="['fas', link.icon]"></i>
@@ -556,6 +556,14 @@ onMounted(async () => {
   .dash-hero {
     padding: 1.2rem;
     border-radius: 12px;
+    align-items: flex-start;
+  }
+  .dash-hero::after {
+    display: none;
+  }
+  .dash-hero-content {
+    width: 100%;
+    align-items: flex-start;
   }
   .dash-hero-icon {
     width: 42px;
@@ -568,8 +576,99 @@ onMounted(async () => {
   .dash-hero-date {
     display: none;
   }
+  .section-header {
+    flex-wrap: wrap;
+    align-items: center;
+    row-gap: .35rem;
+  }
+  .connected-badge {
+    margin-left: 0;
+  }
   .stat-card-value {
     font-size: 1.3rem;
+  }
+  .organe-card {
+    padding: 1rem;
+  }
+  .organe-card-header {
+    align-items: flex-start;
+  }
+  .organe-stats {
+    gap: .5rem;
+  }
+  .organe-stat-value {
+    font-size: 1.1rem;
+  }
+  .admin-users-table-wrap {
+    overflow: visible;
+  }
+  .admin-users-table,
+  .admin-users-table tbody,
+  .admin-users-table tr,
+  .admin-users-table td {
+    display: block;
+    width: 100%;
+  }
+  .admin-users-table thead {
+    display: none;
+  }
+  .admin-users-table tbody {
+    padding: .75rem;
+    background: #f8fafc;
+  }
+  .admin-users-table tr {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
+    padding: .25rem 0;
+  }
+  .admin-users-table tr + tr {
+    margin-top: .75rem;
+  }
+  .admin-users-table td {
+    position: relative;
+    padding: .7rem .9rem .7rem 7rem !important;
+    min-height: 44px;
+    border: 0;
+    white-space: normal;
+  }
+  .admin-users-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: .9rem;
+    top: .7rem;
+    width: 5.2rem;
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+  }
+  .admin-users-table td:first-child {
+    padding-top: .9rem !important;
+  }
+  .admin-users-table td:last-child {
+    padding-bottom: .9rem !important;
+  }
+  .admin-users-table .d-flex.align-items-center.gap-2 {
+    align-items: center !important;
+  }
+  .device-badge {
+    white-space: normal;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1.3;
+  }
+  .ip-badge {
+    display: inline-block;
+    word-break: break-all;
+  }
+  .quick-link-card {
+    padding: .8rem .9rem;
+  }
+  .quick-link-label {
+    font-size: .82rem;
   }
 }
 </style>
