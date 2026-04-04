@@ -33,33 +33,39 @@
 
           <ul class="navbar-nav mx-auto navbar-primary-nav">
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'dashboard' }">
-                <i class="fas fa-th-large nav-icon"></i> Accueil
+              <router-link class="nav-link" active-class="active" :to="{ name: 'dashboard' }" title="Accueil">
+                <i class="fas fa-th-large nav-icon"></i>
+                <span class="nav-link-label">Accueil</span>
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'requests.index' }">
-                <i class="fas fa-paper-plane nav-icon"></i> Demandes
+              <router-link class="nav-link" active-class="active" :to="{ name: 'requests.index' }" title="Demandes">
+                <i class="fas fa-paper-plane nav-icon"></i>
+                <span class="nav-link-label">Demandes</span>
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'documents.index' }">
-                <i class="fas fa-folder-open nav-icon"></i> Documents
+              <router-link class="nav-link" active-class="active" :to="{ name: 'documents.index' }" title="Documents">
+                <i class="fas fa-folder-open nav-icon"></i>
+                <span class="nav-link-label">Documents</span>
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'plan-travail.index' }">
-                <i class="fas fa-calendar-check nav-icon"></i> Plan de Travail
+              <router-link class="nav-link" active-class="active" :to="{ name: 'plan-travail.index' }" title="Plan de travail">
+                <i class="fas fa-calendar-check nav-icon"></i>
+                <span class="nav-link-label">Plan travail</span>
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'documents-travail.index' }">
-                <i class="fas fa-file-invoice nav-icon"></i> Docs Travail
+              <router-link class="nav-link" active-class="active" :to="{ name: 'documents-travail.index' }" title="Documents de travail">
+                <i class="fas fa-file-invoice nav-icon"></i>
+                <span class="nav-link-label">Docs RH</span>
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'mon-planning-conges' }">
-                <i class="fas fa-calendar-alt nav-icon"></i> Conges
+              <router-link class="nav-link" active-class="active" :to="{ name: 'mon-planning-conges' }" title="Conges">
+                <i class="fas fa-calendar-alt nav-icon"></i>
+                <span class="nav-link-label">Conges</span>
               </router-link>
             </li>
           </ul>
@@ -67,13 +73,10 @@
           <div class="mobile-nav-divider d-lg-none"></div>
 
           <ul class="navbar-nav align-items-lg-center navbar-secondary-nav">
-            <li class="nav-item d-none d-lg-flex">
-              <SyncStatusBar />
-            </li>
-
             <li v-if="auth.hasAdminAccess" class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                <i class="fas fa-shield-halved nav-icon"></i> Admin
+                <i class="fas fa-shield-halved nav-icon"></i>
+                <span class="nav-link-label">Admin</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
                 <template v-if="auth.isRH || auth.isSEN">
@@ -233,7 +236,6 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
 import AppToast from '@/components/common/AppToast.vue'
-import SyncStatusBar from '@/components/SyncStatusBar.vue'
 
 const auth = useAuthStore()
 const notifStore = useNotificationStore()

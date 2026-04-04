@@ -2,7 +2,7 @@
   <div v-if="isPWA" class="sync-status-bar" :class="'sync-' + status">
     <div class="sync-indicator" :title="message">
       <i class="fas" :class="iconClass"></i>
-      <span class="sync-label d-none d-lg-inline">{{ label }}</span>
+      <span class="sync-label d-none d-xxl-inline">{{ label }}</span>
     </div>
   </div>
 </template>

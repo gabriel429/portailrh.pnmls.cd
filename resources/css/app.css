@@ -190,6 +190,22 @@ body {
     margin: 0 1px;
     position: relative;
     backdrop-filter: blur(10px);
+    white-space: nowrap;
+    line-height: 1;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%),
+        linear-gradient(135deg, rgba(86, 196, 255, 0.16) 0%, rgba(0, 119, 181, 0.08) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -10px 18px rgba(255,255,255,0.03),
+        0 8px 18px rgba(2, 24, 39, 0.14);
+}
+
+.navbar-main .nav-link-label {
+    display: inline-block;
+    white-space: nowrap;
 }
 
 .navbar-main .nav-link::before {
@@ -197,28 +213,64 @@ body {
     position: absolute;
     inset: 0;
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-    opacity: 0;
-    transition: opacity var(--transition-base);
+    background:
+        radial-gradient(circle at 18% 22%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0.16) 18%, transparent 44%),
+        linear-gradient(180deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0) 48%);
+    opacity: 0.9;
+    transition: opacity var(--transition-base), transform var(--transition-base);
+    pointer-events: none;
+}
+
+.navbar-main .nav-link::after {
+    content: '';
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    bottom: -55%;
+    height: 90%;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(74, 201, 255, 0.34) 0%, rgba(74, 201, 255, 0) 70%);
+    opacity: 0.65;
+    transition: transform var(--transition-base), opacity var(--transition-base);
+    pointer-events: none;
 }
 
 .navbar-main .nav-link:hover {
     color: #fff !important;
-    background: rgba(255,255,255,0.15);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%),
+        linear-gradient(135deg, rgba(114, 226, 255, 0.22) 0%, rgba(0, 119, 181, 0.14) 100%);
+    transform: translateY(-2px) scale(1.01);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.22),
+        inset 0 -12px 20px rgba(255,255,255,0.05),
+        0 14px 28px rgba(2, 24, 39, 0.2);
+    border-color: rgba(255,255,255,0.2);
 }
 
 .navbar-main .nav-link:hover::before {
     opacity: 1;
+    transform: translateY(-1px);
+    animation: liquid-sheen 900ms ease-out 1;
+}
+
+.navbar-main .nav-link:hover::after {
+    opacity: 0.92;
+    transform: scale(1.08);
 }
 
 .navbar-main .nav-link.active,
 .navbar-main .nav-item.active > .nav-link {
     color: #fff !important;
-    background: rgba(255,255,255,0.2);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.2),
-                0 0 0 1px rgba(255,255,255,0.2) inset;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.08) 100%),
+        linear-gradient(135deg, rgba(133, 230, 255, 0.26) 0%, rgba(0, 119, 181, 0.18) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.24),
+        inset 0 -12px 20px rgba(255,255,255,0.05),
+        0 10px 24px rgba(0,0,0,0.2),
+        0 0 0 1px rgba(255,255,255,0.16) inset;
+    border-color: rgba(255,255,255,0.18);
 }
 
 .navbar-main .nav-link.active::before {
@@ -362,13 +414,58 @@ body {
     border: 1px solid rgba(255,255,255,0.2);
     backdrop-filter: blur(10px);
     transition: all var(--transition-base);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        inset 0 -12px 18px rgba(255,255,255,0.04),
+        0 10px 22px rgba(2, 24, 39, 0.16);
+    overflow: hidden;
+    position: relative;
 }
 
 .nav-user-btn:hover {
-    background: rgba(255,255,255,0.2) !important;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%),
+        linear-gradient(135deg, rgba(118, 224, 255, 0.18) 0%, rgba(0, 119, 181, 0.12) 100%) !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.24),
+        inset 0 -12px 20px rgba(255,255,255,0.05),
+        0 14px 28px rgba(2, 24, 39, 0.2);
+}
+
+.nav-user-btn::before,
+.nav-notif-btn::before,
+.navbar-main .navbar-toggler::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background:
+        radial-gradient(circle at 22% 18%, rgba(255,255,255,0.34) 0%, rgba(255,255,255,0.14) 18%, transparent 45%),
+        linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0) 46%);
+    pointer-events: none;
+    transition: transform var(--transition-base), opacity var(--transition-base);
+}
+
+.nav-user-btn::after,
+.nav-notif-btn::after,
+.navbar-main .navbar-toggler::after {
+    content: '';
+    position: absolute;
+    left: 12%;
+    right: 12%;
+    bottom: -58%;
+    height: 86%;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(67, 199, 255, 0.32) 0%, rgba(67, 199, 255, 0) 72%);
+    pointer-events: none;
+    opacity: 0.75;
+}
+
+.nav-user-btn:hover::before,
+.nav-notif-btn:hover::before,
+.navbar-main .navbar-toggler:hover::before {
+    animation: liquid-sheen 900ms ease-out 1;
 }
 
 .nav-user-avatar {
@@ -437,12 +534,21 @@ body {
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius-sm);
     backdrop-filter: blur(10px);
-    background: rgba(255,255,255,0.1);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.05) 100%),
+        linear-gradient(135deg, rgba(105, 220, 255, 0.16) 0%, rgba(0, 119, 181, 0.1) 100%);
     transition: all var(--transition-fast);
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 10px 20px rgba(2, 24, 39, 0.14);
 }
 
 .navbar-main .navbar-toggler:hover {
-    background: rgba(255,255,255,0.2);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.08) 100%),
+        linear-gradient(135deg, rgba(105, 220, 255, 0.2) 0%, rgba(0, 119, 181, 0.12) 100%);
     transform: scale(1.05);
 }
 
@@ -665,12 +771,23 @@ body {
     color: rgba(255,255,255,0.85) !important;
     transition: all var(--transition-fast);
     border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 100%),
+        linear-gradient(135deg, rgba(101, 217, 255, 0.16) 0%, rgba(0, 119, 181, 0.08) 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255,255,255,0.18),
+        0 8px 18px rgba(2, 24, 39, 0.14);
 }
 
 .nav-notif-btn:hover {
     color: #fff !important;
-    background: rgba(255,255,255,0.15);
-    transform: scale(1.1);
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.06) 100%),
+        linear-gradient(135deg, rgba(124, 227, 255, 0.22) 0%, rgba(0, 119, 181, 0.12) 100%);
+    transform: translateY(-1px) scale(1.06);
+    border-color: rgba(255,255,255,0.18);
 }
 
 .nav-notif-btn::after {
@@ -697,23 +814,120 @@ body {
 
 @media (min-width: 992px) {
     .navbar-main .container-fluid {
-        gap: 0.75rem;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: 0.7rem;
+    }
+
+    .navbar-main .navbar-collapse {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 0;
     }
 
     .navbar-main .navbar-nav {
         align-items: center;
+        min-width: 0;
     }
 
     .navbar-primary-nav {
-        gap: 0.12rem;
+        justify-content: center;
+        flex-wrap: nowrap;
+        gap: 0.06rem;
+        min-width: 0;
     }
 
     .navbar-secondary-nav {
-        gap: 0.2rem;
+        flex-wrap: nowrap;
+        gap: 0.15rem;
+        justify-content: flex-end;
+        flex-shrink: 0;
+    }
+
+    .navbar-main .navbar-brand {
+        gap: 0.52rem;
+        font-size: 0.96rem;
+    }
+
+    .navbar-main .navbar-brand img {
+        width: 34px;
+        height: 34px;
+        padding: 3px;
+    }
+
+    .navbar-main .navbar-brand .brand-title {
+        font-size: 0.88rem;
+    }
+
+    .navbar-main .navbar-brand .brand-sub {
+        font-size: 0.53rem;
+    }
+
+    .navbar-main .nav-link {
+        font-size: 0.74rem;
+        padding: 0.42rem 0.62rem !important;
+        gap: 0.34rem;
+        border-radius: 12px;
+    }
+
+    .navbar-main .nav-link .nav-icon {
+        width: 14px;
+        font-size: 0.76rem;
+    }
+
+    .nav-divider {
+        margin: auto 0.35rem;
+    }
+
+    .nav-notif-btn {
+        padding: 0.34rem 0.45rem !important;
+        font-size: 0.92rem;
+    }
+
+    .nav-user-btn {
+        gap: 0.42rem;
+        padding: 0.3rem 0.56rem 0.3rem 0.3rem !important;
+    }
+
+    .nav-user-avatar,
+    .nav-user-photo {
+        width: 30px;
+        height: 30px;
+    }
+
+    .nav-user-name {
+        max-width: 92px;
+        font-size: 0.75rem;
     }
 
     .navbar-main .dropdown-menu {
         min-width: 220px;
+    }
+}
+
+@media (min-width: 992px) and (max-width: 1399.98px) {
+    .navbar-main {
+        padding: 0.52rem 0;
+    }
+
+    .navbar-main .navbar-brand .brand-sub {
+        display: none;
+    }
+
+    .navbar-main .nav-link {
+        font-size: 0.72rem;
+        padding: 0.38rem 0.52rem !important;
+    }
+
+    .nav-user-name {
+        display: none;
+    }
+
+    .nav-user-btn {
+        padding-right: 0.34rem !important;
     }
 }
 
@@ -723,6 +937,21 @@ body {
     }
     50% {
         transform: scale(1.15);
+    }
+}
+
+@keyframes liquid-sheen {
+    0% {
+        transform: translateX(-16%) translateY(0) scale(0.98);
+        opacity: 0.72;
+    }
+    45% {
+        transform: translateX(6%) translateY(-1px) scale(1.01);
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(14%) translateY(0) scale(1);
+        opacity: 0.88;
     }
 }
 
