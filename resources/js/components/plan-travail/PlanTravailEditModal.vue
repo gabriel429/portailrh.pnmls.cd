@@ -35,6 +35,29 @@
           <input v-model="form.titre" type="text" class="form-control" id="titre" required>
         </div>
 
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label for="categorie" class="form-label fw-bold">Rubrique / categorie</label>
+            <input v-model="form.categorie" list="pta-categories-modal" type="text" class="form-control" id="categorie" placeholder="Ex. Leadership">
+            <datalist id="pta-categories-modal">
+              <option v-for="item in formData.categories" :key="item" :value="item"></option>
+            </datalist>
+          </div>
+
+          <div class="col-md-4">
+            <label for="responsable_code" class="form-label fw-bold">Responsable</label>
+            <input v-model="form.responsable_code" list="pta-responsables-modal" type="text" class="form-control" id="responsable_code" placeholder="Ex. DPSE">
+            <datalist id="pta-responsables-modal">
+              <option v-for="item in formData.responsables" :key="item" :value="item"></option>
+            </datalist>
+          </div>
+
+          <div class="col-md-4">
+            <label for="cout_cdf" class="form-label fw-bold">Cout en CDF</label>
+            <input v-model.number="form.cout_cdf" type="number" step="0.01" min="0" class="form-control" id="cout_cdf" placeholder="0">
+          </div>
+        </div>
+
         <div class="mb-3">
           <label for="objectif" class="form-label fw-bold">Objectif strategique</label>
           <textarea v-model="form.objectif" class="form-control" id="objectif" rows="2"></textarea>
@@ -75,12 +98,20 @@
             </select>
           </div>
 
-          <div v-if="form.niveau_administratif === 'SEP' || form.niveau_administratif === 'SEL'" class="col-md-4">
+          <div v-if="form.niveau_administratif === 'SEL'" class="col-md-4">
             <label for="province_id" class="form-label fw-bold">Province</label>
             <select v-model="form.province_id" class="form-select" id="province_id">
               <option value="">-- Choisir --</option>
               <option v-for="p in formData.provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
             </select>
+          </div>
+
+          <div v-if="form.niveau_administratif === 'SEP'" class="col-md-8">
+            <label for="province_ids" class="form-label fw-bold">Provinces concernees</label>
+            <select v-model="form.province_ids" class="form-select" id="province_ids" multiple size="6">
+              <option v-for="p in formData.provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
+            </select>
+            <div class="form-text">Maintenez Ctrl pour selectionner plusieurs provinces.</div>
           </div>
 
           <div v-if="form.niveau_administratif === 'SEL'" class="col-md-4">
@@ -107,6 +138,16 @@
               <option value="T3">T3 (Jul-Sep)</option>
               <option value="T4">T4 (Oct-Dec)</option>
             </select>
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label fw-bold">Chronogramme</label>
+            <div class="d-flex flex-wrap gap-3 pt-2">
+              <label class="form-check-label"><input v-model="form.trimestre_1" class="form-check-input me-1" type="checkbox"> T1</label>
+              <label class="form-check-label"><input v-model="form.trimestre_2" class="form-check-input me-1" type="checkbox"> T2</label>
+              <label class="form-check-label"><input v-model="form.trimestre_3" class="form-check-input me-1" type="checkbox"> T3</label>
+              <label class="form-check-label"><input v-model="form.trimestre_4" class="form-check-input me-1" type="checkbox"> T4</label>
+            </div>
           </div>
 
           <div class="col-md-3">
@@ -175,17 +216,25 @@ const loading = ref(false)
 const submitting = ref(false)
 const errors = ref([])
 const planTravail = ref(null)
-const formData = ref({ departments: [], provinces: [], localites: [] })
+const formData = ref({ departments: [], provinces: [], localites: [], categories: [], responsables: [] })
 const form = ref({
   titre: '',
+  categorie: '',
   objectif: '',
+  responsable_code: '',
+  cout_cdf: '',
   niveau_administratif: '',
   validation_niveau: '',
   departement_id: '',
   province_id: '',
+  province_ids: [],
   localite_id: '',
   annee: new Date().getFullYear(),
   trimestre: '',
+  trimestre_1: false,
+  trimestre_2: false,
+  trimestre_3: false,
+  trimestre_4: false,
   statut: 'planifiee',
   pourcentage: 0,
   date_debut: '',
@@ -212,14 +261,22 @@ async function loadPlanTravail() {
     formData.value = createResp.data
     form.value = {
       titre: a.titre || '',
+      categorie: a.categorie || '',
       objectif: a.objectif || '',
+      responsable_code: a.responsable_code || '',
+      cout_cdf: a.cout_cdf ?? '',
       niveau_administratif: a.niveau_administratif || '',
       validation_niveau: a.validation_niveau || '',
       departement_id: a.departement_id || '',
       province_id: a.province_id || '',
+      province_ids: a.province_ids || (a.province_id ? [a.province_id] : []),
       localite_id: a.localite_id || '',
       annee: a.annee || new Date().getFullYear(),
       trimestre: a.trimestre || '',
+      trimestre_1: !!a.trimestre_1,
+      trimestre_2: !!a.trimestre_2,
+      trimestre_3: !!a.trimestre_3,
+      trimestre_4: !!a.trimestre_4,
       statut: a.statut || 'planifiee',
       pourcentage: a.pourcentage ?? 0,
       date_debut: a.date_debut ? a.date_debut.split('T')[0] : '',
@@ -238,8 +295,30 @@ async function loadPlanTravail() {
 
 function onNiveauChange() {
   if (form.value.niveau_administratif !== 'SEN') form.value.departement_id = ''
-  if (form.value.niveau_administratif !== 'SEP' && form.value.niveau_administratif !== 'SEL') form.value.province_id = ''
+  if (form.value.niveau_administratif !== 'SEL') form.value.province_id = ''
+  if (form.value.niveau_administratif !== 'SEP') form.value.province_ids = []
   if (form.value.niveau_administratif !== 'SEL') form.value.localite_id = ''
+}
+
+function buildPayload() {
+  const payload = { ...form.value }
+
+  if (!payload.departement_id) delete payload.departement_id
+  if (!payload.province_id) delete payload.province_id
+  if (!payload.localite_id) delete payload.localite_id
+  if (!payload.trimestre) delete payload.trimestre
+  if (!payload.date_debut) delete payload.date_debut
+  if (!payload.date_fin) delete payload.date_fin
+  if (!payload.description) delete payload.description
+  if (!payload.objectif) delete payload.objectif
+  if (!payload.resultat_attendu) delete payload.resultat_attendu
+  if (!payload.observations) delete payload.observations
+  if (!payload.categorie) delete payload.categorie
+  if (!payload.responsable_code) delete payload.responsable_code
+  if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
+  if (!payload.province_ids?.length) delete payload.province_ids
+
+  return payload
 }
 
 async function handleSubmit() {
@@ -248,7 +327,7 @@ async function handleSubmit() {
   errors.value = []
   submitting.value = true
   try {
-    await update(planTravail.value.id, form.value)
+    await update(planTravail.value.id, buildPayload())
     ui.addToast('Activité mise à jour.', 'success')
     emit('updated', planTravail.value)
     emit('close')
@@ -277,14 +356,22 @@ watch(() => props.show, (newVal) => {
     formData.value = { departments: [], provinces: [], localites: [] }
     form.value = {
       titre: '',
+      categorie: '',
       objectif: '',
+      responsable_code: '',
+      cout_cdf: '',
       niveau_administratif: '',
       validation_niveau: '',
       departement_id: '',
       province_id: '',
+      province_ids: [],
       localite_id: '',
       annee: new Date().getFullYear(),
       trimestre: '',
+      trimestre_1: false,
+      trimestre_2: false,
+      trimestre_3: false,
+      trimestre_4: false,
       statut: 'planifiee',
       pourcentage: 0,
       date_debut: '',

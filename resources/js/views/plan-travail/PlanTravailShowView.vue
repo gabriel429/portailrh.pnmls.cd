@@ -14,6 +14,7 @@
                 Plan de Travail {{ activite.annee }}
                 <template v-if="activite.trimestre"> | {{ activite.trimestre }}</template>
                 | {{ activite.niveau_administratif }}
+                <template v-if="activite.categorie"> | {{ activite.categorie }}</template>
               </p>
             </div>
             <div class="col-lg-4">
@@ -46,14 +47,23 @@
                   <dt class="col-sm-4 text-muted">Objectif</dt>
                   <dd class="col-sm-8">{{ activite.objectif || 'Non renseigne' }}</dd>
 
+                  <dt class="col-sm-4 text-muted">Rubrique</dt>
+                  <dd class="col-sm-8">{{ activite.categorie || 'Non renseignee' }}</dd>
+
                   <dt class="col-sm-4 text-muted">Resultat attendu</dt>
                   <dd class="col-sm-8">{{ activite.resultat_attendu || 'Non renseigne' }}</dd>
+
+                  <dt class="col-sm-4 text-muted">Responsable</dt>
+                  <dd class="col-sm-8">{{ activite.responsable_code || 'Non renseigne' }}</dd>
+
+                  <dt class="col-sm-4 text-muted">Cout en CDF</dt>
+                  <dd class="col-sm-8">{{ activite.cout_cdf !== null && activite.cout_cdf !== undefined ? formatCurrency(activite.cout_cdf) + ' CDF' : 'Non renseigne' }}</dd>
 
                   <dt class="col-sm-4 text-muted">Niveau</dt>
                   <dd class="col-sm-8">
                     {{ activite.niveau_administratif }}
                     <template v-if="activite.departement"> - {{ activite.departement.nom }}</template>
-                    <template v-if="activite.province"> - {{ activite.province.nom }}</template>
+                    <template v-if="provinceSummary"> - {{ provinceSummary }}</template>
                     <template v-if="activite.localite"> - {{ activite.localite.nom }}</template>
                   </dd>
 
@@ -65,6 +75,9 @@
 
                   <dt class="col-sm-4 text-muted">Trimestre</dt>
                   <dd class="col-sm-8">{{ triLabel(activite.trimestre) }}</dd>
+
+                  <dt class="col-sm-4 text-muted">Chronogramme</dt>
+                  <dd class="col-sm-8">{{ chronogrammeLabel(activite) }}</dd>
 
                   <template v-if="activite.date_debut || activite.date_fin">
                     <dt class="col-sm-4 text-muted">Periode</dt>
@@ -224,6 +237,13 @@ const isOverdue = computed(() => {
   return new Date(activite.value.date_fin) < new Date()
 })
 
+const provinceSummary = computed(() => {
+  if (!activite.value) return ''
+  const names = (activite.value.provinces || []).map((province) => province.nom).filter(Boolean)
+  if (names.length) return names.join(', ')
+  return activite.value.province?.nom || ''
+})
+
 async function loadActivite() {
   try {
     const { data } = await get(route.params.id)
@@ -308,6 +328,21 @@ function validationLabel(value) {
     coordination_provinciale: 'Coordination provinciale',
   }
   return map[value] || 'Non renseigne'
+}
+
+function chronogrammeLabel(activity) {
+  const values = []
+  if (activity.trimestre_1) values.push('T1')
+  if (activity.trimestre_2) values.push('T2')
+  if (activity.trimestre_3) values.push('T3')
+  if (activity.trimestre_4) values.push('T4')
+  if (!values.length && activity.trimestre) values.push(activity.trimestre)
+  return values.length ? values.join(', ') : 'Annuel'
+}
+
+function formatCurrency(value) {
+  const amount = Number(value || 0)
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)
 }
 
 onMounted(() => loadActivite())

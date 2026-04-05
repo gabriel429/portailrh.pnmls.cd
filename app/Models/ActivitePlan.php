@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 use App\Traits\Syncable;
 
@@ -17,16 +18,23 @@ class ActivitePlan extends Model
     protected $fillable = [
         'createur_id',
         'titre',
+        'categorie',
         'objectif',
         'description',
         'resultat_attendu',
         'niveau_administratif',
         'validation_niveau',
+        'responsable_code',
+        'cout_cdf',
         'departement_id',
         'province_id',
         'localite_id',
         'annee',
         'trimestre',
+        'trimestre_1',
+        'trimestre_2',
+        'trimestre_3',
+        'trimestre_4',
         'statut',
         'date_debut',
         'date_fin',
@@ -38,6 +46,11 @@ class ActivitePlan extends Model
         'date_debut' => 'date',
         'date_fin' => 'date',
         'annee' => 'integer',
+        'cout_cdf' => 'decimal:2',
+        'trimestre_1' => 'boolean',
+        'trimestre_2' => 'boolean',
+        'trimestre_3' => 'boolean',
+        'trimestre_4' => 'boolean',
         'pourcentage' => 'integer',
     ];
 
@@ -54,6 +67,12 @@ class ActivitePlan extends Model
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class, 'province_id');
+    }
+
+    public function provinces(): BelongsToMany
+    {
+        return $this->belongsToMany(Province::class, 'activite_plan_province')
+            ->withTimestamps();
     }
 
     public function localite(): BelongsTo
@@ -93,6 +112,20 @@ class ActivitePlan extends Model
 
     public function scopeParTrimestre($query, $trimestre)
     {
-        return $query->where('trimestre', $trimestre);
+        $mapping = [
+            'T1' => 'trimestre_1',
+            'T2' => 'trimestre_2',
+            'T3' => 'trimestre_3',
+            'T4' => 'trimestre_4',
+        ];
+
+        if (!isset($mapping[$trimestre])) {
+            return $query->where('trimestre', $trimestre);
+        }
+
+        return $query->where(function ($builder) use ($trimestre, $mapping) {
+            $builder->where('trimestre', $trimestre)
+                ->orWhere($mapping[$trimestre], true);
+        });
     }
 }

@@ -118,8 +118,9 @@
               </router-link>
               <div v-if="a.description" class="pt-card-desc">{{ truncate(a.description, 100) }}</div>
               <div class="pt-card-tags">
+                  <span v-if="a.categorie" class="pt-meta-badge">{{ a.categorie }}</span>
                 <span :class="statutBadgeClass(a.statut)">{{ statutLabel(a.statut) }}</span>
-                <span v-if="a.trimestre" class="pt-meta-badge">{{ a.trimestre }}</span>
+                  <span v-for="tri in activeTrimestres(a)" :key="`${a.id}-${tri}`" class="pt-meta-badge">{{ tri }}</span>
               </div>
             </div>
           </div>
@@ -128,6 +129,15 @@
               <i class="fas fa-building me-1"></i>{{ a.niveau_administratif }}
               <template v-if="a.departement"> - {{ a.departement.nom }}</template>
             </span>
+              <span v-if="a.responsable_code" class="pt-meta-item">
+                <i class="fas fa-user-tie me-1"></i>{{ a.responsable_code }}
+              </span>
+              <span v-if="provinceSummary(a)" class="pt-meta-item">
+                <i class="fas fa-map-marker-alt me-1"></i>{{ provinceSummary(a) }}
+              </span>
+              <span v-if="a.cout_cdf !== null && a.cout_cdf !== undefined" class="pt-meta-item">
+                <i class="fas fa-coins me-1"></i>{{ formatCurrency(a.cout_cdf) }} CDF
+              </span>
             <span v-if="a.date_debut" class="pt-meta-item">
               <i class="fas fa-calendar me-1"></i>{{ formatShortDate(a.date_debut) }}
               <template v-if="a.date_fin"> &rarr; {{ formatShortDate(a.date_fin) }}</template>
@@ -200,6 +210,28 @@
               <span v-if="createErrors.titre" class="ptm-err-msg">{{ createErrors.titre[0] }}</span>
             </div>
 
+              <div class="ptm-row">
+                <div class="ptm-field ptm-half">
+                  <label class="ptm-label">Rubrique / categorie</label>
+                  <input v-model="createForm.categorie" list="pta-categories-list" type="text" class="ptm-input" placeholder="Ex. Leadership">
+                  <datalist id="pta-categories-list">
+                    <option v-for="item in createCategories" :key="item" :value="item"></option>
+                  </datalist>
+                </div>
+                <div class="ptm-field ptm-half">
+                  <label class="ptm-label">Responsable</label>
+                  <input v-model="createForm.responsable_code" list="pta-responsables-list" type="text" class="ptm-input" placeholder="Ex. DPSE">
+                  <datalist id="pta-responsables-list">
+                    <option v-for="item in createResponsables" :key="item" :value="item"></option>
+                  </datalist>
+                </div>
+              </div>
+
+              <div class="ptm-field">
+                <label class="ptm-label">Cout en CDF</label>
+                <input v-model.number="createForm.cout_cdf" type="number" class="ptm-input" min="0" step="0.01" placeholder="0">
+              </div>
+
             <div class="ptm-field">
               <label class="ptm-label">Objectif strategique</label>
               <textarea v-model="createForm.objectif" class="ptm-input ptm-textarea" rows="2" placeholder="Objectif strategique de l'activite"></textarea>
@@ -231,10 +263,17 @@
             </div>
 
             <!-- Province (SEP / SEL) -->
-            <div v-if="createForm.niveau_administratif === 'SEP' || createForm.niveau_administratif === 'SEL'" class="ptm-field">
+            <div v-if="createForm.niveau_administratif === 'SEL'" class="ptm-field">
               <label class="ptm-label">Province</label>
               <select v-model="createForm.province_id" class="ptm-input">
                 <option value="">-- Choisir --</option>
+                <option v-for="p in createProvinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
+              </select>
+            </div>
+
+            <div v-if="createForm.niveau_administratif === 'SEP'" class="ptm-field">
+              <label class="ptm-label">Provinces concernees</label>
+              <select v-model="createForm.province_ids" class="ptm-input" multiple size="6">
                 <option v-for="p in createProvinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
               </select>
             </div>
@@ -260,6 +299,16 @@
                 <select v-model="createForm.trimestre" class="ptm-input">
                   <option v-for="t in trimestreOptions" :key="t.value" :value="t.value">{{ t.label }}</option>
                 </select>
+              </div>
+            </div>
+
+            <div class="ptm-field">
+              <label class="ptm-label">Chronogramme</label>
+              <div class="ptm-card-row">
+                <label class="ptm-check"><input v-model="createForm.trimestre_1" type="checkbox"> T1</label>
+                <label class="ptm-check"><input v-model="createForm.trimestre_2" type="checkbox"> T2</label>
+                <label class="ptm-check"><input v-model="createForm.trimestre_3" type="checkbox"> T3</label>
+                <label class="ptm-check"><input v-model="createForm.trimestre_4" type="checkbox"> T4</label>
               </div>
             </div>
 
@@ -457,6 +506,8 @@ const createErrors = ref({})
 const createDepartments = ref([])
 const createProvinces = ref([])
 const createLocalites = ref([])
+const createCategories = ref([])
+const createResponsables = ref([])
 
 /* ── Edit modal ── */
 const showEditModal = ref(false)
@@ -483,14 +534,22 @@ const trimestreOptions = [
 function defaultCreateForm() {
   return {
     titre: '',
+    categorie: '',
     objectif: '',
+    responsable_code: '',
+    cout_cdf: '',
     niveau_administratif: '',
     validation_niveau: '',
     departement_id: '',
     province_id: '',
+    province_ids: [],
     localite_id: '',
     annee: new Date().getFullYear(),
     trimestre: '',
+    trimestre_1: false,
+    trimestre_2: false,
+    trimestre_3: false,
+    trimestre_4: false,
     statut: 'planifiee',
     pourcentage: 0,
     date_debut: '',
@@ -511,6 +570,8 @@ async function openCreateModal() {
     createDepartments.value = data.departments || []
     createProvinces.value = data.provinces || []
     createLocalites.value = data.localites || []
+    createCategories.value = data.categories || []
+    createResponsables.value = data.responsables || []
   } catch { /* ignore */ }
 }
 
@@ -520,7 +581,8 @@ function closeCreateModal() {
 
 function onNiveauChange() {
   if (createForm.value.niveau_administratif !== 'SEN') createForm.value.departement_id = ''
-  if (createForm.value.niveau_administratif !== 'SEP' && createForm.value.niveau_administratif !== 'SEL') createForm.value.province_id = ''
+  if (createForm.value.niveau_administratif !== 'SEL') createForm.value.province_id = ''
+  if (createForm.value.niveau_administratif !== 'SEP') createForm.value.province_ids = []
   if (createForm.value.niveau_administratif !== 'SEL') createForm.value.localite_id = ''
 }
 
@@ -532,11 +594,17 @@ async function handleCreateSubmit() {
     if (!payload.trimestre) delete payload.trimestre
     if (!payload.departement_id) delete payload.departement_id
     if (!payload.province_id) delete payload.province_id
+    if (!payload.province_ids?.length) delete payload.province_ids
     if (!payload.localite_id) delete payload.localite_id
     if (!payload.date_debut) delete payload.date_debut
     if (!payload.date_fin) delete payload.date_fin
     if (!payload.description) delete payload.description
+    if (!payload.objectif) delete payload.objectif
+    if (!payload.resultat_attendu) delete payload.resultat_attendu
     if (!payload.observations) delete payload.observations
+    if (!payload.categorie) delete payload.categorie
+    if (!payload.responsable_code) delete payload.responsable_code
+    if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
     await create(payload)
     ui.addToast('Activite creee avec succes !', 'success')
     showCreateModal.value = false
@@ -565,6 +633,27 @@ function closeEditModal() {
 
 function handlePlanTravailUpdated() {
   loadPlan()
+}
+
+function activeTrimestres(activite) {
+  const values = []
+  if (activite.trimestre_1) values.push('T1')
+  if (activite.trimestre_2) values.push('T2')
+  if (activite.trimestre_3) values.push('T3')
+  if (activite.trimestre_4) values.push('T4')
+  if (!values.length && activite.trimestre) values.push(activite.trimestre)
+  return values
+}
+
+function provinceSummary(activite) {
+  const names = (activite.provinces || []).map((province) => province.nom).filter(Boolean)
+  if (names.length) return names.join(', ')
+  return activite.province?.nom || ''
+}
+
+function formatCurrency(value) {
+  const amount = Number(value || 0)
+  return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)
 }
 
 onMounted(() => loadPlan())

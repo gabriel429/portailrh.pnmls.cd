@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
 use App\Services\NotificationService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -90,7 +91,7 @@ class PlanTravailController extends ApiController
 
         // SEP level
         if (str_contains($organe, 'Provincial') && $activite->niveau_administratif === 'SEP') {
-            if ($agent->province_id && $activite->province_id === $agent->province_id) {
+            if ($agent->province_id && $this->activityTargetsProvince($activite, (int) $agent->province_id)) {
                 if (str_contains($nomFonction, 'secrétaire exécutif provincial') || str_contains($nomFonction, 'sep')) {
                     return true;
                 }
@@ -140,10 +141,16 @@ class PlanTravailController extends ApiController
             }
         } elseif (str_contains($organe, 'Provincial')) {
             $query->where('niveau_administratif', 'SEP')
-                  ->where('province_id', $agent->province_id);
+                  ->where(function (Builder $builder) use ($agent) {
+                      $builder->where('province_id', $agent->province_id)
+                          ->orWhereHas('provinces', fn (Builder $q) => $q->where('provinces.id', $agent->province_id));
+                  });
         } elseif (str_contains($organe, 'Local')) {
             $query->where('niveau_administratif', 'SEL')
-                  ->where('province_id', $agent->province_id);
+                  ->where(function (Builder $builder) use ($agent) {
+                      $builder->where('province_id', $agent->province_id)
+                          ->orWhereHas('provinces', fn (Builder $q) => $q->where('provinces.id', $agent->province_id));
+                  });
         }
 
         return $query;
@@ -161,6 +168,7 @@ class PlanTravailController extends ApiController
         $statut = $request->input('statut');
 
         $query = ActivitePlan::with('createur', 'departement', 'province', 'localite')
+            ->with('provinces')
             ->parAnnee($annee);
 
         if ($agent) {
@@ -235,6 +243,8 @@ class PlanTravailController extends ApiController
             'departments' => $departments,
             'provinces' => $provinces,
             'localites' => $localites,
+            'categories' => $this->ptaCategories(),
+            'responsables' => $this->ptaResponsables(),
             'annee' => now()->year,
             'validation_options' => [
                 ['value' => 'direction', 'label' => 'Direction'],
@@ -257,16 +267,25 @@ class PlanTravailController extends ApiController
 
         $validated = $request->validate([
             'titre'                => 'required|string|max:255',
+            'categorie'            => 'nullable|string|max:120',
             'objectif'             => 'nullable|string',
             'description'          => 'nullable|string',
             'resultat_attendu'     => 'nullable|string',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
             'validation_niveau'    => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
+            'responsable_code'     => 'nullable|string|max:30',
+            'cout_cdf'             => 'nullable|numeric|min:0',
             'departement_id'       => 'nullable|exists:departments,id',
             'province_id'          => 'nullable|exists:provinces,id',
+            'province_ids'         => 'nullable|array',
+            'province_ids.*'       => 'integer|exists:provinces,id',
             'localite_id'          => 'nullable|exists:localites,id',
             'annee'                => 'required|integer|min:2020|max:2040',
             'trimestre'            => 'nullable|in:T1,T2,T3,T4',
+            'trimestre_1'          => 'nullable|boolean',
+            'trimestre_2'          => 'nullable|boolean',
+            'trimestre_3'          => 'nullable|boolean',
+            'trimestre_4'          => 'nullable|boolean',
             'statut'               => 'required|in:planifiee,en_cours,terminee',
             'date_debut'           => 'nullable|date',
             'date_fin'             => 'nullable|date',
@@ -274,9 +293,14 @@ class PlanTravailController extends ApiController
             'observations'         => 'nullable|string',
         ]);
 
+        $provinceIds = $this->normalizeProvinceIds($validated);
+        $validated = $this->normalizeTrimestreFlags($validated);
+        $validated['province_id'] = $provinceIds[0] ?? ($validated['province_id'] ?? null);
+
         $validated['createur_id'] = auth()->user()->agent->id;
 
         $activite = ActivitePlan::create($validated);
+        $this->syncActiviteProvinces($activite, $provinceIds);
 
         NotificationService::notifierTous(
             'plan_travail',
@@ -286,7 +310,7 @@ class PlanTravailController extends ApiController
             auth()->id()
         );
 
-        $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'localite'));
+        $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'provinces', 'localite'));
 
         return $this->resource($resource, [], [
             'message' => 'Activite creee avec succes.',
@@ -298,7 +322,7 @@ class PlanTravailController extends ApiController
      */
     public function show(ActivitePlan $activitePlan): JsonResponse
     {
-        $activitePlan->load(['createur', 'departement', 'province', 'localite', 'taches.agent']);
+        $activitePlan->load(['createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent']);
 
         return $this->resource(ActivitePlanResource::make($activitePlan), [
             'canEdit' => $this->canManage(),
@@ -320,16 +344,25 @@ class PlanTravailController extends ApiController
 
         $validated = $request->validate([
             'titre'                => 'required|string|max:255',
+            'categorie'            => 'nullable|string|max:120',
             'objectif'             => 'nullable|string',
             'description'          => 'nullable|string',
             'resultat_attendu'     => 'nullable|string',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
             'validation_niveau'    => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
+            'responsable_code'     => 'nullable|string|max:30',
+            'cout_cdf'             => 'nullable|numeric|min:0',
             'departement_id'       => 'nullable|exists:departments,id',
             'province_id'          => 'nullable|exists:provinces,id',
+            'province_ids'         => 'nullable|array',
+            'province_ids.*'       => 'integer|exists:provinces,id',
             'localite_id'          => 'nullable|exists:localites,id',
             'annee'                => 'required|integer|min:2020|max:2040',
             'trimestre'            => 'nullable|in:T1,T2,T3,T4',
+            'trimestre_1'          => 'nullable|boolean',
+            'trimestre_2'          => 'nullable|boolean',
+            'trimestre_3'          => 'nullable|boolean',
+            'trimestre_4'          => 'nullable|boolean',
             'statut'               => 'required|in:planifiee,en_cours,terminee',
             'date_debut'           => 'nullable|date',
             'date_fin'             => 'nullable|date',
@@ -337,7 +370,12 @@ class PlanTravailController extends ApiController
             'observations'         => 'nullable|string',
         ]);
 
+        $provinceIds = $this->normalizeProvinceIds($validated);
+        $validated = $this->normalizeTrimestreFlags($validated);
+        $validated['province_id'] = $provinceIds[0] ?? ($validated['province_id'] ?? null);
+
         $activitePlan->update($validated);
+        $this->syncActiviteProvinces($activitePlan, $provinceIds);
 
         NotificationService::notifierTous(
             'plan_travail',
@@ -347,7 +385,7 @@ class PlanTravailController extends ApiController
             auth()->id()
         );
 
-        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'localite'));
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite'));
 
         return $this->resource($resource, [], [
             'message' => 'Activite mise a jour.',
@@ -387,10 +425,105 @@ class PlanTravailController extends ApiController
 
         $activitePlan->update($validated);
 
-        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'localite', 'taches.agent'));
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent'));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour.',
         ]);
+    }
+
+    private function normalizeProvinceIds(array &$validated): array
+    {
+        $provinceIds = collect($validated['province_ids'] ?? []);
+
+        if (!empty($validated['province_id'])) {
+            $provinceIds->prepend((int) $validated['province_id']);
+        }
+
+        unset($validated['province_ids']);
+
+        return $provinceIds
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function normalizeTrimestreFlags(array $validated): array
+    {
+        $mapping = [
+            'T1' => 'trimestre_1',
+            'T2' => 'trimestre_2',
+            'T3' => 'trimestre_3',
+            'T4' => 'trimestre_4',
+        ];
+
+        foreach (['trimestre_1', 'trimestre_2', 'trimestre_3', 'trimestre_4'] as $field) {
+            $validated[$field] = (bool) ($validated[$field] ?? false);
+        }
+
+        if (!empty($validated['trimestre'])) {
+            $validated[$mapping[$validated['trimestre']]] = true;
+            return $validated;
+        }
+
+        foreach ($mapping as $trimestre => $field) {
+            if ($validated[$field]) {
+                $validated['trimestre'] = $trimestre;
+                break;
+            }
+        }
+
+        return $validated;
+    }
+
+    private function syncActiviteProvinces(ActivitePlan $activite, array $provinceIds): void
+    {
+        $activite->provinces()->sync($provinceIds);
+    }
+
+    private function activityTargetsProvince(ActivitePlan $activite, int $provinceId): bool
+    {
+        if ((int) $activite->province_id === $provinceId) {
+            return true;
+        }
+
+        if (!$activite->relationLoaded('provinces')) {
+            $activite->load('provinces:id');
+        }
+
+        return $activite->provinces->contains('id', $provinceId);
+    }
+
+    private function ptaCategories(): array
+    {
+        return [
+            'Leadership',
+            'Planification & Suivi Evaluation',
+            'Renforcement des capacités et Recherche',
+            'Coordination des secteurs et multisectorialité',
+            'Partenariat et Coopération Régionale, Bi et Multilatérale',
+            'Administration et Finances',
+            'Informations stratégiques (Suivi Evaluation)',
+            'Planification et Renforcement des capacités',
+            'Coordination des secteurs et partenariat',
+            'Administration logistique et finances',
+        ];
+    }
+
+    private function ptaResponsables(): array
+    {
+        return [
+            'SEN',
+            'DPSE',
+            'DRRC',
+            'DCS',
+            'DPCMB',
+            'DAF',
+            'SEP',
+            'SEL',
+            'Tous les départements',
+        ];
     }
 }
