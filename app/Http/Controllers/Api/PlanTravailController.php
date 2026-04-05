@@ -266,7 +266,7 @@ class PlanTravailController extends ApiController
         }
 
         $validated = $request->validate([
-            'titre'                => 'required|string|max:255',
+            'titre'                => 'required|string|max:1000',
             'categorie'            => 'nullable|string|max:120',
             'objectif'             => 'nullable|string',
             'description'          => 'nullable|string',
@@ -343,7 +343,7 @@ class PlanTravailController extends ApiController
         }
 
         $validated = $request->validate([
-            'titre'                => 'required|string|max:255',
+            'titre'                => 'required|string|max:1000',
             'categorie'            => 'nullable|string|max:120',
             'objectif'             => 'nullable|string',
             'description'          => 'nullable|string',
