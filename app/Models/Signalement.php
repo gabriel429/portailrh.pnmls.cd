@@ -13,17 +13,30 @@ class Signalement extends Model
 
     protected $fillable = [
         'agent_id',
+        'is_anonymous',
         'type',
         'description',
         'observations',
         'severite',
         'statut',
+        'traite_par',
+        'traite_le',
+    ];
+
+    protected $casts = [
+        'is_anonymous' => 'boolean',
+        'traite_le'    => 'datetime',
     ];
 
     // Relations BelongsTo
     public function agent(): BelongsTo
     {
         return $this->belongsTo(Agent::class);
+    }
+
+    public function traitePar(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'traite_par');
     }
 
     // Scopes

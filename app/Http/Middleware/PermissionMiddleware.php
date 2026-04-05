@@ -16,17 +16,23 @@ class PermissionMiddleware
             return redirect()->route('login');
         }
 
+        // SuperAdmin bypass
+        if ($user->isSuperAdmin()) {
+            return $next($request);
+        }
+
         // If no specific permissions required, just check auth
         if (empty($permissions)) {
             return $next($request);
         }
 
-        // Check if user's role has any of the required permissions
-        $agent = $user->agent ?? $user;
-        $userPermissions = $agent->permissions ?? collect();
+        // Collect permissions from role + direct agent permissions
+        $rolePermissions = $user->role?->permissions?->pluck('code') ?? collect();
+        $agentPermissions = $user->agent?->permissions()?->pluck('code') ?? collect();
+        $allCodes = $rolePermissions->merge($agentPermissions)->unique();
 
         foreach ($permissions as $permission) {
-            if ($userPermissions->contains('nom_permission', $permission)) {
+            if ($allCodes->contains($permission)) {
                 return $next($request);
             }
         }

@@ -130,5 +130,38 @@ class User extends Authenticatable
             'Chef de Section Nouvelle Technologie',
         ]);
     }
+
+    /**
+     * Check if user has a specific permission (via role or direct agent assignment).
+     */
+    public function hasPermission(string $code): bool
+    {
+        if ($this->isSuperAdmin()) return true;
+
+        // Check role permissions
+        if ($this->role && $this->role->permissions()->where('code', $code)->exists()) {
+            return true;
+        }
+
+        // Check direct agent permissions
+        if ($this->agent && $this->agent->permissions()->where('code', $code)->exists()) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user has any of the given permissions.
+     */
+    public function hasAnyPermission(array $codes): bool
+    {
+        if ($this->isSuperAdmin()) return true;
+
+        foreach ($codes as $code) {
+            if ($this->hasPermission($code)) return true;
+        }
+        return false;
+    }
 }
 

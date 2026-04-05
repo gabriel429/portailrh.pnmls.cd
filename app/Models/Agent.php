@@ -256,9 +256,7 @@ class Agent extends Authenticatable
             'Chef Section RH',
             'RH National',
             'RH Provincial',
-            'Section Nouvelle Technologie',
-            'Chef Section Nouvelle Technologie',
-            'Chef de Section Nouvelle Technologie',
+            'SEN',
         ]);
     }
 
