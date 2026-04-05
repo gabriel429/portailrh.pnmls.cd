@@ -432,6 +432,94 @@ class PlanTravailController extends ApiController
         ]);
     }
 
+    public function importParsed(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        if (!$user || !$user->hasAdminAccess() || !$user->agent) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $validated = $request->validate([
+            'records' => 'required|array|min:1',
+            'records.*.titre' => 'required|string|max:1000',
+            'records.*.categorie' => 'nullable|string|max:120',
+            'records.*.resultat_attendu' => 'nullable|string',
+            'records.*.niveau_administratif' => 'required|in:SEN,SEP,SEL',
+            'records.*.validation_niveau' => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
+            'records.*.responsable_code' => 'nullable|string|max:30',
+            'records.*.cout_cdf' => 'nullable|numeric|min:0',
+            'records.*.province_ids' => 'nullable|array',
+            'records.*.province_ids.*' => 'integer|exists:provinces,id',
+            'records.*.annee' => 'required|integer|min:2020|max:2040',
+            'records.*.trimestre' => 'nullable|in:T1,T2,T3,T4',
+            'records.*.trimestre_1' => 'nullable|boolean',
+            'records.*.trimestre_2' => 'nullable|boolean',
+            'records.*.trimestre_3' => 'nullable|boolean',
+            'records.*.trimestre_4' => 'nullable|boolean',
+        ]);
+
+        $created = 0;
+        $updated = 0;
+
+        \DB::transaction(function () use ($validated, $user, &$created, &$updated) {
+            foreach ($validated['records'] as $record) {
+                $match = [
+                    'annee' => $record['annee'],
+                    'niveau_administratif' => $record['niveau_administratif'],
+                    'titre' => $record['titre'],
+                    'categorie' => $record['categorie'] ?? null,
+                ];
+
+                $activite = ActivitePlan::query()->firstOrNew($match);
+                $isNew = !$activite->exists;
+
+                $payload = [
+                    'titre' => $record['titre'],
+                    'categorie' => $record['categorie'] ?? null,
+                    'resultat_attendu' => $record['resultat_attendu'] ?? null,
+                    'niveau_administratif' => $record['niveau_administratif'],
+                    'validation_niveau' => $record['validation_niveau'] ?? null,
+                    'responsable_code' => $record['responsable_code'] ?? null,
+                    'cout_cdf' => $record['cout_cdf'] ?? null,
+                    'province_id' => $record['province_ids'][0] ?? null,
+                    'annee' => $record['annee'],
+                    'trimestre' => $record['trimestre'] ?? null,
+                    'trimestre_1' => (bool) ($record['trimestre_1'] ?? false),
+                    'trimestre_2' => (bool) ($record['trimestre_2'] ?? false),
+                    'trimestre_3' => (bool) ($record['trimestre_3'] ?? false),
+                    'trimestre_4' => (bool) ($record['trimestre_4'] ?? false),
+                ];
+
+                if ($isNew) {
+                    $payload['createur_id'] = $user->agent->id;
+                    $payload['statut'] = 'planifiee';
+                    $payload['pourcentage'] = 0;
+                }
+
+                $activite->fill($payload);
+                $activite->save();
+                $activite->provinces()->sync($record['province_ids'] ?? []);
+
+                if ($isNew) {
+                    $created++;
+                } else {
+                    $updated++;
+                }
+            }
+        });
+
+        return $this->success([
+            'created' => $created,
+            'updated' => $updated,
+            'total' => $created + $updated,
+        ], [], [
+            'message' => sprintf('Import PTA termine : %d creee(s), %d mise(s) a jour.', $created, $updated),
+            'created' => $created,
+            'updated' => $updated,
+            'total' => $created + $updated,
+        ]);
+    }
+
     private function normalizeProvinceIds(array &$validated): array
     {
         $provinceIds = collect($validated['province_ids'] ?? []);
