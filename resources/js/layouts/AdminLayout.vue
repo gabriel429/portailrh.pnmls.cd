@@ -62,7 +62,14 @@
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
-              <span class="admin-user-avatar">{{ adminInitials }}</span>
+              <img
+                v-if="currentProfilePhotoUrl"
+                :src="currentProfilePhotoUrl"
+                alt="Photo de l'agent"
+                class="admin-user-photo"
+                @error="handleProfilePhotoError"
+              >
+              <span v-else class="admin-user-avatar">{{ adminInitials }}</span>
               <span class="admin-user-name">{{ adminDisplayName }}</span>
             </a>
 
@@ -109,6 +116,7 @@ const router = useRouter()
 const route = useRoute()
 const isMobile = ref(false)
 const mobileSidebarOpen = ref(false)
+const profilePhotoIndex = ref(0)
 
 const baseNavItems = [
   { route: 'admin.dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
@@ -157,6 +165,48 @@ const adminInitials = computed(() => {
     .join('')
 })
 
+const profilePhotoCandidates = computed(() => {
+  const photo = auth.agent?.photo
+
+  if (!photo) {
+    return []
+  }
+
+  const trimmedPhoto = photo.trim()
+  const candidates = []
+
+  if (/^https?:\/\//i.test(trimmedPhoto)) {
+    candidates.push(trimmedPhoto)
+  } else {
+    const normalizedPhoto = trimmedPhoto.replace(/^\/+/, '')
+
+    candidates.push(`/${normalizedPhoto}`)
+
+    if (!normalizedPhoto.startsWith('storage/')) {
+      candidates.push(`/storage/${normalizedPhoto}`)
+    }
+
+    if (!normalizedPhoto.startsWith('uploads/') && !normalizedPhoto.includes('/')) {
+      candidates.push(`/uploads/profiles/${normalizedPhoto}`)
+    }
+  }
+
+  return [...new Set(candidates)]
+})
+
+const currentProfilePhotoUrl = computed(() => {
+  return profilePhotoCandidates.value[profilePhotoIndex.value] || null
+})
+
+function handleProfilePhotoError() {
+  if (profilePhotoIndex.value < profilePhotoCandidates.value.length - 1) {
+    profilePhotoIndex.value += 1
+    return
+  }
+
+  profilePhotoIndex.value = profilePhotoCandidates.value.length
+}
+
   const showSidebarText = computed(() => (isMobile.value ? true : ui.sidebarOpen))
 
   const sidebarClasses = computed(() => ({
@@ -195,6 +245,10 @@ async function handleLogout() {
 
   watch(() => route.fullPath, () => {
     closeMobileSidebar()
+  })
+
+  watch(profilePhotoCandidates, () => {
+    profilePhotoIndex.value = 0
   })
 
   onMounted(() => {
@@ -293,6 +347,15 @@ async function handleLogout() {
   flex-shrink: 0;
 }
 
+.admin-user-photo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  flex-shrink: 0;
+}
+
 .admin-user-name {
   max-width: 150px;
   overflow: hidden;
@@ -386,6 +449,11 @@ async function handleLogout() {
     width: 34px;
     height: 34px;
     font-size: .76rem;
+  }
+
+  .admin-user-photo {
+    width: 34px;
+    height: 34px;
   }
 
   .admin-user-name {
