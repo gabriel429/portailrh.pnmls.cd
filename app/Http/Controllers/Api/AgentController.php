@@ -749,6 +749,10 @@ class AgentController extends ApiController
             $payload['matricule_etat'] = null;
         }
 
+        if ($payload['matricule_etat'] !== null && Agent::query()->where('matricule_etat', $payload['matricule_etat'])->exists()) {
+            $payload['matricule_etat'] = null;
+        }
+
         return $payload;
     }
 
@@ -1167,7 +1171,7 @@ class AgentController extends ApiController
     private function normalizeImportedFonction(mixed $value, array $lookup): mixed
     {
         if ($value === null || $value === '') {
-            return null;
+            return 'Chauffeur';
         }
 
         $key = $this->normalizeImportHeader((string) $value);
