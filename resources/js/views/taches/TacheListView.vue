@@ -216,7 +216,7 @@ onMounted(() => loadTaches())
 
 <style scoped>
 /* ── Mobile responsive styles ── */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .rh-hero .row {
     text-align: center;
   }
@@ -255,6 +255,8 @@ onMounted(() => loadTaches())
   .table th,
   .table td {
     padding: 0.5rem 0.4rem;
+  }
+  .table td:last-child {
     white-space: nowrap;
   }
 

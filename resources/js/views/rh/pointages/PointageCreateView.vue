@@ -321,6 +321,11 @@ onMounted(() => {
     .agent-poste {
         font-size: 0.75em;
     }
+    /* Masquer Heures et Observation sur petit écran */
+    .pointage-table th:nth-child(5), .pointage-table td:nth-child(5),
+    .pointage-table th:nth-child(6), .pointage-table td:nth-child(6) {
+        display: none;
+    }
     .d-flex.gap-2.mt-3 {
         flex-direction: column;
     }

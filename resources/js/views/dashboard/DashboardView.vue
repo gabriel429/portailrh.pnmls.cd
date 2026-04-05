@@ -610,7 +610,8 @@ watch(profilePhotoCandidates, () => {
 /* Responsive */
 @media (max-width: 576px) {
   .dash-hero { flex-direction: column; align-items: flex-start; padding: 1.5rem 1.2rem; }
-  .dash-hero-stats { margin-left: 0; margin-top: .5rem; gap: 1rem; flex-wrap: wrap; }
+  .dash-hero-stats { margin-left: 0; margin-top: .5rem; gap: .8rem 1.2rem; flex-wrap: wrap; }
+  .dash-hero-stats > div { flex: 0 0 calc(33.33% - 1rem); min-width: 60px; }
   .dash-hero-stat-val { font-size: 1.1rem; }
   .dash-action-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-stat-grid { grid-template-columns: repeat(2, 1fr); }

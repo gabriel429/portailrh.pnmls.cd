@@ -291,7 +291,7 @@ onMounted(() => loadPlanning())
 }
 
 /* ── Mobile responsive ── */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .rh-hero .row { text-align: center; }
   .rh-hero .col-lg-4 { text-align: center; }
   .hero-tools { justify-content: center; display: flex; }

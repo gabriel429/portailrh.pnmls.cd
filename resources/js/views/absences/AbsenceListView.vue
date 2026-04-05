@@ -223,7 +223,7 @@ onMounted(() => loadAbsences())
 
 <style scoped>
 /* ── Mobile responsive styles ── */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   .rh-hero .row {
     text-align: center;
   }

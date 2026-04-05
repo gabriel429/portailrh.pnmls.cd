@@ -1082,10 +1082,10 @@ onMounted(async () => {
   .sen-hero-inner { padding: 1.3rem 1.2rem; gap: 1rem; }
   .sen-hero-badge { width: 48px; height: 48px; font-size: 1.2rem; }
   .sen-hero-name { font-size: 1.2rem; }
-  .sen-hero-kpis { padding: .6rem .8rem; gap: 0; flex-wrap: wrap; }
+  .sen-hero-kpis { padding: .6rem .8rem; flex-wrap: wrap; gap: .5rem; }
   .sen-kpi { padding: 0 .6rem; }
   .sen-kpi-val { font-size: 1.15rem; }
-  .kpi-divider { height: 28px; }
+  .kpi-divider { display: none; }
   .sen-actions { grid-template-columns: 1fr 1fr; gap: .5rem; }
   .sen-action { padding: .75rem .85rem; }
   .sen-metrics { gap: .5rem; }
@@ -1096,10 +1096,9 @@ onMounted(async () => {
 }
 @media (max-width: 575.98px) {
   .sen-hero-kpis { border-radius: 12px; }
-  .sen-kpi { padding: .4rem .4rem; }
+  .sen-kpi { padding: .4rem .4rem; flex: 0 0 calc(50% - .5rem); }
   .sen-kpi-icon { display: none; }
   .sen-kpi-val { font-size: 1.1rem; }
-  .kpi-divider { height: 24px; }
   .sen-actions { grid-template-columns: 1fr; }
   .sen-action-arrow { display: none; }
   .sen-metrics { grid-template-columns: repeat(2, 1fr); }

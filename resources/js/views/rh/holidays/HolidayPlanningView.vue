@@ -518,4 +518,28 @@ onMounted(() => {
 .progress {
   margin-bottom: 4px;
 }
+
+/* ── Mobile responsive ── */
+@media (max-width: 767.98px) {
+  .stat-card { padding: 1rem; }
+  .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; margin-right: .75rem; }
+  .stat-content h3 { font-size: 1.3rem; }
+  .stat-content p { font-size: 0.8rem; }
+  .rh-filters-card { padding: 1rem; }
+  .table { font-size: 0.82rem; }
+  .table th, .table td { padding: 0.5rem 0.4rem; white-space: nowrap; }
+  /* Masquer Année, Jours Totaux, Taux sur mobile */
+  .table th:nth-child(3), .table td:nth-child(3),
+  .table th:nth-child(4), .table td:nth-child(4),
+  .table th:nth-child(6), .table td:nth-child(6) { display: none; }
+  .btn-rh { padding: 0.4rem 0.75rem; font-size: 0.85rem; }
+}
+
+@media (max-width: 575.98px) {
+  .table { font-size: 0.78rem; }
+  .table th, .table td { padding: 0.35rem 0.3rem; }
+  .stat-card { padding: 0.75rem; }
+  .stat-icon { width: 34px; height: 34px; font-size: 0.95rem; }
+  .stat-content h3 { font-size: 1.1rem; }
+}
 </style>

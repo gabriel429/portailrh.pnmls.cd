@@ -974,10 +974,10 @@ onMounted(async () => {
   .rh-hero-inner { padding: 1.3rem 1.2rem; gap: 1rem; }
   .rh-hero-badge { width: 48px; height: 48px; font-size: 1.2rem; }
   .rh-hero-name { font-size: 1.2rem; }
-  .rh-hero-kpis { padding: .6rem .8rem; flex-wrap: wrap; }
+  .rh-hero-kpis { padding: .6rem .8rem; flex-wrap: wrap; gap: .5rem; }
   .rh-kpi { padding: 0 .6rem; }
   .rh-kpi-val { font-size: 1.15rem; }
-  .kpi-divider { height: 28px; }
+  .kpi-divider { display: none; }
   .rh-actions { grid-template-columns: 1fr 1fr; gap: .5rem; }
   .rh-metrics { gap: .5rem; }
   .rh-metric { padding: .85rem; }
@@ -987,10 +987,9 @@ onMounted(async () => {
 }
 @media (max-width: 575.98px) {
   .rh-hero-kpis { border-radius: 12px; }
-  .rh-kpi { padding: .4rem .4rem; }
+  .rh-kpi { padding: .4rem .4rem; flex: 0 0 calc(50% - .5rem); }
   .rh-kpi-icon { display: none; }
   .rh-kpi-val { font-size: 1.1rem; }
-  .kpi-divider { height: 24px; }
   .rh-actions { grid-template-columns: 1fr; }
   .rh-action-arrow { display: none; }
   .rh-metrics { grid-template-columns: repeat(2, 1fr); }

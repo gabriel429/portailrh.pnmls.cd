@@ -569,7 +569,7 @@ onMounted(() => {
 
 <style scoped>
 /* ── Mobile responsive styles ── */
-@media (max-width: 768px) {
+@media (max-width: 767.98px) {
   /* Header stack */
   .d-flex.justify-content-between.align-items-center.mb-4 {
     flex-direction: column;

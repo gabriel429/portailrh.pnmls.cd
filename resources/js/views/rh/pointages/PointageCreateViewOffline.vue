@@ -563,4 +563,32 @@ onMounted(async () => {
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
+
+/* ── Mobile responsive ── */
+@media (max-width: 767.98px) {
+  .pointage-table th, .pointage-table td {
+    padding: 0.4rem 0.35rem;
+    font-size: 0.82rem;
+  }
+  .pointage-table input[type="time"] {
+    min-width: 90px;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.4rem;
+  }
+  .pointage-table input[type="text"] {
+    min-width: 90px;
+    font-size: 0.85rem;
+    padding: 0.25rem 0.4rem;
+  }
+  .agent-name {
+    white-space: normal;
+    font-size: 0.85rem;
+  }
+  .agent-poste { font-size: 0.75em; }
+  /* Masquer Heures et Observation */
+  .pointage-table th:nth-child(5), .pointage-table td:nth-child(5),
+  .pointage-table th:nth-child(6), .pointage-table td:nth-child(6) {
+    display: none;
+  }
+}
 </style>
