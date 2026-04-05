@@ -327,10 +327,31 @@ return new class extends Migration
         // 5. SIGNALEMENTS: agent_id NULLABLE (anonymat)
         // ──────────────────────────────────────────────
         if (Schema::hasColumn('signalements', 'agent_id')) {
-            // Drop existing FK, make nullable, re-add FK with SET NULL
-            Schema::table('signalements', function (Blueprint $table) {
-                $table->dropForeign(['agent_id']);
-            });
+            // Drop existing FK safely (name may vary)
+            try {
+                Schema::table('signalements', function (Blueprint $table) {
+                    $table->dropForeign(['agent_id']);
+                });
+            } catch (\Exception $e) {
+                // FK may not exist or have a different name – try raw SQL
+                try {
+                    $fkName = DB::selectOne("
+                        SELECT CONSTRAINT_NAME
+                        FROM information_schema.KEY_COLUMN_USAGE
+                        WHERE TABLE_SCHEMA = DATABASE()
+                          AND TABLE_NAME = 'signalements'
+                          AND COLUMN_NAME = 'agent_id'
+                          AND REFERENCED_TABLE_NAME IS NOT NULL
+                        LIMIT 1
+                    ");
+                    if ($fkName) {
+                        DB::statement("ALTER TABLE signalements DROP FOREIGN KEY `{$fkName->CONSTRAINT_NAME}`");
+                    }
+                } catch (\Exception $e2) {
+                    // No FK to drop – continue
+                }
+            }
+
             Schema::table('signalements', function (Blueprint $table) {
                 $table->unsignedBigInteger('agent_id')->nullable()->change();
             });
