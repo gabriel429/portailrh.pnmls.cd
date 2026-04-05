@@ -1,4 +1,5 @@
 <template>
+  <Teleport to="body">
   <div
     v-if="show"
     class="modal fade show modal-over-overlay"
@@ -381,6 +382,7 @@
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <script setup>
