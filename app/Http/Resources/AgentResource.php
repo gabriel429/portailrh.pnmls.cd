@@ -40,6 +40,11 @@ class AgentResource extends JsonResource
             'anciennete' => $this->annee_engagement_programme ? now()->year - $this->annee_engagement_programme : null,
             'date_embauche' => optional($this->date_embauche)->toDateString(),
             'statut' => $this->statut,
+            'institution_id' => $this->institution_id,
+            'grade_id' => $this->grade_id,
+            'departement_id' => $this->departement_id,
+            'province_id' => $this->province_id,
+            'section_id' => $this->section_id,
             'province' => $this->whenLoaded('province', fn () => [
                 'id' => $this->province->id,
                 'nom' => $this->province->nom_province ?? $this->province->nom,
