@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="show"
-    class="modal fade show"
-    style="display: block; background: rgba(0,0,0,0.5); z-index: 2200 !important;"
+    class="modal fade show modal-over-overlay"
+    style="display: block; background: rgba(0,0,0,0.5);"
     @click="handleBackdropClick"
   >
-    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="z-index: 2201 !important;" @click.stop>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" @click.stop>
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">

@@ -1126,7 +1126,14 @@ body {
 .modal-dialog {
     z-index: 2001 !important;
 }
-/* Custom overlays should be higher */
+/* Edit modal must appear above detail overlays */
+.modal.modal-over-overlay {
+    z-index: 2200 !important;
+}
+.modal.modal-over-overlay .modal-dialog {
+    z-index: 2201 !important;
+}
+/* Custom overlays should be higher than basic modals */
 .asm-overlay,
 .rcm-overlay,
 .dum-overlay,
