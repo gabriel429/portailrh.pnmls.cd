@@ -228,6 +228,8 @@ class AgentController extends ApiController
             $validated['date_embauche'] = $validated['annee_engagement_programme'] . '-01-01';
         }
 
+        $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
+
         $validated['poste_actuel'] = $validated['fonction'];
 
         // Convert empty matricule values to null
@@ -348,6 +350,8 @@ class AgentController extends ApiController
             $key = mb_strtolower(trim($validated['situation_familiale']));
             $validated['situation_familiale'] = $map[$key] ?? $validated['situation_familiale'];
         }
+
+        $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
 
         // Remove domaine_etudes if column doesn't exist
         if (!Schema::hasColumn('agents', 'domaine_etudes')) {
@@ -756,6 +760,8 @@ class AgentController extends ApiController
             $validated['date_embauche'] = $validated['annee_engagement_programme'] . '-01-01';
         }
 
+        $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
+
         $validated['poste_actuel'] = $validated['fonction'] ?? null;
 
         if (Schema::hasColumn('agents', 'email')) {
@@ -999,6 +1005,19 @@ class AgentController extends ApiController
             'veuf', 'veuve', 'veuf_veuve' => 'veuf',
             default => $value,
         };
+    }
+
+    private function defaultSituationFamiliale(mixed $value): string
+    {
+        if ($value === null) {
+            return 'célibataire';
+        }
+
+        if (is_string($value) && trim($value) === '') {
+            return 'célibataire';
+        }
+
+        return (string) $value;
     }
 
     private function normalizeImportedStatut(mixed $value): string
