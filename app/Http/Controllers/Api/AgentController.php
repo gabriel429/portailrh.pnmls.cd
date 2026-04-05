@@ -805,7 +805,11 @@ class AgentController extends ApiController
     {
         $fonctions = Fonction::query()->pluck('nom')->all();
         $departements = Department::query()->get(['id', 'nom']);
-        $provinces = Province::query()->get(['id', 'nom', 'nom_province']);
+        $provinceColumns = ['id', 'nom'];
+        if (Schema::hasColumn('provinces', 'nom_province')) {
+            $provinceColumns[] = 'nom_province';
+        }
+        $provinces = Province::query()->get($provinceColumns);
         $grades = Schema::hasTable('grades') ? Grade::query()->get(['id', 'libelle', 'nom']) : collect();
         $institutions = Schema::hasTable('institutions') ? Institution::query()->get(['id', 'nom']) : collect();
 
