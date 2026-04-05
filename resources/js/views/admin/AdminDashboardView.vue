@@ -180,6 +180,7 @@ const statCards = computed(() => [
 ])
 
 const quickLinks = [
+  { to: '/plan-travail', label: 'PTA', icon: 'fa-calendar-check', color: '#0077B5' },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'fa-user-shield', color: '#059669' },
   { to: '/admin/agents/import', label: 'Import agents', icon: 'fa-file-import', color: '#2563eb' },
   { to: '/admin/organes', label: 'Organes', icon: 'fa-sitemap', color: '#8b5cf6' },

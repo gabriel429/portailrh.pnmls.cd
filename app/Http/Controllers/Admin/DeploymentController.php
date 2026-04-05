@@ -71,6 +71,16 @@ class DeploymentController extends Controller
         return null;
     }
 
+    private function runArtisanCommand(string $command, array $parameters = []): array
+    {
+        $exitCode = Artisan::call($command, $parameters);
+
+        return [
+            'output' => trim(Artisan::output()),
+            'exit_code' => $exitCode,
+        ];
+    }
+
     public function buildFrontendStatus()
     {
         $pidPath = $this->frontendBuildPidPath();
@@ -1084,28 +1094,35 @@ class DeploymentController extends Controller
 
         try {
             $root = base_path();
-            $php = PHP_BINARY;
-
-            // Use Hostinger PHP path if available
-            if (file_exists('/opt/alt/php83/usr/bin/php')) {
-                $php = '/opt/alt/php83/usr/bin/php';
-            }
 
             $output_messages[] = "=== Git Pull origin main ===";
-            $gitOutput = shell_exec("cd {$root} && git pull origin main 2>&1");
-            $output_messages[] = $gitOutput ?: '(aucune sortie)';
+            $gitResult = $this->runShellCommand('cd ' . escapeshellarg($root) . ' && git pull origin main');
+            $output_messages[] = $gitResult['output'] !== '' ? $gitResult['output'] : '(aucune sortie)';
+
+            if ($gitResult['exit_code'] !== 0) {
+                $error_messages[] = "❌ git pull a échoué (code {$gitResult['exit_code']}).";
+                return $this->deployResponse($output_messages, $error_messages, false);
+            }
 
             $output_messages[] = "=== Nettoyage des caches ===";
-            Artisan::call('config:clear');
-            $output_messages[] = Artisan::output();
-            Artisan::call('route:clear');
-            $output_messages[] = Artisan::output();
-            Artisan::call('view:clear');
-            $output_messages[] = Artisan::output();
+            foreach (['config:clear', 'route:clear', 'view:clear'] as $command) {
+                $result = $this->runArtisanCommand($command);
+                $output_messages[] = $result['output'] !== '' ? $result['output'] : "{$command}: ok";
+
+                if ($result['exit_code'] !== 0) {
+                    $error_messages[] = "❌ La commande {$command} a échoué (code {$result['exit_code']}).";
+                    return $this->deployResponse($output_messages, $error_messages, false);
+                }
+            }
 
             $output_messages[] = "=== Migration ===";
-            Artisan::call('migrate', ['--force' => true]);
-            $output_messages[] = Artisan::output();
+            $migrateResult = $this->runArtisanCommand('migrate', ['--force' => true]);
+            $output_messages[] = $migrateResult['output'] !== '' ? $migrateResult['output'] : '(aucune sortie)';
+
+            if ($migrateResult['exit_code'] !== 0) {
+                $error_messages[] = "❌ La migration a échoué (code {$migrateResult['exit_code']}).";
+                return $this->deployResponse($output_messages, $error_messages, false);
+            }
 
             $output_messages[] = "Déploiement Git terminé avec succès!";
             $success = true;
