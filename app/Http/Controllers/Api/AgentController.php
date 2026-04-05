@@ -719,7 +719,7 @@ class AgentController extends ApiController
         $lieuNaissanceValue = $this->importValue($row, $headerIndexes, 'lieu_naissance');
 
         $payload = [
-            'matricule_etat' => $this->importValue($row, $headerIndexes, 'matricule_etat'),
+            'matricule_etat' => $this->normalizeImportedMatricule($this->importValue($row, $headerIndexes, 'matricule_etat')),
             'nom' => $this->importValue($row, $headerIndexes, 'nom'),
             'postnom' => $this->importValue($row, $headerIndexes, 'postnom'),
             'prenom' => $this->importValue($row, $headerIndexes, 'prenom'),
@@ -1103,12 +1103,32 @@ class AgentController extends ApiController
 
         foreach ($parts as $part) {
             $candidate = trim($part);
-            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+            if (
+                $candidate !== ''
+                && filter_var($candidate, FILTER_VALIDATE_EMAIL)
+                && !preg_match('/^pasdemail\d+@pnmls\.cd$/i', $candidate)
+            ) {
                 return $candidate;
             }
         }
 
         return null;
+    }
+
+    private function normalizeImportedMatricule(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $candidate = trim((string) $value);
+        $normalized = $this->normalizeImportHeader($candidate);
+
+        if (in_array($normalized, ['nu', 'na', 'n_a', 'vide', 'non_renseigne', 'sans_matricule'], true)) {
+            return null;
+        }
+
+        return $candidate;
     }
 
     private function normalizeImportedFonction(mixed $value, array $lookup): mixed
