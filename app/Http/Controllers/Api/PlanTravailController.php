@@ -19,6 +19,8 @@ use Illuminate\Support\Facades\Schema;
 
 class PlanTravailController extends ApiController
 {
+    private array $departmentFamilyCache = [];
+
     private function scopeService(): UserDataScope
     {
         return app(UserDataScope::class);
@@ -88,7 +90,69 @@ class PlanTravailController extends ApiController
             return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('departement_id', $agent->departement_id);
+        $familyIds = $this->getActiveDepartmentFamily($agent->departement_id);
+
+        return count($familyIds) === 1
+            ? $query->where('departement_id', $familyIds[0])
+            : $query->whereIn('departement_id', $familyIds);
+    }
+
+    /**
+     * Get all department IDs belonging to the same active-department family.
+     *
+     * The 5 active PNMLS departments are identified by
+     * Department::ACTIVE_NATIONAL_DEPARTMENT_KEYWORDS.  Tracking
+     * sub-departments (e.g. SE, PRC) share keywords with their parent
+     * active department.  This method groups them together so that PTA
+     * scoping includes the whole family.
+     */
+    private function getActiveDepartmentFamily(int $departmentId): array
+    {
+        if (isset($this->departmentFamilyCache[$departmentId])) {
+            return $this->departmentFamilyCache[$departmentId];
+        }
+
+        $department = Department::find($departmentId);
+        if (!$department || $department->province_id) {
+            return $this->departmentFamilyCache[$departmentId] = [$departmentId];
+        }
+
+        $nomNormalized = $this->normalizeScopeText($department->nom);
+
+        $matchedGroup = null;
+        $bestScore = 0;
+
+        foreach (Department::ACTIVE_NATIONAL_DEPARTMENT_KEYWORDS as $keywordGroup) {
+            $score = 0;
+            foreach ($keywordGroup as $keyword) {
+                if (str_contains($nomNormalized, $keyword)) {
+                    $score++;
+                }
+            }
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $matchedGroup = $keywordGroup;
+            }
+        }
+
+        if (!$matchedGroup) {
+            return $this->departmentFamilyCache[$departmentId] = [$departmentId];
+        }
+
+        $familyIds = Department::whereNull('province_id')
+            ->where(function ($query) use ($matchedGroup) {
+                foreach ($matchedGroup as $keyword) {
+                    $query->orWhere('nom', 'like', '%' . $keyword . '%');
+                }
+            })
+            ->pluck('id')
+            ->toArray();
+
+        if (!in_array($departmentId, $familyIds)) {
+            $familyIds[] = $departmentId;
+        }
+
+        return $this->departmentFamilyCache[$departmentId] = $familyIds;
     }
 
     private function canAccessActivity(ActivitePlan $activite): bool
@@ -105,7 +169,9 @@ class PlanTravailController extends ApiController
                 && $this->activityTargetsProvince($activite, (int) $agent->province_id);
         }
 
-        return (int) $activite->departement_id === (int) $agent->departement_id;
+        $familyIds = $this->getActiveDepartmentFamily((int) $agent->departement_id);
+
+        return in_array((int) $activite->departement_id, $familyIds);
     }
 
     private function enforceManagedScope(array $validated, ?Agent $agent): array
@@ -135,7 +201,9 @@ class PlanTravailController extends ApiController
             abort(403, 'Aucun departement associe a cet agent.');
         }
 
-        if (!empty($validated['departement_id']) && (int) $validated['departement_id'] !== (int) $agent->departement_id) {
+        $familyIds = $this->getActiveDepartmentFamily((int) $agent->departement_id);
+
+        if (!empty($validated['departement_id']) && !in_array((int) $validated['departement_id'], $familyIds)) {
             abort(403, 'Acces refuse pour ce departement.');
         }
 
@@ -203,12 +271,12 @@ class PlanTravailController extends ApiController
         // SEN level
         if (str_contains($organe, 'National') && $activite->niveau_administratif === 'SEN') {
             if (str_contains($nomFonction, 'directeur') || str_contains($nomFonction, 'chef de département')) {
-                if ($agent->departement_id && $activite->departement_id === $agent->departement_id) {
+                if ($agent->departement_id && in_array((int) $activite->departement_id, $this->getActiveDepartmentFamily((int) $agent->departement_id))) {
                     return true;
                 }
             }
             if (str_contains($nomFonction, 'assistant de département') || str_contains($nomFonction, 'secrétaire de département')) {
-                if ($agent->departement_id && $activite->departement_id === $agent->departement_id) {
+                if ($agent->departement_id && in_array((int) $activite->departement_id, $this->getActiveDepartmentFamily((int) $agent->departement_id))) {
                     return true;
                 }
             }
@@ -337,7 +405,7 @@ class PlanTravailController extends ApiController
         $agent = $this->getScopedAgent();
 
         $departments = Department::query()
-            ->when($agent?->departement_id, fn (Builder $query) => $query->where('id', $agent->departement_id))
+            ->when($agent?->departement_id, fn (Builder $query) => $query->whereIn('id', $this->getActiveDepartmentFamily($agent->departement_id)))
             ->when(!$agent?->departement_id, fn (Builder $query) => $query->operational())
             ->orderBy('nom')
             ->get(['id', 'nom']);
