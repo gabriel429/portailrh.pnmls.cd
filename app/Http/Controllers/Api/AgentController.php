@@ -249,6 +249,12 @@ class AgentController extends ApiController
 
         $validated = $this->scopeService()->enforceAgentPayloadScope($validated, $request->user());
 
+        // SEN agents must not have a province
+        $organe = mb_strtolower(trim($validated['organe'] ?? ''));
+        if (str_contains($organe, 'national')) {
+            $validated['province_id'] = null;
+        }
+
         // Default date_naissance from year
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
             $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
@@ -359,6 +365,12 @@ class AgentController extends ApiController
         ]);
 
         $validated = $this->scopeService()->enforceAgentPayloadScope($validated, $request->user());
+
+        // SEN agents must not have a province (otherwise they appear in provincial RH scope)
+        $organe = mb_strtolower(trim($validated['organe'] ?? ''));
+        if (str_contains($organe, 'national')) {
+            $validated['province_id'] = null;
+        }
 
         // Default date_naissance from year
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {

@@ -2,10 +2,10 @@
   <div
     v-if="show"
     class="modal fade show"
-    style="display: block; background: rgba(0,0,0,0.5); z-index: 2000 !important;"
+    style="display: block; background: rgba(0,0,0,0.5); z-index: 2200 !important;"
     @click="handleBackdropClick"
   >
-    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="z-index: 2001 !important;" @click.stop>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="z-index: 2201 !important;" @click.stop>
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -564,7 +564,6 @@ function populateForm(agentData) {
   form.organe = agentData.organe || ''
   form.departement_id = agentData.departement_id || agentData.departement?.id || ''
   form.section_id = agentData.section_id || agentData.section?.id || ''
-  form.province_id = agentData.province_id || agentData.province?.id || ''
   form.fonction = agentData.fonction || ''
   form.niveau_etudes = agentData.niveau_etudes || ''
   form.domaine_etudes = agentData.domaine_etudes || ''
@@ -575,6 +574,13 @@ function populateForm(agentData) {
   // Determine rattachement type for SEN
   const orgKey = (form.organe || '').trim().toLowerCase()
   const niveau = organeToNiveau[orgKey] || organeToNiveau[normalizeStr(form.organe || '')] || ''
+
+  // Province uniquement pour SEP/SEL, pas pour SEN
+  if (niveau === 'SEP' || niveau === 'SEL') {
+    form.province_id = agentData.province_id || agentData.province?.id || ''
+  } else {
+    form.province_id = ''
+  }
   if (niveau === 'SEN') {
     typeRattachement.value = form.departement_id ? 'departement' : 'service_rattache'
   }
