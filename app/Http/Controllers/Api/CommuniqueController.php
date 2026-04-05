@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\CommuniquePublished;
 use App\Http\Resources\CommuniqueResource;
 use App\Models\Communique;
 use App\Services\NotificationService;
@@ -43,6 +44,7 @@ class CommuniqueController extends ApiController
 
         // Notifier tous les utilisateurs du nouveau communique
         if ($communique->actif) {
+            CommuniquePublished::dispatch($communique);
             NotificationService::notifierTous(
                 'communique',
                 'Nouveau communique : ' . $communique->titre,

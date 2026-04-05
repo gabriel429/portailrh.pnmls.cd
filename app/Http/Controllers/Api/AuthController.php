@@ -198,6 +198,17 @@ class AuthController extends Controller
             $data['is_super_admin'] = true;
         }
 
+        // Expose permission codes for the frontend
+        $permissions = collect();
+        if ($user->role) {
+            $permissions = $user->role->permissions()->pluck('code');
+        }
+        if ($user->agent) {
+            $agentPerms = $user->agent->permissions()->pluck('code');
+            $permissions = $permissions->merge($agentPerms)->unique();
+        }
+        $data['permissions'] = $permissions->values()->toArray();
+
         return response()->json($data);
     }
 }

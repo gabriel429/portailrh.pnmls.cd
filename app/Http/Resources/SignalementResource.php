@@ -21,10 +21,22 @@ class SignalementResource extends JsonResource
             'observations' => $this->observations,
             'severite' => $this->severite,
             'statut' => $this->statut,
+            'is_anonymous' => (bool) $this->is_anonymous,
+            'traite_par' => $this->traite_par,
+            'traite_le' => optional($this->traite_le)?->toIso8601String(),
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
             'agent' => $this->whenLoaded('agent', function () use ($request) {
+                if ($this->is_anonymous) {
+                    return null;
+                }
                 return AgentResource::make($this->agent)->resolve($request);
+            }),
+            'traite_par_agent' => $this->whenLoaded('traitePar', function () use ($request) {
+                return $this->traitePar ? [
+                    'id' => $this->traitePar->id,
+                    'nom_complet' => $this->traitePar->prenom . ' ' . $this->traitePar->nom,
+                ] : null;
             }),
         ];
     }

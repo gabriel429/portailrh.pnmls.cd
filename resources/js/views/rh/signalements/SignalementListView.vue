@@ -70,8 +70,13 @@
             <tbody>
               <tr v-for="s in signalements" :key="s.id">
                 <td>
-                  <strong>{{ s.agent?.prenom }} {{ s.agent?.nom }}</strong><br>
-                  <small class="text-muted">{{ s.agent?.id_agent }}</small>
+                  <template v-if="s.is_anonymous">
+                    <span class="anon-badge"><i class="fas fa-user-secret me-1"></i> Anonyme</span>
+                  </template>
+                  <template v-else>
+                    <strong>{{ s.agent?.prenom }} {{ s.agent?.nom }}</strong><br>
+                    <small class="text-muted">{{ s.agent?.id_agent }}</small>
+                  </template>
                 </td>
                 <td>{{ capitalize(s.type) }}</td>
                 <td>

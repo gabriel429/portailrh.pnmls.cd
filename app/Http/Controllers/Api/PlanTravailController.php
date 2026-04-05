@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\PtaModified;
 use App\Http\Resources\ActivitePlanResource;
 use App\Models\ActivitePlan;
 use App\Models\Agent;
@@ -412,6 +413,8 @@ class PlanTravailController extends ApiController
         $activite = ActivitePlan::create($validated);
         $this->syncActiviteProvinces($activite, $provinceIds);
 
+        PtaModified::dispatch($activite, 'created');
+
         NotificationService::notifierTous(
             'plan_travail',
             'Nouvelle activite PTA : ' . $activite->titre,
@@ -498,6 +501,8 @@ class PlanTravailController extends ApiController
         $activitePlan->update($validated);
         $this->syncActiviteProvinces($activitePlan, $provinceIds);
 
+        PtaModified::dispatch($activitePlan, 'updated');
+
         NotificationService::notifierTous(
             'plan_travail',
             'PTA mis a jour : ' . $activitePlan->titre,
@@ -549,6 +554,8 @@ class PlanTravailController extends ApiController
         ]);
 
         $activitePlan->update($validated);
+
+        PtaModified::dispatch($activitePlan, 'status_changed');
 
         $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent'));
 
@@ -670,6 +677,73 @@ class PlanTravailController extends ApiController
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Validate PTA at Section level (Chef Section Planification).
+     */
+    public function validateSection(Request $request, ActivitePlan $activitePlan): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->hasAdminAccess() && !$user->hasPermission('pta.validate.section')) {
+            return response()->json(['message' => 'Permission requise : pta.validate.section'], 403);
+        }
+
+        $validated = $request->validate([
+            'observations' => 'nullable|string',
+        ]);
+
+        $activitePlan->update([
+            'validated_by_section' => $user->agent?->id,
+            'validated_at_section' => now(),
+        ]);
+
+        if (!empty($validated['observations'])) {
+            $activitePlan->update(['observations' => $validated['observations']]);
+        }
+
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent'));
+
+        return $this->resource($resource, [], [
+            'message' => 'Activité validée au niveau Section.',
+        ]);
+    }
+
+    /**
+     * Validate PTA at Cellule level (Chef Cellule Planification).
+     */
+    public function validateCellule(Request $request, ActivitePlan $activitePlan): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->hasAdminAccess() && !$user->hasPermission('pta.validate.cellule')) {
+            return response()->json(['message' => 'Permission requise : pta.validate.cellule'], 403);
+        }
+
+        // Section validation should precede Cellule
+        if (!$activitePlan->validated_by_section) {
+            return response()->json(['message' => 'Cette activité doit d\'abord être validée au niveau Section.'], 422);
+        }
+
+        $validated = $request->validate([
+            'observations' => 'nullable|string',
+        ]);
+
+        $activitePlan->update([
+            'validated_by_cellule' => $user->agent?->id,
+            'validated_at_cellule' => now(),
+        ]);
+
+        if (!empty($validated['observations'])) {
+            $activitePlan->update(['observations' => $validated['observations']]);
+        }
+
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent'));
+
+        return $this->resource($resource, [], [
+            'message' => 'Activité validée au niveau Cellule.',
+        ]);
     }
 
     private function normalizeTrimestreFlags(array $validated): array

@@ -44,6 +44,21 @@ export const useAuthStore = defineStore('auth', {
             if (state.user?.is_super_admin) return true
             return this.isRH || this.isAdminNT || this.isSEN
         },
+        permissions(state) {
+            return state.user?.permissions || []
+        },
+        hasPermission() {
+            return (code) => {
+                if (this.isSuperAdmin) return true
+                return this.permissions.includes(code)
+            }
+        },
+        hasAnyPermission() {
+            return (codes) => {
+                if (this.isSuperAdmin) return true
+                return codes.some(c => this.permissions.includes(c))
+            }
+        },
     },
     actions: {
         async fetchUser() {

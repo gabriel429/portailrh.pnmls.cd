@@ -20,12 +20,16 @@ class RequestResource extends JsonResource
             'statut' => $this->statut,
             'remarques' => $this->remarques,
             'lettre_demande' => $this->lettre_demande,
+            'current_step' => $this->current_step,
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
             'agent' => $this->whenLoaded('agent', fn () => [
                 'id' => $this->agent->id,
                 'id_agent' => $this->agent->id_agent,
+                'nom' => $this->agent->nom,
+                'prenom' => $this->agent->prenom,
                 'nom_complet' => $this->agent->nom_complet,
+                'poste_actuel' => $this->agent->poste_actuel,
                 'email_professionnel' => $this->agent->email_professionnel,
             ]),
         ];

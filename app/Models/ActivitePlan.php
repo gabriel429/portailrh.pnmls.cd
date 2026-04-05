@@ -40,6 +40,10 @@ class ActivitePlan extends Model
         'date_fin',
         'pourcentage',
         'observations',
+        'validated_by_section',
+        'validated_at_section',
+        'validated_by_cellule',
+        'validated_at_cellule',
     ];
 
     protected $casts = [
@@ -52,6 +56,8 @@ class ActivitePlan extends Model
         'trimestre_3' => 'boolean',
         'trimestre_4' => 'boolean',
         'pourcentage' => 'integer',
+        'validated_at_section' => 'datetime',
+        'validated_at_cellule' => 'datetime',
     ];
 
     public function createur(): BelongsTo

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\DemandeCreated;
+use App\Events\DemandeValidated;
 use App\Http\Resources\RequestResource;
 use App\Models\Request as RequestModel;
 use App\Models\Agent;
 use App\Models\User;
+use App\Services\DemandeWorkflowService;
 use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +19,11 @@ class RequestController extends ApiController
     private function scopeService(): UserDataScope
     {
         return app(UserDataScope::class);
+    }
+
+    private function workflowService(): DemandeWorkflowService
+    {
+        return app(DemandeWorkflowService::class);
     }
 
     /**
@@ -105,6 +113,12 @@ class RequestController extends ApiController
 
         $demande = RequestModel::create($validated);
 
+        // Initialize the multi-step workflow
+        $this->workflowService()->initializeWorkflow($demande);
+
+        // Fire event for listeners (renforcement routing, etc.)
+        DemandeCreated::dispatch($demande);
+
         // Notify RH staff of a new request
         $agent = Agent::find($validated['agent_id']);
         $nomAgent = $agent ? $agent->prenom . ' ' . $agent->nom : 'Un agent';
@@ -125,7 +139,7 @@ class RequestController extends ApiController
     }
 
     /**
-     * Display a single request with its agent.
+     * Display a single request with its agent and workflow status.
      */
     public function show(Request $request, int $id): JsonResponse
     {
@@ -133,9 +147,13 @@ class RequestController extends ApiController
 
         $this->authorizeAccess($request->user(), $demande);
 
+        $workflow = $this->workflowService();
+
         return $this->resource(RequestResource::make($demande), [], [
             'isRH' => $request->user()->hasAdminAccess(),
             'isOwner' => $request->user()->agent?->id === $demande->agent_id,
+            'canValidate' => $workflow->canValidate($request->user(), $demande),
+            'workflow' => $workflow->getWorkflowStatus($demande),
         ]);
     }
 
@@ -215,6 +233,62 @@ class RequestController extends ApiController
 
         return $this->resource($resource, [], [
             'message' => 'Demande modifiée avec succès.',
+        ]);
+    }
+
+    /**
+     * Validate (approve) the current workflow step.
+     */
+    public function validateStep(Request $request, int $id): JsonResponse
+    {
+        $demande = RequestModel::findOrFail($id);
+        $this->authorizeAccess($request->user(), $demande);
+
+        $result = $this->workflowService()->approve($request->user(), $demande);
+
+        if (!$result['success']) {
+            return response()->json(['message' => $result['message']], 403);
+        }
+
+        $demande->refresh()->load('agent');
+
+        DemandeValidated::dispatch($demande, $result['step'] ?? 'unknown', 'approved');
+
+        return $this->resource(RequestResource::make($demande), [], [
+            'message' => $result['message'],
+            'workflow' => $this->workflowService()->getWorkflowStatus($demande),
+        ]);
+    }
+
+    /**
+     * Reject the request at the current workflow step.
+     */
+    public function rejectStep(Request $request, int $id): JsonResponse
+    {
+        $demande = RequestModel::findOrFail($id);
+        $this->authorizeAccess($request->user(), $demande);
+
+        $validated = $request->validate([
+            'remarques' => 'nullable|string|max:1000',
+        ]);
+
+        $result = $this->workflowService()->reject(
+            $request->user(),
+            $demande,
+            $validated['remarques'] ?? null
+        );
+
+        if (!$result['success']) {
+            return response()->json(['message' => $result['message']], 403);
+        }
+
+        $demande->refresh()->load('agent');
+
+        DemandeValidated::dispatch($demande, $result['step'] ?? 'unknown', 'rejected');
+
+        return $this->resource(RequestResource::make($demande), [], [
+            'message' => $result['message'],
+            'workflow' => $this->workflowService()->getWorkflowStatus($demande),
         ]);
     }
 

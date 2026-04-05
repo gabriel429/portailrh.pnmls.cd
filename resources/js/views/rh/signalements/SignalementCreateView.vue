@@ -26,7 +26,24 @@
         </div>
 
         <form @submit.prevent="handleSubmit" class="row g-3">
-          <div class="col-md-6">
+          <!-- Anonymous toggle -->
+          <div class="col-12">
+            <div class="anon-toggle" :class="{ active: form.is_anonymous }">
+              <div class="anon-toggle-info">
+                <i class="fas fa-user-secret anon-icon"></i>
+                <div>
+                  <div class="anon-label">Signalement anonyme</div>
+                  <div class="anon-desc">L'identité de l'agent ne sera pas enregistrée.</div>
+                </div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" v-model="form.is_anonymous">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <div v-if="!form.is_anonymous" class="col-md-6">
             <label for="agent_id" class="form-label">Agent</label>
             <select v-model="form.agent_id" class="form-select" id="agent_id" required>
               <option value="">Selectionner un agent</option>
@@ -92,6 +109,7 @@ const form = ref({
   description: '',
   observations: '',
   severite: '',
+  is_anonymous: false,
 })
 
 async function loadAgents() {
@@ -107,7 +125,11 @@ async function handleSubmit() {
   errors.value = []
   submitting.value = true
   try {
-    await create(form.value)
+    const payload = { ...form.value }
+    if (payload.is_anonymous) {
+      delete payload.agent_id
+    }
+    await create(payload)
     ui.addToast('Signalement cree avec succes.', 'success')
     router.push({ name: 'signalements.index' })
   } catch (err) {
@@ -126,6 +148,49 @@ onMounted(() => loadAgents())
 </script>
 
 <style scoped>
+/* Anonymous toggle */
+.anon-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .85rem 1rem;
+  background: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  transition: all .2s;
+}
+.anon-toggle.active {
+  background: #fef3c7;
+  border-color: #fbbf24;
+}
+.anon-toggle-info {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+}
+.anon-icon {
+  font-size: 1.4rem;
+  color: #94a3b8;
+  transition: color .2s;
+}
+.anon-toggle.active .anon-icon { color: #d97706; }
+.anon-label { font-weight: 700; font-size: .88rem; color: #334155; }
+.anon-desc { font-size: .75rem; color: #64748b; margin-top: .1rem; }
+
+/* Toggle switch */
+.switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+  background: #cbd5e1; border-radius: 24px; transition: .3s;
+}
+.slider::before {
+  content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%; transition: .3s;
+}
+.switch input:checked + .slider { background: #f59e0b; }
+.switch input:checked + .slider::before { transform: translateX(20px); }
+
 @media (max-width: 767.98px) {
     .rh-list-card, .dash-panel { border-radius: 12px; padding: 1rem; }
     .card { border-radius: 12px; }

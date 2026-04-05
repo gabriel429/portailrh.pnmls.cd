@@ -102,6 +102,68 @@
           </div>
         </div>
 
+        <!-- Workflow Timeline -->
+        <div v-if="workflow.length" class="dash-panel mt-3">
+          <WorkflowTimeline :steps="workflow" />
+        </div>
+
+        <!-- Validation actions (for authorized users on pending requests) -->
+        <div v-if="canValidate && demande.statut === 'en_attente'" class="dash-panel mt-3">
+          <div class="p-4">
+            <h6 class="section-title"><i class="fas fa-gavel me-2"></i> Action de validation</h6>
+            <p class="text-muted small mb-3">
+              Cette demande attend votre validation à l'étape <strong>{{ currentStepLabel }}</strong>.
+            </p>
+
+            <!-- Reject reason -->
+            <div v-if="showRejectForm" class="mb-3">
+              <label class="form-label fw-semibold">
+                <i class="fas fa-comment-alt me-1 text-muted"></i> Motif du rejet
+                <span class="text-muted fw-normal ms-1">(optionnel)</span>
+              </label>
+              <textarea
+                v-model="rejectRemarques" rows="3"
+                class="form-control"
+                placeholder="Expliquez le motif du rejet..."
+              ></textarea>
+            </div>
+
+            <div class="d-flex gap-2 flex-wrap">
+              <button
+                v-if="!showRejectForm"
+                class="btn-rh success"
+                :disabled="validating"
+                @click="handleValidate"
+              >
+                <span v-if="validating" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="fas fa-check-circle me-1"></i>
+                Valider cette étape
+              </button>
+              <button
+                v-if="!showRejectForm"
+                class="btn-rh danger-outline"
+                @click="showRejectForm = true"
+              >
+                <i class="fas fa-times-circle me-1"></i> Rejeter
+              </button>
+              <template v-if="showRejectForm">
+                <button
+                  class="btn-rh danger"
+                  :disabled="validating"
+                  @click="handleReject"
+                >
+                  <span v-if="validating" class="spinner-border spinner-border-sm me-1"></span>
+                  <i v-else class="fas fa-ban me-1"></i>
+                  Confirmer le rejet
+                </button>
+                <button class="btn-rh outline" @click="showRejectForm = false; rejectRemarques = ''">
+                  Annuler
+                </button>
+              </template>
+            </div>
+          </div>
+        </div>
+
         <!-- Action buttons -->
         <div class="action-bar mt-3">
           <router-link :to="{ name: 'requests.index' }" class="btn-rh outline">
@@ -154,8 +216,9 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { get, remove } from '@/api/requests'
+import { get, remove, validateStep, rejectStep } from '@/api/requests'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
+import WorkflowTimeline from '@/components/common/WorkflowTimeline.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -166,8 +229,18 @@ const loading = ref(true)
 const demande = ref(null)
 const isRH = ref(false)
 const isOwner = ref(false)
+const canValidate = ref(false)
+const workflow = ref([])
 const showDeleteModal = ref(false)
 const deleting = ref(false)
+const validating = ref(false)
+const showRejectForm = ref(false)
+const rejectRemarques = ref('')
+
+const currentStepLabel = computed(() => {
+  const current = workflow.value.find(s => s.status === 'current')
+  return current?.label || ''
+})
 
 const canDelete = computed(() => {
   if (!demande.value) return false
@@ -252,12 +325,48 @@ async function handleDelete() {
   }
 }
 
+async function handleValidate() {
+  validating.value = true
+  try {
+    const { data } = await validateStep(demande.value.id)
+    demande.value = data.data
+    workflow.value = data.workflow || []
+    canValidate.value = false
+    ui.addToast(data.message || 'Étape validée avec succès.', 'success')
+  } catch (err) {
+    const msg = err.response?.data?.message || 'Erreur lors de la validation.'
+    ui.addToast(msg, 'danger')
+  } finally {
+    validating.value = false
+  }
+}
+
+async function handleReject() {
+  validating.value = true
+  try {
+    const { data } = await rejectStep(demande.value.id, { remarques: rejectRemarques.value })
+    demande.value = data.data
+    workflow.value = data.workflow || []
+    canValidate.value = false
+    showRejectForm.value = false
+    rejectRemarques.value = ''
+    ui.addToast(data.message || 'Demande rejetée.', 'warning')
+  } catch (err) {
+    const msg = err.response?.data?.message || 'Erreur lors du rejet.'
+    ui.addToast(msg, 'danger')
+  } finally {
+    validating.value = false
+  }
+}
+
 onMounted(async () => {
   try {
     const { data } = await get(route.params.id)
     demande.value = data.data
     isRH.value = data.isRH
     isOwner.value = data.isOwner
+    canValidate.value = data.canValidate || false
+    workflow.value = data.workflow || []
   } catch (err) {
     if (err.response?.status === 403) {
       ui.addToast('Vous n\'avez pas acces a cette demande.', 'danger')
@@ -324,6 +433,9 @@ onMounted(async () => {
 .btn-rh.warning:hover { background: #b45309; }
 .btn-rh.danger { background: #ef4444; color: #fff; }
 .btn-rh.danger:hover { background: #dc2626; }
+.btn-rh.danger-outline { background: #fff; color: #ef4444; border: 1px solid #fecaca; }
+.btn-rh.danger-outline:hover { background: #fef2f2; border-color: #ef4444; }
+.section-title { font-weight: 700; font-size: .95rem; color: #1e293b; margin-bottom: .5rem; }
 
 @media (max-width: 767.98px) {
   .info-row { grid-template-columns: 1fr; }

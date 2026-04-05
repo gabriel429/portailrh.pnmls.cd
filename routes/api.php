@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\MyHolidayPlanningController;
 use App\Http\Controllers\RH\HolidayPlanningController;
 use App\Http\Controllers\RH\HolidayController;
 use App\Http\Controllers\RH\AgentStatusController;
+use App\Http\Controllers\Api\RenforcementController;
 
 // Public
 Route::get('/', [ApiMetaController::class, 'index']);
@@ -72,18 +73,25 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Requests (Demandes)
     Route::apiResource('requests', RequestController::class);
+    Route::post('requests/{request}/validate', [RequestController::class, 'validateStep']);
+    Route::post('requests/{request}/reject', [RequestController::class, 'rejectStep']);
 
     // Taches
     Route::get('taches/create', [TacheController::class, 'create']);
+    Route::get('taches/performance', [TacheController::class, 'performanceReport']);
     Route::apiResource('taches', TacheController::class)->except(['edit', 'update', 'destroy']);
     Route::put('taches/{tache}/statut', [TacheController::class, 'updateStatut']);
     Route::post('taches/{tache}/commentaire', [TacheController::class, 'addCommentaire']);
     Route::get('taches/{tache}/documents/{document}/download', [TacheController::class, 'downloadDocument']);
+    Route::post('taches/{tache}/report', [TacheController::class, 'submitReport']);
+    Route::get('taches/{tache}/reports', [TacheController::class, 'viewReports']);
 
     // Plan de Travail
     Route::get('plan-travail/create', [PlanTravailController::class, 'create']);
     Route::apiResource('plan-travail', PlanTravailController::class)->parameters(['plan-travail' => 'activitePlan']);
     Route::put('plan-travail/{activitePlan}/statut', [PlanTravailController::class, 'updateStatut']);
+    Route::post('plan-travail/{activitePlan}/validate-section', [PlanTravailController::class, 'validateSection']);
+    Route::post('plan-travail/{activitePlan}/validate-cellule', [PlanTravailController::class, 'validateCellule']);
 
     // Notifications (SPA)
     Route::get('notifications', [ApiNotificationController::class, 'index']);
@@ -120,10 +128,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Signalements
         Route::get('signalements/agents', [SignalementController::class, 'agents']);
+        Route::get('signalements/report/monthly', [SignalementController::class, 'reportMonthly']);
+        Route::get('signalements/report/annual', [SignalementController::class, 'reportAnnual']);
         Route::apiResource('signalements', SignalementController::class);
 
         // Communiques
         Route::apiResource('communiques', CommuniqueController::class);
+
+        // Renforcement des Capacites
+        Route::get('renforcements/report/monthly', [RenforcementController::class, 'reportMonthly']);
+        Route::get('renforcements/report/annual', [RenforcementController::class, 'reportAnnual']);
+        Route::apiResource('renforcements', RenforcementController::class);
+        Route::post('renforcements/{formation}/validate', [RenforcementController::class, 'validate']);
+        Route::post('renforcements/{formation}/beneficiaire', [RenforcementController::class, 'addBeneficiaire']);
+        Route::put('renforcements/{formation}/beneficiaire/{beneficiaire}', [RenforcementController::class, 'updateStatutBeneficiaire']);
 
         // Affectations
         Route::get('affectations', [ParametresController::class, 'apiAffectationsIndex']);
@@ -341,6 +359,8 @@ Route::prefix('v1')->as('v1.')->group(function () {
         Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 
         Route::apiResource('requests', RequestController::class)->names('requests');
+        Route::post('requests/{request}/validate', [RequestController::class, 'validateStep'])->name('requests.validate');
+        Route::post('requests/{request}/reject', [RequestController::class, 'rejectStep'])->name('requests.reject');
 
         Route::get('taches/create', [TacheController::class, 'create'])->name('taches.create');
         Route::apiResource('taches', TacheController::class)->except(['edit', 'update', 'destroy'])->names('taches');

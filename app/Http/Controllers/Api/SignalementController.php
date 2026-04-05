@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\SignalementCreated;
 use App\Http\Resources\SignalementResource;
 use App\Models\Signalement;
 use App\Models\Agent;
@@ -21,7 +22,7 @@ class SignalementController extends ApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Signalement::with(['agent']);
+        $query = Signalement::with(['agent', 'traitePar']);
 
         $this->scopeService()->applySignalementScope($query, $request->user());
 
@@ -40,25 +41,42 @@ class SignalementController extends ApiController
 
     /**
      * Store a newly created signalement.
+     * Supports anonymous submissions (is_anonymous=true, no agent_id required).
      */
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'agent_id' => 'required|exists:agents,id',
+        $isAnonymous = $request->boolean('is_anonymous', false);
+
+        $rules = [
             'type' => 'required|string',
             'description' => 'required|string',
             'observations' => 'nullable|string',
             'severite' => 'required|in:basse,moyenne,haute',
-        ]);
+            'is_anonymous' => 'nullable|boolean',
+        ];
 
-        $agent = Agent::find($validated['agent_id']);
-        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
-            return response()->json([
-                'message' => 'Acces refuse pour cet agent.',
-            ], 403);
+        if (!$isAnonymous) {
+            $rules['agent_id'] = 'required|exists:agents,id';
+        }
+
+        $validated = $request->validate($rules);
+
+        if ($isAnonymous) {
+            $validated['is_anonymous'] = true;
+            $validated['agent_id'] = null;
+        } else {
+            $validated['is_anonymous'] = false;
+            $agent = Agent::find($validated['agent_id']);
+            if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+                return response()->json([
+                    'message' => 'Acces refuse pour cet agent.',
+                ], 403);
+            }
         }
 
         $signalement = Signalement::create($validated);
+
+        SignalementCreated::dispatch($signalement);
 
         $signalement->load('agent');
         $resource = SignalementResource::make($signalement);
@@ -143,5 +161,86 @@ class SignalementController extends ApiController
             ]);
 
         return $this->success($agents);
+    }
+
+    /**
+     * Monthly signalement report.
+     */
+    public function reportMonthly(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->hasAdminAccess() && !$user->hasPermission('signalement.report.monthly')) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        $mois = $request->input('mois', now()->month);
+        $annee = $request->input('annee', now()->year);
+
+        $signalements = Signalement::whereMonth('created_at', $mois)
+            ->whereYear('created_at', $annee)
+            ->get();
+
+        return $this->success([
+            'mois' => $mois,
+            'annee' => $annee,
+            'stats' => [
+                'total' => $signalements->count(),
+                'ouverts' => $signalements->where('statut', 'ouvert')->count(),
+                'en_cours' => $signalements->where('statut', 'en_cours')->count(),
+                'resolus' => $signalements->where('statut', 'résolu')->count(),
+                'fermes' => $signalements->where('statut', 'fermé')->count(),
+                'anonymes' => $signalements->where('is_anonymous', true)->count(),
+                'par_severite' => [
+                    'haute' => $signalements->where('severite', 'haute')->count(),
+                    'moyenne' => $signalements->where('severite', 'moyenne')->count(),
+                    'basse' => $signalements->where('severite', 'basse')->count(),
+                ],
+                'par_type' => $signalements->groupBy('type')->map->count(),
+            ],
+        ]);
+    }
+
+    /**
+     * Annual signalement report.
+     */
+    public function reportAnnual(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if (!$user->hasAdminAccess() && !$user->hasPermission('signalement.report.annual')) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        $annee = $request->input('annee', now()->year);
+
+        $signalements = Signalement::whereYear('created_at', $annee)->get();
+
+        $parMois = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $moisData = $signalements->filter(fn ($s) => $s->created_at->month === $m);
+            $parMois[$m] = [
+                'total' => $moisData->count(),
+                'resolus' => $moisData->where('statut', 'résolu')->count(),
+                'haute_severite' => $moisData->where('severite', 'haute')->count(),
+            ];
+        }
+
+        $delaiMoyen = $signalements->where('statut', 'résolu')
+            ->filter(fn ($s) => $s->traite_le)
+            ->map(fn ($s) => $s->created_at->diffInDays($s->traite_le))
+            ->avg();
+
+        return $this->success([
+            'annee' => $annee,
+            'stats' => [
+                'total' => $signalements->count(),
+                'resolus' => $signalements->where('statut', 'résolu')->count(),
+                'taux_resolution' => $signalements->count() > 0
+                    ? round($signalements->where('statut', 'résolu')->count() / $signalements->count() * 100, 1)
+                    : 0,
+                'delai_moyen_resolution_jours' => $delaiMoyen ? round($delaiMoyen, 1) : null,
+                'par_type' => $signalements->groupBy('type')->map->count(),
+            ],
+            'par_mois' => $parMois,
+        ]);
     }
 }

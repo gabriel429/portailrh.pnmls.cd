@@ -17,6 +17,7 @@ class Signalement extends Model
         'type',
         'description',
         'observations',
+        'analyse_notes',
         'severite',
         'statut',
         'traite_par',

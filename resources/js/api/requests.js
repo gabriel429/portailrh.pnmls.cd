@@ -36,3 +36,17 @@ export function update(id, data) {
 export function remove(id) {
     return client.delete(`/requests/${id}`)
 }
+
+/**
+ * Validate (approve) the current workflow step.
+ */
+export function validateStep(id) {
+    return client.post(`/requests/${id}/validate`)
+}
+
+/**
+ * Reject the request at the current workflow step.
+ */
+export function rejectStep(id, data = {}) {
+    return client.post(`/requests/${id}/reject`, data)
+}

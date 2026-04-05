@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\RH;
 
+use App\Events\CongeApproved;
+use App\Events\CongeRequested;
 use App\Http\Controllers\Controller;
 use App\Models\Holiday;
 use App\Models\HolidayPlanning;
@@ -153,6 +155,9 @@ class HolidayController extends Controller
             ]);
         }
 
+        // Fire event for PTA conflict check
+        CongeRequested::dispatch($holiday);
+
         return response()->json([
             'message' => 'Demande de congé créée avec succès',
             'holiday' => $holiday->load(['agent', 'demandePar'])
@@ -188,6 +193,9 @@ class HolidayController extends Controller
         }
 
         $holiday->approve($user);
+
+        // Fire event for PTA conflict re-check and notifications
+        CongeApproved::dispatch($holiday);
 
         // Créer le statut agent correspondant
         AgentStatus::setNewStatus($holiday->agent_id, [

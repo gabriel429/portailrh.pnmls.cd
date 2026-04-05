@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\TacheAssigned;
 use App\Http\Resources\TacheResource;
 use App\Models\ActivitePlan;
 use App\Models\Tache;
 use App\Models\TacheCommentaire;
 use App\Models\TacheDocument;
+use App\Models\TaskReport;
 use App\Models\Agent;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -190,6 +192,8 @@ class TacheController extends ApiController
 
         $tache = Tache::create($validated);
 
+        TacheAssigned::dispatch($tache);
+
         foreach ($request->file('documents', []) as $uploadedFile) {
             $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
         }
@@ -367,6 +371,115 @@ class TacheController extends ApiController
             'nom_original' => $uploadedFile->getClientOriginalName(),
             'mime_type' => $uploadedFile->getMimeType(),
             'taille' => $uploadedFile->getSize(),
+        ]);
+    }
+
+    /**
+     * Submit an execution report for a tache.
+     */
+    public function submitReport(Request $request, Tache $tache): JsonResponse
+    {
+        $user = $request->user();
+        $agent = $user->agent;
+
+        if (!$agent || $tache->agent_id !== $agent->id) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $validated = $request->validate([
+            'rapport' => 'required|string',
+            'fichier' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx',
+        ]);
+
+        $fichierPath = null;
+        if ($request->hasFile('fichier')) {
+            $fichierPath = $request->file('fichier')->store('task_reports', 'public');
+        }
+
+        $report = TaskReport::create([
+            'tache_id' => $tache->id,
+            'agent_id' => $agent->id,
+            'rapport' => $validated['rapport'],
+            'fichier' => $fichierPath,
+        ]);
+
+        return $this->success($report, [], ['message' => 'Rapport soumis avec succès.'], 201);
+    }
+
+    /**
+     * View reports for a tache.
+     */
+    public function viewReports(Request $request, Tache $tache): JsonResponse
+    {
+        $user = $request->user();
+        $agent = $user->agent;
+
+        if (!$agent || ($tache->createur_id !== $agent->id && $tache->agent_id !== $agent->id && !$user->hasAdminAccess())) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $reports = TaskReport::where('tache_id', $tache->id)
+            ->with('agent:id,nom,prenom')
+            ->latest()
+            ->get();
+
+        return $this->success($reports);
+    }
+
+    /**
+     * Performance report across tasks (for Directeurs / RH).
+     */
+    public function performanceReport(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user->hasRole('Directeur') && !$user->hasAdminAccess()) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $agentId = $request->input('agent_id');
+        $annee = $request->input('annee', now()->year);
+
+        $query = Tache::query()->whereYear('created_at', $annee);
+
+        if ($user->hasRole('Directeur') && !$user->hasAdminAccess()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('createur_id', $user->agent?->id);
+            });
+        }
+
+        if ($agentId) {
+            $query->where('agent_id', $agentId);
+        }
+
+        $taches = $query->get();
+
+        $agents = $taches->groupBy('agent_id')->map(function ($group, $agentId) {
+            $agent = Agent::find($agentId);
+            return [
+                'agent_id' => $agentId,
+                'nom' => $agent ? $agent->prenom . ' ' . $agent->nom : 'Inconnu',
+                'total' => $group->count(),
+                'terminees' => $group->where('statut', 'terminee')->count(),
+                'en_cours' => $group->where('statut', 'en_cours')->count(),
+                'nouvelles' => $group->where('statut', 'nouvelle')->count(),
+                'taux_completion' => $group->count() > 0
+                    ? round($group->where('statut', 'terminee')->count() / $group->count() * 100, 1)
+                    : 0,
+                'pourcentage_moyen' => round($group->avg('pourcentage'), 1),
+                'rapports_soumis' => TaskReport::where('agent_id', $agentId)
+                    ->whereIn('tache_id', $group->pluck('id'))
+                    ->count(),
+            ];
+        })->values();
+
+        return $this->success([
+            'annee' => $annee,
+            'total_taches' => $taches->count(),
+            'taux_completion_global' => $taches->count() > 0
+                ? round($taches->where('statut', 'terminee')->count() / $taches->count() * 100, 1)
+                : 0,
+            'agents' => $agents,
         ]);
     }
 }
