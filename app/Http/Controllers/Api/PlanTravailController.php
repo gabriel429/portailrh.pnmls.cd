@@ -450,6 +450,8 @@ class PlanTravailController extends ApiController
             'records.*.cout_cdf' => 'nullable|numeric|min:0',
             'records.*.province_ids' => 'nullable|array',
             'records.*.province_ids.*' => 'integer|exists:provinces,id',
+            'records.*.province_names' => 'nullable|array',
+            'records.*.province_names.*' => 'string|max:255',
             'records.*.annee' => 'required|integer|min:2020|max:2040',
             'records.*.trimestre' => 'nullable|in:T1,T2,T3,T4',
             'records.*.trimestre_1' => 'nullable|boolean',
@@ -472,6 +474,7 @@ class PlanTravailController extends ApiController
 
                 $activite = ActivitePlan::query()->firstOrNew($match);
                 $isNew = !$activite->exists;
+                $provinceIds = $this->resolveImportedProvinceIds($record);
 
                 $payload = [
                     'titre' => $record['titre'],
@@ -481,7 +484,7 @@ class PlanTravailController extends ApiController
                     'validation_niveau' => $record['validation_niveau'] ?? null,
                     'responsable_code' => $record['responsable_code'] ?? null,
                     'cout_cdf' => $record['cout_cdf'] ?? null,
-                    'province_id' => $record['province_ids'][0] ?? null,
+                    'province_id' => $provinceIds[0] ?? null,
                     'annee' => $record['annee'],
                     'trimestre' => $record['trimestre'] ?? null,
                     'trimestre_1' => (bool) ($record['trimestre_1'] ?? false),
@@ -498,7 +501,7 @@ class PlanTravailController extends ApiController
 
                 $activite->fill($payload);
                 $activite->save();
-                $activite->provinces()->sync($record['province_ids'] ?? []);
+                $activite->provinces()->sync($provinceIds);
 
                 if ($isNew) {
                     $created++;
@@ -569,6 +572,53 @@ class PlanTravailController extends ApiController
     private function syncActiviteProvinces(ActivitePlan $activite, array $provinceIds): void
     {
         $activite->provinces()->sync($provinceIds);
+    }
+
+    private function resolveImportedProvinceIds(array $record): array
+    {
+        $provinceIds = collect($record['province_ids'] ?? [])
+            ->filter(fn ($id) => $id !== null && $id !== '')
+            ->map(fn ($id) => (int) $id);
+
+        if ($provinceIds->isNotEmpty()) {
+            return $provinceIds->unique()->values()->all();
+        }
+
+        $provinceNames = $record['province_names'] ?? [];
+        if ($provinceNames === []) {
+            return [];
+        }
+
+        $catalog = Province::query()->get(['id', 'nom']);
+        $joined = $this->normalizeProvinceImportKey(implode(' ', $provinceNames));
+        $ids = [];
+
+        foreach ($catalog as $province) {
+            $key = $this->normalizeProvinceImportKey($province->nom ?? '');
+            if ($key !== '' && str_contains($joined, $key)) {
+                $ids[] = (int) $province->id;
+            }
+        }
+
+        return array_values(array_unique($ids));
+    }
+
+    private function normalizeProvinceImportKey(string $value): string
+    {
+        $value = mb_strtoupper($value);
+        $value = preg_replace('/[^A-Z0-9]/u', '', $value) ?? $value;
+
+        return str_replace([
+            'KASAIORIENT',
+            'SUDUBANGI',
+            'BASUELE',
+            'HAUTUELE',
+        ], [
+            'KASAIORIENTAL',
+            'SUDUBANGI',
+            'BASUELE',
+            'HAUTUELE',
+        ], $value);
     }
 
     private function activityTargetsProvince(ActivitePlan $activite, int $provinceId): bool
