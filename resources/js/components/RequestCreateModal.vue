@@ -269,7 +269,10 @@ watch(() => props.show, async (newVal) => {
     if (isRH.value && agents.value.length === 0) {
       try {
         const { data } = await client.get('/agents', { params: { actifs: 1 } })
-        agents.value = data.data ?? data
+        const raw = data.data ?? data
+        agents.value = Array.isArray(raw) && raw[0]?.agents
+          ? raw.flatMap(g => g.agents)
+          : raw
       } catch {
         // Silently fail
       }
