@@ -49,23 +49,21 @@ class UserDataScope
     public function applyAgentScope($query, ?User $user, string $table = 'agents')
     {
         if ($this->hasGlobalAdminAccess($user)) {
-            return $query->whereHas('departement', function ($dq) {
-                $dq->operational();
-            });
+            return $query;
         }
 
-        if (!$this->isProvincialRh($user)) {
-            return $query->whereHas('departement', function ($dq) {
-                $dq->operational();
-            });
+        if ($this->isProvincialRh($user)) {
+            $provinceId = $this->provinceId($user);
+            if (!$provinceId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where($table . '.province_id', $provinceId);
         }
 
-        $provinceId = $this->provinceId($user);
-        if (!$provinceId) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->where($table . '.province_id', $provinceId);
+        return $query->whereHas('departement', function ($dq) {
+            $dq->operational();
+        });
     }
 
     public function applyRequestScope($query, ?User $user)
