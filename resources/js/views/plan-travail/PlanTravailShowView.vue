@@ -5,6 +5,17 @@
         <LoadingSpinner message="Chargement de l'activite..." />
       </div>
 
+      <div v-else-if="accessDenied" class="dash-panel">
+        <div class="p-4">
+          <div class="pta-denied-icon mb-3"><i class="fas fa-lock"></i></div>
+          <h3 class="panel-title mb-2">Acces restreint</h3>
+          <p class="text-muted mb-3">{{ accessDeniedMessage }}</p>
+          <router-link :to="{ name: 'plan-travail.index' }" class="btn-rh alt">
+            <i class="fas fa-arrow-left me-1"></i> Retour au PTA
+          </router-link>
+        </div>
+      </div>
+
       <template v-else-if="activite">
         <section class="rh-hero">
           <div class="row g-3 align-items-center">
@@ -223,6 +234,8 @@ const ui = useUiStore()
 
 const loading = ref(true)
 const activite = ref(null)
+const accessDenied = ref(false)
+const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre departement.")
 const canEdit = ref(false)
 const canUpdateStatut = ref(false)
 
@@ -246,6 +259,7 @@ const provinceSummary = computed(() => {
 
 async function loadActivite() {
   try {
+    accessDenied.value = false
     const { data } = await get(route.params.id)
     activite.value = data.data
     canEdit.value = data.canEdit
@@ -255,9 +269,15 @@ async function loadActivite() {
       pourcentage: data.data.pourcentage,
       observations: data.data.observations || '',
     }
-  } catch {
-    ui.addToast('Activite introuvable.', 'danger')
-    router.push({ name: 'plan-travail.index' })
+  } catch (err) {
+    if (err.response?.status === 403) {
+      accessDenied.value = true
+      accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre departement.'
+      ui.addToast(accessDeniedMessage.value, 'warning')
+    } else {
+      ui.addToast('Activite introuvable.', 'danger')
+      router.push({ name: 'plan-travail.index' })
+    }
   } finally {
     loading.value = false
   }
@@ -349,6 +369,17 @@ onMounted(() => loadActivite())
 </script>
 
 <style scoped>
+.pta-denied-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(234, 88, 12, .12);
+  color: #c2410c;
+  font-size: 1.2rem;
+}
 @media (max-width: 767.98px) {
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }

@@ -30,6 +30,14 @@
       </div>
     </div>
 
+    <div v-if="accessDenied && !loading" class="pt-alert pt-alert-danger">
+      <div class="pt-alert-icon"><i class="fas fa-lock"></i></div>
+      <div>
+        <h5>Acces restreint</h5>
+        <p>{{ accessDeniedMessage }}</p>
+      </div>
+    </div>
+
     <!-- Status filter cards (always visible) -->
     <div class="pt-filter-grid">
       <button class="pt-filter-card pt-filter-all" :class="{ active: !filters.statut && !filters.trimestre }" @click="setFilter('', '')">
@@ -396,6 +404,8 @@ const ui = useUiStore()
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
+const accessDenied = ref(false)
+const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre departement.")
 const groupees = ref({})
 const stats = ref({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 })
 const canEdit = ref(false)
@@ -431,6 +441,7 @@ async function loadPlan() {
   }
   filtering.value = true
   try {
+    accessDenied.value = false
     const params = { annee: filters.value.annee }
     if (filters.value.trimestre) params.trimestre = filters.value.trimestre
     if (filters.value.statut) params.statut = filters.value.statut
@@ -438,8 +449,17 @@ async function loadPlan() {
     groupees.value = data.groupees
     stats.value = data.stats
     canEdit.value = data.canEdit
-  } catch {
-    ui.addToast('Erreur lors du chargement du plan de travail.', 'danger')
+  } catch (err) {
+    if (err.response?.status === 403) {
+      accessDenied.value = true
+      accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre departement.'
+      groupees.value = {}
+      stats.value = { total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 }
+      canEdit.value = false
+      ui.addToast(accessDeniedMessage.value, 'warning')
+    } else {
+      ui.addToast('Erreur lors du chargement du plan de travail.', 'danger')
+    }
   } finally {
     loading.value = false
     filtering.value = false
@@ -572,7 +592,12 @@ async function openCreateModal() {
     createLocalites.value = data.localites || []
     createCategories.value = data.categories || []
     createResponsables.value = data.responsables || []
-  } catch { /* ignore */ }
+  } catch (err) {
+    if (err.response?.status === 403) {
+      ui.addToast(err.response?.data?.message || 'Vous ne pouvez creer des activites PTA que pour votre departement.', 'warning')
+      showCreateModal.value = false
+    }
+  }
 }
 
 function closeCreateModal() {
@@ -612,6 +637,8 @@ async function handleCreateSubmit() {
   } catch (err) {
     if (err.response?.status === 422) {
       createErrors.value = err.response.data.errors || {}
+    } else if (err.response?.status === 403) {
+      ui.addToast(err.response?.data?.message || 'Vous ne pouvez creer des activites PTA que pour votre departement.', 'warning')
     } else {
       ui.addToast('Erreur lors de la creation.', 'danger')
     }
@@ -688,6 +715,23 @@ onMounted(() => loadPlan())
 }
 .pt-hero-btn:hover { background: rgba(255,255,255,.3); color: #fff; }
 .pt-hero-filters { display: flex; gap: .5rem; }
+.pt-alert {
+  display: flex; align-items: flex-start; gap: .9rem;
+  padding: 1rem 1.1rem; margin-bottom: 1rem; border-radius: 14px;
+  border: 1px solid transparent;
+}
+.pt-alert-danger {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+.pt-alert-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(234, 88, 12, .12); color: #c2410c; flex-shrink: 0;
+}
+.pt-alert h5 { margin: 0 0 .2rem; font-size: .95rem; font-weight: 700; }
+.pt-alert p { margin: 0; font-size: .82rem; }
 .pt-filter-select {
   background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2);
   color: #fff; border-radius: 8px; padding: .35rem .7rem; font-size: .8rem;
