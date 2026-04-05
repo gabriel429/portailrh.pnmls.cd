@@ -229,6 +229,7 @@ class AgentController extends ApiController
         }
 
         $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
+        $validated['nombre_enfants'] = $this->defaultNombreEnfants($validated['nombre_enfants'] ?? null);
 
         $validated['poste_actuel'] = $validated['fonction'];
 
@@ -352,6 +353,7 @@ class AgentController extends ApiController
         }
 
         $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
+        $validated['nombre_enfants'] = $this->defaultNombreEnfants($validated['nombre_enfants'] ?? null);
 
         // Remove domaine_etudes if column doesn't exist
         if (!Schema::hasColumn('agents', 'domaine_etudes')) {
@@ -761,6 +763,7 @@ class AgentController extends ApiController
         }
 
         $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
+        $validated['nombre_enfants'] = $this->defaultNombreEnfants($validated['nombre_enfants'] ?? null);
 
         $validated['poste_actuel'] = $validated['fonction'] ?? null;
 
@@ -1018,6 +1021,15 @@ class AgentController extends ApiController
         }
 
         return (string) $value;
+    }
+
+    private function defaultNombreEnfants(mixed $value): int
+    {
+        if ($value === null || $value === '') {
+            return 0;
+        }
+
+        return (int) $value;
     }
 
     private function normalizeImportedStatut(mixed $value): string
