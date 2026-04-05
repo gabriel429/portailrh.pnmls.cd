@@ -435,11 +435,12 @@ class PlanTravailController extends ApiController
     public function importParsed(Request $request): JsonResponse
     {
         $user = auth()->user();
-        if (!$user || !$user->hasAdminAccess() || !$user->agent) {
+        if (!$user || !$user->hasAdminAccess()) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
         $validated = $request->validate([
+            'createur_id' => 'nullable|integer|exists:agents,id',
             'records' => 'required|array|min:1',
             'records.*.titre' => 'required|string|max:1000',
             'records.*.categorie' => 'nullable|string|max:120',
@@ -462,8 +463,13 @@ class PlanTravailController extends ApiController
 
         $created = 0;
         $updated = 0;
+        $createurId = (int) ($validated['createur_id'] ?? $user->agent?->id ?? 0);
 
-        \DB::transaction(function () use ($validated, $user, &$created, &$updated) {
+        if ($createurId <= 0) {
+            return response()->json(['message' => 'createur_id est obligatoire pour cet utilisateur.'], 422);
+        }
+
+        \DB::transaction(function () use ($validated, $createurId, &$created, &$updated) {
             foreach ($validated['records'] as $record) {
                 $match = [
                     'annee' => $record['annee'],
@@ -494,7 +500,7 @@ class PlanTravailController extends ApiController
                 ];
 
                 if ($isNew) {
-                    $payload['createur_id'] = $user->agent->id;
+                    $payload['createur_id'] = $createurId;
                     $payload['statut'] = 'planifiee';
                     $payload['pourcentage'] = 0;
                 }
