@@ -1126,11 +1126,11 @@ body {
 .modal-dialog {
     z-index: 2001 !important;
 }
-/* Edit modal must appear above detail overlays */
-.modal.modal-over-overlay {
+/* Edit modal must appear above detail overlays (specificity >= .modal.fade.show = 0-3-0) */
+.modal.fade.show.modal-over-overlay {
     z-index: 2200 !important;
 }
-.modal.modal-over-overlay .modal-dialog {
+.modal.fade.show.modal-over-overlay .modal-dialog {
     z-index: 2201 !important;
 }
 /* Custom overlays should be higher than basic modals */
