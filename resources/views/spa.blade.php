@@ -23,6 +23,7 @@
     <meta name="description" content="Portail Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida">
 
     @vite('resources/js/app.js')
+    <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
 </head>
 <body>
     <div id="app"></div>
