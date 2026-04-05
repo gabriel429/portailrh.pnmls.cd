@@ -98,4 +98,5 @@ Route::middleware(['auth', 'super.admin'])->prefix('admin/deployment')->name('ad
     Route::post('/deploy-agents', [DeploymentController::class, 'deployAgents'])->name('deploy-agents');
     Route::post('/seed-superadmin', [DeploymentController::class, 'seedSuperAdmin'])->name('seed-superadmin');
     Route::post('/deploy-holidays', [DeploymentController::class, 'deployHolidays'])->name('deploy-holidays');
+    Route::post('/fix-sen-province', [DeploymentController::class, 'fixSenProvince'])->name('fix-sen-province');
 });

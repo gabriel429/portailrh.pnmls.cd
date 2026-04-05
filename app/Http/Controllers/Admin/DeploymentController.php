@@ -1375,4 +1375,20 @@ class DeploymentController extends Controller
 
         return $this->deployResponse($output_messages, $error_messages, $success);
     }
+
+    /**
+     * Nettoie province_id pour les agents SEN (one-time fix).
+     */
+    public function fixSenProvince()
+    {
+        $updated = \App\Models\Agent::whereRaw("LOWER(organe) LIKE '%national%'")
+            ->whereNotNull('province_id')
+            ->update(['province_id' => null]);
+
+        return $this->deployResponse(
+            ["✅ {$updated} agent(s) SEN nettoyé(s) (province_id → null)"],
+            [],
+            true
+        );
+    }
 }
