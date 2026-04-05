@@ -121,7 +121,12 @@ class PtaDocxImportReader
             }
 
             foreach ($cellNodes as $cellNode) {
-                $cells[] = $this->normalizeText($cellNode->textContent ?? '');
+                if (!$cellNode instanceof DOMElement) {
+                    $cells[] = '';
+                    continue;
+                }
+
+                $cells[] = $this->extractCellValue($xpath, $cellNode);
             }
 
             if ($this->isEmptyRow($cells)) {
@@ -132,6 +137,43 @@ class PtaDocxImportReader
         }
 
         return $rows;
+    }
+
+    private function extractCellValue(DOMXPath $xpath, DOMElement $cellNode): string
+    {
+        $text = $this->normalizeText($cellNode->textContent ?? '');
+        if ($text !== '') {
+            return $text;
+        }
+
+        return $this->hasQuarterCellFill($xpath, $cellNode) ? 'x' : '';
+    }
+
+    private function hasQuarterCellFill(DOMXPath $xpath, DOMElement $cellNode): bool
+    {
+        $shadingNodes = $xpath->query('./w:tcPr/w:shd', $cellNode);
+        if ($shadingNodes === false || $shadingNodes->length === 0) {
+            return false;
+        }
+
+        foreach ($shadingNodes as $shadingNode) {
+            if (!$shadingNode instanceof DOMElement) {
+                continue;
+            }
+
+            $fill = strtoupper(trim((string) $shadingNode->getAttribute('w:fill')));
+            $themeFill = strtoupper(trim((string) $shadingNode->getAttribute('w:themeFill')));
+
+            if ($themeFill !== '') {
+                return true;
+            }
+
+            if ($fill !== '' && !in_array($fill, ['AUTO', 'FFFFFF', 'FFF'], true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function parseIntroTable(array $rows, int $annee): array

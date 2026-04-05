@@ -28,6 +28,49 @@ class PlanTravailController extends ApiController
         return $user->agent;
     }
 
+    private function normalizeScopeText(?string $value): string
+    {
+        $value = trim((string) $value);
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+
+        return mb_strtolower($ascii !== false ? $ascii : $value);
+    }
+
+    private function isProvincialAgent(?Agent $agent): bool
+    {
+        return str_contains($this->normalizeScopeText($agent?->organe), 'provincial');
+    }
+
+    private function applyProvinceScope(Builder $query, Agent $agent): Builder
+    {
+        if (!$agent->province_id) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query
+            ->where('niveau_administratif', 'SEP')
+            ->where(function (Builder $provinceQuery) use ($agent) {
+                $provinceQuery
+                    ->where('province_id', $agent->province_id)
+                    ->orWhereHas('provinces', function (Builder $relationQuery) use ($agent) {
+                        $relationQuery->where('provinces.id', $agent->province_id);
+                    });
+            });
+    }
+
+    private function applyScopedAccess(Builder $query, ?Agent $agent): Builder
+    {
+        if (!$agent) {
+            return $query;
+        }
+
+        if ($this->isProvincialAgent($agent)) {
+            return $this->applyProvinceScope($query, $agent);
+        }
+
+        return $this->applyDepartmentScope($query, $agent);
+    }
+
     private function applyDepartmentScope(Builder $query, ?Agent $agent): Builder
     {
         if (!$agent) {
@@ -49,12 +92,35 @@ class PlanTravailController extends ApiController
             return true;
         }
 
+        if ($this->isProvincialAgent($agent)) {
+            return (bool) $agent->province_id
+                && $activite->niveau_administratif === 'SEP'
+                && $this->activityTargetsProvince($activite, (int) $agent->province_id);
+        }
+
         return (int) $activite->departement_id === (int) $agent->departement_id;
     }
 
-    private function enforceManagedDepartment(array $validated, ?Agent $agent): array
+    private function enforceManagedScope(array $validated, ?Agent $agent): array
     {
         if (!$agent) {
+            return $validated;
+        }
+
+        if ($this->isProvincialAgent($agent)) {
+            if (!$agent->province_id) {
+                abort(403, 'Aucune province associee a cet agent.');
+            }
+
+            if (($validated['niveau_administratif'] ?? null) !== 'SEP') {
+                abort(403, 'Acces refuse pour ce niveau administratif.');
+            }
+
+            $validated['departement_id'] = null;
+            $validated['localite_id'] = null;
+            $validated['province_id'] = (int) $agent->province_id;
+            $validated['province_ids'] = [(int) $agent->province_id];
+
             return $validated;
         }
 
@@ -199,7 +265,7 @@ class PlanTravailController extends ApiController
             ->with('provinces')
             ->parAnnee($annee);
 
-        $this->applyDepartmentScope($query, $agent);
+        $this->applyScopedAccess($query, $agent);
 
         if ($trimestre) {
             $query->parTrimestre($trimestre);
@@ -267,7 +333,10 @@ class PlanTravailController extends ApiController
             ->when($agent?->departement_id, fn (Builder $query) => $query->where('id', $agent->departement_id))
             ->orderBy('nom')
             ->get(['id', 'nom']);
-        $provinces = Province::orderBy('nom')->get(['id', 'nom']);
+        $provinces = Province::query()
+            ->when($this->isProvincialAgent($agent) && $agent?->province_id, fn (Builder $query) => $query->where('id', $agent->province_id))
+            ->orderBy('nom')
+            ->get(['id', 'nom']);
         $localites = class_exists(Localite::class) ? Localite::orderBy('nom')->get(['id', 'nom']) : collect();
 
         $payload = [
@@ -326,9 +395,9 @@ class PlanTravailController extends ApiController
             'observations'         => 'nullable|string',
         ]);
 
-        $provinceIds = $this->normalizeProvinceIds($validated);
         $validated = $this->normalizeTrimestreFlags($validated);
-        $validated = $this->enforceManagedDepartment($validated, $agent);
+        $validated = $this->enforceManagedScope($validated, $agent);
+        $provinceIds = $this->normalizeProvinceIds($validated);
         $validated['province_id'] = $provinceIds[0] ?? ($validated['province_id'] ?? null);
 
         $validated['createur_id'] = auth()->user()->agent->id;
@@ -414,9 +483,9 @@ class PlanTravailController extends ApiController
             'observations'         => 'nullable|string',
         ]);
 
-        $provinceIds = $this->normalizeProvinceIds($validated);
         $validated = $this->normalizeTrimestreFlags($validated);
-        $validated = $this->enforceManagedDepartment($validated, $agent);
+        $validated = $this->enforceManagedScope($validated, $agent);
+        $provinceIds = $this->normalizeProvinceIds($validated);
         $validated['province_id'] = $provinceIds[0] ?? ($validated['province_id'] ?? null);
 
         $activitePlan->update($validated);

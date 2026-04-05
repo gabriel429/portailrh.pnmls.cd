@@ -88,7 +88,18 @@
                   <dd class="col-sm-8">{{ triLabel(activite.trimestre) }}</dd>
 
                   <dt class="col-sm-4 text-muted">Chronogramme</dt>
-                  <dd class="col-sm-8">{{ chronogrammeLabel(activite) }}</dd>
+                  <dd class="col-sm-8">
+                    <div class="pta-quarter-strip" :aria-label="`Chronogramme ${activite.titre}`">
+                      <span
+                        v-for="slot in trimestreSlots(activite)"
+                        :key="slot.label"
+                        class="pta-quarter-chip"
+                        :class="{ active: slot.active }"
+                      >
+                        {{ slot.label }}
+                      </span>
+                    </div>
+                  </dd>
 
                   <template v-if="activite.date_debut || activite.date_fin">
                     <dt class="col-sm-4 text-muted">Periode</dt>
@@ -360,6 +371,16 @@ function chronogrammeLabel(activity) {
   return values.length ? values.join(', ') : 'Annuel'
 }
 
+function trimestreSlots(activity) {
+  const activeValues = chronogrammeLabel(activity)
+    .split(', ')
+    .filter((value) => /^T[1-4]$/.test(value))
+
+  const active = new Set(activeValues)
+
+  return ['T1', 'T2', 'T3', 'T4'].map((label) => ({ label, active: active.has(label) }))
+}
+
 function formatCurrency(value) {
   const amount = Number(value || 0)
   return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)
@@ -369,6 +390,31 @@ onMounted(() => loadActivite())
 </script>
 
 <style scoped>
+.pta-quarter-strip {
+  display: inline-flex;
+  gap: .4rem;
+  flex-wrap: wrap;
+}
+
+.pta-quarter-chip {
+  min-width: 46px;
+  padding: .25rem .55rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .74rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pta-quarter-chip.active {
+  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(109, 40, 217, .18);
+}
+
 .pta-denied-icon {
   width: 52px;
   height: 52px;

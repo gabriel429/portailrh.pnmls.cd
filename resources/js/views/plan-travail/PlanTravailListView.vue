@@ -128,7 +128,16 @@
               <div class="pt-card-tags">
                   <span v-if="a.categorie" class="pt-meta-badge">{{ a.categorie }}</span>
                 <span :class="statutBadgeClass(a.statut)">{{ statutLabel(a.statut) }}</span>
-                  <span v-for="tri in activeTrimestres(a)" :key="`${a.id}-${tri}`" class="pt-meta-badge">{{ tri }}</span>
+              </div>
+              <div class="pt-quarter-strip" :aria-label="`Chronogramme ${a.titre}`">
+                <span
+                  v-for="slot in trimestreSlots(a)"
+                  :key="`${a.id}-${slot.label}`"
+                  class="pt-quarter-chip"
+                  :class="{ active: slot.active }"
+                >
+                  {{ slot.label }}
+                </span>
               </div>
             </div>
           </div>
@@ -672,6 +681,11 @@ function activeTrimestres(activite) {
   return values
 }
 
+function trimestreSlots(activite) {
+  const active = new Set(activeTrimestres(activite))
+  return ['T1', 'T2', 'T3', 'T4'].map((label) => ({ label, active: active.has(label) }))
+}
+
 function provinceSummary(activite) {
   const names = (activite.provinces || []).map((province) => province.nom).filter(Boolean)
   if (names.length) return names.join(', ')
@@ -750,6 +764,32 @@ onMounted(() => loadPlan())
   color: #374151; transition: all .25s; cursor: pointer;
 }
 .pt-filter-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.08); }
+
+.pt-quarter-strip {
+  display: inline-flex;
+  gap: .35rem;
+  margin-top: .65rem;
+  flex-wrap: wrap;
+}
+
+.pt-quarter-chip {
+  min-width: 42px;
+  padding: .22rem .5rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .72rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.pt-quarter-chip.active {
+  border-color: #8b5cf6;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(109, 40, 217, .18);
+}
 
 .pt-filter-all .pt-filter-icon { background: #ede9fe; color: #7c3aed; }
 .pt-filter-all:hover { border-color: #7c3aed; color: #7c3aed; }
