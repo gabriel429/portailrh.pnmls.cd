@@ -23,8 +23,9 @@ import { registerSW } from 'virtual:pwa-register'
 
 const updateSW = registerSW({
     onNeedRefresh() {
-        console.log('📱 PWA: New version available, updating...')
-        updateSW(true)
+        console.log('📱 PWA: New version available — will update on next navigation')
+        // Don't force reload mid-session. Let the new SW activate naturally
+        // on next page load to avoid blank-page flicker.
     },
     onOfflineReady() {
         console.log('📱 PWA: App ready for offline use')

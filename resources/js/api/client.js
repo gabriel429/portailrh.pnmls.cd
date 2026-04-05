@@ -147,10 +147,13 @@ client.interceptors.response.use(
         if (axios.isCancel(error)) return Promise.reject(error)
 
         // Gestion des erreurs d'authentification
-        if (error.response?.status === 401) {
+        // Avoid double-redirect: the router guard already redirects unauthenticated users
+        const isLoginRoute = router.currentRoute.value?.name === 'login'
+
+        if (error.response?.status === 401 && !isLoginRoute) {
             const auth = useAuthStore()
             auth.clearUser()
-            router.push({ name: 'login' })
+            router.replace({ name: 'login' })
         }
 
         if (error.response?.status === 403) {
@@ -158,10 +161,10 @@ client.interceptors.response.use(
             ui.addToast('❌ Accès refusé - permissions insuffisantes', 'danger', 5000)
         }
 
-        if (error.response?.status === 419) {
+        if (error.response?.status === 419 && !isLoginRoute) {
             const auth = useAuthStore()
             auth.clearUser()
-            router.push({ name: 'login' })
+            router.replace({ name: 'login' })
         }
 
         // FALLBACK CACHE EN CAS D'ERREUR RÉSEAU
