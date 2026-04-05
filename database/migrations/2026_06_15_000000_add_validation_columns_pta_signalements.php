@@ -12,9 +12,17 @@ return new class extends Migration
         Schema::table('activite_plans', function (Blueprint $table) {
             if (!Schema::hasColumn('activite_plans', 'validated_by_section')) {
                 $table->unsignedBigInteger('validated_by_section')->nullable()->after('statut');
+            }
+            if (!Schema::hasColumn('activite_plans', 'validated_at_section')) {
                 $table->timestamp('validated_at_section')->nullable()->after('validated_by_section');
+            }
+            if (!Schema::hasColumn('activite_plans', 'validated_by_cellule')) {
                 $table->unsignedBigInteger('validated_by_cellule')->nullable()->after('validated_at_section');
+            }
+            if (!Schema::hasColumn('activite_plans', 'validated_at_cellule')) {
                 $table->timestamp('validated_at_cellule')->nullable()->after('validated_by_cellule');
+            }
+            if (!Schema::hasColumn('activite_plans', 'observations')) {
                 $table->text('observations')->nullable()->after('validated_at_cellule');
             }
         });
