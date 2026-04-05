@@ -304,9 +304,12 @@ onMounted(async () => {
     try {
       const { data } = await client.get('/agents', { params: { actifs: 1 } })
       const raw = data.data ?? data
-      agents.value = Array.isArray(raw) && raw[0]?.agents
-        ? raw.flatMap(g => g.agents)
-        : raw
+      // L'API retourne les agents groupés par organe → aplatir
+      if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
+        agents.value = raw.flatMap(g => g.agents)
+      } else {
+        agents.value = raw
+      }
     } catch {
       // Silently fail
     }
