@@ -17,6 +17,60 @@ use Illuminate\Support\Facades\Schema;
 
 class PlanTravailController extends ApiController
 {
+    private function getScopedAgent(): ?Agent
+    {
+        $user = auth()->user();
+
+        if (!$user || $user->hasAdminAccess()) {
+            return null;
+        }
+
+        return $user->agent;
+    }
+
+    private function applyDepartmentScope(Builder $query, ?Agent $agent): Builder
+    {
+        if (!$agent) {
+            return $query;
+        }
+
+        if (!$agent->departement_id) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('departement_id', $agent->departement_id);
+    }
+
+    private function canAccessActivity(ActivitePlan $activite): bool
+    {
+        $agent = $this->getScopedAgent();
+
+        if (!$agent) {
+            return true;
+        }
+
+        return (int) $activite->departement_id === (int) $agent->departement_id;
+    }
+
+    private function enforceManagedDepartment(array $validated, ?Agent $agent): array
+    {
+        if (!$agent) {
+            return $validated;
+        }
+
+        if (!$agent->departement_id) {
+            abort(403, 'Aucun departement associe a cet agent.');
+        }
+
+        if (!empty($validated['departement_id']) && (int) $validated['departement_id'] !== (int) $agent->departement_id) {
+            abort(403, 'Acces refuse pour ce departement.');
+        }
+
+        $validated['departement_id'] = (int) $agent->departement_id;
+
+        return $validated;
+    }
+
     /**
      * Check if user can manage PTA (create, edit, delete).
      */
@@ -53,6 +107,10 @@ class PlanTravailController extends ApiController
      */
     private function canUpdateStatut(ActivitePlan $activite): bool
     {
+        if (!$this->canAccessActivity($activite)) {
+            return false;
+        }
+
         $user = auth()->user();
         if ($user->hasAdminAccess()) {
             return true;
@@ -126,43 +184,13 @@ class PlanTravailController extends ApiController
 
         return mb_strtolower($agent->fonction ?? '');
     }
-
-    private function scopeQuery($query, $agent)
-    {
-        $organe = $agent->organe ?? '';
-
-        if (str_contains($organe, 'National')) {
-            $query->where('niveau_administratif', 'SEN');
-            if ($agent->departement_id) {
-                $query->where(function ($q) use ($agent) {
-                    $q->where('departement_id', $agent->departement_id)
-                      ->orWhereNull('departement_id');
-                });
-            }
-        } elseif (str_contains($organe, 'Provincial')) {
-            $query->where('niveau_administratif', 'SEP')
-                  ->where(function (Builder $builder) use ($agent) {
-                      $builder->where('province_id', $agent->province_id)
-                          ->orWhereHas('provinces', fn (Builder $q) => $q->where('provinces.id', $agent->province_id));
-                  });
-        } elseif (str_contains($organe, 'Local')) {
-            $query->where('niveau_administratif', 'SEL')
-                  ->where(function (Builder $builder) use ($agent) {
-                      $builder->where('province_id', $agent->province_id)
-                          ->orWhereHas('provinces', fn (Builder $q) => $q->where('provinces.id', $agent->province_id));
-                  });
-        }
-
-        return $query;
-    }
-
     /**
      * Display listing of PTA activities.
      */
     public function index(Request $request): JsonResponse
     {
         $user = auth()->user();
-        $agent = $user->agent;
+        $agent = $this->getScopedAgent();
         $annee = $request->input('annee', now()->year);
         $trimestre = $request->input('trimestre');
         $statut = $request->input('statut');
@@ -171,9 +199,7 @@ class PlanTravailController extends ApiController
             ->with('provinces')
             ->parAnnee($annee);
 
-        if ($agent) {
-            $this->scopeQuery($query, $agent);
-        }
+        $this->applyDepartmentScope($query, $agent);
 
         if ($trimestre) {
             $query->parTrimestre($trimestre);
@@ -235,7 +261,12 @@ class PlanTravailController extends ApiController
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $departments = Department::orderBy('nom')->get(['id', 'nom']);
+        $agent = $this->getScopedAgent();
+
+        $departments = Department::query()
+            ->when($agent?->departement_id, fn (Builder $query) => $query->where('id', $agent->departement_id))
+            ->orderBy('nom')
+            ->get(['id', 'nom']);
         $provinces = Province::orderBy('nom')->get(['id', 'nom']);
         $localites = class_exists(Localite::class) ? Localite::orderBy('nom')->get(['id', 'nom']) : collect();
 
@@ -265,6 +296,8 @@ class PlanTravailController extends ApiController
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
+        $agent = $this->getScopedAgent();
+
         $validated = $request->validate([
             'titre'                => 'required|string|max:1000',
             'categorie'            => 'nullable|string|max:120',
@@ -295,6 +328,7 @@ class PlanTravailController extends ApiController
 
         $provinceIds = $this->normalizeProvinceIds($validated);
         $validated = $this->normalizeTrimestreFlags($validated);
+        $validated = $this->enforceManagedDepartment($validated, $agent);
         $validated['province_id'] = $provinceIds[0] ?? ($validated['province_id'] ?? null);
 
         $validated['createur_id'] = auth()->user()->agent->id;
@@ -322,6 +356,10 @@ class PlanTravailController extends ApiController
      */
     public function show(ActivitePlan $activitePlan): JsonResponse
     {
+        if (!$this->canAccessActivity($activitePlan)) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
         $activitePlan->load(['createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent']);
 
         return $this->resource(ActivitePlanResource::make($activitePlan), [
@@ -341,6 +379,12 @@ class PlanTravailController extends ApiController
         if (!$this->canManage()) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
+
+        if (!$this->canAccessActivity($activitePlan)) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $agent = $this->getScopedAgent();
 
         $validated = $request->validate([
             'titre'                => 'required|string|max:1000',
@@ -372,6 +416,7 @@ class PlanTravailController extends ApiController
 
         $provinceIds = $this->normalizeProvinceIds($validated);
         $validated = $this->normalizeTrimestreFlags($validated);
+        $validated = $this->enforceManagedDepartment($validated, $agent);
         $validated['province_id'] = $provinceIds[0] ?? ($validated['province_id'] ?? null);
 
         $activitePlan->update($validated);
@@ -398,6 +443,10 @@ class PlanTravailController extends ApiController
     public function destroy(ActivitePlan $activitePlan): JsonResponse
     {
         if (!$this->canManage()) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        if (!$this->canAccessActivity($activitePlan)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
