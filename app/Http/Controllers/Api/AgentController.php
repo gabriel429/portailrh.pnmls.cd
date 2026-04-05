@@ -715,7 +715,7 @@ class AgentController extends ApiController
         $provinceValue = $this->importValue($row, $headerIndexes, 'province');
         $fonctionValue = $this->importValue($row, $headerIndexes, 'fonction');
         $institutionValue = $this->importValue($row, $headerIndexes, 'institution');
-        $niveauEtudesValue = $this->importValue($row, $headerIndexes, 'niveau_etudes');
+        $niveauEtudesValue = $this->defaultImportedNiveauEtudes($this->importValue($row, $headerIndexes, 'niveau_etudes'));
         $lieuNaissanceValue = $this->importValue($row, $headerIndexes, 'lieu_naissance');
 
         $payload = [
@@ -724,7 +724,7 @@ class AgentController extends ApiController
             'postnom' => $this->importValue($row, $headerIndexes, 'postnom'),
             'prenom' => $this->importValue($row, $headerIndexes, 'prenom'),
             'sexe' => $this->normalizeImportedSexe($this->importValue($row, $headerIndexes, 'sexe')),
-            'annee_naissance' => $this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_naissance')),
+            'annee_naissance' => $this->normalizeImportedBirthYear($this->importValue($row, $headerIndexes, 'annee_naissance')),
             'date_naissance' => $this->normalizeImportedDate($this->importValue($row, $headerIndexes, 'date_naissance')),
             'lieu_naissance' => $lieuNaissanceValue ?? $provinceValue ?? 'Non renseigne',
             'situation_familiale' => $this->normalizeSituationFamiliale($this->importValue($row, $headerIndexes, 'situation_familiale')),
@@ -741,7 +741,7 @@ class AgentController extends ApiController
             'institution_id' => $this->resolveOptionalLookupValue($institutionValue, $lookups['institutions']),
             'niveau_etudes' => $this->resolveLookupValue($niveauEtudesValue, $lookups['niveaux_etudes'], 'niveau_etudes'),
             'domaine_etudes' => $this->importValue($row, $headerIndexes, 'domaine_etudes'),
-            'annee_engagement_programme' => $this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_engagement_programme')),
+            'annee_engagement_programme' => $this->defaultImportedEngagementYear($this->normalizeImportedYear($this->importValue($row, $headerIndexes, 'annee_engagement_programme'))),
             'statut' => $this->normalizeImportedStatut($this->importValue($row, $headerIndexes, 'statut')),
         ];
 
@@ -1027,6 +1027,39 @@ class AgentController extends ApiController
     {
         if ($value === null || $value === '') {
             return 0;
+        }
+
+        return (int) $value;
+    }
+
+    private function defaultImportedNiveauEtudes(mixed $value): string
+    {
+        if ($value === null) {
+            return 'Brevet';
+        }
+
+        if (is_string($value) && trim($value) === '') {
+            return 'Brevet';
+        }
+
+        return (string) $value;
+    }
+
+    private function normalizeImportedBirthYear(mixed $value): ?int
+    {
+        $year = $this->normalizeImportedYear($value);
+
+        if ($year === null) {
+            return null;
+        }
+
+        return $year < 1945 ? 1945 : $year;
+    }
+
+    private function defaultImportedEngagementYear(mixed $value): int
+    {
+        if ($value === null || $value === '') {
+            return 2004;
         }
 
         return (int) $value;
