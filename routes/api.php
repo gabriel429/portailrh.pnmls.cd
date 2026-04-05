@@ -259,7 +259,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
 
         // PTA import backend-only
-        Route::post('plan-travail/import-parsed', [PlanTravailController::class, 'importParsed']);
+        Route::post('pta/import-parsed', [PlanTravailController::class, 'importParsed']);
 
         // Categories Documents
         Route::get('categories-documents', [ParametresController::class, 'apiCategoriesDocsIndex']);
