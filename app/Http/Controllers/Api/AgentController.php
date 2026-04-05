@@ -753,6 +753,8 @@ class AgentController extends ApiController
             $payload['matricule_etat'] = null;
         }
 
+        $payload = $this->removeImportedEmailDuplicates($payload);
+
         return $payload;
     }
 
@@ -1150,6 +1152,38 @@ class AgentController extends ApiController
         }
 
         return null;
+    }
+
+    private function removeImportedEmailDuplicates(array $payload): array
+    {
+        foreach (['email_professionnel', 'email_prive'] as $field) {
+            $email = $payload[$field] ?? null;
+
+            if ($email === null || $email === '') {
+                continue;
+            }
+
+            if ($this->importedEmailAlreadyExists((string) $email)) {
+                $payload[$field] = null;
+            }
+        }
+
+        return $payload;
+    }
+
+    private function importedEmailAlreadyExists(string $email): bool
+    {
+        $query = Agent::query()->where('email', $email);
+
+        if (Schema::hasColumn('agents', 'email_prive')) {
+            $query->orWhere('email_prive', $email);
+        }
+
+        if (Schema::hasColumn('agents', 'email_professionnel')) {
+            $query->orWhere('email_professionnel', $email);
+        }
+
+        return $query->exists();
     }
 
     private function normalizeImportedMatricule(mixed $value): mixed
