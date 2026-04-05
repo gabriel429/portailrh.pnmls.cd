@@ -13,6 +13,7 @@ use App\Models\Organe;
 use App\Models\Province;
 use App\Models\Section;
 use App\Services\SpreadsheetImportReader;
+use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,18 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgentController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
+    private function authorizeAgentAccess(Request $request, Agent $agent): void
+    {
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+            abort(403, 'Vous n\'avez pas acces a cet agent.');
+        }
+    }
+
     /**
      * Organe labels used for grouping.
      */
@@ -53,7 +66,10 @@ class AgentController extends ApiController
      */
     public function index(Request $request): JsonResponse
     {
+        $scope = $this->scopeService();
         $query = Agent::with(['role', 'province', 'departement', 'grade', 'institution']);
+
+        $scope->applyAgentScope($query, $request->user());
 
         // Search filter
         $search = $request->query('search');
@@ -231,6 +247,8 @@ class AgentController extends ApiController
             'photo' => 'nullable|image|max:2048',
         ]);
 
+        $validated = $this->scopeService()->enforceAgentPayloadScope($validated, $request->user());
+
         // Default date_naissance from year
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
             $validated['date_naissance'] = $validated['annee_naissance'] . '-01-01';
@@ -287,6 +305,8 @@ class AgentController extends ApiController
      */
     public function show(Agent $agent): JsonResponse
     {
+        $this->authorizeAgentAccess(request(), $agent);
+
         $agent->load([
             'role', 'province', 'departement', 'grade', 'institution',
             'documents', 'requests',
@@ -306,6 +326,8 @@ class AgentController extends ApiController
      */
     public function update(Request $request, Agent $agent): JsonResponse
     {
+        $this->authorizeAgentAccess($request, $agent);
+
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat,' . $agent->id,
             'nom' => 'required|string',
@@ -335,6 +357,8 @@ class AgentController extends ApiController
             'statut' => 'required|in:actif,suspendu,ancien',
             'photo' => 'nullable|image|max:2048',
         ]);
+
+        $validated = $this->scopeService()->enforceAgentPayloadScope($validated, $request->user());
 
         // Default date_naissance from year
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
@@ -404,6 +428,8 @@ class AgentController extends ApiController
      */
     public function destroy(Agent $agent): JsonResponse
     {
+        $this->authorizeAgentAccess(request(), $agent);
+
         $agent->delete();
 
         return $this->success(null, [], [
@@ -416,6 +442,7 @@ class AgentController extends ApiController
      */
     public function export(Request $request): StreamedResponse
     {
+        $scope = $this->scopeService();
         $organe = $request->input('organe');
         $province_id = $request->input('province_id');
         $departement_id = $request->input('departement_id');
@@ -427,6 +454,8 @@ class AgentController extends ApiController
         ];
 
         $query = Agent::with(['province', 'departement', 'grade', 'institution']);
+
+        $scope->applyAgentScope($query, $request->user());
 
         if ($organe && $organe !== 'tous') {
             $organeNom = $organeMap[$organe] ?? null;
@@ -527,14 +556,33 @@ class AgentController extends ApiController
      */
     public function formOptions(): JsonResponse
     {
+        $scope = $this->scopeService();
+        $user = request()->user();
         $organeOptions = Schema::hasTable('organes') ? Organe::where('actif', true)->orderBy('nom')->pluck('nom') : collect();
-        $departments = Department::orderBy('nom')->get(['id', 'nom']);
-        $provinces = Province::orderBy('nom')->get();
+        $departments = $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom']);
+        $provinces = $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get();
         $grades = Schema::hasTable('grades') ? Grade::orderBy('ordre')->get() : collect();
         $institutionCategories = Schema::hasTable('institution_categories')
             ? InstitutionCategorie::with('institutions')->orderBy('ordre')->get()
             : collect();
-        $sections = Schema::hasTable('sections') ? Section::with('department:id,nom')->orderBy('type')->orderBy('nom')->get() : collect();
+        $sections = Schema::hasTable('sections')
+            ? Section::with('department:id,nom')
+                ->when($scope->isProvincialRh($user), function ($query) use ($scope, $user) {
+                    $provinceId = $scope->provinceId($user);
+
+                    if (!$provinceId) {
+                        $query->whereRaw('1 = 0');
+                        return;
+                    }
+
+                    $query->whereHas('department', function ($departmentQuery) use ($provinceId) {
+                        $departmentQuery->where('province_id', $provinceId);
+                    });
+                })
+                ->orderBy('type')
+                ->orderBy('nom')
+                ->get()
+            : collect();
         $fonctions = Schema::hasTable('fonctions') ? Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get() : collect();
         $niveauxEtudes = Agent::NIVEAUX_ETUDES;
 

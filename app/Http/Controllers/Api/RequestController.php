@@ -7,11 +7,17 @@ use App\Models\Request as RequestModel;
 use App\Models\Agent;
 use App\Models\User;
 use App\Services\NotificationService;
+use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class RequestController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
     /**
      * Display a paginated listing of requests.
      * RH staff see all requests; regular agents see only their own.
@@ -20,14 +26,10 @@ class RequestController extends ApiController
     {
         $user = $request->user();
         $isRH = $user->hasAdminAccess();
+        $scope = $this->scopeService();
 
         $query = RequestModel::with(['agent']);
-
-        // Regular agents only see their own requests
-        if (!$isRH) {
-            $agent = $user->agent;
-            $query->where('agent_id', $agent?->id);
-        }
+        $scope->applyRequestScope($query, $user);
 
         // Filter by statut
         if ($request->filled('statut')) {
@@ -53,6 +55,7 @@ class RequestController extends ApiController
     {
         $user = $request->user();
         $isRH = $user->hasAdminAccess();
+        $scope = $this->scopeService();
 
         $rules = [
             'type' => 'required|string',
@@ -84,6 +87,14 @@ class RequestController extends ApiController
                 ], 422);
             }
             $validated['agent_id'] = $agent->id;
+        } else {
+            $selectedAgent = Agent::find($validated['agent_id']);
+
+            if (!$scope->canAccessAgent($user, $selectedAgent)) {
+                return response()->json([
+                    'message' => 'Acces refuse pour cet agent.',
+                ], 403);
+            }
         }
 
         // Handle file upload
@@ -238,13 +249,10 @@ class RequestController extends ApiController
      */
     private function authorizeAccess($user, RequestModel $demande): void
     {
-        if ($user->hasAdminAccess()) {
+        if ($this->scopeService()->canAccessRequest($user, $demande)) {
             return;
         }
 
-        $agent = $user->agent;
-        if (!$agent || $demande->agent_id !== $agent->id) {
-            abort(403, 'Vous n\'avez pas accès à cette demande.');
-        }
+        abort(403, 'Vous n\'avez pas acces a cette demande.');
     }
 }

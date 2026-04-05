@@ -20,12 +20,18 @@ use App\Models\DocumentTravail;
 use App\Models\CategorieDocument;
 use App\Models\AuditLog;
 use App\Services\NotificationService;
+use App\Services\UserDataScope;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 
 class ParametresController extends Controller
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
     /**
      * Parse user-agent to extract device type and model.
      */
@@ -1037,6 +1043,7 @@ class ParametresController extends Controller
         }
         $q = Affectation::with(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite'])
             ->orderByDesc('created_at');
+        $this->scopeService()->applyAffectationScope($q, $request->user());
         if ($request->search) {
             $q->whereHas('agent', function($aq) use ($request) {
                 $aq->where('nom', 'like', "%{$request->search}%")
@@ -1048,20 +1055,30 @@ class ParametresController extends Controller
 
     public function apiAffectationsFormData()
     {
+        $scope = $this->scopeService();
+        $user = request()->user();
+
+        $agentsQuery = Agent::query()->orderBy('nom');
+        $scope->applyAgentScope($agentsQuery, $user);
+
         $agents = Schema::hasTable('agents')
-            ? Agent::orderBy('nom')->get(['id', 'nom', 'prenom'])->map(function ($a) {
-                $a->id_agent = $a->id_agent;
-                return $a;
+            ? $agentsQuery->get(['id', 'nom', 'prenom'])->map(function ($a) {
+                return [
+                    'id' => $a->id,
+                    'nom' => $a->nom,
+                    'prenom' => $a->prenom,
+                    'id_agent' => $a->id_agent,
+                ];
             })
             : [];
 
         return response()->json([
             'agents' => $agents,
             'fonctions' => Schema::hasTable('fonctions') ? Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']) : [],
-            'departments' => Schema::hasTable('departments') ? Department::orderBy('nom')->get(['id', 'nom', 'code']) : [],
+            'departments' => Schema::hasTable('departments') ? $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom', 'code']) : [],
             'sections' => Schema::hasTable('sections') ? Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']) : [],
             'cellules' => Schema::hasTable('cellules') ? Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']) : [],
-            'provinces' => Schema::hasTable('provinces') ? Province::orderBy('nom')->get(['id', 'nom', 'code']) : [],
+            'provinces' => Schema::hasTable('provinces') ? $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get(['id', 'nom', 'code']) : [],
             'localites' => Schema::hasTable('localites') ? Localite::orderBy('nom')->get(['id', 'nom', 'code', 'province_id']) : [],
         ]);
     }
@@ -1083,6 +1100,12 @@ class ParametresController extends Controller
             'actif' => 'boolean',
             'remarque' => 'nullable|string',
         ]);
+
+        $agent = Agent::find($validated['agent_id']);
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+            abort(403, 'Acces refuse pour cet agent.');
+        }
+
         $affectation = Affectation::create($validated);
         $this->recordAudit('CREATE', 'affectations', $affectation->id, null, $affectation->toArray());
         return response()->json($affectation->load(['agent', 'fonction']), 201);
@@ -1090,6 +1113,10 @@ class ParametresController extends Controller
 
     public function apiAffectationsUpdate(Request $request, Affectation $affectation)
     {
+        if (!$this->scopeService()->canAccessAffectation($request->user(), $affectation)) {
+            abort(403, 'Acces refuse pour cette affectation.');
+        }
+
         $before = $affectation->toArray();
         $validated = $request->validate([
             'agent_id' => 'required|exists:agents,id',
@@ -1106,6 +1133,12 @@ class ParametresController extends Controller
             'actif' => 'boolean',
             'remarque' => 'nullable|string',
         ]);
+
+        $agent = Agent::find($validated['agent_id']);
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+            abort(403, 'Acces refuse pour cet agent.');
+        }
+
         $affectation->update($validated);
         $this->recordAudit('UPDATE', 'affectations', $affectation->id, $before, $affectation->fresh()->toArray());
         return response()->json($affectation->load(['agent', 'fonction']));
@@ -1113,6 +1146,10 @@ class ParametresController extends Controller
 
     public function apiAffectationsDestroy(Affectation $affectation)
     {
+        if (!$this->scopeService()->canAccessAffectation(request()->user(), $affectation)) {
+            abort(403, 'Acces refuse pour cette affectation.');
+        }
+
         $before = $affectation->toArray();
         $affectation->delete();
         $this->recordAudit('DELETE', 'affectations', $affectation->id, $before);

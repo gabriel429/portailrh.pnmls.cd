@@ -7,18 +7,26 @@ use App\Models\Pointage;
 use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Province;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 
 class PointageController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
     /**
      * Display a paginated listing of pointages with optional filters.
      */
     public function index(Request $request): JsonResponse
     {
         $query = Pointage::with(['agent']);
+
+        $this->scopeService()->applyPointageScope($query, $request->user());
 
         // Filter by specific date
         if ($request->filled('date')) {
@@ -93,8 +101,21 @@ class PointageController extends ApiController
         $date = $request->date_pointage;
         $created = 0;
         $updated = 0;
+        $scope = $this->scopeService();
+        $user = $request->user();
+
+        $agents = Agent::whereIn('id', collect($request->pointages)->pluck('agent_id')->filter()->unique()->all())
+            ->get()
+            ->keyBy('id');
 
         foreach ($request->pointages as $row) {
+            $agent = $agents->get((int) $row['agent_id']);
+            if (!$scope->canAccessAgent($user, $agent)) {
+                return response()->json([
+                    'message' => 'Acces refuse pour au moins un agent hors de votre perimetre.',
+                ], 403);
+            }
+
             // Skip rows where no time was entered at all
             if (empty($row['heure_entree']) && empty($row['heure_sortie'])) {
                 continue;
@@ -153,8 +174,12 @@ class PointageController extends ApiController
     /**
      * Display the specified pointage.
      */
-    public function show(Pointage $pointage): JsonResponse
+    public function show(Request $request, Pointage $pointage): JsonResponse
     {
+        if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
         $pointage->load('agent');
 
         $resource = PointageResource::make($pointage);
@@ -171,6 +196,10 @@ class PointageController extends ApiController
      */
     public function update(Request $request, Pointage $pointage): JsonResponse
     {
+        if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
         $validated = $request->validate([
             'heure_entree' => 'nullable|date_format:H:i',
             'heure_sortie' => 'nullable|date_format:H:i',
@@ -201,8 +230,12 @@ class PointageController extends ApiController
     /**
      * Remove the specified pointage.
      */
-    public function destroy(Pointage $pointage): JsonResponse
+    public function destroy(Request $request, Pointage $pointage): JsonResponse
     {
+        if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
         $pointage->delete();
 
         return $this->success(null, [], [
@@ -215,6 +248,7 @@ class PointageController extends ApiController
      */
     public function daily(Request $request): JsonResponse
     {
+        $scope = $this->scopeService();
         $dateDebut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
         $dateFin = $request->query('date_fin', now()->format('Y-m-d'));
         $agent_id = $request->query('agent_id');
@@ -222,6 +256,8 @@ class PointageController extends ApiController
 
         $query = Pointage::with(['agent'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+
+        $scope->applyPointageScope($query, $request->user());
 
         if ($agent_id) {
             $query->where('agent_id', $agent_id);
@@ -254,7 +290,10 @@ class PointageController extends ApiController
         }
 
         // Agents list for filter dropdown
-        $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom', 'postnom'])
+        $agentsQuery = Agent::actifs()->orderBy('nom');
+        $scope->applyAgentScope($agentsQuery, $request->user());
+
+        $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom'])
             ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
         return $this->success([
@@ -284,6 +323,7 @@ class PointageController extends ApiController
      */
     public function monthly(Request $request): JsonResponse
     {
+        $scope = $this->scopeService();
         $month = $request->query('month', now()->format('Y-m'));
         [$year, $monthNum] = explode('-', $month);
 
@@ -294,6 +334,8 @@ class PointageController extends ApiController
 
         $query = Pointage::with(['agent.departement', 'agent.province'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+
+        $scope->applyPointageScope($query, $request->user());
 
         if ($organeFilter) {
             $query->whereHas('agent', fn($q) => $q->where('organe', $organeFilter));
@@ -371,9 +413,11 @@ class PointageController extends ApiController
             'sel' => 'Secretariat Executif Local',
         ];
 
-        $allPointages = Pointage::with(['agent.departement', 'agent.province'])
+        $allPointagesQuery = Pointage::with(['agent.departement', 'agent.province'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin])
-            ->get();
+            ;
+        $scope->applyPointageScope($allPointagesQuery, $request->user());
+        $allPointages = $allPointagesQuery->get();
 
         $statsByOrgane = [];
         foreach ($organes as $code => $nom) {
@@ -428,7 +472,10 @@ class PointageController extends ApiController
             ];
         }
 
-        $allProvinces = Province::orderBy('nom')
+        $allProvincesQuery = Province::query();
+        $scope->filterProvinces($allProvincesQuery, $request->user());
+
+        $allProvinces = $allProvincesQuery->orderBy('nom')
             ->get(['id', 'code', 'nom']);
 
         return $this->success([
@@ -456,6 +503,7 @@ class PointageController extends ApiController
      */
     public function agentsByDepartment(Request $request): JsonResponse
     {
+        $scope = $this->scopeService();
         $departmentId = $request->query('department_id');
         $date = $request->query('date');
 
@@ -463,10 +511,13 @@ class PointageController extends ApiController
             return $this->success([]);
         }
 
-        $agents = Agent::actifs()
+        $agentsQuery = Agent::actifs()
             ->where('departement_id', $departmentId)
-            ->orderBy('nom')
-            ->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+            ->orderBy('nom');
+
+        $scope->applyAgentScope($agentsQuery, $request->user());
+
+        $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
 
         // Attach existing pointage for each agent on the given date
         if ($date) {
@@ -493,12 +544,15 @@ class PointageController extends ApiController
      */
     public function exportDaily(Request $request)
     {
+        $scope = $this->scopeService();
         $dateDebut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
         $dateFin = $request->query('date_fin', now()->format('Y-m-d'));
         $agent_id = $request->query('agent_id');
 
         $query = Pointage::with(['agent'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+
+        $scope->applyPointageScope($query, $request->user());
 
         if ($agent_id) {
             $query->where('agent_id', $agent_id);
@@ -545,6 +599,7 @@ class PointageController extends ApiController
      */
     public function exportMonthly(Request $request)
     {
+        $scope = $this->scopeService();
         $month = $request->query('month', now()->format('Y-m'));
         [$year, $monthNum] = explode('-', $month);
 
@@ -553,6 +608,8 @@ class PointageController extends ApiController
 
         $query = Pointage::with(['agent'])
             ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+
+        $scope->applyPointageScope($query, $request->user());
 
         if ($request->filled('organe')) {
             $query->whereHas('agent', fn($q) => $q->where('organe', $request->query('organe')));

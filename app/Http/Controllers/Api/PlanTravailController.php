@@ -10,6 +10,7 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
 use App\Services\NotificationService;
+use App\Services\UserDataScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,11 +18,16 @@ use Illuminate\Support\Facades\Schema;
 
 class PlanTravailController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
     private function getScopedAgent(): ?Agent
     {
         $user = auth()->user();
 
-        if (!$user || $user->hasAdminAccess()) {
+        if (!$user || $this->scopeService()->hasGlobalAdminAccess($user)) {
             return null;
         }
 
@@ -143,7 +149,7 @@ class PlanTravailController extends ApiController
     private function canManage(): bool
     {
         $user = auth()->user();
-        if ($user->hasAdminAccess()) {
+        if ($this->scopeService()->hasGlobalAdminAccess($user)) {
             return true;
         }
 
@@ -178,7 +184,7 @@ class PlanTravailController extends ApiController
         }
 
         $user = auth()->user();
-        if ($user->hasAdminAccess()) {
+        if ($this->scopeService()->hasGlobalAdminAccess($user)) {
             return true;
         }
         if ($this->canManage()) {
@@ -553,7 +559,7 @@ class PlanTravailController extends ApiController
     public function importParsed(Request $request): JsonResponse
     {
         $user = auth()->user();
-        if (!$user || !$user->hasAdminAccess()) {
+        if (!$user || !$this->scopeService()->hasGlobalAdminAccess($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 

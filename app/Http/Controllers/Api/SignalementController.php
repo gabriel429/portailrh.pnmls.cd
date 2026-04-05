@@ -5,17 +5,25 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\SignalementResource;
 use App\Models\Signalement;
 use App\Models\Agent;
+use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class SignalementController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
     /**
      * Display a paginated listing of signalements.
      */
     public function index(Request $request): JsonResponse
     {
         $query = Signalement::with(['agent']);
+
+        $this->scopeService()->applySignalementScope($query, $request->user());
 
         if ($request->filled('severite')) {
             $query->where('severite', $request->input('severite'));
@@ -43,6 +51,13 @@ class SignalementController extends ApiController
             'severite' => 'required|in:basse,moyenne,haute',
         ]);
 
+        $agent = Agent::find($validated['agent_id']);
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+            return response()->json([
+                'message' => 'Acces refuse pour cet agent.',
+            ], 403);
+        }
+
         $signalement = Signalement::create($validated);
 
         $signalement->load('agent');
@@ -58,6 +73,10 @@ class SignalementController extends ApiController
      */
     public function show(Signalement $signalement): JsonResponse
     {
+        if (!$this->scopeService()->canAccessSignalement(request()->user(), $signalement)) {
+            abort(403, 'Vous n\'avez pas acces a ce signalement.');
+        }
+
         $signalement->load('agent');
 
         return $this->resource(SignalementResource::make($signalement));
@@ -68,6 +87,12 @@ class SignalementController extends ApiController
      */
     public function update(Request $request, Signalement $signalement): JsonResponse
     {
+        if (!$this->scopeService()->canAccessSignalement($request->user(), $signalement)) {
+            return response()->json([
+                'message' => 'Vous n\'avez pas acces a ce signalement.',
+            ], 403);
+        }
+
         $validated = $request->validate([
             'type' => 'required|string',
             'description' => 'required|string',
@@ -90,6 +115,10 @@ class SignalementController extends ApiController
      */
     public function destroy(Signalement $signalement): JsonResponse
     {
+        if (!$this->scopeService()->canAccessSignalement(request()->user(), $signalement)) {
+            abort(403, 'Vous n\'avez pas acces a ce signalement.');
+        }
+
         $signalement->delete();
 
         return $this->success(null, [], [
@@ -102,8 +131,16 @@ class SignalementController extends ApiController
      */
     public function agents(): JsonResponse
     {
-        $agents = Agent::actifs()->orderBy('nom')->get(['id', 'nom', 'prenom'])
-            ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
+        $query = Agent::actifs()->orderBy('nom');
+        $this->scopeService()->applyAgentScope($query, request()->user());
+
+        $agents = $query->get(['id', 'nom', 'prenom'])
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'nom' => $a->nom,
+                'prenom' => $a->prenom,
+                'id_agent' => $a->id_agent,
+            ]);
 
         return $this->success($agents);
     }

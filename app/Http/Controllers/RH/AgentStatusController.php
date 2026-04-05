@@ -5,12 +5,18 @@ namespace App\Http\Controllers\RH;
 use App\Http\Controllers\Controller;
 use App\Models\AgentStatus;
 use App\Models\Agent;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
 
 class AgentStatusController extends Controller
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -22,6 +28,19 @@ class AgentStatusController extends Controller
     public function index(Request $request)
     {
         $query = AgentStatus::with(['agent.departement', 'createdBy', 'approvedBy']);
+        $scope = $this->scopeService();
+        $user = $request->user();
+
+        if ($scope->isProvincialRh($user)) {
+            $provinceId = $scope->provinceId($user);
+            if (!$provinceId) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('agent', function ($agentQuery) use ($provinceId) {
+                    $agentQuery->where('province_id', $provinceId);
+                });
+            }
+        }
 
         // Filtres
         if ($request->filled('agent_id')) {
@@ -59,12 +78,15 @@ class AgentStatusController extends Controller
      */
     public function current(Request $request)
     {
+        $scope = $this->scopeService();
         $query = Agent::with([
             'departement',
             'agentStatuses' => function ($q) {
                 $q->where('actuel', true)->latest();
             }
         ]);
+
+        $scope->applyAgentScope($query, $request->user());
 
         // Filtres
         if ($request->filled('department_id')) {
@@ -105,6 +127,10 @@ class AgentStatusController extends Controller
      */
     public function show(AgentStatus $agentStatus)
     {
+        if (!$this->scopeService()->canAccessAgent(request()->user(), $agentStatus->agent, false)) {
+            abort(403, 'Acces refuse a ce statut.');
+        }
+
         $agentStatus->load([
             'agent.departement',
             'createdBy',
@@ -191,6 +217,12 @@ class AgentStatusController extends Controller
             ], 403);
         }
 
+        if (!$this->scopeService()->canAccessAgent(auth()->user(), $agentStatus->agent, false)) {
+            return response()->json([
+                'message' => 'Permissions insuffisantes pour approuver ce changement'
+            ], 403);
+        }
+
         $agentStatus->approve($user);
 
         return response()->json([
@@ -204,6 +236,12 @@ class AgentStatusController extends Controller
      */
     public function history(Agent $agent, Request $request)
     {
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agent, true)) {
+            return response()->json([
+                'message' => 'Acces refuse a cet historique'
+            ], 403);
+        }
+
         $year = $request->get('year');
         $limit = $request->get('limit', 50);
 
@@ -249,6 +287,12 @@ class AgentStatusController extends Controller
             ], 403);
         }
 
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agentStatus->agent, false)) {
+            return response()->json([
+                'message' => 'Permissions insuffisantes pour prolonger ce statut'
+            ], 403);
+        }
+
         $newEndDate = Carbon::parse($validated['nouvelle_date_fin']);
         $agentStatus->extend($newEndDate);
 
@@ -263,10 +307,22 @@ class AgentStatusController extends Controller
      */
     public function statistics(Request $request)
     {
+        $scope = $this->scopeService();
         $departmentId = $request->get('department_id');
         $year = $request->get('year', date('Y'));
 
         $baseQuery = AgentStatus::whereYear('created_at', $year);
+
+        if ($scope->isProvincialRh($request->user())) {
+            $provinceId = $scope->provinceId($request->user());
+            if (!$provinceId) {
+                $baseQuery->whereRaw('1 = 0');
+            } else {
+                $baseQuery->whereHas('agent', function ($agentQuery) use ($provinceId) {
+                    $agentQuery->where('province_id', $provinceId);
+                });
+            }
+        }
 
         if ($departmentId) {
             $baseQuery->whereHas('agent', function ($q) use ($departmentId) {
@@ -323,6 +379,7 @@ class AgentStatusController extends Controller
      */
     public function available(Request $request)
     {
+        $scope = $this->scopeService();
         $date = $request->get('date') ? Carbon::parse($request->date) : Carbon::today();
         $departmentId = $request->get('department_id');
 
@@ -340,6 +397,8 @@ class AgentStatusController extends Controller
             $query->where('departement_id', $departmentId);
         }
 
+        $scope->applyAgentScope($query, $request->user());
+
         $agents = $query->with('departement')
             ->actifs()
             ->orderBy('nom')
@@ -353,6 +412,7 @@ class AgentStatusController extends Controller
      */
     public function absenceReport(Request $request)
     {
+        $scope = $this->scopeService();
         $start = Carbon::parse($request->get('date_debut', now()->startOfMonth()));
         $end = Carbon::parse($request->get('date_fin', now()->endOfMonth()));
         $departmentId = $request->get('department_id');
@@ -360,6 +420,17 @@ class AgentStatusController extends Controller
         $query = AgentStatus::with(['agent.departement'])
             ->whereIn('statut', ['en_conge', 'en_mission', 'suspendu', 'en_formation'])
             ->activeBetween($start, $end);
+
+        if ($scope->isProvincialRh($request->user())) {
+            $provinceId = $scope->provinceId($request->user());
+            if (!$provinceId) {
+                $query->whereRaw('1 = 0');
+            } else {
+                $query->whereHas('agent', function ($agentQuery) use ($provinceId) {
+                    $agentQuery->where('province_id', $provinceId);
+                });
+            }
+        }
 
         if ($departmentId) {
             $query->whereHas('agent', function ($q) use ($departmentId) {
