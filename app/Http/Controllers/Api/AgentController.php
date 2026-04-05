@@ -112,6 +112,19 @@ class AgentController extends ApiController
         // Sort by hierarchical position (grade_etat maps to Fonction Publique ranks)
         $allAgents = $query->orderBy('organe')
             ->orderByRaw("CASE
+                WHEN organe = 'Secrétariat Exécutif Provincial' AND (
+                    LOWER(fonction) LIKE '%secrétaire exécutif provincial%'
+                    OR LOWER(fonction) LIKE '%secretaire executif provincial%'
+                    OR LOWER(fonction) LIKE '%sep%'
+                ) THEN 0
+                WHEN organe = 'Secrétariat Exécutif Provincial' AND LOWER(fonction) LIKE '%chef de cellule%' THEN 1
+                WHEN organe = 'Secrétariat Exécutif Provincial' AND (
+                    LOWER(fonction) LIKE '%gardien%'
+                    OR LOWER(fonction) LIKE '%sentinelle%'
+                ) THEN 99
+                ELSE 10
+            END")
+            ->orderByRaw("CASE
                 WHEN LOWER(grade_etat) LIKE '%secrétaire général%' OR LOWER(grade_etat) LIKE '%secretaire general%' THEN 1
                 WHEN LOWER(grade_etat) LIKE '%directeur%' THEN 2
                 WHEN LOWER(grade_etat) LIKE '%chef de division%' THEN 3
