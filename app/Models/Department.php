@@ -5,9 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Builder;
 
 class Department extends Model
 {
+    public const ACTIVE_NATIONAL_DEPARTMENT_KEYWORDS = [
+        ['administration', 'finance'],
+        ['coordination', 'multi'],
+        ['documentation', 'renforcement'],
+        ['partenariat', 'multilat'],
+        ['planification', 'evaluation'],
+    ];
+
     protected $fillable = [
         'code',
         'nom',
@@ -57,5 +66,48 @@ class Department extends Model
     public function scopeByProvince($query, $provinceId)
     {
         return $query->where('province_id', $provinceId);
+    }
+
+    public function scopeOperational($query)
+    {
+        return $query->where(function ($departmentQuery) {
+            $departmentQuery
+                ->whereNotNull('province_id')
+                ->orWhere(function ($nationalQuery) {
+                    self::applyActiveNationalDepartmentConstraint($nationalQuery);
+                });
+        });
+    }
+
+    public function scopeOperationalNationalStructures($query)
+    {
+        return $query
+            ->whereNull('province_id')
+            ->where(function ($nationalQuery) {
+                $nationalQuery
+                    ->where('code', 'DIR')
+                    ->orWhere(function ($activeDepartmentQuery) {
+                        self::applyActiveNationalDepartmentConstraint($activeDepartmentQuery);
+                    })
+                    ->orWhere(function ($attachedQuery) {
+                        $attachedQuery
+                            ->whereNotNull('code')
+                            ->where('code', 'not like', 'D%');
+                    });
+            });
+    }
+
+    public static function applyActiveNationalDepartmentConstraint(Builder $query): void
+    {
+        $query->whereNull('province_id')
+            ->where(function ($keywordsQuery) {
+                foreach (self::ACTIVE_NATIONAL_DEPARTMENT_KEYWORDS as $keywordGroup) {
+                    $keywordsQuery->orWhere(function ($matchQuery) use ($keywordGroup) {
+                        foreach ($keywordGroup as $keyword) {
+                            $matchQuery->where('nom', 'like', '%' . $keyword . '%');
+                        }
+                    });
+                }
+            });
     }
 }

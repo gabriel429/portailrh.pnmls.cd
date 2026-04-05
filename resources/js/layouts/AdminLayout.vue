@@ -50,10 +50,38 @@
           <i class="fas fa-bars"></i>
         </button>
         <div class="topbar-right">
-          <span class="text-muted me-3">{{ auth.user?.name }}</span>
-          <a href="#" class="text-danger" @click.prevent="handleLogout">
-            <i class="fas fa-sign-out-alt"></i>
-          </a>
+          <button type="button" class="admin-topbar-icon" aria-label="Notifications">
+            <i class="fas fa-bell"></i>
+          </button>
+
+          <div class="dropdown">
+            <a
+              href="#"
+              class="admin-user-chip dropdown-toggle"
+              role="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+            >
+              <span class="admin-user-avatar">{{ adminInitials }}</span>
+              <span class="admin-user-name">{{ adminDisplayName }}</span>
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end admin-user-menu">
+              <li>
+                <div class="admin-user-menu-header">
+                  <div class="admin-user-menu-title">{{ adminFullName }}</div>
+                  <div class="admin-user-menu-subtitle">{{ auth.user?.email }}</div>
+                </div>
+              </li>
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a href="#" class="dropdown-item text-danger" @click.prevent="handleLogout">
+                  <i class="fas fa-sign-out-alt me-2"></i>
+                  Deconnexion
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
 
@@ -106,6 +134,27 @@ const navItems = computed(() => {
         items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })
     }
     return items
+})
+
+const adminDisplayName = computed(() => auth.agent?.prenom || auth.user?.name || 'Compte')
+
+const adminFullName = computed(() => {
+  const fullName = [auth.agent?.prenom, auth.agent?.nom].filter(Boolean).join(' ').trim()
+  return fullName || auth.user?.name || 'Compte administrateur'
+})
+
+const adminInitials = computed(() => {
+  const source = adminFullName.value
+  if (!source) {
+    return 'AD'
+  }
+
+  return source
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('')
 })
 
   const showSidebarText = computed(() => (isMobile.value ? true : ui.sidebarOpen))
@@ -195,8 +244,91 @@ async function handleLogout() {
     padding: .75rem 1.5rem; background: #fff;
     border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 1030;
 }
-.topbar-right { display: flex; align-items: center; gap: .5rem; }
+.topbar-right { display: flex; align-items: center; gap: .75rem; }
 .admin-content { padding: 1.5rem; }
+
+.admin-topbar-icon {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #1f6b91 0%, #165a7a 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .14);
+}
+
+.admin-user-chip {
+  min-height: 56px;
+  padding: .5rem .95rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: .72rem;
+  background: linear-gradient(180deg, #1f6b91 0%, #165a7a 100%);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, .18);
+  border: 1px solid rgba(255, 255, 255, .18);
+}
+
+.admin-user-chip::after {
+  margin-left: .1rem;
+}
+
+.admin-user-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
+  flex-shrink: 0;
+}
+
+.admin-user-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.admin-user-menu {
+  min-width: 250px;
+  margin-top: .6rem;
+  border: 1px solid rgba(15, 23, 42, .08);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, .18);
+}
+
+.admin-user-menu-header {
+  padding: .95rem 1rem;
+  background: linear-gradient(180deg, #f8fbfd 0%, #eef6fa 100%);
+}
+
+.admin-user-menu-title {
+  font-size: .95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.admin-user-menu-subtitle {
+  margin-top: .15rem;
+  font-size: .8rem;
+  color: #64748b;
+  word-break: break-word;
+}
 
 .admin-mobile-backdrop {
   position: fixed; inset: 0; z-index: 1035; border: 0;
@@ -236,15 +368,29 @@ async function handleLogout() {
   }
 
   .topbar-right {
-    gap: .35rem;
+    gap: .45rem;
   }
 
-  .topbar-right .text-muted {
-    max-width: 140px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: .82rem;
+  .admin-topbar-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .admin-user-chip {
+    min-height: 48px;
+    padding: .35rem .72rem .35rem .38rem;
+    gap: .55rem;
+  }
+
+  .admin-user-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: .76rem;
+  }
+
+  .admin-user-name {
+    max-width: 108px;
+    font-size: .78rem;
   }
 
   .sidebar-link {

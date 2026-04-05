@@ -337,6 +337,7 @@ class PlanTravailController extends ApiController
 
         $departments = Department::query()
             ->when($agent?->departement_id, fn (Builder $query) => $query->where('id', $agent->departement_id))
+            ->when(!$agent?->departement_id, fn (Builder $query) => $query->operational())
             ->orderBy('nom')
             ->get(['id', 'nom']);
         $provinces = Province::query()

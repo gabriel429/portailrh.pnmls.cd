@@ -280,7 +280,7 @@ class UserDataScope
     public function filterDepartments($query, ?User $user)
     {
         if (!$this->isProvincialRh($user)) {
-            return $query;
+            return $query->operational();
         }
 
         $provinceId = $this->provinceId($user);

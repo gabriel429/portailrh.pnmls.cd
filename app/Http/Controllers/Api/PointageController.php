@@ -451,7 +451,8 @@ class PointageController extends ApiController
 
         // Sub-filter options for hierarchical drill-down
         // SEN structures: group national departments by type (direction, departement, service rattache)
-        $allNational = Department::whereNull('province_id')
+        $allNational = Department::query()
+            ->operationalNationalStructures()
             ->orderBy('nom')
             ->get(['id', 'code', 'nom']);
 

@@ -48,7 +48,10 @@ class HolidayPlanningController extends Controller
         ];
 
         // Liste des structures pour les filtres
-        $departments = Department::orderBy('nom')->get();
+        $departments = Department::query()
+            ->operational()
+            ->orderBy('nom')
+            ->get();
 
         return response()->json([
             'plannings' => $plannings,
