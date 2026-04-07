@@ -2,7 +2,7 @@
   <div class="rh-modern">
     <div class="rh-shell">
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement de la tache..." />
+        <LoadingSpinner message="Chargement de la tâche..." />
       </div>
 
       <template v-else-if="tache">
@@ -11,7 +11,7 @@
             <div class="col-lg-8">
               <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ tache.titre }}</h1>
               <p class="rh-sub">
-                Assignee a {{ tache.agent?.nom_complet }} par {{ tache.createur?.nom_complet }}
+                Assignée à {{ tache.agent?.nom_complet }} par {{ tache.createur?.nom_complet }}
               </p>
             </div>
             <div class="col-lg-4">
@@ -31,7 +31,7 @@
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
-                  <h3 class="panel-title"><i class="fas fa-info-circle me-2 text-primary"></i>Details</h3>
+                  <h3 class="panel-title"><i class="fas fa-info-circle me-2 text-primary"></i>Détails</h3>
                 </div>
                 <div class="d-flex gap-2 align-items-center">
                   <span :class="prioriteBadge(tache.priorite)">{{ capitalize(tache.priorite) }}</span>
@@ -51,22 +51,22 @@
                   <dt class="col-sm-4 text-muted">Source</dt>
                   <dd class="col-sm-8">{{ sourceEmetteurLabel(tache.source_emetteur) }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Creee par</dt>
+                  <dt class="col-sm-4 text-muted">Créée par</dt>
                   <dd class="col-sm-8">{{ tache.createur?.nom_complet }}</dd>
 
                   <template v-if="tache.date_tache">
-                    <dt class="col-sm-4 text-muted">Date de la tache</dt>
+                    <dt class="col-sm-4 text-muted">Date de la tâche</dt>
                     <dd class="col-sm-8">{{ formatDate(tache.date_tache) }}</dd>
                   </template>
 
-                  <dt class="col-sm-4 text-muted">Assignee a</dt>
+                  <dt class="col-sm-4 text-muted">Assignée à</dt>
                   <dd class="col-sm-8">{{ tache.agent?.nom_complet }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Date de creation</dt>
+                  <dt class="col-sm-4 text-muted">Date de création</dt>
                   <dd class="col-sm-8">{{ formatDateTime(tache.created_at) }}</dd>
 
                   <template v-if="tache.date_echeance">
-                    <dt class="col-sm-4 text-muted">Echeance</dt>
+                    <dt class="col-sm-4 text-muted">Échéance</dt>
                     <dd class="col-sm-8">
                       {{ formatDate(tache.date_echeance) }}
                       <span v-if="isOverdue" class="badge bg-danger ms-1">En retard</span>
@@ -128,7 +128,7 @@
             <div v-if="isAssigne && tache.statut !== 'terminee'" class="dash-panel mt-3">
               <header class="panel-head">
                 <div>
-                  <h3 class="panel-title"><i class="fas fa-exchange-alt me-2 text-warning"></i>Mettre a jour le statut</h3>
+                  <h3 class="panel-title"><i class="fas fa-exchange-alt me-2 text-warning"></i>Mettre à jour le statut</h3>
                 </div>
               </header>
               <div class="p-3">
@@ -138,7 +138,7 @@
                       <label for="statut" class="form-label fw-bold">Nouveau statut <span class="text-danger">*</span></label>
                       <select v-model="statutForm.statut" class="form-select" id="statut" required>
                         <option value="en_cours" :selected="tache.statut === 'nouvelle'">En cours</option>
-                        <option value="terminee">Terminee</option>
+                        <option value="terminee">Terminée</option>
                       </select>
                     </div>
                     <div class="col-md-4">
@@ -152,12 +152,12 @@
                     <div class="col-12">
                       <label for="contenu_statut" class="form-label fw-bold">Commentaire <span class="text-danger">*</span></label>
                       <textarea v-model="statutForm.contenu" class="form-control" id="contenu_statut" rows="3" required
-                                placeholder="Decrivez l'avancement ou le resultat..."></textarea>
+                                placeholder="Décrivez l'avancement ou le résultat..."></textarea>
                     </div>
                     <div class="col-12">
                       <div class="alert alert-info py-2 mb-0 small">
                         <i class="fas fa-info-circle me-1"></i>
-                        Le document est obligatoire si vous passez la tache a Terminee ou si vous modifiez le pourcentage de progression.
+                        Le document est obligatoire si vous passez la tâche à Terminée ou si vous modifiez le pourcentage de progression.
                       </div>
                       <div v-if="statusDocumentName" class="task-inline-file mt-2">
                         <span><i class="fas fa-file me-1"></i>{{ statusDocumentName }}</span>
@@ -169,7 +169,7 @@
                     <div class="col-12">
                       <button type="submit" class="btn btn-warning" :disabled="updatingStatut">
                         <span v-if="updatingStatut" class="spinner-border spinner-border-sm me-1"></span>
-                        <i v-else class="fas fa-sync-alt me-1"></i> Mettre a jour
+                        <i v-else class="fas fa-sync-alt me-1"></i> Mettre à jour
                       </button>
                     </div>
                   </div>
@@ -304,7 +304,7 @@ async function loadTache() {
       contenu: '',
     }
   } catch {
-    ui.addToast('Tache introuvable.', 'danger')
+    ui.addToast('Tâche introuvable.', 'danger')
     router.push({ name: 'taches.index' })
   } finally {
     loading.value = false
@@ -330,9 +330,9 @@ async function handleUpdateStatut() {
       contenu: '',
     }
     removeStatusDocument()
-    ui.addToast('Statut mis a jour avec succes.', 'success')
+    ui.addToast('Statut mis à jour avec succès.', 'success')
   } catch (err) {
-    ui.addToast(err.response?.data?.message || 'Erreur lors de la mise a jour.', 'danger')
+    ui.addToast(err.response?.data?.message || 'Erreur lors de la mise à jour.', 'danger')
   } finally {
     updatingStatut.value = false
   }
@@ -344,7 +344,7 @@ async function handleAddComment() {
     const { data } = await addCommentaire(route.params.id, commentForm.value)
     tache.value = data.data
     commentForm.value = { contenu: '' }
-    ui.addToast('Commentaire ajoute.', 'success')
+    ui.addToast('Commentaire ajouté.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur.', 'danger')
   } finally {
@@ -384,7 +384,7 @@ function statutBadge(statut) {
 }
 
 function statutLabel(statut) {
-  const map = { terminee: 'Terminee', en_cours: 'En cours', nouvelle: 'Nouvelle' }
+  const map = { terminee: 'Terminée', en_cours: 'En cours', nouvelle: 'Nouvelle' }
   return map[statut] || capitalize(statut)
 }
 
@@ -397,7 +397,7 @@ function formatDateTime(dateStr) {
   if (!dateStr) return ''
   const d = new Date(dateStr)
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
-    ' a ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+    ' à ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
 function sourceEmetteurLabel(source) {

@@ -10,13 +10,13 @@
           <div v-if="isDirecteur" class="col-lg-4">
             <div class="hero-tools">
               <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
-                <i class="fas fa-clipboard-list me-1"></i> Taches assignees par moi
+                <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
               </router-link>
               <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                <i class="fas fa-arrow-left me-1"></i> Retour a mes taches
+                <i class="fas fa-arrow-left me-1"></i> Retour à mes tâches
               </router-link>
               <router-link :to="{ name: 'taches.create' }" class="btn-rh main">
-                <i class="fas fa-plus-circle me-1"></i> Nouvelle tache
+                <i class="fas fa-plus-circle me-1"></i> Nouvelle tâche
               </router-link>
             </div>
           </div>
@@ -24,7 +24,7 @@
       </section>
 
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement des taches..." />
+        <LoadingSpinner message="Chargement des tâches..." />
       </div>
 
       <template v-else>
@@ -55,10 +55,10 @@
                 <tr>
                   <th>Titre</th>
                   <th>Origine</th>
-                  <th>{{ showAssignedByMe ? 'Assigne a' : 'De' }}</th>
-                  <th>Priorite</th>
+                  <th>{{ showAssignedByMe ? 'Assigné à' : 'De' }}</th>
+                  <th>Priorité</th>
                   <th>Statut</th>
-                  <th>Echeance</th>
+                  <th>Échéance</th>
                   <th>Date</th>
                   <th></th>
                 </tr>
@@ -124,15 +124,15 @@ const sourceFilter = ref('all')
 
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
-const pageTitle = computed(() => showAssignedByMe.value ? 'Taches assignees par moi' : 'Mes Taches')
+const pageTitle = computed(() => showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches')
 const pageSubtitle = computed(() => showAssignedByMe.value
-  ? 'Suivi des taches que vous attribuez aux agents de votre structure.'
-  : 'Espace des taches qui vous sont attribuees par votre direction, le SEN, le SEP ou le SEL.')
-const panelTitle = computed(() => showAssignedByMe.value ? 'Taches que j\'ai assignees' : 'Taches qui me sont assignees')
+  ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
+  : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.')
+const panelTitle = computed(() => showAssignedByMe.value ? 'Tâches que j\'ai assignées' : 'Tâches qui me sont assignées')
 const panelSubtitle = computed(() => showAssignedByMe.value
-  ? 'Liste des taches que vous avez affectees aux agents.'
-  : 'Taches attribuees par votre direction, le SEN, le SEP ou le SEL.')
-const emptyStateText = computed(() => showAssignedByMe.value ? 'Aucune tache assignee par vous pour ce filtre.' : 'Aucune tache assignee pour ce filtre.')
+  ? 'Liste des tâches que vous avez affectées aux agents.'
+  : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.')
+const emptyStateText = computed(() => showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.')
 
 const filteredTaches = computed(() => {
   const items = showAssignedByMe.value ? tachesCreees.value : mesTaches.value
@@ -146,7 +146,7 @@ async function loadTaches() {
     tachesCreees.value = data.tachesCreees
     isDirecteur.value = data.isDirecteur
   } catch {
-    ui.addToast('Erreur lors du chargement des taches.', 'danger')
+    ui.addToast('Erreur lors du chargement des tâches.', 'danger')
   } finally {
     loading.value = false
   }
@@ -173,7 +173,7 @@ function statutBadge(statut) {
 }
 
 function statutLabel(statut) {
-  const map = { terminee: 'Terminee', en_cours: 'En cours', nouvelle: 'Nouvelle' }
+  const map = { terminee: 'Terminée', en_cours: 'En cours', nouvelle: 'Nouvelle' }
   return map[statut] || capitalize(statut)
 }
 

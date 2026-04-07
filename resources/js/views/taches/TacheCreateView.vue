@@ -4,8 +4,8 @@
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Tache</h1>
-            <p class="rh-sub">Assigner une tache a un agent de votre departement.</p>
+            <h1 class="rh-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Tâche</h1>
+            <p class="rh-sub">Assigner une tâche à un agent de votre département.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -48,14 +48,14 @@
             </div>
 
             <div class="col-md-4">
-              <label for="date_tache" class="form-label fw-bold">Date de la tache</label>
+              <label for="date_tache" class="form-label fw-bold">Date de la tâche</label>
               <input v-model="form.date_tache" type="date" class="form-control" id="date_tache">
             </div>
 
             <div v-if="form.source_type === 'pta'" class="col-12">
-              <label for="activite_plan_id" class="form-label fw-bold">Activite PTA liee <span class="text-danger">*</span></label>
+              <label for="activite_plan_id" class="form-label fw-bold">Activité PTA liée <span class="text-danger">*</span></label>
               <select v-model="form.activite_plan_id" class="form-select" id="activite_plan_id" required>
-                <option value="">-- Choisir une activite du PTA --</option>
+                <option value="">-- Choisir une activité du PTA --</option>
                 <option v-for="activite in activitesPta" :key="activite.id" :value="activite.id">
                   {{ activiteLabel(activite) }}
                 </option>
@@ -75,7 +75,7 @@
 
             <!-- Priorite -->
             <div class="col-md-3">
-              <label for="priorite" class="form-label fw-bold">Priorite <span class="text-danger">*</span></label>
+              <label for="priorite" class="form-label fw-bold">Priorité <span class="text-danger">*</span></label>
               <select v-model="form.priorite" class="form-select" id="priorite" required>
                 <option value="normale">Normale</option>
                 <option value="haute">Haute</option>
@@ -85,22 +85,22 @@
 
             <!-- Date echeance -->
             <div class="col-md-3">
-              <label for="date_echeance" class="form-label fw-bold">Echeance</label>
+              <label for="date_echeance" class="form-label fw-bold">Échéance</label>
               <input v-model="form.date_echeance" type="date" class="form-control" id="date_echeance">
             </div>
 
             <!-- Titre -->
             <div class="col-12">
-              <label for="titre" class="form-label fw-bold">Titre de la tache <span class="text-danger">*</span></label>
+              <label for="titre" class="form-label fw-bold">Titre de la tâche <span class="text-danger">*</span></label>
               <input v-model="form.titre" type="text" class="form-control" id="titre" required
-                     placeholder="Ex: Preparer le rapport mensuel">
+                     placeholder="Ex: Préparer le rapport mensuel">
             </div>
 
             <!-- Description -->
             <div class="col-12">
               <label for="description" class="form-label fw-bold">Description</label>
               <textarea v-model="form.description" class="form-control" id="description" rows="5"
-                        placeholder="Details et instructions pour l'agent..."></textarea>
+                        placeholder="Détails et instructions pour l'agent..."></textarea>
             </div>
 
             <div class="col-12">
@@ -134,7 +134,7 @@
             <div class="col-12 mt-3">
               <button type="submit" class="btn btn-primary" :disabled="submitting">
                 <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                <i v-else class="fas fa-paper-plane me-1"></i> Assigner la tache
+                <i v-else class="fas fa-paper-plane me-1"></i> Assigner la tâche
               </button>
               <router-link :to="{ name: 'taches.index' }" class="btn btn-outline-secondary ms-2">Annuler</router-link>
             </div>
@@ -183,7 +183,7 @@ async function loadAgents() {
     sourceEmetteurs.value = data.data.source_emetteurs || []
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Acces refuse. Seuls les directeurs peuvent creer des taches.', 'danger')
+      ui.addToast('Accès refusé. Seuls les directeurs peuvent créer des tâches.', 'danger')
       router.push({ name: 'taches.index' })
     } else {
       ui.addToast(err.response?.data?.message || 'Erreur lors du chargement.', 'danger')
@@ -213,7 +213,7 @@ async function handleSubmit() {
     })
 
     await create(payload)
-    ui.addToast('Tache creee avec succes.', 'success')
+    ui.addToast('Tâche créée avec succès.', 'success')
     router.push({ name: 'taches.index' })
   } catch (err) {
     if (err.response?.status === 422) {
