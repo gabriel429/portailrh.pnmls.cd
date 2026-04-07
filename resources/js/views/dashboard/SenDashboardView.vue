@@ -534,28 +534,28 @@
               </div>
             </div>
             <div class="sen-task-grid">
-              <div class="sen-task-card">
+              <div class="sen-task-card sen-clickable" @click="router.push('/taches?statut=nouvelle')">
                 <div class="sen-task-card-icon" style="background:#dbeafe;color:#3b82f6;">
                   <i class="fas fa-plus-circle"></i>
                 </div>
                 <div class="sen-task-card-val">{{ data.taches?.nouvelle ?? 0 }}</div>
                 <div class="sen-task-card-lbl">Nouvelles</div>
               </div>
-              <div class="sen-task-card">
+              <div class="sen-task-card sen-clickable" @click="router.push('/taches?statut=en_cours')">
                 <div class="sen-task-card-icon" style="background:#fef3c7;color:#d97706;">
                   <i class="fas fa-spinner"></i>
                 </div>
                 <div class="sen-task-card-val">{{ data.taches?.en_cours ?? 0 }}</div>
                 <div class="sen-task-card-lbl">En cours</div>
               </div>
-              <div class="sen-task-card">
+              <div class="sen-task-card sen-clickable" @click="router.push('/taches?statut=terminee')">
                 <div class="sen-task-card-icon" style="background:#dcfce7;color:#16a34a;">
                   <i class="fas fa-check-circle"></i>
                 </div>
                 <div class="sen-task-card-val">{{ data.taches?.terminee ?? 0 }}</div>
                 <div class="sen-task-card-lbl">Terminées</div>
               </div>
-              <div class="sen-task-card" :class="{ 'sen-task-card-alert': (data.taches?.overdue ?? 0) > 0 }">
+              <div class="sen-task-card sen-clickable" :class="{ 'sen-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push('/taches?statut=en_retard')">
                 <div class="sen-task-card-icon" style="background:#fee2e2;color:#dc2626;">
                   <i class="fas fa-exclamation-triangle"></i>
                 </div>
