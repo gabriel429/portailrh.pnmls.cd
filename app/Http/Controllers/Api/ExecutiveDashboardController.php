@@ -946,6 +946,30 @@ class ExecutiveDashboardController extends ApiController
                 'sexe' => $a->sexe,
             ]);
 
+        // PTA du département
+        $currentYear = $now->year;
+        $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('departement_id', $id);
+        $ptaTotal = (clone $ptaQuery)->count();
+        $ptaTerminee = (clone $ptaQuery)->terminee()->count();
+        $ptaEnCours = (clone $ptaQuery)->enCours()->count();
+        $ptaAvg = $ptaTotal > 0 ? round((clone $ptaQuery)->avg('pourcentage'), 1) : 0;
+
+        $activites = ActivitePlan::parAnnee($currentYear)
+            ->where('departement_id', $id)
+            ->orderByDesc('pourcentage')
+            ->limit(50)
+            ->get()
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'titre' => $a->titre ?? $a->activite ?? '-',
+                'pourcentage' => $a->pourcentage ?? 0,
+                'statut' => $a->statut ?? '-',
+                'categorie' => $a->categorie ?? '-',
+                'trimestre' => $a->trimestre ?? '-',
+                'date_debut' => $a->date_debut?->format('d/m/Y') ?? '-',
+                'date_fin' => $a->date_fin?->format('d/m/Y') ?? '-',
+            ]);
+
         return $this->success([
             'department' => [
                 'id' => $department->id,
@@ -959,6 +983,13 @@ class ExecutiveDashboardController extends ApiController
                 'monthly_rate' => $monthlyRate,
                 'total_active' => $actifs,
             ],
+            'pta' => [
+                'total' => $ptaTotal,
+                'terminee' => $ptaTerminee,
+                'en_cours' => $ptaEnCours,
+                'avg' => $ptaAvg,
+            ],
+            'activites' => $activites,
             'agents' => $topAgents,
         ]);
     }
