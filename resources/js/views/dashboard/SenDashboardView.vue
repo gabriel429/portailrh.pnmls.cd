@@ -584,14 +584,14 @@
             </div>
             <div class="sen-audit-compact">
               <div class="sen-audit-compact-stats">
-                <div class="sen-audit-compact-stat">
+                <div class="sen-audit-compact-stat sen-clickable" @click="router.push('/admin/audit-logs')">
                   <div class="sen-audit-compact-icon" style="background:#fee2e2;color:#dc2626;">
                     <i class="fas fa-lock"></i>
                   </div>
                   <div class="sen-audit-compact-val">{{ data.audit?.comptes_geles ?? 0 }}</div>
                   <div class="sen-audit-compact-lbl">Comptes gelés</div>
                 </div>
-                <div class="sen-audit-compact-stat">
+                <div class="sen-audit-compact-stat sen-clickable" @click="router.push('/admin/audit-logs')">
                   <div class="sen-audit-compact-icon" style="background:#fef3c7;color:#d97706;">
                     <i class="fas fa-user-times"></i>
                   </div>
@@ -599,7 +599,7 @@
                   <div class="sen-audit-compact-lbl">Échecs login 24h</div>
                 </div>
               </div>
-              <div class="sen-audit-compact-list">
+              <div class="sen-audit-compact-list sen-clickable" @click="router.push('/admin/audit-logs')">
                 <div class="sen-audit-compact-list-head">
                   <i class="fas fa-history"></i> Actions sensibles récentes
                 </div>
