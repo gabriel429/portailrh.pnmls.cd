@@ -12,18 +12,18 @@
     <div class="card mb-3">
       <div class="card-body">
         <div class="row g-2 align-items-end">
-          <div class="col-md-3">
+          <div class="col-md-3 col-6">
             <label class="form-label small">Recherche</label>
             <input v-model="filters.search" type="text" class="form-control form-control-sm" placeholder="Nom, table, IP..." @input="debouncedFetch">
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2 col-6">
             <label class="form-label small">Table</label>
             <select v-model="filters.table_name" class="form-select form-select-sm" @change="fetchLogs">
               <option value="">Toutes</option>
               <option v-for="t in tables" :key="t" :value="t">{{ t }}</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2 col-6">
             <label class="form-label small">Action</label>
             <select v-model="filters.action" class="form-select form-select-sm" @change="fetchLogs">
               <option value="">Toutes</option>
@@ -33,18 +33,18 @@
               <option value="REVERT">Restauration</option>
             </select>
           </div>
-          <div class="col-md-2">
+          <div class="col-md-2 col-6">
             <label class="form-label small">Utilisateur</label>
             <select v-model="filters.user_id" class="form-select form-select-sm" @change="fetchLogs">
               <option value="">Tous</option>
               <option v-for="u in users" :key="u.user_id" :value="u.user_id">{{ u.user_name }}</option>
             </select>
           </div>
-          <div class="col-md-1">
+          <div class="col-md-1 col-6">
             <label class="form-label small">De</label>
             <input v-model="filters.date_from" type="date" class="form-control form-control-sm" @change="fetchLogs">
           </div>
-          <div class="col-md-1">
+          <div class="col-md-1 col-6">
             <label class="form-label small">A</label>
             <input v-model="filters.date_to" type="date" class="form-control form-control-sm" @change="fetchLogs">
           </div>
@@ -314,5 +314,23 @@ onMounted(() => {
 .modal-box {
     background: #fff; border-radius: 12px; padding: 1.5rem; max-width: 480px; width: 90%;
     box-shadow: 0 10px 40px rgba(0,0,0,.2);
+}
+
+/* ── Mobile responsive ── */
+@media (max-width: 767.98px) {
+    .audit-header { padding: 1rem 1.2rem; border-radius: 10px; }
+    .audit-header h4 { font-size: 1.05rem; }
+    .audit-header p { font-size: .78rem; }
+    .table th, .table td { padding: .4rem .35rem; font-size: .78rem; }
+    /* Hide IP and ID columns on mobile */
+    .table th:nth-child(5), .table td:nth-child(5),
+    .table th:nth-child(6), .table td:nth-child(6) { display: none; }
+}
+@media (max-width: 575.98px) {
+    .table th, .table td { font-size: .74rem; padding: .35rem .3rem; }
+    /* Also hide Table column */
+    .table th:nth-child(4), .table td:nth-child(4) { display: none; }
+    .audit-header { padding: .85rem 1rem; }
+    .audit-header h4 { font-size: .95rem; }
 }
 </style>

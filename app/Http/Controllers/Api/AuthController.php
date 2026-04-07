@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -210,5 +212,89 @@ class AuthController extends Controller
         $data['permissions'] = $permissions->values()->toArray();
 
         return response()->json($data);
+    }
+
+    // =========================================================================
+    // Mobile Token-based Authentication (Sanctum Personal Access Tokens)
+    // =========================================================================
+
+    /**
+     * Mobile login — returns a Bearer token instead of a session cookie.
+     */
+    public function mobileLogin(Request $request)
+    {
+        $request->validate([
+            'email'       => 'required|email',
+            'password'    => 'required|string',
+            'device_name' => 'required|string|max:255',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json(['message' => 'Identifiants incorrects.'], 401);
+        }
+
+        if ($user->is_frozen) {
+            return response()->json([
+                'message' => 'Votre compte a été gelé. Veuillez contacter la Section Nouvelle Technologie.',
+            ], 403);
+        }
+
+        // Record login
+        $user->update([
+            'last_login_ip' => $request->ip(),
+            'last_login_at' => now(),
+        ]);
+
+        // Revoke previous tokens for the same device (one token per device)
+        $user->tokens()->where('name', $request->device_name)->delete();
+
+        $token = $user->createToken($request->device_name)->plainTextToken;
+
+        $user->load(['agent.departement', 'agent.province', 'role']);
+
+        return response()->json([
+            'message' => 'Connexion réussie.',
+            'token'   => $token,
+            'user'    => $user,
+        ]);
+    }
+
+    /**
+     * Mobile register — creates user + returns a Bearer token.
+     */
+    public function mobileRegister(Request $request)
+    {
+        $request->validate([
+            'name'        => 'required|string|max:255',
+            'email'       => 'required|email|unique:users,email',
+            'password'    => 'required|string|min:8|confirmed',
+            'device_name' => 'required|string|max:255',
+        ]);
+
+        $user = User::create([
+            'name'     => $request->name,
+            'email'    => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        $token = $user->createToken($request->device_name)->plainTextToken;
+
+        return response()->json([
+            'message' => 'Inscription réussie.',
+            'token'   => $token,
+            'user'    => $user,
+        ], 201);
+    }
+
+    /**
+     * Mobile logout — revokes the current token.
+     */
+    public function mobileLogout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Déconnexion réussie.']);
     }
 }

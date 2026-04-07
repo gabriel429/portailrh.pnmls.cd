@@ -473,7 +473,7 @@ watch(profilePhotoCandidates, () => {
 }
 .dash-hero::before {
   content: ''; position: absolute; top: -40%; right: -8%;
-  width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,.07);
+  width: min(240px, 50vw); height: min(240px, 50vw); border-radius: 50%; background: rgba(255,255,255,.07);
 }
 .dash-hero-avatar {
   width: 52px; height: 52px; border-radius: 14px;
@@ -608,6 +608,20 @@ watch(profilePhotoCandidates, () => {
 .dash-info-link:hover { color: #005a87; }
 
 /* Responsive */
+@media (max-width: 768px) {
+  .dash-hero { padding: 1.5rem 1.2rem; }
+  .dash-hero-text h2 { font-size: 1.1rem; }
+  .dash-hero-stats { gap: .8rem 1rem; }
+  .dash-hero-stat-val { font-size: 1.2rem; }
+  .dash-action-grid { grid-template-columns: repeat(2, 1fr); gap: .6rem; }
+  .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+  .dash-activity-grid { grid-template-columns: 1fr; }
+  .dash-info-grid { grid-template-columns: 1fr; }
+  .dum-cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .dum-body { padding: 1rem; }
+  .dum-header { padding: .9rem 1rem; }
+}
+
 @media (max-width: 576px) {
   .dash-hero { flex-direction: column; align-items: flex-start; padding: 1.5rem 1.2rem; }
   .dash-hero-stats { margin-left: 0; margin-top: .5rem; gap: .8rem 1.2rem; flex-wrap: wrap; }

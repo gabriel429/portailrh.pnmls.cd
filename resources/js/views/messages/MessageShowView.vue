@@ -1,5 +1,5 @@
 <template>
-  <div class="container py-4" style="max-width: 800px;">
+  <div class="container py-4" style="max-width: min(800px, 100%);">
     <!-- Bouton retour -->
     <router-link :to="{ name: 'dashboard' }" class="btn btn-outline-secondary btn-sm mb-3">
       <i class="fas fa-arrow-left me-1"></i> Retour au tableau de bord
@@ -22,7 +22,7 @@
           pointer-events: none;
           z-index: 0;
         ">
-          <img src="/images/logo-pnmls.png" alt="" class="watermark-logo" style="width: 350px; height: auto;">
+          <img src="/images/logo-pnmls.png" alt="" class="watermark-logo" style="width: min(350px, 80vw); height: auto;">
         </div>
 
         <!-- En-tete du message -->

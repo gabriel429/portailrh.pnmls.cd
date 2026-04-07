@@ -35,6 +35,31 @@ Route::get('/openapi.json', [ApiMetaController::class, 'openapi']);
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])
     ->middleware('throttle:5,1'); // Max 5 tentatives par minute
 
+// --- Mobile API (token-based auth) ---
+Route::prefix('mobile')->group(function () {
+    Route::post('/login', [AuthController::class, 'mobileLogin'])
+        ->middleware('throttle:5,1');
+    Route::post('/register', [AuthController::class, 'mobileRegister'])
+        ->middleware('throttle:3,1');
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/user', [AuthController::class, 'user']);
+        Route::post('/logout', [AuthController::class, 'mobileLogout']);
+        Route::get('/dashboard', [DashboardController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::get('/profile', [ApiProfileController::class, 'show']);
+        Route::put('/profile', [ApiProfileController::class, 'update']);
+        Route::put('/profile/password', [ApiProfileController::class, 'updatePassword']);
+        Route::get('/notifications', [ApiNotificationController::class, 'index']);
+        Route::post('/notifications/{notification}/read', [ApiNotificationController::class, 'markRead']);
+        Route::get('/taches', [TacheController::class, 'index']);
+        Route::put('/taches/{tache}/statut', [TacheController::class, 'updateStatut']);
+        Route::get('/communiques', [CommuniqueController::class, 'index']);
+        Route::get('/documents-travail', [DocumentTravailController::class, 'index']);
+        Route::get('/mon-planning-conges', [MyHolidayPlanningController::class, 'index']);
+    });
+});
+
 // Sync status (public, for online detection)
 Route::get('/sync/status', [SyncController::class, 'status']);
 

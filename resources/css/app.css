@@ -85,6 +85,17 @@
     box-sizing: border-box;
 }
 
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Scrollable table containers */
+.table-responsive,
+.rh-table-wrap {
+    -webkit-overflow-scrolling: touch;
+}
+
 body {
     font-family: var(--font-family);
     background: linear-gradient(180deg, var(--grey-50) 0%, #ffffff 100%);
@@ -986,7 +997,7 @@ body {
 
 /* Notification Dropout */
 .notif-dropdown {
-    width: 360px;
+    width: clamp(280px, 90vw, 360px);
     padding: 0;
     border: 1px solid var(--grey-200);
     border-radius: var(--radius-lg);
@@ -1872,6 +1883,36 @@ body {
     opacity: 0.8;
 }
 
+/* ── Modal Responsive for Small Screens ── */
+@media (max-width: 575.98px) {
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100vw - 1rem);
+    }
+    .modal-dialog.modal-lg,
+    .modal-dialog.modal-xl {
+        max-width: calc(100vw - 1rem);
+    }
+    .modal-body {
+        padding: 1rem;
+    }
+    .modal-footer {
+        padding: 0.75rem 1rem;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+    .modal-footer .btn {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+    .modal-header {
+        padding: 0.75rem 1rem;
+    }
+    .modal-title {
+        font-size: 1rem;
+    }
+}
+
 /* ── Global Mobile Responsive ── */
 @media (max-width: 767.98px) {
     /* Hero sections */
@@ -1915,6 +1956,18 @@ body {
     .search-box .form-control,
     .search-box .form-select {
         width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    /* Reset fixed th widths on mobile */
+    .table th[style*="width"],
+    .data-table th[style*="width"],
+    .rh-table th[style*="width"] {
+        width: auto !important;
+    }
+
+    /* Search wrappers */
+    .search-wrapper {
         max-width: 100% !important;
     }
 
@@ -1974,7 +2027,7 @@ body {
     .toast-item { font-size: .8rem; padding: 10px 14px; }
 
     /* Notification dropdown */
-    .notif-dropdown { width: 290px; }
+    .notif-dropdown { width: clamp(250px, 88vw, 290px); }
 
     /* Empty states */
     .empty-state { padding: 2rem 1rem !important; }
@@ -2053,6 +2106,8 @@ body {
 
     .notif-dropdown {
         width: min(100vw - 1.4rem, 280px);
+        right: 0;
+        left: auto;
     }
 
     /* Extra compact for very small screens */

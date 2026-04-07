@@ -216,7 +216,7 @@ function handleProfilePhotoError() {
   }))
 
   function syncViewportState() {
-    isMobile.value = window.innerWidth <= 768
+    isMobile.value = window.innerWidth <= 991
     if (isMobile.value) {
       mobileSidebarOpen.value = false
     }
@@ -400,7 +400,7 @@ async function handleLogout() {
   -webkit-backdrop-filter: blur(8px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 991.98px) {
   .admin-sidebar {
     width: min(82vw, 320px);
     max-width: 320px;
