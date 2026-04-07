@@ -1025,43 +1025,35 @@
 
                   <!-- ── LEVEL 3 : DÉPARTEMENT DETAIL ── -->
                   <template v-else-if="drilldownLevel === 'department' && drilldownDepartment">
-                    <!-- PTA Summary -->
-                    <div class="drill-prov-stats">
-                      <div class="drill-prov-stat-grid">
-                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.total ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Activités PTA</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#059669;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.terminee ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Terminées</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.en_cours ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">En cours</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.avg ?? 0 }}%</div>
-                          <div class="drill-prov-stat-lbl">Progression moy.</div>
-                        </div>
+                    <!-- Stats résumé en grille -->
+                    <div class="drill-dept-grid">
+                      <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.total ?? 0 }}</div>
+                        <div class="drill-prov-stat-lbl">Activités PTA</div>
                       </div>
-                    </div>
-
-                    <!-- Effectifs résumé -->
-                    <div class="drill-prov-stats" style="margin-top:10px;">
-                      <div class="drill-prov-stat-grid">
-                        <div class="drill-prov-stat-card">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Agents</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#059669;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Actifs</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
-                          <div class="drill-prov-stat-lbl">Présence auj.</div>
-                        </div>
+                      <div class="drill-prov-stat-card" style="border-color:#059669;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.terminee ?? 0 }}</div>
+                        <div class="drill-prov-stat-lbl">Terminées</div>
+                      </div>
+                      <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.en_cours ?? 0 }}</div>
+                        <div class="drill-prov-stat-lbl">En cours</div>
+                      </div>
+                      <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.avg ?? 0 }}%</div>
+                        <div class="drill-prov-stat-lbl">Progression moy.</div>
+                      </div>
+                      <div class="drill-prov-stat-card" style="border-color:#6366f1;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
+                        <div class="drill-prov-stat-lbl">Agents</div>
+                      </div>
+                      <div class="drill-prov-stat-card" style="border-color:#059669;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
+                        <div class="drill-prov-stat-lbl">Actifs</div>
+                      </div>
+                      <div class="drill-prov-stat-card" style="border-color:#f59e0b;">
+                        <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
+                        <div class="drill-prov-stat-lbl">Présence auj.</div>
                       </div>
                     </div>
 
@@ -1910,6 +1902,9 @@ onMounted(async () => {
 }
 .drill-prov-stat-val { font-size: 1.4rem; font-weight: 800; line-height: 1; color: #1e293b; }
 .drill-prov-stat-lbl { font-size: .6rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: .15rem; }
+.drill-dept-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1rem;
+}
 
 .drill-prov-section-title {
   font-size: .82rem; font-weight: 700; color: #334155;
@@ -1984,6 +1979,7 @@ onMounted(async () => {
   .drill-panel { width: 100vw; }
   .drill-summary { grid-template-columns: repeat(2, 1fr); }
   .drill-prov-stats { grid-template-columns: repeat(2, 1fr); }
+  .drill-dept-grid { grid-template-columns: repeat(2, 1fr); }
   .drill-prov-dept-grid { grid-template-columns: 1fr; }
   .drill-item-stats { grid-template-columns: repeat(2, 1fr); }
 }
