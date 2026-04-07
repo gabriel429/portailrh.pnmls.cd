@@ -330,8 +330,11 @@
               </router-link>
             </div>
             <div v-else class="sen-recent-empty">
-              <i class="fas fa-inbox"></i>
-              <span>Aucun communiqué</span>
+              <div class="sen-empty-icon-wrap" style="background:#ecfeff;">
+                <i class="fas fa-inbox" style="color:#0891b2;"></i>
+              </div>
+              <span>Aucun communiqué récent</span>
+              <span class="sen-empty-hint">Les communiqués publiés apparaîtront ici</span>
             </div>
           </div>
 
@@ -356,8 +359,11 @@
               </div>
             </div>
             <div v-else class="sen-recent-empty">
-              <i class="fas fa-check-circle"></i>
-              <span>Aucune demande</span>
+              <div class="sen-empty-icon-wrap" style="background:#fef9ee;">
+                <i class="fas fa-check-circle" style="color:#16a34a;"></i>
+              </div>
+              <span>Aucune demande en attente</span>
+              <span class="sen-empty-hint">Toutes les demandes sont traitées</span>
             </div>
           </div>
 
@@ -385,8 +391,11 @@
               </router-link>
             </div>
             <div v-else class="sen-recent-empty">
-              <i class="fas fa-shield-alt"></i>
-              <span>Aucun signalement</span>
+              <div class="sen-empty-icon-wrap" style="background:#fef2f2;">
+                <i class="fas fa-shield-alt" style="color:#dc2626;"></i>
+              </div>
+              <span>Aucun signalement ouvert</span>
+              <span class="sen-empty-hint">Aucune alerte à traiter</span>
             </div>
           </div>
         </div>
@@ -508,90 +517,121 @@
         </div>
       </div>
 
-      <!-- ═══ AUDIT & SÉCURITÉ ═══ [NOUVEAU] -->
+      <!-- ═══ TÂCHES & AUDIT ═══ -->
       <div class="sen-section">
-        <div class="sen-section-head">
-          <div class="sen-section-icon" style="background:#fee2e2;color:#7f1d1d;">
-            <i class="fas fa-shield-alt"></i>
-          </div>
-          <div>
-            <h3 class="sen-section-title">Audit & Sécurité</h3>
-            <p class="sen-section-sub">{{ data.audit?.last_24h ?? 0 }} actions dernières 24h — {{ data.audit?.comptes_geles ?? 0 }} comptes gelés</p>
-          </div>
-        </div>
-        <div class="sen-audit-row">
-          <div class="sen-audit-card">
-            <div class="sen-audit-stat">
-              <div class="sen-audit-stat-icon" style="background:#fee2e2;color:#dc2626;">
-                <i class="fas fa-lock"></i>
+        <div class="sen-duo-grid">
+          <!-- Tâches -->
+          <div class="sen-duo-block">
+            <div class="sen-section-head">
+              <div class="sen-section-icon" style="background:#ede9fe;color:#7c3aed;">
+                <i class="fas fa-clipboard-list"></i>
               </div>
               <div>
-                <div class="sen-audit-stat-val">{{ data.audit?.comptes_geles ?? 0 }}</div>
-                <div class="sen-audit-stat-lbl">Comptes gelés</div>
+                <h3 class="sen-section-title">Gestion des tâches</h3>
+                <p class="sen-section-sub">{{ data.taches?.total ?? 0 }} tâches au total</p>
               </div>
             </div>
-            <div class="sen-audit-stat">
-              <div class="sen-audit-stat-icon" style="background:#fef3c7;color:#d97706;">
-                <i class="fas fa-user-times"></i>
+            <div class="sen-task-grid">
+              <div class="sen-task-card">
+                <div class="sen-task-card-icon" style="background:#dbeafe;color:#3b82f6;">
+                  <i class="fas fa-plus-circle"></i>
+                </div>
+                <div class="sen-task-card-val">{{ data.taches?.nouvelle ?? 0 }}</div>
+                <div class="sen-task-card-lbl">Nouvelles</div>
               </div>
-              <div>
-                <div class="sen-audit-stat-val">{{ data.audit?.connexions_echouees_24h ?? 0 }}</div>
-                <div class="sen-audit-stat-lbl">Échecs login 24h</div>
+              <div class="sen-task-card">
+                <div class="sen-task-card-icon" style="background:#fef3c7;color:#d97706;">
+                  <i class="fas fa-spinner"></i>
+                </div>
+                <div class="sen-task-card-val">{{ data.taches?.en_cours ?? 0 }}</div>
+                <div class="sen-task-card-lbl">En cours</div>
               </div>
+              <div class="sen-task-card">
+                <div class="sen-task-card-icon" style="background:#dcfce7;color:#16a34a;">
+                  <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="sen-task-card-val">{{ data.taches?.terminee ?? 0 }}</div>
+                <div class="sen-task-card-lbl">Terminées</div>
+              </div>
+              <div class="sen-task-card" :class="{ 'sen-task-card-alert': (data.taches?.overdue ?? 0) > 0 }">
+                <div class="sen-task-card-icon" style="background:#fee2e2;color:#dc2626;">
+                  <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="sen-task-card-val">{{ data.taches?.overdue ?? 0 }}</div>
+                <div class="sen-task-card-lbl">En retard</div>
+              </div>
+            </div>
+            <div v-if="(data.taches?.total ?? 0) > 0" class="sen-task-progress">
+              <div class="sen-task-progress-bar">
+                <div class="sen-task-progress-fill" :style="{ width: taskCompletionPct + '%' }"></div>
+              </div>
+              <div class="sen-task-progress-lbl">{{ taskCompletionPct }}% terminées</div>
             </div>
           </div>
-          <div class="sen-audit-recent">
-            <div class="sen-audit-recent-head">Actions sensibles récentes</div>
-            <div v-if="(data.audit?.actions_sensibles ?? []).length" class="sen-audit-list">
-              <div v-for="a in (data.audit.actions_sensibles ?? []).slice(0, 5)" :key="a.id" class="sen-audit-list-item">
-                <div class="sen-audit-dot"></div>
-                <div class="sen-audit-list-info">
-                  <div class="sen-audit-list-action">{{ a.action }}</div>
-                  <div class="sen-audit-list-time">{{ formatTime(a.created_at) }}</div>
+
+          <!-- Audit (résumé compact) -->
+          <div class="sen-duo-block">
+            <div class="sen-section-head">
+              <div class="sen-section-icon" style="background:#fee2e2;color:#7f1d1d;">
+                <i class="fas fa-shield-alt"></i>
+              </div>
+              <div>
+                <h3 class="sen-section-title">Audit & Sécurité</h3>
+                <p class="sen-section-sub">{{ data.audit?.last_24h ?? 0 }} actions dernières 24h</p>
+              </div>
+            </div>
+            <div class="sen-audit-compact">
+              <div class="sen-audit-compact-stats">
+                <div class="sen-audit-compact-stat">
+                  <div class="sen-audit-compact-icon" style="background:#fee2e2;color:#dc2626;">
+                    <i class="fas fa-lock"></i>
+                  </div>
+                  <div class="sen-audit-compact-val">{{ data.audit?.comptes_geles ?? 0 }}</div>
+                  <div class="sen-audit-compact-lbl">Comptes gelés</div>
+                </div>
+                <div class="sen-audit-compact-stat">
+                  <div class="sen-audit-compact-icon" style="background:#fef3c7;color:#d97706;">
+                    <i class="fas fa-user-times"></i>
+                  </div>
+                  <div class="sen-audit-compact-val">{{ data.audit?.connexions_echouees_24h ?? 0 }}</div>
+                  <div class="sen-audit-compact-lbl">Échecs login 24h</div>
                 </div>
               </div>
-            </div>
-            <div v-else class="sen-recent-empty" style="padding:1rem;">
-              <i class="fas fa-check-circle"></i>
-              <span>Aucune action</span>
+              <div class="sen-audit-compact-list">
+                <div class="sen-audit-compact-list-head">
+                  <i class="fas fa-history"></i> Actions sensibles récentes
+                </div>
+                <template v-if="(data.audit?.actions_sensibles ?? []).length">
+                  <div v-for="a in (data.audit.actions_sensibles ?? []).slice(0, 4)" :key="a.id" class="sen-audit-compact-item">
+                    <div class="sen-audit-dot"></div>
+                    <div class="sen-audit-compact-item-info">
+                      <div class="sen-audit-compact-item-action">{{ a.action }}</div>
+                      <div class="sen-audit-compact-item-meta">
+                        <span v-if="a.user">{{ a.user }}</span>
+                        <span v-if="a.description"> · {{ a.description }}</span>
+                        <span class="sen-audit-compact-item-time">{{ formatTime(a.created_at) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </template>
+                <div v-else class="sen-audit-compact-empty">
+                  <i class="fas fa-check-circle"></i> Aucune action sensible
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ═══ TACHES ═══ -->
-      <div class="sen-section">
-        <div class="sen-section-head">
-          <div class="sen-section-icon" style="background:#ede9fe;color:#7c3aed;">
-            <i class="fas fa-clipboard-list"></i>
+      <!-- ═══ FOOTER ═══ -->
+      <div class="sen-footer">
+        <div class="sen-footer-inner">
+          <div class="sen-footer-left">
+            <i class="fas fa-sync-alt"></i>
+            <span>Tableau de bord mis à jour le {{ today }} à {{ currentTime }}</span>
           </div>
-          <div>
-            <h3 class="sen-section-title">Gestion des tâches</h3>
-            <p class="sen-section-sub">{{ data.taches?.total ?? 0 }} tâches au total</p>
-          </div>
-        </div>
-        <div class="sen-taches-card">
-          <div class="sen-task-items">
-            <div class="sen-task-row">
-              <div class="sen-task-dot" style="background:#3b82f6;"></div>
-              <span>Nouvelles</span>
-              <span class="sen-task-count">{{ data.taches?.nouvelle ?? 0 }}</span>
-            </div>
-            <div class="sen-task-row">
-              <div class="sen-task-dot" style="background:#f59e0b;"></div>
-              <span>En cours</span>
-              <span class="sen-task-count">{{ data.taches?.en_cours ?? 0 }}</span>
-            </div>
-            <div class="sen-task-row">
-              <div class="sen-task-dot" style="background:#22c55e;"></div>
-              <span>Terminées</span>
-              <span class="sen-task-count">{{ data.taches?.terminee ?? 0 }}</span>
-            </div>
-            <div v-if="data.taches?.overdue" class="sen-task-row sen-task-overdue">
-              <div class="sen-task-dot" style="background:#ef4444;"></div>
-              <span><i class="fas fa-exclamation-triangle me-1"></i>En retard</span>
-              <span class="sen-task-count">{{ data.taches.overdue }}</span>
-            </div>
+          <div class="sen-footer-right">
+            <span class="sen-footer-badge">E-PNMLS v2.0</span>
           </div>
         </div>
       </div>
@@ -613,6 +653,26 @@ const currentYear = new Date().getFullYear()
 const today = computed(() => new Date().toLocaleDateString('fr-FR', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
 }))
+
+const currentTime = computed(() => new Date().toLocaleTimeString('fr-FR', {
+  hour: '2-digit', minute: '2-digit',
+}))
+
+const taskCompletionPct = computed(() => {
+  const total = data.value.taches?.total ?? 0
+  const done = data.value.taches?.terminee ?? 0
+  return total > 0 ? Math.round((done / total) * 100) : 0
+})
+
+const currentTime = computed(() => new Date().toLocaleTimeString('fr-FR', {
+  hour: '2-digit', minute: '2-digit',
+}))
+
+const taskCompletionPct = computed(() => {
+  const total = data.value.taches?.total ?? 0
+  const done = data.value.taches?.terminee ?? 0
+  return total > 0 ? Math.round((done / total) * 100) : 0
+})
 
 const quickActions = [
   { to: '/rh/communiques/create', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
@@ -955,20 +1015,88 @@ onMounted(async () => {
 .sev-moyenne { background: #fef3c7; color: #d97706; }
 .sev-haute { background: #fee2e2; color: #dc2626; }
 
-/* ═══════════ TACHES ═══════════ */
-.sen-taches-card {
+/* ═══════════ TACHES (redesign card grid) ═══════════ */
+.sen-duo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.sen-duo-block {}
+
+.sen-task-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; margin-top: .25rem; }
+.sen-task-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  padding: 1.3rem; max-width: 500px;
+  padding: 1rem; text-align: center; transition: all .25s;
 }
-.sen-task-items { display: flex; flex-direction: column; gap: .5rem; }
-.sen-task-row {
-  display: flex; align-items: center; gap: .6rem; padding: .55rem .8rem;
-  background: #f8fafc; border-radius: 10px; font-size: .82rem; color: #475569;
+.sen-task-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.06); }
+.sen-task-card-alert { border-color: #fca5a5; background: #fef2f2; }
+.sen-task-card-icon {
+  width: 40px; height: 40px; border-radius: 12px; display: inline-flex;
+  align-items: center; justify-content: center; font-size: .9rem; margin-bottom: .5rem;
 }
-.sen-task-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.sen-task-count { margin-left: auto; font-weight: 800; color: #1e293b; font-size: .9rem; }
-.sen-task-overdue { background: #fef2f2; color: #dc2626; }
-.sen-task-overdue .sen-task-count { color: #dc2626; }
+.sen-task-card-val { font-size: 1.6rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.sen-task-card-lbl { font-size: .68rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .2rem; }
+
+.sen-task-progress { margin-top: .75rem; }
+.sen-task-progress-bar { height: 6px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
+.sen-task-progress-fill {
+  height: 100%; border-radius: 6px; min-width: 2px;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa); transition: width .8s ease;
+}
+.sen-task-progress-lbl { font-size: .65rem; color: #94a3b8; margin-top: .25rem; text-align: right; }
+
+/* ═══════════ AUDIT COMPACT (in duo) ═══════════ */
+.sen-audit-compact {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  overflow: hidden; margin-top: .25rem;
+}
+.sen-audit-compact-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.sen-audit-compact-stat {
+  text-align: center; padding: 1rem .5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+.sen-audit-compact-stat:first-child { border-right: 1px solid #f1f5f9; }
+.sen-audit-compact-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: inline-flex;
+  align-items: center; justify-content: center; font-size: .85rem; margin-bottom: .35rem;
+}
+.sen-audit-compact-val { font-size: 1.4rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.sen-audit-compact-lbl { font-size: .62rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .15rem; }
+
+.sen-audit-compact-list { padding: 0; }
+.sen-audit-compact-list-head {
+  padding: .7rem 1rem; font-size: .78rem; font-weight: 700; color: #475569;
+  background: #f8fafc; border-bottom: 1px solid #f1f5f9;
+}
+.sen-audit-compact-item {
+  display: flex; align-items: flex-start; gap: .5rem; padding: .55rem 1rem;
+  border-bottom: 1px solid #f8fafc; transition: background .15s;
+}
+.sen-audit-compact-item:hover { background: #fef2f2; }
+.sen-audit-compact-item-action { font-size: .74rem; font-weight: 600; color: #1e293b; }
+.sen-audit-compact-item-meta { font-size: .62rem; color: #94a3b8; margin-top: .1rem; display: flex; gap: .2rem; flex-wrap: wrap; }
+.sen-audit-compact-item-time { margin-left: auto; white-space: nowrap; }
+.sen-audit-compact-empty {
+  padding: 1.2rem 1rem; color: #94a3b8; font-size: .78rem; text-align: center;
+}
+
+/* ═══════════ EMPTY STATES (enhanced) ═══════════ */
+.sen-empty-icon-wrap {
+  width: 48px; height: 48px; border-radius: 50%; display: flex;
+  align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: .2rem;
+}
+.sen-empty-hint { font-size: .68rem; color: #cbd5e1; margin-top: .1rem; }
+
+/* ═══════════ FOOTER ═══════════ */
+.sen-footer {
+  margin-top: .5rem; padding: 1rem 0; border-top: 1px solid #e5e7eb;
+}
+.sen-footer-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .72rem; color: #94a3b8;
+}
+.sen-footer-left { display: flex; align-items: center; gap: .4rem; }
+.sen-footer-left i { font-size: .65rem; }
+.sen-footer-badge {
+  background: #f1f5f9; padding: .2rem .6rem; border-radius: 6px;
+  font-weight: 600; font-size: .65rem; color: #64748b;
+}
 
 /* ═══════════ CONGÉS & DISPONIBILITÉS ═══════════ */
 .sen-holidays-grid { display: grid; grid-template-columns: 300px 1fr; gap: .75rem; }
@@ -1075,6 +1203,7 @@ onMounted(async () => {
   .sen-holidays-grid { grid-template-columns: 1fr; }
   .sen-affectations-row { grid-template-columns: repeat(2, 1fr); }
   .sen-audit-row { grid-template-columns: 1fr; }
+  .sen-duo-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 767.98px) {
   .sen-dashboard { padding: 0 .5rem 1.5rem; }
@@ -1106,5 +1235,6 @@ onMounted(async () => {
   .sen-organe-stats { grid-template-columns: repeat(2, 1fr); }
   .sen-affectations-row { grid-template-columns: 1fr; }
   .sen-audit-row { grid-template-columns: 1fr; }
+  .sen-task-grid { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
