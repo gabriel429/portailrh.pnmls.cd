@@ -684,8 +684,8 @@ class ExecutiveDashboardController extends ApiController
                 ];
             }
 
-            // Trier par effectif total desc
-            usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total']);
+            // Trier par ordre alphabétique
+            usort($items, fn($a, $b) => strcasecmp($a['nom'], $b['nom']));
         } else {
             // SEN / SEL : breakdown par département
             $departments = Department::withCount([
