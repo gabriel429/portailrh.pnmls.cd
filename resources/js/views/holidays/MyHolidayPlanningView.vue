@@ -3,15 +3,21 @@
     <div class="rh-shell">
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
-          <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-calendar-alt me-2"></i>Planning Conges</h1>
+          <div class="col-lg-7 col-md-6">
+            <h1 class="rh-title"><i class="fas fa-calendar-alt me-2"></i>Planning Congés</h1>
             <p class="rh-sub">
               <template v-if="structure">{{ structure.nom }}</template>
-              <template v-else>Conges de votre structure</template>
+              <template v-else>Congés de votre structure</template>
             </p>
           </div>
-          <div class="col-lg-4">
+          <div class="col-lg-5 col-md-6">
             <div class="hero-tools">
+              <div class="year-filter">
+                <label class="year-label">Année</label>
+                <select v-model="selectedYear" class="year-select" @change="loadPlanning">
+                  <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+                </select>
+              </div>
               <router-link :to="{ name: 'dashboard' }" class="btn-rh alt">
                 <i class="fas fa-arrow-left me-1"></i> Retour
               </router-link>
@@ -20,32 +26,18 @@
         </div>
       </section>
 
-      <!-- Filtre annee -->
-      <div class="dash-panel mt-3">
-        <div class="p-3">
-          <div class="row g-2 align-items-end">
-            <div class="col-auto">
-              <label class="form-label mb-1 small fw-bold">Annee</label>
-              <select v-model="selectedYear" class="form-select form-select-sm" @change="loadPlanning">
-                <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div v-if="loading" class="text-center py-5">
         <div class="spinner-border text-primary" role="status"></div>
         <p class="mt-2 text-muted">Chargement du planning...</p>
       </div>
 
       <template v-else>
-        <!-- Structure non identifiee -->
+        <!-- Structure non identifiée -->
         <div v-if="!structure" class="dash-panel mt-3">
           <div class="text-center py-5 text-muted">
             <i class="fas fa-building fa-3x mb-3 d-block text-warning"></i>
-            <h5>Structure non identifiee</h5>
-            <p class="mb-0">Votre departement ou organe n'a pas pu etre determine.<br>Veuillez contacter la Section RH.</p>
+            <h5>Structure non identifiée</h5>
+            <p class="mb-0">Votre département ou organe n'a pas pu être déterminé.<br>Veuillez contacter la Section RH.</p>
           </div>
         </div>
 
@@ -54,37 +46,35 @@
           <div class="text-center py-5 text-muted">
             <i class="fas fa-calendar-times fa-3x mb-3 d-block"></i>
             <h5>Aucun planning pour {{ selectedYear }}</h5>
-            <p class="mb-0">Le planning de conges de <strong>{{ structure.nom }}</strong> n'a pas encore ete cree pour cette annee.</p>
+            <p class="mb-0">Le planning de congés de <strong>{{ structure.nom }}</strong> n'a pas encore été créé pour cette année.</p>
           </div>
         </div>
 
-        <!-- Planning trouve -->
+        <!-- Planning trouvé -->
         <template v-else>
           <!-- Statistiques -->
           <div class="row g-3 mt-2">
             <div class="col-6 col-md-3">
-              <div class="stat-card-mini" style="background: #e3f2fd;">
+              <div class="stat-card-mini stat-blue">
                 <h3 class="mb-0 fw-bold text-primary">{{ stats.jours_totaux }}</h3>
                 <small class="text-muted">Jours totaux</small>
               </div>
             </div>
             <div class="col-6 col-md-3">
-              <div class="stat-card-mini" style="background: #fff3e0;">
+              <div class="stat-card-mini stat-orange">
                 <h3 class="mb-0 fw-bold text-warning">{{ stats.jours_utilises }}</h3>
-                <small class="text-muted">Jours utilises</small>
+                <small class="text-muted">Jours utilisés</small>
               </div>
             </div>
             <div class="col-6 col-md-3">
-              <div class="stat-card-mini" style="background: #e8f5e9;">
+              <div class="stat-card-mini stat-green">
                 <h3 class="mb-0 fw-bold text-success">{{ stats.jours_restants }}</h3>
                 <small class="text-muted">Jours restants</small>
               </div>
             </div>
             <div class="col-6 col-md-3">
-              <div class="stat-card-mini" style="background: #f3e5f5;">
-                <div class="d-flex align-items-center justify-content-center gap-2">
-                  <h3 class="mb-0 fw-bold" :class="tauxColor">{{ stats.taux }}%</h3>
-                </div>
+              <div class="stat-card-mini stat-purple">
+                <h3 class="mb-0 fw-bold" :class="tauxColor">{{ stats.taux }}%</h3>
                 <div class="progress mt-1" style="height: 6px;">
                   <div
                     class="progress-bar"
@@ -98,26 +88,26 @@
           </div>
 
           <!-- Statut validation -->
-          <div class="mt-3">
+          <div class="validation-status mt-3">
             <span class="badge" :class="planning.valide ? 'bg-success' : 'bg-warning'">
               <i class="fas me-1" :class="planning.valide ? 'fa-check-circle' : 'fa-clock'"></i>
-              {{ planning.valide ? 'Planning valide' : 'Planning en attente de validation' }}
+              {{ planning.valide ? 'Planning validé' : 'Planning en attente de validation' }}
             </span>
           </div>
 
-          <!-- Periodes de fermeture -->
+          <!-- Périodes de fermeture -->
           <div v-if="fermetures.length" class="dash-panel mt-3">
             <header class="panel-head">
               <div>
                 <h3 class="panel-title">
-                  <i class="fas fa-door-closed me-2 text-danger"></i>Periodes de fermeture
+                  <i class="fas fa-door-closed me-2 text-danger"></i>Périodes de fermeture
                 </h3>
               </div>
             </header>
             <div class="p-3">
               <div class="row g-2">
-                <div v-for="(p, i) in fermetures" :key="i" class="col-md-4">
-                  <div class="border rounded p-2 text-center" style="background: #fce4ec;">
+                <div v-for="(p, i) in fermetures" :key="i" class="col-sm-6 col-md-4">
+                  <div class="fermeture-card">
                     <strong>{{ p.nom || 'Fermeture' }}</strong>
                     <div class="small text-muted">
                       {{ formatDate(p.start) }} — {{ formatDate(p.end) }}
@@ -128,12 +118,12 @@
             </div>
           </div>
 
-          <!-- Collegues en conge -->
+          <!-- Collègues en congé -->
           <div class="dash-panel mt-3">
             <header class="panel-head">
               <div>
                 <h3 class="panel-title">
-                  <i class="fas fa-users me-2 text-info"></i>Collegues en conge
+                  <i class="fas fa-users me-2 text-info"></i>Collègues en congé
                   <span v-if="colleagues.length" class="badge bg-info ms-2" style="font-size: 0.7rem;">{{ colleagues.length }}</span>
                 </h3>
               </div>
@@ -145,8 +135,9 @@
                   <tr class="text-muted small">
                     <th>Agent</th>
                     <th>Type</th>
-                    <th>Debut</th>
-                    <th>Fin</th>
+                    <th class="d-none d-sm-table-cell">Début</th>
+                    <th class="d-none d-sm-table-cell">Fin</th>
+                    <th class="d-sm-none">Période</th>
                     <th>Jours</th>
                   </tr>
                 </thead>
@@ -161,8 +152,12 @@
                         {{ typeCongeLabel(h.type_conge) }}
                       </span>
                     </td>
-                    <td>{{ formatDate(h.date_debut) }}</td>
-                    <td>{{ formatDate(h.date_fin) }}</td>
+                    <td class="d-none d-sm-table-cell">{{ formatDate(h.date_debut) }}</td>
+                    <td class="d-none d-sm-table-cell">{{ formatDate(h.date_fin) }}</td>
+                    <td class="d-sm-none">
+                      <div class="small">{{ formatDateShort(h.date_debut) }}</div>
+                      <div class="small text-muted">{{ formatDateShort(h.date_fin) }}</div>
+                    </td>
                     <td><strong>{{ h.nombre_jours }}j</strong></td>
                   </tr>
                 </tbody>
@@ -171,7 +166,7 @@
 
             <div v-else class="text-center py-4 text-muted">
               <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
-              <p class="mb-0">Aucun collegue en conge approuve pour cette annee.</p>
+              <p class="mb-0">Aucun collègue en congé approuvé pour cette année.</p>
             </div>
           </div>
         </template>
@@ -252,14 +247,19 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function formatDateShort(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+}
+
 function typeCongeLabel(type) {
   const labels = {
     annuel: 'Annuel',
     maladie: 'Maladie',
-    maternite: 'Maternite',
-    paternite: 'Paternite',
+    maternite: 'Maternité',
+    paternite: 'Paternité',
     urgence: 'Urgence',
-    special: 'Special',
+    special: 'Spécial',
   }
   return labels[type] || type
 }
@@ -280,35 +280,105 @@ onMounted(() => loadPlanning())
 </script>
 
 <style scoped>
+/* ── Year filter in hero ── */
+.year-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+}
+
+.year-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  white-space: nowrap;
+}
+
+.year-select {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.year-select option {
+  background: #0d2f52;
+  color: #fff;
+}
+
+/* ── Stat cards ── */
 .stat-card-mini {
   padding: 1rem;
-  border-radius: 10px;
+  border-radius: 12px;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 90px;
 }
+
+.stat-blue { background: #e3f2fd; }
+.stat-orange { background: #fff3e0; }
+.stat-green { background: #e8f5e9; }
+.stat-purple { background: #f3e5f5; }
 
 .stat-card-mini h3 {
   font-size: 1.5rem;
 }
 
+/* ── Validation badge ── */
+.validation-status {
+  display: flex;
+  align-items: center;
+}
+
+/* ── Fermeture cards ── */
+.fermeture-card {
+  border: 1px solid #f8bbd0;
+  border-radius: 10px;
+  padding: 0.65rem 0.75rem;
+  text-align: center;
+  background: #fce4ec;
+}
+
 /* ── Mobile responsive ── */
 @media (max-width: 767.98px) {
   .rh-hero .row { text-align: center; }
-  .rh-hero .col-lg-4 { text-align: center; }
-  .hero-tools { justify-content: center; display: flex; }
+  .rh-hero .col-md-6 { text-align: center; }
+  .hero-tools { justify-content: center; display: flex; flex-wrap: wrap; gap: 0.5rem; }
   .rh-title { font-size: 1.3rem; }
   .rh-sub { font-size: 0.85rem; }
 
-  .dash-panel .row .col-auto { flex: 1 1 100%; }
+  .year-filter { margin: 0 auto; }
 
   .stat-card-mini h3 { font-size: 1.2rem; }
-  .stat-card-mini { padding: 0.75rem; }
+  .stat-card-mini { padding: 0.75rem; min-height: 75px; }
 
   .panel-title { font-size: 1rem; }
 
   .table { font-size: 0.82rem; }
-  .table th, .table td { padding: 0.5rem 0.4rem; white-space: nowrap; }
+  .table th, .table td { padding: 0.5rem 0.4rem; }
 
-  .pagination { flex-wrap: wrap; gap: 2px; }
-  .page-link { padding: 0.25rem 0.5rem; font-size: 0.78rem; }
+  .fermeture-card { padding: 0.5rem; font-size: 0.85rem; }
+}
+
+@media (max-width: 575.98px) {
+  .stat-card-mini h3 { font-size: 1rem; }
+  .stat-card-mini { padding: 0.6rem; min-height: 65px; }
+  .stat-card-mini small { font-size: 0.7rem; }
+
+  .year-filter { padding: 0.3rem 0.6rem; }
+  .year-label { font-size: 0.72rem; }
+  .year-select { font-size: 0.78rem; }
 }
 </style>
