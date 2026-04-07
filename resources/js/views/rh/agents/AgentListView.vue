@@ -15,6 +15,12 @@
                   Gestion des agents
                 </h1>
                 <p class="hero-subtitle">Gérez l'ensemble des agents PNMLS, leurs profils, statuts et affectations</p>
+                <div v-if="filterSansAffectation" class="mt-2">
+                  <span class="badge bg-warning text-dark">
+                    <i class="fas fa-filter me-1"></i>Agents sans affectation
+                    <button class="btn-close ms-1" style="font-size:.5rem" @click="filterSansAffectation=false; fetchAgents()"></button>
+                  </span>
+                </div>
               </div>
             </div>
             <div class="col-lg-5">
@@ -541,7 +547,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { list, get, remove, exportCsv, getFormOptions } from '@/api/agents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -550,6 +556,7 @@ import AgentEditModal from '@/components/agents/AgentEditModal.vue'
 import AgentCreateModal from '@/components/agents/AgentCreateModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const ui = useUiStore()
 
 // State
@@ -563,6 +570,7 @@ const departments = ref([])
 
 // Search and filters
 const searchInput = ref('')
+const filterSansAffectation = ref(false)
 const filters = reactive({
     search: '',
     organe: '',
@@ -881,6 +889,7 @@ async function fetchAgents() {
         if (filters.province_id) params.province_id = filters.province_id
         if (filters.department_id) params.department_id = filters.department_id
         if (filters.statut) params.statut = filters.statut
+        if (filterSansAffectation.value) params.sans_affectation = 1
 
         const { data } = await list(params)
         agentsByOrgane.value = data.agentsByOrgane || []
@@ -981,6 +990,7 @@ async function doExport() {
 }
 
 onMounted(() => {
+    if (route.query.sans_affectation) filterSansAffectation.value = true
     fetchOptions()
     fetchAgents()
 })

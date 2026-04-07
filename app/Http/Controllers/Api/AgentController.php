@@ -125,6 +125,11 @@ class AgentController extends ApiController
             $query->where('statut', 'actif');
         }
 
+        // Filter: agents without any active affectation
+        if ($request->boolean('sans_affectation')) {
+            $query->whereDoesntHave('affectations', fn($q) => $q->where('actif', true));
+        }
+
         // Sort by hierarchical position (grade_etat maps to Fonction Publique ranks)
         $allAgents = $query->orderBy('organe')
             ->orderByRaw("CASE

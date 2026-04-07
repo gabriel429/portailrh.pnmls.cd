@@ -5,6 +5,16 @@
       <div>
         <h4 class="mb-1"><i class="fas fa-project-diagram me-2"></i>Affectations</h4>
         <p class="text-muted mb-0 small">Gestion des affectations des agents aux fonctions et structures.</p>
+        <div v-if="filterActif || filterMobilite" class="mt-2">
+          <span v-if="filterActif" class="badge bg-success me-1">
+            <i class="fas fa-filter me-1"></i>Affectations actives
+            <button class="btn-close btn-close-white ms-1" style="font-size:.5rem" @click="filterActif=false; fetchAffectations()"></button>
+          </span>
+          <span v-if="filterMobilite" class="badge bg-info me-1">
+            <i class="fas fa-filter me-1"></i>Mobilité (30 derniers jours)
+            <button class="btn-close btn-close-white ms-1" style="font-size:.5rem" @click="filterMobilite=false; fetchAffectations()"></button>
+          </span>
+        </div>
       </div>
       <button class="btn btn-primary" @click="openCreateModal">
         <i class="fas fa-plus me-1"></i> Nouvelle affectation
@@ -301,6 +311,7 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -308,8 +319,11 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import Pagination from '@/components/common/Pagination.vue'
 
 const ui = useUiStore()
+const route = useRoute()
 
-// State
+// Query param filters from dashboard cards
+const filterActif = ref(false)
+const filterMobilite = ref(false)
 const loading = ref(true)
 const affectations = ref([])
 const total = ref(0)
@@ -363,6 +377,8 @@ async function fetchAffectations() {
   try {
     const params = { page: currentPage.value }
     if (search.value) params.search = search.value
+    if (filterActif.value) params.actif = 1
+    if (filterMobilite.value) params.mobilite = 1
     const { data } = await client.get('/affectations', { params })
     affectations.value = data.data || []
     total.value = data.total || 0
@@ -563,6 +579,8 @@ async function handleCreateSubmit() {
 }
 
 onMounted(() => {
+  if (route.query.actif) filterActif.value = true
+  if (route.query.mobilite) filterMobilite.value = true
   fetchAffectations()
 })
 </script>

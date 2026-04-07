@@ -1050,6 +1050,14 @@ class ParametresController extends Controller
                    ->orWhere('prenom', 'like', "%{$request->search}%");
             });
         }
+        // Filter: only active affectations
+        if ($request->boolean('actif')) {
+            $q->where('actif', true);
+        }
+        // Filter: mobility (started within last 30 days)
+        if ($request->boolean('mobilite')) {
+            $q->where('date_debut', '>=', now()->subDays(30));
+        }
         return response()->json($q->paginate($request->per_page ?? 25));
     }
 

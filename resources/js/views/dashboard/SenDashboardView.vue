@@ -489,7 +489,7 @@
               <div class="sen-affectation-lbl">Postes vacants</div>
             </div>
           </div>
-          <div class="sen-affectation-card sen-affectation-warning sen-clickable" @click="router.push('/rh/affectations')">
+          <div class="sen-affectation-card sen-affectation-warning sen-clickable" @click="router.push('/rh/agents?sans_affectation=1')">
             <div class="sen-affectation-icon" style="background:#fef3c7;color:#d97706;">
               <i class="fas fa-user-slash"></i>
             </div>
@@ -498,7 +498,7 @@
               <div class="sen-affectation-lbl">Agents sans affectation</div>
             </div>
           </div>
-          <div class="sen-affectation-card sen-clickable" @click="router.push('/rh/affectations')">
+          <div class="sen-affectation-card sen-clickable" @click="router.push('/rh/affectations?mobilite=1')">
             <div class="sen-affectation-icon" style="background:#e0f2fe;color:#0077B5;">
               <i class="fas fa-exchange-alt"></i>
             </div>
@@ -507,7 +507,7 @@
               <div class="sen-affectation-lbl">Mobilité (30j)</div>
             </div>
           </div>
-          <div class="sen-affectation-card sen-clickable" @click="router.push('/rh/affectations')">
+          <div class="sen-affectation-card sen-clickable" @click="router.push('/rh/affectations?actif=1')">
             <div class="sen-affectation-icon" style="background:#dcfce7;color:#16a34a;">
               <i class="fas fa-briefcase"></i>
             </div>
