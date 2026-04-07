@@ -239,7 +239,7 @@ class ExecutiveDashboardController extends ApiController
         // Congés actifs aujourd'hui
         $holidaysActiveToday = Holiday::active($now)->count();
         $agentsEnCongeToday = Holiday::active($now)
-            ->with('agent:id,nom,prenom,organe,fonction_id')
+            ->with('agent:id,nom,prenom,organe,fonction')
             ->get()
             ->map(fn($h) => [
                 'id' => $h->id,
@@ -802,15 +802,14 @@ class ExecutiveDashboardController extends ApiController
 
         // Top agents (noms/prénoms/fonctions)
         $topAgents = Agent::where('province_id', $id)->actifs()
-            ->with('fonction:id,nom')
             ->orderBy('nom')
             ->limit(20)
-            ->get(['id', 'nom', 'prenom', 'organe', 'fonction_id', 'poste_actuel', 'sexe'])
+            ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe'])
             ->map(fn($a) => [
                 'id' => $a->id,
                 'nom' => $a->prenom . ' ' . $a->nom,
                 'organe' => $a->organe,
-                'fonction' => $a->fonction?->nom ?? $a->poste_actuel ?? '-',
+                'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
                 'sexe' => $a->sexe,
             ]);
 
