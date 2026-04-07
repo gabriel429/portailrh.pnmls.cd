@@ -28,7 +28,22 @@
       </div>
 
       <template v-else>
-        <div class="dash-panel mt-3">
+        <!-- ── Status Tabs ── -->
+        <div class="tache-status-tabs mt-3">
+          <button
+            v-for="tab in statusTabs"
+            :key="tab.key"
+            class="tache-tab"
+            :class="{ active: statusFilter === tab.key, [tab.color]: true }"
+            @click="statusFilter = tab.key"
+          >
+            <i :class="tab.icon + ' me-1'"></i>
+            <span class="tache-tab-label">{{ tab.label }}</span>
+            <span class="tache-tab-count">{{ tab.count }}</span>
+          </button>
+        </div>
+
+        <div class="dash-panel mt-2">
           <header class="panel-head">
             <div>
               <h3 class="panel-title">
@@ -108,21 +123,58 @@
 </template>
 
 <script setup>
-import { computed, ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, ref, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { list } from '@/api/taches'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
+const router = useRouter()
 const ui = useUiStore()
 const loading = ref(true)
 const mesTaches = ref([])
 const tachesCreees = ref([])
 const isDirecteur = ref(false)
 const sourceFilter = ref('all')
+const statusFilter = ref('all')
 
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
+
+/* ── helper: overdue check ── */
+function isOverdue(tache) {
+  if (!tache.date_echeance || tache.statut === 'terminee') return false
+  return new Date(tache.date_echeance) < new Date()
+}
+
+/* ── Source-filtered base list ── */
+const sourceFilteredTaches = computed(() => {
+  const items = showAssignedByMe.value ? tachesCreees.value : mesTaches.value
+  return items.filter((t) => matchesSourceFilter(t.source_emetteur))
+})
+
+/* ── Status tabs with live counts ── */
+const statusTabs = computed(() => {
+  const items = sourceFilteredTaches.value
+  return [
+    { key: 'all',       label: 'Toutes',    icon: 'fas fa-list',           color: 'tab-all',       count: items.length },
+    { key: 'nouvelle',  label: 'Nouvelles',  icon: 'fas fa-star',           color: 'tab-nouvelle',  count: items.filter(t => t.statut === 'nouvelle').length },
+    { key: 'en_cours',  label: 'En cours',   icon: 'fas fa-spinner',        color: 'tab-en-cours',  count: items.filter(t => t.statut === 'en_cours').length },
+    { key: 'terminee',  label: 'Terminées',  icon: 'fas fa-check-circle',   color: 'tab-terminee',  count: items.filter(t => t.statut === 'terminee').length },
+    { key: 'en_retard', label: 'En retard',  icon: 'fas fa-exclamation-triangle', color: 'tab-en-retard', count: items.filter(t => isOverdue(t)).length },
+  ]
+})
+
+/* ── Final filtered list (source + status) ── */
+const filteredTaches = computed(() => {
+  let items = sourceFilteredTaches.value
+  if (statusFilter.value === 'en_retard') {
+    items = items.filter(t => isOverdue(t))
+  } else if (statusFilter.value !== 'all') {
+    items = items.filter(t => t.statut === statusFilter.value)
+  }
+  return items
+})
 
 const pageTitle = computed(() => showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches')
 const pageSubtitle = computed(() => showAssignedByMe.value
@@ -133,11 +185,6 @@ const panelSubtitle = computed(() => showAssignedByMe.value
   ? 'Liste des tâches que vous avez affectées aux agents.'
   : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.')
 const emptyStateText = computed(() => showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.')
-
-const filteredTaches = computed(() => {
-  const items = showAssignedByMe.value ? tachesCreees.value : mesTaches.value
-  return items.filter((tache) => matchesSourceFilter(tache.source_emetteur))
-})
 
 async function loadTaches() {
   try {
@@ -206,12 +253,26 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
-function isOverdue(tache) {
-  if (!tache.date_echeance || tache.statut === 'terminee') return false
-  return new Date(tache.date_echeance) < new Date()
-}
+onMounted(() => {
+  if (route.query.statut) {
+    const valid = ['nouvelle', 'en_cours', 'terminee', 'en_retard']
+    if (valid.includes(route.query.statut)) {
+      statusFilter.value = route.query.statut
+    }
+  }
+  loadTaches()
+})
 
-onMounted(() => loadTaches())
+/* ── Sync tab → URL query param ── */
+watch(statusFilter, (val) => {
+  const query = { ...route.query }
+  if (val === 'all') {
+    delete query.statut
+  } else {
+    query.statut = val
+  }
+  router.replace({ query })
+})
 </script>
 
 <style scoped>
@@ -296,5 +357,77 @@ onMounted(() => loadTaches())
 
 .task-filter-select {
   min-width: 150px;
+}
+
+/* ── Status Tabs ── */
+.tache-status-tabs {
+  display: flex;
+  gap: .5rem;
+  flex-wrap: wrap;
+}
+
+.tache-tab {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .5rem 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: .6rem;
+  background: #fff;
+  font-size: .85rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all .2s;
+}
+.tache-tab:hover { border-color: #94a3b8; color: #334155; }
+
+.tache-tab-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+/* ── Active states ── */
+.tache-tab.active.tab-all          { border-color: #475569; color: #1e293b; background: #f1f5f9; }
+.tache-tab.active.tab-all .tache-tab-count { background: #475569; color: #fff; }
+
+.tache-tab.active.tab-nouvelle     { border-color: #6366f1; color: #4338ca; background: #eef2ff; }
+.tache-tab.active.tab-nouvelle .tache-tab-count { background: #6366f1; color: #fff; }
+
+.tache-tab.active.tab-en-cours     { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
+.tache-tab.active.tab-en-cours .tache-tab-count { background: #3b82f6; color: #fff; }
+
+.tache-tab.active.tab-terminee     { border-color: #22c55e; color: #15803d; background: #f0fdf4; }
+.tache-tab.active.tab-terminee .tache-tab-count { background: #22c55e; color: #fff; }
+
+.tache-tab.active.tab-en-retard    { border-color: #ef4444; color: #b91c1c; background: #fef2f2; }
+.tache-tab.active.tab-en-retard .tache-tab-count { background: #ef4444; color: #fff; }
+
+@media (max-width: 767.98px) {
+  .tache-status-tabs {
+    gap: .3rem;
+  }
+  .tache-tab {
+    padding: .35rem .6rem;
+    font-size: .75rem;
+    border-radius: .45rem;
+  }
+  .tache-tab-label {
+    display: none;
+  }
+  .tache-tab-count {
+    font-size: .68rem;
+    min-width: 1.2rem;
+    height: 1.2rem;
+  }
 }
 </style>
