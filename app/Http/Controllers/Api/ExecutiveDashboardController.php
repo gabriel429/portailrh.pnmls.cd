@@ -813,6 +813,23 @@ class ExecutiveDashboardController extends ApiController
                 'sexe' => $a->sexe,
             ]);
 
+        // Activités PTA de cette province
+        $activites = ActivitePlan::parAnnee($currentYear)
+            ->where('province_id', $id)
+            ->orderByDesc('pourcentage')
+            ->limit(50)
+            ->get(['id', 'titre', 'categorie', 'statut', 'pourcentage', 'trimestre', 'date_debut', 'date_fin'])
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'titre' => $a->titre,
+                'categorie' => $a->categorie,
+                'statut' => $a->statut,
+                'pourcentage' => $a->pourcentage ?? 0,
+                'trimestre' => $a->trimestre,
+                'date_debut' => $a->date_debut?->format('d/m/Y'),
+                'date_fin' => $a->date_fin?->format('d/m/Y'),
+            ]);
+
         return $this->success([
             'province' => [
                 'id' => $province->id,
@@ -840,6 +857,7 @@ class ExecutiveDashboardController extends ApiController
             ],
             'departments' => $departments,
             'agents' => $topAgents,
+            'activites' => $activites,
         ]);
     }
 }
