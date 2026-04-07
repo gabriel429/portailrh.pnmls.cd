@@ -303,9 +303,9 @@ const senStructures = ref([])
 const allProvinces = ref([])
 
 const organeOptions = [
-  { value: 'Secretariat Executif National', label: 'National', code: 'SEN', color: '#0077B5', icon: 'fa-landmark' },
-  { value: 'Secretariat Executif Provincial', label: 'Provincial', code: 'SEP', color: '#0ea5e9', icon: 'fa-map-marked-alt' },
-  { value: 'Secretariat Executif Local', label: 'Local', code: 'SEL', color: '#0d9488', icon: 'fa-map-pin' },
+  { value: 'Secrétariat Exécutif National', label: 'National', code: 'SEN', color: '#0077B5', icon: 'fa-landmark' },
+  { value: 'Secrétariat Exécutif Provincial', label: 'Provincial', code: 'SEP', color: '#0ea5e9', icon: 'fa-map-marked-alt' },
+  { value: 'Secrétariat Exécutif Local', label: 'Local', code: 'SEL', color: '#0d9488', icon: 'fa-map-pin' },
 ]
 
 /* ─── Computed ─── */

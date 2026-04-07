@@ -44,9 +44,9 @@ class ExecutiveDashboardController extends ApiController
 
         // ─── ORGANES mapping ───
         $organes = [
-            'sen' => 'Secretariat Executif National',
-            'sep' => 'Secretariat Executif Provincial',
-            'sel' => 'Secretariat Executif Local',
+            'sen' => 'Secrétariat Exécutif National',
+            'sep' => 'Secrétariat Exécutif Provincial',
+            'sel' => 'Secrétariat Exécutif Local',
         ];
 
         // ─── AGENTS ───
@@ -613,9 +613,9 @@ class ExecutiveDashboardController extends ApiController
     {
         $code = strtoupper($code);
         $organes = [
-            'SEN' => 'Secretariat Executif National',
-            'SEP' => 'Secretariat Executif Provincial',
-            'SEL' => 'Secretariat Executif Local',
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
         ];
 
         if (!isset($organes[$code])) {
@@ -797,7 +797,7 @@ class ExecutiveDashboardController extends ApiController
         $anciens = (clone $agents)->anciens()->count();
 
         // Par organe dans cette province
-        $organes = ['sen' => 'Secretariat Executif National', 'sep' => 'Secretariat Executif Provincial', 'sel' => 'Secretariat Executif Local'];
+        $organes = ['sen' => 'Secrétariat Exécutif National', 'sep' => 'Secrétariat Exécutif Provincial', 'sel' => 'Secrétariat Exécutif Local'];
         $byOrgane = [];
         foreach ($organes as $oCode => $oNom) {
             $byOrgane[$oCode] = Agent::where('province_id', $id)->where('organe', $oNom)->actifs()->count();

@@ -534,9 +534,9 @@ const metrics = computed(() => [
 const organeCards = computed(() => {
   const bo = d.value.agents?.by_organe || {}
   return [
-    { code: 'SEN', nom: 'Secretariat Executif National', total: bo.sen?.total ?? 0, actifs: bo.sen?.actifs ?? 0, color: '#0077B5' },
-    { code: 'SEP', nom: 'Secretariat Executif Provincial', total: bo.sep?.total ?? 0, actifs: bo.sep?.actifs ?? 0, color: '#0ea5e9' },
-    { code: 'SEL', nom: 'Secretariat Executif Local', total: bo.sel?.total ?? 0, actifs: bo.sel?.actifs ?? 0, color: '#0d9488' },
+    { code: 'SEN', nom: 'Secrétariat Exécutif National', total: bo.sen?.total ?? 0, actifs: bo.sen?.actifs ?? 0, color: '#0077B5' },
+    { code: 'SEP', nom: 'Secrétariat Exécutif Provincial', total: bo.sep?.total ?? 0, actifs: bo.sep?.actifs ?? 0, color: '#0ea5e9' },
+    { code: 'SEL', nom: 'Secrétariat Exécutif Local', total: bo.sel?.total ?? 0, actifs: bo.sel?.actifs ?? 0, color: '#0d9488' },
   ]
 })
 
