@@ -1100,7 +1100,7 @@ const drilldownColor = computed(() => {
 })
 
 const quickActions = [
-  { to: '/rh/communiques/create', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
+  { to: '/rh/communiques/create?from=sen', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Voir tous les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
   { to: '/plan-travail', label: 'PTA', desc: 'Suivi stratégique annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },

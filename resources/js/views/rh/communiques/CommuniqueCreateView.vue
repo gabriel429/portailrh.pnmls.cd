@@ -8,7 +8,7 @@
           <h2><i class="fas fa-bullhorn me-2"></i> {{ isEdit ? 'Modifier le Communiqué' : 'Nouveau Communiqué' }}</h2>
           <p>{{ isEdit ? 'Modifier ce communiqué officiel.' : 'Publier un communiqué à destination de tous les agents.' }}</p>
         </div>
-        <router-link :to="{ name: 'rh.communiques.index' }" class="btn btn-light btn-sm" style="border-radius:8px;font-weight:600;">
+        <router-link :to="backRoute" class="btn btn-light btn-sm" style="border-radius:8px;font-weight:600;">
           <i class="fas fa-arrow-left me-1"></i> Retour
         </router-link>
       </div>
@@ -98,7 +98,7 @@
 
         <!-- Actions -->
         <div class="d-flex gap-3 justify-content-end">
-          <router-link :to="{ name: 'rh.communiques.index' }" class="btn btn-cancel">
+          <router-link :to="backRoute" class="btn btn-cancel">
             <i class="fas fa-times me-1"></i> Annuler
           </router-link>
           <button type="submit" class="btn btn-submit" :disabled="submitting">
@@ -124,6 +124,8 @@ const router = useRouter()
 const ui = useUiStore()
 
 const isEdit = computed(() => !!route.query.edit)
+const fromSen = computed(() => route.query.from === 'sen')
+const backRoute = computed(() => fromSen.value ? { name: 'dashboard' } : { name: 'rh.communiques.index' })
 const loadingEdit = ref(false)
 const submitting = ref(false)
 const errors = ref([])
@@ -152,7 +154,7 @@ async function loadCommunique() {
     }
   } catch {
     ui.addToast('Communique introuvable.', 'danger')
-    router.push({ name: 'rh.communiques.index' })
+    router.push(backRoute.value)
   } finally {
     loadingEdit.value = false
   }
@@ -169,7 +171,7 @@ async function handleSubmit() {
       await create(form.value)
       ui.addToast('Communique publie avec succes.', 'success')
     }
-    router.push({ name: 'rh.communiques.index' })
+    router.push(backRoute.value)
   } catch (err) {
     if (err.response?.status === 422) {
       const validationErrors = err.response.data.errors || {}
