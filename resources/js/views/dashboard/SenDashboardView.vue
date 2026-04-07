@@ -573,7 +573,7 @@
 
           <!-- Audit (résumé compact) -->
           <div class="sen-duo-block">
-            <div class="sen-section-head">
+            <div class="sen-section-head sen-clickable" @click="router.push('/admin/audit-logs')">
               <div class="sen-section-icon" style="background:#fee2e2;color:#7f1d1d;">
                 <i class="fas fa-shield-alt"></i>
               </div>
