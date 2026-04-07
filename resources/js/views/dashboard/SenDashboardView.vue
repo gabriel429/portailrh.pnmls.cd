@@ -480,7 +480,7 @@
           </div>
         </div>
         <div class="sen-affectations-row">
-          <div class="sen-affectation-card sen-affectation-alert">
+          <div class="sen-affectation-card sen-affectation-alert sen-clickable" @click="router.push('/rh/affectations')">
             <div class="sen-affectation-icon" style="background:#fee2e2;color:#dc2626;">
               <i class="fas fa-exclamation-triangle"></i>
             </div>
@@ -489,7 +489,7 @@
               <div class="sen-affectation-lbl">Postes vacants</div>
             </div>
           </div>
-          <div class="sen-affectation-card sen-affectation-warning">
+          <div class="sen-affectation-card sen-affectation-warning sen-clickable" @click="router.push('/rh/affectations')">
             <div class="sen-affectation-icon" style="background:#fef3c7;color:#d97706;">
               <i class="fas fa-user-slash"></i>
             </div>
@@ -498,7 +498,7 @@
               <div class="sen-affectation-lbl">Agents sans affectation</div>
             </div>
           </div>
-          <div class="sen-affectation-card">
+          <div class="sen-affectation-card sen-clickable" @click="router.push('/rh/affectations')">
             <div class="sen-affectation-icon" style="background:#e0f2fe;color:#0077B5;">
               <i class="fas fa-exchange-alt"></i>
             </div>
@@ -507,7 +507,7 @@
               <div class="sen-affectation-lbl">Mobilité (30j)</div>
             </div>
           </div>
-          <div class="sen-affectation-card">
+          <div class="sen-affectation-card sen-clickable" @click="router.push('/rh/affectations')">
             <div class="sen-affectation-icon" style="background:#dcfce7;color:#16a34a;">
               <i class="fas fa-briefcase"></i>
             </div>
@@ -1290,6 +1290,7 @@ onMounted(async () => {
   padding: 1.1rem; transition: all .25s; position: relative;
 }
 .sen-metric-clickable { cursor: pointer; }
+.sen-clickable { cursor: pointer; }
 .sen-metric:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
 .sen-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
 .sen-metric-icon {
