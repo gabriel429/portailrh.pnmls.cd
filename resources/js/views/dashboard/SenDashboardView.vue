@@ -659,7 +659,9 @@
                         {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
                       </div>
                       <div class="drill-header-sub" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
-                        {{ drilldownDepartment.effectifs.total }} agents · {{ drilldownDepartment.department.code || '' }}
+                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownDepartment.effectifs.total }} agents · {{ drilldownDepartment.department.code || '' }}</template>
+                        <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownDepartment.effectifs.actifs }} agents actifs</template>
+                        <template v-else>PTA {{ new Date().getFullYear() }} · {{ drilldownDepartment.pta?.total || 0 }} activités</template>
                       </div>
                     </div>
                   </div>
@@ -1025,66 +1027,139 @@
 
                   <!-- ── LEVEL 3 : DÉPARTEMENT DETAIL ── -->
                   <template v-else-if="drilldownLevel === 'department' && drilldownDepartment">
-                    <!-- Stats résumé en grille -->
-                    <div class="drill-dept-grid">
-                      <div class="drill-prov-stat-card" style="border-color:#0077B5;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.total ?? 0 }}</div>
-                        <div class="drill-prov-stat-lbl">Activités PTA</div>
-                      </div>
-                      <div class="drill-prov-stat-card" style="border-color:#059669;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.terminee ?? 0 }}</div>
-                        <div class="drill-prov-stat-lbl">Terminées</div>
-                      </div>
-                      <div class="drill-prov-stat-card" style="border-color:#d97706;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.en_cours ?? 0 }}</div>
-                        <div class="drill-prov-stat-lbl">En cours</div>
-                      </div>
-                      <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.avg ?? 0 }}%</div>
-                        <div class="drill-prov-stat-lbl">Progression moy.</div>
-                      </div>
-                      <div class="drill-prov-stat-card" style="border-color:#6366f1;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
-                        <div class="drill-prov-stat-lbl">Agents</div>
-                      </div>
-                      <div class="drill-prov-stat-card" style="border-color:#059669;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
-                        <div class="drill-prov-stat-lbl">Actifs</div>
-                      </div>
-                      <div class="drill-prov-stat-card" style="border-color:#f59e0b;">
-                        <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
-                        <div class="drill-prov-stat-lbl">Présence auj.</div>
-                      </div>
-                    </div>
 
-                    <!-- Activités PTA du département -->
-                    <template v-if="drilldownDepartment.activites?.length">
-                      <div class="drill-prov-section-title" style="margin-top:16px;">
-                        <i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownDepartment.activites.length }})
+                    <!-- ─── Contenu EFFECTIFS ─── -->
+                    <template v-if="drilldownSection === 'effectifs'">
+                      <div class="drill-dept-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Agents</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Actifs</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.suspendus ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Suspendus</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#64748b;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.anciens ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Anciens</div>
+                        </div>
                       </div>
-                      <div class="drill-prov-activites">
-                        <div v-for="act in drilldownDepartment.activites" :key="act.id" class="drill-prov-activite">
-                          <div class="drill-activite-head">
-                            <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
-                            <div class="drill-activite-info">
-                              <div class="drill-activite-titre">{{ act.titre }}</div>
-                              <div class="drill-activite-meta">
-                                <span v-if="act.categorie" class="drill-activite-cat">{{ act.categorie }}</span>
-                                <span v-if="act.trimestre">{{ act.trimestre }}</span>
-                                <span v-if="act.date_debut">{{ act.date_debut }} → {{ act.date_fin || '?' }}</span>
-                              </div>
-                            </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-user"></i> Agents ({{ drilldownDepartment.agents.length }})
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
+                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
-                          <div class="drill-item-bar" style="margin-top:4px;">
-                            <div class="drill-item-bar-fill" :style="{ width: Math.min(act.pourcentage, 100) + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                           </div>
                         </div>
                       </div>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucun agent dans ce département</p>
+                      </div>
                     </template>
-                    <div v-else class="drill-empty">
-                      <i class="fas fa-inbox"></i>
-                      <p>Aucune activité PTA dans ce département</p>
-                    </div>
+
+                    <!-- ─── Contenu PRÉSENCE ─── -->
+                    <template v-else-if="drilldownSection === 'presence'">
+                      <div class="drill-dept-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_present ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Présents auj.</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ (drilldownDepartment.presence?.total_active ?? 0) - (drilldownDepartment.presence?.today_present ?? 0) }}</div>
+                          <div class="drill-prov-stat-lbl">Absents</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
+                          <div class="drill-prov-stat-lbl">Taux auj.</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.monthly_rate ?? 0 }}%</div>
+                          <div class="drill-prov-stat-lbl">Moy. mensuelle</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#6366f1;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Agents actifs</div>
+                        </div>
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-user"></i> Agents actifs ({{ drilldownDepartment.agents.length }})
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
+                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                          </div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucun agent dans ce département</p>
+                      </div>
+                    </template>
+
+                    <!-- ─── Contenu PTA ─── -->
+                    <template v-else>
+                      <div class="drill-dept-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.total ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Activités PTA</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.terminee ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Terminées</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.en_cours ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">En cours</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.avg ?? 0 }}%</div>
+                          <div class="drill-prov-stat-lbl">Progression moy.</div>
+                        </div>
+                      </div>
+                      <template v-if="drilldownDepartment.activites?.length">
+                        <div class="drill-prov-section-title" style="margin-top:16px;">
+                          <i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownDepartment.activites.length }})
+                        </div>
+                        <div class="drill-prov-activites">
+                          <div v-for="act in drilldownDepartment.activites" :key="act.id" class="drill-prov-activite">
+                            <div class="drill-activite-head">
+                              <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
+                              <div class="drill-activite-info">
+                                <div class="drill-activite-titre">{{ act.titre }}</div>
+                                <div class="drill-activite-meta">
+                                  <span v-if="act.categorie" class="drill-activite-cat">{{ act.categorie }}</span>
+                                  <span v-if="act.trimestre">{{ act.trimestre }}</span>
+                                  <span v-if="act.date_debut">{{ act.date_debut }} → {{ act.date_fin || '?' }}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="drill-item-bar" style="margin-top:4px;">
+                              <div class="drill-item-bar-fill" :style="{ width: Math.min(act.pourcentage, 100) + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucune activité PTA dans ce département</p>
+                      </div>
+                    </template>
                   </template>
                 </div>
               </div>
