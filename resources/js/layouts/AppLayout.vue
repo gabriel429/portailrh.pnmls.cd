@@ -51,9 +51,9 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'taches.index' }" title="Mes taches">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'taches.index' }" title="Mes tâches">
                 <i class="fas fa-tasks nav-icon"></i>
-                <span class="nav-link-label">Mes taches</span>
+                <span class="nav-link-label">Mes tâches</span>
                 <span v-if="taskNewCount > 0 || taskInProgressCount > 0" class="nav-badge-stack">
                   <span v-if="taskNewCount > 0" class="nav-badge nav-badge-new">{{ taskNewBadgeLabel }}</span>
                   <span v-if="taskInProgressCount > 0" class="nav-badge nav-badge-progress">{{ taskInProgressBadgeLabel }}</span>
@@ -73,9 +73,9 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'mon-planning-conges' }" title="Conges">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'mon-planning-conges' }" title="Congés">
                 <i class="fas fa-calendar-alt nav-icon"></i>
-                <span class="nav-link-label">Conges</span>
+                <span class="nav-link-label">Congés</span>
               </router-link>
             </li>
           </ul>
@@ -97,12 +97,12 @@
                   </li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
-                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Conges
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Congés
                     </router-link>
                   </li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
-                      <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiques
+                      <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiqués
                     </router-link>
                   </li>
                   <li>

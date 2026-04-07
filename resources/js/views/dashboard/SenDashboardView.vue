@@ -15,7 +15,7 @@
             </h1>
             <div class="sen-hero-role">
               <i class="fas fa-shield-alt me-1"></i>
-              Secretariat Executif National
+              Secrétariat Exécutif National
             </div>
             <div class="sen-hero-date">
               <i class="fas fa-calendar-alt me-1"></i>{{ today }}
@@ -35,7 +35,7 @@
             <div class="sen-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="sen-kpi-val">{{ data.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
-              <div class="sen-kpi-lbl">Presence</div>
+              <div class="sen-kpi-lbl">Présence</div>
             </div>
           </div>
           <div class="kpi-divider"></div>
@@ -58,7 +58,7 @@
       </div>
     </div>
 
-    <LoadingSpinner v-if="loading" message="Chargement du tableau de bord executif..." />
+    <LoadingSpinner v-if="loading" message="Chargement du tableau de bord exécutif..." />
 
     <div v-else-if="loadError" class="alert alert-warning mx-3">
       <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
@@ -73,7 +73,7 @@
           </div>
           <div>
             <h3 class="sen-section-title">Actions rapides</h3>
-            <p class="sen-section-sub">Acces direct aux modules cles</p>
+            <p class="sen-section-sub">Accès direct aux modules clés</p>
           </div>
         </div>
         <div class="sen-actions">
@@ -98,7 +98,7 @@
             <i class="fas fa-chart-bar"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Indicateurs cles</h3>
+            <h3 class="sen-section-title">Indicateurs clés</h3>
             <p class="sen-section-sub">Vue d'ensemble de l'organisation</p>
           </div>
         </div>
@@ -176,8 +176,8 @@
             <i class="fas fa-user-check"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Presence par organe</h3>
-            <p class="sen-section-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} presents aujourd'hui ({{ data.attendance?.today_rate ?? 0 }}%)</p>
+            <h3 class="sen-section-title">Présence par organe</h3>
+            <p class="sen-section-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} présents aujourd'hui ({{ data.attendance?.today_rate ?? 0 }}%)</p>
           </div>
         </div>
         <div class="sen-presence-grid">
@@ -236,7 +236,7 @@
           </div>
           <div>
             <h3 class="sen-section-title">Plan de travail {{ currentYear }} par organe</h3>
-            <p class="sen-section-sub">{{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} activites terminees ({{ data.plan_travail?.avg_completion ?? 0 }}% global)</p>
+            <p class="sen-section-sub">{{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} activités terminées ({{ data.plan_travail?.avg_completion ?? 0 }}% global)</p>
           </div>
         </div>
 
@@ -265,7 +265,7 @@
               <div class="sen-trim-bar">
                 <div class="sen-trim-fill" :style="{ width: t.avg_pourcentage + '%' }"></div>
               </div>
-              <div class="sen-trim-detail">{{ t.terminee }}/{{ t.total }} terminees</div>
+              <div class="sen-trim-detail">{{ t.terminee }}/{{ t.total }} terminées</div>
             </div>
           </div>
         </div>
@@ -277,7 +277,7 @@
               <div class="sen-plan-organe-badge" :style="{ background: po.color }">{{ po.code }}</div>
               <div class="sen-plan-organe-info">
                 <div class="sen-plan-organe-name">{{ po.label }}</div>
-                <div class="sen-plan-organe-summary">{{ po.terminee }}/{{ po.total }} terminees &middot; <strong>{{ po.avg }}%</strong></div>
+                <div class="sen-plan-organe-summary">{{ po.terminee }}/{{ po.total }} terminées &middot; <strong>{{ po.avg }}%</strong></div>
               </div>
               <div class="sen-plan-organe-pct" :style="{ color: po.color }">{{ po.avg }}%</div>
             </div>
@@ -303,8 +303,8 @@
             <i class="fas fa-stream"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Activites recentes</h3>
-            <p class="sen-section-sub">Dernieres mises a jour organisationnelles</p>
+            <h3 class="sen-section-title">Activités récentes</h3>
+            <p class="sen-section-sub">Dernières mises à jour organisationnelles</p>
           </div>
         </div>
         <div class="sen-recent-grid">
@@ -315,7 +315,7 @@
                 <i class="fas fa-bullhorn"></i>
               </div>
               <div>
-                <div class="sen-recent-head-title">Communiques</div>
+                <div class="sen-recent-head-title">Communiqués</div>
                 <div class="sen-recent-head-count">{{ data.communiques?.actifs ?? 0 }} actifs</div>
               </div>
               <span v-if="data.communiques?.urgents" class="sen-alert-badge">{{ data.communiques.urgents }} urgent(s)</span>
@@ -331,7 +331,7 @@
             </div>
             <div v-else class="sen-recent-empty">
               <i class="fas fa-inbox"></i>
-              <span>Aucun communique</span>
+              <span>Aucun communiqué</span>
             </div>
           </div>
 
@@ -399,8 +399,8 @@
             <i class="fas fa-umbrella-beach"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Conges & Disponibilites</h3>
-            <p class="sen-section-sub">{{ data.holidays?.active_today ?? 0 }} agents en conge aujourd'hui — {{ data.holidays?.pending ?? 0 }} demandes en attente</p>
+            <h3 class="sen-section-title">Congés & Disponibilités</h3>
+            <p class="sen-section-sub">{{ data.holidays?.active_today ?? 0 }} agents en congé aujourd'hui — {{ data.holidays?.pending ?? 0 }} demandes en attente</p>
           </div>
         </div>
         <div class="sen-holidays-grid">
@@ -412,7 +412,7 @@
               </div>
               <div>
                 <div class="sen-holiday-stat-val">{{ data.holidays?.approved ?? 0 }}</div>
-                <div class="sen-holiday-stat-lbl">Approuves</div>
+                <div class="sen-holiday-stat-lbl">Approuvés</div>
               </div>
             </div>
             <div class="sen-holiday-stat-item">
@@ -438,7 +438,7 @@
           <!-- Agents en congé aujourd'hui -->
           <div class="sen-holiday-list-card">
             <div class="sen-holiday-list-head">
-              <i class="fas fa-user-clock"></i> En conge aujourd'hui ({{ data.holidays?.active_today ?? 0 }})
+              <i class="fas fa-user-clock"></i> En congé aujourd'hui ({{ data.holidays?.active_today ?? 0 }})
             </div>
             <div v-if="data.holidays?.agents_en_conge_today?.length" class="sen-holiday-list">
               <div v-for="h in data.holidays.agents_en_conge_today.slice(0, 5)" :key="h.id" class="sen-holiday-item">
@@ -451,7 +451,7 @@
             </div>
             <div v-else class="sen-recent-empty" style="padding:1.5rem;">
               <i class="fas fa-check-circle"></i>
-              <span>Aucun agent en conge</span>
+              <span>Aucun agent en congé</span>
             </div>
           </div>
         </div>
@@ -493,7 +493,7 @@
             </div>
             <div>
               <div class="sen-affectation-val">{{ (data.affectations?.mobilite_30_jours ?? []).length }}</div>
-              <div class="sen-affectation-lbl">Mobilite (30j)</div>
+              <div class="sen-affectation-lbl">Mobilité (30j)</div>
             </div>
           </div>
           <div class="sen-affectation-card">
@@ -515,8 +515,8 @@
             <i class="fas fa-shield-alt"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Audit & Securite</h3>
-            <p class="sen-section-sub">{{ data.audit?.last_24h ?? 0 }} actions dernieres 24h — {{ data.audit?.comptes_geles ?? 0 }} comptes geles</p>
+            <h3 class="sen-section-title">Audit & Sécurité</h3>
+            <p class="sen-section-sub">{{ data.audit?.last_24h ?? 0 }} actions dernières 24h — {{ data.audit?.comptes_geles ?? 0 }} comptes gelés</p>
           </div>
         </div>
         <div class="sen-audit-row">
@@ -527,7 +527,7 @@
               </div>
               <div>
                 <div class="sen-audit-stat-val">{{ data.audit?.comptes_geles ?? 0 }}</div>
-                <div class="sen-audit-stat-lbl">Comptes geles</div>
+                <div class="sen-audit-stat-lbl">Comptes gelés</div>
               </div>
             </div>
             <div class="sen-audit-stat">
@@ -536,12 +536,12 @@
               </div>
               <div>
                 <div class="sen-audit-stat-val">{{ data.audit?.connexions_echouees_24h ?? 0 }}</div>
-                <div class="sen-audit-stat-lbl">Echecs login 24h</div>
+                <div class="sen-audit-stat-lbl">Échecs login 24h</div>
               </div>
             </div>
           </div>
           <div class="sen-audit-recent">
-            <div class="sen-audit-recent-head">Actions sensibles recentes</div>
+            <div class="sen-audit-recent-head">Actions sensibles récentes</div>
             <div v-if="(data.audit?.actions_sensibles ?? []).length" class="sen-audit-list">
               <div v-for="a in (data.audit.actions_sensibles ?? []).slice(0, 5)" :key="a.id" class="sen-audit-list-item">
                 <div class="sen-audit-dot"></div>
@@ -566,8 +566,8 @@
             <i class="fas fa-clipboard-list"></i>
           </div>
           <div>
-            <h3 class="sen-section-title">Gestion des taches</h3>
-            <p class="sen-section-sub">{{ data.taches?.total ?? 0 }} taches au total</p>
+            <h3 class="sen-section-title">Gestion des tâches</h3>
+            <p class="sen-section-sub">{{ data.taches?.total ?? 0 }} tâches au total</p>
           </div>
         </div>
         <div class="sen-taches-card">
@@ -584,7 +584,7 @@
             </div>
             <div class="sen-task-row">
               <div class="sen-task-dot" style="background:#22c55e;"></div>
-              <span>Terminees</span>
+              <span>Terminées</span>
               <span class="sen-task-count">{{ data.taches?.terminee ?? 0 }}</span>
             </div>
             <div v-if="data.taches?.overdue" class="sen-task-row sen-task-overdue">
@@ -615,12 +615,12 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 }))
 
 const quickActions = [
-  { to: '/rh/communiques/create', label: 'Nouveau communique', desc: 'Publier un communique', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
+  { to: '/rh/communiques/create', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Voir tous les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
-  { to: '/plan-travail', label: 'PTA', desc: 'Suivi strategique annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
+  { to: '/plan-travail', label: 'PTA', desc: 'Suivi stratégique annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/rh/pointages/monthly', label: 'Pointages', desc: 'Rapport mensuel', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
-  { to: '/requests', label: 'Demandes', desc: 'Gerer les demandes', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
+  { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
 ]
 
 const maxMetric = computed(() => {
@@ -641,10 +641,10 @@ const metrics = computed(() => [
   { label: 'Agents total', value: data.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(data.value.agents?.total), alert: false },
   { label: 'Agents actifs', value: data.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(data.value.agents?.actifs), alert: false },
   { label: 'Demandes en attente', value: data.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#d97706', bg: '#fef3c7', pct: pct(data.value.requests?.en_attente), alert: (data.value.requests?.en_attente ?? 0) > 5 },
-  { label: 'Demandes approuvees', value: data.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(data.value.requests?.approuve), alert: false },
+  { label: 'Demandes approuvées', value: data.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(data.value.requests?.approuve), alert: false },
   { label: 'Signalements ouverts', value: data.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(data.value.signalements?.ouvert), alert: (data.value.signalements?.ouvert ?? 0) > 0 },
-  { label: 'Taches en cours', value: data.value.taches?.en_cours ?? 0, icon: 'fa-spinner', color: '#7c3aed', bg: '#ede9fe', pct: pct(data.value.taches?.en_cours), alert: false },
-  { label: 'Communiques actifs', value: data.value.communiques?.actifs ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: pct(data.value.communiques?.actifs), alert: false },
+  { label: 'Tâches en cours', value: data.value.taches?.en_cours ?? 0, icon: 'fa-spinner', color: '#7c3aed', bg: '#ede9fe', pct: pct(data.value.taches?.en_cours), alert: false },
+  { label: 'Communiqués actifs', value: data.value.communiques?.actifs ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: pct(data.value.communiques?.actifs), alert: false },
   { label: 'Documents', value: data.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1', bg: '#e0e7ff', pct: pct(data.value.documents?.total), alert: false },
 ])
 
@@ -656,9 +656,9 @@ function pct(val) {
 const organeCards = computed(() => {
   const bo = data.value.agents?.by_organe || {}
   return [
-    { code: 'SEN', nom: 'Secretariat Executif National', total: bo.sen?.total ?? 0, actifs: bo.sen?.actifs ?? 0, suspendus: bo.sen?.suspendus ?? 0, anciens: bo.sen?.anciens ?? 0, color: '#0077B5' },
-    { code: 'SEP', nom: 'Secretariat Executif Provincial', total: bo.sep?.total ?? 0, actifs: bo.sep?.actifs ?? 0, suspendus: bo.sep?.suspendus ?? 0, anciens: bo.sep?.anciens ?? 0, color: '#0ea5e9' },
-    { code: 'SEL', nom: 'Secretariat Executif Local', total: bo.sel?.total ?? 0, actifs: bo.sel?.actifs ?? 0, suspendus: bo.sel?.suspendus ?? 0, anciens: bo.sel?.anciens ?? 0, color: '#0d9488' },
+    { code: 'SEN', nom: 'Secrétariat Exécutif National', total: bo.sen?.total ?? 0, actifs: bo.sen?.actifs ?? 0, suspendus: bo.sen?.suspendus ?? 0, anciens: bo.sen?.anciens ?? 0, color: '#0077B5' },
+    { code: 'SEP', nom: 'Secrétariat Exécutif Provincial', total: bo.sep?.total ?? 0, actifs: bo.sep?.actifs ?? 0, suspendus: bo.sep?.suspendus ?? 0, anciens: bo.sep?.anciens ?? 0, color: '#0ea5e9' },
+    { code: 'SEL', nom: 'Secrétariat Exécutif Local', total: bo.sel?.total ?? 0, actifs: bo.sel?.actifs ?? 0, suspendus: bo.sel?.suspendus ?? 0, anciens: bo.sel?.anciens ?? 0, color: '#0d9488' },
   ]
 })
 
@@ -699,7 +699,7 @@ function formatTime(iso) {
   const d = new Date(iso)
   const now = new Date()
   const diff = Math.floor((now - d) / 60000)
-  if (diff < 1) return "A l'instant"
+  if (diff < 1) return "À l'instant"
   if (diff < 60) return `Il y a ${diff} min`
   if (diff < 1440) return `Il y a ${Math.floor(diff / 60)}h`
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
@@ -712,7 +712,7 @@ onMounted(async () => {
     const { data: result } = await client.get('/dashboard/executive')
     data.value = result
   } catch (e) {
-    loadError.value = e.response?.data?.message || 'Impossible de charger le tableau de bord executif.'
+    loadError.value = e.response?.data?.message || 'Impossible de charger le tableau de bord exécutif.'
   } finally {
     loading.value = false
   }
