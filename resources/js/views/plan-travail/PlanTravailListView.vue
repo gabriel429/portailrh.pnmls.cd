@@ -115,7 +115,7 @@
     <template v-else>
       <!-- Activity cards -->
       <div v-if="flatActivites.length" class="pt-grid" :class="{ 'pt-filtering': filtering }">
-        <div v-for="a in flatActivites" :key="a.id" class="pt-card">
+        <div v-for="a in flatActivites" :key="a.id" class="pt-card" style="cursor:pointer" @click="router.push({ name: 'plan-travail.show', params: { id: a.id } })">
           <div class="pt-card-top">
             <div class="pt-card-status-icon" :class="statutIconClass(a.statut)">
               <i :class="statutIconName(a.statut)"></i>
@@ -175,10 +175,10 @@
               <i class="fas fa-clock me-1"></i>{{ formatDate(a.created_at) }}
             </span>
             <div class="pt-card-actions">
-              <router-link :to="{ name: 'plan-travail.show', params: { id: a.id } }" class="pt-act-btn pt-act-view">
+              <router-link :to="{ name: 'plan-travail.show', params: { id: a.id } }" class="pt-act-btn pt-act-view" @click.stop>
                 <i class="fas fa-eye"></i> Voir
               </router-link>
-              <button v-if="canEdit" class="pt-act-btn pt-act-edit" @click="openEditModal(a.id)">
+              <button v-if="canEdit" class="pt-act-btn pt-act-edit" @click.stop="openEditModal(a.id)">
                 <i class="fas fa-edit"></i> Modifier
               </button>
             </div>
@@ -404,12 +404,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { list, create, getCreateData } from '@/api/planTravail'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
 
 const ui = useUiStore()
+const router = useRouter()
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
