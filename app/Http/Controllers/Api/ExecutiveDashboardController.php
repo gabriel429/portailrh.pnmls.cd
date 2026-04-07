@@ -860,4 +860,67 @@ class ExecutiveDashboardController extends ApiController
             'activites' => $activites,
         ]);
     }
+
+    /**
+     * Drill-down département : détail complet d'un département
+     */
+    public function departmentDetail(Request $request, int $id)
+    {
+        $department = Department::find($id);
+        if (!$department) {
+            return $this->error('Département introuvable', 404);
+        }
+
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+
+        $agents = Agent::where('departement_id', $id);
+        $total = (clone $agents)->count();
+        $actifs = (clone $agents)->actifs()->count();
+        $suspendus = (clone $agents)->suspendu()->count();
+        $anciens = (clone $agents)->anciens()->count();
+
+        // Présence
+        $deptActifs = $actifs ?: 1;
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('departement_id', $id))
+            ->distinct('agent_id')->count('agent_id');
+
+        $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('departement_id', $id))
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')->get();
+        $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
+
+        // Agents du département
+        $topAgents = Agent::where('departement_id', $id)->actifs()
+            ->orderBy('nom')
+            ->limit(50)
+            ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe'])
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'nom' => $a->prenom . ' ' . $a->nom,
+                'organe' => $a->organe,
+                'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
+                'sexe' => $a->sexe,
+            ]);
+
+        return $this->success([
+            'department' => [
+                'id' => $department->id,
+                'nom' => $department->nom,
+                'code' => $department->code,
+            ],
+            'effectifs' => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'presence' => [
+                'today_present' => $todayPresent,
+                'today_rate' => round(($todayPresent / $deptActifs) * 100, 1),
+                'monthly_rate' => $monthlyRate,
+                'total_active' => $actifs,
+            ],
+            'agents' => $topAgents,
+        ]);
+    }
 }

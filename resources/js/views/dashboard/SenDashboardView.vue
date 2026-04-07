@@ -634,7 +634,7 @@
                 <!-- Header -->
                 <div class="drill-header" :style="{ background: drilldownColor }">
                   <div class="drill-header-left">
-                    <button v-if="drilldownLevel === 'province'" class="drill-back" @click="backToOrgane">
+                    <button v-if="drilldownLevel === 'province' || drilldownLevel === 'department'" class="drill-back" @click="drilldownLevel === 'department' ? backToPrevious() : backToOrgane()">
                       <i class="fas fa-arrow-left"></i>
                     </button>
                     <div>
@@ -643,6 +643,9 @@
                       </div>
                       <div class="drill-header-title" v-else-if="drilldownLevel === 'province' && drilldownProvince">
                         <i class="fas fa-map-marker-alt"></i> {{ drilldownProvince.province.nom }}
+                      </div>
+                      <div class="drill-header-title" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
+                        <i class="fas fa-building"></i> {{ drilldownDepartment.department.nom }}
                       </div>
                       <div class="drill-header-title" v-else>
                         <i class="fas fa-spinner fa-spin"></i> Chargement...
@@ -654,6 +657,9 @@
                       </div>
                       <div class="drill-header-sub" v-else-if="drilldownLevel === 'province' && drilldownProvince">
                         {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
+                      </div>
+                      <div class="drill-header-sub" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
+                        {{ drilldownDepartment.effectifs.total }} agents · {{ drilldownDepartment.department.code || '' }}
                       </div>
                     </div>
                   </div>
@@ -727,9 +733,8 @@
                     <div class="drill-items-grid">
                       <div
                         v-for="item in drilldownOrgane.items" :key="item.id"
-                        class="drill-item-card"
-                        :class="{ 'drill-item-clickable': drilldownOrgane.type_items === 'provinces' }"
-                        @click="drilldownOrgane.type_items === 'provinces' && openProvinceDrilldown(item.id)"
+                        class="drill-item-card drill-item-clickable"
+                        @click="drilldownOrgane.type_items === 'provinces' ? openProvinceDrilldown(item.id) : openDepartmentDrilldown(item.id)"
                       >
                         <div class="drill-item-head">
                           <div class="drill-item-badge" :style="{ background: drilldownColor }">
@@ -740,7 +745,7 @@
                             <div class="drill-item-sub" v-if="item.ville_secretariat">{{ item.ville_secretariat }}</div>
                             <div class="drill-item-sub" v-else-if="item.code">{{ item.code }}</div>
                           </div>
-                          <i v-if="drilldownOrgane.type_items === 'provinces'" class="fas fa-chevron-right drill-item-arrow"></i>
+                          <i class="fas fa-chevron-right drill-item-arrow"></i>
                         </div>
                         <div class="drill-item-stats">
                           <template v-if="drilldownSection === 'effectifs'">
@@ -923,8 +928,8 @@
                       <!-- Départements -->
                       <div v-if="drilldownProvince.departments.length" class="drill-prov-section-title"><i class="fas fa-building"></i> Départements</div>
                       <div class="drill-prov-dept-grid">
-                        <div v-for="d in drilldownProvince.departments" :key="d.id" class="drill-prov-dept">
-                          <div class="drill-prov-dept-name">{{ d.nom }}</div>
+                        <div v-for="d in drilldownProvince.departments" :key="d.id" class="drill-prov-dept drill-item-clickable" @click="openDepartmentDrilldown(d.id)">
+                          <div class="drill-prov-dept-name">{{ d.nom }} <i class="fas fa-chevron-right" style="font-size:0.7em;opacity:0.5;margin-left:4px;"></i></div>
                           <div class="drill-prov-dept-count">{{ d.actifs }} <small>actifs</small> / {{ d.total }}</div>
                         </div>
                       </div>
@@ -991,6 +996,69 @@
                       </div>
                     </template>
                   </template>
+
+                  <!-- ── LEVEL 3 : DÉPARTEMENT DETAIL ── -->
+                  <template v-else-if="drilldownLevel === 'department' && drilldownDepartment">
+                    <!-- Département stats -->
+                    <div class="drill-prov-stats">
+                      <div class="drill-prov-stat-grid">
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs.total }}</div>
+                          <div class="drill-prov-stat-lbl">Total</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs.actifs }}</div>
+                          <div class="drill-prov-stat-lbl">Actifs</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs.suspendus }}</div>
+                          <div class="drill-prov-stat-lbl">Suspendus</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#94a3b8;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs.anciens }}</div>
+                          <div class="drill-prov-stat-lbl">Anciens</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Présence -->
+                    <div class="drill-prov-stats" style="margin-top:12px;">
+                      <div class="drill-prov-stat-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence.today_present }}</div>
+                          <div class="drill-prov-stat-lbl">Présents auj.</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence.today_rate }}%</div>
+                          <div class="drill-prov-stat-lbl">Taux auj.</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence.monthly_rate }}%</div>
+                          <div class="drill-prov-stat-lbl">Taux mensuel</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Agents du département -->
+                    <div v-if="drilldownDepartment.agents.length" class="drill-prov-section-title" style="margin-top:16px;">
+                      <i class="fas fa-user"></i> Agents ({{ drilldownDepartment.agents.length }})
+                    </div>
+                    <div class="drill-prov-agents-table">
+                      <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                        <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                          <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                        </div>
+                        <div class="drill-prov-agent-info">
+                          <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                          <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div v-if="drilldownDepartment.agents.length === 0" class="drill-empty">
+                      <i class="fas fa-inbox"></i>
+                      <p>Aucun agent dans ce département</p>
+                    </div>
+                  </template>
                 </div>
               </div>
             </Transition>
@@ -1046,7 +1114,8 @@ const drilldownOpen = ref(false)
 const drilldownLoading = ref(false)
 const drilldownOrgane = ref(null)   // { organe, nom, type_items, summary, items }
 const drilldownProvince = ref(null) // { province, effectifs, by_organe, presence, pta, departments, agents }
-const drilldownLevel = ref('organe') // 'organe' | 'province'
+const drilldownDepartment = ref(null) // { department, effectifs, presence, agents }
+const drilldownLevel = ref('organe') // 'organe' | 'province' | 'department'
 const drilldownSection = ref('effectifs') // 'effectifs' | 'presence' | 'pta'
 
 async function openOrganeDrilldown(code, section = 'effectifs') {
@@ -1078,10 +1147,24 @@ async function openProvinceDrilldown(id) {
   }
 }
 
+async function openDepartmentDrilldown(id) {
+  drilldownLoading.value = true
+  drilldownLevel.value = 'department'
+  try {
+    const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
+    drilldownDepartment.value = result.data ?? result
+  } catch (e) {
+    drilldownDepartment.value = null
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
 function closeDrilldown() {
   drilldownOpen.value = false
   drilldownOrgane.value = null
   drilldownProvince.value = null
+  drilldownDepartment.value = null
   drilldownLevel.value = 'organe'
   drilldownSection.value = 'effectifs'
 }
@@ -1089,6 +1172,16 @@ function closeDrilldown() {
 function backToOrgane() {
   drilldownLevel.value = 'organe'
   drilldownProvince.value = null
+  drilldownDepartment.value = null
+}
+
+function backToPrevious() {
+  drilldownDepartment.value = null
+  if (drilldownProvince.value) {
+    drilldownLevel.value = 'province'
+  } else {
+    drilldownLevel.value = 'organe'
+  }
 }
 
 const drilldownColor = computed(() => {
