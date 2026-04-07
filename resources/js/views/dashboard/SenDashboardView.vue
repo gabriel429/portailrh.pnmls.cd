@@ -884,7 +884,7 @@ async function openOrganeDrilldown(code) {
   drilldownProvince.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/organe/${code}`)
-    drilldownOrgane.value = result
+    drilldownOrgane.value = result.data ?? result
   } catch (e) {
     drilldownOrgane.value = null
   } finally {
@@ -897,7 +897,7 @@ async function openProvinceDrilldown(id) {
   drilldownLevel.value = 'province'
   try {
     const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
-    drilldownProvince.value = result
+    drilldownProvince.value = result.data ?? result
   } catch (e) {
     drilldownProvince.value = null
   } finally {
