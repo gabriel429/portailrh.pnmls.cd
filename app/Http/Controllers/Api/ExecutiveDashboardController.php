@@ -605,4 +605,242 @@ class ExecutiveDashboardController extends ApiController
 
         return $this->success($payload, [], $payload);
     }
+
+    /**
+     * Drill-down par organe : détails provinces (SEP) ou départements (SEN/SEL)
+     */
+    public function organeDetail(Request $request, string $code)
+    {
+        $code = strtoupper($code);
+        $organes = [
+            'SEN' => 'Secretariat Executif National',
+            'SEP' => 'Secretariat Executif Provincial',
+            'SEL' => 'Secretariat Executif Local',
+        ];
+
+        if (!isset($organes[$code])) {
+            return $this->error('Organe invalide', 404);
+        }
+
+        $nom = $organes[$code];
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $currentYear = $now->year;
+
+        // Agents de cet organe
+        $agents = Agent::where('organe', $nom);
+        $total = (clone $agents)->count();
+        $actifs = (clone $agents)->actifs()->count();
+        $suspendus = (clone $agents)->suspendu()->count();
+        $anciens = (clone $agents)->anciens()->count();
+
+        $items = [];
+
+        if ($code === 'SEP') {
+            // Breakdown par province
+            $provinces = Province::withCount([
+                'agents as total' => fn($q) => $q->where('organe', $nom),
+                'agents as actifs' => fn($q) => $q->where('organe', $nom)->actifs(),
+                'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
+            ])->get();
+
+            foreach ($provinces as $prov) {
+                $provActifs = $prov->actifs ?: 1;
+
+                // Présence aujourd'hui
+                $todayPresent = Pointage::byDate($now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('province_id', $prov->id))
+                    ->distinct('agent_id')->count('agent_id');
+
+                // Moyenne mensuelle
+                $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('province_id', $prov->id))
+                    ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+                    ->groupBy('date_pointage')->get();
+                $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $provActifs) * 100, 1) : 0;
+
+                // PTA
+                $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('province_id', $prov->id);
+                $ptaTotal = (clone $ptaQuery)->count();
+                $ptaTerminee = (clone $ptaQuery)->terminee()->count();
+                $ptaAvg = (clone $ptaQuery)->avg('pourcentage') ?? 0;
+
+                $items[] = [
+                    'id' => $prov->id,
+                    'nom' => $prov->nom,
+                    'code' => $prov->code,
+                    'ville_secretariat' => $prov->ville_secretariat,
+                    'nom_secretariat_executif' => $prov->nom_secretariat_executif,
+                    'effectifs' => ['total' => $prov->total, 'actifs' => $prov->actifs, 'suspendus' => $prov->suspendus],
+                    'presence' => [
+                        'today_present' => $todayPresent,
+                        'today_rate' => round(($todayPresent / $provActifs) * 100, 1),
+                        'monthly_rate' => $monthlyRate,
+                        'total_active' => $prov->actifs,
+                    ],
+                    'pta' => ['total' => $ptaTotal, 'terminee' => $ptaTerminee, 'avg' => round($ptaAvg, 0)],
+                ];
+            }
+
+            // Trier par effectif total desc
+            usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total']);
+        } else {
+            // SEN / SEL : breakdown par département
+            $departments = Department::withCount([
+                'agents as total' => fn($q) => $q->where('organe', $nom),
+                'agents as actifs' => fn($q) => $q->where('organe', $nom)->actifs(),
+                'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
+            ])->get();
+
+            foreach ($departments as $dept) {
+                if ($dept->total === 0) continue;
+
+                $deptActifs = $dept->actifs ?: 1;
+
+                $todayPresent = Pointage::byDate($now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('departement_id', $dept->id))
+                    ->distinct('agent_id')->count('agent_id');
+
+                $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('departement_id', $dept->id))
+                    ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+                    ->groupBy('date_pointage')->get();
+                $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
+
+                $items[] = [
+                    'id' => $dept->id,
+                    'nom' => $dept->nom,
+                    'code' => $dept->code,
+                    'effectifs' => ['total' => $dept->total, 'actifs' => $dept->actifs, 'suspendus' => $dept->suspendus],
+                    'presence' => [
+                        'today_present' => $todayPresent,
+                        'today_rate' => round(($todayPresent / $deptActifs) * 100, 1),
+                        'monthly_rate' => $monthlyRate,
+                        'total_active' => $dept->actifs,
+                    ],
+                ];
+            }
+
+            usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total']);
+        }
+
+        return $this->success([
+            'organe' => $code,
+            'nom' => $nom,
+            'type_items' => $code === 'SEP' ? 'provinces' : 'departements',
+            'summary' => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'items' => $items,
+        ]);
+    }
+
+    /**
+     * Drill-down province : détail complet d'une province
+     */
+    public function provinceDetail(Request $request, int $id)
+    {
+        $province = Province::find($id);
+        if (!$province) {
+            return $this->error('Province introuvable', 404);
+        }
+
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $currentYear = $now->year;
+
+        $agents = Agent::where('province_id', $id);
+        $total = (clone $agents)->count();
+        $actifs = (clone $agents)->actifs()->count();
+        $suspendus = (clone $agents)->suspendu()->count();
+        $anciens = (clone $agents)->anciens()->count();
+
+        // Par organe dans cette province
+        $organes = ['sen' => 'Secretariat Executif National', 'sep' => 'Secretariat Executif Provincial', 'sel' => 'Secretariat Executif Local'];
+        $byOrgane = [];
+        foreach ($organes as $oCode => $oNom) {
+            $byOrgane[$oCode] = Agent::where('province_id', $id)->where('organe', $oNom)->actifs()->count();
+        }
+
+        // Présence
+        $provActifs = $actifs ?: 1;
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $id))
+            ->distinct('agent_id')->count('agent_id');
+
+        $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $id))
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')->get();
+        $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $provActifs) * 100, 1) : 0;
+
+        // PTA dans cette province
+        $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('province_id', $id);
+        $ptaTotal = (clone $ptaQuery)->count();
+        $ptaTerminee = (clone $ptaQuery)->terminee()->count();
+        $ptaEnCours = (clone $ptaQuery)->enCours()->count();
+        $ptaAvg = (clone $ptaQuery)->avg('pourcentage') ?? 0;
+
+        // Départements de la province
+        $departments = Department::where('province_id', $id)
+            ->withCount([
+                'agents as total_agents' => fn($q) => $q,
+                'agents as actifs_agents' => fn($q) => $q->actifs(),
+            ])
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($d) => [
+                'id' => $d->id,
+                'nom' => $d->nom,
+                'code' => $d->code,
+                'total' => $d->total_agents,
+                'actifs' => $d->actifs_agents,
+            ]);
+
+        // Top agents (noms/prénoms/fonctions)
+        $topAgents = Agent::where('province_id', $id)->actifs()
+            ->with('fonction:id,nom')
+            ->orderBy('nom')
+            ->limit(20)
+            ->get(['id', 'nom', 'prenom', 'organe', 'fonction_id', 'poste_actuel', 'sexe'])
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'nom' => $a->prenom . ' ' . $a->nom,
+                'organe' => $a->organe,
+                'fonction' => $a->fonction?->nom ?? $a->poste_actuel ?? '-',
+                'sexe' => $a->sexe,
+            ]);
+
+        return $this->success([
+            'province' => [
+                'id' => $province->id,
+                'nom' => $province->nom,
+                'code' => $province->code,
+                'ville_secretariat' => $province->ville_secretariat,
+                'nom_gouverneur' => $province->nom_gouverneur,
+                'nom_secretariat_executif' => $province->nom_secretariat_executif,
+                'email' => $province->email_officiel,
+                'telephone' => $province->telephone_officiel,
+            ],
+            'effectifs' => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'by_organe' => $byOrgane,
+            'presence' => [
+                'today_present' => $todayPresent,
+                'today_rate' => round(($todayPresent / $provActifs) * 100, 1),
+                'monthly_rate' => $monthlyRate,
+                'total_active' => $actifs,
+            ],
+            'pta' => [
+                'total' => $ptaTotal,
+                'terminee' => $ptaTerminee,
+                'en_cours' => $ptaEnCours,
+                'avg' => round($ptaAvg, 0),
+            ],
+            'departments' => $departments,
+            'agents' => $topAgents,
+        ]);
+    }
 }

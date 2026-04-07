@@ -133,13 +133,14 @@
           </div>
         </div>
         <div class="sen-organe-grid">
-          <div v-for="o in organeCards" :key="o.code" class="sen-organe-card" :style="{ borderTop: '4px solid ' + o.color }">
+          <div v-for="o in organeCards" :key="o.code" class="sen-organe-card sen-organe-clickable" :style="{ borderTop: '4px solid ' + o.color }" @click="openOrganeDrilldown(o.code)">
             <div class="sen-organe-header">
               <div class="sen-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
               <div>
                 <div class="sen-organe-name">{{ o.nom }}</div>
                 <div class="sen-organe-sub">{{ orgPct(o.total) }}% de l'effectif total</div>
               </div>
+              <i class="fas fa-chevron-right sen-drill-arrow"></i>
             </div>
             <div class="sen-organe-stats">
               <div class="sen-organe-stat">
@@ -204,9 +205,10 @@
             </div>
           </div>
           <!-- Par organe -->
-          <div v-for="o in presenceOrganes" :key="o.code" class="sen-presence-card">
+          <div v-for="o in presenceOrganes" :key="o.code" class="sen-presence-card sen-organe-clickable" @click="openOrganeDrilldown(o.code)">
             <div class="sen-presence-card-head" :style="{ color: o.color }">
               <i class="fas" :class="o.icon"></i> {{ o.label }}
+              <i class="fas fa-chevron-right sen-drill-arrow" style="margin-left:auto;"></i>
             </div>
             <div class="sen-presence-big" :style="{ color: o.color }">{{ o.today_rate }}%</div>
             <div class="sen-presence-sub">{{ o.today_present }} / {{ o.total_active }} agents</div>
@@ -272,7 +274,7 @@
 
         <!-- Par organe -->
         <div class="sen-plan-organe-grid">
-          <div v-for="po in planOrganes" :key="po.code" class="sen-plan-organe-card" :style="{ borderLeft: '4px solid ' + po.color }">
+          <div v-for="po in planOrganes" :key="po.code" class="sen-plan-organe-card sen-organe-clickable" :style="{ borderLeft: '4px solid ' + po.color }" @click="openOrganeDrilldown(po.code)">
             <div class="sen-plan-organe-head">
               <div class="sen-plan-organe-badge" :style="{ background: po.color }">{{ po.code }}</div>
               <div class="sen-plan-organe-info">
@@ -623,6 +625,210 @@
         </div>
       </div>
 
+      <!-- ═══ DRILL-DOWN MODAL ═══ -->
+      <Teleport to="body">
+        <Transition name="drill-fade">
+          <div v-if="drilldownOpen" class="drill-overlay" @click.self="closeDrilldown">
+            <Transition name="drill-slide" mode="out-in">
+              <div class="drill-panel" :key="drilldownLevel">
+                <!-- Header -->
+                <div class="drill-header" :style="{ background: drilldownColor }">
+                  <div class="drill-header-left">
+                    <button v-if="drilldownLevel === 'province'" class="drill-back" @click="backToOrgane">
+                      <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div>
+                      <div class="drill-header-title" v-if="drilldownLevel === 'organe' && drilldownOrgane">
+                        <i class="fas fa-sitemap"></i> {{ drilldownOrgane.nom }}
+                      </div>
+                      <div class="drill-header-title" v-else-if="drilldownLevel === 'province' && drilldownProvince">
+                        <i class="fas fa-map-marker-alt"></i> {{ drilldownProvince.province.nom }}
+                      </div>
+                      <div class="drill-header-title" v-else>
+                        <i class="fas fa-spinner fa-spin"></i> Chargement...
+                      </div>
+                      <div class="drill-header-sub" v-if="drilldownLevel === 'organe' && drilldownOrgane">
+                        {{ drilldownOrgane.summary.total }} agents · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}
+                      </div>
+                      <div class="drill-header-sub" v-else-if="drilldownLevel === 'province' && drilldownProvince">
+                        {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
+                      </div>
+                    </div>
+                  </div>
+                  <button class="drill-close" @click="closeDrilldown"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Body -->
+                <div class="drill-body">
+                  <div v-if="drilldownLoading" class="drill-loading">
+                    <i class="fas fa-circle-notch fa-spin fa-2x" :style="{ color: drilldownColor }"></i>
+                    <p>Chargement des données…</p>
+                  </div>
+
+                  <!-- ── LEVEL 1 : ORGANE → ITEMS (provinces / départements) ── -->
+                  <template v-else-if="drilldownLevel === 'organe' && drilldownOrgane">
+                    <!-- Summary bar -->
+                    <div class="drill-summary">
+                      <div class="drill-summary-item">
+                        <div class="drill-summary-val">{{ drilldownOrgane.summary.actifs }}</div>
+                        <div class="drill-summary-lbl">Actifs</div>
+                      </div>
+                      <div class="drill-summary-item">
+                        <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.summary.suspendus }}</div>
+                        <div class="drill-summary-lbl">Suspendus</div>
+                      </div>
+                      <div class="drill-summary-item">
+                        <div class="drill-summary-val" style="color:#64748b;">{{ drilldownOrgane.summary.anciens }}</div>
+                        <div class="drill-summary-lbl">Anciens</div>
+                      </div>
+                      <div class="drill-summary-item">
+                        <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.summary.total }}</div>
+                        <div class="drill-summary-lbl">Total</div>
+                      </div>
+                    </div>
+
+                    <!-- Items list -->
+                    <div class="drill-items-grid">
+                      <div
+                        v-for="item in drilldownOrgane.items" :key="item.id"
+                        class="drill-item-card"
+                        :class="{ 'drill-item-clickable': drilldownOrgane.type_items === 'provinces' }"
+                        @click="drilldownOrgane.type_items === 'provinces' && openProvinceDrilldown(item.id)"
+                      >
+                        <div class="drill-item-head">
+                          <div class="drill-item-badge" :style="{ background: drilldownColor }">
+                            <i :class="drilldownOrgane.type_items === 'provinces' ? 'fas fa-map-marker-alt' : 'fas fa-building'"></i>
+                          </div>
+                          <div class="drill-item-info">
+                            <div class="drill-item-name">{{ item.nom }}</div>
+                            <div class="drill-item-sub" v-if="item.ville_secretariat">{{ item.ville_secretariat }}</div>
+                            <div class="drill-item-sub" v-else-if="item.code">{{ item.code }}</div>
+                          </div>
+                          <i v-if="drilldownOrgane.type_items === 'provinces'" class="fas fa-chevron-right drill-item-arrow"></i>
+                        </div>
+                        <div class="drill-item-stats">
+                          <div class="drill-item-stat">
+                            <span class="drill-stat-val">{{ item.effectifs.total }}</span>
+                            <span class="drill-stat-lbl">Agents</span>
+                          </div>
+                          <div class="drill-item-stat">
+                            <span class="drill-stat-val" style="color:#059669;">{{ item.effectifs.actifs }}</span>
+                            <span class="drill-stat-lbl">Actifs</span>
+                          </div>
+                          <div class="drill-item-stat">
+                            <span class="drill-stat-val" :style="{ color: drilldownColor }">{{ item.presence.today_rate }}%</span>
+                            <span class="drill-stat-lbl">Présence</span>
+                          </div>
+                          <div class="drill-item-stat" v-if="item.pta">
+                            <span class="drill-stat-val" style="color:#d97706;">{{ item.pta.avg }}%</span>
+                            <span class="drill-stat-lbl">PTA</span>
+                          </div>
+                        </div>
+                        <div class="drill-item-bar">
+                          <div class="drill-item-bar-fill" :style="{ width: item.presence.today_rate + '%', background: drilldownColor }"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-if="drilldownOrgane.items.length === 0" class="drill-empty">
+                      <i class="fas fa-inbox"></i>
+                      <p>Aucune donnée disponible</p>
+                    </div>
+                  </template>
+
+                  <!-- ── LEVEL 2 : PROVINCE DETAIL ── -->
+                  <template v-else-if="drilldownLevel === 'province' && drilldownProvince">
+                    <!-- Province info -->
+                    <div class="drill-prov-info">
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.nom_secretariat_executif">
+                        <i class="fas fa-user-tie"></i>
+                        <span>SE : {{ drilldownProvince.province.nom_secretariat_executif }}</span>
+                      </div>
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.nom_gouverneur">
+                        <i class="fas fa-landmark"></i>
+                        <span>Gouverneur : {{ drilldownProvince.province.nom_gouverneur }}</span>
+                      </div>
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.telephone">
+                        <i class="fas fa-phone"></i>
+                        <span>{{ drilldownProvince.province.telephone }}</span>
+                      </div>
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.email">
+                        <i class="fas fa-envelope"></i>
+                        <span>{{ drilldownProvince.province.email }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Stats row -->
+                    <div class="drill-prov-stats">
+                      <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-users"></i></div>
+                        <div class="drill-prov-stat-val">{{ drilldownProvince.effectifs.total }}</div>
+                        <div class="drill-prov-stat-lbl">Agents</div>
+                      </div>
+                      <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-user-check"></i></div>
+                        <div class="drill-prov-stat-val">{{ drilldownProvince.effectifs.actifs }}</div>
+                        <div class="drill-prov-stat-lbl">Actifs</div>
+                      </div>
+                      <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-clock"></i></div>
+                        <div class="drill-prov-stat-val">{{ drilldownProvince.presence.today_rate }}%</div>
+                        <div class="drill-prov-stat-lbl">Présence</div>
+                      </div>
+                      <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-tasks"></i></div>
+                        <div class="drill-prov-stat-val">{{ drilldownProvince.pta.avg }}%</div>
+                        <div class="drill-prov-stat-lbl">PTA</div>
+                      </div>
+                    </div>
+
+                    <!-- Effectifs par organe mini -->
+                    <div class="drill-prov-section-title"><i class="fas fa-sitemap"></i> Répartition par organe</div>
+                    <div class="drill-prov-organe-row">
+                      <div class="drill-prov-organe-chip" style="border-color:#0077B5;">
+                        <span class="drill-prov-organe-code" style="color:#0077B5;">SEN</span>
+                        <span>{{ drilldownProvince.by_organe.sen ?? 0 }}</span>
+                      </div>
+                      <div class="drill-prov-organe-chip" style="border-color:#0ea5e9;">
+                        <span class="drill-prov-organe-code" style="color:#0ea5e9;">SEP</span>
+                        <span>{{ drilldownProvince.by_organe.sep ?? 0 }}</span>
+                      </div>
+                      <div class="drill-prov-organe-chip" style="border-color:#0d9488;">
+                        <span class="drill-prov-organe-code" style="color:#0d9488;">SEL</span>
+                        <span>{{ drilldownProvince.by_organe.sel ?? 0 }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Départements -->
+                    <div v-if="drilldownProvince.departments.length" class="drill-prov-section-title"><i class="fas fa-building"></i> Départements</div>
+                    <div class="drill-prov-dept-grid">
+                      <div v-for="d in drilldownProvince.departments" :key="d.id" class="drill-prov-dept">
+                        <div class="drill-prov-dept-name">{{ d.nom }}</div>
+                        <div class="drill-prov-dept-count">{{ d.actifs }} <small>actifs</small> / {{ d.total }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Agents -->
+                    <div v-if="drilldownProvince.agents.length" class="drill-prov-section-title"><i class="fas fa-user"></i> Agents ({{ drilldownProvince.agents.length }})</div>
+                    <div class="drill-prov-agents-table">
+                      <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row">
+                        <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                          <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                        </div>
+                        <div class="drill-prov-agent-info">
+                          <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                          <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </Transition>
+          </div>
+        </Transition>
+      </Teleport>
+
       <!-- ═══ FOOTER ═══ -->
       <div class="sen-footer">
         <div class="sen-footer-inner">
@@ -664,14 +870,59 @@ const taskCompletionPct = computed(() => {
   return total > 0 ? Math.round((done / total) * 100) : 0
 })
 
-const currentTime = computed(() => new Date().toLocaleTimeString('fr-FR', {
-  hour: '2-digit', minute: '2-digit',
-}))
+// ─── DRILL-DOWN STATE ───
+const drilldownOpen = ref(false)
+const drilldownLoading = ref(false)
+const drilldownOrgane = ref(null)   // { organe, nom, type_items, summary, items }
+const drilldownProvince = ref(null) // { province, effectifs, by_organe, presence, pta, departments, agents }
+const drilldownLevel = ref('organe') // 'organe' | 'province'
 
-const taskCompletionPct = computed(() => {
-  const total = data.value.taches?.total ?? 0
-  const done = data.value.taches?.terminee ?? 0
-  return total > 0 ? Math.round((done / total) * 100) : 0
+async function openOrganeDrilldown(code) {
+  drilldownOpen.value = true
+  drilldownLoading.value = true
+  drilldownLevel.value = 'organe'
+  drilldownProvince.value = null
+  try {
+    const { data: result } = await client.get(`/dashboard/executive/organe/${code}`)
+    drilldownOrgane.value = result
+  } catch (e) {
+    drilldownOrgane.value = null
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
+async function openProvinceDrilldown(id) {
+  drilldownLoading.value = true
+  drilldownLevel.value = 'province'
+  try {
+    const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
+    drilldownProvince.value = result
+  } catch (e) {
+    drilldownProvince.value = null
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
+function closeDrilldown() {
+  drilldownOpen.value = false
+  drilldownOrgane.value = null
+  drilldownProvince.value = null
+  drilldownLevel.value = 'organe'
+}
+
+function backToOrgane() {
+  drilldownLevel.value = 'organe'
+  drilldownProvince.value = null
+}
+
+const drilldownColor = computed(() => {
+  const code = drilldownOrgane.value?.organe
+  if (code === 'SEN') return '#0077B5'
+  if (code === 'SEP') return '#0ea5e9'
+  if (code === 'SEL') return '#0d9488'
+  return '#0077B5'
 })
 
 const quickActions = [
@@ -1236,5 +1487,178 @@ onMounted(async () => {
   .sen-affectations-row { grid-template-columns: 1fr; }
   .sen-audit-row { grid-template-columns: 1fr; }
   .sen-task-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ═══════════ DRILL-DOWN CLICKABLE ═══════════ */
+.sen-organe-clickable { cursor: pointer; position: relative; }
+.sen-organe-clickable:hover { border-color: #93c5fd; box-shadow: 0 8px 28px rgba(0,119,181,.12); }
+.sen-drill-arrow {
+  position: absolute; top: 1.2rem; right: 1.2rem;
+  font-size: .65rem; color: #cbd5e1; transition: all .25s;
+}
+.sen-organe-clickable:hover .sen-drill-arrow { color: #0077B5; transform: translateX(3px); }
+
+/* ═══════════ DRILL-DOWN OVERLAY ═══════════ */
+.drill-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(6px);
+  display: flex; justify-content: flex-end;
+}
+.drill-panel {
+  width: 580px; max-width: 95vw; height: 100vh;
+  background: #f8fafc; display: flex; flex-direction: column;
+  box-shadow: -12px 0 48px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+
+/* Header */
+.drill-header {
+  padding: 1.5rem 1.8rem; color: #fff; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.drill-header-left { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+.drill-header-title { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
+.drill-header-sub { font-size: .72rem; opacity: .8; margin-top: .15rem; }
+.drill-back {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.3);
+  background: rgba(255,255,255,.1); color: #fff; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: .85rem; transition: all .2s; flex-shrink: 0;
+}
+.drill-back:hover { background: rgba(255,255,255,.2); }
+.drill-close {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.08); color: #fff; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: .85rem; transition: all .2s; flex-shrink: 0;
+}
+.drill-close:hover { background: rgba(255,255,255,.2); }
+
+/* Body */
+.drill-body { flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; }
+
+/* Loading */
+.drill-loading { text-align: center; padding: 3rem 1rem; }
+.drill-loading p { margin-top: .8rem; color: #94a3b8; font-size: .82rem; }
+
+/* Summary */
+.drill-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem;
+  margin-bottom: 1.4rem;
+}
+.drill-summary-item {
+  background: #fff; border-radius: 12px; padding: .8rem; text-align: center;
+  border: 1px solid #e5e7eb;
+}
+.drill-summary-val { font-size: 1.5rem; font-weight: 800; color: #059669; }
+.drill-summary-lbl { font-size: .62rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
+
+/* Items grid */
+.drill-items-grid { display: flex; flex-direction: column; gap: .6rem; }
+.drill-item-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1rem 1.2rem; transition: all .25s;
+}
+.drill-item-clickable { cursor: pointer; }
+.drill-item-clickable:hover {
+  border-color: #93c5fd; transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,119,181,.1);
+}
+.drill-item-head { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
+.drill-item-badge {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; color: #fff; font-size: .75rem; flex-shrink: 0;
+}
+.drill-item-info { flex: 1; min-width: 0; }
+.drill-item-name { font-size: .88rem; font-weight: 700; color: #1e293b; }
+.drill-item-sub { font-size: .68rem; color: #94a3b8; }
+.drill-item-arrow { color: #cbd5e1; font-size: .6rem; transition: all .2s; }
+.drill-item-clickable:hover .drill-item-arrow { color: #0077B5; transform: translateX(3px); }
+
+.drill-item-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; margin-bottom: .6rem; }
+.drill-item-stat { text-align: center; }
+.drill-stat-val { font-size: 1rem; font-weight: 800; display: block; }
+.drill-stat-lbl { font-size: .58rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+
+.drill-item-bar { height: 4px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.drill-item-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 2px; }
+
+.drill-empty { text-align: center; padding: 2.5rem 1rem; color: #94a3b8; }
+.drill-empty i { font-size: 2rem; margin-bottom: .5rem; display: block; }
+
+/* ═══════════ PROVINCE DETAIL (Level 2) ═══════════ */
+.drill-prov-info {
+  display: flex; flex-wrap: wrap; gap: .5rem .8rem;
+  margin-bottom: 1.2rem; padding: .8rem 1rem;
+  background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
+}
+.drill-prov-info-item {
+  display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: #475569;
+}
+.drill-prov-info-item i { color: #94a3b8; font-size: .7rem; }
+
+.drill-prov-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1.2rem; }
+.drill-prov-stat-card {
+  background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
+  padding: .8rem; text-align: center;
+}
+.drill-prov-stat-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; margin: 0 auto .4rem; font-size: .85rem;
+}
+.drill-prov-stat-val { font-size: 1.4rem; font-weight: 800; line-height: 1; color: #1e293b; }
+.drill-prov-stat-lbl { font-size: .6rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: .15rem; }
+
+.drill-prov-section-title {
+  font-size: .82rem; font-weight: 700; color: #334155;
+  display: flex; align-items: center; gap: .4rem;
+  margin: 1.2rem 0 .6rem; padding-bottom: .3rem; border-bottom: 1px solid #e5e7eb;
+}
+.drill-prov-section-title i { font-size: .72rem; color: #94a3b8; }
+
+.drill-prov-organe-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.drill-prov-organe-chip {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .4rem .8rem; border-radius: 8px; border: 1.5px solid;
+  background: #fff; font-size: .82rem; font-weight: 700;
+}
+.drill-prov-organe-code { font-weight: 800; font-size: .7rem; }
+
+.drill-prov-dept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+.drill-prov-dept {
+  background: #fff; border-radius: 10px; border: 1px solid #e5e7eb;
+  padding: .6rem .8rem; display: flex; align-items: center; justify-content: space-between;
+}
+.drill-prov-dept-name { font-size: .78rem; font-weight: 600; color: #334155; }
+.drill-prov-dept-count { font-size: .78rem; font-weight: 700; color: #0077B5; }
+.drill-prov-dept-count small { color: #94a3b8; font-weight: 500; }
+
+.drill-prov-agents-table { display: flex; flex-direction: column; gap: .35rem; }
+.drill-prov-agent-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .5rem .7rem; background: #fff; border-radius: 10px; border: 1px solid #f1f5f9;
+}
+.drill-prov-agent-avatar {
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: .75rem; flex-shrink: 0;
+}
+.drill-prov-agent-info { flex: 1; min-width: 0; }
+.drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
+.drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
+
+/* ═══════════ TRANSITIONS ═══════════ */
+.drill-fade-enter-active, .drill-fade-leave-active { transition: all .3s ease; }
+.drill-fade-enter-from, .drill-fade-leave-to { opacity: 0; }
+
+.drill-slide-enter-active { transition: all .35s cubic-bezier(.16,1,.3,1); }
+.drill-slide-leave-active { transition: all .25s ease-in; }
+.drill-slide-enter-from { transform: translateX(40px); opacity: 0; }
+.drill-slide-leave-to { transform: translateX(-20px); opacity: 0; }
+
+/* ═══════════ RESPONSIVE DRILL-DOWN ═══════════ */
+@media (max-width: 640px) {
+  .drill-panel { width: 100vw; }
+  .drill-summary { grid-template-columns: repeat(2, 1fr); }
+  .drill-prov-stats { grid-template-columns: repeat(2, 1fr); }
+  .drill-prov-dept-grid { grid-template-columns: 1fr; }
+  .drill-item-stats { grid-template-columns: repeat(2, 1fr); }
 }
 </style>
