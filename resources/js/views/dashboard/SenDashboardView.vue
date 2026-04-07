@@ -133,7 +133,7 @@
           </div>
         </div>
         <div class="sen-organe-grid">
-          <div v-for="o in organeCards" :key="o.code" class="sen-organe-card sen-organe-clickable" :style="{ borderTop: '4px solid ' + o.color }" @click="openOrganeDrilldown(o.code)">
+          <div v-for="o in organeCards" :key="o.code" class="sen-organe-card sen-organe-clickable" :style="{ borderTop: '4px solid ' + o.color }" @click="openOrganeDrilldown(o.code, 'effectifs')">
             <div class="sen-organe-header">
               <div class="sen-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
               <div>
@@ -205,7 +205,7 @@
             </div>
           </div>
           <!-- Par organe -->
-          <div v-for="o in presenceOrganes" :key="o.code" class="sen-presence-card sen-organe-clickable" @click="openOrganeDrilldown(o.code)">
+          <div v-for="o in presenceOrganes" :key="o.code" class="sen-presence-card sen-organe-clickable" @click="openOrganeDrilldown(o.code, 'presence')">
             <div class="sen-presence-card-head" :style="{ color: o.color }">
               <i class="fas" :class="o.icon"></i> {{ o.label }}
               <i class="fas fa-chevron-right sen-drill-arrow" style="margin-left:auto;"></i>
@@ -274,7 +274,7 @@
 
         <!-- Par organe -->
         <div class="sen-plan-organe-grid">
-          <div v-for="po in planOrganes" :key="po.code" class="sen-plan-organe-card sen-organe-clickable" :style="{ borderLeft: '4px solid ' + po.color }" @click="openOrganeDrilldown(po.code)">
+          <div v-for="po in planOrganes" :key="po.code" class="sen-plan-organe-card sen-organe-clickable" :style="{ borderLeft: '4px solid ' + po.color }" @click="openOrganeDrilldown(po.code, 'pta')">
             <div class="sen-plan-organe-head">
               <div class="sen-plan-organe-badge" :style="{ background: po.color }">{{ po.code }}</div>
               <div class="sen-plan-organe-info">
@@ -648,7 +648,9 @@
                         <i class="fas fa-spinner fa-spin"></i> Chargement...
                       </div>
                       <div class="drill-header-sub" v-if="drilldownLevel === 'organe' && drilldownOrgane">
-                        {{ drilldownOrgane.summary.total }} agents · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}
+                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownOrgane.summary.total }} agents · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
+                        <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
+                        <template v-else>Plan de travail {{ new Date().getFullYear() }} · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
                       </div>
                       <div class="drill-header-sub" v-else-if="drilldownLevel === 'province' && drilldownProvince">
                         {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
@@ -669,22 +671,56 @@
                   <template v-else-if="drilldownLevel === 'organe' && drilldownOrgane">
                     <!-- Summary bar -->
                     <div class="drill-summary">
-                      <div class="drill-summary-item">
-                        <div class="drill-summary-val">{{ drilldownOrgane.summary.actifs }}</div>
-                        <div class="drill-summary-lbl">Actifs</div>
-                      </div>
-                      <div class="drill-summary-item">
-                        <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.summary.suspendus }}</div>
-                        <div class="drill-summary-lbl">Suspendus</div>
-                      </div>
-                      <div class="drill-summary-item">
-                        <div class="drill-summary-val" style="color:#64748b;">{{ drilldownOrgane.summary.anciens }}</div>
-                        <div class="drill-summary-lbl">Anciens</div>
-                      </div>
-                      <div class="drill-summary-item">
-                        <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.summary.total }}</div>
-                        <div class="drill-summary-lbl">Total</div>
-                      </div>
+                      <template v-if="drilldownSection === 'effectifs'">
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val">{{ drilldownOrgane.summary.actifs }}</div>
+                          <div class="drill-summary-lbl">Actifs</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.summary.suspendus }}</div>
+                          <div class="drill-summary-lbl">Suspendus</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#64748b;">{{ drilldownOrgane.summary.anciens }}</div>
+                          <div class="drill-summary-lbl">Anciens</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.summary.total }}</div>
+                          <div class="drill-summary-lbl">Total</div>
+                        </div>
+                      </template>
+                      <template v-else-if="drilldownSection === 'presence'">
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" :style="{ color: drilldownColor }">{{ drilldownOrgane.summary.actifs }}</div>
+                          <div class="drill-summary-lbl">Agents actifs</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#059669;">{{ drilldownOrgane.items.reduce((s, i) => s + (i.presence?.today_present || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">Présents</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.summary.actifs - drilldownOrgane.items.reduce((s, i) => s + (i.presence?.today_present || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">Absents</div>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" :style="{ color: drilldownColor }">{{ drilldownOrgane.items.reduce((s, i) => s + (i.pta?.total || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">Activités</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#059669;">{{ drilldownOrgane.items.reduce((s, i) => s + (i.pta?.terminee || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">Terminées</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.items.reduce((s, i) => s + (i.pta?.total || 0), 0) - drilldownOrgane.items.reduce((s, i) => s + (i.pta?.terminee || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">En cours</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.items.length > 0 ? Math.round(drilldownOrgane.items.reduce((s, i) => s + (i.pta?.avg || 0), 0) / drilldownOrgane.items.length) : 0 }}%</div>
+                          <div class="drill-summary-lbl">Moy. avancement</div>
+                        </div>
+                      </template>
                     </div>
 
                     <!-- Items list -->
@@ -707,25 +743,62 @@
                           <i v-if="drilldownOrgane.type_items === 'provinces'" class="fas fa-chevron-right drill-item-arrow"></i>
                         </div>
                         <div class="drill-item-stats">
-                          <div class="drill-item-stat">
-                            <span class="drill-stat-val">{{ item.effectifs.total }}</span>
-                            <span class="drill-stat-lbl">Agents</span>
-                          </div>
-                          <div class="drill-item-stat">
-                            <span class="drill-stat-val" style="color:#059669;">{{ item.effectifs.actifs }}</span>
-                            <span class="drill-stat-lbl">Actifs</span>
-                          </div>
-                          <div class="drill-item-stat">
-                            <span class="drill-stat-val" :style="{ color: drilldownColor }">{{ item.presence.today_rate }}%</span>
-                            <span class="drill-stat-lbl">Présence</span>
-                          </div>
-                          <div class="drill-item-stat" v-if="item.pta">
-                            <span class="drill-stat-val" style="color:#d97706;">{{ item.pta.avg }}%</span>
-                            <span class="drill-stat-lbl">PTA</span>
-                          </div>
+                          <template v-if="drilldownSection === 'effectifs'">
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val">{{ item.effectifs.total }}</span>
+                              <span class="drill-stat-lbl">Agents</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#059669;">{{ item.effectifs.actifs }}</span>
+                              <span class="drill-stat-lbl">Actifs</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#d97706;">{{ item.effectifs.suspendus }}</span>
+                              <span class="drill-stat-lbl">Suspendus</span>
+                            </div>
+                          </template>
+                          <template v-else-if="drilldownSection === 'presence'">
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" :style="{ color: drilldownColor }">{{ item.presence.today_rate }}%</span>
+                              <span class="drill-stat-lbl">Aujourd'hui</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#059669;">{{ item.presence.today_present }}</span>
+                              <span class="drill-stat-lbl">Présents</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#d97706;">{{ item.presence.monthly_rate }}%</span>
+                              <span class="drill-stat-lbl">Moy. mois</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#64748b;">{{ item.effectifs.actifs }}</span>
+                              <span class="drill-stat-lbl">Actifs</span>
+                            </div>
+                          </template>
+                          <template v-else>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" :style="{ color: drilldownColor }">{{ item.pta?.avg || 0 }}%</span>
+                              <span class="drill-stat-lbl">Avancement</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#059669;">{{ item.pta?.terminee || 0 }}</span>
+                              <span class="drill-stat-lbl">Terminées</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#d97706;">{{ (item.pta?.total || 0) - (item.pta?.terminee || 0) }}</span>
+                              <span class="drill-stat-lbl">En cours</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#64748b;">{{ item.pta?.total || 0 }}</span>
+                              <span class="drill-stat-lbl">Total</span>
+                            </div>
+                          </template>
                         </div>
                         <div class="drill-item-bar">
-                          <div class="drill-item-bar-fill" :style="{ width: item.presence.today_rate + '%', background: drilldownColor }"></div>
+                          <div class="drill-item-bar-fill" :style="{
+                            width: (drilldownSection === 'pta' ? (item.pta?.avg || 0) : drilldownSection === 'presence' ? item.presence.today_rate : (item.effectifs.total > 0 ? Math.round(item.effectifs.actifs / item.effectifs.total * 100) : 0)) + '%',
+                            background: drilldownColor
+                          }"></div>
                         </div>
                       </div>
                     </div>
@@ -876,11 +949,13 @@ const drilldownLoading = ref(false)
 const drilldownOrgane = ref(null)   // { organe, nom, type_items, summary, items }
 const drilldownProvince = ref(null) // { province, effectifs, by_organe, presence, pta, departments, agents }
 const drilldownLevel = ref('organe') // 'organe' | 'province'
+const drilldownSection = ref('effectifs') // 'effectifs' | 'presence' | 'pta'
 
-async function openOrganeDrilldown(code) {
+async function openOrganeDrilldown(code, section = 'effectifs') {
   drilldownOpen.value = true
   drilldownLoading.value = true
   drilldownLevel.value = 'organe'
+  drilldownSection.value = section
   drilldownProvince.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/organe/${code}`)
@@ -910,6 +985,7 @@ function closeDrilldown() {
   drilldownOrgane.value = null
   drilldownProvince.value = null
   drilldownLevel.value = 'organe'
+  drilldownSection.value = 'effectifs'
 }
 
 function backToOrgane() {
