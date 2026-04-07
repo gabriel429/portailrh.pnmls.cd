@@ -711,6 +711,12 @@ class ExecutiveDashboardController extends ApiController
                     ->groupBy('date_pointage')->get();
                 $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
 
+                // PTA du département
+                $ptaDeptQuery = ActivitePlan::parAnnee($currentYear)->where('departement_id', $dept->id);
+                $ptaDeptTotal = (clone $ptaDeptQuery)->count();
+                $ptaDeptTerminee = (clone $ptaDeptQuery)->terminee()->count();
+                $ptaDeptAvg = (clone $ptaDeptQuery)->avg('pourcentage') ?? 0;
+
                 $items[] = [
                     'id' => $dept->id,
                     'nom' => $dept->nom,
@@ -722,11 +728,37 @@ class ExecutiveDashboardController extends ApiController
                         'monthly_rate' => $monthlyRate,
                         'total_active' => $dept->actifs,
                     ],
+                    'pta' => ['total' => $ptaDeptTotal, 'terminee' => $ptaDeptTerminee, 'avg' => round($ptaDeptAvg, 0)],
                 ];
             }
 
             usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total']);
         }
+
+        // PTA global de cet organe
+        $ptaOrganeQuery = ActivitePlan::parAnnee($currentYear)
+            ->where('niveau_administratif', $code === 'SEN' ? 'national' : ($code === 'SEP' ? 'provincial' : 'local'));
+        $ptaOrganeTotal = (clone $ptaOrganeQuery)->count();
+        $ptaOrganeTerminee = (clone $ptaOrganeQuery)->terminee()->count();
+        $ptaOrganeEnCours = (clone $ptaOrganeQuery)->enCours()->count();
+        $ptaOrganeAvg = (clone $ptaOrganeQuery)->avg('pourcentage') ?? 0;
+
+        // Top activités PTA de l'organe
+        $ptaActivites = (clone $ptaOrganeQuery)
+            ->orderByDesc('pourcentage')
+            ->limit(50)
+            ->get(['id', 'titre', 'categorie', 'statut', 'pourcentage', 'trimestre', 'date_debut', 'date_fin', 'departement_id'])
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'titre' => $a->titre,
+                'categorie' => $a->categorie,
+                'statut' => $a->statut,
+                'pourcentage' => $a->pourcentage ?? 0,
+                'trimestre' => $a->trimestre,
+                'date_debut' => $a->date_debut?->format('d/m/Y'),
+                'date_fin' => $a->date_fin?->format('d/m/Y'),
+                'departement' => $a->departement_id ? optional($a->departement)->nom : null,
+            ]);
 
         return $this->success([
             'organe' => $code,
@@ -734,6 +766,13 @@ class ExecutiveDashboardController extends ApiController
             'type_items' => $code === 'SEP' ? 'provinces' : 'departements',
             'summary' => compact('total', 'actifs', 'suspendus', 'anciens'),
             'items' => $items,
+            'pta' => [
+                'total' => $ptaOrganeTotal,
+                'terminee' => $ptaOrganeTerminee,
+                'en_cours' => $ptaOrganeEnCours,
+                'avg' => round($ptaOrganeAvg, 0),
+            ],
+            'activites' => $ptaActivites,
         ]);
     }
 

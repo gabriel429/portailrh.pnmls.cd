@@ -711,19 +711,19 @@
                       </template>
                       <template v-else>
                         <div class="drill-summary-item">
-                          <div class="drill-summary-val" :style="{ color: drilldownColor }">{{ drilldownOrgane.items.reduce((s, i) => s + (i.pta?.total || 0), 0) }}</div>
+                          <div class="drill-summary-val" :style="{ color: drilldownColor }">{{ drilldownOrgane.pta?.total || 0 }}</div>
                           <div class="drill-summary-lbl">Activités</div>
                         </div>
                         <div class="drill-summary-item">
-                          <div class="drill-summary-val" style="color:#059669;">{{ drilldownOrgane.items.reduce((s, i) => s + (i.pta?.terminee || 0), 0) }}</div>
+                          <div class="drill-summary-val" style="color:#059669;">{{ drilldownOrgane.pta?.terminee || 0 }}</div>
                           <div class="drill-summary-lbl">Terminées</div>
                         </div>
                         <div class="drill-summary-item">
-                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.items.reduce((s, i) => s + (i.pta?.total || 0), 0) - drilldownOrgane.items.reduce((s, i) => s + (i.pta?.terminee || 0), 0) }}</div>
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.pta?.en_cours || 0 }}</div>
                           <div class="drill-summary-lbl">En cours</div>
                         </div>
                         <div class="drill-summary-item">
-                          <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.items.length > 0 ? Math.round(drilldownOrgane.items.reduce((s, i) => s + (i.pta?.avg || 0), 0) / drilldownOrgane.items.length) : 0 }}%</div>
+                          <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.pta?.avg || 0 }}%</div>
                           <div class="drill-summary-lbl">Moy. avancement</div>
                         </div>
                       </template>
@@ -808,10 +808,36 @@
                       </div>
                     </div>
 
-                    <div v-if="drilldownOrgane.items.length === 0" class="drill-empty">
+                    <div v-if="drilldownOrgane.items.length === 0 && (!drilldownOrgane.activites || drilldownOrgane.activites.length === 0)" class="drill-empty">
                       <i class="fas fa-inbox"></i>
                       <p>Aucune donnée disponible</p>
                     </div>
+
+                    <!-- Activités PTA de l'organe -->
+                    <template v-if="drilldownSection === 'pta' && drilldownOrgane.activites?.length">
+                      <div class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownOrgane.activites.length }})
+                      </div>
+                      <div class="drill-prov-activites">
+                        <div v-for="act in drilldownOrgane.activites" :key="act.id" class="drill-prov-activite">
+                          <div class="drill-activite-head">
+                            <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
+                            <div class="drill-activite-info">
+                              <div class="drill-activite-titre">{{ act.titre }}</div>
+                              <div class="drill-activite-meta">
+                                <span v-if="act.categorie" class="drill-activite-cat">{{ act.categorie }}</span>
+                                <span v-if="act.departement" class="drill-activite-dept"><i class="fas fa-building" style="font-size:0.7em;"></i> {{ act.departement }}</span>
+                                <span v-if="act.trimestre">{{ act.trimestre }}</span>
+                                <span v-if="act.date_debut">{{ act.date_debut }} → {{ act.date_fin || '?' }}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="drill-item-bar" style="margin-top:4px;">
+                            <div class="drill-item-bar-fill" :style="{ width: act.pourcentage + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
                   </template>
 
                   <!-- ── LEVEL 2 : PROVINCE DETAIL ── -->
