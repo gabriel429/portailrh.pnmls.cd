@@ -1047,47 +1047,51 @@
                       </div>
                     </div>
 
-                    <!-- Activités PTA du département -->
-                    <div v-if="drilldownDepartment.activites?.length" class="drill-prov-section-title" style="margin-top:16px;">
-                      <i class="fas fa-tasks"></i> Activités PTA ({{ drilldownDepartment.activites.length }})
-                    </div>
-                    <div v-if="drilldownDepartment.activites?.length" class="drill-prov-activites">
-                      <div v-for="a in drilldownDepartment.activites" :key="a.id" class="drill-prov-activite">
-                        <div class="drill-activite-head">
-                          <span class="drill-activite-pct" :style="{ color: a.pourcentage >= 100 ? '#059669' : a.pourcentage >= 50 ? '#d97706' : '#ef4444' }">{{ a.pourcentage }}%</span>
-                          <span class="drill-activite-titre">{{ a.titre }}</span>
-                        </div>
-                        <div class="drill-activite-info">
-                          <span class="drill-activite-cat"><i class="fas fa-tag"></i> {{ a.categorie }}</span>
-                          <span class="drill-activite-meta"><i class="fas fa-calendar"></i> {{ a.trimestre }} · {{ a.date_debut }} → {{ a.date_fin }}</span>
-                        </div>
-                        <div class="drill-activite-bar">
-                          <div class="drill-activite-bar-fill" :style="{ width: Math.min(a.pourcentage, 100) + '%', background: a.pourcentage >= 100 ? '#059669' : a.pourcentage >= 50 ? '#d97706' : '#ef4444' }"></div>
-                        </div>
-                      </div>
-                    </div>
-                    <div v-else-if="!drilldownDepartment.activites?.length" class="drill-empty">
-                      <i class="fas fa-inbox"></i>
-                      <p>Aucune activité PTA dans ce département</p>
-                    </div>
-
                     <!-- Effectifs résumé -->
-                    <div class="drill-prov-stats" style="margin-top:18px;">
-                      <div class="drill-prov-section-title"><i class="fas fa-users"></i> Effectifs</div>
+                    <div class="drill-prov-stats" style="margin-top:10px;">
                       <div class="drill-prov-stat-grid">
                         <div class="drill-prov-stat-card">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs.total }}</div>
-                          <div class="drill-prov-stat-lbl">Total</div>
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Agents</div>
                         </div>
                         <div class="drill-prov-stat-card" style="border-color:#059669;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs.actifs }}</div>
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
                           <div class="drill-prov-stat-lbl">Actifs</div>
                         </div>
                         <div class="drill-prov-stat-card" style="border-color:#d97706;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence.today_rate }}%</div>
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
                           <div class="drill-prov-stat-lbl">Présence auj.</div>
                         </div>
                       </div>
+                    </div>
+
+                    <!-- Activités PTA du département -->
+                    <template v-if="drilldownDepartment.activites?.length">
+                      <div class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownDepartment.activites.length }})
+                      </div>
+                      <div class="drill-prov-activites">
+                        <div v-for="act in drilldownDepartment.activites" :key="act.id" class="drill-prov-activite">
+                          <div class="drill-activite-head">
+                            <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
+                            <div class="drill-activite-info">
+                              <div class="drill-activite-titre">{{ act.titre }}</div>
+                              <div class="drill-activite-meta">
+                                <span v-if="act.categorie" class="drill-activite-cat">{{ act.categorie }}</span>
+                                <span v-if="act.trimestre">{{ act.trimestre }}</span>
+                                <span v-if="act.date_debut">{{ act.date_debut }} → {{ act.date_fin || '?' }}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="drill-item-bar" style="margin-top:4px;">
+                            <div class="drill-item-bar-fill" :style="{ width: Math.min(act.pourcentage, 100) + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                    <div v-else class="drill-empty">
+                      <i class="fas fa-inbox"></i>
+                      <p>Aucune activité PTA dans ce département</p>
                     </div>
                   </template>
                 </div>
@@ -1951,7 +1955,10 @@ onMounted(async () => {
 .drill-activite-pct { font-size: 1.1rem; font-weight: 700; min-width: 3rem; text-align: right; }
 .drill-activite-info { flex: 1; min-width: 0; }
 .drill-activite-titre { font-size: .78rem; font-weight: 600; color: #1e293b; line-height: 1.3; }
-.drill-activite-meta { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; }
+.drill-activite-meta { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; font-size: .65rem; color: #64748b; }
+.drill-activite-meta span { background: #f1f5f9; padding: .1rem .4rem; border-radius: .25rem; }
+.drill-activite-cat { font-weight: 600; }
+.drill-activite-dept { }
 .drill-activite-tag { font-size: .6rem; background: #f1f5f9; color: #64748b; padding: .1rem .4rem; border-radius: .25rem; }
 .drill-activite-statut { font-size: .6rem; padding: .1rem .4rem; border-radius: .25rem; font-weight: 600; }
 .statut-terminée, .statut-terminee { background: #d1fae5; color: #059669; }
