@@ -17,37 +17,37 @@
           </div>
         </div>
         <div class="rh-hero-kpis">
-          <router-link to="/rh/agents" class="rh-kpi">
+          <div class="rh-kpi" @click="openOrganeDrilldown('SEN', 'effectifs')">
             <div class="rh-kpi-icon"><i class="fas fa-users"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.agents?.actifs ?? '-' }}</div>
               <div class="rh-kpi-lbl">Agents actifs</div>
             </div>
-          </router-link>
+          </div>
           <div class="kpi-divider"></div>
-          <router-link to="/rh/pointages/daily" class="rh-kpi">
+          <div class="rh-kpi" @click="openOrganeDrilldown('SEN', 'presence')">
             <div class="rh-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="rh-kpi-lbl">Presence</div>
             </div>
-          </router-link>
+          </div>
           <div class="kpi-divider"></div>
-          <router-link to="/requests" class="rh-kpi">
+          <div class="rh-kpi" @click="router.push('/requests')">
             <div class="rh-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.requests?.en_attente ?? 0 }}</div>
               <div class="rh-kpi-lbl">En attente</div>
             </div>
-          </router-link>
+          </div>
           <div class="kpi-divider"></div>
-          <router-link to="/signalements" class="rh-kpi">
+          <div class="rh-kpi" @click="router.push('/signalements')">
             <div class="rh-kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.signalements?.ouvert ?? 0 }}</div>
               <div class="rh-kpi-lbl">Signalements</div>
             </div>
-          </router-link>
+          </div>
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@
           </div>
         </div>
         <div class="rh-metrics">
-          <router-link v-for="m in metrics" :key="m.label" :to="m.to" class="rh-metric">
+          <div v-for="m in metrics" :key="m.label" class="rh-metric" @click="m.drill ? m.drill() : router.push(m.to)">
             <div class="rh-metric-header">
               <div class="rh-metric-icon" :style="{ background: m.bg, color: m.color }">
                 <i class="fas" :class="m.icon"></i>
@@ -111,7 +111,7 @@
             <div class="rh-metric-bar">
               <div class="rh-metric-bar-fill" :style="{ background: m.color, width: m.pct + '%' }"></div>
             </div>
-          </router-link>
+          </div>
         </div>
       </div>
 
@@ -208,7 +208,7 @@
           </div>
         </div>
         <div class="rh-organe-grid">
-          <router-link v-for="o in organeCards" :key="o.code" :to="'/rh/agents'" class="rh-organe-card" :style="{ borderTop: '4px solid ' + o.color }">
+          <div v-for="o in organeCards" :key="o.code" class="rh-organe-card" :style="{ borderTop: '4px solid ' + o.color }" @click="openOrganeDrilldown(o.code, 'effectifs')">
             <div class="rh-organe-header">
               <div class="rh-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
               <div>
@@ -229,7 +229,7 @@
             <div class="rh-organe-bar-bg">
               <div class="rh-organe-bar-fill" :style="{ background: o.color, width: orgPct(o.actifs) + '%' }"></div>
             </div>
-          </router-link>
+          </div>
 
           <!-- Repartition par sexe -->
           <div class="rh-organe-card" style="border-top: 4px solid #8b5cf6;">
@@ -477,6 +477,523 @@
           </div>
         </div>
       </div>
+
+      <!-- ═══ DRILL-DOWN MODAL ═══ -->
+      <Teleport to="body">
+        <Transition name="drill-fade">
+          <div v-if="drilldownOpen" class="drill-overlay" @click.self="closeDrilldown">
+            <Transition name="drill-slide" mode="out-in">
+              <div class="drill-panel" :key="drilldownLevel">
+                <!-- Header -->
+                <div class="drill-header" :style="{ background: drilldownColor }">
+                  <div class="drill-header-left">
+                    <button v-if="drilldownLevel === 'province' || drilldownLevel === 'department'" class="drill-back" @click="drilldownLevel === 'department' ? backToPrevious() : backToOrgane()">
+                      <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div>
+                      <div class="drill-header-title" v-if="drilldownLevel === 'organe' && drilldownOrgane">
+                        <i class="fas fa-sitemap"></i> {{ drilldownOrgane.nom }}
+                      </div>
+                      <div class="drill-header-title" v-else-if="drilldownLevel === 'province' && drilldownProvince">
+                        <i class="fas fa-map-marker-alt"></i> {{ drilldownProvince.province.nom }}
+                      </div>
+                      <div class="drill-header-title" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
+                        <i class="fas fa-building"></i> {{ drilldownDepartment.department.nom }}
+                      </div>
+                      <div class="drill-header-title" v-else>
+                        <i class="fas fa-spinner fa-spin"></i> Chargement...
+                      </div>
+                      <div class="drill-header-sub" v-if="drilldownLevel === 'organe' && drilldownOrgane">
+                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownOrgane.summary.total }} agents · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
+                        <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
+                        <template v-else>Plan de travail {{ new Date().getFullYear() }} · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
+                      </div>
+                      <div class="drill-header-sub" v-else-if="drilldownLevel === 'province' && drilldownProvince">
+                        {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
+                      </div>
+                      <div class="drill-header-sub" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
+                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownDepartment.effectifs.total }} agents · {{ drilldownDepartment.department.code || '' }}</template>
+                        <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownDepartment.effectifs.actifs }} agents actifs</template>
+                        <template v-else>PTA {{ new Date().getFullYear() }} · {{ drilldownDepartment.pta?.total || 0 }} activités</template>
+                      </div>
+                    </div>
+                  </div>
+                  <button class="drill-close" @click="closeDrilldown"><i class="fas fa-times"></i></button>
+                </div>
+
+                <!-- Body -->
+                <div class="drill-body">
+                  <div v-if="drilldownLoading" class="drill-loading">
+                    <i class="fas fa-circle-notch fa-spin fa-2x" :style="{ color: drilldownColor }"></i>
+                    <p>Chargement des données…</p>
+                  </div>
+
+                  <!-- ── LEVEL 1 : ORGANE → ITEMS ── -->
+                  <template v-else-if="drilldownLevel === 'organe' && drilldownOrgane">
+                    <div class="drill-summary">
+                      <template v-if="drilldownSection === 'effectifs'">
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val">{{ drilldownOrgane.summary.actifs }}</div>
+                          <div class="drill-summary-lbl">Actifs</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.summary.suspendus }}</div>
+                          <div class="drill-summary-lbl">Suspendus</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#64748b;">{{ drilldownOrgane.summary.anciens }}</div>
+                          <div class="drill-summary-lbl">Anciens</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.summary.total }}</div>
+                          <div class="drill-summary-lbl">Total</div>
+                        </div>
+                      </template>
+                      <template v-else-if="drilldownSection === 'presence'">
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" :style="{ color: drilldownColor }">{{ drilldownOrgane.summary.actifs }}</div>
+                          <div class="drill-summary-lbl">Agents actifs</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#059669;">{{ drilldownOrgane.items.reduce((s, i) => s + (i.presence?.today_present || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">Présents</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.summary.actifs - drilldownOrgane.items.reduce((s, i) => s + (i.presence?.today_present || 0), 0) }}</div>
+                          <div class="drill-summary-lbl">Absents</div>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" :style="{ color: drilldownColor }">{{ drilldownOrgane.pta?.total || 0 }}</div>
+                          <div class="drill-summary-lbl">Activités</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#059669;">{{ drilldownOrgane.pta?.terminee || 0 }}</div>
+                          <div class="drill-summary-lbl">Terminées</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#d97706;">{{ drilldownOrgane.pta?.en_cours || 0 }}</div>
+                          <div class="drill-summary-lbl">En cours</div>
+                        </div>
+                        <div class="drill-summary-item">
+                          <div class="drill-summary-val" style="color:#0077B5;">{{ drilldownOrgane.pta?.avg || 0 }}%</div>
+                          <div class="drill-summary-lbl">Moy. avancement</div>
+                        </div>
+                      </template>
+                    </div>
+
+                    <div class="drill-items-grid">
+                      <div
+                        v-for="item in drilldownOrgane.items" :key="item.id"
+                        class="drill-item-card drill-item-clickable"
+                        @click="drilldownOrgane.type_items === 'provinces' ? openProvinceDrilldown(item.id) : openDepartmentDrilldown(item.id)"
+                      >
+                        <div class="drill-item-head">
+                          <div class="drill-item-badge" :style="{ background: drilldownColor }">
+                            <i :class="drilldownOrgane.type_items === 'provinces' ? 'fas fa-map-marker-alt' : 'fas fa-building'"></i>
+                          </div>
+                          <div class="drill-item-info">
+                            <div class="drill-item-name">{{ item.nom }}</div>
+                            <div class="drill-item-sub" v-if="item.ville_secretariat">{{ item.ville_secretariat }}</div>
+                            <div class="drill-item-sub" v-else-if="item.code">{{ item.code }}</div>
+                          </div>
+                          <i class="fas fa-chevron-right drill-item-arrow"></i>
+                        </div>
+                        <div class="drill-item-stats">
+                          <template v-if="drilldownSection === 'effectifs'">
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val">{{ item.effectifs.total }}</span>
+                              <span class="drill-stat-lbl">Agents</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#059669;">{{ item.effectifs.actifs }}</span>
+                              <span class="drill-stat-lbl">Actifs</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#d97706;">{{ item.effectifs.suspendus }}</span>
+                              <span class="drill-stat-lbl">Suspendus</span>
+                            </div>
+                          </template>
+                          <template v-else-if="drilldownSection === 'presence'">
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" :style="{ color: drilldownColor }">{{ item.presence.today_rate }}%</span>
+                              <span class="drill-stat-lbl">Aujourd'hui</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#059669;">{{ item.presence.today_present }}</span>
+                              <span class="drill-stat-lbl">Présents</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#d97706;">{{ item.presence.monthly_rate }}%</span>
+                              <span class="drill-stat-lbl">Moy. mois</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#64748b;">{{ item.effectifs.actifs }}</span>
+                              <span class="drill-stat-lbl">Actifs</span>
+                            </div>
+                          </template>
+                          <template v-else>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" :style="{ color: drilldownColor }">{{ item.pta?.avg || 0 }}%</span>
+                              <span class="drill-stat-lbl">Avancement</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#059669;">{{ item.pta?.terminee || 0 }}</span>
+                              <span class="drill-stat-lbl">Terminées</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#d97706;">{{ (item.pta?.total || 0) - (item.pta?.terminee || 0) }}</span>
+                              <span class="drill-stat-lbl">En cours</span>
+                            </div>
+                            <div class="drill-item-stat">
+                              <span class="drill-stat-val" style="color:#64748b;">{{ item.pta?.total || 0 }}</span>
+                              <span class="drill-stat-lbl">Total</span>
+                            </div>
+                          </template>
+                        </div>
+                        <div class="drill-item-bar">
+                          <div class="drill-item-bar-fill" :style="{
+                            width: (drilldownSection === 'pta' ? (item.pta?.avg || 0) : drilldownSection === 'presence' ? item.presence.today_rate : (item.effectifs.total > 0 ? Math.round(item.effectifs.actifs / item.effectifs.total * 100) : 0)) + '%',
+                            background: drilldownColor
+                          }"></div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div v-if="drilldownOrgane.items.length === 0" class="drill-empty">
+                      <i class="fas fa-inbox"></i>
+                      <p>Aucune donnée disponible</p>
+                    </div>
+
+                    <template v-if="drilldownSection === 'pta' && drilldownOrgane.activites?.length">
+                      <div class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownOrgane.activites.length }})
+                      </div>
+                      <div class="drill-prov-activites">
+                        <div v-for="act in drilldownOrgane.activites" :key="act.id" class="drill-prov-activite">
+                          <div class="drill-activite-head">
+                            <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
+                            <div class="drill-activite-info">
+                              <div class="drill-activite-titre">{{ act.titre }}</div>
+                              <div class="drill-activite-meta">
+                                <span v-if="act.categorie" class="drill-activite-cat">{{ act.categorie }}</span>
+                                <span v-if="act.departement"><i class="fas fa-building" style="font-size:0.7em;"></i> {{ act.departement }}</span>
+                                <span v-if="act.trimestre">{{ act.trimestre }}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="drill-item-bar" style="margin-top:4px;">
+                            <div class="drill-item-bar-fill" :style="{ width: act.pourcentage + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+                  </template>
+
+                  <!-- ── LEVEL 2 : PROVINCE DETAIL ── -->
+                  <template v-else-if="drilldownLevel === 'province' && drilldownProvince">
+                    <div class="drill-prov-info">
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.nom_secretariat_executif">
+                        <i class="fas fa-user-tie"></i>
+                        <span>SE : {{ drilldownProvince.province.nom_secretariat_executif }}</span>
+                      </div>
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.nom_gouverneur">
+                        <i class="fas fa-landmark"></i>
+                        <span>Gouverneur : {{ drilldownProvince.province.nom_gouverneur }}</span>
+                      </div>
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.telephone">
+                        <i class="fas fa-phone"></i>
+                        <span>{{ drilldownProvince.province.telephone }}</span>
+                      </div>
+                      <div class="drill-prov-info-item" v-if="drilldownProvince.province.email">
+                        <i class="fas fa-envelope"></i>
+                        <span>{{ drilldownProvince.province.email }}</span>
+                      </div>
+                    </div>
+
+                    <div class="drill-prov-stats">
+                      <template v-if="drilldownSection === 'effectifs'">
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-users"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.effectifs.total }}</div>
+                          <div class="drill-prov-stat-lbl">Agents</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-user-check"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.effectifs.actifs }}</div>
+                          <div class="drill-prov-stat-lbl">Actifs</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-user-slash"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.effectifs.suspendus }}</div>
+                          <div class="drill-prov-stat-lbl">Suspendus</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#f1f5f9;color:#64748b;"><i class="fas fa-user-clock"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.effectifs.anciens }}</div>
+                          <div class="drill-prov-stat-lbl">Anciens</div>
+                        </div>
+                      </template>
+                      <template v-else-if="drilldownSection === 'presence'">
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-user-check"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.presence.today_present }}</div>
+                          <div class="drill-prov-stat-lbl">Présents</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-user-times"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.presence.total_active - drilldownProvince.presence.today_present }}</div>
+                          <div class="drill-prov-stat-lbl">Absents</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-chart-line"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.presence.today_rate }}%</div>
+                          <div class="drill-prov-stat-lbl">Taux jour</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-calendar-check"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.presence.monthly_rate }}%</div>
+                          <div class="drill-prov-stat-lbl">Moy. mois</div>
+                        </div>
+                      </template>
+                      <template v-else>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-tasks"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.pta.total }}</div>
+                          <div class="drill-prov-stat-lbl">Activités</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-check-circle"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.pta.terminee }}</div>
+                          <div class="drill-prov-stat-lbl">Terminées</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-spinner"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.pta.en_cours }}</div>
+                          <div class="drill-prov-stat-lbl">En cours</div>
+                        </div>
+                        <div class="drill-prov-stat-card">
+                          <div class="drill-prov-stat-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-percentage"></i></div>
+                          <div class="drill-prov-stat-val">{{ drilldownProvince.pta.avg }}%</div>
+                          <div class="drill-prov-stat-lbl">Avancement</div>
+                        </div>
+                      </template>
+                    </div>
+
+                    <template v-if="drilldownSection === 'effectifs'">
+                      <div class="drill-prov-section-title"><i class="fas fa-sitemap"></i> Répartition par organe</div>
+                      <div class="drill-prov-organe-row">
+                        <div class="drill-prov-organe-chip" style="border-color:#0077B5;">
+                          <span class="drill-prov-organe-code" style="color:#0077B5;">SEN</span>
+                          <span>{{ drilldownProvince.by_organe.sen ?? 0 }}</span>
+                        </div>
+                        <div class="drill-prov-organe-chip" style="border-color:#0ea5e9;">
+                          <span class="drill-prov-organe-code" style="color:#0ea5e9;">SEP</span>
+                          <span>{{ drilldownProvince.by_organe.sep ?? 0 }}</span>
+                        </div>
+                        <div class="drill-prov-organe-chip" style="border-color:#0d9488;">
+                          <span class="drill-prov-organe-code" style="color:#0d9488;">SEL</span>
+                          <span>{{ drilldownProvince.by_organe.sel ?? 0 }}</span>
+                        </div>
+                      </div>
+
+                      <div v-if="drilldownProvince.departments.length" class="drill-prov-section-title"><i class="fas fa-building"></i> Départements</div>
+                      <div class="drill-prov-dept-grid">
+                        <div v-for="dept in drilldownProvince.departments" :key="dept.id" class="drill-prov-dept drill-item-clickable" @click="openDepartmentDrilldown(dept.id)">
+                          <div class="drill-prov-dept-name">{{ dept.nom }} <i class="fas fa-chevron-right" style="font-size:0.7em;opacity:0.5;margin-left:4px;"></i></div>
+                          <div class="drill-prov-dept-count">{{ dept.actifs }} <small>actifs</small> / {{ dept.total }}</div>
+                        </div>
+                      </div>
+
+                      <div v-if="drilldownProvince.agents.length" class="drill-prov-section-title"><i class="fas fa-user"></i> Agents ({{ drilldownProvince.agents.length }})</div>
+                      <div class="drill-prov-agents-table">
+                        <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                          </div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+
+                    <template v-else-if="drilldownSection === 'presence'">
+                      <div class="drill-prov-section-title"><i class="fas fa-user"></i> Agents actifs ({{ drilldownProvince.presence.total_active }})</div>
+                      <div class="drill-prov-agents-table">
+                        <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                          </div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </template>
+
+                    <template v-else>
+                      <div class="drill-prov-section-title"><i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownProvince.activites?.length || 0 }})</div>
+                      <div v-if="drilldownProvince.activites?.length" class="drill-prov-activites">
+                        <div v-for="act in drilldownProvince.activites" :key="act.id" class="drill-prov-activite">
+                          <div class="drill-activite-head">
+                            <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
+                            <div class="drill-activite-info">
+                              <div class="drill-activite-titre">{{ act.titre }}</div>
+                              <div class="drill-activite-meta">
+                                <span v-if="act.categorie" class="drill-activite-tag">{{ act.categorie }}</span>
+                                <span v-if="act.trimestre" class="drill-activite-tag">{{ act.trimestre }}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="drill-activite-bar">
+                            <div class="drill-activite-bar-fill" :style="{ width: act.pourcentage + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-clipboard"></i>
+                        <p>Aucune activité PTA pour cette province</p>
+                      </div>
+                    </template>
+                  </template>
+
+                  <!-- ── LEVEL 3 : DÉPARTEMENT DETAIL ── -->
+                  <template v-else-if="drilldownLevel === 'department' && drilldownDepartment">
+                    <template v-if="drilldownSection === 'effectifs'">
+                      <div class="drill-dept-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Agents</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Actifs</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.suspendus ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Suspendus</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#64748b;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.anciens ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Anciens</div>
+                        </div>
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-user"></i> Agents ({{ drilldownDepartment.agents.length }})
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
+                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                          </div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucun agent dans ce département</p>
+                      </div>
+                    </template>
+
+                    <template v-else-if="drilldownSection === 'presence'">
+                      <div class="drill-dept-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_present ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Présents auj.</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ (drilldownDepartment.presence?.total_active ?? 0) - (drilldownDepartment.presence?.today_present ?? 0) }}</div>
+                          <div class="drill-prov-stat-lbl">Absents</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
+                          <div class="drill-prov-stat-lbl">Taux auj.</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.monthly_rate ?? 0 }}%</div>
+                          <div class="drill-prov-stat-lbl">Moy. mensuelle</div>
+                        </div>
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-user"></i> Agents actifs ({{ drilldownDepartment.agents.length }})
+                      </div>
+                      <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
+                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                          </div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucun agent dans ce département</p>
+                      </div>
+                    </template>
+
+                    <template v-else>
+                      <div class="drill-dept-grid">
+                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.total ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Activités PTA</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.terminee ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">Terminées</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.en_cours ?? 0 }}</div>
+                          <div class="drill-prov-stat-lbl">En cours</div>
+                        </div>
+                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                          <div class="drill-prov-stat-val">{{ drilldownDepartment.pta?.avg ?? 0 }}%</div>
+                          <div class="drill-prov-stat-lbl">Progression moy.</div>
+                        </div>
+                      </div>
+                      <template v-if="drilldownDepartment.activites?.length">
+                        <div class="drill-prov-section-title" style="margin-top:16px;">
+                          <i class="fas fa-clipboard-list"></i> Activités PTA {{ new Date().getFullYear() }} ({{ drilldownDepartment.activites.length }})
+                        </div>
+                        <div class="drill-prov-activites">
+                          <div v-for="act in drilldownDepartment.activites" :key="act.id" class="drill-prov-activite">
+                            <div class="drill-activite-head">
+                              <div class="drill-activite-pct" :style="{ color: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#94a3b8' }">{{ act.pourcentage }}%</div>
+                              <div class="drill-activite-info">
+                                <div class="drill-activite-titre">{{ act.titre }}</div>
+                                <div class="drill-activite-meta">
+                                  <span v-if="act.categorie" class="drill-activite-cat">{{ act.categorie }}</span>
+                                  <span v-if="act.trimestre">{{ act.trimestre }}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div class="drill-item-bar" style="margin-top:4px;">
+                              <div class="drill-item-bar-fill" :style="{ width: Math.min(act.pourcentage, 100) + '%', background: act.pourcentage >= 100 ? '#059669' : act.pourcentage > 0 ? '#d97706' : '#e2e8f0' }"></div>
+                            </div>
+                          </div>
+                        </div>
+                      </template>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucune activité PTA dans ce département</p>
+                      </div>
+                    </template>
+                  </template>
+                </div>
+              </div>
+            </Transition>
+          </div>
+        </Transition>
+      </Teleport>
     </template>
   </div>
 </template>
@@ -524,9 +1041,9 @@ function pct(val) {
 }
 
 const metrics = computed(() => [
-  { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false, to: '/rh/agents' },
-  { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false, to: '/rh/agents' },
-  { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents' },
+  { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false, to: '/rh/agents', drill: () => openOrganeDrilldown('SEN', 'effectifs') },
+  { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false, to: '/rh/agents', drill: () => openOrganeDrilldown('SEN', 'effectifs') },
+  { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents', drill: () => openOrganeDrilldown('SEN', 'effectifs') },
   { label: 'Nouveaux ce mois', value: d.value.agents?.new_this_month ?? 0, icon: 'fa-user-plus', color: '#8b5cf6', bg: '#ede9fe', pct: pct(d.value.agents?.new_this_month), alert: false, to: '/rh/agents' },
   { label: 'Demandes en attente', value: d.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#ea580c', bg: '#fff7ed', pct: pct(d.value.requests?.en_attente), alert: (d.value.requests?.en_attente ?? 0) > 5, to: '/requests' },
   { label: 'Demandes approuvees', value: d.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.requests?.approuve), alert: false, to: '/requests' },
@@ -630,6 +1147,91 @@ function agentInitials(agent) {
 function formatShortDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// ═══════════ DRILL-DOWN STATE ═══════════
+const drilldownOpen = ref(false)
+const drilldownLoading = ref(false)
+const drilldownOrgane = ref(null)
+const drilldownProvince = ref(null)
+const drilldownDepartment = ref(null)
+const drilldownLevel = ref('organe')
+const drilldownSection = ref('effectifs')
+
+const drilldownColor = computed(() => {
+  const code = drilldownOrgane.value?.organe || ''
+  if (code === 'SEP') return '#0ea5e9'
+  if (code === 'SEL') return '#0d9488'
+  return '#0077B5'
+})
+
+async function openOrganeDrilldown(code, section = 'effectifs') {
+  drilldownOpen.value = true
+  drilldownLoading.value = true
+  drilldownLevel.value = 'organe'
+  drilldownSection.value = section
+  drilldownOrgane.value = null
+  drilldownProvince.value = null
+  drilldownDepartment.value = null
+  try {
+    const { data } = await client.get(`/dashboard/executive/organe/${code}`)
+    drilldownOrgane.value = data
+  } catch (e) {
+    console.error('Drill-down organe error:', e)
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
+async function openProvinceDrilldown(id) {
+  drilldownLoading.value = true
+  drilldownLevel.value = 'province'
+  drilldownProvince.value = null
+  try {
+    const { data } = await client.get(`/dashboard/executive/province/${id}`)
+    drilldownProvince.value = data
+  } catch (e) {
+    console.error('Drill-down province error:', e)
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
+async function openDepartmentDrilldown(id) {
+  drilldownLoading.value = true
+  drilldownLevel.value = 'department'
+  drilldownDepartment.value = null
+  try {
+    const { data } = await client.get(`/dashboard/executive/department/${id}`)
+    drilldownDepartment.value = data
+  } catch (e) {
+    console.error('Drill-down department error:', e)
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
+function closeDrilldown() {
+  drilldownOpen.value = false
+  drilldownOrgane.value = null
+  drilldownProvince.value = null
+  drilldownDepartment.value = null
+  drilldownLevel.value = 'organe'
+}
+
+function backToOrgane() {
+  drilldownLevel.value = 'organe'
+  drilldownProvince.value = null
+  drilldownDepartment.value = null
+}
+
+function backToPrevious() {
+  if (drilldownLevel.value === 'department' && drilldownProvince.value) {
+    drilldownLevel.value = 'province'
+    drilldownDepartment.value = null
+  } else {
+    backToOrgane()
+  }
 }
 
 onMounted(async () => {
@@ -998,5 +1600,165 @@ onMounted(async () => {
   .rh-action-arrow { display: none; }
   .rh-metrics { grid-template-columns: repeat(2, 1fr); }
   .rh-bars { gap: .3rem; }
+}
+
+/* ═══════════ DRILL-DOWN OVERLAY ═══════════ */
+.drill-overlay {
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(15,23,42,.55); backdrop-filter: blur(6px);
+  display: flex; justify-content: flex-end;
+}
+.drill-panel {
+  width: 580px; max-width: 95vw; height: 100vh;
+  background: #f8fafc; display: flex; flex-direction: column;
+  box-shadow: -12px 0 48px rgba(0,0,0,.18);
+  overflow: hidden;
+}
+.drill-header {
+  padding: 1.5rem 1.8rem; color: #fff; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.drill-header-left { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+.drill-header-title { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
+.drill-header-sub { font-size: .72rem; opacity: .8; margin-top: .15rem; }
+.drill-back, .drill-close {
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.1); color: #fff; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: .85rem; transition: all .2s; flex-shrink: 0;
+}
+.drill-back:hover, .drill-close:hover { background: rgba(255,255,255,.2); }
+.drill-body { flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; }
+.drill-loading { text-align: center; padding: 3rem 1rem; }
+.drill-loading p { margin-top: .8rem; color: #94a3b8; font-size: .82rem; }
+.drill-summary {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1.4rem;
+}
+.drill-summary-item {
+  background: #fff; border-radius: 12px; padding: .8rem; text-align: center; border: 1px solid #e5e7eb;
+}
+.drill-summary-val { font-size: 1.5rem; font-weight: 800; color: #059669; }
+.drill-summary-lbl { font-size: .62rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; }
+.drill-items-grid { display: flex; flex-direction: column; gap: .6rem; }
+.drill-item-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1rem 1.2rem; transition: all .25s;
+}
+.drill-item-clickable { cursor: pointer; }
+.drill-item-clickable:hover {
+  border-color: #93c5fd; transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0,119,181,.1);
+}
+.drill-item-head { display: flex; align-items: center; gap: .7rem; margin-bottom: .7rem; }
+.drill-item-badge {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; color: #fff; font-size: .75rem; flex-shrink: 0;
+}
+.drill-item-info { flex: 1; min-width: 0; }
+.drill-item-name { font-size: .88rem; font-weight: 700; color: #1e293b; }
+.drill-item-sub { font-size: .68rem; color: #94a3b8; }
+.drill-item-arrow { color: #cbd5e1; font-size: .6rem; transition: all .2s; }
+.drill-item-clickable:hover .drill-item-arrow { color: #0077B5; transform: translateX(3px); }
+.drill-item-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .4rem; margin-bottom: .6rem; }
+.drill-item-stat { text-align: center; }
+.drill-stat-val { font-size: 1rem; font-weight: 800; display: block; }
+.drill-stat-lbl { font-size: .58rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+.drill-item-bar { height: 4px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.drill-item-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 2px; }
+.drill-empty { text-align: center; padding: 2.5rem 1rem; color: #94a3b8; }
+.drill-empty i { font-size: 2rem; margin-bottom: .5rem; display: block; }
+
+/* Province detail */
+.drill-prov-info {
+  display: flex; flex-wrap: wrap; gap: .5rem .8rem; margin-bottom: 1.2rem;
+  padding: .8rem 1rem; background: #fff; border-radius: 12px; border: 1px solid #e5e7eb;
+}
+.drill-prov-info-item { display: flex; align-items: center; gap: .4rem; font-size: .78rem; color: #475569; }
+.drill-prov-info-item i { color: #94a3b8; font-size: .7rem; }
+.drill-prov-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1.2rem; }
+.drill-prov-stat-card {
+  background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: .8rem; text-align: center;
+}
+.drill-prov-stat-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; margin: 0 auto .4rem; font-size: .85rem;
+}
+.drill-prov-stat-val { font-size: 1.4rem; font-weight: 800; line-height: 1; color: #1e293b; }
+.drill-prov-stat-lbl { font-size: .6rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: .15rem; }
+.drill-dept-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1rem; }
+.drill-prov-section-title {
+  font-size: .82rem; font-weight: 700; color: #334155;
+  display: flex; align-items: center; gap: .4rem;
+  margin: 1.2rem 0 .6rem; padding-bottom: .3rem; border-bottom: 1px solid #e5e7eb;
+}
+.drill-prov-section-title i { font-size: .72rem; color: #94a3b8; }
+.drill-prov-organe-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
+.drill-prov-organe-chip {
+  display: flex; align-items: center; gap: .5rem;
+  padding: .4rem .8rem; border-radius: 8px; border: 1.5px solid;
+  background: #fff; font-size: .82rem; font-weight: 700;
+}
+.drill-prov-organe-code { font-weight: 800; font-size: .7rem; }
+.drill-prov-dept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .5rem; }
+.drill-prov-dept {
+  background: #fff; border-radius: 10px; border: 1px solid #e5e7eb;
+  padding: .6rem .8rem; display: flex; align-items: center; justify-content: space-between;
+}
+.drill-prov-dept-name { font-size: .78rem; font-weight: 600; color: #334155; }
+.drill-prov-dept-count { font-size: .78rem; font-weight: 700; color: #0077B5; }
+.drill-prov-dept-count small { color: #94a3b8; font-weight: 500; }
+.drill-prov-agents-table { display: flex; flex-direction: column; gap: .35rem; }
+.drill-prov-agent-row {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .5rem .7rem; background: #fff; border-radius: 10px; border: 1px solid #f1f5f9;
+}
+.drill-prov-agent-avatar {
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: .75rem; flex-shrink: 0;
+}
+.drill-prov-agent-info { flex: 1; min-width: 0; }
+.drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
+.drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
+
+/* Activités PTA */
+.drill-prov-activites { display: flex; flex-direction: column; gap: .5rem; }
+.drill-prov-activite { background: #fff; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .6rem .75rem; }
+.drill-activite-head { display: flex; gap: .6rem; align-items: flex-start; }
+.drill-activite-pct { font-size: 1.1rem; font-weight: 700; min-width: 3rem; text-align: right; }
+.drill-activite-info { flex: 1; min-width: 0; }
+.drill-activite-titre { font-size: .78rem; font-weight: 600; color: #1e293b; line-height: 1.3; }
+.drill-activite-meta { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .25rem; font-size: .65rem; color: #64748b; }
+.drill-activite-meta span { background: #f1f5f9; padding: .1rem .4rem; border-radius: .25rem; }
+.drill-activite-cat { font-weight: 600; }
+.drill-activite-tag { font-size: .6rem; background: #f1f5f9; color: #64748b; padding: .1rem .4rem; border-radius: .25rem; }
+.drill-activite-bar { height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: .35rem; overflow: hidden; }
+.drill-activite-bar-fill { height: 100%; border-radius: 2px; transition: width .4s ease; }
+
+/* Transitions */
+.drill-fade-enter-active, .drill-fade-leave-active { transition: all .3s ease; }
+.drill-fade-enter-from, .drill-fade-leave-to { opacity: 0; }
+.drill-slide-enter-active { transition: all .35s cubic-bezier(.16,1,.3,1); }
+.drill-slide-leave-active { transition: all .25s ease-in; }
+.drill-slide-enter-from { transform: translateX(40px); opacity: 0; }
+.drill-slide-leave-to { transform: translateX(-20px); opacity: 0; }
+
+/* Responsive drill */
+@media (max-width: 640px) {
+  .drill-panel { width: 100vw; }
+  .drill-summary { grid-template-columns: repeat(2, 1fr); }
+  .drill-prov-stats { grid-template-columns: repeat(2, 1fr); }
+  .drill-dept-grid { grid-template-columns: repeat(2, 1fr); }
+  .drill-prov-dept-grid { grid-template-columns: 1fr; }
+  .drill-item-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Clickable cards */
+.rh-organe-card { cursor: pointer; transition: all .25s; }
+.rh-organe-card:hover {
+  border-color: #93c5fd; transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,119,181,.12);
+}
+.rh-metric { cursor: pointer; transition: all .25s; }
+.rh-metric:hover {
+  border-color: #93c5fd; transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,119,181,.1);
 }
 </style>
