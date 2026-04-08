@@ -40,6 +40,8 @@ class Holiday extends Model
         'type_conge',
         'statut_demande',
         'motif',
+        'observation',
+        'interim_assure_par',
         'commentaire_refus',
         'document_medical',
         'report_possible',
@@ -87,6 +89,11 @@ class Holiday extends Model
     public function refusePar(): BelongsTo
     {
         return $this->belongsTo(Agent::class, 'refuse_par');
+    }
+
+    public function interimPar(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'interim_assure_par');
     }
 
     // Accessors

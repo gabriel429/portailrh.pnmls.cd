@@ -102,8 +102,18 @@ class HolidayPlanningController extends Controller
         }
         $departments = $departments->orderBy('nom')->get();
 
+        // Liste des congés individuels (pour le tableau principal)
+        $holidaysQuery = Holiday::with(['agent', 'interimPar'])
+            ->forYear($year);
+        if ($provinceId) {
+            $holidaysQuery->whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        }
+        $holidays = $holidaysQuery->orderBy('date_debut', 'desc')
+            ->paginate(20);
+
         return response()->json([
             'plannings' => $plannings,
+            'holidays' => $holidays,
             'stats' => $stats,
             'departments' => $departments,
             'year' => $year

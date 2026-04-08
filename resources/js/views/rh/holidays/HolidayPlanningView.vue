@@ -144,12 +144,12 @@
             <div class="spinner-border text-primary" role="status"></div>
           </div>
 
-          <div v-else-if="plannings.data?.length === 0" class="empty-state">
+          <div v-else-if="holidays.data?.length === 0" class="empty-state">
             <div class="empty-icon">
               <i class="fas fa-calendar-times fa-3x"></i>
             </div>
-            <h5>Aucun planning trouvé</h5>
-            <p class="text-muted">Créez un nouveau planning pour commencer</p>
+            <h5>Aucun congé trouvé</h5>
+            <p class="text-muted">Aucun congé planifié pour cette période</p>
           </div>
 
           <div v-else>
@@ -157,80 +157,30 @@
               <table class="table table-hover">
                 <thead>
                   <tr>
-                    <th>Structure</th>
-                    <th>Type</th>
-                    <th>Année</th>
-                    <th>Jours Totaux</th>
-                    <th>Utilisés</th>
-                    <th>Taux</th>
-                    <th>Statut</th>
-                    <th>Actions</th>
+                    <th>Noms</th>
+                    <th>Fonction</th>
+                    <th>Date de début</th>
+                    <th>Date de fin</th>
+                    <th>Date de reprise</th>
+                    <th>Durée</th>
+                    <th>Observation</th>
+                    <th>Intérim assuré par</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="planning in plannings.data" :key="planning.id">
+                  <tr v-for="holiday in holidays.data" :key="holiday.id">
                     <td>
-                      <div class="fw-medium">{{ planning.nom_structure }}</div>
+                      <div class="fw-medium">{{ holiday.agent?.nom_complet || holiday.agent?.nom || '-' }}</div>
                     </td>
+                    <td>{{ holiday.agent?.fonction || '-' }}</td>
+                    <td>{{ formatDate(holiday.date_debut) }}</td>
+                    <td>{{ formatDate(holiday.date_fin) }}</td>
+                    <td>{{ formatDate(holiday.date_retour_prevu) }}</td>
                     <td>
-                      <span class="badge bg-secondary">{{ planning.type_structure_label }}</span>
+                      <span class="badge bg-info">{{ holiday.nombre_jours }} j</span>
                     </td>
-                    <td>{{ planning.annee }}</td>
-                    <td>
-                      <span class="fw-medium">{{ planning.jours_conge_totaux }} j</span>
-                    </td>
-                    <td>
-                      <span class="fw-medium text-warning">{{ planning.jours_utilises }} j</span>
-                    </td>
-                    <td>
-                      <div class="progress" style="width: 80px; height: 8px;">
-                        <div
-                          class="progress-bar"
-                          :class="{
-                            'bg-success': planning.pourcentage_utilisation < 70,
-                            'bg-warning': planning.pourcentage_utilisation >= 70 && planning.pourcentage_utilisation < 90,
-                            'bg-danger': planning.pourcentage_utilisation >= 90
-                          }"
-                          :style="{ width: planning.pourcentage_utilisation + '%' }"
-                        ></div>
-                      </div>
-                      <small class="text-muted">{{ planning.pourcentage_utilisation }}%</small>
-                    </td>
-                    <td>
-                      <span
-                        class="badge"
-                        :class="planning.valide ? 'bg-success' : 'bg-warning'"
-                      >
-                        {{ planning.valide ? 'Validé' : 'En attente' }}
-                      </span>
-                    </td>
-                    <td>
-                      <div class="btn-group btn-group-sm">
-                        <button
-                          class="btn btn-outline-primary"
-                          @click="viewPlanning(planning)"
-                          title="Voir détails"
-                        >
-                          <i class="fas fa-eye"></i>
-                        </button>
-                        <button
-                          class="btn btn-outline-success"
-                          @click="editPlanning(planning)"
-                          v-if="!planning.valide || canValidate"
-                          title="Modifier"
-                        >
-                          <i class="fas fa-edit"></i>
-                        </button>
-                        <button
-                          class="btn btn-outline-warning"
-                          @click="validatePlanning(planning)"
-                          v-if="!planning.valide && canValidate"
-                          title="Valider"
-                        >
-                          <i class="fas fa-check"></i>
-                        </button>
-                      </div>
-                    </td>
+                    <td>{{ holiday.observation || holiday.motif || '-' }}</td>
+                    <td>{{ holiday.interim_par?.nom_complet || holiday.interim_par?.nom || '-' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -238,8 +188,8 @@
 
             <!-- Pagination -->
             <Pagination
-              v-if="plannings.last_page > 1"
-              :pagination="plannings"
+              v-if="holidays.last_page > 1"
+              :pagination="holidays"
               @page-changed="changePage"
             />
           </div>
@@ -300,6 +250,7 @@ const auth = useAuthStore()
 // État
 const loading = ref(false)
 const plannings = ref({ data: [] })
+const holidays = ref({ data: [] })
 const departments = ref([])
 const stats = ref(null)
 const viewMode = ref('list')
@@ -347,6 +298,7 @@ async function loadPlannings(page = 1) {
 
     const response = await client.get('/holiday-plannings', { params })
     plannings.value = response.data.plannings
+    holidays.value = response.data.holidays || { data: [] }
     stats.value = response.data.stats
 
     if (departments.value.length === 0 && response.data.departments?.length) {
@@ -421,6 +373,12 @@ function onPlanningCreated() {
 function onPlanningUpdated() {
   showDetailsModal.value = false
   loadPlannings()
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return '-'
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
 // Watchers
