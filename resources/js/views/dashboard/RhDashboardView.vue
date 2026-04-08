@@ -17,37 +17,37 @@
           </div>
         </div>
         <div class="rh-hero-kpis">
-          <div class="rh-kpi">
+          <router-link to="/rh/agents" class="rh-kpi">
             <div class="rh-kpi-icon"><i class="fas fa-users"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.agents?.actifs ?? '-' }}</div>
               <div class="rh-kpi-lbl">Agents actifs</div>
             </div>
-          </div>
+          </router-link>
           <div class="kpi-divider"></div>
-          <div class="rh-kpi">
+          <router-link to="/rh/pointages/daily" class="rh-kpi">
             <div class="rh-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="rh-kpi-lbl">Presence</div>
             </div>
-          </div>
+          </router-link>
           <div class="kpi-divider"></div>
-          <div class="rh-kpi">
+          <router-link to="/requests" class="rh-kpi">
             <div class="rh-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.requests?.en_attente ?? 0 }}</div>
               <div class="rh-kpi-lbl">En attente</div>
             </div>
-          </div>
+          </router-link>
           <div class="kpi-divider"></div>
-          <div class="rh-kpi">
+          <router-link to="/signalements" class="rh-kpi">
             <div class="rh-kpi-icon"><i class="fas fa-exclamation-triangle"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.signalements?.ouvert ?? 0 }}</div>
               <div class="rh-kpi-lbl">Signalements</div>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
     </div>
@@ -97,7 +97,7 @@
           </div>
         </div>
         <div class="rh-metrics">
-          <div v-for="m in metrics" :key="m.label" class="rh-metric">
+          <router-link v-for="m in metrics" :key="m.label" :to="m.to" class="rh-metric">
             <div class="rh-metric-header">
               <div class="rh-metric-icon" :style="{ background: m.bg, color: m.color }">
                 <i class="fas" :class="m.icon"></i>
@@ -111,7 +111,7 @@
             <div class="rh-metric-bar">
               <div class="rh-metric-bar-fill" :style="{ background: m.color, width: m.pct + '%' }"></div>
             </div>
-          </div>
+          </router-link>
         </div>
       </div>
 
@@ -208,7 +208,7 @@
           </div>
         </div>
         <div class="rh-organe-grid">
-          <div v-for="o in organeCards" :key="o.code" class="rh-organe-card" :style="{ borderTop: '4px solid ' + o.color }">
+          <router-link v-for="o in organeCards" :key="o.code" :to="'/rh/agents'" class="rh-organe-card" :style="{ borderTop: '4px solid ' + o.color }">
             <div class="rh-organe-header">
               <div class="rh-organe-badge" :style="{ background: o.color }">{{ o.code }}</div>
               <div>
@@ -229,7 +229,7 @@
             <div class="rh-organe-bar-bg">
               <div class="rh-organe-bar-fill" :style="{ background: o.color, width: orgPct(o.actifs) + '%' }"></div>
             </div>
-          </div>
+          </router-link>
 
           <!-- Repartition par sexe -->
           <div class="rh-organe-card" style="border-top: 4px solid #8b5cf6;">
@@ -483,9 +483,12 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+
+const router = useRouter()
 
 const auth = useAuthStore()
 const loading = ref(true)
@@ -521,14 +524,14 @@ function pct(val) {
 }
 
 const metrics = computed(() => [
-  { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false },
-  { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false },
-  { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0 },
-  { label: 'Nouveaux ce mois', value: d.value.agents?.new_this_month ?? 0, icon: 'fa-user-plus', color: '#8b5cf6', bg: '#ede9fe', pct: pct(d.value.agents?.new_this_month), alert: false },
-  { label: 'Demandes en attente', value: d.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#ea580c', bg: '#fff7ed', pct: pct(d.value.requests?.en_attente), alert: (d.value.requests?.en_attente ?? 0) > 5 },
-  { label: 'Demandes approuvees', value: d.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.requests?.approuve), alert: false },
-  { label: 'Signalements ouverts', value: d.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(d.value.signalements?.ouvert), alert: (d.value.signalements?.haute_severite ?? 0) > 0 },
-  { label: 'Documents', value: d.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1', bg: '#e0e7ff', pct: pct(d.value.documents?.total), alert: (d.value.documents?.expires ?? 0) > 0 },
+  { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false, to: '/rh/agents' },
+  { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false, to: '/rh/agents' },
+  { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents' },
+  { label: 'Nouveaux ce mois', value: d.value.agents?.new_this_month ?? 0, icon: 'fa-user-plus', color: '#8b5cf6', bg: '#ede9fe', pct: pct(d.value.agents?.new_this_month), alert: false, to: '/rh/agents' },
+  { label: 'Demandes en attente', value: d.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#ea580c', bg: '#fff7ed', pct: pct(d.value.requests?.en_attente), alert: (d.value.requests?.en_attente ?? 0) > 5, to: '/requests' },
+  { label: 'Demandes approuvees', value: d.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.requests?.approuve), alert: false, to: '/requests' },
+  { label: 'Signalements ouverts', value: d.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(d.value.signalements?.ouvert), alert: (d.value.signalements?.haute_severite ?? 0) > 0, to: '/signalements' },
+  { label: 'Documents', value: d.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1', bg: '#e0e7ff', pct: pct(d.value.documents?.total), alert: (d.value.documents?.expires ?? 0) > 0, to: '/documents' },
 ])
 
 const organeCards = computed(() => {
@@ -678,7 +681,8 @@ onMounted(async () => {
   background: rgba(255,255,255,.08); border-radius: 16px; padding: .8rem 1.2rem;
   border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(8px);
 }
-.rh-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; }
+.rh-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; text-decoration: none; cursor: pointer; transition: opacity .2s; }
+.rh-kpi:hover { opacity: .85; color: #fff; }
 .rh-kpi-icon {
   width: 38px; height: 38px; border-radius: 10px;
   background: rgba(255,255,255,.1); display: flex; align-items: center;
@@ -723,7 +727,7 @@ onMounted(async () => {
 .rh-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
 .rh-metric {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  padding: 1.1rem; transition: all .25s;
+  padding: 1.1rem; transition: all .25s; text-decoration: none; color: inherit; cursor: pointer; display: block;
 }
 .rh-metric:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
 .rh-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
@@ -742,7 +746,7 @@ onMounted(async () => {
 .rh-organe-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
 .rh-organe-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  padding: 1.2rem; transition: all .25s;
+  padding: 1.2rem; transition: all .25s; text-decoration: none; color: inherit; cursor: pointer; display: block;
 }
 .rh-organe-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
 .rh-organe-header { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
