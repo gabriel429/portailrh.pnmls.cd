@@ -1174,8 +1174,8 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   drilldownProvince.value = null
   drilldownDepartment.value = null
   try {
-    const { data } = await client.get(`/dashboard/executive/organe/${code}`)
-    drilldownOrgane.value = data
+    const { data: result } = await client.get(`/dashboard/executive/organe/${code}`)
+    drilldownOrgane.value = result.data ?? result
   } catch (e) {
     console.error('Drill-down organe error:', e)
   } finally {
@@ -1188,8 +1188,8 @@ async function openProvinceDrilldown(id) {
   drilldownLevel.value = 'province'
   drilldownProvince.value = null
   try {
-    const { data } = await client.get(`/dashboard/executive/province/${id}`)
-    drilldownProvince.value = data
+    const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
+    drilldownProvince.value = result.data ?? result
   } catch (e) {
     console.error('Drill-down province error:', e)
   } finally {
@@ -1202,8 +1202,8 @@ async function openDepartmentDrilldown(id) {
   drilldownLevel.value = 'department'
   drilldownDepartment.value = null
   try {
-    const { data } = await client.get(`/dashboard/executive/department/${id}`)
-    drilldownDepartment.value = data
+    const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
+    drilldownDepartment.value = result.data ?? result
   } catch (e) {
     console.error('Drill-down department error:', e)
   } finally {
