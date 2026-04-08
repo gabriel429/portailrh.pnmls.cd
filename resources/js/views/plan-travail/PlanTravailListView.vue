@@ -115,15 +115,15 @@
     <template v-else>
       <!-- Activity cards -->
       <div v-if="flatActivites.length" class="pt-grid" :class="{ 'pt-filtering': filtering }">
-        <div v-for="a in flatActivites" :key="a.id" class="pt-card" style="cursor:pointer" @click="router.push({ name: 'plan-travail.show', params: { id: a.id } })">
+        <div v-for="a in flatActivites" :key="a.id" class="pt-card" style="cursor:pointer" @click="openDetailPopup(a.id)">
           <div class="pt-card-top">
             <div class="pt-card-status-icon" :class="statutIconClass(a.statut)">
               <i :class="statutIconName(a.statut)"></i>
             </div>
             <div class="pt-card-info">
-              <router-link :to="{ name: 'plan-travail.show', params: { id: a.id } }" class="pt-card-title">
+              <a href="#" class="pt-card-title" @click.prevent.stop="openDetailPopup(a.id)">
                 {{ a.titre }}
-              </router-link>
+              </a>
               <div v-if="a.description" class="pt-card-desc">{{ truncate(a.description, 100) }}</div>
               <div class="pt-card-tags">
                   <span v-if="a.categorie" class="pt-meta-badge">{{ a.categorie }}</span>
@@ -175,9 +175,9 @@
               <i class="fas fa-clock me-1"></i>{{ formatDate(a.created_at) }}
             </span>
             <div class="pt-card-actions">
-              <router-link :to="{ name: 'plan-travail.show', params: { id: a.id } }" class="pt-act-btn pt-act-view" @click.stop>
+              <button class="pt-act-btn pt-act-view" @click.stop="openDetailPopup(a.id)">
                 <i class="fas fa-eye"></i> Voir
-              </router-link>
+              </button>
               <button v-if="canEdit" class="pt-act-btn pt-act-edit" @click.stop="openEditModal(a.id)">
                 <i class="fas fa-edit"></i> Modifier
               </button>
@@ -205,6 +205,173 @@
         </template>
       </div>
     </template>
+
+    <!-- Detail Popup -->
+    <Teleport to="body">
+      <Transition name="ptd-fade">
+        <div v-if="detailOpen" class="ptd-overlay" @click.self="closeDetailPopup">
+          <div class="ptd-dialog">
+            <!-- Loading -->
+            <div v-if="detailLoading" class="ptd-loading">
+              <i class="fas fa-spinner fa-spin"></i> Chargement...
+            </div>
+
+            <template v-else-if="detailActivite">
+              <!-- Header -->
+              <div class="ptd-header">
+                <div class="ptd-header-icon" :class="detailStatutBadge(detailActivite.statut).replace('pt-badge ', 'ptd-si-')">
+                  <i :class="detailActivite.statut === 'terminee' ? 'fas fa-check-circle' : detailActivite.statut === 'en_cours' ? 'fas fa-spinner' : 'fas fa-clock'"></i>
+                </div>
+                <div class="ptd-header-info">
+                  <h3 class="ptd-title">{{ detailActivite.titre }}</h3>
+                  <div class="ptd-sub">
+                    {{ detailActivite.annee }}
+                    <template v-if="detailActivite.trimestre"> &middot; {{ detailActivite.trimestre }}</template>
+                    &middot; {{ detailActivite.niveau_administratif }}
+                    <template v-if="detailActivite.categorie"> &middot; {{ detailActivite.categorie }}</template>
+                  </div>
+                </div>
+                <button class="ptd-close" @click="closeDetailPopup"><i class="fas fa-times"></i></button>
+              </div>
+
+              <!-- Body scrollable -->
+              <div class="ptd-body">
+                <!-- Status badge + progress -->
+                <div class="ptd-progress-section">
+                  <span :class="detailStatutBadge(detailActivite.statut)">{{ detailStatutLabel(detailActivite.statut) }}</span>
+                  <div class="ptd-progress">
+                    <div class="ptd-progress-track">
+                      <div class="ptd-progress-fill" :class="detailActivite.pourcentage >= 100 ? 'done' : ''" :style="{ width: detailActivite.pourcentage + '%' }"></div>
+                    </div>
+                    <span class="ptd-progress-val">{{ detailActivite.pourcentage }}%</span>
+                  </div>
+                </div>
+
+                <!-- Info grid -->
+                <div class="ptd-info-grid">
+                  <div class="ptd-info-item">
+                    <i class="fas fa-bullseye"></i>
+                    <div><span class="ptd-info-lbl">Objectif</span><span class="ptd-info-val">{{ detailActivite.objectif || 'Non renseigne' }}</span></div>
+                  </div>
+                  <div class="ptd-info-item">
+                    <i class="fas fa-tag"></i>
+                    <div><span class="ptd-info-lbl">Rubrique</span><span class="ptd-info-val">{{ detailActivite.categorie || 'Non renseignee' }}</span></div>
+                  </div>
+                  <div class="ptd-info-item">
+                    <i class="fas fa-trophy"></i>
+                    <div><span class="ptd-info-lbl">Resultat attendu</span><span class="ptd-info-val">{{ detailActivite.resultat_attendu || 'Non renseigne' }}</span></div>
+                  </div>
+                  <div class="ptd-info-item">
+                    <i class="fas fa-user-tie"></i>
+                    <div><span class="ptd-info-lbl">Responsable</span><span class="ptd-info-val">{{ detailActivite.responsable_code || 'Non renseigne' }}</span></div>
+                  </div>
+                  <div class="ptd-info-item">
+                    <i class="fas fa-coins"></i>
+                    <div><span class="ptd-info-lbl">Cout en CDF</span><span class="ptd-info-val">{{ detailActivite.cout_cdf != null ? formatCurrency(detailActivite.cout_cdf) + ' CDF' : 'Non renseigne' }}</span></div>
+                  </div>
+                  <div class="ptd-info-item">
+                    <i class="fas fa-building"></i>
+                    <div>
+                      <span class="ptd-info-lbl">Niveau</span>
+                      <span class="ptd-info-val">
+                        {{ detailActivite.niveau_administratif }}
+                        <template v-if="detailActivite.departement"> - {{ detailActivite.departement.nom }}</template>
+                        <template v-if="detailProvinceSummary(detailActivite)"> - {{ detailProvinceSummary(detailActivite) }}</template>
+                        <template v-if="detailActivite.localite"> - {{ detailActivite.localite.nom }}</template>
+                      </span>
+                    </div>
+                  </div>
+                  <div class="ptd-info-item">
+                    <i class="fas fa-check-double"></i>
+                    <div><span class="ptd-info-lbl">Validation</span><span class="ptd-info-val">{{ detailValidationLabel(detailActivite.validation_niveau) }}</span></div>
+                  </div>
+                  <div v-if="detailActivite.date_debut || detailActivite.date_fin" class="ptd-info-item">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div>
+                      <span class="ptd-info-lbl">Periode</span>
+                      <span class="ptd-info-val">
+                        {{ formatDate(detailActivite.date_debut) || '?' }} &rarr; {{ formatDate(detailActivite.date_fin) || '?' }}
+                        <span v-if="detailIsOverdue()" style="color:#ef4444; font-weight:700; margin-left:.3rem;">En retard</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Chronogramme -->
+                <div class="ptd-chrono">
+                  <span class="ptd-info-lbl" style="margin-bottom:.3rem; display:block;">Chronogramme</span>
+                  <div class="ptd-chrono-strip">
+                    <span v-for="slot in trimestreSlots(detailActivite)" :key="slot.label" class="ptd-chrono-chip" :class="{ active: slot.active }">{{ slot.label }}</span>
+                  </div>
+                </div>
+
+                <!-- Description -->
+                <div v-if="detailActivite.description" class="ptd-section">
+                  <h6><i class="fas fa-file-alt me-1"></i> Description</h6>
+                  <p>{{ detailActivite.description }}</p>
+                </div>
+
+                <!-- Observations -->
+                <div v-if="detailActivite.observations" class="ptd-section">
+                  <h6><i class="fas fa-comment-alt me-1"></i> Observations</h6>
+                  <p>{{ detailActivite.observations }}</p>
+                </div>
+
+                <!-- Taches -->
+                <div v-if="detailActivite.taches?.length" class="ptd-section">
+                  <h6><i class="fas fa-tasks me-1"></i> Taches liees ({{ detailActivite.taches.length }})</h6>
+                  <div class="ptd-taches">
+                    <div v-for="t in detailActivite.taches" :key="t.id" class="ptd-tache">
+                      <span class="ptd-tache-name">{{ t.titre }}</span>
+                      <span :class="detailStatutBadge(t.statut)" style="font-size:.68rem;">{{ detailStatutLabel(t.statut) }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Meta -->
+                <div class="ptd-meta">
+                  <span><i class="fas fa-user me-1"></i> {{ detailActivite.createur?.nom_complet ?? 'N/A' }}</span>
+                  <span><i class="fas fa-clock me-1"></i> {{ detailFormatDateTime(detailActivite.created_at) }}</span>
+                </div>
+
+                <!-- Mise a jour rapide -->
+                <div v-if="detailCanUpdateStatut && detailActivite.statut !== 'terminee'" class="ptd-update">
+                  <h6><i class="fas fa-sync-alt me-1"></i> Mise a jour rapide</h6>
+                  <form @submit.prevent="handleDetailUpdateStatut" class="ptd-update-form">
+                    <div class="ptd-update-row">
+                      <select v-model="detailStatutForm.statut" class="ptm-input">
+                        <option value="planifiee">Planifiee</option>
+                        <option value="en_cours">En cours</option>
+                        <option value="terminee">Terminee</option>
+                      </select>
+                      <div class="ptd-range-wrap">
+                        <input v-model.number="detailStatutForm.pourcentage" type="range" min="0" max="100" step="5">
+                        <span>{{ detailStatutForm.pourcentage }}%</span>
+                      </div>
+                    </div>
+                    <textarea v-model="detailStatutForm.observations" class="ptm-input ptm-textarea" rows="2" placeholder="Observations..."></textarea>
+                    <button type="submit" class="ptd-update-btn" :disabled="detailUpdating">
+                      <i :class="detailUpdating ? 'fas fa-spinner fa-spin' : 'fas fa-save'" class="me-1"></i>
+                      {{ detailUpdating ? 'Enregistrement...' : 'Mettre a jour' }}
+                    </button>
+                  </form>
+                </div>
+
+                <!-- Actions -->
+                <div v-if="detailCanEdit" class="ptd-actions">
+                  <button class="ptd-act-btn ptd-act-edit" @click="closeDetailPopup(); openEditModal(detailActivite.id)">
+                    <i class="fas fa-edit me-1"></i> Modifier
+                  </button>
+                  <router-link :to="{ name: 'plan-travail.show', params: { id: detailActivite.id } }" class="ptd-act-btn ptd-act-full">
+                    <i class="fas fa-external-link-alt me-1"></i> Page complete
+                  </router-link>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
 
     <!-- Create Modal -->
     <teleport to="body">
@@ -406,7 +573,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { list, create, getCreateData } from '@/api/planTravail'
+import { list, create, get, getCreateData, updateStatut } from '@/api/planTravail'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
 
@@ -697,6 +864,94 @@ function provinceSummary(activite) {
 function formatCurrency(value) {
   const amount = Number(value || 0)
   return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)
+}
+
+/* ── Detail popup ── */
+const detailOpen = ref(false)
+const detailLoading = ref(false)
+const detailActivite = ref(null)
+const detailCanEdit = ref(false)
+const detailCanUpdateStatut = ref(false)
+const detailUpdating = ref(false)
+const detailStatutForm = ref({ statut: '', pourcentage: 0, observations: '' })
+
+async function openDetailPopup(id) {
+  detailOpen.value = true
+  detailLoading.value = true
+  detailActivite.value = null
+  try {
+    const { data } = await get(id)
+    detailActivite.value = data.data
+    detailCanEdit.value = data.canEdit
+    detailCanUpdateStatut.value = data.canUpdateStatut
+    detailStatutForm.value = {
+      statut: data.data.statut,
+      pourcentage: data.data.pourcentage,
+      observations: data.data.observations || '',
+    }
+  } catch (err) {
+    ui.addToast('Erreur lors du chargement.', 'danger')
+    detailOpen.value = false
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+function closeDetailPopup() {
+  detailOpen.value = false
+  detailActivite.value = null
+}
+
+async function handleDetailUpdateStatut() {
+  detailUpdating.value = true
+  try {
+    const { data } = await updateStatut(detailActivite.value.id, detailStatutForm.value)
+    detailActivite.value = data.data
+    detailStatutForm.value = {
+      statut: data.data.statut,
+      pourcentage: data.data.pourcentage,
+      observations: data.data.observations || '',
+    }
+    ui.addToast('Statut mis a jour.', 'success')
+    loadPlan()
+  } catch (err) {
+    ui.addToast(err.response?.data?.message || 'Erreur.', 'danger')
+  } finally {
+    detailUpdating.value = false
+  }
+}
+
+function detailStatutBadge(statut) {
+  const map = { terminee: 'pt-badge done', en_cours: 'pt-badge progress', planifiee: 'pt-badge planned' }
+  return map[statut] || 'pt-badge planned'
+}
+
+function detailStatutLabel(statut) {
+  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee' }
+  return map[statut] || statut
+}
+
+function detailValidationLabel(value) {
+  const map = { direction: 'Direction', coordination_nationale: 'Coordination nationale', coordination_provinciale: 'Coordination provinciale' }
+  return map[value] || 'Non renseigne'
+}
+
+function detailProvinceSummary(activite) {
+  const names = (activite.provinces || []).map(p => p.nom).filter(Boolean)
+  if (names.length) return names.join(', ')
+  return activite.province?.nom || ''
+}
+
+function detailFormatDateTime(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' a ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+function detailIsOverdue() {
+  if (!detailActivite.value?.date_fin || detailActivite.value.statut === 'terminee') return false
+  return new Date(detailActivite.value.date_fin) < new Date()
 }
 
 onMounted(() => loadPlan())
@@ -1029,5 +1284,139 @@ onMounted(() => loadPlan())
   .ptm-opt-card { text-align: center; }
   .ptm-footer { flex-direction: column; }
   .ptm-btn-cancel, .ptm-btn-submit { width: 100%; text-align: center; }
+}
+
+/* ── Detail Popup (ptd-*) ── */
+.ptd-fade-enter-active, .ptd-fade-leave-active { transition: opacity .25s ease; }
+.ptd-fade-enter-from, .ptd-fade-leave-to { opacity: 0; }
+
+.ptd-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  background: rgba(0,0,0,.35); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem;
+}
+.ptd-dialog {
+  background: rgba(255,255,255,.92); border-radius: 22px;
+  width: 100%; max-width: 680px; max-height: 88vh; overflow-y: auto;
+  box-shadow: 0 30px 70px rgba(0,0,0,.22);
+  animation: ptdSlide .25s ease;
+}
+@keyframes ptdSlide { from { opacity: 0; transform: translateY(24px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+.ptd-loading { padding: 3rem; text-align: center; color: #7c3aed; font-size: 1rem; }
+
+.ptd-header {
+  display: flex; align-items: flex-start; gap: .8rem;
+  padding: 1.25rem 1.5rem; border-bottom: 1px solid rgba(0,0,0,.07);
+  background: linear-gradient(135deg, rgba(124,58,237,.08) 0%, rgba(109,40,217,.04) 100%);
+  border-radius: 22px 22px 0 0;
+}
+.ptd-header-icon {
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #fff;
+}
+.ptd-si-done { background: linear-gradient(135deg, #10b981, #34d399); }
+.ptd-si-progress { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
+.ptd-si-planned { background: linear-gradient(135deg, #64748b, #94a3b8); }
+.ptd-header-info { flex: 1; min-width: 0; }
+.ptd-title { font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.3; }
+.ptd-sub { font-size: .75rem; color: #64748b; margin-top: .15rem; }
+
+.ptd-close {
+  flex-shrink: 0; width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,.06); color: #64748b;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: .2s;
+}
+.ptd-close:hover { background: rgba(239,68,68,.15); color: #ef4444; }
+
+.ptd-body { padding: 1.25rem 1.5rem; }
+
+.ptd-progress-section {
+  display: flex; align-items: center; gap: 1rem;
+  margin-bottom: 1.2rem; flex-wrap: wrap;
+}
+.ptd-progress { flex: 1; min-width: 150px; display: flex; align-items: center; gap: .6rem; }
+.ptd-progress-track { flex: 1; height: 7px; border-radius: 6px; background: #f1f5f9; overflow: hidden; }
+.ptd-progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #7c3aed, #a78bfa); transition: width .4s; }
+.ptd-progress-fill.done { background: linear-gradient(90deg, #10b981, #34d399); }
+.ptd-progress-val { font-size: .8rem; font-weight: 700; color: #7c3aed; white-space: nowrap; }
+
+.ptd-info-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .6rem;
+  margin-bottom: 1.2rem;
+}
+.ptd-info-item {
+  display: flex; gap: .5rem; align-items: flex-start;
+  padding: .55rem .7rem; border-radius: 10px; background: rgba(124,58,237,.04);
+  border: 1px solid rgba(124,58,237,.06);
+}
+.ptd-info-item > i { color: #7c3aed; font-size: .78rem; margin-top: .15rem; }
+.ptd-info-lbl { display: block; font-size: .65rem; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .3px; }
+.ptd-info-val { display: block; font-size: .82rem; font-weight: 600; color: #1e293b; }
+
+.ptd-chrono { margin-bottom: 1.2rem; }
+.ptd-chrono-strip { display: flex; gap: .4rem; }
+.ptd-chrono-chip {
+  padding: .25rem .65rem; border-radius: 14px; font-size: .72rem; font-weight: 600;
+  background: #f1f5f9; color: #94a3b8; border: 1px solid #e2e8f0;
+}
+.ptd-chrono-chip.active { background: #ede9fe; color: #7c3aed; border-color: #c4b5fd; }
+
+.ptd-section { margin-bottom: 1.1rem; }
+.ptd-section h6 { font-size: .82rem; font-weight: 700; color: #1e293b; margin-bottom: .4rem; }
+.ptd-section p { font-size: .82rem; color: #475569; margin: 0; white-space: pre-line; }
+
+.ptd-taches { display: flex; flex-direction: column; gap: .3rem; }
+.ptd-tache {
+  display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  padding: .4rem .6rem; border-radius: 8px; background: #f8fafc; border: 1px solid #f1f5f9;
+}
+.ptd-tache-name { font-size: .78rem; font-weight: 600; color: #334155; }
+
+.ptd-meta {
+  display: flex; gap: 1.5rem; font-size: .72rem; color: #94a3b8;
+  padding: .7rem 0; border-top: 1px solid #f3f4f6; margin-bottom: .8rem;
+}
+
+.ptd-update {
+  background: rgba(124,58,237,.03); border: 1px solid rgba(124,58,237,.08);
+  border-radius: 14px; padding: 1rem; margin-bottom: .8rem;
+}
+.ptd-update h6 { font-size: .82rem; font-weight: 700; color: #7c3aed; margin-bottom: .6rem; }
+.ptd-update-form { display: flex; flex-direction: column; gap: .5rem; }
+.ptd-update-row { display: flex; gap: .5rem; align-items: center; }
+.ptd-update-row select { flex: 0 0 130px; }
+.ptd-range-wrap { display: flex; align-items: center; gap: .4rem; flex: 1; }
+.ptd-range-wrap input[type="range"] { flex: 1; accent-color: #7c3aed; }
+.ptd-range-wrap span { font-size: .78rem; font-weight: 700; color: #7c3aed; min-width: 35px; }
+.ptd-update-btn {
+  align-self: flex-end; padding: .4rem 1rem; border-radius: 10px; font-size: .78rem;
+  font-weight: 600; border: none; background: #7c3aed; color: #fff; cursor: pointer; transition: .2s;
+}
+.ptd-update-btn:hover { background: #6d28d9; }
+.ptd-update-btn:disabled { opacity: .6; cursor: default; }
+
+.ptd-actions {
+  display: flex; gap: .5rem; padding-top: .5rem; border-top: 1px solid #f3f4f6;
+}
+.ptd-act-btn {
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .4rem .9rem; border-radius: 10px; font-size: .78rem; font-weight: 600;
+  text-decoration: none; border: none; cursor: pointer; transition: .2s;
+}
+.ptd-act-edit { background: #ede9fe; color: #7c3aed; }
+.ptd-act-edit:hover { background: #ddd6fe; }
+.ptd-act-full { background: #f1f5f9; color: #64748b; }
+.ptd-act-full:hover { background: #e2e8f0; color: #475569; }
+
+@media (max-width: 576px) {
+  .ptd-dialog { max-width: 100%; border-radius: 16px; }
+  .ptd-info-grid { grid-template-columns: 1fr; }
+  .ptd-update-row { flex-direction: column; }
+  .ptd-update-row select { flex: 1; width: 100%; }
+  .ptd-actions { flex-direction: column; }
+  .ptd-act-btn { justify-content: center; width: 100%; }
 }
 </style>
