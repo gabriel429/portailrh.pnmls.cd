@@ -67,11 +67,16 @@ RewriteRule ^manifest\.json$ serve-asset.php?file=../manifest.json [L,QSA]
     </RequireAll>
 </FilesMatch>
 
-# Cache control
+# Cache control - hashed assets can be cached forever
 <FilesMatch "\.(js|css|woff2|woff|png|svg|ico)$">
     Header set Cache-Control "public, max-age=31536000, immutable"
 </FilesMatch>
-<FilesMatch "manifest\.json$">
+# sw.js must NEVER be cached (browser must always check for updates)
+<FilesMatch "^sw\.js$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+</FilesMatch>
+# manifest files must not be cached
+<FilesMatch "(manifest\.json|manifest\.webmanifest)$">
     Header set Cache-Control "no-cache, no-store, must-revalidate"
 </FilesMatch>
 
