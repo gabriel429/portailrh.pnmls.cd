@@ -24,12 +24,17 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
 use App\Models\Institution;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class ExecutiveDashboardController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
     public function index(Request $request)
     {
         $user = $request->user();
@@ -627,8 +632,17 @@ class ExecutiveDashboardController extends ApiController
         $startOfMonth = $now->copy()->startOfMonth();
         $currentYear = $now->year;
 
-        // Agents de cet organe
+        // Provincial scoping
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
+
+        // Agents de cet organe (scoped)
         $agents = Agent::where('organe', $nom);
+        if ($userProvinceId) {
+            $agents->where('province_id', $userProvinceId);
+        }
         $total = (clone $agents)->count();
         $actifs = (clone $agents)->actifs()->count();
         $suspendus = (clone $agents)->suspendu()->count();
@@ -637,8 +651,12 @@ class ExecutiveDashboardController extends ApiController
         $items = [];
 
         if ($code === 'SEP') {
-            // Breakdown par province
-            $provinces = Province::withCount([
+            // Breakdown par province (scoped pour RH Provincial)
+            $provQuery = Province::query();
+            if ($userProvinceId) {
+                $provQuery->where('id', $userProvinceId);
+            }
+            $provinces = $provQuery->withCount([
                 'agents as total' => fn($q) => $q->where('organe', $nom),
                 'agents as actifs' => fn($q) => $q->where('organe', $nom)->actifs(),
                 'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
@@ -687,8 +705,12 @@ class ExecutiveDashboardController extends ApiController
             // Trier par ordre alphabétique
             usort($items, fn($a, $b) => strcasecmp($a['nom'], $b['nom']));
         } else {
-            // SEN / SEL : breakdown par département
-            $departments = Department::withCount([
+            // SEN / SEL : breakdown par département (scoped pour RH Provincial)
+            $deptQuery = Department::query();
+            if ($userProvinceId) {
+                $deptQuery->where('province_id', $userProvinceId);
+            }
+            $departments = $deptQuery->withCount([
                 'agents as total' => fn($q) => $q->where('organe', $nom),
                 'agents as actifs' => fn($q) => $q->where('organe', $nom)->actifs(),
                 'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
@@ -735,9 +757,12 @@ class ExecutiveDashboardController extends ApiController
             usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total']);
         }
 
-        // PTA global de cet organe
+        // PTA global de cet organe (scoped)
         $ptaOrganeQuery = ActivitePlan::parAnnee($currentYear)
             ->where('niveau_administratif', $code === 'SEN' ? 'national' : ($code === 'SEP' ? 'provincial' : 'local'));
+        if ($userProvinceId) {
+            $ptaOrganeQuery->where('province_id', $userProvinceId);
+        }
         $ptaOrganeTotal = (clone $ptaOrganeQuery)->count();
         $ptaOrganeTerminee = (clone $ptaOrganeQuery)->terminee()->count();
         $ptaOrganeEnCours = (clone $ptaOrganeQuery)->enCours()->count();
@@ -781,6 +806,16 @@ class ExecutiveDashboardController extends ApiController
      */
     public function provinceDetail(Request $request, int $id)
     {
+        // Provincial scoping: RH Provincial can only see their own province
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
+
+        if ($userProvinceId && $userProvinceId !== $id) {
+            return $this->error('Acces refuse pour cette province.', 403);
+        }
+
         $province = Province::find($id);
         if (!$province) {
             return $this->error('Province introuvable', 404);
@@ -912,6 +947,16 @@ class ExecutiveDashboardController extends ApiController
         $department = Department::find($id);
         if (!$department) {
             return $this->error('Département introuvable', 404);
+        }
+
+        // Provincial scoping: RH Provincial can only see departments in their province
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
+
+        if ($userProvinceId && (int) $department->province_id !== $userProvinceId) {
+            return $this->error('Acces refuse pour ce departement.', 403);
         }
 
         $now = Carbon::now();

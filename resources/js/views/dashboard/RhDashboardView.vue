@@ -1054,16 +1054,23 @@ function pct(val) {
   return Math.min(((val ?? 0) / maxMetric.value) * 100, 100)
 }
 
-const metrics = computed(() => [
-  { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false, to: '/rh/agents', drill: () => openOrganeDrilldown('SEN', 'effectifs') },
-  { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false, to: '/rh/agents', drill: () => openOrganeDrilldown('SEN', 'effectifs') },
-  { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents', drill: () => openOrganeDrilldown('SEN', 'effectifs') },
+const metrics = computed(() => {
+  const isProvincial = d.value.scope?.is_provincial
+  const provId = d.value.scope?.province_id
+  const drillFn = isProvincial && provId
+    ? (section) => openProvinceDrilldown(provId, section)
+    : (section) => openOrganeDrilldown('SEN', section)
+
+  return [
+  { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false, to: '/rh/agents', drill: () => drillFn('effectifs') },
+  { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false, to: '/rh/agents', drill: () => drillFn('effectifs') },
+  { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents', drill: () => drillFn('effectifs') },
   { label: 'Nouveaux ce mois', value: d.value.agents?.new_this_month ?? 0, icon: 'fa-user-plus', color: '#8b5cf6', bg: '#ede9fe', pct: pct(d.value.agents?.new_this_month), alert: false, to: '/rh/agents' },
   { label: 'Demandes en attente', value: d.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#ea580c', bg: '#fff7ed', pct: pct(d.value.requests?.en_attente), alert: (d.value.requests?.en_attente ?? 0) > 5, to: '/requests' },
   { label: 'Demandes approuvees', value: d.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.requests?.approuve), alert: false, to: '/requests' },
   { label: 'Signalements ouverts', value: d.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(d.value.signalements?.ouvert), alert: (d.value.signalements?.haute_severite ?? 0) > 0, to: '/signalements' },
   { label: 'Documents', value: d.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1', bg: '#e0e7ff', pct: pct(d.value.documents?.total), alert: (d.value.documents?.expires ?? 0) > 0, to: '/documents' },
-])
+]})
 
 const organeCards = computed(() => {
   const bo = d.value.agents?.by_organe || {}
@@ -1181,6 +1188,12 @@ const drilldownColor = computed(() => {
 })
 
 async function openOrganeDrilldown(code, section = 'effectifs') {
+  // RH Provincial: redirect organe drill to province drill
+  const isProvincial = d.value.scope?.is_provincial
+  const provId = d.value.scope?.province_id
+  if (isProvincial && provId) {
+    return openProvinceDrilldown(provId, section)
+  }
   drilldownOpen.value = true
   drilldownLoading.value = true
   drilldownLevel.value = 'organe'
@@ -1198,11 +1211,12 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   }
 }
 
-async function openProvinceDrilldown(id) {
+async function openProvinceDrilldown(id, section = 'effectifs') {
+  drilldownOpen.value = true
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
+  drilldownSection.value = section
   drilldownProvince.value = null
-  selectedAgent.value = null
   selectedAgent.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
