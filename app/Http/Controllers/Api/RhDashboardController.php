@@ -16,24 +16,56 @@ use App\Models\ActivitePlan;
 use App\Models\Tache;
 use App\Models\Grade;
 use App\Models\Province;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class RhDashboardController extends ApiController
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
+    /**
+     * Helper: returns a base Agent query scoped to the user's province (if RH Provincial).
+     */
+    private function agentQuery(Request $request)
+    {
+        $q = Agent::query();
+        $this->scopeService()->applyAgentScope($q, $request->user());
+        return $q;
+    }
+
+    /**
+     * Helper: scope any model that has an agent_id FK by province.
+     */
+    private function scopeByAgent($query, ?int $provinceId)
+    {
+        if ($provinceId) {
+            $query->whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        }
+        return $query;
+    }
+
     public function index(Request $request)
     {
         $now = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
 
-        // ─── AGENTS ───
-        $agentsTotal = Agent::count();
-        $agentsActifs = Agent::actifs()->count();
-        $agentsSuspendus = Agent::suspendu()->count();
-        $agentsAnciens = Agent::anciens()->count();
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $provinceId = $isProvincial ? $scope->provinceId($user) : null;
 
-        $agentsBySexe = Agent::actifs()
+        // ─── AGENTS ───
+        $agentsTotal = $this->agentQuery($request)->count();
+        $agentsActifs = $this->agentQuery($request)->actifs()->count();
+        $agentsSuspendus = $this->agentQuery($request)->suspendu()->count();
+        $agentsAnciens = $this->agentQuery($request)->anciens()->count();
+
+        $agentsBySexe = $this->agentQuery($request)->actifs()
             ->select('sexe', DB::raw('COUNT(*) as total'))
             ->groupBy('sexe')
             ->pluck('total', 'sexe')
@@ -47,28 +79,29 @@ class RhDashboardController extends ApiController
         ];
         foreach ($organes as $code => $nom) {
             $agentsByOrgane[$code] = [
-                'total' => Agent::where('organe', $nom)->count(),
-                'actifs' => Agent::actifs()->where('organe', $nom)->count(),
+                'total' => $this->agentQuery($request)->where('organe', $nom)->count(),
+                'actifs' => $this->agentQuery($request)->actifs()->where('organe', $nom)->count(),
             ];
         }
 
         // Nouveaux agents ce mois
-        $newAgentsMonth = Agent::where('created_at', '>=', $startOfMonth)->count();
+        $newAgentsMonth = $this->agentQuery($request)->where('created_at', '>=', $startOfMonth)->count();
 
         // ─── DEMANDES ───
-        $requestsTotal = RequestModel::count();
-        $requestsPending = RequestModel::enAttente()->count();
-        $requestsApproved = RequestModel::approuve()->count();
-        $requestsRejected = RequestModel::rejete()->count();
+        $reqBase = fn() => $this->scopeByAgent(RequestModel::query(), $provinceId);
+        $requestsTotal = $reqBase()->count();
+        $requestsPending = $reqBase()->enAttente()->count();
+        $requestsApproved = $reqBase()->approuve()->count();
+        $requestsRejected = $reqBase()->rejete()->count();
 
-        $requestsByType = RequestModel::select('type', DB::raw('COUNT(*) as total'))
+        $requestsByType = $reqBase()->select('type', DB::raw('COUNT(*) as total'))
             ->groupBy('type')
             ->orderByDesc('total')
             ->limit(6)
             ->pluck('total', 'type')
             ->toArray();
 
-        $recentRequests = RequestModel::with('agent:id,nom,prenom')
+        $recentRequests = $reqBase()->with('agent:id,nom,prenom')
             ->orderByDesc('created_at')
             ->limit(8)
             ->get(['id', 'agent_id', 'type', 'statut', 'created_at']);
@@ -76,17 +109,18 @@ class RhDashboardController extends ApiController
         // ─── PRESENCE ───
         $totalActiveAgents = $agentsActifs ?: 1;
 
-        $todayPresent = Pointage::byDate($now->toDateString())
-            ->whereNotNull('heure_entree')
-            ->distinct('agent_id')
-            ->count('agent_id');
+        $todayPresent = $this->scopeByAgent(
+            Pointage::byDate($now->toDateString())->whereNotNull('heure_entree'),
+            $provinceId
+        )->distinct('agent_id')->count('agent_id');
         $todayRate = round(($todayPresent / $totalActiveAgents) * 100, 1);
 
         // Presence des 7 derniers jours
         $weekAgo = $now->copy()->subDays(6);
-        $weeklyPresence = Pointage::betweenDates($weekAgo->toDateString(), $now->toDateString())
-            ->whereNotNull('heure_entree')
-            ->select('date_pointage', DB::raw('COUNT(DISTINCT agent_id) as present'))
+        $weeklyPresence = $this->scopeByAgent(
+            Pointage::betweenDates($weekAgo->toDateString(), $now->toDateString())->whereNotNull('heure_entree'),
+            $provinceId
+        )->select('date_pointage', DB::raw('COUNT(DISTINCT agent_id) as present'))
             ->groupBy('date_pointage')
             ->orderBy('date_pointage')
             ->get()
@@ -97,9 +131,10 @@ class RhDashboardController extends ApiController
             ]);
 
         $avgMonthlyRate = 0;
-        $monthlyPointages = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
-            ->whereNotNull('heure_entree')
-            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+        $monthlyPointages = $this->scopeByAgent(
+            Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())->whereNotNull('heure_entree'),
+            $provinceId
+        )->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
             ->groupBy('date_pointage')
             ->get();
         if ($monthlyPointages->count() > 0) {
@@ -107,11 +142,12 @@ class RhDashboardController extends ApiController
         }
 
         // ─── DOCUMENTS ───
-        $documentsTotal = Document::count();
-        $documentsValides = Document::valides()->count();
-        $documentsExpires = Document::expires()->count();
+        $docBase = fn() => $this->scopeByAgent(Document::query(), $provinceId);
+        $documentsTotal = $docBase()->count();
+        $documentsValides = $docBase()->valides()->count();
+        $documentsExpires = $docBase()->expires()->count();
 
-        $documentsByType = Document::select('type', DB::raw('COUNT(*) as total'))
+        $documentsByType = $docBase()->select('type', DB::raw('COUNT(*) as total'))
             ->groupBy('type')
             ->orderByDesc('total')
             ->limit(5)
@@ -119,15 +155,16 @@ class RhDashboardController extends ApiController
             ->toArray();
 
         // ─── SIGNALEMENTS ───
-        $signalementTotal = Signalement::count();
-        $signalementOuvert = Signalement::ouvert()->count();
-        $signalementEnCours = Signalement::enCours()->count();
-        $signalementResolu = Signalement::resolu()->count();
-        $signalementHaute = Signalement::hauteSeverite()
+        $sigBase = fn() => $this->scopeByAgent(Signalement::query(), $provinceId);
+        $signalementTotal = $sigBase()->count();
+        $signalementOuvert = $sigBase()->ouvert()->count();
+        $signalementEnCours = $sigBase()->enCours()->count();
+        $signalementResolu = $sigBase()->resolu()->count();
+        $signalementHaute = $sigBase()->hauteSeverite()
             ->whereIn('statut', ['ouvert', 'en_cours'])
             ->count();
 
-        $recentSignalements = Signalement::with('agent:id,nom,prenom')
+        $recentSignalements = $sigBase()->with('agent:id,nom,prenom')
             ->orderByDesc('created_at')
             ->limit(5)
             ->get(['id', 'agent_id', 'type', 'severite', 'statut', 'created_at']);
@@ -142,7 +179,8 @@ class RhDashboardController extends ApiController
             ->get(['id', 'titre', 'urgence', 'created_at']);
 
         // ─── STATUTS AGENTS ───
-        $agentStatusCounts = AgentStatus::actuel()
+        $statusBase = fn() => $this->scopeByAgent(AgentStatus::actuel(), $provinceId);
+        $agentStatusCounts = $statusBase()
             ->select('statut', DB::raw('COUNT(*) as total'))
             ->groupBy('statut')
             ->pluck('total', 'statut')
@@ -151,7 +189,7 @@ class RhDashboardController extends ApiController
         $agentStatusDetails = [];
         $statusTypes = ['en_conge', 'en_mission', 'suspendu', 'en_formation'];
         foreach ($statusTypes as $statut) {
-            $agents = AgentStatus::actuel()
+            $agents = $this->scopeByAgent(AgentStatus::actuel(), $provinceId)
                 ->byStatut($statut)
                 ->with(['agent:id,nom,prenom,id_agent,organe,sexe,poste_actuel'])
                 ->orderBy('date_debut', 'desc')
@@ -172,17 +210,18 @@ class RhDashboardController extends ApiController
             $agentStatusDetails[$statut] = $agents;
         }
 
-        // ─── CONGÉS (HOLIDAY) ─── [NOUVEAU - CRITIQUE POUR RH]
+        // ─── CONGÉS (HOLIDAY) ─── [CRITIQUE POUR RH]
         $currentYear = $now->year;
 
-        $holidaysTotal = Holiday::count();
-        $holidaysPending = Holiday::pending()->count();
-        $holidaysApproved = Holiday::approved()->count();
-        $holidaysActiveToday = Holiday::active($now)->count();
+        $holBase = fn() => $this->scopeByAgent(Holiday::query(), $provinceId);
+        $holidaysTotal = $holBase()->count();
+        $holidaysPending = $holBase()->pending()->count();
+        $holidaysApproved = $holBase()->approved()->count();
+        $holidaysActiveToday = $holBase()->active($now)->count();
 
         // Prochains retours de congé (7 prochains jours)
         $next7Days = $now->copy()->addDays(7);
-        $upcomingReturns = Holiday::approved()
+        $upcomingReturns = $holBase()->approved()
             ->whereBetween('date_retour_prevu', [$now->toDateString(), $next7Days->toDateString()])
             ->with('agent:id,nom,prenom,organe')
             ->orderBy('date_retour_prevu')
@@ -190,7 +229,14 @@ class RhDashboardController extends ApiController
             ->get(['id', 'agent_id', 'date_retour_prevu', 'type_conge', 'nombre_jours']);
 
         // Taux d'utilisation congés
-        $holidayPlanningStats = HolidayPlanning::where('annee', $currentYear)
+        $holidayPlanningQuery = HolidayPlanning::where('annee', $currentYear);
+        if ($provinceId) {
+            $holidayPlanningQuery->where(function ($q) use ($provinceId) {
+                $q->where('type_structure', 'sep')
+                  ->where('structure_id', $provinceId);
+            });
+        }
+        $holidayPlanningStats = $holidayPlanningQuery
             ->selectRaw('
                 COUNT(*) as total_plannings,
                 SUM(jours_utilises) as total_utilises,
@@ -206,42 +252,66 @@ class RhDashboardController extends ApiController
             );
         }
 
-        // ─── AFFECTATIONS ─── [NOUVEAU - GESTION MOBILITÉ]
-        $affectationsActives = Affectation::where('actif', true)->count();
+        // ─── AFFECTATIONS ─── [GESTION MOBILITÉ]
+        $affBase = fn() => $provinceId
+            ? Affectation::where('actif', true)->where(function ($q) use ($provinceId) {
+                $q->where('province_id', $provinceId)
+                  ->orWhereHas('agent', fn($aq) => $aq->where('province_id', $provinceId));
+            })
+            : Affectation::where('actif', true);
 
-        $agentsSansAffectation = Agent::actifs()
+        $affectationsActives = $affBase()->count();
+
+        $agentsSansAffectation = $this->agentQuery($request)->actifs()
             ->whereDoesntHave('affectations', fn($q) => $q->where('actif', true))
             ->count();
 
         // Mobilité récente (30 derniers jours)
-        $mobiliteRecente = Affectation::where('date_debut', '>=', $now->copy()->subDays(30))
+        $mobiliteQuery = Affectation::where('date_debut', '>=', $now->copy()->subDays(30));
+        if ($provinceId) {
+            $mobiliteQuery->where(function ($q) use ($provinceId) {
+                $q->where('province_id', $provinceId)
+                  ->orWhereHas('agent', fn($aq) => $aq->where('province_id', $provinceId));
+            });
+        }
+        $mobiliteRecente = $mobiliteQuery
             ->with('agent:id,nom,prenom', 'fonction:id,nom')
             ->orderByDesc('date_debut')
             ->limit(10)
             ->get(['id', 'agent_id', 'fonction_id', 'niveau_administratif', 'date_debut']);
 
-        // ─── PLAN DE TRAVAIL ─── [NOUVEAU]
-        $planTotal = ActivitePlan::parAnnee($currentYear)->count();
-        $planTerminee = ActivitePlan::parAnnee($currentYear)->terminee()->count();
-        $planEnCours = ActivitePlan::parAnnee($currentYear)->enCours()->count();
-        $avgCompletionPlan = ActivitePlan::parAnnee($currentYear)->avg('pourcentage') ?? 0;
+        // ─── PLAN DE TRAVAIL ───
+        $ptaBase = fn() => $provinceId
+            ? ActivitePlan::parAnnee($currentYear)->where('province_id', $provinceId)
+            : ActivitePlan::parAnnee($currentYear);
 
-        // ─── TÂCHES RH ─── [NOUVEAU]
-        $tachesTotal = Tache::count();
-        $tachesEnCours = Tache::enCours()->count();
-        $tachesTerminee = Tache::terminee()->count();
-        $tachesOverdue = Tache::where('statut', '!=', 'terminee')
+        $planTotal = $ptaBase()->count();
+        $planTerminee = $ptaBase()->terminee()->count();
+        $planEnCours = $ptaBase()->enCours()->count();
+        $avgCompletionPlan = $ptaBase()->avg('pourcentage') ?? 0;
+
+        // ─── TÂCHES RH ───
+        $tacheBase = fn() => $this->scopeByAgent(Tache::query(), $provinceId);
+        $tachesTotal = $tacheBase()->count();
+        $tachesEnCours = $tacheBase()->enCours()->count();
+        $tachesTerminee = $tacheBase()->terminee()->count();
+        $tachesOverdue = $tacheBase()->where('statut', '!=', 'terminee')
             ->whereNotNull('date_echeance')
             ->where('date_echeance', '<', $now->toDateString())
             ->count();
 
         // Tâches récentes
-        $recentTaches = Tache::orderByDesc('created_at')
+        $recentTaches = $tacheBase()->orderByDesc('created_at')
             ->limit(5)
             ->get(['id', 'titre', 'statut', 'priorite', 'date_echeance', 'created_at']);
 
-        // ─── GRADES & COMPÉTENCES ─── [NOUVEAU]
-        $gradesDistribution = Grade::withCount('agents')
+        // ─── GRADES & COMPÉTENCES ───
+        $gradesDistribution = Grade::query()
+            ->withCount(['agents' => function ($q) use ($provinceId) {
+                if ($provinceId) {
+                    $q->where('province_id', $provinceId);
+                }
+            }])
             ->orderBy('ordre')
             ->get(['id', 'nom', 'code'])
             ->map(fn($g) => [
@@ -249,7 +319,7 @@ class RhDashboardController extends ApiController
                 'count' => $g->agents_count,
             ]);
 
-        $domainesEtudes = Agent::actifs()
+        $domainesEtudes = $this->agentQuery($request)->actifs()
             ->select('domaine_etudes', DB::raw('COUNT(*) as count'))
             ->whereNotNull('domaine_etudes')
             ->groupBy('domaine_etudes')
@@ -261,21 +331,33 @@ class RhDashboardController extends ApiController
                 'count' => $d->count,
             ]);
 
-        // ─── GÉOGRAPHIE ─── [NOUVEAU]
-        $agentsByProvince = Province::withCount([
-                'agents' => fn($q) => $q->actifs()
-            ])
-            ->orderByDesc('agents_count')
-            ->limit(10)
-            ->get(['id', 'nom', 'code'])
-            ->map(fn($p) => [
-                'nom' => $p->nom,
-                'code' => $p->code,
-                'count' => $p->agents_count,
-            ]);
+        // ─── GÉOGRAPHIE ───
+        if ($provinceId) {
+            // RH Provincial: only their province
+            $agentsByProvince = Province::where('id', $provinceId)
+                ->withCount(['agents' => fn($q) => $q->actifs()])
+                ->get(['id', 'nom', 'code'])
+                ->map(fn($p) => [
+                    'nom' => $p->nom,
+                    'code' => $p->code,
+                    'count' => $p->agents_count,
+                ]);
+        } else {
+            $agentsByProvince = Province::withCount([
+                    'agents' => fn($q) => $q->actifs()
+                ])
+                ->orderByDesc('agents_count')
+                ->limit(10)
+                ->get(['id', 'nom', 'code'])
+                ->map(fn($p) => [
+                    'nom' => $p->nom,
+                    'code' => $p->code,
+                    'count' => $p->agents_count,
+                ]);
+        }
 
-        // ─── KPIs AVANCÉS ─── [NOUVEAU]
-        $totalRequestsTraitees = RequestModel::whereIn('statut', ['approuve', 'rejete'])->count();
+        // ─── KPIs AVANCÉS ───
+        $totalRequestsTraitees = $reqBase()->whereIn('statut', ['approuve', 'rejete'])->count();
         $tauxApprobation = 0;
         if ($totalRequestsTraitees > 0) {
             $tauxApprobation = round(($requestsApproved / $totalRequestsTraitees) * 100, 1);
@@ -287,7 +369,11 @@ class RhDashboardController extends ApiController
             $monthStart = $now->copy()->subMonths($i)->startOfMonth();
             $monthEnd = $monthStart->copy()->endOfMonth();
 
-            $effectif = Agent::where('created_at', '<=', $monthEnd)->count();
+            $effectifQuery = Agent::where('created_at', '<=', $monthEnd);
+            if ($provinceId) {
+                $effectifQuery->where('province_id', $provinceId);
+            }
+            $effectif = $effectifQuery->count();
 
             $evolutionEffectifs[] = [
                 'mois' => $monthStart->format('M Y'),
@@ -296,6 +382,13 @@ class RhDashboardController extends ApiController
         }
 
         $payload = [
+            'scope' => [
+                'is_provincial' => $isProvincial,
+                'province_id' => $provinceId,
+                'province_nom' => $isProvincial && $provinceId
+                    ? Province::find($provinceId)?->nom
+                    : null,
+            ],
             'agents' => [
                 'total' => $agentsTotal,
                 'actifs' => $agentsActifs,
