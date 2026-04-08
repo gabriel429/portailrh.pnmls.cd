@@ -6,7 +6,8 @@
       <div class="rh-hero-inner">
         <div class="rh-hero-left">
           <div class="rh-hero-badge">
-            <i class="fas fa-user-tie"></i>
+            <img v-if="auth.agent?.photo" :src="'/' + auth.agent.photo" alt="Photo" class="rh-hero-photo" @error="$event.target.style.display='none'; $event.target.nextElementSibling.style.display=''">
+            <i class="fas fa-user-tie" :style="auth.agent?.photo ? { display: 'none' } : {}"></i>
           </div>
           <div>
             <div class="rh-hero-greeting">Tableau de bord</div>
@@ -1294,6 +1295,10 @@ onMounted(async () => {
   border: 1px solid rgba(255,255,255,.15);
   display: flex; align-items: center; justify-content: center;
   font-size: 1.5rem; color: #38bdf8; backdrop-filter: blur(8px);
+  overflow: hidden;
+}
+.rh-hero-photo {
+  width: 100%; height: 100%; object-fit: cover;
 }
 .rh-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
 .rh-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
