@@ -8,9 +8,15 @@
             <h1 class="rh-title">
               <i class="fas fa-calendar-alt me-2"></i>
               Gestion des Congés
+              <span v-if="scopeInfo.province_nom" class="rh-title-badge">{{ scopeInfo.province_nom }}</span>
             </h1>
             <p class="rh-sub">
-              Planning annuel des congés par département et structure organisationnelle
+              <template v-if="scopeInfo.is_provincial">
+                Planning des congés {{ filters.year }} — Province {{ scopeInfo.province_nom }}
+              </template>
+              <template v-else>
+                Planning annuel des congés par département et structure organisationnelle
+              </template>
             </p>
           </div>
           <div class="col-lg-4">
@@ -28,6 +34,13 @@
 
       <!-- Filtres -->
       <div class="rh-filters-card">
+        <!-- Bandeau province pour RH Provincial -->
+        <div v-if="scopeInfo.is_provincial" class="province-scope-banner mb-3">
+          <i class="fas fa-map-marker-alt me-2"></i>
+          <strong>Province : {{ scopeInfo.province_nom }}</strong>
+          <span class="ms-3">|</span>
+          <span class="ms-3"><i class="fas fa-calendar me-1"></i> Année : {{ filters.year }}</span>
+        </div>
         <div class="row g-3">
           <div class="col-md-3">
             <label class="form-label">Année</label>
@@ -35,13 +48,22 @@
               <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div class="col-md-3" v-if="!scopeInfo.is_provincial">
             <label class="form-label">Type de Structure</label>
             <select class="form-select" v-model="filters.structure_type" @change="loadPlannings">
               <option value="">Toutes les structures</option>
               <option value="department">Départements</option>
               <option value="sen">SEN</option>
               <option value="sena">SENA</option>
+              <option value="sep">SEP Provincial</option>
+              <option value="local">Structures Locales</option>
+            </select>
+          </div>
+          <div class="col-md-3" v-if="scopeInfo.is_provincial">
+            <label class="form-label">Structure</label>
+            <select class="form-select" v-model="filters.structure_type" @change="loadPlannings">
+              <option value="">Toutes</option>
+              <option value="department">Départements</option>
               <option value="sep">SEP Provincial</option>
               <option value="local">Structures Locales</option>
             </select>
@@ -253,6 +275,7 @@ const plannings = ref({ data: [] })
 const holidays = ref({ data: [] })
 const departments = ref([])
 const stats = ref(null)
+const scopeInfo = ref({ is_provincial: false, province_id: null, province_nom: null })
 const viewMode = ref('list')
 const calendarKey = ref(0)
 const statsKey = ref(0)
@@ -300,6 +323,10 @@ async function loadPlannings(page = 1) {
     plannings.value = response.data.plannings
     holidays.value = response.data.holidays || { data: [] }
     stats.value = response.data.stats
+
+    if (response.data.scope) {
+      scopeInfo.value = response.data.scope
+    }
 
     if (departments.value.length === 0 && response.data.departments?.length) {
       departments.value = response.data.departments
@@ -407,6 +434,26 @@ onMounted(() => {
   margin-bottom: 2rem;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   border: 1px solid #e9ecef;
+}
+
+.province-scope-banner {
+  background: linear-gradient(135deg, #e8f5e9, #f1f8e9);
+  border: 1px solid #c8e6c9;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  color: #2e7d32;
+}
+
+.rh-title-badge {
+  display: inline-block;
+  font-size: 0.65em;
+  background: #e3f2fd;
+  color: #1565c0;
+  padding: 0.15em 0.6em;
+  border-radius: 6px;
+  vertical-align: middle;
+  margin-left: 0.5rem;
 }
 
 .stat-card {

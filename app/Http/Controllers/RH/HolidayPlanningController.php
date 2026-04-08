@@ -7,6 +7,7 @@ use App\Models\HolidayPlanning;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\Agent;
+use App\Models\Province;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -116,7 +117,12 @@ class HolidayPlanningController extends Controller
             'holidays' => $holidays,
             'stats' => $stats,
             'departments' => $departments,
-            'year' => $year
+            'year' => $year,
+            'scope' => [
+                'is_provincial' => $isProvincial,
+                'province_id' => $provinceId,
+                'province_nom' => $provinceId ? Province::find($provinceId)?->nom : null,
+            ],
         ]);
     }
 
