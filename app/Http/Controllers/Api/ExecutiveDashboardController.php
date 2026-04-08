@@ -839,17 +839,21 @@ class ExecutiveDashboardController extends ApiController
                 'actifs' => $d->actifs_agents,
             ]);
 
-        // Top agents (noms/prénoms/fonctions)
+        // Top agents (noms/prénoms/fonctions + contact)
         $topAgents = Agent::where('province_id', $id)->actifs()
             ->orderBy('nom')
             ->limit(20)
-            ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe'])
+            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
             ->map(fn($a) => [
                 'id' => $a->id,
                 'nom' => $a->prenom . ' ' . $a->nom,
                 'organe' => $a->organe,
                 'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
                 'sexe' => $a->sexe,
+                'email' => $a->email_professionnel ?: $a->email ?: null,
+                'telephone' => $a->telephone,
+                'matricule' => $a->matricule_etat,
+                'grade' => $a->grade_etat,
             ]);
 
         // Activités PTA de cette province
@@ -937,13 +941,17 @@ class ExecutiveDashboardController extends ApiController
         $topAgents = Agent::where('departement_id', $id)->actifs()
             ->orderBy('nom')
             ->limit(50)
-            ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe'])
+            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
             ->map(fn($a) => [
                 'id' => $a->id,
                 'nom' => $a->prenom . ' ' . $a->nom,
                 'organe' => $a->organe,
                 'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
                 'sexe' => $a->sexe,
+                'email' => $a->email_professionnel ?: $a->email ?: null,
+                'telephone' => $a->telephone,
+                'matricule' => $a->matricule_etat,
+                'grade' => $a->grade_etat,
             ]);
 
         // PTA du département

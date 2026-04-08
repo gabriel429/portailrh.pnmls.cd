@@ -808,7 +808,7 @@
 
                       <div v-if="drilldownProvince.agents.length" class="drill-prov-section-title"><i class="fas fa-user"></i> Agents ({{ drilldownProvince.agents.length }})</div>
                       <div class="drill-prov-agents-table">
-                        <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row">
+                        <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
                           <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
@@ -816,22 +816,29 @@
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                           </div>
+                          <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
-                      </div>
-                    </template>
-
-                    <template v-else-if="drilldownSection === 'presence'">
-                      <div class="drill-prov-section-title"><i class="fas fa-user"></i> Agents actifs ({{ drilldownProvince.presence.total_active }})</div>
-                      <div class="drill-prov-agents-table">
-                        <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row">
-                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
-                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                        <Transition name="drill-contact">
+                          <div v-if="selectedAgent && drilldownProvince.agents.some(x => x.id === selectedAgent.id)" class="drill-agent-contact-card" :key="selectedAgent.id">
+                            <div class="drill-contact-header">
+                              <div class="drill-contact-avatar" :style="{ background: selectedAgent.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: selectedAgent.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                                <i :class="selectedAgent.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'" style="font-size:1.2rem;"></i>
+                              </div>
+                              <div>
+                                <div class="drill-contact-name">{{ selectedAgent.nom }}</div>
+                                <div class="drill-contact-fn">{{ selectedAgent.fonction }}</div>
+                              </div>
+                              <button class="drill-contact-close" @click.stop="selectedAgent = null"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="drill-contact-body">
+                              <div v-if="selectedAgent.matricule" class="drill-contact-item"><i class="fas fa-id-badge"></i><span>{{ selectedAgent.matricule }}</span></div>
+                              <div v-if="selectedAgent.grade" class="drill-contact-item"><i class="fas fa-medal"></i><span>{{ selectedAgent.grade }}</span></div>
+                              <a v-if="selectedAgent.email" :href="'mailto:' + selectedAgent.email" class="drill-contact-item drill-contact-link" @click.stop><i class="fas fa-envelope"></i><span>{{ selectedAgent.email }}</span></a>
+                              <a v-if="selectedAgent.telephone" :href="'tel:' + selectedAgent.telephone" class="drill-contact-item drill-contact-link" @click.stop><i class="fas fa-phone"></i><span>{{ selectedAgent.telephone }}</span></a>
+                              <div v-if="!selectedAgent.email && !selectedAgent.telephone && !selectedAgent.matricule" class="drill-contact-empty">Aucune info de contact</div>
+                            </div>
                           </div>
-                          <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
-                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                          </div>
-                        </div>
+                        </Transition>
                       </div>
                     </template>
 
@@ -886,7 +893,7 @@
                         <i class="fas fa-user"></i> Agents ({{ drilldownDepartment.agents.length }})
                       </div>
                       <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
-                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
                           <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
@@ -894,7 +901,29 @@
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                           </div>
+                          <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
+                        <Transition name="drill-contact">
+                          <div v-if="selectedAgent && drilldownDepartment.agents.some(x => x.id === selectedAgent.id)" class="drill-agent-contact-card" :key="selectedAgent.id">
+                            <div class="drill-contact-header">
+                              <div class="drill-contact-avatar" :style="{ background: selectedAgent.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: selectedAgent.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                                <i :class="selectedAgent.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'" style="font-size:1.2rem;"></i>
+                              </div>
+                              <div>
+                                <div class="drill-contact-name">{{ selectedAgent.nom }}</div>
+                                <div class="drill-contact-fn">{{ selectedAgent.fonction }}</div>
+                              </div>
+                              <button class="drill-contact-close" @click.stop="selectedAgent = null"><i class="fas fa-times"></i></button>
+                            </div>
+                            <div class="drill-contact-body">
+                              <div v-if="selectedAgent.matricule" class="drill-contact-item"><i class="fas fa-id-badge"></i><span>{{ selectedAgent.matricule }}</span></div>
+                              <div v-if="selectedAgent.grade" class="drill-contact-item"><i class="fas fa-medal"></i><span>{{ selectedAgent.grade }}</span></div>
+                              <a v-if="selectedAgent.email" :href="'mailto:' + selectedAgent.email" class="drill-contact-item drill-contact-link" @click.stop><i class="fas fa-envelope"></i><span>{{ selectedAgent.email }}</span></a>
+                              <a v-if="selectedAgent.telephone" :href="'tel:' + selectedAgent.telephone" class="drill-contact-item drill-contact-link" @click.stop><i class="fas fa-phone"></i><span>{{ selectedAgent.telephone }}</span></a>
+                              <div v-if="!selectedAgent.email && !selectedAgent.telephone && !selectedAgent.matricule" class="drill-contact-empty">Aucune info de contact</div>
+                            </div>
+                          </div>
+                        </Transition>
                       </div>
                       <div v-else class="drill-empty">
                         <i class="fas fa-inbox"></i>
@@ -925,7 +954,7 @@
                         <i class="fas fa-user"></i> Agents actifs ({{ drilldownDepartment.agents.length }})
                       </div>
                       <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
-                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
+                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
                           <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
@@ -933,6 +962,7 @@
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                           </div>
+                          <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
                       </div>
                       <div v-else class="drill-empty">
@@ -1157,6 +1187,7 @@ const drilldownProvince = ref(null)
 const drilldownDepartment = ref(null)
 const drilldownLevel = ref('organe')
 const drilldownSection = ref('effectifs')
+const selectedAgent = ref(null)
 
 const drilldownColor = computed(() => {
   const code = drilldownOrgane.value?.organe || ''
@@ -1187,6 +1218,7 @@ async function openProvinceDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
   drilldownProvince.value = null
+  selectedAgent.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
     drilldownProvince.value = result.data ?? result
@@ -1201,6 +1233,7 @@ async function openDepartmentDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   drilldownDepartment.value = null
+  selectedAgent.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
     drilldownDepartment.value = result.data ?? result
@@ -1217,12 +1250,14 @@ function closeDrilldown() {
   drilldownProvince.value = null
   drilldownDepartment.value = null
   drilldownLevel.value = 'organe'
+  selectedAgent.value = null
 }
 
 function backToOrgane() {
   drilldownLevel.value = 'organe'
   drilldownProvince.value = null
   drilldownDepartment.value = null
+  selectedAgent.value = null
 }
 
 function backToPrevious() {
@@ -1717,6 +1752,50 @@ onMounted(async () => {
 .drill-prov-agent-info { flex: 1; min-width: 0; }
 .drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
 .drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
+
+/* Agent clickable & contact card */
+.drill-agent-clickable { cursor: pointer; transition: all .15s ease; position: relative; }
+.drill-agent-clickable:hover { background: #f8fafc; border-color: #e2e8f0; transform: translateX(2px); }
+.drill-agent-contact-icon { color: #cbd5e1; font-size: .72rem; transition: color .15s; flex-shrink: 0; }
+.drill-agent-clickable:hover .drill-agent-contact-icon { color: #0077B5; }
+
+.drill-agent-contact-card {
+  background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08); margin: .35rem 0; overflow: hidden;
+}
+.drill-contact-header {
+  display: flex; align-items: center; gap: .6rem;
+  padding: .7rem .8rem; background: #f8fafc; border-bottom: 1px solid #f1f5f9;
+}
+.drill-contact-avatar {
+  width: 40px; height: 40px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+}
+.drill-contact-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.drill-contact-fn { font-size: .68rem; color: #64748b; }
+.drill-contact-close {
+  margin-left: auto; background: none; border: none; color: #94a3b8;
+  cursor: pointer; font-size: .78rem; padding: .2rem; border-radius: 6px;
+}
+.drill-contact-close:hover { color: #ef4444; background: #fef2f2; }
+.drill-contact-body { padding: .6rem .8rem; display: flex; flex-direction: column; gap: .4rem; }
+.drill-contact-item {
+  display: flex; align-items: center; gap: .5rem;
+  font-size: .76rem; color: #334155; padding: .3rem .5rem;
+  background: #f8fafc; border-radius: 8px;
+}
+.drill-contact-item i { width: 18px; text-align: center; color: #94a3b8; font-size: .7rem; }
+.drill-contact-link { text-decoration: none; color: #0077B5; cursor: pointer; transition: background .15s; }
+.drill-contact-link:hover { background: #e0f2fe; }
+.drill-contact-empty { font-size: .72rem; color: #94a3b8; text-align: center; padding: .5rem; font-style: italic; }
+
+/* Contact card transitions */
+.drill-contact-enter-active { animation: drillContactIn .25s ease; }
+.drill-contact-leave-active { animation: drillContactIn .2s ease reverse; }
+@keyframes drillContactIn {
+  from { opacity: 0; max-height: 0; transform: translateY(-8px); }
+  to { opacity: 1; max-height: 200px; transform: translateY(0); }
+}
 
 /* Activités PTA */
 .drill-prov-activites { display: flex; flex-direction: column; gap: .5rem; }
