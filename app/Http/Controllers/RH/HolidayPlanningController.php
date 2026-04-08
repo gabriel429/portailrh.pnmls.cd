@@ -7,12 +7,49 @@ use App\Models\HolidayPlanning;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\Agent;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class HolidayPlanningController extends Controller
 {
+    private function scopeService(): UserDataScope
+    {
+        return app(UserDataScope::class);
+    }
+
+    /**
+     * Apply provincial scoping on a HolidayPlanning query.
+     * RH Provincial can only see plannings for structures in their province.
+     */
+    private function applyProvinceScope($query, ?int $provinceId)
+    {
+        if (!$provinceId) {
+            return $query;
+        }
+
+        $deptIds = Department::where('province_id', $provinceId)->pluck('id');
+
+        return $query->where(function ($q) use ($provinceId, $deptIds) {
+            // SEP plannings for their province
+            $q->where(function ($q2) use ($provinceId) {
+                $q2->where('type_structure', 'sep')
+                   ->where('structure_id', $provinceId);
+            })
+            // Department plannings within their province
+            ->orWhere(function ($q2) use ($deptIds) {
+                $q2->where('type_structure', 'department')
+                   ->whereIn('structure_id', $deptIds);
+            })
+            // Local structures within their province departments
+            ->orWhere(function ($q2) use ($deptIds) {
+                $q2->where('type_structure', 'local')
+                   ->whereIn('structure_id', $deptIds);
+            });
+        });
+    }
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -28,8 +65,15 @@ class HolidayPlanningController extends Controller
         $structureType = $request->get('structure_type');
         $structureId = $request->get('structure_id');
 
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $provinceId = $isProvincial ? $scope->provinceId($user) : null;
+
         $query = HolidayPlanning::with(['createdBy', 'validatedBy'])
             ->forYear($year);
+
+        $this->applyProvinceScope($query, $provinceId);
 
         if ($structureType && $structureId) {
             $query->forStructure($structureType, $structureId);
@@ -39,19 +83,24 @@ class HolidayPlanningController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(20);
 
-        // Statistiques globales pour l'année
+        // Statistiques globales pour l'année (scoped)
+        $statsQuery = HolidayPlanning::forYear($year);
+        $this->applyProvinceScope($statsQuery, $provinceId);
+
         $stats = [
-            'total_plannings' => HolidayPlanning::forYear($year)->count(),
-            'plannings_valides' => HolidayPlanning::forYear($year)->validated()->count(),
-            'total_jours_prevus' => HolidayPlanning::forYear($year)->sum('jours_conge_totaux'),
-            'total_jours_utilises' => HolidayPlanning::forYear($year)->sum('jours_utilises'),
+            'total_plannings' => (clone $statsQuery)->count(),
+            'plannings_valides' => (clone $statsQuery)->validated()->count(),
+            'total_jours_prevus' => (clone $statsQuery)->sum('jours_conge_totaux'),
+            'total_jours_utilises' => (clone $statsQuery)->sum('jours_utilises'),
         ];
 
-        // Liste des structures pour les filtres
+        // Liste des structures pour les filtres (scoped)
         $departments = Department::query()
-            ->operational()
-            ->orderBy('nom')
-            ->get();
+            ->operational();
+        if ($provinceId) {
+            $departments->where('province_id', $provinceId);
+        }
+        $departments = $departments->orderBy('nom')->get();
 
         return response()->json([
             'plannings' => $plannings,
@@ -102,6 +151,11 @@ class HolidayPlanningController extends Controller
         $structureType = $request->get('structure_type');
         $structureId = $request->get('structure_id');
 
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $provinceId = $isProvincial ? $scope->provinceId($user) : null;
+
         $start = Carbon::create($year, $month ?: 1, 1)->startOfMonth();
         $end = $month
             ? $start->copy()->endOfMonth()
@@ -110,6 +164,11 @@ class HolidayPlanningController extends Controller
         $query = Holiday::with(['agent', 'holidayPlanning'])
             ->approved()
             ->between($start, $end);
+
+        // Province scoping via agent
+        if ($provinceId) {
+            $query->whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        }
 
         if ($structureType && $structureId) {
             $query->whereHas('holidayPlanning', function ($q) use ($structureType, $structureId) {
@@ -244,8 +303,30 @@ class HolidayPlanningController extends Controller
     {
         $year = $request->get('year', date('Y'));
 
-        $stats = DB::table('holiday_plannings as hp')
-            ->select([
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialRh($user);
+        $provinceId = $isProvincial ? $scope->provinceId($user) : null;
+
+        $baseQuery = DB::table('holiday_plannings as hp')
+            ->where('hp.annee', $year);
+
+        // Province scoping
+        if ($provinceId) {
+            $deptIds = Department::where('province_id', $provinceId)->pluck('id');
+            $baseQuery->where(function ($q) use ($provinceId, $deptIds) {
+                $q->where(function ($q2) use ($provinceId) {
+                    $q2->where('hp.type_structure', 'sep')
+                       ->where('hp.structure_id', $provinceId);
+                })
+                ->orWhere(function ($q2) use ($deptIds) {
+                    $q2->whereIn('hp.type_structure', ['department', 'local'])
+                       ->whereIn('hp.structure_id', $deptIds);
+                });
+            });
+        }
+
+        $stats = $baseQuery->select([
                 'hp.type_structure',
                 'hp.nom_structure',
                 'hp.jours_conge_totaux',
@@ -301,13 +382,19 @@ class HolidayPlanningController extends Controller
         $year = $request->get('year', date('Y'));
         $format = $request->get('format', 'json'); // json, csv
 
-        $plannings = HolidayPlanning::with([
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $provinceId = $scope->isProvincialRh($user) ? $scope->provinceId($user) : null;
+
+        $query = HolidayPlanning::with([
             'createdBy',
             'validatedBy',
             'holidays.agent'
-        ])
-            ->forYear($year)
-            ->get();
+        ])->forYear($year);
+
+        $this->applyProvinceScope($query, $provinceId);
+
+        $plannings = $query->get();
 
         if ($format === 'csv') {
             $headers = [

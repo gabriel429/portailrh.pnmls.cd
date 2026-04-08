@@ -9,6 +9,7 @@ use App\Models\Holiday;
 use App\Models\HolidayPlanning;
 use App\Models\Agent;
 use App\Models\AgentStatus;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Storage;
@@ -31,6 +32,16 @@ class HolidayController extends Controller
             'demandePar',
             'approuvePar'
         ]);
+
+        // Province scoping for RH Provincial
+        $scope = app(UserDataScope::class);
+        $user = $request->user();
+        if ($scope->isProvincialRh($user)) {
+            $provinceId = $scope->provinceId($user);
+            if ($provinceId) {
+                $query->whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+            }
+        }
 
         // Filtres
         if ($request->filled('agent_id')) {
