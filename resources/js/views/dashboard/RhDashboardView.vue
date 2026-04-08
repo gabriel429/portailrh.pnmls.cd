@@ -488,7 +488,7 @@
                 <!-- Header -->
                 <div class="drill-header" :style="{ background: drilldownColor }">
                   <div class="drill-header-left">
-                    <button v-if="drilldownLevel === 'province' || drilldownLevel === 'department'" class="drill-back" @click="drilldownLevel === 'department' ? backToPrevious() : backToOrgane()">
+                    <button v-if="drilldownLevel === 'province' || drilldownLevel === 'department'" class="drill-back" @click="drilldownLevel === 'department' ? backToPrevious() : (drilldownOrgane ? backToOrgane() : closeDrilldown())">
                       <i class="fas fa-arrow-left"></i>
                     </button>
                     <div>
@@ -1262,11 +1262,14 @@ function backToOrgane() {
 }
 
 function backToPrevious() {
-  if (drilldownLevel.value === 'department' && drilldownProvince.value) {
+  if (drilldownLevel.value === 'department') {
     drilldownLevel.value = 'province'
     drilldownDepartment.value = null
-  } else {
+    selectedAgent.value = null
+  } else if (drilldownOrgane.value) {
     backToOrgane()
+  } else {
+    closeDrilldown()
   }
 }
 
