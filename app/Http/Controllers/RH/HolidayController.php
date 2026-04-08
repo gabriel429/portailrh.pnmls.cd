@@ -16,11 +16,6 @@ use Illuminate\Support\Facades\Storage;
 
 class HolidayController extends Controller
 {
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /**
      * Liste des congés avec filtres
      */

@@ -17,11 +17,6 @@ class AgentStatusController extends Controller
         return app(UserDataScope::class);
     }
 
-    public function __construct()
-    {
-        $this->middleware('auth');
-    }
-
     /**
      * Liste des statuts des agents
      */

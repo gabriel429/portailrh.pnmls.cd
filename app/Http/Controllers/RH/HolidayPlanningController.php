@@ -51,12 +51,6 @@ class HolidayPlanningController extends Controller
         });
     }
 
-    public function __construct()
-    {
-        $this->middleware('auth');
-        $this->middleware('role:Section ressources humaines,RH National,RH Provincial,SEN');
-    }
-
     /**
      * Liste des plannings de congés avec filtres
      */
