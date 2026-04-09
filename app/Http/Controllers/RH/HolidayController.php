@@ -107,6 +107,55 @@ class HolidayController extends Controller
     }
 
     /**
+     * Agents par département/structure pour planification en lot
+     */
+    public function agentsByStructure(Request $request)
+    {
+        $request->validate([
+            'department_id' => 'required|integer',
+        ]);
+
+        $scope = app(UserDataScope::class);
+        $user = $request->user();
+
+        $agentsQuery = Agent::where('departement_id', $request->department_id)
+            ->where('statut', 'actif')
+            ->orderBy('nom');
+
+        // Scope provincial
+        if ($scope->isProvincialRh($user)) {
+            $provinceId = $scope->provinceId($user);
+            if ($provinceId) {
+                $agentsQuery->where('province_id', $provinceId);
+            }
+        }
+
+        $agents = $agentsQuery->get(['id', 'nom', 'postnom', 'prenom', 'fonction']);
+
+        // Vérifier les congés existants pour l'année en cours
+        $year = $request->query('year', date('Y'));
+        $existingHolidays = Holiday::whereIn('agent_id', $agents->pluck('id'))
+            ->whereYear('date_debut', $year)
+            ->whereIn('statut_demande', ['en_attente', 'approuve'])
+            ->get()
+            ->groupBy('agent_id');
+
+        $result = $agents->map(fn($a) => [
+            'id' => $a->id,
+            'nom_complet' => trim(($a->nom ?? '') . ' ' . ($a->postnom ?? '') . ' ' . ($a->prenom ?? '')),
+            'fonction' => $a->fonction,
+            'conge_existant' => $existingHolidays->has($a->id) ? $existingHolidays[$a->id]->map(fn($h) => [
+                'date_debut' => $h->date_debut->format('Y-m-d'),
+                'date_fin' => $h->date_fin->format('Y-m-d'),
+                'type_conge' => $h->type_conge,
+                'statut' => $h->statut_demande,
+            ])->values() : [],
+        ]);
+
+        return response()->json(['agents' => $result]);
+    }
+
+    /**
      * Création d'une demande de congé
      */
     public function store(Request $request)
@@ -189,6 +238,75 @@ class HolidayController extends Controller
             'message' => 'Demande de congé créée avec succès',
             'holiday' => $holiday->load(['agent', 'demandePar'])
         ], 201);
+    }
+
+    /**
+     * Création en lot de congés planifiés (par structure/département)
+     */
+    public function storeBatch(Request $request)
+    {
+        $request->validate([
+            'entries' => 'required|array|min:1',
+            'entries.*.agent_id' => 'required|exists:agents,id',
+            'entries.*.date_debut' => 'required|date',
+            'entries.*.date_fin' => 'required|date|after_or_equal:entries.*.date_debut',
+            'entries.*.type_conge' => 'required|in:annuel,maladie,maternite,paternite,urgence,special',
+            'entries.*.observation' => 'nullable|string|max:1000',
+            'entries.*.interim_assure_par' => 'nullable|exists:agents,id',
+            'holiday_planning_id' => 'nullable|exists:holiday_plannings,id',
+        ]);
+
+        $currentAgent = auth()->user()->agent;
+        $isRh = $currentAgent->hasRole(['RH National', 'RH Provincial']);
+        $created = [];
+        $errors = [];
+
+        foreach ($request->entries as $i => $entry) {
+            $dateDebut = Carbon::parse($entry['date_debut']);
+            $dateFin = Carbon::parse($entry['date_fin']);
+
+            // Vérifier conflit
+            if (Holiday::hasConflict($entry['agent_id'], $dateDebut, $dateFin)) {
+                $agent = Agent::find($entry['agent_id']);
+                $nom = trim(($agent->nom ?? '') . ' ' . ($agent->postnom ?? ''));
+                $errors[] = "Conflit de dates pour {$nom} : congé existant sur cette période";
+                continue;
+            }
+
+            $holiday = Holiday::create([
+                'agent_id' => $entry['agent_id'],
+                'date_debut' => $dateDebut,
+                'date_fin' => $dateFin,
+                'nombre_jours' => $dateDebut->diffInDays($dateFin) + 1,
+                'date_retour_prevu' => $dateFin->copy()->addDay(),
+                'type_conge' => $entry['type_conge'],
+                'motif' => $entry['observation'] ?? 'Congé planifié par RH',
+                'observation' => $entry['observation'] ?? null,
+                'interim_assure_par' => $entry['interim_assure_par'] ?? null,
+                'holiday_planning_id' => $request->holiday_planning_id,
+                'demande_par' => $currentAgent->id,
+                'statut_demande' => 'en_attente',
+            ]);
+
+            // Auto-approuver si RH
+            if ($isRh) {
+                $holiday->approve($currentAgent);
+            }
+
+            $created[] = $holiday;
+        }
+
+        $msg = count($created) . ' congé(s) planifié(s) avec succès';
+        if (count($errors) > 0) {
+            $msg .= '. ' . count($errors) . ' erreur(s) : ' . implode('; ', $errors);
+        }
+
+        return response()->json([
+            'message' => $msg,
+            'created_count' => count($created),
+            'error_count' => count($errors),
+            'errors' => $errors,
+        ], count($created) > 0 ? 201 : 422);
     }
 
     /**

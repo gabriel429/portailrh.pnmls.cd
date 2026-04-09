@@ -251,8 +251,9 @@
     <AddHolidayModal
       v-if="showAddHolidayModal"
       :show="showAddHolidayModal"
-      :agents="agents"
+      :departments="departments"
       :plannings="plannings.data || []"
+      :year="filters.year"
       @close="showAddHolidayModal = false"
       @created="onHolidayCreated"
     />

@@ -196,7 +196,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('holidays', [HolidayController::class, 'index']);
         Route::get('holidays/pending', [HolidayController::class, 'pending']);
         Route::get('holidays/active', [HolidayController::class, 'active']);
+        Route::get('holidays/agents-by-structure', [HolidayController::class, 'agentsByStructure']);
         Route::post('holidays', [HolidayController::class, 'store']);
+        Route::post('holidays/batch', [HolidayController::class, 'storeBatch']);
         Route::get('holidays/{holiday}', [HolidayController::class, 'show']);
         Route::put('holidays/{holiday}', [HolidayController::class, 'update']);
         Route::post('holidays/{holiday}/approve', [HolidayController::class, 'approve']);
