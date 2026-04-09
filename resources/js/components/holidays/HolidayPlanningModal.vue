@@ -51,8 +51,8 @@
                 >
                   <option value="">Sélectionner un type</option>
                   <option value="department">Département</option>
-                  <option value="sen">SEN</option>
-                  <option value="sena">SENA</option>
+                  <option v-if="!scopeInfo.is_provincial" value="sen">SEN</option>
+                  <option v-if="!scopeInfo.is_provincial" value="sena">SENA</option>
                   <option value="sep">SEP Provincial</option>
                   <option value="local">Structure Locale</option>
                 </select>
@@ -252,6 +252,10 @@ const props = defineProps({
   departments: {
     type: Array,
     default: () => []
+  },
+  scopeInfo: {
+    type: Object,
+    default: () => ({ is_provincial: false, province_id: null, province_nom: null })
   }
 })
 

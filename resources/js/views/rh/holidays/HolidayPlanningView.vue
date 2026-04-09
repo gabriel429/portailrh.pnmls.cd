@@ -230,6 +230,7 @@
       v-if="showCreateModal"
       :show="showCreateModal"
       :departments="departments"
+      :scope-info="scopeInfo"
       @close="showCreateModal = false"
       @created="onPlanningCreated"
     />
