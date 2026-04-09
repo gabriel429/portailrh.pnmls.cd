@@ -206,6 +206,27 @@ class HolidayController extends Controller
             ], 422);
         }
 
+        // Résoudre automatiquement le planning si non fourni (pour type annuel)
+        $nombreJours = $dateDebut->diffInDays($dateFin) + 1;
+        if (empty($validated['holiday_planning_id'])) {
+            $planning = $this->resolvePlanning($agent, $dateDebut->year);
+            if ($planning) {
+                $validated['holiday_planning_id'] = $planning->id;
+            }
+        } else {
+            $planning = HolidayPlanning::find($validated['holiday_planning_id']);
+        }
+
+        // Vérifier le quota du planning (uniquement pour congé annuel)
+        if (isset($planning) && $planning && ($validated['type_conge'] ?? '') === 'annuel') {
+            $joursRestants = $planning->jours_conge_totaux - $planning->jours_utilises;
+            if ($nombreJours > $joursRestants) {
+                return response()->json([
+                    'message' => "Quota insuffisant : {$joursRestants} jour(s) disponible(s) sur {$planning->jours_conge_totaux} dans le planning '{$planning->nom_structure}'. Demande : {$nombreJours} jour(s)."
+                ], 422);
+            }
+        }
+
         // Gérer le document médical si fourni
         if ($request->hasFile('document_medical')) {
             $validated['document_medical'] = $request->file('document_medical')
@@ -290,24 +311,46 @@ class HolidayController extends Controller
             $dateFin = Carbon::parse($entry['date_fin']);
 
             // Vérifier conflit
+            $entryAgent = Agent::find($entry['agent_id']);
+            $entryNom = trim(($entryAgent->nom ?? '') . ' ' . ($entryAgent->postnom ?? ''));
+
             if (Holiday::hasConflict($entry['agent_id'], $dateDebut, $dateFin)) {
-                $agent = Agent::find($entry['agent_id']);
-                $nom = trim(($agent->nom ?? '') . ' ' . ($agent->postnom ?? ''));
-                $errors[] = "Conflit de dates pour {$nom} : congé existant sur cette période";
+                $errors[] = "Conflit de dates pour {$entryNom} : congé existant sur cette période";
                 continue;
+            }
+
+            // Résoudre le planning pour cet agent
+            $entryNbJours = $dateDebut->diffInDays($dateFin) + 1;
+            $entryPlanningId = $request->holiday_planning_id ?? null;
+            if (!$entryPlanningId && $entryAgent) {
+                $entryPlanning = $this->resolvePlanning($entryAgent, $dateDebut->year);
+                if ($entryPlanning) {
+                    $entryPlanningId = $entryPlanning->id;
+                }
+            } else {
+                $entryPlanning = $entryPlanningId ? HolidayPlanning::find($entryPlanningId) : null;
+            }
+
+            // Vérifier le quota (congé annuel uniquement)
+            if ($entryPlanning && ($entry['type_conge'] ?? '') === 'annuel') {
+                $joursRestants = $entryPlanning->jours_conge_totaux - $entryPlanning->jours_utilises;
+                if ($entryNbJours > $joursRestants) {
+                    $errors[] = "Quota insuffisant pour {$entryNom} : {$joursRestants} jour(s) disponible(s), demande {$entryNbJours} jour(s).";
+                    continue;
+                }
             }
 
             $holiday = Holiday::create([
                 'agent_id' => $entry['agent_id'],
                 'date_debut' => $dateDebut,
                 'date_fin' => $dateFin,
-                'nombre_jours' => $dateDebut->diffInDays($dateFin) + 1,
+                'nombre_jours' => $entryNbJours,
                 'date_retour_prevu' => $dateFin->copy()->addDay(),
                 'type_conge' => $entry['type_conge'],
                 'motif' => $entry['observation'] ?? 'Congé planifié par RH',
                 'observation' => $entry['observation'] ?? null,
                 'interim_assure_par' => $entry['interim_assure_par'] ?? null,
-                'holiday_planning_id' => $request->holiday_planning_id,
+                'holiday_planning_id' => $entryPlanningId,
                 'demande_par' => $currentAgent->id,
                 'statut_demande' => 'en_attente',
             ]);
@@ -594,5 +637,34 @@ class HolidayController extends Controller
             'conflicts' => $conflicts,
             'agent' => $agent->load('currentStatus')
         ]);
+    }
+
+    /**
+     * Trouver le planning de congé correspondant à la structure de l'agent pour une année donnée.
+     * - Agent provincial  → planning SEP de sa province
+     * - Agent national    → planning du département
+     * - Autres           → planning SEN national (structure_id = 1)
+     */
+    private function resolvePlanning(Agent $agent, int $year): ?HolidayPlanning
+    {
+        if ($agent->province_id) {
+            return HolidayPlanning::where('annee', $year)
+                ->where('type_structure', 'sep')
+                ->where('structure_id', $agent->province_id)
+                ->first();
+        }
+
+        if ($agent->departement_id) {
+            return HolidayPlanning::where('annee', $year)
+                ->where('type_structure', 'department')
+                ->where('structure_id', $agent->departement_id)
+                ->first();
+        }
+
+        // Fallback : planning SEN national
+        return HolidayPlanning::where('annee', $year)
+            ->where('type_structure', 'sen')
+            ->where('structure_id', 1)
+            ->first();
     }
 }
