@@ -21,6 +21,9 @@
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
+              <button @click="showAddHolidayModal = true" class="btn-rh me-2">
+                <i class="fas fa-user-clock me-1"></i> Planifier un congé
+              </button>
               <button @click="showCreateModal = true" class="btn-rh me-2">
                 <i class="fas fa-plus me-1"></i> Nouveau Planning
               </button>
@@ -243,6 +246,16 @@
       @close="showDetailsModal = false"
       @updated="onPlanningUpdated"
     />
+
+    <!-- Modal planifier un congé -->
+    <AddHolidayModal
+      v-if="showAddHolidayModal"
+      :show="showAddHolidayModal"
+      :agents="agents"
+      :plannings="plannings.data || []"
+      @close="showAddHolidayModal = false"
+      @created="onHolidayCreated"
+    />
   </div>
 </template>
 
@@ -257,6 +270,7 @@ import HolidayCalendar from '@/components/holidays/HolidayCalendar.vue'
 import HolidayStatistics from '@/components/holidays/HolidayStatistics.vue'
 import HolidayPlanningModal from '@/components/holidays/HolidayPlanningModal.vue'
 import HolidayPlanningDetailsModal from '@/components/holidays/HolidayPlanningDetailsModal.vue'
+import AddHolidayModal from '@/components/holidays/AddHolidayModal.vue'
 
 const router = useRouter()
 const ui = useUiStore()
@@ -267,6 +281,7 @@ const loading = ref(false)
 const plannings = ref({ data: [] })
 const holidays = ref({ data: [] })
 const departments = ref([])
+const agents = ref([])
 const stats = ref(null)
 const scopeInfo = ref({ is_provincial: false, province_id: null, province_nom: null })
 const viewMode = ref('list')
@@ -276,6 +291,7 @@ const statsKey = ref(0)
 // Modales
 const showCreateModal = ref(false)
 const showDetailsModal = ref(false)
+const showAddHolidayModal = ref(false)
 const selectedPlanning = ref(null)
 
 // Filtres
@@ -323,6 +339,10 @@ async function loadPlannings(page = 1) {
 
     if (departments.value.length === 0 && response.data.departments?.length) {
       departments.value = response.data.departments
+    }
+
+    if (response.data.agents?.length) {
+      agents.value = response.data.agents
     }
   } catch (error) {
     console.error('Erreur chargement plannings:', error)
@@ -392,6 +412,11 @@ function onPlanningCreated() {
 
 function onPlanningUpdated() {
   showDetailsModal.value = false
+  loadPlannings()
+}
+
+function onHolidayCreated() {
+  showAddHolidayModal.value = false
   loadPlannings()
 }
 

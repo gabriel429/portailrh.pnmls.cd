@@ -111,15 +111,26 @@ class HolidayController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
+        $isPlanning = $request->boolean('is_planning');
+
+        $rules = [
             'agent_id' => 'required|exists:agents,id',
-            'date_debut' => 'required|date|after_or_equal:today',
+            'date_debut' => 'required|date',
             'date_fin' => 'required|date|after_or_equal:date_debut',
             'type_conge' => 'required|in:annuel,maladie,maternite,paternite,urgence,special',
-            'motif' => 'required|string|max:1000',
+            'motif' => $isPlanning ? 'nullable|string|max:1000' : 'required|string|max:1000',
+            'observation' => 'nullable|string|max:1000',
+            'interim_assure_par' => 'nullable|exists:agents,id',
             'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
             'holiday_planning_id' => 'nullable|exists:holiday_plannings,id'
-        ]);
+        ];
+
+        // Pour les demandes normales (pas planning), date doit être dans le futur
+        if (!$isPlanning) {
+            $rules['date_debut'] = 'required|date|after_or_equal:today';
+        }
+
+        $validated = $request->validate($rules);
 
         // Vérifier les conflits de dates
         $agent = Agent::find($validated['agent_id']);
@@ -138,16 +149,26 @@ class HolidayController extends Controller
                 ->store('documents/medical', 'public');
         }
 
+        // Retirer is_planning avant la création
+        unset($validated['is_planning']);
+        if (empty($validated['motif'])) {
+            $validated['motif'] = 'Congé planifié par RH';
+        }
+
         $validated['demande_par'] = auth()->user()->agent->id;
         $validated['statut_demande'] = 'en_attente';
 
+        // Calculer le nombre de jours
+        $validated['nombre_jours'] = $dateDebut->diffInDays($dateFin) + 1;
+        $validated['date_retour_prevu'] = $dateFin->copy()->addDay();
+
         $holiday = Holiday::create($validated);
 
-        // Créer un nouveau statut agent si approuvé automatiquement
-        // (par exemple pour les congés d'urgence par un RH)
-        if (auth()->user()->agent->hasRole(['RH National', 'RH Provincial']) &&
-            in_array($validated['type_conge'], ['urgence', 'maladie'])) {
+        // Auto-approuver si RH planifie directement ou si urgence/maladie
+        $isRh = auth()->user()->agent->hasRole(['RH National', 'RH Provincial']);
+        $shouldAutoApprove = $isRh && ($isPlanning || in_array($validated['type_conge'], ['urgence', 'maladie']));
 
+        if ($shouldAutoApprove) {
             $holiday->approve(auth()->user()->agent);
 
             AgentStatus::setNewStatus($validated['agent_id'], [

@@ -106,11 +106,25 @@ class HolidayPlanningController extends Controller
         $holidays = $holidaysQuery->orderBy('date_debut', 'desc')
             ->paginate(20);
 
+        // Liste des agents pour le formulaire d'ajout de congé (scoped)
+        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id')
+            ->where('statut', 'actif')
+            ->orderBy('nom');
+        if ($provinceId) {
+            $agentsQuery->where('province_id', $provinceId);
+        }
+        $agents = $agentsQuery->get()->map(fn($a) => [
+            'id' => $a->id,
+            'nom_complet' => trim(($a->nom ?? '') . ' ' . ($a->postnom ?? '') . ' ' . ($a->prenom ?? '')),
+            'fonction' => $a->fonction,
+        ]);
+
         return response()->json([
             'plannings' => $plannings,
             'holidays' => $holidays,
             'stats' => $stats,
             'departments' => $departments,
+            'agents' => $agents,
             'year' => $year,
             'scope' => [
                 'is_provincial' => $isProvincial,
