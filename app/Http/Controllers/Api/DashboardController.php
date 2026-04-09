@@ -34,7 +34,7 @@ class DashboardController extends ApiController
         $stats = [
             'documents' => $agent->documents()->count(),
             'requests_pending' => $agent->requests()->where('statut', 'en_attente')->count(),
-            'requests_approved' => $agent->requests()->where('statut', 'approuve')->count(),
+            'requests_approved' => $agent->requests()->where('statut', 'approuvé')->count(),
             'absences' => \App\Models\Pointage::where('agent_id', $agent->id)
                 ->whereNull('heure_entree')
                 ->whereNull('heure_sortie')

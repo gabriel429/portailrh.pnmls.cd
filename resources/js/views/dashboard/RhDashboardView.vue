@@ -377,6 +377,52 @@
         </div>
       </div>
 
+      <!-- DEMANDES EN ATTENTE : VALIDATION RAPIDE -->
+      <div class="rh-section" v-if="pendingRequests.length || pendingLoading">
+        <div class="rh-section-head">
+          <div class="rh-section-icon" style="background:#fff7ed;color:#ea580c;">
+            <i class="fas fa-hourglass-half"></i>
+          </div>
+          <div>
+            <h3 class="rh-section-title">Demandes en attente de validation</h3>
+            <p class="rh-section-sub">{{ pendingRequests.length }} demande(s) requièrent votre action</p>
+          </div>
+        </div>
+        <div v-if="pendingLoading" class="rh-recent-empty">
+          <i class="fas fa-spinner fa-spin"></i><span>Chargement...</span>
+        </div>
+        <div v-else class="rh-pending-list">
+          <div v-for="r in pendingRequests" :key="r.id" class="rh-pending-item">
+            <div class="rh-pending-left">
+              <div class="rh-pending-type">{{ r.type }}</div>
+              <div class="rh-pending-agent" v-if="r.agent">{{ r.agent.prenom }} {{ r.agent.nom }}</div>
+              <div class="rh-pending-date"><i class="fas fa-clock me-1"></i>{{ formatTime(r.created_at) }}</div>
+            </div>
+            <div class="rh-pending-actions">
+              <router-link :to="'/requests/' + r.id" class="rh-btn-detail" title="Voir le détail">
+                <i class="fas fa-eye"></i>
+              </router-link>
+              <button class="rh-btn-validate" @click="validateRequest(r.id)" :disabled="actionLoading !== null" :class="{ 'rh-btn-loading': actionLoading === r.id }">
+                <i class="fas fa-check"></i> Valider
+              </button>
+              <button class="rh-btn-reject" @click="confirmReject(r.id)" :disabled="actionLoading !== null">
+                <i class="fas fa-times"></i> Rejeter
+              </button>
+            </div>
+            <!-- Formulaire de rejet inline -->
+            <div v-if="rejectTargetId === r.id" class="rh-reject-form">
+              <textarea v-model="rejectRemark" rows="2" placeholder="Motif de rejet (optionnel)..." class="rh-reject-textarea"></textarea>
+              <div class="rh-reject-form-actions">
+                <button class="rh-btn-cancel" @click="rejectTargetId = null">Annuler</button>
+                <button class="rh-btn-confirm-reject" @click="submitReject" :disabled="actionLoading !== null">
+                  <i class="fas fa-times-circle me-1"></i>Confirmer le rejet
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ACTIVITES RECENTES -->
       <div class="rh-section">
         <div class="rh-section-head">
@@ -1122,7 +1168,7 @@ function typePct(count, total) {
 }
 
 function statutLabel(s) {
-  const map = { en_attente: 'En attente', approuve: 'Approuve', rejete: 'Rejete', annule: 'Annule' }
+  const map = { en_attente: 'En attente', 'approuvé': 'Approuvé', 'rejeté': 'Rejeté', 'annulé': 'Annulé', approuve: 'Approuvé', rejete: 'Rejeté', annule: 'Annulé' }
   return map[s] || s
 }
 
@@ -1168,6 +1214,63 @@ function agentInitials(agent) {
 function formatShortDate(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+// ═══════════ PENDING REQUESTS (VALIDATION RAPIDE) ═══════════
+const pendingRequests = ref([])
+const pendingLoading = ref(false)
+const actionLoading = ref(null)
+const rejectTargetId = ref(null)
+const rejectRemark = ref('')
+
+async function loadPendingRequests() {
+  pendingLoading.value = true
+  try {
+    const { data } = await client.get('/requests', { params: { statut: 'en_attente', per_page: 50 } })
+    pendingRequests.value = data.data || []
+  } catch {
+    // silently fail, the count KPI still shows
+  } finally {
+    pendingLoading.value = false
+  }
+}
+
+async function reloadDashboard() {
+  try {
+    const { data: result } = await client.get('/rh/dashboard')
+    d.value = result
+  } catch { /* silent */ }
+}
+
+async function validateRequest(id) {
+  actionLoading.value = id
+  try {
+    await client.post(`/requests/${id}/validate`)
+    await Promise.all([loadPendingRequests(), reloadDashboard()])
+  } catch (e) {
+    alert(e.response?.data?.message || 'Erreur lors de la validation.')
+  } finally {
+    actionLoading.value = null
+  }
+}
+
+function confirmReject(id) {
+  rejectTargetId.value = id
+  rejectRemark.value = ''
+}
+
+async function submitReject() {
+  const id = rejectTargetId.value
+  actionLoading.value = id
+  try {
+    await client.post(`/requests/${id}/reject`, { remarques: rejectRemark.value || null })
+    rejectTargetId.value = null
+    await Promise.all([loadPendingRequests(), reloadDashboard()])
+  } catch (e) {
+    alert(e.response?.data?.message || 'Erreur lors du rejet.')
+  } finally {
+    actionLoading.value = null
+  }
 }
 
 // ═══════════ DRILL-DOWN STATE ═══════════
@@ -1282,11 +1385,40 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  loadPendingRequests()
 })
 </script>
 
 <style scoped>
 .rh-dashboard { max-width: 1200px; margin: 0 auto; padding: 0 1rem 2rem; }
+
+/* PENDING REQUESTS VALIDATION */
+.rh-pending-list { display: flex; flex-direction: column; gap: .6rem; }
+.rh-pending-item { background: #fff; border: 1px solid #fed7aa; border-radius: 14px; padding: 1rem 1.2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; transition: box-shadow .2s; }
+.rh-pending-item:hover { box-shadow: 0 4px 16px rgba(234,88,12,.1); }
+.rh-pending-left { flex: 1; min-width: 0; }
+.rh-pending-type { font-size: .85rem; font-weight: 700; color: #1e293b; text-transform: capitalize; }
+.rh-pending-agent { font-size: .78rem; color: #64748b; margin-top: .15rem; }
+.rh-pending-date { font-size: .72rem; color: #94a3b8; margin-top: .2rem; }
+.rh-pending-actions { display: flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+.rh-btn-detail { width: 32px; height: 32px; border-radius: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; text-decoration: none; font-size: .8rem; transition: all .2s; }
+.rh-btn-detail:hover { background: #e0f2fe; color: #0077B5; border-color: #7dd3fc; }
+.rh-btn-validate { padding: .35rem .85rem; border-radius: 8px; background: #dcfce7; border: 1px solid #86efac; color: #16a34a; font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .2s; }
+.rh-btn-validate:hover:not(:disabled) { background: #16a34a; color: #fff; }
+.rh-btn-validate:disabled { opacity: .5; cursor: not-allowed; }
+.rh-btn-validate.rh-btn-loading { opacity: .7; }
+.rh-btn-reject { padding: .35rem .85rem; border-radius: 8px; background: #fee2e2; border: 1px solid #fca5a5; color: #dc2626; font-size: .78rem; font-weight: 700; cursor: pointer; transition: all .2s; }
+.rh-btn-reject:hover:not(:disabled) { background: #dc2626; color: #fff; }
+.rh-btn-reject:disabled { opacity: .5; cursor: not-allowed; }
+.rh-reject-form { width: 100%; margin-top: .75rem; padding-top: .75rem; border-top: 1px solid #fee2e2; }
+.rh-reject-textarea { width: 100%; border: 1px solid #fca5a5; border-radius: 8px; padding: .5rem .75rem; font-size: .8rem; resize: none; outline: none; transition: border-color .2s; box-sizing: border-box; }
+.rh-reject-textarea:focus { border-color: #dc2626; }
+.rh-reject-form-actions { display: flex; gap: .5rem; justify-content: flex-end; margin-top: .5rem; }
+.rh-btn-cancel { padding: .3rem .75rem; border-radius: 8px; background: #f1f5f9; border: 1px solid #e2e8f0; color: #64748b; font-size: .78rem; cursor: pointer; }
+.rh-btn-cancel:hover { background: #e2e8f0; }
+.rh-btn-confirm-reject { padding: .3rem .75rem; border-radius: 8px; background: #dc2626; border: none; color: #fff; font-size: .78rem; font-weight: 700; cursor: pointer; }
+.rh-btn-confirm-reject:hover:not(:disabled) { background: #b91c1c; }
+.rh-btn-confirm-reject:disabled { opacity: .6; cursor: not-allowed; }
 
 /* HERO */
 .rh-hero {
