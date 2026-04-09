@@ -30,7 +30,6 @@
               <option value="conge">Conge</option>
               <option value="absence">Absence</option>
               <option value="permission">Permission</option>
-              <option value="formation">Renforcement des capacités</option>
               <option value="renforcement_capacites">Renforcement des capacités</option>
             </select>
           </div>

@@ -137,6 +137,37 @@ class DemandeWorkflowService
     }
 
     /**
+     * Check if the user can validate a specific workflow step (regardless of request state).
+     * Useful for filtering requests by validatable steps.
+     */
+    public function canValidateAtStep(User $user, string $step): bool
+    {
+        if (!in_array($step, self::STEPS)) {
+            return false;
+        }
+
+        if ($user->isSuperAdmin()) {
+            return true;
+        }
+
+        $permissionCode = self::STEP_PERMISSIONS[$step] ?? null;
+        if ($permissionCode && $user->hasPermission($permissionCode)) {
+            return true;
+        }
+
+        $allowedRoles = self::STEP_ROLES[$step] ?? [];
+        return $user->hasRole($allowedRoles);
+    }
+
+    /**
+     * Return the list of workflow steps this user is authorized to validate.
+     */
+    public function getValidatableSteps(User $user): array
+    {
+        return array_values(array_filter(self::STEPS, fn($step) => $this->canValidateAtStep($user, $step)));
+    }
+
+    /**
      * Validate (approve) the current step.
      */
     public function approve(User $user, RequestModel $request): array

@@ -35,9 +35,29 @@ class RequestController extends ApiController
         $user = $request->user();
         $isRH = $user->hasAdminAccess();
         $scope = $this->scopeService();
+        $workflowSvc = $this->workflowService();
 
-        $query = RequestModel::with(['agent']);
-        $scope->applyRequestScope($query, $user);
+        // Workflow validators (SEP, SENA, Chef Section Renforcement…) who are not
+        // global admins: they must see both their own requests AND requests
+        // currently sitting at their validation step.
+        $validatableSteps = [];
+        if (!$scope->hasGlobalAdminAccess($user) && !$scope->isProvincialRh($user)) {
+            $validatableSteps = $workflowSvc->getValidatableSteps($user);
+        }
+
+        if (!empty($validatableSteps)) {
+            $agentId = $user->agent?->id;
+            $steps   = $validatableSteps;
+            $query   = RequestModel::with(['agent'])->where(function ($q) use ($agentId, $steps) {
+                if ($agentId) {
+                    $q->where('agent_id', $agentId);
+                }
+                $q->orWhereIn('current_step', $steps);
+            });
+        } else {
+            $query = RequestModel::with(['agent']);
+            $scope->applyRequestScope($query, $user);
+        }
 
         // Filter by statut
         if ($request->filled('statut')) {
@@ -244,6 +264,7 @@ class RequestController extends ApiController
         $demande = RequestModel::findOrFail($id);
         $this->authorizeAccess($request->user(), $demande);
 
+        $stepBefore = $demande->current_step ?? 'unknown';
         $result = $this->workflowService()->approve($request->user(), $demande);
 
         if (!$result['success']) {
@@ -252,7 +273,7 @@ class RequestController extends ApiController
 
         $demande->refresh()->load('agent');
 
-        DemandeValidated::dispatch($demande, $result['step'] ?? 'unknown', 'approved');
+        DemandeValidated::dispatch($demande, $stepBefore, 'approved');
 
         return $this->resource(RequestResource::make($demande), [], [
             'message' => $result['message'],
@@ -272,6 +293,7 @@ class RequestController extends ApiController
             'remarques' => 'nullable|string|max:1000',
         ]);
 
+        $stepBefore = $demande->current_step ?? 'unknown';
         $result = $this->workflowService()->reject(
             $request->user(),
             $demande,
@@ -284,7 +306,7 @@ class RequestController extends ApiController
 
         $demande->refresh()->load('agent');
 
-        DemandeValidated::dispatch($demande, $result['step'] ?? 'unknown', 'rejected');
+        DemandeValidated::dispatch($demande, $stepBefore, 'rejected');
 
         return $this->resource(RequestResource::make($demande), [], [
             'message' => $result['message'],
@@ -320,10 +342,16 @@ class RequestController extends ApiController
 
     /**
      * Verify that the current user can access the given request.
+     * Allows: global admins, provincial RH, request owner, and workflow step validators.
      */
     private function authorizeAccess($user, RequestModel $demande): void
     {
         if ($this->scopeService()->canAccessRequest($user, $demande)) {
+            return;
+        }
+
+        // Workflow step validators can access requests they are entitled to validate.
+        if ($this->workflowService()->canValidate($user, $demande)) {
             return;
         }
 
