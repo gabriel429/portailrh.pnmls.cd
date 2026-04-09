@@ -5,14 +5,16 @@
         <div class="modal-header bg-primary text-white">
           <h5 class="modal-title">
             <i class="fas fa-user-clock me-2"></i>
-            Planifier les congés par département / service
+            Planifier les congés
+            <template v-if="isProvincial">— {{ scopeInfo.province_nom }}</template>
+            <template v-else>par département / service</template>
           </h5>
           <button type="button" class="btn-close btn-close-white" @click="$emit('close')"></button>
         </div>
 
         <div class="modal-body">
-          <!-- Sélecteurs : Département + Planning lié -->
-          <div class="row g-3 mb-4">
+          <!-- Sélecteurs : National = Département obligatoire, Provincial = auto-chargement -->
+          <div class="row g-3 mb-4" v-if="!isProvincial">
             <div class="col-md-5">
               <label class="form-label fw-bold">Département / Service <span class="text-danger">*</span></label>
               <select class="form-select" v-model="selectedDepartment" :disabled="loadingAgents">
@@ -44,12 +46,24 @@
               </button>
             </div>
           </div>
+          <!-- Provincial : planning lié uniquement -->
+          <div class="row g-3 mb-4" v-if="isProvincial && plannings.length > 0">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Planning lié</label>
+              <select class="form-select" v-model="selectedPlanningId">
+                <option value="">-- Aucun --</option>
+                <option v-for="p in plannings" :key="p.id" :value="p.id">
+                  {{ p.nom_structure || p.type_structure }} — {{ p.annee }}
+                </option>
+              </select>
+            </div>
+          </div>
 
           <!-- Tableau des agents -->
           <div v-if="agentsLoaded">
             <div v-if="agents.length === 0" class="text-center text-muted py-4">
               <i class="fas fa-users-slash fa-2x mb-2 d-block"></i>
-              Aucun agent actif dans ce département
+              Aucun agent actif {{ isProvincial ? 'dans cette province' : 'dans ce département' }}
             </div>
 
             <div v-else>
@@ -181,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
 
@@ -207,26 +221,32 @@ const defaultType = ref('annuel')
 const selectedDepartment = ref('')
 const selectedPlanningId = ref('')
 
+const isProvincial = computed(() => !!props.scopeInfo?.is_provincial)
+
 // RH National : uniquement départements nationaux (province_id null)
 const filteredDepartments = computed(() => {
-  if (props.scopeInfo?.is_provincial) {
-    return props.departments
-  }
-  // National : only national departments
+  if (isProvincial.value) return props.departments
   return props.departments.filter(d => !d.province_id)
 })
 
-// Charger les agents du département
+// Provincial : charger tous les agents de la province à l'ouverture
+onMounted(() => {
+  if (isProvincial.value) {
+    loadAgents()
+  }
+})
+
+// Charger les agents
 async function loadAgents() {
-  if (!selectedDepartment.value) return
+  if (!isProvincial.value && !selectedDepartment.value) return
   loadingAgents.value = true
   globalError.value = ''
   agents.value = []
 
   try {
-    const { data } = await client.get('/holidays/agents-by-structure', {
-      params: { department_id: selectedDepartment.value, year: props.year }
-    })
+    const params = { year: props.year }
+    if (selectedDepartment.value) params.department_id = selectedDepartment.value
+    const { data } = await client.get('/holidays/agents-by-structure', { params })
 
     agents.value = (data.agents || []).map(a => ({
       ...a,

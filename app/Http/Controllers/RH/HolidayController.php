@@ -113,34 +113,35 @@ class HolidayController extends Controller
     public function agentsByStructure(Request $request)
     {
         $request->validate([
-            'department_id' => 'required|integer',
+            'department_id' => 'nullable|integer',
         ]);
 
         $scope = app(UserDataScope::class);
         $user = $request->user();
 
-        // Vérifier que le département est accessible pour ce RH
-        $dept = Department::find($request->department_id);
-        if (!$dept) {
-            return response()->json(['agents' => []]);
-        }
-
-        $agentsQuery = Agent::where('departement_id', $request->department_id)
-            ->where('statut', 'actif')
-            ->orderBy('nom');
+        $agentsQuery = Agent::where('statut', 'actif')->orderBy('nom');
 
         if ($scope->isProvincialRh($user)) {
-            // RH Provincial : agents de sa province uniquement
+            // RH Provincial : tous les agents de sa province
             $provinceId = $scope->provinceId($user);
             if ($provinceId) {
                 $agentsQuery->where('province_id', $provinceId);
             }
+            // Optionnel : filtrer par département si fourni
+            if ($request->filled('department_id')) {
+                $agentsQuery->where('departement_id', $request->department_id);
+            }
         } else {
-            // RH National : uniquement départements nationaux (province_id IS NULL)
-            if ($dept->province_id !== null) {
+            // RH National : department_id obligatoire, départements nationaux uniquement
+            if (!$request->filled('department_id')) {
+                return response()->json(['agents' => [], 'message' => 'Sélectionnez un département']);
+            }
+            $dept = Department::find($request->department_id);
+            if (!$dept || $dept->province_id !== null) {
                 return response()->json(['agents' => [], 'message' => 'Le RH National ne peut planifier que pour les structures nationales']);
             }
-            $agentsQuery->whereNull('province_id');
+            $agentsQuery->where('departement_id', $request->department_id)
+                ->whereNull('province_id');
         }
 
         $agents = $agentsQuery->get(['id', 'nom', 'postnom', 'prenom', 'fonction']);
