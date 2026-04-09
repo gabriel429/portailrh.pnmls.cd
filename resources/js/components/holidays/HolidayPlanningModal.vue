@@ -50,7 +50,7 @@
                   required
                 >
                   <option value="">Sélectionner un type</option>
-                  <option value="department">Département</option>
+                  <option v-if="!scopeInfo.is_provincial" value="department">Département</option>
                   <option v-if="!scopeInfo.is_provincial" value="sen">SEN</option>
                   <option v-if="!scopeInfo.is_provincial" value="sena">SENA</option>
                   <option value="sep">SEP Provincial</option>
