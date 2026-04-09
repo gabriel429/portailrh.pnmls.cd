@@ -257,8 +257,8 @@
                 <i class="fas fa-chart-pie me-2"></i>
                 Répartition des jours utilisés
               </h6>
-              <div class="chart-placeholder">
-                <canvas ref="pieChart" width="300" height="300"></canvas>
+              <div class="chart-placeholder" style="position:relative;height:300px;">
+                <canvas ref="pieChart"></canvas>
               </div>
             </div>
           </div>
@@ -270,8 +270,8 @@
                 <i class="fas fa-chart-bar me-2"></i>
                 Taux d'utilisation par structure
               </h6>
-              <div class="chart-placeholder">
-                <canvas ref="barChart" width="300" height="300"></canvas>
+              <div class="chart-placeholder" style="position:relative;height:300px;">
+                <canvas ref="barChart"></canvas>
               </div>
             </div>
           </div>
@@ -283,8 +283,8 @@
                 <i class="fas fa-chart-line me-2"></i>
                 Comparaison des structures
               </h6>
-              <div class="chart-placeholder">
-                <canvas ref="lineChart" width="600" height="200"></canvas>
+              <div class="chart-placeholder" style="position:relative;height:280px;">
+                <canvas ref="lineChart"></canvas>
               </div>
             </div>
           </div>
@@ -295,7 +295,22 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import {
+  Chart,
+  ArcElement, DoughnutController,
+  BarElement, BarController,
+  LineElement, LineController, PointElement,
+  CategoryScale, LinearScale,
+  Tooltip, Legend, Title
+} from 'chart.js'
+Chart.register(
+  ArcElement, DoughnutController,
+  BarElement, BarController,
+  LineElement, LineController, PointElement,
+  CategoryScale, LinearScale,
+  Tooltip, Legend, Title
+)
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
 
@@ -315,10 +330,17 @@ const globalStats = ref({})
 const viewType = ref('overview')
 const activeStructureTab = ref('')
 
-// Refs pour les graphiques
+// Refs pour les canevas
 const pieChart = ref(null)
 const barChart = ref(null)
 const lineChart = ref(null)
+
+// Instances Chart.js
+let pieChartInstance = null
+let barChartInstance = null
+let lineChartInstance = null
+
+const CHART_COLORS = ['#0077B5', '#00C851', '#ff4444', '#ffbb33', '#2bbbad', '#aa66cc']
 
 // Méthodes
 async function loadStatistics() {
@@ -385,7 +407,13 @@ function showStructureDetails(structureType, data) {
   viewType.value = 'details'
 }
 
-// Graphiques (version simplifiée sans Chart.js pour l'instant)
+// Graphiques avec Chart.js
+function destroyCharts() {
+  if (pieChartInstance) { pieChartInstance.destroy(); pieChartInstance = null }
+  if (barChartInstance) { barChartInstance.destroy(); barChartInstance = null }
+  if (lineChartInstance) { lineChartInstance.destroy(); lineChartInstance = null }
+}
+
 function drawCharts() {
   drawPieChart()
   drawBarChart()
@@ -394,48 +422,109 @@ function drawCharts() {
 
 function drawPieChart() {
   if (!pieChart.value) return
+  if (pieChartInstance) { pieChartInstance.destroy(); pieChartInstance = null }
+  const entries = Object.entries(statistiques.value)
+  if (!entries.length) return
 
-  const ctx = pieChart.value.getContext('2d')
-  const data = Object.values(statistiques.value).map(s => s.totals.jours_utilises)
-  const labels = Object.keys(statistiques.value).map(getStructureLabel)
+  const labels = entries.map(([k]) => getStructureLabel(k))
+  const data = entries.map(([, v]) => v.totals.jours_utilises || 0)
 
-  // Simulation d'un graphique simple
-  ctx.clearRect(0, 0, 300, 300)
-  ctx.fillStyle = '#e9ecef'
-  ctx.fillRect(0, 0, 300, 300)
-  ctx.fillStyle = '#333'
-  ctx.font = '14px Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText('Graphique de répartition', 150, 150)
-  ctx.fillText('(Chart.js requis)', 150, 170)
+  pieChartInstance = new Chart(pieChart.value, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: CHART_COLORS.slice(0, labels.length),
+        borderWidth: 2,
+        borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  })
 }
 
 function drawBarChart() {
   if (!barChart.value) return
+  if (barChartInstance) { barChartInstance.destroy(); barChartInstance = null }
+  const allStructures = Object.values(statistiques.value).flatMap(t => t.structures)
+  if (!allStructures.length) return
 
-  const ctx = barChart.value.getContext('2d')
-  ctx.clearRect(0, 0, 300, 300)
-  ctx.fillStyle = '#e9ecef'
-  ctx.fillRect(0, 0, 300, 300)
-  ctx.fillStyle = '#333'
-  ctx.font = '14px Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText('Graphique en barres', 150, 150)
-  ctx.fillText('(Chart.js requis)', 150, 170)
+  const labels = allStructures.map(s => s.nom_structure)
+  const data = allStructures.map(s => parseFloat(s.taux_utilisation) || 0)
+
+  barChartInstance = new Chart(barChart.value, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: "Taux d'utilisation (%)",
+        data,
+        backgroundColor: data.map(v => v >= 90 ? '#ff4444' : v >= 70 ? '#ffbb33' : '#00C851'),
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true, max: 100, ticks: { callback: v => v + '%' } },
+        x: { ticks: { maxRotation: 45, minRotation: 30 } }
+      },
+      plugins: { legend: { display: false } }
+    }
+  })
 }
 
 function drawLineChart() {
   if (!lineChart.value) return
+  if (lineChartInstance) { lineChartInstance.destroy(); lineChartInstance = null }
+  const allStructures = Object.values(statistiques.value).flatMap(t => t.structures)
+  if (!allStructures.length) return
 
-  const ctx = lineChart.value.getContext('2d')
-  ctx.clearRect(0, 0, 600, 200)
-  ctx.fillStyle = '#e9ecef'
-  ctx.fillRect(0, 0, 600, 200)
-  ctx.fillStyle = '#333'
-  ctx.font = '14px Arial'
-  ctx.textAlign = 'center'
-  ctx.fillText('Graphique linéaire', 300, 100)
-  ctx.fillText('(Chart.js requis)', 300, 120)
+  const labels = allStructures.map(s => s.nom_structure)
+  const jouPrevus = allStructures.map(s => s.jours_conge_totaux || 0)
+  const jourUtil = allStructures.map(s => s.jours_utilises || 0)
+
+  lineChartInstance = new Chart(lineChart.value, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Jours prévus',
+          data: jouPrevus,
+          backgroundColor: 'rgba(0, 119, 181, 0.65)',
+          borderColor: '#0077B5',
+          borderWidth: 1,
+          borderRadius: 4
+        },
+        {
+          label: 'Jours utilisés',
+          data: jourUtil,
+          backgroundColor: 'rgba(0, 200, 81, 0.65)',
+          borderColor: '#00C851',
+          borderWidth: 1,
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true },
+        x: { ticks: { maxRotation: 45, minRotation: 30 } }
+      },
+      plugins: { legend: { position: 'top' } }
+    }
+  })
 }
 
 // Watchers
@@ -454,6 +543,10 @@ watch(() => viewType.value, (newValue) => {
 // Initialisation
 onMounted(() => {
   loadStatistics()
+})
+
+onUnmounted(() => {
+  destroyCharts()
 })
 </script>
 
