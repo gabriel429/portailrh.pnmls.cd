@@ -349,7 +349,7 @@ function getJoursFeriesRDC(annee) {
     { start: `${annee}-01-01`, end: `${annee}-01-01`, nom: "Jour de l'An" },
     { start: `${annee}-01-04`, end: `${annee}-01-04`, nom: "Journée des Martyrs de l'Indépendance" },
     { start: `${annee}-01-16`, end: `${annee}-01-17`, nom: 'Journée des Héros Nationaux (Kabila & Lumumba)' },
-    { start: `${annee}-04-02`, end: `${annee}-04-02`, nom: 'Journée de Simon Kimbangu' },
+    { start: `${annee}-04-06`, end: `${annee}-04-06`, nom: 'Journée du Combat de Simon Kimbangu et de la Conscience Africaine' },
     { start: `${annee}-05-01`, end: `${annee}-05-01`, nom: 'Fête du Travail' },
     { start: `${annee}-05-17`, end: `${annee}-05-17`, nom: 'Journée de la Libération' },
     { start: `${annee}-06-30`, end: `${annee}-06-30`, nom: "Fête de l'Indépendance" },
