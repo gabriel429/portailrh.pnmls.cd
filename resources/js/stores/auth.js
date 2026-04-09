@@ -71,9 +71,9 @@ export const useAuthStore = defineStore('auth', {
                 this.loading = false
             }
         },
-        async login(email, password) {
+        async login(email, password, remember = false) {
             await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
-            await client.post('/login', { email, password })
+            await client.post('/login', { email, password, remember })
             await this.fetchUser()
         },
         async logout() {

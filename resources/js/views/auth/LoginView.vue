@@ -114,7 +114,7 @@ async function handleLogin() {
     errors.value = {}
 
     try {
-        await auth.login(form.email, form.password)
+        await auth.login(form.email, form.password, form.remember)
         const redirect = route.query.redirect
         if (redirect && redirect.startsWith('/') && !redirect.startsWith('//')) {
             router.push(redirect)
