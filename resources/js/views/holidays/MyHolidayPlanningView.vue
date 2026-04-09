@@ -56,7 +56,6 @@
             <div>
               <h3 class="panel-title">
                 <i class="fas fa-umbrella-beach me-2 text-primary"></i>Mon congé planifié
-                <span class="badge bg-primary ms-2" style="font-size: 0.7rem;">{{ myHolidays.length }}</span>
               </h3>
             </div>
           </header>
