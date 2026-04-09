@@ -86,8 +86,7 @@ class AuthController extends Controller
             // Check if account is frozen
             if ($user->is_frozen) {
                 Auth::guard('web')->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
+                try { $request->session()->invalidate(); $request->session()->regenerateToken(); } catch (\Throwable $e) {}
 
                 return response()->json([
                     'message' => 'Votre compte a été gelé. Veuillez contacter la Section Nouvelle Technologie.',
@@ -120,7 +119,8 @@ class AuthController extends Controller
 
             // Check existing active sessions for this user (same device type)
             // Exclude current session — Auth::attempt() already assigned user_id to it
-            $currentSessionId = session()->getId();
+            $currentSessionId = null;
+            try { $currentSessionId = session()->getId(); } catch (\Throwable $e) {}
             $existingSessions = DB::table('sessions')
                 ->where('user_id', $user->id)
                 ->where('id', '!=', $currentSessionId)
@@ -133,8 +133,7 @@ class AuthController extends Controller
                 if ($sessionIsMobile === $currentIsMobile) {
                     // Log the user back out since Auth::attempt already logged them in
                     Auth::guard('web')->logout();
-                    $request->session()->invalidate();
-                    $request->session()->regenerateToken();
+                    try { $request->session()->invalidate(); $request->session()->regenerateToken(); } catch (\Throwable $e) {}
 
                     $deviceType = $currentIsMobile ? 'téléphone' : 'ordinateur';
                     $deviceModel = $this->parseDeviceModel($session->user_agent ?? '');
@@ -176,14 +175,14 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $userId = Auth::id();
-        $sessionId = session()->getId();
+        $sessionId = null;
+        try { $sessionId = session()->getId(); } catch (\Throwable $e) {}
 
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        try { $request->session()->invalidate(); $request->session()->regenerateToken(); } catch (\Throwable $e) {}
 
         // Explicitly remove the session from database to prevent ghost sessions
-        DB::table('sessions')->where('id', $sessionId)->delete();
+        if ($sessionId) { DB::table('sessions')->where('id', $sessionId)->delete(); }
 
         return response()->json(['message' => 'Deconnexion reussie.']);
     }
