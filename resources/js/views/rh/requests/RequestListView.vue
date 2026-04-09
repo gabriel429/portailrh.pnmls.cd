@@ -10,7 +10,7 @@
             {{ isRH ? 'Gestion des demandes' : 'Mes Demandes' }}
           </h2>
           <p v-if="isRH">Suivi, validation et historisation des demandes des agents.</p>
-          <p v-else>Suivez l'etat de vos demandes de conge, absence et permission.</p>
+          <p v-else>Suivez l'état de vos demandes de congé, absence et permission.</p>
           <div class="req-hero-stats">
             <div>
               <div class="req-hero-stat-val">{{ meta.total }}</div>
@@ -27,7 +27,7 @@
             <label class="req-type-label">Type</label>
             <select v-model="filters.type" class="req-type-select" @change="loadRequests(1)">
               <option value="">Tous les types</option>
-              <option value="conge">Conge</option>
+              <option value="conge">Congé</option>
               <option value="absence">Absence</option>
               <option value="permission">Permission</option>
               <option value="renforcement_capacites">Renforcement des capacités</option>
@@ -58,7 +58,7 @@
         <div class="req-filter-icon"><i class="fas fa-hourglass-half"></i></div>
         <div class="req-filter-info">
           <div class="req-filter-name">En attente</div>
-          <div class="req-filter-count">A traiter</div>
+          <div class="req-filter-count">À traiter</div>
         </div>
       </button>
       <button
@@ -68,8 +68,8 @@
       >
         <div class="req-filter-icon"><i class="fas fa-check-circle"></i></div>
         <div class="req-filter-info">
-          <div class="req-filter-name">Approuvee</div>
-          <div class="req-filter-count">Validees</div>
+          <div class="req-filter-name">Approuvée</div>
+          <div class="req-filter-count">Validées</div>
         </div>
       </button>
       <button
@@ -79,8 +79,8 @@
       >
         <div class="req-filter-icon"><i class="fas fa-times-circle"></i></div>
         <div class="req-filter-info">
-          <div class="req-filter-name">Rejetee</div>
-          <div class="req-filter-count">Refusees</div>
+          <div class="req-filter-name">Rejetée</div>
+          <div class="req-filter-count">Refusées</div>
         </div>
       </button>
       <button
@@ -90,8 +90,8 @@
       >
         <div class="req-filter-icon"><i class="fas fa-ban"></i></div>
         <div class="req-filter-info">
-          <div class="req-filter-name">Annulee</div>
-          <div class="req-filter-count">Annulees</div>
+          <div class="req-filter-name">Annulée</div>
+          <div class="req-filter-count">Annulées</div>
         </div>
       </button>
     </div>
@@ -153,7 +153,7 @@
             <div class="req-card-actions">
               <button
                 class="req-act-btn req-act-view"
-                title="Details"
+                title="Détails"
                 @click="openDetail(req.id)"
               >
                 <i class="fas fa-eye"></i> Voir
@@ -213,9 +213,9 @@
         </template>
         <template v-else>
           <h5>Aucune demande</h5>
-          <p>{{ isRH ? "Il n'y a aucune demande a afficher." : "Vous n'avez pas encore soumis de demande." }}</p>
+          <p>{{ isRH ? "Il n'y a aucune demande à afficher." : "Vous n'avez pas encore soumis de demande." }}</p>
           <button class="req-hero-btn mt-3" style="display:inline-flex;" @click="openCreateModal">
-            <i class="fas fa-plus me-1"></i> Creer une demande
+            <i class="fas fa-plus me-1"></i> Créer une demande
           </button>
         </template>
       </div>
@@ -225,7 +225,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer la demande"
-      :message="`Etes-vous sur de vouloir supprimer cette demande de ${deleteTarget?.type ?? ''} ?`"
+      :message="`Êtes-vous sûr de vouloir supprimer cette demande de ${deleteTarget?.type ?? ''} ?`"
       :loading="deleting"
       @confirm="handleDelete"
       @cancel="showDeleteModal = false"
@@ -282,7 +282,7 @@
               <div class="rdm-info-card">
                 <div class="rdm-info-icon rdm-ic-purple"><i class="fas fa-calendar-alt"></i></div>
                 <div>
-                  <div class="rdm-info-label">Periode</div>
+                  <div class="rdm-info-label">Période</div>
                   <div class="rdm-info-value">
                     {{ formatDate(detailRequest.date_debut) }}
                     <template v-if="detailRequest.date_fin"> - {{ formatDate(detailRequest.date_fin) }}</template>
@@ -313,7 +313,7 @@
                 <div class="rdm-file-icon"><i class="fas fa-file-alt"></i></div>
                 <span class="rdm-file-name">{{ fileName(detailRequest.lettre_demande) }}</span>
                 <a :href="storageUrl(detailRequest.lettre_demande)" target="_blank" class="rdm-file-dl">
-                  <i class="fas fa-download me-1"></i> Telecharger
+                  <i class="fas fa-download me-1"></i> Télécharger
                 </a>
               </div>
             </div>
@@ -505,9 +505,9 @@ function formatType(type) {
 function statusLabel(statut) {
   const labels = {
     en_attente: 'En attente',
-    'approuvé': 'Approuve',
-    'rejeté': 'Rejete',
-    'annulé': 'Annule',
+    'approuvé': 'Approuvée',
+    'rejeté': 'Rejetée',
+    'annulé': 'Annulée',
   }
   return labels[statut] || statut
 }
@@ -567,7 +567,7 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(deleteTarget.value.id)
-    ui.addToast('Demande supprimee avec succes.', 'success')
+    ui.addToast('Demande supprimée avec succès.', 'success')
     showDeleteModal.value = false
     deleteTarget.value = null
     await loadRequests(meta.value.current_page)
