@@ -44,6 +44,7 @@ class Holiday extends Model
         'interim_assure_par',
         'commentaire_refus',
         'document_medical',
+        'lettre_demande',
         'report_possible',
         'date_retour_prevu',
         'date_retour_effectif',

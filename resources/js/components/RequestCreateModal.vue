@@ -137,7 +137,7 @@
             <div class="mb-3">
               <label class="rcm-label">
                 <i class="fas fa-paperclip me-1 text-muted"></i>
-                Lettre de demande (optionnel)
+                {{ form.type === 'conge' ? 'Lettre de demande de congé (optionnel)' : 'Lettre de demande (optionnel)' }}
               </label>
 
               <div v-if="!filePreview" class="upload-zone-sm" @click="$refs.fileInput.click()">
@@ -162,6 +162,7 @@
                 @change="handleFileSelect"
               >
               <div v-if="errors.lettre_demande" class="text-danger small mt-1">{{ errors.lettre_demande[0] }}</div>
+              <div v-if="errors.document_medical" class="text-danger small mt-1">{{ errors.document_medical[0] }}</div>
             </div>
 
             <!-- Submit -->
@@ -285,7 +286,7 @@ async function handleSubmit() {
       fd.append('date_fin', form.value.date_fin)
       fd.append('motif', form.value.description)
       if (form.value.interim_assure_par) fd.append('interim_assure_par', form.value.interim_assure_par)
-      if (selectedFile.value) fd.append('document_medical', selectedFile.value)
+      if (selectedFile.value) fd.append('lettre_demande', selectedFile.value)
       await client.post('/my-holiday', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
     } else {
       // Autres types → route requests standard

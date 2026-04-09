@@ -662,6 +662,7 @@ class HolidayController extends Controller
             'observation'        => 'nullable|string|max:1000',
             'interim_assure_par' => 'nullable|exists:agents,id',
             'document_medical'   => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'lettre_demande'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
 
         $dateDebut = Carbon::parse($validated['date_debut']);
@@ -695,6 +696,12 @@ class HolidayController extends Controller
         if ($request->hasFile('document_medical')) {
             $validated['document_medical'] = $request->file('document_medical')
                 ->store('documents_medicaux', 'public');
+        }
+
+        // Lettre de demande
+        if ($request->hasFile('lettre_demande')) {
+            $validated['lettre_demande'] = $request->file('lettre_demande')
+                ->store('lettres_conge', 'public');
         }
 
         $validated['agent_id']          = $agent->id;
