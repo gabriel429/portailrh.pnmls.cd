@@ -24,7 +24,7 @@
         </div>
         <div>
           <div class="dash-hero-stat-val">{{ stats.communiques ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Communiques</div>
+          <div class="dash-hero-stat-lbl">Communiqués</div>
         </div>
         <div>
           <div class="dash-hero-stat-val">{{ stats.requests_pending ?? 0 }}</div>
@@ -32,7 +32,7 @@
         </div>
         <div>
           <div class="dash-hero-stat-val">{{ stats.requests_approved ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Approuvees</div>
+          <div class="dash-hero-stat-lbl">Approuvées</div>
         </div>
         <div>
           <div class="dash-hero-stat-val">{{ stats.absences ?? 0 }}</div>
@@ -67,7 +67,7 @@
           </div>
           <div class="dash-action-info">
             <div class="dash-action-name">Nouvelle demande</div>
-            <div class="dash-action-desc">Conge, attestation...</div>
+            <div class="dash-action-desc">Congé, attestation...</div>
           </div>
         </button>
         <button
@@ -126,7 +126,7 @@
       <div class="dash-section-header">
         <div class="dash-section-title">
           <i class="fas fa-history" style="color:#0077B5;"></i>
-          Activite recente
+          Activité récente
         </div>
       </div>
       <div v-if="activities.length" class="dash-activity-grid">
@@ -144,8 +144,8 @@
       </div>
       <div v-else class="dash-empty">
         <div class="dash-empty-icon"><i class="fas fa-inbox"></i></div>
-        <h5>Aucune activite recente</h5>
-        <p>Vos dernieres actions et notifications apparaitront ici.</p>
+        <h5>Aucune activité récente</h5>
+        <p>Vos dernières actions et notifications apparaîtront ici.</p>
         <button class="dash-action-btn" @click="showRequestModal = true">
           <i class="fas fa-plus me-1"></i>Nouvelle demande
         </button>
@@ -160,7 +160,7 @@
             </div>
             <div class="dash-info-content">
               <div class="dash-info-title">Besoin d'aide ?</div>
-              <div class="dash-info-text">Pour toute question relative a votre dossier RH, contactez la Section Ressources Humaines ou consultez les documents de travail.</div>
+              <div class="dash-info-text">Pour toute question relative à votre dossier RH, contactez la Section Ressources Humaines ou consultez les documents de travail.</div>
             </div>
           </div>
           <div class="dash-info-footer">
@@ -176,7 +176,7 @@
             </div>
             <div class="dash-info-content">
               <div class="dash-info-title">Notifications</div>
-              <div class="dash-info-text">Restez informe des mises a jour sur vos demandes, documents et communiques importants de l'organisation.</div>
+              <div class="dash-info-text">Restez informé des mises à jour sur vos demandes, documents et communiqués importants de l'organisation.</div>
             </div>
           </div>
           <div class="dash-info-footer">
@@ -206,7 +206,7 @@
                 <div v-if="!uplFilePreview" class="dum-upload-zone" @click="uplFileInput.click()" @dragover.prevent="uplIsDragging = true" @dragleave="uplIsDragging = false" @drop.prevent="uplHandleDrop" :class="{ dragging: uplIsDragging }">
                   <i class="fas fa-cloud-upload-alt dum-upload-icon"></i>
                   <div class="fw-semibold small">Glissez votre fichier ici ou cliquez pour parcourir</div>
-                  <div class="text-muted" style="font-size:.7rem;">Tous formats acceptes - Max 10 Mo</div>
+                  <div class="text-muted" style="font-size:.7rem;">Tous formats acceptés · Max 10 Mo</div>
                 </div>
                 <div v-else class="dum-file-preview">
                   <div class="dum-file-icon-box"><i class="fas fa-file-alt"></i></div>
@@ -225,7 +225,7 @@
                 <div v-if="uplErrors.nom_document" class="dum-error">{{ uplErrors.nom_document[0] }}</div>
               </div>
               <div class="mb-3">
-                <label class="dum-label"><i class="fas fa-folder me-1 text-muted"></i> Categorie</label>
+                <label class="dum-label"><i class="fas fa-folder me-1 text-muted"></i> Catégorie</label>
                 <div class="dum-cat-grid">
                   <div v-for="c in uplCatOptions" :key="c.value" class="dum-cat-card" :class="{ active: uplForm.categories_document_id === c.value }" @click="uplForm.categories_document_id = uplForm.categories_document_id === c.value ? '' : c.value">
                     <i :class="c.icon" class="dum-cat-icon"></i>
@@ -235,7 +235,7 @@
                 <div v-if="uplErrors.categories_document_id" class="dum-error">{{ uplErrors.categories_document_id[0] }}</div>
               </div>
               <div class="mb-3">
-                <label class="dum-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-muted fw-normal">(optionnel)</span></label>
+                <label class="dum-label"><i class="fas fa-align-left me-1 text-muted"></i> Description <span class="text-muted fw-normal">(optionnelle)</span></label>
                 <textarea v-model="uplForm.description" rows="2" class="dum-input dum-textarea" :class="{ 'is-invalid': uplErrors.description }" placeholder="Ajoutez une description..."></textarea>
                 <div v-if="uplErrors.description" class="dum-error">{{ uplErrors.description[0] }}</div>
               </div>
@@ -337,7 +337,7 @@ const today = computed(() => {
 })
 
 const quickActions = [
-  { to: '/mon-planning-conges', label: 'Planning conges', desc: 'Conges de ma structure', icon: 'fa-calendar-alt', color: '#0d9488', bg: '#ccfbf1' },
+  { to: '/mon-planning-conges', label: 'Planning congés', desc: 'Congés de ma structure', icon: 'fa-calendar-alt', color: '#0d9488', bg: '#ccfbf1' },
   { to: '/documents-travail', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
   { to: '/plan-travail', label: 'PTA', desc: 'Plan de travail annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/profile', label: 'Mon profil', desc: 'Voir mes infos', icon: 'fa-user-circle', color: '#7c3aed', bg: '#ede9fe' },
@@ -358,9 +358,9 @@ const maxStat = computed(() => {
 const statCards = computed(() => [
   { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', color: '#0077B5', bg: '#e0f2fe', pct: ((stats.value.documents ?? 0) / maxStat.value) * 100 },
   { label: 'Messages non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100 },
-  { label: 'Communiques du SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100 },
+  { label: 'Communiqués du SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100 },
   { label: 'Demandes en attente', value: stats.value.requests_pending ?? 0, icon: 'fa-clock', color: '#d97706', bg: '#fef3c7', pct: ((stats.value.requests_pending ?? 0) / maxStat.value) * 100 },
-  { label: 'Demandes approuvees', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', color: '#059669', bg: '#d1fae5', pct: ((stats.value.requests_approved ?? 0) / maxStat.value) * 100 },
+  { label: 'Demandes approuvées', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', color: '#059669', bg: '#d1fae5', pct: ((stats.value.requests_approved ?? 0) / maxStat.value) * 100 },
   { label: 'Absences', value: stats.value.absences ?? 0, icon: 'fa-calendar-times', color: '#dc2626', bg: '#fee2e2', pct: ((stats.value.absences ?? 0) / maxStat.value) * 100 },
 ])
 
@@ -374,7 +374,7 @@ function formatTime(iso) {
   const d = new Date(iso)
   const now = new Date()
   const diff = Math.floor((now - d) / 60000)
-  if (diff < 1) return "A l'instant"
+  if (diff < 1) return "À l'instant"
   if (diff < 60) return `Il y a ${diff} min`
   if (diff < 1440) return `Il y a ${Math.floor(diff / 60)}h`
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
@@ -396,7 +396,7 @@ async function loadDashboard() {
     stats.value = data.stats || data
     activities.value = data.activities || []
   } catch (e) {
-    loadError.value = e.response?.data?.message || 'Impossible de charger les donnees du tableau de bord.'
+    loadError.value = e.response?.data?.message || 'Impossible de charger les données du tableau de bord.'
   }
 }
 

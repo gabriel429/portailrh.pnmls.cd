@@ -30,7 +30,7 @@
             <div class="rh-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="rh-kpi-val">{{ d.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
-              <div class="rh-kpi-lbl">Presence</div>
+              <div class="rh-kpi-lbl">Présence</div>
             </div>
           </div>
           <div class="kpi-divider"></div>
@@ -68,7 +68,7 @@
           </div>
           <div>
             <h3 class="rh-section-title">Actions rapides</h3>
-            <p class="rh-section-sub">Acces direct aux modules RH</p>
+            <p class="rh-section-sub">Accès direct aux modules RH</p>
           </div>
         </div>
         <div class="rh-actions">
@@ -86,14 +86,14 @@
         </div>
       </div>
 
-      <!-- INDICATEURS CLES -->
+      <!-- INDICATEURS CLÉS -->
       <div class="rh-section">
         <div class="rh-section-head">
           <div class="rh-section-icon" style="background:#ede9fe;color:#7c3aed;">
             <i class="fas fa-chart-bar"></i>
           </div>
           <div>
-            <h3 class="rh-section-title">Indicateurs cles</h3>
+            <h3 class="rh-section-title">Indicateurs clés</h3>
             <p class="rh-section-sub">Vue d'ensemble des ressources humaines</p>
           </div>
         </div>
@@ -232,12 +232,12 @@
             </div>
           </div>
 
-          <!-- Repartition par sexe -->
+          <!-- Répartition par sexe -->
           <div class="rh-organe-card" style="border-top: 4px solid #8b5cf6;">
             <div class="rh-organe-header">
               <div class="rh-organe-badge" style="background:#8b5cf6;"><i class="fas fa-venus-mars" style="font-size:.7rem;"></i></div>
               <div>
-                <div class="rh-organe-name">Repartition par sexe</div>
+                <div class="rh-organe-name">Répartition par sexe</div>
                 <div class="rh-organe-sub">Agents actifs</div>
               </div>
             </div>
@@ -261,15 +261,15 @@
         </div>
       </div>
 
-      <!-- PRESENCE (7 derniers jours) -->
+      <!-- PRÉSENCE (7 derniers jours) -->
       <div class="rh-section">
         <div class="rh-section-head">
           <div class="rh-section-icon" style="background:#d1fae5;color:#059669;">
             <i class="fas fa-user-check"></i>
           </div>
           <div>
-            <h3 class="rh-section-title">Presence</h3>
-            <p class="rh-section-sub">{{ d.attendance?.today_present ?? 0 }} / {{ d.attendance?.total_active_agents ?? 0 }} presents aujourd'hui ({{ d.attendance?.today_rate ?? 0 }}%)</p>
+            <h3 class="rh-section-title">Présence</h3>
+            <p class="rh-section-sub">{{ d.attendance?.today_present ?? 0 }} / {{ d.attendance?.total_active_agents ?? 0 }} présents aujourd'hui ({{ d.attendance?.today_rate ?? 0 }}%)</p>
           </div>
         </div>
         <div class="rh-presence-row">
@@ -279,7 +279,7 @@
             <div class="rh-presence-sub-text">Taux aujourd'hui</div>
             <div class="rh-presence-detail">
               <div class="rh-presence-item">
-                <span>Presents</span>
+                <span>Présents</span>
                 <span class="fw-bold">{{ d.attendance?.today_present ?? 0 }}</span>
               </div>
               <div class="rh-presence-item">
@@ -344,7 +344,7 @@
               </div>
               <div>
                 <div class="rh-col-head-title">Documents</div>
-                <div class="rh-col-head-count">{{ d.documents?.total ?? 0 }} au total &middot; {{ d.documents?.expires ?? 0 }} expires</div>
+                <div class="rh-col-head-count">{{ d.documents?.total ?? 0 }} au total &middot; {{ d.documents?.expires ?? 0 }} expirés</div>
               </div>
             </div>
             <div class="rh-col-body">
@@ -355,7 +355,7 @@
                 </div>
                 <div class="rh-doc-stat">
                   <div class="rh-doc-stat-val" style="color:#dc2626;">{{ d.documents?.expires ?? 0 }}</div>
-                  <div class="rh-doc-stat-lbl">Expires</div>
+                  <div class="rh-doc-stat-lbl">Expirés</div>
                 </div>
                 <div class="rh-doc-stat">
                   <div class="rh-doc-stat-val" style="color:#1e293b;">{{ d.documents?.total ?? 0 }}</div>
@@ -423,15 +423,15 @@
         </div>
       </div>
 
-      <!-- ACTIVITES RECENTES -->
+      <!-- ACTIVITÉS RÉCENTES -->
       <div class="rh-section">
         <div class="rh-section-head">
           <div class="rh-section-icon" style="background:#fce7f3;color:#db2777;">
             <i class="fas fa-stream"></i>
           </div>
           <div>
-            <h3 class="rh-section-title">Activites recentes</h3>
-            <p class="rh-section-sub">Dernieres mises a jour</p>
+            <h3 class="rh-section-title">Activités récentes</h3>
+            <p class="rh-section-sub">Dernières mises à jour</p>
           </div>
         </div>
         <div class="rh-recent-grid">
@@ -442,7 +442,7 @@
                 <i class="fas fa-clock"></i>
               </div>
               <div>
-                <div class="rh-recent-head-title">Dernieres demandes</div>
+                <div class="rh-recent-head-title">Dernières demandes</div>
                 <div class="rh-recent-head-count">{{ d.requests?.en_attente ?? 0 }} en attente</div>
               </div>
             </div>
@@ -496,14 +496,14 @@
             </div>
           </div>
 
-          <!-- Communiques -->
+          <!-- Communiqués -->
           <div class="rh-recent-col">
             <div class="rh-recent-head" style="border-color:#0891b2;">
               <div class="rh-recent-head-icon" style="background:#cffafe;color:#0891b2;">
                 <i class="fas fa-bullhorn"></i>
               </div>
               <div>
-                <div class="rh-recent-head-title">Communiques</div>
+                <div class="rh-recent-head-title">Communiqués</div>
                 <div class="rh-recent-head-count">{{ d.communiques?.actifs ?? 0 }} actifs</div>
               </div>
               <span v-if="d.communiques?.urgents" class="rh-alert-badge">{{ d.communiques.urgents }} urgent(s)</span>
@@ -519,7 +519,7 @@
             </div>
             <div v-else class="rh-recent-empty">
               <i class="fas fa-inbox"></i>
-              <span>Aucun communique</span>
+              <span>Aucun communiqué</span>
             </div>
           </div>
         </div>
@@ -1076,13 +1076,13 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 }))
 
 const quickActions = [
-  { to: '/rh/agents', label: 'Gestion agents', desc: 'Consulter et gerer les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
-  { to: '/rh/agents/create', label: 'Nouvel agent', desc: 'Creer une fiche agent', icon: 'fa-user-plus', color: '#059669', bg: '#d1fae5' },
+  { to: '/rh/agents', label: 'Gestion des agents', desc: 'Consulter et gérer les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
+  { to: '/rh/agents/create', label: 'Nouvel agent', desc: 'Créer une fiche agent', icon: 'fa-user-plus', color: '#059669', bg: '#d1fae5' },
   { to: '/rh/holidays/planning', label: 'Gestion des congés', desc: 'Planning et statuts des agents', icon: 'fa-calendar-alt', color: '#10b981', bg: '#ecfdf5' },
-  { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des presences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
-  { to: '/requests', label: 'Demandes', desc: 'Gerer les demandes', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
+  { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des présences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
+  { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
-  { to: '/rh/communiques/create', label: 'Communique', desc: 'Publier un communique', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
+  { to: '/rh/communiques/create', label: 'Communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
 ]
 
 const maxMetric = computed(() => {
@@ -1113,7 +1113,7 @@ const metrics = computed(() => {
   { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents', drill: () => drillFn('effectifs') },
   { label: 'Nouveaux ce mois', value: d.value.agents?.new_this_month ?? 0, icon: 'fa-user-plus', color: '#8b5cf6', bg: '#ede9fe', pct: pct(d.value.agents?.new_this_month), alert: false, to: '/rh/agents' },
   { label: 'Demandes en attente', value: d.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#ea580c', bg: '#fff7ed', pct: pct(d.value.requests?.en_attente), alert: (d.value.requests?.en_attente ?? 0) > 5, to: '/requests' },
-  { label: 'Demandes approuvees', value: d.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.requests?.approuve), alert: false, to: '/requests' },
+  { label: 'Demandes approuvées', value: d.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.requests?.approuve), alert: false, to: '/requests' },
   { label: 'Signalements ouverts', value: d.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(d.value.signalements?.ouvert), alert: (d.value.signalements?.haute_severite ?? 0) > 0, to: '/signalements' },
   { label: 'Documents', value: d.value.documents?.total ?? 0, icon: 'fa-folder-open', color: '#6366f1', bg: '#e0e7ff', pct: pct(d.value.documents?.total), alert: (d.value.documents?.expires ?? 0) > 0, to: '/documents' },
 ]})
@@ -1177,7 +1177,7 @@ function formatTime(iso) {
   const dd = new Date(iso)
   const now = new Date()
   const diff = Math.floor((now - dd) / 60000)
-  if (diff < 1) return "A l'instant"
+  if (diff < 1) return "À l'instant"
   if (diff < 60) return `Il y a ${diff} min`
   if (diff < 1440) return `Il y a ${Math.floor(diff / 60)}h`
   return dd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
