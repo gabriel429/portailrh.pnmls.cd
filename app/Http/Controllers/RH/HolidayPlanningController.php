@@ -245,7 +245,7 @@ class HolidayPlanningController extends Controller
         $validated = $request->validate([
             'annee' => 'required|integer|min:2020|max:2030',
             'type_structure' => 'required|in:department,sen,sena,sep,local',
-            'structure_id' => 'required|integer',
+            'structure_id' => 'required|integer|min:1|max:99999',
             'nom_structure' => 'required|string|max:255',
             'jours_conge_totaux' => 'required|integer|min:1|max:50',
             'periods_fermeture' => 'nullable|array',
@@ -253,6 +253,23 @@ class HolidayPlanningController extends Controller
             'periods_fermeture.*.end' => 'required_with:periods_fermeture|date|after_or_equal:periods_fermeture.*.start',
             'notes' => 'nullable|string|max:1000'
         ]);
+
+        // Valider que structure_id correspond à une vraie entité
+        $type = $validated['type_structure'];
+        $sid  = $validated['structure_id'];
+        if (in_array($type, ['sen', 'sena'])) {
+            if ($sid !== 1) {
+                return response()->json(['message' => 'structure_id doit être 1 pour SEN/SENA.'], 422);
+            }
+        } elseif (in_array($type, ['sep', 'local'])) {
+            if (!\App\Models\Province::where('id', $sid)->exists()) {
+                return response()->json(['message' => 'Province introuvable (structure_id invalide).'], 422);
+            }
+        } elseif ($type === 'department') {
+            if (!\App\Models\Department::where('id', $sid)->exists()) {
+                return response()->json(['message' => 'Département introuvable (structure_id invalide).'], 422);
+            }
+        }
 
         // Vérifier qu'un planning n'existe pas déjà pour cette structure/année
         $exists = HolidayPlanning::forYear($validated['annee'])
