@@ -60,7 +60,7 @@
               </div>
 
               <!-- Structure spécifique -->
-              <div class="col-12" v-if="form.type_structure">
+              <div class="col-12" v-if="form.type_structure && !isAutoFilledStructure">
                 <label class="form-label required">
                   {{ getStructureLabel() }}
                 </label>
@@ -283,6 +283,10 @@ const availableYears = computed(() => {
   return Array.from({ length: 5 }, (_, i) => currentYear - 1 + i)
 })
 
+const isAutoFilledStructure = computed(() => {
+  return props.scopeInfo.is_provincial && form.value.type_structure === 'sep'
+})
+
 const isFormValid = computed(() => {
   return form.value.annee &&
          form.value.type_structure &&
@@ -306,6 +310,12 @@ function onStructureTypeChange() {
   form.value.structure_id = ''
   form.value.nom_structure = ''
   errors.value = {}
+
+  // Auto-fill province name for provincial SEP
+  if (props.scopeInfo.is_provincial && form.value.type_structure === 'sep') {
+    form.value.nom_structure = 'SEP ' + props.scopeInfo.province_nom
+    form.value.structure_id = Date.now()
+  }
 }
 
 function onStructureChange() {
