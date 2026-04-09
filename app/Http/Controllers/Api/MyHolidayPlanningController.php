@@ -85,11 +85,37 @@ class MyHolidayPlanningController extends Controller
             ];
         }
 
+        // Mon congé planifié (approuvé ou en attente) pour cette année
+        $myHolidays = [];
+        if (Schema::hasTable('holidays')) {
+            $myHolidays = Holiday::with(['interimPar:id,nom,postnom,prenom,fonction'])
+                ->where('agent_id', $agent->id)
+                ->whereYear('date_debut', $year)
+                ->whereIn('statut_demande', ['en_attente', 'approuve'])
+                ->select(['id', 'agent_id', 'type_conge', 'date_debut', 'date_fin', 'nombre_jours', 'statut_demande', 'observation', 'interim_assure_par', 'holiday_planning_id'])
+                ->orderBy('date_debut')
+                ->get();
+        }
+
+        // Intérims : congés où je suis désigné comme intérimaire
+        $myInterims = [];
+        if (Schema::hasTable('holidays')) {
+            $myInterims = Holiday::with(['agent:id,nom,postnom,prenom,fonction'])
+                ->where('interim_assure_par', $agent->id)
+                ->whereYear('date_debut', $year)
+                ->whereIn('statut_demande', ['en_attente', 'approuve'])
+                ->select(['id', 'agent_id', 'type_conge', 'date_debut', 'date_fin', 'nombre_jours', 'statut_demande', 'observation', 'interim_assure_par', 'holiday_planning_id'])
+                ->orderBy('date_debut')
+                ->get();
+        }
+
         return response()->json([
             'structure' => $structure,
             'planning' => $planning,
             'colleagues' => $colleagues,
             'stats' => $stats,
+            'my_holidays' => $myHolidays,
+            'my_interims' => $myInterims,
             'year' => (int) $year,
         ]);
     }
