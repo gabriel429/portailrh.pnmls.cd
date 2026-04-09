@@ -47,9 +47,9 @@ test-*.html
 # /public/workbox-*.js
 # /public/manifest.webmanifest
 
-# Dossier build/ a la racine = miroir local de public/build/ (symlink sur le serveur via deploy.sh)
-# Ne pas tracker pour eviter la duplication des 176 fichiers
+# Dossiers racine = symlinks sur le serveur (deploy.sh), doublons locaux non trackés
 /build/
+/images/
 
 # Archives de deploiement manuel obsoletes
 build-hostinger.zip
