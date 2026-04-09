@@ -164,14 +164,24 @@
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-primary mt-2"
-                    @click="addFermeture"
-                  >
-                    <i class="fas fa-plus me-1"></i>
-                    Ajouter une période de fermeture
-                  </button>
+                  <div class="d-flex gap-2 mt-2 flex-wrap">
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-primary"
+                      @click="addFermeture"
+                    >
+                      <i class="fas fa-plus me-1"></i>
+                      Ajouter une période de fermeture
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-outline-success"
+                      @click="applyJoursFeriesRDC"
+                    >
+                      <i class="fas fa-calendar-check me-1"></i>
+                      Appliquer les jours fériés RDC
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -332,6 +342,31 @@ function onStructureNameChange() {
     // Générer un ID fictif pour les autres structures
     form.value.structure_id = Date.now()
   }
+}
+
+function getJoursFeriesRDC(annee) {
+  return [
+    { start: `${annee}-01-01`, end: `${annee}-01-01`, nom: "Jour de l'An" },
+    { start: `${annee}-01-04`, end: `${annee}-01-04`, nom: "Journée des Martyrs de l'Indépendance" },
+    { start: `${annee}-01-16`, end: `${annee}-01-17`, nom: 'Journée des Héros Nationaux (Kabila & Lumumba)' },
+    { start: `${annee}-05-01`, end: `${annee}-05-01`, nom: 'Fête du Travail' },
+    { start: `${annee}-05-17`, end: `${annee}-05-17`, nom: 'Journée de la Libération' },
+    { start: `${annee}-06-30`, end: `${annee}-06-30`, nom: "Fête de l'Indépendance" },
+    { start: `${annee}-08-01`, end: `${annee}-08-01`, nom: 'Fête des Parents' },
+    { start: `${annee}-12-25`, end: `${annee}-12-25`, nom: 'Noël' },
+  ]
+}
+
+function applyJoursFeriesRDC() {
+  const annee = form.value.annee || new Date().getFullYear()
+  const feries = getJoursFeriesRDC(annee)
+  // Éviter les doublons : ne pas ajouter un jour férié déjà présent
+  const existing = form.value.periods_fermeture.map(p => p.start + p.nom)
+  feries.forEach(f => {
+    if (!existing.includes(f.start + f.nom)) {
+      form.value.periods_fermeture.push({ ...f })
+    }
+  })
 }
 
 function addFermeture() {
