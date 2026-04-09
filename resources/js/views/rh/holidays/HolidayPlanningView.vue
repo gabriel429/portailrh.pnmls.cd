@@ -233,6 +233,7 @@
       v-if="showCreateModal"
       :show="showCreateModal"
       :departments="departments"
+      :provinces="provinces"
       :scope-info="scopeInfo"
       @close="showCreateModal = false"
       @created="onPlanningCreated"
@@ -283,6 +284,7 @@ const loading = ref(false)
 const plannings = ref({ data: [] })
 const holidays = ref({ data: [] })
 const departments = ref([])
+const provinces = ref([])
 const agents = ref([])
 const stats = ref(null)
 const scopeInfo = ref({ is_provincial: false, province_id: null, province_nom: null })
@@ -345,6 +347,10 @@ async function loadPlannings(page = 1) {
 
     if (response.data.agents?.length) {
       agents.value = response.data.agents
+    }
+
+    if (response.data.provinces?.length) {
+      provinces.value = response.data.provinces
     }
   } catch (error) {
     console.error('Erreur chargement plannings:', error)

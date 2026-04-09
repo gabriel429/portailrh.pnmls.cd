@@ -1,3 +1,15 @@
+                // DEBUG: Log planning pour l'année demandée
+                \Log::info('Planning chargé', [
+                    'structure_id' => $structure ? $structure->id : null,
+                    'year' => $year,
+                    'planning' => $planning,
+                ]);
+        // DEBUG: Log planning pour l'année demandée
+        \Log::info('Planning chargé', [
+            'structure_id' => $structure ? $structure->id : null,
+            'year' => $year,
+            'planning' => $planning,
+        ]);
 <?php
 
 namespace App\Http\Controllers\Api;
@@ -54,6 +66,13 @@ class MyHolidayPlanningController extends Controller
             ->forStructure($structure['type'], $structure['id'])
             ->first();
 
+        // DEBUG: Log planning pour l'année demandée
+        \Log::info('Planning chargé', [
+            'structure_id' => $structure ? $structure->id : null,
+            'year' => $year,
+            'planning' => $planning,
+        ]);
+
         // Congés approuvés des collègues (même structure, même année)
         $colleagues = [];
         if ($planning && Schema::hasTable('holidays')) {
@@ -68,6 +87,13 @@ class MyHolidayPlanningController extends Controller
                 ->orderBy('date_debut', 'desc')
                 ->get();
         }
+
+        // DEBUG: Log planning pour l'année demandée
+        \Log::info('Planning chargé', [
+            'structure_id' => $structure ? $structure->id : null,
+            'year' => $year,
+            'planning' => $planning,
+        ]);
 
         // Statistiques
         $stats = null;

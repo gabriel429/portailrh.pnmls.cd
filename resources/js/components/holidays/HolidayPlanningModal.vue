@@ -64,6 +64,7 @@
                 <label class="form-label required">
                   {{ getStructureLabel() }}
                 </label>
+                <!-- Département -->
                 <select
                   v-if="form.type_structure === 'department'"
                   class="form-select"
@@ -77,6 +78,21 @@
                     {{ dept.nom }}
                   </option>
                 </select>
+                <!-- SEP / Structure Locale → dropdown de provinces -->
+                <select
+                  v-else-if="form.type_structure === 'sep' || form.type_structure === 'local'"
+                  class="form-select"
+                  v-model="form.structure_id"
+                  :class="{ 'is-invalid': errors.structure_id }"
+                  @change="onProvinceChange"
+                  required
+                >
+                  <option value="">Sélectionner une province</option>
+                  <option v-for="prov in provinces" :key="prov.id" :value="prov.id">
+                    {{ prov.nom }}
+                  </option>
+                </select>
+                <!-- Autres types (fallback) -->
                 <input
                   v-else
                   type="text"
@@ -84,7 +100,6 @@
                   v-model="form.nom_structure"
                   :class="{ 'is-invalid': errors.nom_structure }"
                   :placeholder="'Nom de la ' + getStructureLabel().toLowerCase()"
-                  @input="onStructureNameChange"
                   required
                 />
                 <div v-if="errors.structure_id || errors.nom_structure" class="invalid-feedback">
@@ -263,6 +278,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  provinces: {
+    type: Array,
+    default: () => []
+  },
   scopeInfo: {
     type: Object,
     default: () => ({ is_provincial: false, province_id: null, province_nom: null })
@@ -294,7 +313,10 @@ const availableYears = computed(() => {
 })
 
 const isAutoFilledStructure = computed(() => {
-  return props.scopeInfo.is_provincial && form.value.type_structure === 'sep'
+  const type = form.value.type_structure
+  if (type === 'sen' || type === 'sena') return true
+  if (props.scopeInfo.is_provincial && (type === 'sep' || type === 'local')) return true
+  return false
 })
 
 const isFormValid = computed(() => {
@@ -321,10 +343,28 @@ function onStructureTypeChange() {
   form.value.nom_structure = ''
   errors.value = {}
 
-  // Auto-fill province name for provincial SEP
-  if (props.scopeInfo.is_provincial && form.value.type_structure === 'sep') {
+  const type = form.value.type_structure
+
+  if (type === 'sen') {
+    form.value.structure_id = 1
+    form.value.nom_structure = 'Secrétariat Exécutif National'
+  } else if (type === 'sena') {
+    form.value.structure_id = 1
+    form.value.nom_structure = 'Secrétariat Exécutif National Adjoint'
+  } else if (props.scopeInfo.is_provincial && type === 'sep') {
+    form.value.structure_id = props.scopeInfo.province_id
     form.value.nom_structure = 'SEP ' + props.scopeInfo.province_nom
-    form.value.structure_id = Date.now()
+  } else if (props.scopeInfo.is_provincial && type === 'local') {
+    form.value.structure_id = props.scopeInfo.province_id
+    form.value.nom_structure = 'SEL ' + props.scopeInfo.province_nom
+  }
+}
+
+function onProvinceChange() {
+  const type = form.value.type_structure
+  const prov = props.provinces.find(p => p.id == form.value.structure_id)
+  if (prov) {
+    form.value.nom_structure = type === 'local' ? 'SEL ' + prov.nom : 'SEP ' + prov.nom
   }
 }
 
@@ -338,10 +378,7 @@ function onStructureChange() {
 }
 
 function onStructureNameChange() {
-  if (form.value.type_structure !== 'department') {
-    // Générer un ID fictif pour les autres structures
-    form.value.structure_id = Date.now()
-  }
+  // nom_structure mis à jour directement par v-model; structure_id géré par onStructureTypeChange
 }
 
 function getJoursFeriesRDC(annee) {

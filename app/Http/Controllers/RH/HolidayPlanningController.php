@@ -119,12 +119,20 @@ class HolidayPlanningController extends Controller
             'fonction' => $a->fonction,
         ]);
 
+        // Liste des provinces (toutes pour RH National, filtrée pour RH Provincial)
+        $provincesQuery = Province::orderBy('nom');
+        if ($provinceId) {
+            $provincesQuery->where('id', $provinceId);
+        }
+        $provinces = $provincesQuery->get(['id', 'nom']);
+
         return response()->json([
             'plannings' => $plannings,
             'holidays' => $holidays,
             'stats' => $stats,
             'departments' => $departments,
             'agents' => $agents,
+            'provinces' => $provinces,
             'year' => $year,
             'scope' => [
                 'is_provincial' => $isProvincial,
