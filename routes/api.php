@@ -130,8 +130,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Mon Planning Congés (tous les agents authentifiés)
     Route::get('mon-planning-conges', [MyHolidayPlanningController::class, 'index']);
 
-    // Demande de congé individuelle (agent lui-même)
-    Route::post('holidays', [HolidayController::class, 'store']);
+    // Demande de congé individuelle (agent pour lui-même)
+    Route::post('my-holiday', [\App\Http\Controllers\RH\HolidayController::class, 'storeOwn']);
 
     // Documents de Travail
     Route::get('documents-travail', [DocumentTravailController::class, 'index']);

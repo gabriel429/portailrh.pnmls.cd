@@ -640,6 +640,79 @@ class HolidayController extends Controller
     }
 
     /**
+     * Demande de congé par l'agent lui-même (accessible à tous les agents authentifiés).
+     * Force agent_id = agent du user connecté.
+     */
+    public function storeOwn(Request $request)
+    {
+        $user  = $request->user();
+        $agent = $user->agent;
+
+        if (!$agent) {
+            return response()->json([
+                'message' => "Votre compte n'est pas associé à un agent."
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'date_debut'         => 'required|date|after_or_equal:today',
+            'date_fin'           => 'required|date|after_or_equal:date_debut',
+            'type_conge'         => 'required|in:annuel,maladie,maternite,paternite,urgence,special',
+            'motif'              => 'required|string|max:1000',
+            'observation'        => 'nullable|string|max:1000',
+            'interim_assure_par' => 'nullable|exists:agents,id',
+            'document_medical'   => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ]);
+
+        $dateDebut = Carbon::parse($validated['date_debut']);
+        $dateFin   = Carbon::parse($validated['date_fin']);
+
+        // Conflit de dates
+        if (Holiday::hasConflict($agent->id, $dateDebut, $dateFin)) {
+            return response()->json([
+                'message' => 'Conflit de dates : vous avez déjà un congé sur cette période.'
+            ], 422);
+        }
+
+        // Auto-résolution du planning
+        $nombreJours = $dateDebut->diffInDays($dateFin) + 1;
+        $planning = $this->resolvePlanning($agent, $dateDebut->year);
+        if ($planning) {
+            $validated['holiday_planning_id'] = $planning->id;
+        }
+
+        // Vérification quota (annuel uniquement)
+        if ($planning && $validated['type_conge'] === 'annuel') {
+            $joursRestants = $planning->jours_conge_totaux - $planning->jours_utilises;
+            if ($nombreJours > $joursRestants) {
+                return response()->json([
+                    'message' => "Quota insuffisant : {$joursRestants} jour(s) disponible(s) sur {$planning->jours_conge_totaux}. Demande : {$nombreJours} jour(s)."
+                ], 422);
+            }
+        }
+
+        // Document médical
+        if ($request->hasFile('document_medical')) {
+            $validated['document_medical'] = $request->file('document_medical')
+                ->store('documents_medicaux', 'public');
+        }
+
+        $validated['agent_id']          = $agent->id;
+        $validated['nombre_jours']       = $nombreJours;
+        $validated['date_retour_prevu']  = $dateFin->copy()->addDay()->format('Y-m-d');
+        $validated['statut_demande']     = 'en_attente';
+        $validated['demande_par']        = $agent->id;
+
+        $holiday = Holiday::create($validated);
+        $holiday->load('agent');
+
+        return response()->json([
+            'message' => 'Demande de congé soumise avec succès.',
+            'holiday' => $holiday,
+        ], 201);
+    }
+
+    /**
      * Trouver le planning de congé correspondant à la structure de l'agent pour une année donnée.
      * - Agent provincial  → planning SEP de sa province
      * - Agent national    → planning du département
