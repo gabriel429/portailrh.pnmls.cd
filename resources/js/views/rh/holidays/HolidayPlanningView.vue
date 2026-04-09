@@ -59,15 +59,7 @@
               <option value="local">Structures Locales</option>
             </select>
           </div>
-          <div class="col-md-3" v-if="scopeInfo.is_provincial">
-            <label class="form-label">Structure</label>
-            <select class="form-select" v-model="filters.structure_type" @change="loadPlannings">
-              <option value="">Toutes</option>
-              <option value="department">Départements</option>
-              <option value="sep">SEP Provincial</option>
-              <option value="local">Structures Locales</option>
-            </select>
-          </div>
+
           <div class="col-md-3" v-if="filters.structure_type === 'department'">
             <label class="form-label">Département</label>
             <select class="form-select" v-model="filters.structure_id" @change="loadPlannings">
