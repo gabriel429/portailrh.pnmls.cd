@@ -122,6 +122,11 @@ class DemandeWorkflowService
             return false;
         }
 
+        // Interdire l'auto-approbation : un agent ne peut pas valider sa propre demande
+        if ($user->agent?->id && $user->agent->id === (int) $request->agent_id) {
+            return false;
+        }
+
         if ($user->isSuperAdmin()) {
             return true;
         }
