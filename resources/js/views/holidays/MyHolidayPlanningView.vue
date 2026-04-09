@@ -50,6 +50,110 @@
           </div>
         </div>
 
+        <!-- MON CONGÉ PLANIFIÉ (affiché même sans planning structure) -->
+        <div v-if="myHolidays.length > 0" class="dash-panel mt-3">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">
+                <i class="fas fa-umbrella-beach me-2 text-primary"></i>Mon congé planifié
+                <span class="badge bg-primary ms-2" style="font-size: 0.7rem;">{{ myHolidays.length }}</span>
+              </h3>
+            </div>
+          </header>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr class="text-muted small">
+                  <th>Type</th>
+                  <th>Début</th>
+                  <th>Fin</th>
+                  <th>Jours</th>
+                  <th>Statut</th>
+                  <th>Intérimaire</th>
+                  <th>Observation</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="h in myHolidays" :key="h.id">
+                  <td>
+                    <span class="badge" :class="typeCongeClass(h.type_conge)">
+                      {{ typeCongeLabel(h.type_conge) }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(h.date_debut) }}</td>
+                  <td>{{ formatDate(h.date_fin) }}</td>
+                  <td><strong>{{ h.nombre_jours }}j</strong></td>
+                  <td>
+                    <span class="badge" :class="statutClass(h.statut_demande)">
+                      {{ statutLabel(h.statut_demande) }}
+                    </span>
+                  </td>
+                  <td>
+                    <template v-if="h.interim_par">
+                      {{ agentName(h.interim_par) }}
+                    </template>
+                    <span v-else class="text-muted">—</span>
+                  </td>
+                  <td class="small text-muted">{{ h.observation || '—' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- MES INTÉRIMS (affiché même sans planning structure) -->
+        <div v-if="myInterims.length > 0" class="dash-panel mt-3">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">
+                <i class="fas fa-user-shield me-2 text-warning"></i>Mes intérims à assurer
+                <span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">{{ myInterims.length }}</span>
+              </h3>
+            </div>
+          </header>
+          <div class="p-3">
+            <div class="alert alert-warning py-2 mb-3">
+              <i class="fas fa-info-circle me-1"></i>
+              Vous êtes désigné(e) comme intérimaire pour les agents ci-dessous pendant leur absence.
+            </div>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr class="text-muted small">
+                  <th>Agent absent</th>
+                  <th>Type</th>
+                  <th>Début</th>
+                  <th>Fin</th>
+                  <th>Jours</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="h in myInterims" :key="h.id">
+                  <td>
+                    <strong>{{ agentName(h.agent) }}</strong>
+                    <div v-if="h.agent?.fonction" class="small text-muted">{{ h.agent.fonction }}</div>
+                  </td>
+                  <td>
+                    <span class="badge" :class="typeCongeClass(h.type_conge)">
+                      {{ typeCongeLabel(h.type_conge) }}
+                    </span>
+                  </td>
+                  <td>{{ formatDate(h.date_debut) }}</td>
+                  <td>{{ formatDate(h.date_fin) }}</td>
+                  <td><strong>{{ h.nombre_jours }}j</strong></td>
+                  <td>
+                    <span class="badge" :class="statutClass(h.statut_demande)">
+                      {{ statutLabel(h.statut_demande) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Planning trouvé -->
         <template v-else>
           <!-- Statistiques -->
@@ -93,110 +197,6 @@
               <i class="fas me-1" :class="planning.valide ? 'fa-check-circle' : 'fa-clock'"></i>
               {{ planning.valide ? 'Planning validé' : 'Planning en attente de validation' }}
             </span>
-          </div>
-
-          <!-- MON CONGÉ PLANIFIÉ -->
-          <div v-if="myHolidays.length > 0" class="dash-panel mt-3">
-            <header class="panel-head">
-              <div>
-                <h3 class="panel-title">
-                  <i class="fas fa-umbrella-beach me-2 text-primary"></i>Mon congé planifié
-                  <span class="badge bg-primary ms-2" style="font-size: 0.7rem;">{{ myHolidays.length }}</span>
-                </h3>
-              </div>
-            </header>
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead>
-                  <tr class="text-muted small">
-                    <th>Type</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    <th>Jours</th>
-                    <th>Statut</th>
-                    <th>Intérimaire</th>
-                    <th>Observation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="h in myHolidays" :key="h.id">
-                    <td>
-                      <span class="badge" :class="typeCongeClass(h.type_conge)">
-                        {{ typeCongeLabel(h.type_conge) }}
-                      </span>
-                    </td>
-                    <td>{{ formatDate(h.date_debut) }}</td>
-                    <td>{{ formatDate(h.date_fin) }}</td>
-                    <td><strong>{{ h.nombre_jours }}j</strong></td>
-                    <td>
-                      <span class="badge" :class="statutClass(h.statut_demande)">
-                        {{ statutLabel(h.statut_demande) }}
-                      </span>
-                    </td>
-                    <td>
-                      <template v-if="h.interim_par">
-                        {{ agentName(h.interim_par) }}
-                      </template>
-                      <span v-else class="text-muted">—</span>
-                    </td>
-                    <td class="small text-muted">{{ h.observation || '—' }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <!-- MES INTÉRIMS -->
-          <div v-if="myInterims.length > 0" class="dash-panel mt-3">
-            <header class="panel-head">
-              <div>
-                <h3 class="panel-title">
-                  <i class="fas fa-user-shield me-2 text-warning"></i>Mes intérims à assurer
-                  <span class="badge bg-warning text-dark ms-2" style="font-size: 0.7rem;">{{ myInterims.length }}</span>
-                </h3>
-              </div>
-            </header>
-            <div class="p-3">
-              <div class="alert alert-warning py-2 mb-3">
-                <i class="fas fa-info-circle me-1"></i>
-                Vous êtes désigné(e) comme intérimaire pour les agents ci-dessous pendant leur absence.
-              </div>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead>
-                  <tr class="text-muted small">
-                    <th>Agent absent</th>
-                    <th>Type</th>
-                    <th>Début</th>
-                    <th>Fin</th>
-                    <th>Jours</th>
-                    <th>Statut</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="h in myInterims" :key="h.id">
-                    <td>
-                      <strong>{{ agentName(h.agent) }}</strong>
-                      <div v-if="h.agent?.fonction" class="small text-muted">{{ h.agent.fonction }}</div>
-                    </td>
-                    <td>
-                      <span class="badge" :class="typeCongeClass(h.type_conge)">
-                        {{ typeCongeLabel(h.type_conge) }}
-                      </span>
-                    </td>
-                    <td>{{ formatDate(h.date_debut) }}</td>
-                    <td>{{ formatDate(h.date_fin) }}</td>
-                    <td><strong>{{ h.nombre_jours }}j</strong></td>
-                    <td>
-                      <span class="badge" :class="statutClass(h.statut_demande)">
-                        {{ statutLabel(h.statut_demande) }}
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
           </div>
 
           <!-- Périodes de fermeture -->
