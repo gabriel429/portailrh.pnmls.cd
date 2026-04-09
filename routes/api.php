@@ -33,12 +33,12 @@ Route::get('/resources', [ApiMetaController::class, 'resources']);
 Route::get('/openapi.json', [ApiMetaController::class, 'openapi']);
 
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])
-    ->middleware('throttle:5,1'); // Max 5 tentatives par minute
+    ->middleware('throttle:15,1'); // Max 15 tentatives par minute
 
 // --- Mobile API (token-based auth) ---
 Route::prefix('mobile')->group(function () {
     Route::post('/login', [AuthController::class, 'mobileLogin'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:15,1');
     Route::post('/register', [AuthController::class, 'mobileRegister'])
         ->middleware('throttle:3,1');
 
@@ -353,7 +353,7 @@ Route::prefix('v1')->as('v1.')->group(function () {
     Route::get('/openapi.json', [ApiMetaController::class, 'openapi']);
 
     Route::post('/login', [AuthController::class, 'login'])
-        ->middleware('throttle:5,1');
+        ->middleware('throttle:15,1');
 
     Route::get('/sync/status', [SyncController::class, 'status']);
 
