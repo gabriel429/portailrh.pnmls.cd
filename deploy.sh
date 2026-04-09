@@ -16,7 +16,11 @@ php artisan cache:clear
 php artisan route:clear
 php artisan view:clear
 
-# 3. Set permissions
+# 3. Run database migrations
+echo "🗄️  Running migrations..."
+php artisan migrate --force
+
+# 4. Set permissions
 echo "🔒 Setting permissions..."
 chmod -R 755 public/build
 chmod -R 755 storage bootstrap/cache

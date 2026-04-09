@@ -1,0 +1,1 @@
+import{r as e}from"./router-BTzc0evZ.js";function t(t={}){return e.get(`/communiques`,{params:t})}function n(t){return e.get(`/communiques/${t}`)}function r(t){return e.post(`/communiques`,t)}function i(t,n){return e.put(`/communiques/${t}`,n)}function a(t){return e.delete(`/communiques/${t}`)}export{i as a,a as i,n,t as r,r as t};

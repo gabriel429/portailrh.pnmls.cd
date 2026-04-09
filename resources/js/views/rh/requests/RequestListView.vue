@@ -58,7 +58,7 @@
         <div class="req-filter-icon"><i class="fas fa-hourglass-half"></i></div>
         <div class="req-filter-info">
           <div class="req-filter-name">En attente</div>
-          <div class="req-filter-count">À traiter</div>
+          <div class="req-filter-count">{{ counts['en_attente'] }} demande{{ counts['en_attente'] !== 1 ? 's' : '' }}</div>
         </div>
       </button>
       <button
@@ -69,7 +69,7 @@
         <div class="req-filter-icon"><i class="fas fa-check-circle"></i></div>
         <div class="req-filter-info">
           <div class="req-filter-name">Approuvée</div>
-          <div class="req-filter-count">Validées</div>
+          <div class="req-filter-count">{{ counts['approuvé'] }} demande{{ counts['approuvé'] !== 1 ? 's' : '' }}</div>
         </div>
       </button>
       <button
@@ -80,7 +80,7 @@
         <div class="req-filter-icon"><i class="fas fa-times-circle"></i></div>
         <div class="req-filter-info">
           <div class="req-filter-name">Rejetée</div>
-          <div class="req-filter-count">Refusées</div>
+          <div class="req-filter-count">{{ counts['rejeté'] }} demande{{ counts['rejeté'] !== 1 ? 's' : '' }}</div>
         </div>
       </button>
       <button
@@ -91,7 +91,7 @@
         <div class="req-filter-icon"><i class="fas fa-ban"></i></div>
         <div class="req-filter-info">
           <div class="req-filter-name">Annulée</div>
-          <div class="req-filter-count">Annulées</div>
+          <div class="req-filter-count">{{ counts['annulé'] }} demande{{ counts['annulé'] !== 1 ? 's' : '' }}</div>
         </div>
       </button>
     </div>
@@ -377,6 +377,7 @@ const filtering = ref(false)
 const initialLoadDone = ref(false)
 const requests = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
+const counts = ref({ 'en_attente': 0, 'approuvé': 0, 'rejeté': 0, 'annulé': 0 })
 const filters = ref({ statut: '', type: '' })
 
 const showDeleteModal = ref(false)
@@ -461,6 +462,7 @@ async function loadRequests(page = 1) {
     const { data } = await list(params)
     requests.value = data.data
     meta.value = data.meta
+    if (data.counts) counts.value = data.counts
   } catch (err) {
     ui.addToast('Erreur lors du chargement des demandes.', 'danger')
   } finally {

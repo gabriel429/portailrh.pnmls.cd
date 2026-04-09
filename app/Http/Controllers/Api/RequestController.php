@@ -54,10 +54,32 @@ class RequestController extends ApiController
                 }
                 $q->orWhereIn('current_step', $steps);
             });
+            // Cloner la base de requête pour les compteurs (avant filtres statut/type)
+            $countQuery = RequestModel::where(function ($q) use ($agentId, $steps) {
+                if ($agentId) {
+                    $q->where('agent_id', $agentId);
+                }
+                $q->orWhereIn('current_step', $steps);
+            });
         } else {
             $query = RequestModel::with(['agent']);
             $scope->applyRequestScope($query, $user);
+            // Cloner la base de requête pour les compteurs (avant filtres statut/type)
+            $countQuery = RequestModel::query();
+            $scope->applyRequestScope($countQuery, $user);
         }
+
+        // Calculer les compteurs par statut (sans filtre statut/type)
+        $statusCounts = $countQuery->selectRaw('statut, COUNT(*) as cnt')
+            ->groupBy('statut')
+            ->pluck('cnt', 'statut')
+            ->toArray();
+        $counts = [
+            'en_attente' => (int) ($statusCounts['en_attente'] ?? 0),
+            'approuvé'   => (int) ($statusCounts['approuvé'] ?? 0),
+            'rejeté'     => (int) ($statusCounts['rejeté'] ?? 0),
+            'annulé'     => (int) ($statusCounts['annulé'] ?? 0),
+        ];
 
         // Filter by statut
         if ($request->filled('statut')) {
@@ -72,7 +94,8 @@ class RequestController extends ApiController
         $requests = $query->latest()->paginate(15);
 
         return $this->paginated($requests, RequestResource::class, [], [
-            'isRH' => $isRH,
+            'isRH'   => $isRH,
+            'counts' => $counts,
         ]);
     }
 
