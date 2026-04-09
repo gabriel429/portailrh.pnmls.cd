@@ -179,7 +179,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Gestion des Congés et Planning
         // Départements (lecture seule pour filtres congés)
         Route::get('departments', function () {
-            return response()->json(\App\Models\Department::orderBy('nom')->get(['id', 'code', 'nom']));
+            return response()->json(\App\Models\Department::orderBy('nom')->get(['id', 'code', 'nom', 'province_id']));
         });
         // Planning des Congés
         Route::get('holiday-plannings', [HolidayPlanningController::class, 'index']);

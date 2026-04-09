@@ -9,6 +9,7 @@ use App\Models\Holiday;
 use App\Models\HolidayPlanning;
 use App\Models\Agent;
 use App\Models\AgentStatus;
+use App\Models\Department;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -118,16 +119,28 @@ class HolidayController extends Controller
         $scope = app(UserDataScope::class);
         $user = $request->user();
 
+        // Vérifier que le département est accessible pour ce RH
+        $dept = Department::find($request->department_id);
+        if (!$dept) {
+            return response()->json(['agents' => []]);
+        }
+
         $agentsQuery = Agent::where('departement_id', $request->department_id)
             ->where('statut', 'actif')
             ->orderBy('nom');
 
-        // Scope provincial
         if ($scope->isProvincialRh($user)) {
+            // RH Provincial : agents de sa province uniquement
             $provinceId = $scope->provinceId($user);
             if ($provinceId) {
                 $agentsQuery->where('province_id', $provinceId);
             }
+        } else {
+            // RH National : uniquement départements nationaux (province_id IS NULL)
+            if ($dept->province_id !== null) {
+                return response()->json(['agents' => [], 'message' => 'Le RH National ne peut planifier que pour les structures nationales']);
+            }
+            $agentsQuery->whereNull('province_id');
         }
 
         $agents = $agentsQuery->get(['id', 'nom', 'postnom', 'prenom', 'fonction']);
@@ -258,10 +271,20 @@ class HolidayController extends Controller
 
         $currentAgent = auth()->user()->agent;
         $isRh = $currentAgent->hasRole(['RH National', 'RH Provincial']);
+        $isNational = $currentAgent->hasRole('RH National');
         $created = [];
         $errors = [];
 
         foreach ($request->entries as $i => $entry) {
+            // RH National ne planifie que pour agents nationaux
+            if ($isNational) {
+                $targetAgent = Agent::find($entry['agent_id']);
+                if ($targetAgent && $targetAgent->province_id !== null) {
+                    $nom = trim(($targetAgent->nom ?? '') . ' ' . ($targetAgent->postnom ?? ''));
+                    $errors[] = "{$nom} est un agent provincial — le RH National ne peut pas planifier son congé";
+                    continue;
+                }
+            }
             $dateDebut = Carbon::parse($entry['date_debut']);
             $dateFin = Carbon::parse($entry['date_fin']);
 

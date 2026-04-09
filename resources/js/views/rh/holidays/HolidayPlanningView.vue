@@ -254,6 +254,7 @@
       :departments="departments"
       :plannings="plannings.data || []"
       :year="filters.year"
+      :scope-info="scopeInfo"
       @close="showAddHolidayModal = false"
       @created="onHolidayCreated"
     />

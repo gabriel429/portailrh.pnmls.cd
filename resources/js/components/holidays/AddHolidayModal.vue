@@ -17,7 +17,7 @@
               <label class="form-label fw-bold">Département / Service <span class="text-danger">*</span></label>
               <select class="form-select" v-model="selectedDepartment" :disabled="loadingAgents">
                 <option value="">-- Sélectionner un département --</option>
-                <option v-for="dept in departments" :key="dept.id" :value="dept.id">
+                <option v-for="dept in filteredDepartments" :key="dept.id" :value="dept.id">
                   {{ dept.nom }}
                 </option>
               </select>
@@ -189,7 +189,8 @@ const props = defineProps({
   show: { type: Boolean, required: true },
   departments: { type: Array, default: () => [] },
   plannings: { type: Array, default: () => [] },
-  year: { type: [Number, String], default: () => new Date().getFullYear() }
+  year: { type: [Number, String], default: () => new Date().getFullYear() },
+  scopeInfo: { type: Object, default: () => ({}) }
 })
 
 const emit = defineEmits(['close', 'created'])
@@ -205,6 +206,15 @@ const selectAll = ref(true)
 const defaultType = ref('annuel')
 const selectedDepartment = ref('')
 const selectedPlanningId = ref('')
+
+// RH National : uniquement départements nationaux (province_id null)
+const filteredDepartments = computed(() => {
+  if (props.scopeInfo?.is_provincial) {
+    return props.departments
+  }
+  // National : only national departments
+  return props.departments.filter(d => !d.province_id)
+})
 
 // Charger les agents du département
 async function loadAgents() {
