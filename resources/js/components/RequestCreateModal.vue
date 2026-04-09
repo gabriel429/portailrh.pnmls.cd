@@ -72,9 +72,14 @@
                 <i class="fas fa-user-shield me-1 text-muted"></i>
                 Intérimaire (optionnel)
               </label>
-              <input type="text" v-model="form.interim_assure_par"
-                     class="form-control form-control-sm"
-                     placeholder="ID de l'agent intérimaire">
+              <select v-model="form.interim_assure_par"
+                      class="form-select form-select-sm"
+                      :class="{ 'is-invalid': errors.interim_assure_par }">
+                <option value="">-- Aucun intérimaire --</option>
+                <option v-for="a in agentsInterimaires" :key="a.id" :value="a.id">
+                  {{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})
+                </option>
+              </select>
               <div v-if="errors.interim_assure_par" class="invalid-feedback d-block">{{ errors.interim_assure_par[0] }}</div>
             </div>
 
@@ -212,6 +217,13 @@ const form = ref({
 })
 
 const agents = ref([])
+
+// Liste des agents disponibles comme intérimaire (exclure l'agent courant)
+const agentsInterimaires = computed(() => {
+  const selfId = form.value.agent_id || currentAgent.value?.id
+  return agents.value.filter(a => a.id !== selfId)
+})
+
 const errors = ref({})
 const submitting = ref(false)
 const selectedFile = ref(null)
@@ -320,7 +332,7 @@ async function handleSubmit() {
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     resetForm()
-    if (isRH.value && agents.value.length === 0) {
+    if (agents.value.length === 0) {
       try {
         const { data } = await client.get('/agents', { params: { actifs: 1 } })
         const raw = data.data ?? data
@@ -328,7 +340,7 @@ watch(() => props.show, async (newVal) => {
         if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
           agents.value = raw.flatMap(g => g.agents)
         } else {
-          agents.value = raw
+          agents.value = Array.isArray(raw) ? raw : []
         }
       } catch {
         // Silently fail

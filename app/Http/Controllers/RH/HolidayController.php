@@ -263,6 +263,7 @@ class HolidayController extends Controller
 
         if ($shouldAutoApprove) {
             $holiday->approve(auth()->user()->agent);
+            CongeApproved::dispatch($holiday->fresh()); // C6 — notifier l'agent
 
             AgentStatus::setNewStatus($validated['agent_id'], [
                 'statut' => 'en_conge',
@@ -387,14 +388,25 @@ class HolidayController extends Controller
             ], 422);
         }
 
-        // Vérifications de permission selon la hiérarchie
+        // Anti self-approve
         $user = auth()->user()->agent;
+        if (!$user) {
+            return response()->json(['message' => 'Compte non associé à un agent.'], 422);
+        }
+
+        if ($holiday->agent_id === $user->id || $holiday->demande_par === $user->id) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas approuver votre propre demande de congé.'
+            ], 403);
+        }
+
+        // Vérifications de permission selon la hiérarchie
         $canApprove = false;
 
         if ($user->hasRole(['RH National', 'SEN'])) {
             $canApprove = true;
         } elseif ($user->hasRole('RH Provincial')) {
-            // RH Provincial peut approuver les congés dans sa province
+            // RH Provincial peut approuver uniquement les congés dans sa province
             $canApprove = $holiday->agent->province_id === $user->province_id;
         }
 
@@ -404,10 +416,21 @@ class HolidayController extends Controller
             ], 403);
         }
 
+        // Re-vérification du quota à l'approbation (C3)
+        if ($holiday->type_conge === 'annuel' && $holiday->holidayPlanning) {
+            $planning = $holiday->holidayPlanning;
+            $joursRestants = $planning->jours_conge_totaux - $planning->jours_utilises;
+            if ($holiday->nombre_jours > $joursRestants) {
+                return response()->json([
+                    'message' => "Quota dépassé : {$joursRestants} jour(s) disponible(s) sur {$planning->jours_conge_totaux}. Congé demandé : {$holiday->nombre_jours} jour(s)."
+                ], 422);
+            }
+        }
+
         $holiday->approve($user);
 
         // Fire event for PTA conflict re-check and notifications
-        CongeApproved::dispatch($holiday);
+        CongeApproved::dispatch($holiday->fresh());
 
         // Créer le statut agent correspondant
         AgentStatus::setNewStatus($holiday->agent_id, [
@@ -441,7 +464,21 @@ class HolidayController extends Controller
             'motif_refus' => 'required|string|max:1000'
         ]);
 
-        $holiday->refuse(auth()->user()->agent, $validated['motif_refus']);
+        // Vérification scope Provincial pour le refus (C5)
+        $refuseur = auth()->user()->agent;
+        if (!$refuseur) {
+            return response()->json(['message' => 'Compte non associé à un agent.'], 422);
+        }
+
+        if ($refuseur->hasRole('RH Provincial')) {
+            if ($holiday->agent->province_id !== $refuseur->province_id) {
+                return response()->json([
+                    'message' => 'Permissions insuffisantes pour refuser ce congé.'
+                ], 403);
+            }
+        }
+
+        $holiday->refuse($refuseur, $validated['motif_refus']);
 
         return response()->json([
             'message' => 'Congé refusé',
@@ -575,12 +612,20 @@ class HolidayController extends Controller
     {
         $year = $request->get('year', date('Y'));
 
+        $joursUtilises = $agent->holidays()->forYear($year)->approved()->sum('nombre_jours');
+
+        // Quota dynamique via le planning de l'agent (M7)
+        $planning = $this->resolvePlanning($agent, (int) $year);
+        $quotaAnnuel = $planning ? $planning->jours_conge_totaux : 30;
+        $joursRestants = $quotaAnnuel - $joursUtilises;
+
         $stats = [
             'total_conges' => $agent->holidays()->forYear($year)->count(),
-            'jours_total' => $agent->holidays()->forYear($year)->approved()->sum('nombre_jours'),
+            'jours_total' => $joursUtilises,
             'conges_approuves' => $agent->holidays()->forYear($year)->approved()->count(),
             'conges_en_attente' => $agent->holidays()->forYear($year)->pending()->count(),
-            'jours_restants' => 30 - $agent->holidays()->forYear($year)->approved()->sum('nombre_jours'),
+            'quota_annuel' => $quotaAnnuel,
+            'jours_restants' => $joursRestants,
             'par_type' => $agent->holidays()
                 ->forYear($year)
                 ->approved()
