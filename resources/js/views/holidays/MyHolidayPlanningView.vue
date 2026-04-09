@@ -155,7 +155,7 @@
         </div>
 
         <!-- Planning trouvé -->
-        <template v-else>
+        <template v-if="planning">
           <!-- Statistiques -->
           <div class="row g-3 mt-2">
             <div class="col-6 col-md-3">
