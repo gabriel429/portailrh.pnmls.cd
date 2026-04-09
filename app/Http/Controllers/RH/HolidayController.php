@@ -176,6 +176,15 @@ class HolidayController extends Controller
     {
         $isPlanning = $request->boolean('is_planning');
 
+        // L'agent peut soumettre sa propre demande sans passer agent_id
+        $requestingAgent = auth()->user()->agent;
+        $isRhUser = $requestingAgent && $requestingAgent->hasRole(['Section ressources humaines', 'Chef Section RH', 'RH National', 'RH Provincial']);
+
+        // Si non-RH : forcer agent_id à celui de l'utilisateur connecté
+        if (!$isRhUser) {
+            $request->merge(['agent_id' => $requestingAgent?->id]);
+        }
+
         $rules = [
             'agent_id' => 'required|exists:agents,id',
             'date_debut' => 'required|date',
@@ -292,21 +301,12 @@ class HolidayController extends Controller
         ]);
 
         $currentAgent = auth()->user()->agent;
-        $isRh = $currentAgent->hasRole(['RH National', 'RH Provincial']);
-        $isNational = $currentAgent->hasRole('RH National');
+        $isRh = $currentAgent && $currentAgent->hasRole(['Section ressources humaines', 'Chef Section RH', 'RH National', 'RH Provincial']);
+
         $created = [];
         $errors = [];
 
-        foreach ($request->entries as $i => $entry) {
-            // RH National ne planifie que pour agents nationaux
-            if ($isNational) {
-                $targetAgent = Agent::find($entry['agent_id']);
-                if ($targetAgent && $targetAgent->province_id !== null) {
-                    $nom = trim(($targetAgent->nom ?? '') . ' ' . ($targetAgent->postnom ?? ''));
-                    $errors[] = "{$nom} est un agent provincial — le RH National ne peut pas planifier son congé";
-                    continue;
-                }
-            }
+        foreach ($request->entries as $entry) {
             $dateDebut = Carbon::parse($entry['date_debut']);
             $dateFin = Carbon::parse($entry['date_fin']);
 

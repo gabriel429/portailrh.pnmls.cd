@@ -52,8 +52,108 @@
               <div v-if="errors.type" class="text-danger small mt-1">{{ errors.type[0] }}</div>
             </div>
 
-            <!-- Dates -->
-            <div class="row g-2 mb-3">
+            <!-- Champs spécifiques : Congé -->
+            <template v-if="form.type === 'conge'">
+              <!-- Type de congé -->
+              <div class="mb-3">
+                <label class="rcm-label">
+                  <i class="fas fa-umbrella-beach me-1 text-muted"></i>
+                  Type de congé <span class="text-danger">*</span>
+                </label>
+                <select v-model="form.type_conge" class="form-select form-select-sm" :class="{ 'is-invalid': errors.type_conge }">
+                  <option value="">-- Sélectionner --</option>
+                  <option value="annuel">Congé annuel</option>
+                  <option value="maladie">Congé maladie</option>
+                  <option value="maternite">Congé maternité</option>
+                  <option value="paternite">Congé paternité</option>
+                  <option value="urgence">Congé d'urgence</option>
+                  <option value="special">Congé spécial</option>
+                </select>
+                <div v-if="errors.type_conge" class="invalid-feedback d-block">{{ errors.type_conge[0] }}</div>
+              </div>
+
+              <!-- Dates -->
+              <div class="row g-2 mb-3">
+                <div class="col-6">
+                  <label class="rcm-label">
+                    <i class="fas fa-calendar-alt me-1 text-muted"></i>
+                    Date début <span class="text-danger">*</span>
+                  </label>
+                  <input type="date" v-model="form.date_debut"
+                    class="form-control form-control-sm" :class="{ 'is-invalid': errors.date_debut }"
+                  >
+                  <div v-if="errors.date_debut" class="invalid-feedback d-block">{{ errors.date_debut[0] }}</div>
+                </div>
+                <div class="col-6">
+                  <label class="rcm-label">
+                    <i class="fas fa-calendar-check me-1 text-muted"></i>
+                    Date fin <span class="text-danger">*</span>
+                  </label>
+                  <input type="date" v-model="form.date_fin"
+                    class="form-control form-control-sm" :class="{ 'is-invalid': errors.date_fin }"
+                    :min="form.date_debut"
+                  >
+                  <div v-if="errors.date_fin" class="invalid-feedback d-block">{{ errors.date_fin[0] }}</div>
+                </div>
+              </div>
+
+              <!-- Motif -->
+              <div class="mb-3">
+                <label class="rcm-label">
+                  <i class="fas fa-align-left me-1 text-muted"></i>
+                  Motif <span class="text-danger">*</span>
+                </label>
+                <textarea
+                  v-model="form.description" rows="2"
+                  class="form-control form-control-sm" :class="{ 'is-invalid': errors.description }"
+                  placeholder="Motif du congé..."
+                ></textarea>
+                <div v-if="errors.description" class="invalid-feedback d-block">{{ errors.description[0] }}</div>
+              </div>
+
+              <!-- Intérimaire -->
+              <div class="mb-3">
+                <label class="rcm-label">
+                  <i class="fas fa-user-shield me-1 text-muted"></i>
+                  Intérimaire (optionnel)
+                </label>
+                <select v-model="form.interim_assure_par" class="form-select form-select-sm">
+                  <option value="">-- Aucun --</option>
+                  <option v-for="a in colleaguesForInterim" :key="a.id" :value="a.id">
+                    {{ a.prenom }} {{ a.nom }}
+                  </option>
+                </select>
+              </div>
+
+              <!-- Document médical (maladie) -->
+              <div v-if="form.type_conge === 'maladie'" class="mb-3">
+                <label class="rcm-label">
+                  <i class="fas fa-file-medical me-1 text-muted"></i>
+                  Document médical
+                </label>
+                <div v-if="!filePreview" class="upload-zone-sm" @click="$refs.fileInput.click()">
+                  <i class="fas fa-cloud-upload-alt"></i>
+                  <span>Cliquer pour parcourir</span>
+                </div>
+                <div v-else class="file-preview-sm">
+                  <i class="fas fa-file-alt"></i>
+                  <div class="flex-grow-1">
+                    <div class="file-name-sm">{{ filePreview.name }}</div>
+                    <div class="file-size-sm">{{ filePreview.size }}</div>
+                  </div>
+                  <button type="button" class="btn-remove-sm" @click="removeFile">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+                <input ref="fileInput" type="file" class="d-none"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  @change="handleFileSelect"
+                >
+              </div>
+            </template>
+
+            <!-- Dates (autres types) -->
+            <div v-else class="row g-2 mb-3">
               <div class="col-6">
                 <label class="rcm-label">
                   <i class="fas fa-calendar-alt me-1 text-muted"></i>
@@ -79,8 +179,8 @@
               </div>
             </div>
 
-            <!-- Description -->
-            <div class="mb-3">
+            <!-- Description (autres types) -->
+            <div v-if="form.type !== 'conge'" class="mb-3">
               <label class="rcm-label">
                 <i class="fas fa-align-left me-1 text-muted"></i>
                 Description <span class="text-danger">*</span>
@@ -107,8 +207,8 @@
               <div v-if="errors.motivation" class="invalid-feedback d-block">{{ errors.motivation[0] }}</div>
             </div>
 
-            <!-- File upload -->
-            <div class="mb-3">
+            <!-- File upload (autres types) -->
+            <div v-if="form.type !== 'conge'" class="mb-3">
               <label class="rcm-label">
                 <i class="fas fa-paperclip me-1 text-muted"></i>
                 Lettre de demande (optionnel)
@@ -160,6 +260,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { create } from '@/api/requests'
 import client from '@/api/client'
+import holidayApi from '@/api/holidays'
 
 const props = defineProps({
   show: { type: Boolean, default: false }
@@ -176,13 +277,16 @@ const currentAgent = computed(() => auth.agent)
 const form = ref({
   agent_id: '',
   type: '',
+  type_conge: '',
   date_debut: '',
   date_fin: '',
   description: '',
   motivation: '',
+  interim_assure_par: '',
 })
 
 const agents = ref([])
+const colleaguesForInterim = ref([])
 const errors = ref({})
 const submitting = ref(false)
 const selectedFile = ref(null)
@@ -224,10 +328,12 @@ function resetForm() {
   form.value = {
     agent_id: currentAgent.value?.id || '',
     type: '',
+    type_conge: '',
     date_debut: '',
     date_fin: '',
     description: '',
     motivation: '',
+    interim_assure_par: '',
   }
   errors.value = {}
   removeFile()
@@ -237,24 +343,54 @@ async function handleSubmit() {
   errors.value = {}
   submitting.value = true
 
-  const formData = new FormData()
-  formData.append('type', form.value.type)
-  formData.append('description', form.value.description)
-  formData.append('date_debut', form.value.date_debut)
-  if (form.value.date_fin) formData.append('date_fin', form.value.date_fin)
-  if (form.value.motivation) formData.append('motivation', form.value.motivation)
-  if (form.value.agent_id) formData.append('agent_id', form.value.agent_id)
-  if (selectedFile.value) formData.append('lettre_demande', selectedFile.value)
-
   try {
-    await create(formData)
-    ui.addToast('Demande créée avec succès.', 'success')
+    if (form.value.type === 'conge') {
+      // Validation côté client minimale
+      const localErrors = {}
+      if (!form.value.type_conge) localErrors.type_conge = ['Le type de congé est requis.']
+      if (!form.value.date_debut) localErrors.date_debut = ['La date de début est requise.']
+      if (!form.value.date_fin) localErrors.date_fin = ['La date de fin est requise.']
+      if (!form.value.description) localErrors.description = ['Le motif est requis.']
+      if (Object.keys(localErrors).length) {
+        errors.value = localErrors
+        return
+      }
+
+      const agentId = isRH.value ? form.value.agent_id : currentAgent.value?.id
+      const payload = new FormData()
+      payload.append('agent_id', agentId)
+      payload.append('type_conge', form.value.type_conge)
+      payload.append('date_debut', form.value.date_debut)
+      payload.append('date_fin', form.value.date_fin)
+      payload.append('motif', form.value.description)
+      if (form.value.interim_assure_par) payload.append('interim_assure_par', form.value.interim_assure_par)
+      if (selectedFile.value) payload.append('document_medical', selectedFile.value)
+
+      await client.post('/holidays', payload, { headers: { 'Content-Type': 'multipart/form-data' } })
+      ui.addToast('Demande de congé soumise avec succès.', 'success')
+    } else {
+      const formData = new FormData()
+      formData.append('type', form.value.type)
+      formData.append('description', form.value.description)
+      formData.append('date_debut', form.value.date_debut)
+      if (form.value.date_fin) formData.append('date_fin', form.value.date_fin)
+      if (form.value.motivation) formData.append('motivation', form.value.motivation)
+      if (form.value.agent_id) formData.append('agent_id', form.value.agent_id)
+      if (selectedFile.value) formData.append('lettre_demande', selectedFile.value)
+
+      await create(formData)
+      ui.addToast('Demande créée avec succès.', 'success')
+    }
+
     resetForm()
     emit('created')
     close()
   } catch (err) {
     if (err.response?.status === 422) {
       errors.value = err.response.data.errors || {}
+      if (err.response.data.message && !Object.keys(errors.value).length) {
+        ui.addToast(err.response.data.message, 'danger')
+      }
     } else {
       ui.addToast(err.response?.data?.message || 'Erreur lors de la création.', 'danger')
     }
@@ -266,16 +402,19 @@ async function handleSubmit() {
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     resetForm()
-    if (isRH.value && agents.value.length === 0) {
+    // Charger les agents actifs pour RH (sélection agent) et pour intérimaire
+    if (agents.value.length === 0) {
       try {
         const { data } = await client.get('/agents', { params: { actifs: 1 } })
         const raw = data.data ?? data
-        // L'API retourne les agents groupés par organe → aplatir
+        let list = []
         if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
-          agents.value = raw.flatMap(g => g.agents)
+          list = raw.flatMap(g => g.agents)
         } else {
-          agents.value = raw
+          list = raw
         }
+        agents.value = list
+        colleaguesForInterim.value = list
       } catch {
         // Silently fail
       }
