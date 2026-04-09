@@ -19,6 +19,7 @@ class DemandeWorkflowService
      */
     private const STEP_ROLES = [
         'director' => [
+            'Directeur',
             'Chef Section RH',
             'Chef Section Renforcement',
             'Chef Cellule Renforcement',
