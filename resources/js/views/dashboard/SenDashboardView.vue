@@ -23,7 +23,7 @@
           </div>
         </div>
         <div class="sen-hero-kpis">
-          <div class="sen-kpi">
+          <div class="sen-kpi sen-kpi-clickable" @click="openOrganeDrilldown('SEN', 'effectifs')">
             <div class="sen-kpi-icon"><i class="fas fa-users"></i></div>
             <div>
               <div class="sen-kpi-val">{{ data.agents?.actifs ?? '-' }}</div>
@@ -31,7 +31,7 @@
             </div>
           </div>
           <div class="kpi-divider"></div>
-          <div class="sen-kpi">
+          <div class="sen-kpi sen-kpi-clickable" @click="openOrganeDrilldown('SEN', 'presence')">
             <div class="sen-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="sen-kpi-val">{{ data.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
@@ -39,7 +39,7 @@
             </div>
           </div>
           <div class="kpi-divider"></div>
-          <div class="sen-kpi">
+          <div class="sen-kpi sen-kpi-clickable" @click="router.push('/requests')">
             <div class="sen-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
             <div>
               <div class="sen-kpi-val">{{ data.requests?.en_attente ?? 0 }}</div>
@@ -47,7 +47,7 @@
             </div>
           </div>
           <div class="kpi-divider"></div>
-          <div class="sen-kpi">
+          <div class="sen-kpi sen-kpi-clickable" @click="openOrganeDrilldown('SEN', 'pta')">
             <div class="sen-kpi-icon"><i class="fas fa-bullseye"></i></div>
             <div>
               <div class="sen-kpi-val">{{ data.plan_travail?.avg_completion ?? 0 }}<span class="kpi-unit">%</span></div>
@@ -352,13 +352,13 @@
               </div>
             </div>
             <div v-if="data.requests?.recent_pending?.length" class="sen-recent-body">
-              <div v-for="r in data.requests.recent_pending" :key="r.id" class="sen-recent-item">
+              <router-link v-for="r in data.requests.recent_pending" :key="r.id" :to="'/requests/' + r.id" class="sen-recent-item">
                 <div class="sen-recent-dot" style="background:#d97706;"></div>
                 <div class="sen-recent-info">
                   <div class="sen-recent-title">{{ r.type }} — {{ r.agent?.prenom }} {{ r.agent?.nom }}</div>
                   <div class="sen-recent-time"><i class="fas fa-clock me-1"></i>{{ formatTime(r.created_at) }}</div>
                 </div>
-              </div>
+              </router-link>
             </div>
             <div v-else class="sen-recent-empty">
               <div class="sen-empty-icon-wrap" style="background:#fef9ee;">
@@ -1438,6 +1438,8 @@ onMounted(async () => {
   border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(8px);
 }
 .sen-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; }
+.sen-kpi-clickable { cursor: pointer; border-radius: 10px; transition: background .15s; }
+.sen-kpi-clickable:hover { background: rgba(255,255,255,.15); }
 .sen-kpi-icon {
   width: 38px; height: 38px; border-radius: 10px;
   background: rgba(255,255,255,.1); display: flex; align-items: center;

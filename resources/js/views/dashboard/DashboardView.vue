@@ -14,30 +14,30 @@
         <p class="dash-hero-date">{{ today }}</p>
       </div>
       <div class="dash-hero-stats">
-        <div>
+        <router-link to="/documents" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.documents ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">Documents</div>
-        </div>
-        <div>
+        </router-link>
+        <router-link to="/notifications" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.messages_non_lus ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">Messages</div>
-        </div>
-        <div>
+        </router-link>
+        <router-link to="/notifications" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.communiques ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">Communiqués</div>
-        </div>
-        <div>
+        </router-link>
+        <router-link to="/requests" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.requests_pending ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">En attente</div>
-        </div>
-        <div>
+        </router-link>
+        <router-link to="/requests" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.requests_approved ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">Approuvées</div>
-        </div>
-        <div>
+        </router-link>
+        <router-link to="/mes-absences" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.absences ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">Absences</div>
-        </div>
+        </router-link>
       </div>
     </div>
 
@@ -106,7 +106,7 @@
         </div>
       </div>
       <div class="dash-stat-grid">
-        <div v-for="card in statCards" :key="card.label" class="dash-stat-card">
+        <router-link v-for="card in statCards" :key="card.label" :to="card.to" class="dash-stat-card dash-stat-card-link">
           <div class="dash-stat-top">
             <div class="dash-stat-icon" :style="{ background: card.bg, color: card.color }">
               <i class="fas" :class="card.icon"></i>
@@ -119,7 +119,7 @@
           <div class="dash-stat-bar">
             <div class="dash-stat-bar-fill" :style="{ background: card.color, width: card.pct + '%' }"></div>
           </div>
-        </div>
+        </router-link>
       </div>
 
       <!-- Recent Activity -->
@@ -130,7 +130,12 @@
         </div>
       </div>
       <div v-if="activities.length" class="dash-activity-grid">
-        <div v-for="(activity, index) in activities" :key="index" class="dash-activity-card">
+        <component
+          v-for="(activity, index) in activities" :key="index"
+          :is="activity.link ? 'router-link' : 'div'"
+          :to="activity.link || undefined"
+          class="dash-activity-card"
+        >
           <div class="dash-activity-top">
             <div class="dash-activity-icon" :class="'dash-act-' + (activity.type || 'default')">
               <i class="fas" :class="activityIcon(activity.type)"></i>
@@ -140,7 +145,7 @@
               <div class="dash-activity-time"><i class="fas fa-clock me-1"></i>{{ formatTime(activity.created_at) }}</div>
             </div>
           </div>
-        </div>
+        </component>
       </div>
       <div v-else class="dash-empty">
         <div class="dash-empty-icon"><i class="fas fa-inbox"></i></div>
@@ -356,12 +361,12 @@ const maxStat = computed(() => {
 })
 
 const statCards = computed(() => [
-  { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', color: '#0077B5', bg: '#e0f2fe', pct: ((stats.value.documents ?? 0) / maxStat.value) * 100 },
-  { label: 'Messages non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100 },
-  { label: 'Communiqués du SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100 },
-  { label: 'Demandes en attente', value: stats.value.requests_pending ?? 0, icon: 'fa-clock', color: '#d97706', bg: '#fef3c7', pct: ((stats.value.requests_pending ?? 0) / maxStat.value) * 100 },
-  { label: 'Demandes approuvées', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', color: '#059669', bg: '#d1fae5', pct: ((stats.value.requests_approved ?? 0) / maxStat.value) * 100 },
-  { label: 'Absences', value: stats.value.absences ?? 0, icon: 'fa-calendar-times', color: '#dc2626', bg: '#fee2e2', pct: ((stats.value.absences ?? 0) / maxStat.value) * 100 },
+  { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', color: '#0077B5', bg: '#e0f2fe', pct: ((stats.value.documents ?? 0) / maxStat.value) * 100, to: '/documents' },
+  { label: 'Messages non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100, to: '/notifications' },
+  { label: 'Communiqués du SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100, to: '/notifications' },
+  { label: 'Demandes en attente', value: stats.value.requests_pending ?? 0, icon: 'fa-clock', color: '#d97706', bg: '#fef3c7', pct: ((stats.value.requests_pending ?? 0) / maxStat.value) * 100, to: '/requests' },
+  { label: 'Demandes approuvées', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', color: '#059669', bg: '#d1fae5', pct: ((stats.value.requests_approved ?? 0) / maxStat.value) * 100, to: '/requests' },
+  { label: 'Absences', value: stats.value.absences ?? 0, icon: 'fa-calendar-times', color: '#dc2626', bg: '#fee2e2', pct: ((stats.value.absences ?? 0) / maxStat.value) * 100, to: '/mes-absences' },
 ])
 
 function activityIcon(type) {
@@ -505,6 +510,11 @@ watch(profilePhotoCandidates, () => {
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
 .dash-hero-stats { display: flex; gap: 1.5rem; margin-left: auto; }
+.dash-hero-stat-link {
+  text-decoration: none; color: inherit; display: block;
+  padding: .3rem .5rem; border-radius: 8px; transition: background .15s;
+}
+.dash-hero-stat-link:hover { background: rgba(255,255,255,.15); }
 .dash-hero-stat-val { font-size: 1.4rem; font-weight: 800; text-align: center; }
 .dash-hero-stat-lbl { font-size: .68rem; opacity: .7; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
 
@@ -536,8 +546,10 @@ watch(profilePhotoCandidates, () => {
 .dash-stat-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1.2rem; transition: all .2s;
+  text-decoration: none; color: inherit; display: block;
 }
-.dash-stat-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: translateY(-2px); }
+.dash-stat-card-link { cursor: pointer; }
+.dash-stat-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: translateY(-2px); border-color: #0077B5; }
 .dash-stat-top { display: flex; align-items: center; gap: .8rem; margin-bottom: .8rem; }
 .dash-stat-icon {
   width: 44px; height: 44px; border-radius: 12px; display: flex;
@@ -554,8 +566,10 @@ watch(profilePhotoCandidates, () => {
 .dash-activity-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1rem 1.2rem; transition: all .2s;
+  text-decoration: none; color: inherit; display: block;
 }
-.dash-activity-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: translateY(-2px); }
+a.dash-activity-card { cursor: pointer; }
+.dash-activity-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: translateY(-2px); border-color: #0077B5; }
 .dash-activity-top { display: flex; align-items: flex-start; gap: .8rem; }
 .dash-activity-icon {
   width: 38px; height: 38px; border-radius: 10px; display: flex;
