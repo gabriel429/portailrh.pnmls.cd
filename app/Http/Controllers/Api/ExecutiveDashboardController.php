@@ -612,6 +612,284 @@ class ExecutiveDashboardController extends ApiController
     }
 
     /**
+     * Tableau de bord SEP — données scoped à la province de l'agent connecté
+     */
+    public function sepIndex(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->hasRole('SEP')) {
+            return response()->json(['message' => 'Accès réservé au SEP.'], 403);
+        }
+
+        $agent  = $user->agent;
+        $provinceId = $agent?->province_id;
+
+        if (!$provinceId) {
+            return response()->json(['message' => 'Province non configurée pour cet agent SEP.'], 422);
+        }
+
+        $province = Province::find($provinceId);
+        if (!$province) {
+            return response()->json(['message' => 'Province introuvable.'], 404);
+        }
+
+        $now           = Carbon::now();
+        $currentYear   = $now->year;
+        $startOfMonth  = $now->copy()->startOfMonth();
+
+        // ─── AGENTS (scoped province) ────────────────────────────────────────────
+        $agentsQ    = Agent::where('province_id', $provinceId);
+        $totalAgents    = (clone $agentsQ)->count();
+        $actifsAgents   = (clone $agentsQ)->actifs()->count();
+        $suspendusAgents= (clone $agentsQ)->suspendu()->count();
+        $anciensAgents  = (clone $agentsQ)->anciens()->count();
+
+        // Par organe dans la province
+        $organeMap = [
+            'sen' => 'Secrétariat Exécutif National',
+            'sep' => 'Secrétariat Exécutif Provincial',
+            'sel' => 'Secrétariat Exécutif Local',
+        ];
+        $byOrgane = [];
+        foreach ($organeMap as $code => $nom) {
+            $byOrgane[$code] = (clone $agentsQ)->where('organe', $nom)->actifs()->count();
+        }
+
+        // Par sexe
+        $bySexe = (clone $agentsQ)->actifs()
+            ->select('sexe', DB::raw('COUNT(*) as count'))
+            ->groupBy('sexe')
+            ->pluck('count', 'sexe');
+
+        // Agents sans affectation (province)
+        $agentsSansAffectation = (clone $agentsQ)->actifs()
+            ->whereDoesntHave('affectations', fn($q) => $q->where('actif', true))
+            ->count();
+
+        // ─── PRÉSENCE (scoped province) ──────────────────────────────────────────
+        $provActifs = $actifsAgents ?: 1;
+
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->distinct('agent_id')->count('agent_id');
+        $todayRate = round(($todayPresent / $provActifs) * 100, 1);
+
+        $monthlyPointages = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')
+            ->get();
+        $avgMonthlyRate = $monthlyPointages->count() > 0
+            ? round(($monthlyPointages->avg('present') / $provActifs) * 100, 1)
+            : 0;
+
+        // Présence par organe dans la province
+        $attendanceByOrgane = [];
+        foreach ($organeMap as $code => $nom) {
+            $orgActifs = max((clone $agentsQ)->where('organe', $nom)->actifs()->count(), 1);
+            $orgPresent = Pointage::byDate($now->toDateString())
+                ->whereNotNull('heure_entree')
+                ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId)->where('organe', $nom))
+                ->distinct('agent_id')->count('agent_id');
+            $orgMonthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                ->whereNotNull('heure_entree')
+                ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId)->where('organe', $nom))
+                ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+                ->groupBy('date_pointage')->get();
+            $attendanceByOrgane[$code] = [
+                'today_present'       => $orgPresent,
+                'today_rate'          => round(($orgPresent / $orgActifs) * 100, 1),
+                'monthly_avg_rate'    => $orgMonthly->count() > 0 ? round(($orgMonthly->avg('present') / $orgActifs) * 100, 1) : 0,
+                'total_active_agents' => $orgActifs - 1, // undo the max(1)
+            ];
+        }
+
+        // ─── DEPARTMENTS de la province ──────────────────────────────────────────
+        $departments = Department::where('province_id', $provinceId)
+            ->withCount([
+                'agents as total'  => fn($q) => $q,
+                'agents as actifs' => fn($q) => $q->where('statut', 'actif'),
+            ])
+            ->orderByDesc('actifs')
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($d) => [
+                'id'     => $d->id,
+                'nom'    => $d->nom,
+                'code'   => $d->code,
+                'total'  => $d->total,
+                'actifs' => $d->actifs,
+            ]);
+
+        // ─── DEMANDES (scoped province) ──────────────────────────────────────────
+        $requestsQ  = RequestModel::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        $reqPending = (clone $requestsQ)->enAttente()->count();
+        $reqApproved= (clone $requestsQ)->approuve()->count();
+        $reqRejected= (clone $requestsQ)->rejete()->count();
+        $recentPending = (clone $requestsQ)->enAttente()
+            ->with('agent:id,nom,prenom')
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get(['id', 'agent_id', 'type', 'created_at']);
+
+        // ─── SIGNALEMENTS (scoped province) ──────────────────────────────────────
+        $sigQ = Signalement::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        $sigOuvert  = (clone $sigQ)->ouvert()->count();
+        $sigEnCours = (clone $sigQ)->enCours()->count();
+        $sigHaute   = (clone $sigQ)->hauteSeverite()->whereIn('statut', ['ouvert', 'en_cours'])->count();
+        $recentSig  = (clone $sigQ)->with('agent:id,nom,prenom')->orderByDesc('created_at')->limit(5)
+            ->get(['id', 'agent_id', 'type', 'severite', 'statut', 'created_at']);
+
+        // ─── TÂCHES (scoped province) ────────────────────────────────────────────
+        $tacheQ   = Tache::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        $tTotal   = (clone $tacheQ)->count();
+        $tNouvelle= (clone $tacheQ)->nouvelle()->count();
+        $tEnCours = (clone $tacheQ)->enCours()->count();
+        $tTerminee= (clone $tacheQ)->terminee()->count();
+        $tOverdue = (clone $tacheQ)->where('statut', '!=', 'terminee')
+            ->whereNotNull('date_echeance')->where('date_echeance', '<', $now->toDateString())->count();
+
+        // ─── PLAN DE TRAVAIL SEP (niveau_administratif = SEP + province) ────────
+        $planQ = ActivitePlan::parAnnee($currentYear)->parNiveau('SEP');
+        // Si la table activites_plan a province_id, on filtre; sinon on prend tout le SEP
+        $planTotal   = (clone $planQ)->count();
+        $planTerminee= (clone $planQ)->terminee()->count();
+        $planEnCours = (clone $planQ)->enCours()->count();
+        $avgCompletion = (clone $planQ)->avg('pourcentage') ?? 0;
+
+        $planByTrimestre = [];
+        for ($t = 1; $t <= 4; $t++) {
+            $tq  = (clone $planQ)->parTrimestre("T{$t}");
+            $planByTrimestre[] = [
+                'trimestre'      => "T{$t}",
+                'total'          => (clone $tq)->count(),
+                'terminee'       => (clone $tq)->terminee()->count(),
+                'avg_pourcentage'=> round((clone $tq)->avg('pourcentage') ?? 0, 0),
+            ];
+        }
+
+        // ─── COMMUNIQUÉS ─────────────────────────────────────────────────────────
+        $commActifs  = Communique::visibles()->count();
+        $commUrgents = Communique::visibles()->urgent()->count();
+        $recentComm  = Communique::visibles()->orderByDesc('created_at')->limit(5)
+            ->get(['id', 'titre', 'urgence', 'created_at']);
+
+        // ─── CONGÉS (scoped province) ─────────────────────────────────────────────
+        $holidayQ = Holiday::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        $hPending  = (clone $holidayQ)->pending()->count();
+        $hApproved = (clone $holidayQ)->approved()->count();
+        $hActiveToday = (clone $holidayQ)->active($now)->count();
+        $agentsEnCongeToday = (clone $holidayQ)->active($now)
+            ->with('agent:id,nom,prenom,province_id')
+            ->get()
+            ->map(fn($h) => [
+                'id'         => $h->id,
+                'agent'      => $h->agent ? ($h->agent->prenom . ' ' . $h->agent->nom) : 'N/A',
+                'type'       => $h->getTypeCongeLabel(),
+                'date_debut' => $h->date_debut->format('Y-m-d'),
+                'date_fin'   => $h->date_fin->format('Y-m-d'),
+            ]);
+        $hPlanningStats = HolidayPlanning::where('annee', $currentYear)
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->selectRaw('SUM(jours_utilises) as total_utilises, SUM(jours_conge_totaux) as total_totaux')
+            ->first();
+        $tauxConges = ($hPlanningStats && $hPlanningStats->total_totaux > 0)
+            ? round(($hPlanningStats->total_utilises / $hPlanningStats->total_totaux) * 100, 1)
+            : 0;
+
+        // ─── AFFECTATIONS (scoped province) ──────────────────────────────────────
+        $affQ   = Affectation::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        $affActives= (clone $affQ)->where('actif', true)->count();
+        $mobilite  = (clone $affQ)->where('date_debut', '>=', $now->copy()->subDays(30))
+            ->with('agent:id,nom,prenom', 'fonction:id,nom')
+            ->orderByDesc('date_debut')->limit(10)
+            ->get(['id', 'agent_id', 'fonction_id', 'niveau_administratif', 'date_debut']);
+
+        // Postes vacants niveau SEP dans cette province
+        $fonctionsSEP = Fonction::where('niveau_administratif', 'SEP')->count();
+        $fonctionsSEPAff = Affectation::where('actif', true)->where('niveau_administratif', 'SEP')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->distinct('fonction_id')->count('fonction_id');
+        $postesVacants = max(0, $fonctionsSEP - $fonctionsSEPAff);
+
+        $payload = [
+            'province' => [
+                'id'                      => $province->id,
+                'nom'                     => $province->nom,
+                'code'                    => $province->code,
+                'ville_secretariat'       => $province->ville_secretariat,
+                'nom_gouverneur'          => $province->nom_gouverneur,
+                'nom_secretariat_executif'=> $province->nom_secretariat_executif,
+            ],
+            'agents' => [
+                'total'           => $totalAgents,
+                'actifs'          => $actifsAgents,
+                'suspendus'       => $suspendusAgents,
+                'anciens'         => $anciensAgents,
+                'by_organe'       => $byOrgane,
+                'by_sexe'         => $bySexe,
+                'sans_affectation'=> $agentsSansAffectation,
+            ],
+            'attendance' => [
+                'today_present'     => $todayPresent,
+                'today_rate'        => $todayRate,
+                'monthly_avg_rate'  => $avgMonthlyRate,
+                'total_active_agents' => $actifsAgents,
+                'by_organe'         => $attendanceByOrgane,
+            ],
+            'departments' => $departments,
+            'requests' => [
+                'en_attente'     => $reqPending,
+                'approuve'       => $reqApproved,
+                'rejete'         => $reqRejected,
+                'recent_pending' => $recentPending,
+            ],
+            'signalements' => [
+                'ouvert'          => $sigOuvert,
+                'en_cours'        => $sigEnCours,
+                'haute_severite'  => $sigHaute,
+                'recent'          => $recentSig,
+            ],
+            'taches' => [
+                'total'    => $tTotal,
+                'nouvelle' => $tNouvelle,
+                'en_cours' => $tEnCours,
+                'terminee' => $tTerminee,
+                'overdue'  => $tOverdue,
+            ],
+            'plan_travail' => [
+                'total'          => $planTotal,
+                'terminee'       => $planTerminee,
+                'en_cours'       => $planEnCours,
+                'avg_completion' => round($avgCompletion, 0),
+                'by_trimestre'   => $planByTrimestre,
+            ],
+            'communiques' => [
+                'actifs'  => $commActifs,
+                'urgents' => $commUrgents,
+                'recent'  => $recentComm,
+            ],
+            'holidays' => [
+                'pending'              => $hPending,
+                'approved'             => $hApproved,
+                'active_today'         => $hActiveToday,
+                'agents_en_conge_today'=> $agentsEnCongeToday,
+                'taux_utilisation_pct' => $tauxConges,
+            ],
+            'affectations' => [
+                'actives'          => $affActives,
+                'postes_vacants'   => $postesVacants,
+                'sans_affectation' => $agentsSansAffectation,
+                'mobilite_30_jours'=> $mobilite,
+            ],
+        ];
+
+        return $this->success($payload, [], $payload);
+    }
+
+    /**
      * Drill-down par organe : détails provinces (SEP) ou départements (SEN/SEL)
      */
     public function organeDetail(Request $request, string $code)
