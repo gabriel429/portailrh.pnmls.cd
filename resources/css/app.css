@@ -2327,6 +2327,157 @@ body.is-offline .navbar-main {
     }
 }
 
+/* ═══════════════════════════════════════════════════════════
+   MODE NUIT — Dashboards SEP & SEN (classes scoped custom)
+   ═══════════════════════════════════════════════════════════ */
+
+/* --- Cartes / panneaux principaux (fond blanc → fond sombre) --- */
+html.dark .sep-action,
+html.dark .sep-metric,
+html.dark .sep-dept-card,
+html.dark .sep-presence-card,
+html.dark .sep-holiday-stats-card,
+html.dark .sep-holiday-list-card,
+html.dark .sep-affectation-card,
+html.dark .sep-task-card,
+html.dark .sep-plan-global-row,
+html.dark .sep-recent-col,
+html.dark .drill-panel,
+html.dark .sen-action,
+html.dark .sen-metric,
+html.dark .sen-kpi-modal-card,
+html.dark .sen-holiday-stats-card,
+html.dark .sen-holiday-list-card,
+html.dark .sen-affectation-card,
+html.dark .sen-task-card,
+html.dark .sen-plan-global-row,
+html.dark .sen-recent-col,
+html.dark .sen-presence-card,
+html.dark .sen-dept-card {
+    background: var(--dm-bg-card) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* --- Panneaux secondaires / internes (gris clair → sombre secondaire) --- */
+html.dark .sep-dept-stat,
+html.dark .sep-holiday-stat-item,
+html.dark .sep-recent-head,
+html.dark .sep-holiday-list-head,
+html.dark .sep-dept-empty,
+html.dark .drill-prov-stat-card,
+html.dark .drill-prov-agent-row,
+html.dark .sen-dept-stat,
+html.dark .sen-recent-head,
+html.dark .sen-holiday-list-head,
+html.dark .sen-holiday-stat-item {
+    background: var(--dm-bg-card2) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* --- Carte province SEP (dégradé clair → sombre) --- */
+html.dark .sep-province-card {
+    background: linear-gradient(135deg, #0c2a40, #0a1a2e) !important;
+    border-color: rgba(14,165,233,.2) !important;
+}
+
+/* --- Textes de titre / valeurs principaux --- */
+html.dark .sep-section-title,
+html.dark .sep-dept-name,
+html.dark .sep-recent-head-title,
+html.dark .sep-recent-title,
+html.dark .sep-province-name,
+html.dark .sep-trim-name,
+html.dark .sep-holiday-stat-val,
+html.dark .sep-holiday-item-agent,
+html.dark .sep-affectation-val,
+html.dark .sep-task-card-val,
+html.dark .sep-dept-stat-val,
+html.dark .drill-prov-stat-val,
+html.dark .drill-prov-agent-name,
+html.dark .drill-prov-section-title,
+html.dark .sep-presence-card-head,
+html.dark .sen-section-title,
+html.dark .sen-dept-name,
+html.dark .sen-recent-head-title,
+html.dark .sen-recent-title,
+html.dark .sen-trim-name,
+html.dark .sen-holiday-stat-val,
+html.dark .sen-holiday-item-agent,
+html.dark .sen-affectation-val,
+html.dark .sen-task-card-val,
+html.dark .sen-presence-card-head,
+html.dark .sen-metric-val,
+html.dark .sep-metric-val {
+    color: var(--dm-text) !important;
+}
+
+/* --- Textes secondaires / muted --- */
+html.dark .sep-province-details,
+html.dark .sep-province-sep,
+html.dark .sep-presence-item,
+html.dark .sep-holiday-item-info,
+html.dark .sep-action-desc,
+html.dark .sep-dept-code,
+html.dark .sep-dept-bar-label,
+html.dark .sep-trim-detail,
+html.dark .sep-task-progress-lbl,
+html.dark .sen-action-desc,
+html.dark .sen-dept-code,
+html.dark .sep-recent-time,
+html.dark .sen-recent-time {
+    color: var(--dm-text-muted) !important;
+}
+
+/* --- Barres de progression (fond gris clair → fond transparent) --- */
+html.dark .sep-metric-bar,
+html.dark .sep-dept-bar-bg,
+html.dark .sep-trim-bar,
+html.dark .sep-task-progress-bar,
+html.dark .sep-presence-bar,
+html.dark .sen-metric-bar,
+html.dark .sen-dept-bar-bg,
+html.dark .sen-trim-bar,
+html.dark .sen-task-progress-bar,
+html.dark .sen-presence-bar {
+    background: rgba(255,255,255,.1) !important;
+}
+
+/* --- Effets hover sur items de liste --- */
+html.dark .sep-recent-item:hover,
+html.dark .sep-holiday-item:hover,
+html.dark .drill-prov-agent-row:hover,
+html.dark .sep-action:hover,
+html.dark .sen-recent-item:hover,
+html.dark .sen-holiday-item:hover,
+html.dark .sen-action:hover {
+    background: rgba(14,165,233,.08) !important;
+    border-color: rgba(14,165,233,.2) !important;
+}
+
+/* --- Icônes de section (fonds pastels clairs) --- */
+html.dark .sep-section-icon,
+html.dark .sen-section-icon {
+    background: rgba(255,255,255,.06) !important;
+}
+
+/* --- Footer SEP --- */
+html.dark .sep-footer {
+    border-top-color: var(--dm-border) !important;
+    color: var(--dm-text-muted) !important;
+}
+html.dark .sep-footer-badge {
+    background: rgba(14,165,233,.15) !important;
+    color: #7dd3fc !important;
+}
+
+/* --- Alerte tâche SEP (fond rouge très clair → rose sombre) --- */
+html.dark .sep-task-card-alert {
+    background: rgba(239,68,68,.1) !important;
+    border-color: rgba(239,68,68,.3) !important;
+}
+
 
 /* -------------------------------------------
    MODE NUIT � html.dark
