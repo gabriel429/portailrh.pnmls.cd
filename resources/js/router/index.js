@@ -49,6 +49,19 @@ const routes = [
         component: () => import('@/views/notifications/NotificationListView.vue'),
         meta: { auth: true },
     },
+    {
+        path: '/notifications/:id/read',
+        name: 'notifications.read',
+        redirect: to => ({ name: 'notifications.index' }),
+        beforeEnter: async (to) => {
+            try {
+                const { markRead } = await import('@/api/notifications')
+                await markRead(to.params.id)
+            } catch (_) { /* silently ignore */ }
+            return { name: 'notifications.index' }
+        },
+        meta: { auth: true },
+    },
 
     // Documents GED
     {
