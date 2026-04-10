@@ -791,15 +791,9 @@ class ExecutiveDashboardController extends ApiController
                 'date_debut' => $h->date_debut->format('Y-m-d'),
                 'date_fin'   => $h->date_fin->format('Y-m-d'),
             ]);
-        $hPlanningStats = HolidayPlanning::where('annee', $currentYear)
-            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
-            ->selectRaw('SUM(jours_utilises) as total_utilises, SUM(jours_conge_totaux) as total_totaux')
-            ->first();
-        $tauxConges = ($hPlanningStats && $hPlanningStats->total_totaux > 0)
-            ? round(($hPlanningStats->total_utilises / $hPlanningStats->total_totaux) * 100, 1)
-            : 0;
-
-        // ─── AFFECTATIONS (scoped province) ──────────────────────────────────────
+        // Taux utilisation des congés : proportion d'agents actifs ayant un congé approuvé
+        $tauxConges = $actifsAgents > 0
+            ? round(($hApproved / $actifsAgents
         $affQ   = Affectation::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
         $affActives= (clone $affQ)->where('actif', true)->count();
         $mobilite  = (clone $affQ)->where('date_debut', '>=', $now->copy()->subDays(30))
