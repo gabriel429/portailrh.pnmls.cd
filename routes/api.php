@@ -57,6 +57,10 @@ Route::prefix('mobile')->group(function () {
         Route::get('/communiques', [CommuniqueController::class, 'index']);
         Route::get('/documents-travail', [DocumentTravailController::class, 'index']);
         Route::get('/mon-planning-conges', [MyHolidayPlanningController::class, 'index']);
+
+        // Dashboard RH étendu (accès RH et NT)
+        Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,SEN,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie')
+            ->get('/rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index']);
     });
 });
 
