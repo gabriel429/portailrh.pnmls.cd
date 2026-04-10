@@ -904,10 +904,10 @@ class ExecutiveDashboardController extends ApiController
         $startOfMonth = $now->copy()->startOfMonth();
         $currentYear = $now->year;
 
-        // Provincial scoping
+        // Provincial scoping: RH Provincial AND SEP can only see their own province
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvincialUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         // Agents de cet organe (scoped)
@@ -1078,10 +1078,10 @@ class ExecutiveDashboardController extends ApiController
      */
     public function provinceDetail(Request $request, int $id)
     {
-        // Provincial scoping: RH Provincial can only see their own province
+        // Provincial scoping: RH Provincial AND SEP can only see their own province
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvincialUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         if ($userProvinceId && $userProvinceId !== $id) {
@@ -1221,10 +1221,10 @@ class ExecutiveDashboardController extends ApiController
             return $this->error('Département introuvable', 404);
         }
 
-        // Provincial scoping: RH Provincial can only see departments in their province
+        // Provincial scoping: RH Provincial AND SEP can only see departments in their province
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvincialUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         if ($userProvinceId && (int) $department->province_id !== $userProvinceId) {
