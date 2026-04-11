@@ -1,12 +1,13 @@
-<template>
+﻿<template>
   <div class="dept-dashboard">
 
-    <!-- ═══ HERO ═══ -->
+    <!-- ════════════════════ HERO ════════════════════ -->
     <div class="dept-hero">
       <div class="dept-hero-bg"></div>
       <div class="dept-hero-inner">
+
+        <!-- Gauche : Avatar + identité -->
         <div class="dept-hero-left">
-          <!-- Avatar photo / initiales -->
           <div class="dept-hero-avatar">
             <img v-if="deptPhotoUrl" :src="deptPhotoUrl" :alt="deptFullName"
               class="dept-hero-avatar-photo" @error="handlePhotoError">
@@ -18,8 +19,8 @@
             <div class="dept-hero-fonction" v-if="deptFonction">
               <i class="fas fa-id-badge me-1"></i>{{ deptFonction }}
             </div>
-            <div class="dept-hero-role">
-              <i class="fas fa-building me-1"></i>
+            <div class="dept-hero-role-pill">
+              <i :class="auth.isDirecteur ? `fas fa-user-tie` : `fas fa-user-cog`" class="me-1"></i>
               {{ auth.isDirecteur ? 'Directeur de Département' : 'Assistant de Département' }}
               <span v-if="data?.department?.nom" class="dept-hero-dept-badge">
                 {{ data.department.nom }}
@@ -31,62 +32,63 @@
           </div>
         </div>
 
-        <!-- KPIs hero -->
+        <!-- Droite : KPIs -->
         <div class="dept-hero-kpis">
-          <div class="dept-kpi" @click="router.push('/agents')">
-            <div class="dept-kpi-icon"><i class="fas fa-users"></i></div>
+          <div class="dept-kpi-pill" @click="router.push('/agents')">
+            <div class="dept-kpi-pill-icon"><i class="fas fa-users"></i></div>
             <div>
-              <div class="dept-kpi-val">{{ data?.agents?.actifs ?? '-' }}</div>
-              <div class="dept-kpi-lbl">Agents actifs</div>
+              <div class="dept-kpi-pill-val">{{ data?.agents?.actifs ?? '—' }}</div>
+              <div class="dept-kpi-pill-lbl">Agents actifs</div>
             </div>
-            <i class="fas fa-arrow-right dept-kpi-arrow"></i>
+            <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi" @click="router.push('/taches')">
-            <div class="dept-kpi-icon"><i class="fas fa-tasks"></i></div>
+          <div class="dept-kpi-pill" @click="router.push('/taches')">
+            <div class="dept-kpi-pill-icon"><i class="fas fa-tasks"></i></div>
             <div>
-              <div class="dept-kpi-val">{{ data?.taches?.en_cours ?? 0 }}</div>
-              <div class="dept-kpi-lbl">Tâches en cours</div>
+              <div class="dept-kpi-pill-val">{{ data?.taches?.en_cours ?? 0 }}</div>
+              <div class="dept-kpi-pill-lbl">Tâches en cours</div>
             </div>
-            <i class="fas fa-arrow-right dept-kpi-arrow"></i>
+            <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi" @click="router.push('/requests')">
-            <div class="dept-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
+          <div class="dept-kpi-pill" @click="router.push('/requests')">
+            <div class="dept-kpi-pill-icon"><i class="fas fa-hourglass-half"></i></div>
             <div>
-              <div class="dept-kpi-val">{{ data?.requests?.en_attente ?? 0 }}</div>
-              <div class="dept-kpi-lbl">Demandes en attente</div>
+              <div class="dept-kpi-pill-val">{{ data?.requests?.en_attente ?? 0 }}</div>
+              <div class="dept-kpi-pill-lbl">Demandes</div>
             </div>
-            <i class="fas fa-arrow-right dept-kpi-arrow"></i>
+            <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi">
-            <div class="dept-kpi-icon"><i class="fas fa-chart-line"></i></div>
+          <div class="dept-kpi-pill">
+            <div class="dept-kpi-pill-icon"><i class="fas fa-chart-line"></i></div>
             <div>
-              <div class="dept-kpi-val">{{ data?.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
-              <div class="dept-kpi-lbl">Présence aujourd'hui</div>
+              <div class="dept-kpi-pill-val">{{ data?.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
+              <div class="dept-kpi-pill-lbl">Présence</div>
             </div>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi">
-            <div class="dept-kpi-icon"><i class="fas fa-umbrella-beach"></i></div>
+          <div class="dept-kpi-pill">
+            <div class="dept-kpi-pill-icon"><i class="fas fa-umbrella-beach"></i></div>
             <div>
-              <div class="dept-kpi-val">{{ data?.conges?.actifs ?? 0 }}</div>
-              <div class="dept-kpi-lbl">Congés actifs</div>
+              <div class="dept-kpi-pill-val">{{ data?.conges?.actifs ?? 0 }}</div>
+              <div class="dept-kpi-pill-lbl">Congés actifs</div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Loading / Error -->
     <LoadingSpinner v-if="loading" message="Chargement du tableau de bord..." />
-
-    <div v-else-if="loadError" class="alert alert-warning mx-3 mt-3">
+    <div v-else-if="loadError" class="dept-error-banner">
       <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
     </div>
 
     <template v-else>
-      <!-- ═══ ACTIONS RAPIDES ═══ -->
+
+      <!-- ════════ ACTIONS RAPIDES ════════ -->
       <div class="dept-section">
         <div class="dept-section-head">
           <div class="dept-section-icon" style="background:#e0f2fe;color:#0077B5;">
@@ -94,252 +96,334 @@
           </div>
           <div>
             <h3 class="dept-section-title">Actions rapides</h3>
-            <p class="dept-section-sub">Accès direct aux modules de gestion</p>
+            <p class="dept-section-sub">Accès direct aux modules de gestion du département</p>
           </div>
         </div>
         <div class="dept-actions">
-          <router-link to="/taches/create" class="dept-action-card">
-            <div class="dept-action-glow" style="background:#0077B5;"></div>
-            <div class="dept-action-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-plus-circle"></i></div>
-            <div class="dept-action-label">Nouvelle tâche</div>
-          </router-link>
-          <router-link to="/agents" class="dept-action-card">
-            <div class="dept-action-glow" style="background:#059669;"></div>
-            <div class="dept-action-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-users"></i></div>
-            <div class="dept-action-label">Agents</div>
-          </router-link>
-          <router-link to="/requests" class="dept-action-card">
-            <div class="dept-action-glow" style="background:#7c3aed;"></div>
-            <div class="dept-action-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-file-signature"></i></div>
-            <div class="dept-action-label">Demandes</div>
-          </router-link>
-          <router-link to="/pointages" class="dept-action-card">
-            <div class="dept-action-glow" style="background:#d97706;"></div>
-            <div class="dept-action-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-user-clock"></i></div>
-            <div class="dept-action-label">Présences</div>
-          </router-link>
-          <router-link to="/taches" class="dept-action-card">
-            <div class="dept-action-glow" style="background:#dc2626;"></div>
-            <div class="dept-action-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-tasks"></i></div>
-            <div class="dept-action-label">Toutes les tâches</div>
-          </router-link>
-          <router-link to="/holiday-planning" class="dept-action-card">
-            <div class="dept-action-glow" style="background:#0891b2;"></div>
-            <div class="dept-action-icon" style="background:#cffafe;color:#0891b2;"><i class="fas fa-calendar-alt"></i></div>
-            <div class="dept-action-label">Planning congés</div>
+          <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="dept-action">
+            <div class="dept-action-glow" :style="{ background: a.color }"></div>
+            <div class="dept-action-icon" :style="{ background: a.bg, color: a.color }">
+              <i class="fas" :class="a.icon"></i>
+            </div>
+            <div class="dept-action-text">
+              <div class="dept-action-label">{{ a.label }}</div>
+              <div class="dept-action-desc">{{ a.desc }}</div>
+            </div>
+            <i class="fas fa-chevron-right dept-action-arrow"></i>
           </router-link>
         </div>
       </div>
 
-      <!-- ═══ GRILLE PRINCIPALE ═══ -->
-      <div class="dept-main-grid">
-
-        <!-- ─── Gauche : Tâches récentes + Performance équipe ─── -->
-        <div class="dept-col-left">
-
-          <!-- Alertes -->
-          <div class="dept-alerts" v-if="hasAlerts">
-            <div v-if="data.taches.overdue > 0" class="dept-alert dept-alert-danger">
-              <i class="fas fa-exclamation-circle me-2"></i>
-              <strong>{{ data.taches.overdue }}</strong> tâche{{ data.taches.overdue > 1 ? 's' : '' }} en retard
+      <!-- ════════ INDICATEURS CLÉS ════════ -->
+      <div class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#ede9fe;color:#7c3aed;">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Indicateurs clés</h3>
+            <p class="dept-section-sub">Vue d'ensemble du département — {{ data.department?.nom }}</p>
+          </div>
+        </div>
+        <div class="dept-metrics">
+          <div v-for="m in metrics" :key="m.label" class="dept-metric" @click="router.push(m.to)">
+            <div class="dept-metric-header">
+              <div class="dept-metric-icon" :style="{ background: m.bg, color: m.color }">
+                <i class="fas" :class="m.icon"></i>
+              </div>
+              <span v-if="m.alert" class="dept-metric-alert"><i class="fas fa-exclamation-circle"></i></span>
             </div>
-            <div v-if="data.requests.en_attente > 0" class="dept-alert dept-alert-warning">
-              <i class="fas fa-exclamation-triangle me-2"></i>
-              <strong>{{ data.requests.en_attente }}</strong> demande{{ data.requests.en_attente > 1 ? 's' : '' }} en attente de traitement
+            <div class="dept-metric-val" :style="{ color: m.color }">{{ m.value }}</div>
+            <div class="dept-metric-lbl">{{ m.label }}</div>
+            <div class="dept-metric-bar">
+              <div class="dept-metric-bar-fill" :style="{ background: m.color, width: m.pct + '%' }"></div>
             </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Tâches récentes -->
-          <div class="dept-card">
-            <div class="dept-card-head">
-              <div class="dept-card-icon" style="background:#e0f2fe;color:#0077B5;">
-                <i class="fas fa-tasks"></i>
-              </div>
-              <div>
-                <h4 class="dept-card-title">Tâches récentes</h4>
-                <p class="dept-card-sub">Suivi de l'exécution du département</p>
-              </div>
-              <router-link to="/taches" class="dept-card-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
-            </div>
+      <!-- ════════ TÂCHES DU DÉPARTEMENT ════════ -->
+      <div class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#fef3c7;color:#d97706;">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Tâches du département</h3>
+            <p class="dept-section-sub">{{ totalTaches }} tâches au total — {{ data.taches?.terminees ?? 0 }} terminées</p>
+          </div>
+          <router-link to="/taches" class="dept-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+        </div>
 
-            <div v-if="data.recent_taches?.length === 0" class="dept-empty">
-              <i class="fas fa-check-circle"></i>
-              <p>Aucune tâche pour le moment</p>
-            </div>
-            <div v-else class="dept-tasks-list">
-              <div v-for="t in data.recent_taches" :key="t.id" class="dept-task-row">
+        <!-- Mini-cards statuts -->
+        <div class="dept-task-cards">
+          <div class="dept-task-card" @click="router.push('/taches')">
+            <div class="dept-task-card-icon" style="background:#dbeafe;color:#3b82f6;"><i class="fas fa-plus-circle"></i></div>
+            <div class="dept-task-card-val">{{ data.taches?.nouvelle ?? 0 }}</div>
+            <div class="dept-task-card-lbl">Nouvelles</div>
+          </div>
+          <div class="dept-task-card" @click="router.push('/taches')">
+            <div class="dept-task-card-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-spinner"></i></div>
+            <div class="dept-task-card-val">{{ data.taches?.en_cours ?? 0 }}</div>
+            <div class="dept-task-card-lbl">En cours</div>
+          </div>
+          <div class="dept-task-card" @click="router.push('/taches')">
+            <div class="dept-task-card-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
+            <div class="dept-task-card-val">{{ data.taches?.terminees ?? 0 }}</div>
+            <div class="dept-task-card-lbl">Terminées</div>
+          </div>
+          <div class="dept-task-card" :class="{ 'dept-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push('/taches')">
+            <div class="dept-task-card-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="dept-task-card-val">{{ data.taches?.overdue ?? 0 }}</div>
+            <div class="dept-task-card-lbl">En retard</div>
+          </div>
+        </div>
+
+        <!-- Barre progression globale -->
+        <div v-if="totalTaches > 0" class="dept-task-global-bar">
+          <div class="dept-task-global-bar-track">
+            <div class="dept-task-global-bar-fill" :style="{ width: taskCompletionPct + '%' }"></div>
+          </div>
+          <div class="dept-task-global-bar-lbl">{{ taskCompletionPct }}% des tâches terminées</div>
+        </div>
+
+        <!-- Liste tâches récentes -->
+        <div class="dept-recent-tasks">
+          <div v-if="!data.recent_taches?.length" class="dept-empty">
+            <div class="dept-empty-icon-wrap" style="background:#f9fafb;"><i class="fas fa-check-circle" style="color:#059669;"></i></div>
+            <span>Aucune tâche pour le moment</span>
+          </div>
+          <div v-else>
+            <div class="dept-recent-tasks-head">Tâches récentes</div>
+            <div class="dept-tasks-list">
+              <router-link v-for="t in data.recent_taches" :key="t.id" :to="'/taches/' + t.id" class="dept-task-row">
+                <div class="dept-task-priority" :class="'prio-' + t.priorite"></div>
                 <div class="dept-task-info">
                   <div class="dept-task-title">{{ t.titre }}</div>
                   <div class="dept-task-meta">
                     <span class="dept-tag" :class="statutClass(t.statut)">{{ statutLabel(t.statut) }}</span>
-                    <span class="dept-task-agent" v-if="t.agent">
+                    <span v-if="t.agent" class="dept-task-agent">
                       <i class="fas fa-user-circle me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
                     </span>
-                    <span class="dept-task-due" v-if="t.date_echeance" :class="{ 'text-danger': isOverdue(t) }">
+                    <span v-if="t.date_echeance" class="dept-task-due" :class="{ 'dept-overdue': isOverdue(t) }">
                       <i class="fas fa-clock me-1"></i>{{ formatDate(t.date_echeance) }}
                     </span>
                   </div>
                 </div>
-                <div class="dept-task-progress">
-                  <div class="dept-progress-bar">
-                    <div class="dept-progress-fill"
-                      :style="{ width: (t.pourcentage || 0) + '%', background: progressColor(t.pourcentage) }">
-                    </div>
+                <div class="dept-task-prog">
+                  <div class="dept-prog-track">
+                    <div class="dept-prog-fill" :style="{ width: (t.pourcentage || 0) + '%', background: progressColor(t.pourcentage) }"></div>
                   </div>
-                  <span class="dept-progress-pct">{{ t.pourcentage ?? 0 }}%</span>
+                  <span class="dept-prog-pct">{{ t.pourcentage ?? 0 }}%</span>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Performance équipe -->
-          <div class="dept-card dept-card-mt">
-            <div class="dept-card-head">
-              <div class="dept-card-icon" style="background:#d1fae5;color:#059669;">
-                <i class="fas fa-chart-bar"></i>
-              </div>
-              <div>
-                <h4 class="dept-card-title">Performance de l'équipe</h4>
-                <p class="dept-card-sub">Vue synthétique par agent</p>
-              </div>
-            </div>
-
-            <div v-if="data.team_performance?.length === 0" class="dept-empty">
-              <i class="fas fa-users"></i>
-              <p>Aucun agent actif dans le département</p>
-            </div>
-            <div v-else class="dept-table-wrap">
-              <table class="dept-table">
-                <thead>
-                  <tr>
-                    <th>Agent</th>
-                    <th class="text-center">Tâches</th>
-                    <th class="text-center">Réalisation</th>
-                    <th class="text-center">Retard</th>
-                    <th class="text-center">Statut</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="ag in data.team_performance" :key="ag.id" @click="router.push('/agents/' + ag.id)" class="dept-table-row">
-                    <td>
-                      <div class="dept-agent-cell">
-                        <div class="dept-agent-avatar">
-                          <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
-                            class="dept-agent-photo" @error="$event.target.style.display='none'">
-                          <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
-                        </div>
-                        <div>
-                          <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                          <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="text-center">
-                      <span class="dept-badge-total">{{ ag.taches_total }}</span>
-                    </td>
-                    <td class="text-center">
-                      <div class="dept-mini-progress">
-                        <div class="dept-mini-fill" :style="{ width: ag.avg_completion + '%', background: progressColor(ag.avg_completion) }"></div>
-                      </div>
-                      <span class="dept-mini-pct">{{ ag.avg_completion }}%</span>
-                    </td>
-                    <td class="text-center">
-                      <span v-if="ag.taches_overdue > 0" class="dept-badge-danger">{{ ag.taches_overdue }}</span>
-                      <span v-else class="dept-badge-ok"><i class="fas fa-check"></i></span>
-                    </td>
-                    <td class="text-center">
-                      <span class="dept-perf-badge" :class="perfClass(ag.avg_completion)">{{ perfLabel(ag.avg_completion) }}</span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+              </router-link>
             </div>
           </div>
         </div>
+      </div>
 
-        <!-- ─── Droite : Infos Dept + Demandes en attente ─── -->
-        <div class="dept-col-right">
+      <!-- ════════ PERFORMANCE ÉQUIPE ════════ -->
+      <div class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#d1fae5;color:#059669;">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Performance de l'équipe</h3>
+            <p class="dept-section-sub">{{ data.agents?.actifs ?? 0 }} agents actifs — réalisation des tâches par agent</p>
+          </div>
+          <router-link to="/agents" class="dept-section-link">Voir tous <i class="fas fa-arrow-right"></i></router-link>
+        </div>
+        <div v-if="!data.team_performance?.length" class="dept-empty">
+          <div class="dept-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-users" style="color:#059669;"></i></div>
+          <span>Aucun agent actif dans le département</span>
+        </div>
+        <div v-else class="dept-table-wrap">
+          <table class="dept-table">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th class="text-center">Total tâches</th>
+                <th class="text-center">Terminées</th>
+                <th>Réalisation</th>
+                <th class="text-center">En retard</th>
+                <th class="text-center">Niveau</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ag in data.team_performance" :key="ag.id"
+                class="dept-table-row" @click="router.push('/agents/' + ag.id)">
+                <td>
+                  <div class="dept-agent-cell">
+                    <div class="dept-agent-avatar">
+                      <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
+                        class="dept-agent-photo" @error="$event.target.style.display='none'">
+                      <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
+                    </div>
+                    <div>
+                      <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                      <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center"><span class="dept-badge-neutral">{{ ag.taches_total }}</span></td>
+                <td class="text-center"><span class="dept-badge-ok">{{ ag.taches_done }}</span></td>
+                <td>
+                  <div class="dept-prog-cell">
+                    <div class="dept-prog-track">
+                      <div class="dept-prog-fill" :style="{ width: ag.avg_completion + '%', background: progressColor(ag.avg_completion) }"></div>
+                    </div>
+                    <span class="dept-prog-pct">{{ ag.avg_completion }}%</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span v-if="ag.taches_overdue > 0" class="dept-badge-danger">{{ ag.taches_overdue }}</span>
+                  <span v-else class="dept-badge-ok"><i class="fas fa-check"></i></span>
+                </td>
+                <td class="text-center">
+                  <span class="dept-perf-badge" :class="perfClass(ag.avg_completion)">{{ perfLabel(ag.avg_completion) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
 
-          <!-- Résumé département -->
-          <div class="dept-card">
-            <div class="dept-card-head">
-              <div class="dept-card-icon" style="background:#ede9fe;color:#7c3aed;">
-                <i class="fas fa-building"></i>
+      <!-- ════════ DEMANDES EN ATTENTE ════════ -->
+      <div class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#fef3c7;color:#d97706;">
+            <i class="fas fa-file-signature"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Demandes en attente</h3>
+            <p class="dept-section-sub" v-if="auth.isDirecteur">
+              En tant que Directeur, vous pouvez viser les demandes avant transmission aux RH
+            </p>
+            <p class="dept-section-sub" v-else>
+              Suivi des demandes en cours de traitement dans votre département
+            </p>
+          </div>
+          <router-link to="/requests" class="dept-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+        </div>
+        <div v-if="!data.pending_requests?.length" class="dept-empty">
+          <div class="dept-empty-icon-wrap" style="background:#dcfce7;"><i class="fas fa-check-double" style="color:#16a34a;"></i></div>
+          <span>Aucune demande en attente</span>
+          <span class="dept-empty-hint">Toutes les demandes sont traitées</span>
+        </div>
+        <div v-else class="dept-requests-grid">
+          <div v-for="req in data.pending_requests" :key="req.id" class="dept-request-card">
+            <div class="dept-request-card-head">
+              <div class="dept-request-type-icon" :style="{ background: requestBg(req.type), color: requestColor(req.type) }">
+                <i class="fas" :class="requestIcon(req.type)"></i>
               </div>
-              <div>
-                <h4 class="dept-card-title">{{ data.department?.nom ?? 'Mon département' }}</h4>
-                <p class="dept-card-sub" v-if="data.department?.province">Province : {{ data.department.province }}</p>
+              <div class="dept-request-type-label">{{ requestLabel(req.type) }}</div>
+              <span class="dept-request-badge-pending">en attente</span>
+            </div>
+            <div class="dept-request-agent" v-if="req.agent">
+              <i class="fas fa-user-circle me-1" style="color:#94a3b8;"></i>
+              {{ req.agent.prenom }} {{ req.agent.nom }}
+            </div>
+            <div class="dept-request-desc" v-if="req.description">{{ truncate(req.description, 90) }}</div>
+            <div class="dept-request-footer">
+              <span class="dept-request-date"><i class="fas fa-clock me-1"></i>{{ formatDate(req.created_at) }}</span>
+              <div class="dept-request-actions">
+                <router-link v-if="auth.isDirecteur" :to="'/requests/' + req.id" class="dept-btn dept-btn-primary">
+                  <i class="fas fa-eye me-1"></i>Traiter
+                </router-link>
+                <router-link v-else :to="'/requests/' + req.id" class="dept-btn dept-btn-outline">
+                  <i class="fas fa-eye me-1"></i>Voir
+                </router-link>
               </div>
             </div>
-            <div class="dept-kpi-grid">
-              <div class="dept-mini-kpi">
-                <div class="dept-mini-kpi-val" style="color:#0077B5;">{{ data.agents?.actifs ?? 0 }}</div>
-                <div class="dept-mini-kpi-lbl">Agents actifs</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ════════ PRÉSENCE & CONGÉS ════════ -->
+      <div class="dept-section" style="padding-bottom:2rem;">
+        <div class="dept-duo-row">
+
+          <!-- Présence -->
+          <div class="dept-duo-block">
+            <div class="dept-section-head">
+              <div class="dept-section-icon" style="background:#d1fae5;color:#059669;">
+                <i class="fas fa-user-check"></i>
               </div>
-              <div class="dept-mini-kpi">
-                <div class="dept-mini-kpi-val" style="color:#059669;">{{ data.taches?.terminees ?? 0 }}</div>
-                <div class="dept-mini-kpi-lbl">Tâches terminées</div>
+              <div>
+                <h3 class="dept-section-title">Présence</h3>
+                <p class="dept-section-sub">
+                  {{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_actifs ?? 0 }} présents aujourd'hui
+                </p>
               </div>
-              <div class="dept-mini-kpi">
-                <div class="dept-mini-kpi-val" style="color:#d97706;">{{ data.taches?.en_cours ?? 0 }}</div>
-                <div class="dept-mini-kpi-lbl">En cours</div>
+              <router-link to="/pointages" class="dept-section-link">Détail <i class="fas fa-arrow-right"></i></router-link>
+            </div>
+            <div class="dept-presence-big">
+              <div class="dept-presence-ring-wrap">
+                <svg viewBox="0 0 120 120" class="dept-ring-svg">
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" stroke-width="10"/>
+                  <circle cx="60" cy="60" r="50" fill="none" stroke="#059669" stroke-width="10"
+                    stroke-linecap="round"
+                    :stroke-dasharray="presenceDash"
+                    :stroke-dashoffset="presenceOffset"
+                    transform="rotate(-90 60 60)"/>
+                </svg>
+                <div class="dept-ring-center">
+                  <div class="dept-ring-val">{{ data.attendance?.today_rate ?? 0 }}%</div>
+                  <div class="dept-ring-lbl">Aujourd'hui</div>
+                </div>
               </div>
-              <div class="dept-mini-kpi">
-                <div class="dept-mini-kpi-val" style="color:#dc2626;">{{ data.taches?.overdue ?? 0 }}</div>
-                <div class="dept-mini-kpi-lbl">En retard</div>
-              </div>
-              <div class="dept-mini-kpi">
-                <div class="dept-mini-kpi-val" style="color:#0891b2;">{{ data.attendance?.monthly_rate ?? 0 }}%</div>
-                <div class="dept-mini-kpi-lbl">Présence (mois)</div>
-              </div>
-              <div class="dept-mini-kpi">
-                <div class="dept-mini-kpi-val" style="color:#6d28d9;">{{ data.conges?.actifs ?? 0 }}</div>
-                <div class="dept-mini-kpi-lbl">Congés actifs</div>
+              <div class="dept-presence-stats">
+                <div class="dept-presence-stat">
+                  <span class="dept-presence-stat-val" style="color:#059669;">{{ data.attendance?.today_present ?? 0 }}</span>
+                  <span class="dept-presence-stat-lbl">Présents</span>
+                </div>
+                <div class="dept-presence-stat">
+                  <span class="dept-presence-stat-val" style="color:#dc2626;">
+                    {{ (data.attendance?.total_actifs ?? 0) - (data.attendance?.today_present ?? 0) }}
+                  </span>
+                  <span class="dept-presence-stat-lbl">Absents</span>
+                </div>
+                <div class="dept-presence-stat">
+                  <span class="dept-presence-stat-val" style="color:#0077B5;">{{ data.attendance?.monthly_rate ?? 0 }}%</span>
+                  <span class="dept-presence-stat-lbl">Moy. mensuelle</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <!-- Demandes en attente -->
-          <div class="dept-card dept-card-mt">
-            <div class="dept-card-head">
-              <div class="dept-card-icon" style="background:#fef3c7;color:#d97706;">
-                <i class="fas fa-file-signature"></i>
+          <!-- Congés -->
+          <div class="dept-duo-block">
+            <div class="dept-section-head">
+              <div class="dept-section-icon" style="background:#fef3c7;color:#f59e0b;">
+                <i class="fas fa-umbrella-beach"></i>
               </div>
               <div>
-                <h4 class="dept-card-title">Demandes en attente</h4>
-                <p class="dept-card-sub">Workflow Agent → Directeur → RH</p>
+                <h3 class="dept-section-title">Congés</h3>
+                <p class="dept-section-sub">{{ data.conges?.actifs ?? 0 }} agent(s) en congé aujourd'hui</p>
               </div>
-              <router-link to="/requests" class="dept-card-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+              <router-link to="/holiday-planning" class="dept-section-link">Planning <i class="fas fa-arrow-right"></i></router-link>
             </div>
-
-            <div v-if="data.pending_requests?.length === 0" class="dept-empty">
-              <i class="fas fa-check-double"></i>
-              <p>Aucune demande en attente</p>
-            </div>
-
-            <div v-else class="dept-requests-list">
-              <div v-for="req in data.pending_requests" :key="req.id" class="dept-request-row">
-                <div class="dept-request-info">
-                  <div class="dept-request-type">
-                    <i :class="requestIcon(req.type)" class="me-1"></i>{{ requestLabel(req.type) }}
-                  </div>
-                  <div class="dept-request-agent" v-if="req.agent">
-                    {{ req.agent.prenom }} {{ req.agent.nom }}
-                  </div>
-                  <div class="dept-request-date">
-                    <i class="fas fa-clock me-1"></i>{{ formatDate(req.created_at) }}
-                  </div>
+            <div class="dept-conges-grid">
+              <div class="dept-conge-stat-card" style="border-color:#16a34a;">
+                <div class="dept-conge-stat-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
+                <div>
+                  <div class="dept-conge-stat-val">{{ data.conges?.actifs ?? 0 }}</div>
+                  <div class="dept-conge-stat-lbl">En cours aujourd'hui</div>
                 </div>
-                <!-- Directeur seulement peut viser -->
-                <div class="dept-request-actions" v-if="auth.isDirecteur">
-                  <router-link :to="'/requests/' + req.id" class="dept-btn dept-btn-primary" title="Voir & viser">
-                    <i class="fas fa-eye"></i>
-                  </router-link>
+              </div>
+              <div class="dept-conge-stat-card" style="border-color:#d97706;">
+                <div class="dept-conge-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-hourglass-half"></i></div>
+                <div>
+                  <div class="dept-conge-stat-val">{{ data.requests?.en_attente ?? 0 }}</div>
+                  <div class="dept-conge-stat-lbl">Demandes en attente</div>
                 </div>
-                <div class="dept-request-actions" v-else>
-                  <router-link :to="'/requests/' + req.id" class="dept-btn dept-btn-outline" title="Voir">
-                    <i class="fas fa-eye"></i>
-                  </router-link>
+              </div>
+              <div class="dept-conge-stat-card" style="border-color:#0077B5;">
+                <div class="dept-conge-stat-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-calendar-check"></i></div>
+                <div>
+                  <div class="dept-conge-stat-val">{{ data.agents?.actifs ?? 0 }}</div>
+                  <div class="dept-conge-stat-lbl">Agents disponibles</div>
                 </div>
               </div>
             </div>
@@ -362,14 +446,12 @@ import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 const router = useRouter()
 const auth   = useAuthStore()
 
-// ─── État ───────────────────────────────────────────────────
-const loading   = ref(true)
-const loadError = ref(null)
-const data      = ref({})
-
+const loading    = ref(true)
+const loadError  = ref(null)
+const data       = ref({})
 const photoIndex = ref(0)
 
-// ─── Données agent connecté ─────────────────────────────────
+// ─── Identité ────────────────────────────────────────────────
 const deptIsFemme = computed(() => {
   const s = auth.agent?.sexe?.toLowerCase() ?? ''
   return s === 'f' || s === 'femme' || s === 'féminin'
@@ -377,16 +459,15 @@ const deptIsFemme = computed(() => {
 const deptCivility  = computed(() => deptIsFemme.value ? 'Mme' : 'M.')
 const deptGreeting  = computed(() => {
   const h = new Date().getHours()
-  const base = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'
-  return deptIsFemme.value ? base : base
+  return h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir'
 })
-const deptFullName  = computed(() => {
+const deptFullName = computed(() => {
   const a = auth.agent
   if (!a) return ''
   return [a.prenom, a.postnom, a.nom].filter(Boolean).join(' ')
 })
-const deptFonction  = computed(() => auth.agent?.poste_actuel || auth.agent?.fonction || null)
-const deptInitials  = computed(() => {
+const deptFonction = computed(() => auth.agent?.poste_actuel || auth.agent?.fonction || null)
+const deptInitials = computed(() => {
   const a = auth.agent
   if (!a) return 'D'
   return ((a.prenom?.[0] ?? '') + (a.nom?.[0] ?? '')).toUpperCase() || 'D'
@@ -395,72 +476,126 @@ const deptPhotoUrl = computed(() => {
   const photo = auth.agent?.photo
   if (!photo) return null
   const p = photo.trim()
-  const candidates = []
-  if (/^https?:\/\//i.test(p)) {
-    candidates.push(p)
-  } else {
-    const n = p.replace(/^\/+/, '')
-    candidates.push(`/${n}`)
-    if (!n.startsWith('storage/')) candidates.push(`/storage/${n}`)
-    if (!n.startsWith('uploads/') && !n.includes('/')) candidates.push(`/uploads/profiles/${n}`)
-  }
-  const uniq = [...new Set(candidates)]
-  return uniq[photoIndex.value] ?? null
+  if (/^https?:\/\//i.test(p)) return p
+  const n = p.replace(/^\/+/, '')
+  const candidates = [`/${n}`, `/storage/${n}`, `/uploads/profiles/${n}`]
+  return [...new Set(candidates)][photoIndex.value] ?? null
 })
 function handlePhotoError() {
-  const photo = auth.agent?.photo
-  if (!photo) return
-  const p = photo.trim()
-  const n = p.replace(/^\/+/, '')
-  const max = [p, `/${n}`, `/storage/${n}`, `/uploads/profiles/${n}`].filter(Boolean).length
+  const p = (auth.agent?.photo ?? '').trim().replace(/^\/+/, '')
+  const max = 3
   if (photoIndex.value < max - 1) photoIndex.value++
   else photoIndex.value = max
 }
 
-// ─── Date du jour ───────────────────────────────────────────
-const today = computed(() => {
-  return new Date().toLocaleDateString('fr-CD', {
+// ─── Date ────────────────────────────────────────────────────
+const today = computed(() =>
+  new Date().toLocaleDateString('fr-CD', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   })
-})
-
-// ─── Alertes ────────────────────────────────────────────────
-const hasAlerts = computed(() =>
-  (data.value?.taches?.overdue ?? 0) > 0 ||
-  (data.value?.requests?.en_attente ?? 0) > 0
 )
 
-// ─── Chargement des données ─────────────────────────────────
+// ─── Actions rapides ─────────────────────────────────────────
+const quickActions = computed(() => {
+  const base = [
+    { to: '/taches/create',    icon: 'fa-plus-circle',   color: '#0077B5', bg: '#e0f2fe', label: 'Nouvelle tâche',   desc: 'Créer et attribuer une tâche' },
+    { to: '/agents',           icon: 'fa-users',          color: '#059669', bg: '#d1fae5', label: 'Agents',           desc: 'Gérer les membres du département' },
+    { to: '/requests',         icon: 'fa-file-signature', color: '#7c3aed', bg: '#ede9fe', label: 'Demandes',         desc: auth.isDirecteur ? 'Viser et valider les demandes' : 'Suivre les demandes' },
+    { to: '/pointages',        icon: 'fa-user-clock',     color: '#d97706', bg: '#fef3c7', label: 'Présences',        desc: 'Suivi du pointage quotidien' },
+    { to: '/taches',           icon: 'fa-tasks',           color: '#dc2626', bg: '#fee2e2', label: 'Toutes les tâches',desc: 'Tableau de bord des tâches' },
+    { to: '/holiday-planning', icon: 'fa-calendar-alt',   color: '#0891b2', bg: '#cffafe', label: 'Congés',           desc: 'Planning et demandes de congé' },
+  ]
+  if (auth.isDirecteur) {
+    base.push({ to: '/requests?statut=en_attente', icon: 'fa-stamp', color: '#b45309', bg: '#fef9c3', label: 'Visa Directeur', desc: 'Demandes à viser en priorité' })
+  }
+  return base
+})
+
+// ─── Métriques ───────────────────────────────────────────────
+const totalTaches = computed(() =>
+  (data.value?.taches?.en_cours ?? 0) +
+  (data.value?.taches?.terminees ?? 0) +
+  (data.value?.taches?.nouvelle ?? 0)
+)
+const taskCompletionPct = computed(() => {
+  const t = totalTaches.value
+  if (!t) return 0
+  return Math.round(((data.value?.taches?.terminees ?? 0) / t) * 100)
+})
+
+const metrics = computed(() => {
+  const agentTotal = Math.max(data.value?.agents?.total ?? 1, 1)
+  const tTotal = Math.max(totalTaches.value, 1)
+  return [
+    { label: "Agents actifs",        icon: 'fa-users',              color: '#0077B5', bg: '#e0f2fe',
+      value: data.value?.agents?.actifs ?? 0,             to: '/agents',          alert: false,
+      pct: Math.min(((data.value?.agents?.actifs ?? 0) / agentTotal) * 100, 100) },
+    { label: "Présence aujourd'hui", icon: 'fa-user-check',         color: '#059669', bg: '#d1fae5',
+      value: (data.value?.attendance?.today_rate ?? 0) + '%', to: '/pointages',
+      pct: data.value?.attendance?.today_rate ?? 0,
+      alert: (data.value?.attendance?.today_rate ?? 100) < 60 },
+    { label: "Tâches en cours",      icon: 'fa-spinner',            color: '#d97706', bg: '#fef3c7',
+      value: data.value?.taches?.en_cours ?? 0,            to: '/taches',          alert: false,
+      pct: Math.min(((data.value?.taches?.en_cours ?? 0) / tTotal) * 100, 100) },
+    { label: "Tâches terminées",     icon: 'fa-check-circle',       color: '#059669', bg: '#dcfce7',
+      value: data.value?.taches?.terminees ?? 0,           to: '/taches',          alert: false,
+      pct: taskCompletionPct.value },
+    { label: "En retard",            icon: 'fa-exclamation-triangle',color: '#dc2626', bg: '#fee2e2',
+      value: data.value?.taches?.overdue ?? 0,             to: '/taches',
+      pct: Math.min(((data.value?.taches?.overdue ?? 0) / tTotal) * 100, 100),
+      alert: (data.value?.taches?.overdue ?? 0) > 0 },
+    { label: "Demandes en attente",  icon: 'fa-hourglass-half',     color: '#7c3aed', bg: '#ede9fe',
+      value: data.value?.requests?.en_attente ?? 0,        to: '/requests',
+      pct: Math.min(((data.value?.requests?.en_attente ?? 0) / agentTotal) * 100, 100),
+      alert: (data.value?.requests?.en_attente ?? 0) > 0 },
+    { label: "Congés actifs",        icon: 'fa-umbrella-beach',     color: '#0891b2', bg: '#cffafe',
+      value: data.value?.conges?.actifs ?? 0,              to: '/holiday-planning', alert: false,
+      pct: Math.min(((data.value?.conges?.actifs ?? 0) / agentTotal) * 100, 100) },
+  ]
+})
+
+// ─── Anneau présence ─────────────────────────────────────────
+const presenceDash   = computed(() => Math.PI * 2 * 50)
+const presenceOffset = computed(() => {
+  const pct = data.value?.attendance?.today_rate ?? 0
+  return presenceDash.value * (1 - pct / 100)
+})
+
+// ─── Chargement ──────────────────────────────────────────────
 async function loadData() {
   loading.value   = true
   loadError.value = null
   try {
-    const res = await client.get('/dashboard/department')
+    const res  = await client.get('/dashboard/department')
     data.value = res.data?.data ?? res.data ?? {}
+    if (data.value.taches && data.value.taches.nouvelle === undefined) {
+      data.value.taches.nouvelle = Math.max(0,
+        (data.value.taches.en_cours ?? 0) - (data.value.taches.overdue ?? 0)
+      )
+    }
   } catch (err) {
     loadError.value = err?.response?.data?.message ?? 'Impossible de charger le tableau de bord.'
   } finally {
     loading.value = false
   }
 }
-
 onMounted(loadData)
 
-// ─── Helpers ────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 function formatDate(d) {
   if (!d) return '—'
   return new Date(d).toLocaleDateString('fr-CD', { day: '2-digit', month: 'short', year: 'numeric' })
 }
-
-function isOverdue(t) {
-  if (!t.date_echeance || t.statut === 'terminee') return false
-  return new Date(t.date_echeance) < new Date()
+function truncate(str, n) {
+  if (!str) return ''
+  return str.length > n ? str.slice(0, n) + '…' : str
 }
-
+function isOverdue(t) {
+  return !!(t.date_echeance && t.statut !== 'terminee' && new Date(t.date_echeance) < new Date())
+}
 function agentInitials(ag) {
   return ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() || '?'
 }
-
 function statutLabel(s) {
   return { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée' }[s] ?? s
 }
@@ -468,6 +603,7 @@ function statutClass(s) {
   return { nouvelle: 'tag-nouvelle', en_cours: 'tag-en-cours', terminee: 'tag-terminee' }[s] ?? ''
 }
 function progressColor(pct) {
+  if (!pct) return '#dc2626'
   if (pct >= 80) return '#059669'
   if (pct >= 50) return '#d97706'
   return '#dc2626'
@@ -483,373 +619,418 @@ function perfLabel(pct) {
   return 'Faible'
 }
 function requestIcon(type) {
-  const icons = {
-    conge: 'fas fa-umbrella-beach',
-    formation: 'fas fa-graduation-cap',
-    autorisation: 'fas fa-file-alt',
-    attestation: 'fas fa-certificate',
-  }
-  return icons[type] ?? 'fas fa-file'
+  return { conge: 'fa-umbrella-beach', formation: 'fa-graduation-cap', autorisation: 'fa-file-alt', attestation: 'fa-certificate' }[type] ?? 'fa-file'
+}
+function requestColor(type) {
+  return { conge: '#0891b2', formation: '#7c3aed', autorisation: '#d97706', attestation: '#059669' }[type] ?? '#6b7280'
+}
+function requestBg(type) {
+  return { conge: '#cffafe', formation: '#ede9fe', autorisation: '#fef3c7', attestation: '#d1fae5' }[type] ?? '#f3f4f6'
 }
 function requestLabel(type) {
-  const labels = {
-    conge: 'Congé',
-    formation: 'Formation',
-    autorisation: 'Autorisation',
-    attestation: 'Attestation',
-  }
-  return labels[type] ?? type ?? 'Demande'
+  return { conge: 'Congé', formation: 'Formation', autorisation: 'Autorisation', attestation: 'Attestation' }[type] ?? (type ?? 'Demande')
 }
 </script>
 
 <style scoped>
-/* ─── Conteneur principal ───────────────────────────────── */
-.dept-dashboard {
-  min-height: 100vh;
-  background: #f0f4fa;
-}
+/* ──────────────────────────────────────────────────────────
+   Conteneur
+────────────────────────────────────────────────────────── */
+.dept-dashboard { min-height: 100vh; background: #f0f4fa; }
 
-/* ─── Hero ─────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+   HERO
+────────────────────────────────────────────────────────── */
 .dept-hero {
   position: relative;
   background: linear-gradient(135deg, #1e3a5f 0%, #1565c0 60%, #0d47a1 100%);
-  color: #fff;
-  padding: 0;
-  overflow: hidden;
+  color: #fff; overflow: hidden;
 }
 .dept-hero-bg {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background:
-    radial-gradient(ellipse at 80% 0%, rgba(255,255,255,.12) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 0%, rgba(255,255,255,.13) 0%, transparent 60%),
     radial-gradient(ellipse at 10% 100%, rgba(0,0,0,.18) 0%, transparent 55%);
   pointer-events: none;
 }
 .dept-hero-inner {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 1.5rem;
-  padding: 2rem 2.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 1.5rem; padding: 2rem 2.5rem;
 }
-.dept-hero-left {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  flex: 1;
-  min-width: 0;
-}
+.dept-hero-left { display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 0; }
 
 /* Avatar */
 .dept-hero-avatar {
-  width: 68px; height: 68px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 2.5px solid rgba(255,255,255,.35);
-  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  width: 70px; height: 70px; border-radius: 50%; flex-shrink: 0;
+  overflow: hidden; border: 3px solid rgba(255,255,255,.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
   background: linear-gradient(135deg, rgba(101,163,213,.5), rgba(30,58,95,.6));
   display: flex; align-items: center; justify-content: center;
 }
 .dept-hero-avatar-photo { width: 100%; height: 100%; object-fit: cover; }
-.dept-hero-avatar-initials { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
+.dept-hero-avatar-initials { font-size: 1.5rem; font-weight: 800; color: #fff; }
 
-/* Textes hero */
-.dept-hero-greeting { font-size: .85rem; opacity: .8; text-transform: uppercase; letter-spacing: 1px; }
-h1.dept-hero-name { font-size: 1.4rem; font-weight: 800; margin: .2rem 0; }
-.dept-hero-fonction { font-size: .88rem; opacity: .9; margin-bottom: .35rem; }
-.dept-hero-role {
-  background: rgba(255,255,255,.15);
-  backdrop-filter: blur(4px);
-  border-radius: 100px;
-  padding: .3rem .85rem;
-  font-size: .82rem;
-  display: inline-flex; align-items: center; gap: .5rem;
-  margin-bottom: .35rem;
+.dept-hero-greeting { font-size: .8rem; opacity: .75; text-transform: uppercase; letter-spacing: 1.2px; }
+h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem; }
+.dept-hero-fonction { font-size: .85rem; opacity: .88; margin-bottom: .35rem; }
+.dept-hero-role-pill {
+  display: inline-flex; align-items: center; gap: .4rem;
+  background: rgba(255,255,255,.15); backdrop-filter: blur(4px);
+  border-radius: 100px; padding: .28rem .85rem; font-size: .8rem; margin-bottom: .3rem;
 }
 .dept-hero-dept-badge {
-  background: rgba(255,255,255,.25);
-  border-radius: 100px;
-  padding: .1rem .6rem;
-  font-size: .78rem;
-  font-weight: 600;
+  background: rgba(255,255,255,.25); border-radius: 100px;
+  padding: .1rem .55rem; font-size: .75rem; font-weight: 700;
 }
-.dept-hero-date { font-size: .8rem; opacity: .75; }
+.dept-hero-date { font-size: .78rem; opacity: .7; }
 
 /* KPIs hero */
-.dept-hero-kpis {
-  display: flex;
-  align-items: center;
-  gap: .5rem;
-  flex-wrap: wrap;
+.dept-hero-kpis { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.dept-kpi-pill {
+  display: flex; align-items: center; gap: .6rem;
+  background: rgba(255,255,255,.12); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,.18); border-radius: 14px;
+  padding: .7rem 1rem; cursor: pointer; transition: background .2s; min-width: 110px;
 }
-.dept-kpi {
-  display: flex;
-  align-items: center;
-  gap: .65rem;
-  background: rgba(255,255,255,.12);
-  backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,.18);
-  border-radius: 14px;
-  padding: .75rem 1rem;
-  cursor: pointer;
-  transition: background .2s;
-  min-width: 120px;
-}
-.dept-kpi:hover { background: rgba(255,255,255,.22); }
-.dept-kpi-icon {
-  width: 36px; height: 36px;
-  background: rgba(255,255,255,.2);
-  border-radius: 10px;
+.dept-kpi-pill:hover { background: rgba(255,255,255,.22); }
+.dept-kpi-pill-icon {
+  width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
+  font-size: 1rem; flex-shrink: 0;
+  background: rgba(255,255,255,.18);
 }
-.dept-kpi-val { font-size: 1.4rem; font-weight: 800; line-height: 1.1; }
-.dept-kpi-lbl { font-size: .72rem; opacity: .8; }
-.dept-kpi-arrow { opacity: .5; font-size: .75rem; margin-left: auto; }
-.kpi-unit { font-size: .8rem; font-weight: 400; }
+.dept-kpi-pill-val { font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+.dept-kpi-pill-lbl { font-size: .7rem; opacity: .8; }
+.dept-kpi-pill-arrow { opacity: .45; font-size: .7rem; margin-left: auto; }
+.kpi-unit { font-size: .75rem; font-weight: 400; }
 .kpi-divider { width: 1px; height: 44px; background: rgba(255,255,255,.2); }
 
-/* ─── Sections communes ─────────────────────────────────── */
+/* Error */
+.dept-error-banner {
+  margin: 1rem 2rem; padding: .85rem 1.25rem;
+  background: #fef3c7; color: #92400e;
+  border: 1px solid #fcd34d; border-radius: 12px; font-size: .9rem;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Sections
+────────────────────────────────────────────────────────── */
 .dept-section { padding: 1.75rem 2rem 0; }
-.dept-section-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-.dept-section-icon { width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+.dept-section-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.1rem; }
+.dept-section-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.05rem; flex-shrink: 0;
+}
 .dept-section-title { font-size: 1rem; font-weight: 700; margin: 0; }
 .dept-section-sub { font-size: .8rem; color: #6b7280; margin: 0; }
+.dept-section-link { margin-left: auto; font-size: .8rem; color: #0077B5; text-decoration: none; white-space: nowrap; }
+.dept-section-link:hover { text-decoration: underline; }
 
-/* ─── Actions rapides ───────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+   Actions rapides (style SEN/RH)
+────────────────────────────────────────────────────────── */
 .dept-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: .75rem;
-}
-.dept-action-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .6rem;
-  padding: 1.1rem .75rem;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.05);
-  text-decoration: none;
-  color: #1f2937;
-  transition: transform .18s, box-shadow .18s;
-  overflow: hidden;
-  cursor: pointer;
-  border: 1px solid #e5e7eb;
-}
-.dept-action-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.1); }
-.dept-action-glow {
-  position: absolute;
-  top: -30px; left: 50%;
-  transform: translateX(-50%);
-  width: 80px; height: 80px;
-  border-radius: 50%;
-  opacity: .1;
-  pointer-events: none;
-}
-.dept-action-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; }
-.dept-action-label { font-size: .8rem; font-weight: 600; text-align: center; }
-
-/* ─── Grille principale ─────────────────────────────────── */
-.dept-main-grid {
-  display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 1.5rem;
-  padding: 1.5rem 2rem 2rem;
-}
-@media (max-width: 1024px) {
-  .dept-main-grid { grid-template-columns: 1fr; }
-}
-
-/* ─── Cards ─────────────────────────────────────────────── */
-.dept-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06);
-  border: 1px solid #e5e7eb;
-  padding: 1.25rem;
-}
-.dept-card-mt { margin-top: 1.25rem; }
-.dept-card-head {
-  display: flex;
-  align-items: center;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
   gap: .85rem;
-  margin-bottom: 1rem;
 }
-.dept-card-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-.dept-card-title { font-size: .95rem; font-weight: 700; margin: 0; }
-.dept-card-sub { font-size: .78rem; color: #6b7280; margin: 0; }
-.dept-card-link { margin-left: auto; font-size: .8rem; color: #0077B5; text-decoration: none; white-space: nowrap; }
-.dept-card-link:hover { text-decoration: underline; }
-
-/* ─── Alertes ───────────────────────────────────────────── */
-.dept-alerts { margin-bottom: 1.1rem; display: flex; flex-direction: column; gap: .5rem; }
-.dept-alert {
-  padding: .65rem 1rem;
-  border-radius: 10px;
-  font-size: .85rem;
+.dept-action {
+  position: relative; display: flex; align-items: center; gap: .85rem;
+  padding: 1rem 1.1rem; background: #fff; border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.05); text-decoration: none; color: #1f2937;
+  border: 1px solid #e5e7eb; overflow: hidden; transition: transform .18s, box-shadow .18s;
 }
-.dept-alert-danger { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
-.dept-alert-warning { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+.dept-action:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,.1); }
+.dept-action-glow {
+  position: absolute; top: -32px; left: 50%; transform: translateX(-50%);
+  width: 90px; height: 90px; border-radius: 50%; opacity: .1; pointer-events: none;
+}
+.dept-action-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.dept-action-text { flex: 1; min-width: 0; }
+.dept-action-label { font-size: .88rem; font-weight: 700; }
+.dept-action-desc { font-size: .74rem; color: #6b7280; margin-top: .1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dept-action-arrow { color: #cbd5e1; font-size: .8rem; flex-shrink: 0; }
 
-/* ─── Liste tâches ──────────────────────────────────────── */
-.dept-tasks-list { display: flex; flex-direction: column; gap: .6rem; }
+/* ──────────────────────────────────────────────────────────
+   Indicateurs clés
+────────────────────────────────────────────────────────── */
+.dept-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: .85rem;
+}
+.dept-metric {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+  padding: 1.1rem 1rem; cursor: pointer; transition: transform .18s, box-shadow .18s;
+}
+.dept-metric:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.dept-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .65rem; }
+.dept-metric-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: .95rem;
+}
+.dept-metric-alert { color: #dc2626; font-size: .8rem; }
+.dept-metric-val { font-size: 1.65rem; font-weight: 800; line-height: 1.1; }
+.dept-metric-lbl { font-size: .75rem; color: #6b7280; margin: .2rem 0 .6rem; }
+.dept-metric-bar { height: 5px; background: #f1f5f9; border-radius: 100px; overflow: hidden; }
+.dept-metric-bar-fill { height: 100%; border-radius: 100px; transition: width .4s; }
+
+/* ──────────────────────────────────────────────────────────
+   Tâches — mini-cards
+────────────────────────────────────────────────────────── */
+.dept-task-cards {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .85rem; margin-bottom: 1rem;
+}
+.dept-task-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+  padding: 1rem; text-align: center; cursor: pointer; transition: transform .18s, box-shadow .18s;
+}
+.dept-task-card:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.08); }
+.dept-task-card-alert { border-color: #fca5a5; background: #fff5f5; animation: pulse 2s infinite; }
+@keyframes pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,.15); }
+  50%      { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+}
+.dept-task-card-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; margin: 0 auto .6rem;
+}
+.dept-task-card-val { font-size: 1.8rem; font-weight: 800; color: #1f2937; }
+.dept-task-card-lbl { font-size: .75rem; color: #6b7280; margin-top: .2rem; }
+
+/* Barre globale */
+.dept-task-global-bar { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.25rem; }
+.dept-task-global-bar-track { flex: 1; height: 8px; background: #e5e7eb; border-radius: 100px; overflow: hidden; }
+.dept-task-global-bar-fill {
+  height: 100%; border-radius: 100px;
+  background: linear-gradient(90deg, #059669, #34d399); transition: width .5s;
+}
+.dept-task-global-bar-lbl { font-size: .8rem; color: #6b7280; white-space: nowrap; }
+
+/* Liste tâches récentes */
+.dept-recent-tasks-head {
+  font-size: .85rem; font-weight: 600; color: #374151;
+  margin-bottom: .6rem; padding-bottom: .4rem; border-bottom: 1px solid #e5e7eb;
+}
+.dept-tasks-list { display: flex; flex-direction: column; gap: .5rem; }
 .dept-task-row {
-  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  padding: .65rem .85rem;
-  border: 1px solid #f3f4f6;
-  border-radius: 10px;
-  background: #fafafa;
-  transition: background .15s;
+  display: flex; align-items: center; gap: .85rem;
+  padding: .65rem .9rem; background: #f9fafb; border: 1px solid #f3f4f6;
+  border-radius: 10px; text-decoration: none; color: inherit; transition: background .15s;
 }
 .dept-task-row:hover { background: #f0f4ff; }
+.dept-task-priority { width: 4px; height: 36px; border-radius: 100px; flex-shrink: 0; background: #e5e7eb; }
+.dept-task-priority.prio-haute   { background: #dc2626; }
+.dept-task-priority.prio-normale { background: #d97706; }
+.dept-task-priority.prio-basse   { background: #059669; }
 .dept-task-info { flex: 1; min-width: 0; }
 .dept-task-title { font-size: .88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dept-task-meta { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin-top: .2rem; }
+.dept-task-meta { display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; margin-top: .18rem; }
 .dept-task-agent { font-size: .75rem; color: #6b7280; }
-.dept-task-due { font-size: .75rem; color: #6b7280; }
-.text-danger { color: #dc2626 !important; }
+.dept-task-due   { font-size: .75rem; color: #6b7280; }
+.dept-overdue    { color: #dc2626 !important; font-weight: 600; }
 
-/* tags statut */
-.dept-tag { font-size: .7rem; padding: .15rem .5rem; border-radius: 100px; font-weight: 600; }
-.tag-nouvelle { background: #e0f2fe; color: #0369a1; }
-.tag-en-cours { background: #fef3c7; color: #92400e; }
-.tag-terminee { background: #d1fae5; color: #065f46; }
+.dept-tag { font-size: .7rem; padding: .15rem .55rem; border-radius: 100px; font-weight: 600; }
+.tag-nouvelle  { background: #dbeafe; color: #1d4ed8; }
+.tag-en-cours  { background: #fef3c7; color: #92400e; }
+.tag-terminee  { background: #d1fae5; color: #065f46; }
 
-/* Barre de progression */
-.dept-task-progress { display: flex; align-items: center; gap: .5rem; min-width: 90px; }
-.dept-progress-bar { flex: 1; height: 6px; background: #e5e7eb; border-radius: 100px; overflow: hidden; }
-.dept-progress-fill { height: 100%; border-radius: 100px; transition: width .3s; }
-.dept-progress-pct { font-size: .75rem; font-weight: 600; color: #374151; width: 32px; text-align: right; }
+.dept-task-prog { display: flex; align-items: center; gap: .5rem; min-width: 100px; }
+.dept-prog-track { flex: 1; height: 7px; background: #e5e7eb; border-radius: 100px; overflow: hidden; }
+.dept-prog-fill  { height: 100%; border-radius: 100px; transition: width .3s; }
+.dept-prog-pct   { font-size: .75rem; font-weight: 700; color: #374151; min-width: 32px; text-align: right; }
+.dept-prog-cell  { display: flex; align-items: center; gap: .5rem; }
+.dept-prog-cell .dept-prog-track { width: 80px; }
 
-/* ─── Tableau performance ───────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+   Tableau performance
+────────────────────────────────────────────────────────── */
 .dept-table-wrap { overflow-x: auto; }
 .dept-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
-.dept-table th { padding: .55rem .75rem; background: #f9fafb; color: #6b7280; font-size: .73rem; text-transform: uppercase; letter-spacing: .5px; font-weight: 600; border-bottom: 1px solid #e5e7eb; }
-.dept-table td { padding: .55rem .75rem; border-bottom: 1px solid #f3f4f6; }
+.dept-table th {
+  padding: .6rem .85rem; background: #f9fafb; color: #6b7280;
+  font-size: .71rem; text-transform: uppercase; letter-spacing: .5px; font-weight: 600;
+  border-bottom: 1px solid #e5e7eb;
+}
+.dept-table td { padding: .6rem .85rem; border-bottom: 1px solid #f3f4f6; }
 .dept-table-row { cursor: pointer; transition: background .15s; }
 .dept-table-row:hover { background: #f0f4ff; }
 
-.dept-agent-cell { display: flex; align-items: center; gap: .65rem; }
-.dept-agent-avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; background: #e0f2fe; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.dept-agent-photo { width: 100%; height: 100%; object-fit: cover; }
+.dept-agent-cell { display: flex; align-items: center; gap: .6rem; }
+.dept-agent-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  overflow: hidden; background: #e0f2fe;
+  display: flex; align-items: center; justify-content: center;
+}
+.dept-agent-photo    { width: 100%; height: 100%; object-fit: cover; }
 .dept-agent-initials { font-size: .75rem; font-weight: 700; color: #0077B5; }
-.dept-agent-name { font-weight: 600; }
-.dept-agent-fonction { font-size: .73rem; color: #6b7280; }
+.dept-agent-name     { font-weight: 600; font-size: .85rem; }
+.dept-agent-fonction { font-size: .72rem; color: #6b7280; }
 
-.dept-badge-total { background: #e0f2fe; color: #0369a1; padding: .2rem .55rem; border-radius: 6px; font-weight: 700; font-size: .8rem; }
-.dept-badge-danger { background: #fee2e2; color: #b91c1c; padding: .2rem .55rem; border-radius: 6px; font-weight: 700; font-size: .8rem; }
-.dept-badge-ok { background: #d1fae5; color: #065f46; padding: .2rem .55rem; border-radius: 6px; font-size: .8rem; }
+.dept-badge-neutral { background: #f1f5f9; color: #334155; padding: .2rem .6rem; border-radius: 6px; font-weight: 700; font-size: .8rem; }
+.dept-badge-ok      { background: #d1fae5; color: #065f46; padding: .2rem .6rem; border-radius: 6px; font-size: .8rem; }
+.dept-badge-danger  { background: #fee2e2; color: #b91c1c; padding: .2rem .6rem; border-radius: 6px; font-weight: 700; font-size: .8rem; }
 
-.dept-mini-progress { width: 60px; height: 6px; background: #e5e7eb; border-radius: 100px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: .35rem; }
-.dept-mini-fill { height: 100%; border-radius: 100px; }
-.dept-mini-pct { font-size: .78rem; font-weight: 600; color: #374151; }
-
-.dept-perf-badge { padding: .2rem .6rem; border-radius: 100px; font-size: .73rem; font-weight: 700; }
-.perf-bon { background: #d1fae5; color: #065f46; }
-.perf-moyen { background: #fef3c7; color: #92400e; }
+.dept-perf-badge { padding: .2rem .65rem; border-radius: 100px; font-size: .73rem; font-weight: 700; }
+.perf-bon    { background: #d1fae5; color: #065f46; }
+.perf-moyen  { background: #fef3c7; color: #92400e; }
 .perf-faible { background: #fee2e2; color: #b91c1c; }
 
-/* ─── Mini KPI grid ─────────────────────────────────────── */
-.dept-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: .75rem;
-  margin-top: .25rem;
+/* ──────────────────────────────────────────────────────────
+   Demandes — grille
+────────────────────────────────────────────────────────── */
+.dept-requests-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: .85rem;
 }
-.dept-mini-kpi {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: .75rem;
-  text-align: center;
+.dept-request-card {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 1.1rem;
+  display: flex; flex-direction: column; gap: .5rem; transition: box-shadow .2s;
 }
-.dept-mini-kpi-val { font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
-.dept-mini-kpi-lbl { font-size: .72rem; color: #6b7280; margin-top: .2rem; }
-
-/* ─── Liste demandes ────────────────────────────────────── */
-.dept-requests-list { display: flex; flex-direction: column; gap: .6rem; }
-.dept-request-row {
-  display: flex; align-items: center; justify-content: space-between; gap: .75rem;
-  padding: .65rem .85rem;
-  background: #fafafa;
-  border: 1px solid #f3f4f6;
-  border-radius: 10px;
-  transition: background .15s;
+.dept-request-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.09); }
+.dept-request-card-head { display: flex; align-items: center; gap: .6rem; }
+.dept-request-type-icon {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: .9rem;
 }
-.dept-request-row:hover { background: #fef3c7; }
-.dept-request-info { flex: 1; min-width: 0; }
-.dept-request-type { font-size: .85rem; font-weight: 600; }
-.dept-request-agent { font-size: .75rem; color: #6b7280; }
-.dept-request-date { font-size: .73rem; color: #9ca3af; margin-top: .15rem; }
-.dept-request-actions { display: flex; gap: .4rem; flex-shrink: 0; }
+.dept-request-type-label { font-size: .88rem; font-weight: 700; flex: 1; }
+.dept-request-badge-pending {
+  background: #fef3c7; color: #92400e; font-size: .7rem; font-weight: 600;
+  padding: .15rem .55rem; border-radius: 100px;
+}
+.dept-request-agent { font-size: .8rem; color: #374151; }
+.dept-request-desc  { font-size: .78rem; color: #6b7280; line-height: 1.4; }
+.dept-request-footer { display: flex; align-items: center; justify-content: space-between; margin-top: .35rem; }
+.dept-request-date   { font-size: .75rem; color: #9ca3af; }
+.dept-request-actions { display: flex; gap: .4rem; }
 
 .dept-btn {
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  display: inline-flex; align-items: center; justify-content: center;
-  font-size: .85rem;
-  text-decoration: none;
-  cursor: pointer;
-  border: none;
-  transition: background .15s;
+  display: inline-flex; align-items: center; gap: .3rem;
+  padding: .35rem .75rem; border-radius: 8px; font-size: .78rem; font-weight: 600;
+  text-decoration: none; cursor: pointer; border: none; transition: background .15s;
 }
-.dept-btn-primary { background: #0077B5; color: #fff; }
-.dept-btn-primary:hover { background: #005a8e; }
-.dept-btn-outline { background: #e5e7eb; color: #374151; }
-.dept-btn-outline:hover { background: #d1d5db; }
+.dept-btn-primary { background: #1565c0; color: #fff; }
+.dept-btn-primary:hover { background: #0d47a1; }
+.dept-btn-outline { background: #f1f5f9; color: #334155; }
+.dept-btn-outline:hover { background: #e2e8f0; }
 
-/* ─── Empty state ───────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+   Présence & Congés
+────────────────────────────────────────────────────────── */
+.dept-duo-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+}
+.dept-duo-block {
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 16px;
+  padding: 1.25rem; box-shadow: 0 2px 10px rgba(0,0,0,.05);
+}
+.dept-duo-block .dept-section-head { margin-bottom: .9rem; }
+
+/* Anneau */
+.dept-presence-big { display: flex; align-items: center; gap: 1.5rem; padding: .5rem 0; }
+.dept-presence-ring-wrap { position: relative; width: 110px; height: 110px; flex-shrink: 0; }
+.dept-ring-svg { width: 100%; height: 100%; }
+.dept-ring-center {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+}
+.dept-ring-val { font-size: 1.4rem; font-weight: 800; color: #059669; }
+.dept-ring-lbl { font-size: .7rem; color: #6b7280; }
+.dept-presence-stats { display: flex; flex-direction: column; gap: .6rem; }
+.dept-presence-stat  { display: flex; flex-direction: column; }
+.dept-presence-stat-val { font-size: 1.3rem; font-weight: 800; }
+.dept-presence-stat-lbl { font-size: .72rem; color: #6b7280; }
+
+/* Congés */
+.dept-conges-grid { display: flex; flex-direction: column; gap: .7rem; padding: .5rem 0; }
+.dept-conge-stat-card {
+  display: flex; align-items: center; gap: .75rem;
+  border-left: 3px solid; border-radius: 10px; background: #fafafa; padding: .7rem 1rem;
+}
+.dept-conge-stat-icon {
+  width: 34px; height: 34px; border-radius: 9px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: .9rem;
+}
+.dept-conge-stat-val { font-size: 1.35rem; font-weight: 800; }
+.dept-conge-stat-lbl { font-size: .75rem; color: #6b7280; }
+
+/* Empty state */
 .dept-empty {
-  text-align: center;
-  padding: 2rem 1rem;
-  color: #9ca3af;
+  text-align: center; padding: 2.5rem 1rem; color: #9ca3af;
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
 }
-.dept-empty i { font-size: 2rem; margin-bottom: .5rem; display: block; }
-.dept-empty p { margin: 0; font-size: .85rem; }
+.dept-empty-icon-wrap {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: .25rem;
+}
+.dept-empty span { font-size: .88rem; }
+.dept-empty-hint { font-size: .78rem; color: #cbd5e1; }
 
-/* ─── Dark mode ─────────────────────────────────────────── */
-html.dark .dept-dashboard { background: #111827; }
-html.dark .dept-card { background: #1f2937 !important; border-color: #374151 !important; }
-html.dark .dept-card-title { color: #f9fafb !important; }
-html.dark .dept-card-sub { color: #9ca3af !important; }
-html.dark .dept-action-card { background: #1f2937 !important; border-color: #374151 !important; color: #f9fafb !important; }
-html.dark .dept-task-row { background: #1a2234 !important; border-color: #374151 !important; }
-html.dark .dept-task-row:hover { background: #1e3a5f !important; }
-html.dark .dept-task-title { color: #f3f4f6 !important; }
-html.dark .dept-table th { background: #111827 !important; color: #9ca3af !important; border-color: #374151 !important; }
-html.dark .dept-table td { border-color: #1f2937 !important; color: #e5e7eb !important; }
+/* ──────────────────────────────────────────────────────────
+   Dark mode
+────────────────────────────────────────────────────────── */
+html.dark .dept-dashboard { background: #0f172a; }
+html.dark .dept-action,
+html.dark .dept-metric,
+html.dark .dept-task-card,
+html.dark .dept-duo-block,
+html.dark .dept-request-card { background: #1e293b !important; border-color: #334155 !important; }
+html.dark .dept-action-label,
+html.dark .dept-section-title,
+html.dark .dept-task-card-val,
+html.dark .dept-metric-val,
+html.dark .dept-agent-name,
+html.dark .dept-ring-val { color: #f1f5f9 !important; }
+html.dark .dept-action-desc,
+html.dark .dept-section-sub,
+html.dark .dept-metric-lbl,
+html.dark .dept-task-card-lbl,
+html.dark .dept-agent-fonction,
+html.dark .dept-conge-stat-lbl,
+html.dark .dept-presence-stat-lbl,
+html.dark .dept-task-global-bar-lbl,
+html.dark .dept-ring-lbl { color: #94a3b8 !important; }
+html.dark .dept-action-arrow { color: #475569 !important; }
+html.dark .dept-task-row { background: #1a2438 !important; border-color: #334155 !important; }
+html.dark .dept-task-row:hover,
 html.dark .dept-table-row:hover { background: #1e3a5f !important; }
-html.dark .dept-mini-kpi { background: #111827 !important; border-color: #374151 !important; }
-html.dark .dept-mini-kpi-lbl { color: #9ca3af !important; }
-html.dark .dept-request-row { background: #1a2234 !important; border-color: #374151 !important; }
-html.dark .dept-request-row:hover { background: #1e3a5f !important; }
-html.dark .dept-request-agent { color: #9ca3af !important; }
-html.dark .dept-request-date { color: #6b7280 !important; }
-html.dark .dept-section-title { color: #f9fafb !important; }
-html.dark .dept-section-sub { color: #9ca3af !important; }
-html.dark .dept-action-label { color: #f3f4f6 !important; }
-html.dark .dept-agent-name { color: #f3f4f6 !important; }
-html.dark .dept-agent-fonction { color: #9ca3af !important; }
-html.dark .dept-progress-pct { color: #d1d5db !important; }
+html.dark .dept-task-title { color: #f1f5f9 !important; }
+html.dark .dept-table th { background: #0f172a !important; color: #94a3b8 !important; border-color: #334155 !important; }
+html.dark .dept-table td { border-color: #1e293b !important; color: #e2e8f0 !important; }
+html.dark .dept-badge-neutral { background: #334155 !important; color: #e2e8f0 !important; }
+html.dark .dept-request-type-label,
+html.dark .dept-request-agent { color: #e2e8f0 !important; }
+html.dark .dept-request-desc { color: #94a3b8 !important; }
+html.dark .dept-conge-stat-card { background: #0f172a !important; }
+html.dark .dept-metric-bar { background: #334155 !important; }
+html.dark .dept-task-global-bar-track,
+html.dark .dept-prog-track { background: #334155 !important; }
+html.dark .dept-recent-tasks-head { color: #e2e8f0 !important; border-color: #334155 !important; }
+html.dark .dept-error-banner { background: #1e293b !important; border-color: #475569 !important; color: #fbbf24 !important; }
 
-/* ─── Responsive ────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────
+   Responsive
+────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .dept-duo-row { grid-template-columns: 1fr; }
+  .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
+}
 @media (max-width: 768px) {
   .dept-hero-inner { flex-direction: column; padding: 1.25rem; }
   .dept-hero-kpis { width: 100%; overflow-x: auto; padding-bottom: .5rem; }
-  .dept-kpi { min-width: 110px; }
   .dept-section { padding: 1rem 1rem 0; }
-  .dept-main-grid { padding: 1rem; gap: 1rem; }
-  .dept-actions { grid-template-columns: repeat(3, 1fr); }
-  h1.dept-hero-name { font-size: 1.1rem; }
+  .dept-actions { grid-template-columns: 1fr; }
+  .dept-metrics { grid-template-columns: repeat(2, 1fr); }
+  .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
+  .dept-requests-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 480px) {
-  .dept-actions { grid-template-columns: repeat(2, 1fr); }
-  .dept-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .dept-metrics { grid-template-columns: 1fr; }
 }
 </style>
