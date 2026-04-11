@@ -39,6 +39,16 @@ class UserDataScope
         return (bool) $user?->hasRole('RH Provincial');
     }
 
+    public function isSEP(?User $user): bool
+    {
+        return (bool) $user?->hasRole('SEP');
+    }
+
+    public function isProvinciallyScopedUser(?User $user): bool
+    {
+        return $this->isProvincialRh($user) || $this->isSEP($user);
+    }
+
     public function provinceId(?User $user): ?int
     {
         $provinceId = $user?->agent?->province_id;

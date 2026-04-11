@@ -36,6 +36,10 @@ export const useAuthStore = defineStore('auth', {
             const role = state.user?.role?.nom_role?.toLowerCase()
             return role === 'sen'
         },
+        isSEP(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase()
+            return role === 'sep'
+        },
         canManageDocsTravail(state) {
             if (state.user?.is_super_admin) return true
             return this.isSEN || this.isRH

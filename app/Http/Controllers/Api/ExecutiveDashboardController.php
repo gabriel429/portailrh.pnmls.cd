@@ -806,10 +806,10 @@ class ExecutiveDashboardController extends ApiController
      */
     public function provinceDetail(Request $request, int $id)
     {
-        // Provincial scoping: RH Provincial can only see their own province
+        // Provincial scoping: RH Provincial and SEP can only see their own province
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvinciallyScopedUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         if ($userProvinceId && $userProvinceId !== $id) {
@@ -949,10 +949,10 @@ class ExecutiveDashboardController extends ApiController
             return $this->error('Département introuvable', 404);
         }
 
-        // Provincial scoping: RH Provincial can only see departments in their province
+        // Provincial scoping: RH Provincial and SEP can only see departments in their province
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvinciallyScopedUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         if ($userProvinceId && (int) $department->province_id !== $userProvinceId) {
@@ -1044,6 +1044,157 @@ class ExecutiveDashboardController extends ApiController
             ],
             'activites' => $activites,
             'agents' => $topAgents,
+        ]);
+    }
+
+    /**
+     * Dashboard SEP : tableau de bord provincial pour le Secrétaire Exécutif Provincial
+     */
+    public function sepIndex(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->hasRole('SEP')) {
+            return response()->json(['message' => 'Accès réservé au SEP.'], 403);
+        }
+
+        $scope = $this->scopeService();
+        $provinceId = $scope->provinceId($user);
+
+        if (!$provinceId) {
+            return response()->json(['message' => 'Aucune province associée à cet utilisateur SEP.'], 422);
+        }
+
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $currentYear = $now->year;
+
+        $province = Province::find($provinceId);
+        if (!$province) {
+            return response()->json(['message' => 'Province introuvable.'], 404);
+        }
+
+        // ─── AGENTS ───
+        $agents = Agent::where('province_id', $provinceId);
+        $agentsTotal = (clone $agents)->count();
+        $agentsActifs = (clone $agents)->actifs()->count();
+        $agentsSuspendus = (clone $agents)->suspendu()->count();
+        $agentsAnciens = (clone $agents)->anciens()->count();
+
+        $organes = [
+            'sen' => 'Secrétariat Exécutif National',
+            'sep' => 'Secrétariat Exécutif Provincial',
+            'sel' => 'Secrétariat Exécutif Local',
+        ];
+        $byOrgane = [];
+        foreach ($organes as $oCode => $oNom) {
+            $byOrgane[$oCode] = Agent::where('province_id', $provinceId)->where('organe', $oNom)->actifs()->count();
+        }
+
+        // ─── PRÉSENCE ───
+        $totalActive = $agentsActifs ?: 1;
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->distinct('agent_id')->count('agent_id');
+        $todayRate = round(($todayPresent / $totalActive) * 100, 1);
+
+        $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')->get();
+        $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $totalActive) * 100, 1) : 0;
+
+        // ─── DEMANDES ───
+        $requestsPending = RequestModel::enAttente()
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->count();
+
+        // ─── SIGNALEMENTS ───
+        $signalementsOuverts = Signalement::ouvert()
+            ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+            ->count();
+
+        // ─── PLAN DE TRAVAIL ───
+        $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('province_id', $provinceId);
+        $ptaTotal = (clone $ptaQuery)->count();
+        $ptaTerminee = (clone $ptaQuery)->terminee()->count();
+        $ptaEnCours = (clone $ptaQuery)->enCours()->count();
+        $ptaAvg = $ptaTotal > 0 ? round((clone $ptaQuery)->avg('pourcentage'), 1) : 0;
+
+        // PTA par trimestre
+        $ptaByTrimestre = (clone $ptaQuery)
+            ->select('trimestre', DB::raw('COUNT(*) as total'), DB::raw('SUM(CASE WHEN statut = "terminee" THEN 1 ELSE 0 END) as terminee'), DB::raw('AVG(pourcentage) as avg_pourcentage'))
+            ->groupBy('trimestre')
+            ->orderBy('trimestre')
+            ->get()
+            ->map(fn($t) => [
+                'trimestre' => $t->trimestre,
+                'total' => $t->total,
+                'terminee' => (int) $t->terminee,
+                'avg_pourcentage' => round($t->avg_pourcentage ?? 0, 0),
+            ]);
+
+        // ─── DÉPARTEMENTS ───
+        $departments = Department::where('province_id', $provinceId)
+            ->withCount([
+                'agents as total_agents' => fn($q) => $q,
+                'agents as actifs_agents' => fn($q) => $q->actifs(),
+            ])
+            ->get(['id', 'nom', 'code'])
+            ->map(fn($d) => [
+                'id' => $d->id,
+                'nom' => $d->nom,
+                'code' => $d->code,
+                'total' => $d->total_agents,
+                'actifs' => $d->actifs_agents,
+            ]);
+
+        // ─── COMMUNIQUÉS ───
+        $communiquesActifs = Communique::visibles()->count();
+
+        return $this->success([
+            'province' => [
+                'id' => $province->id,
+                'nom' => $province->nom,
+                'code' => $province->code,
+                'ville_secretariat' => $province->ville_secretariat,
+                'nom_gouverneur' => $province->nom_gouverneur,
+                'nom_secretariat_executif' => $province->nom_secretariat_executif,
+                'email' => $province->email_officiel,
+                'telephone' => $province->telephone_officiel,
+            ],
+            'agents' => [
+                'total' => $agentsTotal,
+                'actifs' => $agentsActifs,
+                'suspendus' => $agentsSuspendus,
+                'anciens' => $agentsAnciens,
+                'by_organe' => $byOrgane,
+            ],
+            'attendance' => [
+                'today_present' => $todayPresent,
+                'today_rate' => $todayRate,
+                'monthly_rate' => $monthlyRate,
+                'total_active_agents' => $agentsActifs,
+            ],
+            'requests' => [
+                'en_attente' => $requestsPending,
+            ],
+            'signalements' => [
+                'ouvert' => $signalementsOuverts,
+            ],
+            'plan_travail' => [
+                'total' => $ptaTotal,
+                'terminee' => $ptaTerminee,
+                'en_cours' => $ptaEnCours,
+                'avg_completion' => $ptaAvg,
+                'by_trimestre' => $ptaByTrimestre,
+            ],
+            'departments' => $departments,
+            'communiques' => [
+                'actifs' => $communiquesActifs,
+            ],
         ]);
     }
 }
