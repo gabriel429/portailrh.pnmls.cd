@@ -83,6 +83,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index']);
     Route::get('/dashboard/executive', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'index']);
+    Route::get('/dashboard/executive/sep', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'sepIndex']);
     Route::get('/dashboard/executive/organe/{code}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'organeDetail']);
     Route::get('/dashboard/executive/province/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'provinceDetail']);
     Route::get('/dashboard/executive/department/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'departmentDetail']);
