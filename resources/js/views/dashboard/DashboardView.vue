@@ -1,5 +1,6 @@
 <template>
   <SenDashboardView v-if="auth.isSEN" />
+  <SepDashboardView v-else-if="auth.isSEP" />
   <RhDashboardView v-else-if="auth.isRH" />
   <div v-else class="container py-4">
     <!-- Hero -->
@@ -268,6 +269,7 @@ import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RequestCreateModal from '@/components/RequestCreateModal.vue'
 const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenDashboardView.vue'))
+const SepDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SepDashboardView.vue'))
 const RhDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RhDashboardView.vue'))
 
 const auth = useAuthStore()

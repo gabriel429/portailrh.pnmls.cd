@@ -49,6 +49,19 @@ const routes = [
         component: () => import('@/views/notifications/NotificationListView.vue'),
         meta: { auth: true },
     },
+    {
+        path: '/notifications/:id/read',
+        name: 'notifications.read',
+        redirect: to => ({ name: 'notifications.index' }),
+        beforeEnter: async (to) => {
+            try {
+                const { markRead } = await import('@/api/notifications')
+                await markRead(to.params.id)
+            } catch (_) { /* silently ignore */ }
+            return { name: 'notifications.index' }
+        },
+        meta: { auth: true },
+    },
 
     // Documents GED
     {
@@ -101,25 +114,25 @@ const routes = [
         path: '/signalements',
         name: 'signalements.index',
         component: () => import('@/views/rh/signalements/SignalementListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/signalements/create',
         name: 'signalements.create',
         component: () => import('@/views/rh/signalements/SignalementCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/signalements/:id',
         name: 'signalements.show',
         component: () => import('@/views/rh/signalements/SignalementShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/signalements/:id/edit',
         name: 'signalements.edit',
         component: () => import('@/views/rh/signalements/SignalementEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
 
     // Taches
@@ -225,7 +238,7 @@ const routes = [
         path: '/rh/agents',
         name: 'rh.agents.index',
         component: () => import('@/views/rh/agents/AgentListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/agents/create',
@@ -237,7 +250,7 @@ const routes = [
         path: '/rh/agents/:id',
         name: 'rh.agents.show',
         component: () => import('@/views/rh/agents/AgentShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/agents/:id/edit',
@@ -251,7 +264,7 @@ const routes = [
         path: '/rh/pointages',
         name: 'rh.pointages.index',
         component: () => import('@/views/rh/pointages/PointageListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/pointages/create',
@@ -263,19 +276,19 @@ const routes = [
         path: '/rh/pointages/daily',
         name: 'rh.pointages.daily',
         component: () => import('@/views/rh/pointages/PointageDailyView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/pointages/monthly',
         name: 'rh.pointages.monthly',
         component: () => import('@/views/rh/pointages/PointageMonthlyView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/pointages/:id',
         name: 'rh.pointages.show',
         component: () => import('@/views/rh/pointages/PointageShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/pointages/:id/edit',
@@ -289,7 +302,7 @@ const routes = [
         path: '/rh/communiques',
         name: 'rh.communiques.index',
         component: () => import('@/views/rh/communiques/CommuniqueListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
     },
     {
         path: '/rh/communiques/create',

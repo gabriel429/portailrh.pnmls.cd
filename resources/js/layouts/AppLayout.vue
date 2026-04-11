@@ -139,6 +139,15 @@
 
             <div class="nav-divider d-none d-lg-block"></div>
 
+            <li class="nav-item d-none d-lg-flex align-items-center">
+              <button class="dark-toggle-btn" @click="ui.toggleDarkMode()" :title="ui.isDark ? 'Passer en mode jour' : 'Passer en mode nuit'">
+                <i :class="ui.isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                <span>{{ ui.isDark ? 'Jour' : 'Nuit' }}</span>
+              </button>
+            </li>
+
+            <div class="nav-divider d-none d-lg-block"></div>
+
             <li class="nav-item dropdown">
               <a class="nav-link nav-notif-btn dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 <i class="fas fa-bell"></i>
@@ -245,8 +254,11 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useNotificationStore } from '@/stores/notification'
+import { useUiStore } from '@/stores/ui'
 import { getSummary as getTaskSummary } from '@/api/taches'
 import AppToast from '@/components/common/AppToast.vue'
+
+const ui = useUiStore()
 
 const auth = useAuthStore()
 const notifStore = useNotificationStore()
@@ -362,6 +374,8 @@ async function handleLogout() {
 }
 
 onMounted(() => {
+  ui.initDarkMode()
+
   if (auth.isAuthenticated) {
     notifStore.startPolling()
     loadTaskSummary()

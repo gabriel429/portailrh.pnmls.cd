@@ -86,6 +86,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/executive/organe/{code}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'organeDetail']);
     Route::get('/dashboard/executive/province/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'provinceDetail']);
     Route::get('/dashboard/executive/department/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'departmentDetail']);
+    Route::get('/dashboard/sep', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'sepIndex']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
 
     // Profile (SPA)
@@ -145,7 +146,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('messages/{message}', [MessageController::class, 'show']);
 
     // RH Agents (role-protected)
-    Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN')->group(function () {
+    Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN,SEP')->group(function () {
         Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index']);
         Route::get('agents/export', [ApiAgentController::class, 'export']);
         Route::get('agents/form-options', [ApiAgentController::class, 'formOptions']);
@@ -413,7 +414,7 @@ Route::prefix('v1')->as('v1.')->group(function () {
         Route::get('documents-travail/{doc}/download', [DocumentTravailController::class, 'download'])->name('documents-travail.download');
         Route::get('messages/{message}', [MessageController::class, 'show'])->name('messages.show');
 
-        Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN')->group(function () {
+        Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN,SEP')->group(function () {
             Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index'])->name('rh.dashboard');
             Route::get('agents/export', [ApiAgentController::class, 'export'])->name('agents.export');
             Route::get('agents/form-options', [ApiAgentController::class, 'formOptions'])->name('agents.form-options');

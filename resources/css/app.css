@@ -7,6 +7,18 @@
 
 /* ── Design Tokens ── */
 :root {
+    --dm-bg: #0f172a;
+    --dm-bg-card: #1e293b;
+    --dm-bg-card2: #263042;
+    --dm-bg-sidebar: #1a2540;
+    --dm-text: #e2e8f0;
+    --dm-text-muted: #94a3b8;
+    --dm-border: rgba(255,255,255,0.08);
+    --dm-input-bg: #1e293b;
+    --dm-table-stripe: rgba(255,255,255,0.03);
+    --dm-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+:root {
     /* Primary Colors */
     --primary-50: #e0f2fe;
     --primary-100: #bae6fd;
@@ -2313,4 +2325,466 @@ body.is-offline .navbar-main {
     button {
         display: none !important;
     }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODE NUIT — Dashboards SEP & SEN (classes scoped custom)
+   ═══════════════════════════════════════════════════════════ */
+
+/* --- Cartes / panneaux principaux (fond blanc → fond sombre) --- */
+html.dark .sep-action,
+html.dark .sep-metric,
+html.dark .sep-dept-card,
+html.dark .sep-presence-card,
+html.dark .sep-holiday-stats-card,
+html.dark .sep-holiday-list-card,
+html.dark .sep-affectation-card,
+html.dark .sep-task-card,
+html.dark .sep-plan-global-row,
+html.dark .sep-recent-col,
+html.dark .drill-panel,
+html.dark .sen-action,
+html.dark .sen-metric,
+html.dark .sen-kpi-modal-card,
+html.dark .sen-holiday-stats-card,
+html.dark .sen-holiday-list-card,
+html.dark .sen-affectation-card,
+html.dark .sen-task-card,
+html.dark .sen-plan-global-row,
+html.dark .sen-recent-col,
+html.dark .sen-presence-card,
+html.dark .sen-dept-card {
+    background: var(--dm-bg-card) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* --- Panneaux secondaires / internes (gris clair → sombre secondaire) --- */
+html.dark .sep-dept-stat,
+html.dark .sep-holiday-stat-item,
+html.dark .sep-recent-head,
+html.dark .sep-holiday-list-head,
+html.dark .sep-dept-empty,
+html.dark .drill-prov-stat-card,
+html.dark .drill-prov-agent-row,
+html.dark .sen-dept-stat,
+html.dark .sen-recent-head,
+html.dark .sen-holiday-list-head,
+html.dark .sen-holiday-stat-item {
+    background: var(--dm-bg-card2) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* --- Carte province SEP (dégradé clair → sombre) --- */
+html.dark .sep-province-card {
+    background: linear-gradient(135deg, #0c2a40, #0a1a2e) !important;
+    border-color: rgba(14,165,233,.2) !important;
+}
+
+/* --- Textes de titre / valeurs principaux --- */
+html.dark .sep-section-title,
+html.dark .sep-dept-name,
+html.dark .sep-recent-head-title,
+html.dark .sep-recent-title,
+html.dark .sep-province-name,
+html.dark .sep-trim-name,
+html.dark .sep-holiday-stat-val,
+html.dark .sep-holiday-item-agent,
+html.dark .sep-affectation-val,
+html.dark .sep-task-card-val,
+html.dark .sep-dept-stat-val,
+html.dark .drill-prov-stat-val,
+html.dark .drill-prov-agent-name,
+html.dark .drill-prov-section-title,
+html.dark .sep-presence-card-head,
+html.dark .sen-section-title,
+html.dark .sen-dept-name,
+html.dark .sen-recent-head-title,
+html.dark .sen-recent-title,
+html.dark .sen-trim-name,
+html.dark .sen-holiday-stat-val,
+html.dark .sen-holiday-item-agent,
+html.dark .sen-affectation-val,
+html.dark .sen-task-card-val,
+html.dark .sen-presence-card-head,
+html.dark .sen-metric-val,
+html.dark .sep-metric-val {
+    color: var(--dm-text) !important;
+}
+
+/* --- Textes secondaires / muted --- */
+html.dark .sep-province-details,
+html.dark .sep-province-sep,
+html.dark .sep-presence-item,
+html.dark .sep-holiday-item-info,
+html.dark .sep-action-desc,
+html.dark .sep-dept-code,
+html.dark .sep-dept-bar-label,
+html.dark .sep-trim-detail,
+html.dark .sep-task-progress-lbl,
+html.dark .sen-action-desc,
+html.dark .sen-dept-code,
+html.dark .sep-recent-time,
+html.dark .sen-recent-time {
+    color: var(--dm-text-muted) !important;
+}
+
+/* --- Barres de progression (fond gris clair → fond transparent) --- */
+html.dark .sep-metric-bar,
+html.dark .sep-dept-bar-bg,
+html.dark .sep-trim-bar,
+html.dark .sep-task-progress-bar,
+html.dark .sep-presence-bar,
+html.dark .sen-metric-bar,
+html.dark .sen-dept-bar-bg,
+html.dark .sen-trim-bar,
+html.dark .sen-task-progress-bar,
+html.dark .sen-presence-bar {
+    background: rgba(255,255,255,.1) !important;
+}
+
+/* --- Effets hover sur items de liste --- */
+html.dark .sep-recent-item:hover,
+html.dark .sep-holiday-item:hover,
+html.dark .drill-prov-agent-row:hover,
+html.dark .sep-action:hover,
+html.dark .sen-recent-item:hover,
+html.dark .sen-holiday-item:hover,
+html.dark .sen-action:hover {
+    background: rgba(14,165,233,.08) !important;
+    border-color: rgba(14,165,233,.2) !important;
+}
+
+/* --- Icônes de section (fonds pastels clairs) --- */
+html.dark .sep-section-icon,
+html.dark .sen-section-icon {
+    background: rgba(255,255,255,.06) !important;
+}
+
+/* --- Footer SEP --- */
+html.dark .sep-footer {
+    border-top-color: var(--dm-border) !important;
+    color: var(--dm-text-muted) !important;
+}
+html.dark .sep-footer-badge {
+    background: rgba(14,165,233,.15) !important;
+    color: #7dd3fc !important;
+}
+
+/* --- Alerte tâche SEP (fond rouge très clair → rose sombre) --- */
+html.dark .sep-task-card-alert {
+    background: rgba(239,68,68,.1) !important;
+    border-color: rgba(239,68,68,.3) !important;
+}
+
+
+/* -------------------------------------------
+   MODE NUIT � html.dark
+   Activ� automatiquement � 18h00 (off � 06h00)
+   ------------------------------------------- */
+html.dark {
+    color-scheme: dark;
+    /* Redéfinir toutes les variables de couleur pour le mode nuit */
+    --grey-50:  #1e293b;
+    --grey-100: #263042;
+    --grey-200: #2d3a52;
+    --grey-300: #3d4f6a;
+    --grey-400: #64748b;
+    --grey-500: #94a3b8;
+    --grey-600: #b0bdd0;
+    --grey-700: #cbd5e1;
+    --grey-800: #e2e8f0;
+    --grey-900: #f1f5f9;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.4);
+    --shadow-lg: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+/* Règle générale : tout texte hérite de la couleur parente */
+html.dark * {
+    border-color: var(--dm-border);
+}
+
+/* Neutraliser les couleurs de texte fixes de Bootstrap */
+html.dark .text-dark,
+html.dark .text-black,
+html.dark .text-body {
+    color: var(--dm-text) !important;
+}
+html.dark .bg-white,
+html.dark .bg-light {
+    background-color: var(--dm-bg-card) !important;
+    color: var(--dm-text) !important;
+}
+html.dark .bg-dark {
+    background-color: #0f172a !important;
+}
+
+/* Éléments portant une couleur dark en dur */
+html.dark a:not(.btn):not(.nav-link):not(.dropdown-item) {
+    color: #7dd3fc;
+}
+html.dark a:not(.btn):not(.nav-link):not(.dropdown-item):hover {
+    color: #bae6fd;
+}
+
+/* Inputs, selects, textareas — couleur du placeholder */
+html.dark input,
+html.dark select,
+html.dark textarea {
+    color-scheme: dark;
+}
+
+/* -- Corps & fond g�n�ral -- */
+html.dark body {
+    background: var(--dm-bg);
+    background-attachment: fixed;
+    color: var(--dm-text);
+}
+
+/* -- Cartes Bootstrap & personnalis�es -- */
+html.dark .card,
+html.dark .rh-card,
+html.dark .stat-card,
+html.dark .kpi-card,
+html.dark .info-card,
+html.dark .alert-card,
+html.dark .doc-card,
+html.dark .task-card,
+html.dark .planning-card,
+html.dark .modal-content {
+    background: var(--dm-bg-card) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+    box-shadow: var(--dm-shadow) !important;
+}
+
+html.dark .card-header,
+html.dark .card-footer,
+html.dark .modal-header,
+html.dark .modal-footer {
+    background: var(--dm-bg-card2) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* -- Textes -- */
+html.dark h1, html.dark h2, html.dark h3,
+html.dark h4, html.dark h5, html.dark h6 {
+    color: #f1f5f9;
+}
+html.dark p, html.dark span, html.dark label,
+html.dark td, html.dark th, html.dark li,
+html.dark small, html.dark strong, html.dark b,
+html.dark dt, html.dark dd, html.dark caption,
+html.dark figcaption, html.dark blockquote,
+html.dark .fw-bold, html.dark .fw-semibold,
+html.dark .fw-medium {
+    color: var(--dm-text);
+}
+html.dark .text-muted,
+html.dark .text-secondary {
+    color: var(--dm-text-muted) !important;
+}
+/* Empêcher les spans/divs avec color: #333 / #000 d'être invisibles */
+html.dark [style*="color:#0"],
+html.dark [style*="color: #0"],
+html.dark [style*="color:#1"],
+html.dark [style*="color: #1"],
+html.dark [style*="color:#2"],
+html.dark [style*="color: #2"],
+html.dark [style*="color:#3"],
+html.dark [style*="color: #3"],
+html.dark [style*="color:#4"],
+html.dark [style*="color: #4"] {
+    color: var(--dm-text) !important;
+}
+
+/* -- Tables -- */
+html.dark .table {
+    color: var(--dm-text);
+    border-color: var(--dm-border);
+}
+html.dark .table thead th {
+    background: var(--dm-bg-card2) !important;
+    color: #cbd5e1 !important;
+    border-color: var(--dm-border) !important;
+}
+html.dark .table tbody tr:nth-child(odd) {
+    background: var(--dm-table-stripe);
+}
+html.dark .table tbody tr:hover {
+    background: rgba(255,255,255,0.05) !important;
+}
+html.dark .table td, html.dark .table th {
+    border-color: var(--dm-border) !important;
+}
+html.dark .table-striped > tbody > tr:nth-of-type(odd) > * {
+    background-color: var(--dm-table-stripe) !important;
+    color: var(--dm-text) !important;
+}
+
+/* -- Formulaires -- */
+html.dark .form-control,
+html.dark .form-select,
+html.dark .input-group-text {
+    background: var(--dm-input-bg) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+html.dark .form-control::placeholder {
+    color: var(--dm-text-muted);
+}
+html.dark .form-control:focus,
+html.dark .form-select:focus {
+    background: #263554 !important;
+    border-color: var(--primary-400) !important;
+    box-shadow: 0 0 0 3px rgba(14,165,233,0.2) !important;
+}
+html.dark .form-label {
+    color: #cbd5e1;
+}
+
+/* -- Badges & pills -- */
+html.dark .badge.bg-light {
+    background: #334155 !important;
+    color: var(--dm-text) !important;
+}
+
+/* -- Dropdowns Bootstrap -- */
+html.dark .dropdown-menu {
+    background: #1e293b !important;
+    border-color: var(--dm-border) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5) !important;
+}
+html.dark .dropdown-item {
+    color: var(--dm-text) !important;
+}
+html.dark .dropdown-item:hover,
+html.dark .dropdown-item:focus {
+    background: rgba(255,255,255,0.08) !important;
+    color: #fff !important;
+}
+html.dark .dropdown-divider {
+    border-color: var(--dm-border) !important;
+}
+
+/* -- Navigation secondaire (dropdowns user/admin) -- */
+html.dark .user-dd-header {
+    background: var(--dm-bg-card2) !important;
+}
+html.dark .user-dd-name {
+    color: #f1f5f9 !important;
+}
+html.dark .user-dd-email {
+    color: var(--dm-text-muted) !important;
+}
+html.dark .notif-dropdown {
+    background: #1e293b !important;
+}
+html.dark .notif-dd-header {
+    background: var(--dm-bg-card2) !important;
+    border-color: var(--dm-border) !important;
+}
+html.dark .notif-item:hover {
+    background: rgba(255,255,255,0.07) !important;
+}
+
+/* -- Contenu principal & sections -- */
+html.dark .main-content {
+    background: transparent;
+}
+html.dark .rh-section,
+html.dark .section-card,
+html.dark .panel,
+html.dark .sidebar-card {
+    background: var(--dm-bg-card) !important;
+    border-color: var(--dm-border) !important;
+}
+
+/* -- Hero dashboard (pas touch� � d�j� fonc�) -- */
+html.dark .rh-hero {
+    filter: brightness(0.9);
+}
+
+/* -- Offcanvas / modals -- */
+html.dark .offcanvas {
+    background: var(--dm-bg-card) !important;
+    color: var(--dm-text) !important;
+}
+html.dark .offcanvas-header {
+    border-color: var(--dm-border) !important;
+}
+
+/* -- Pill / tab nav -- */
+html.dark .nav-tabs {
+    border-color: var(--dm-border) !important;
+}
+html.dark .nav-tabs .nav-link {
+    color: var(--dm-text-muted) !important;
+}
+html.dark .nav-tabs .nav-link.active {
+    background: var(--dm-bg-card2) !important;
+    border-color: var(--dm-border) var(--dm-border) var(--dm-bg-card) !important;
+    color: #fff !important;
+}
+html.dark .nav-pills .nav-link {
+    color: var(--dm-text-muted) !important;
+}
+html.dark .nav-pills .nav-link.active {
+    background: var(--primary-600) !important;
+    color: #fff !important;
+}
+
+/* -- Paginations -- */
+html.dark .page-item .page-link {
+    background: var(--dm-bg-card) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+html.dark .page-item.active .page-link {
+    background: var(--primary-600) !important;
+    border-color: var(--primary-600) !important;
+    color: #fff !important;
+}
+
+/* -- Alertes Bootstrap -- */
+html.dark .alert {
+    background: var(--dm-bg-card2) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* -- Liste group�e -- */
+html.dark .list-group-item {
+    background: var(--dm-bg-card) !important;
+    border-color: var(--dm-border) !important;
+    color: var(--dm-text) !important;
+}
+
+/* -- Bouton toggle dark mode -- */
+.dark-toggle-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.85);
+    border-radius: 50px;
+    padding: 6px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.dark-toggle-btn:hover {
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    transform: scale(1.03);
+}
+html.dark .dark-toggle-btn {
+    background: rgba(255,255,255,0.08);
+    border-color: rgba(255,255,255,0.12);
 }

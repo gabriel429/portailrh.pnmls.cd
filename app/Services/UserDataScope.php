@@ -39,6 +39,17 @@ class UserDataScope
         return (bool) $user?->hasRole('RH Provincial');
     }
 
+    public function isProvincialSep(?User $user): bool
+    {
+        return (bool) $user?->hasRole('SEP');
+    }
+
+    /** Vrai si l'utilisateur doit être scopé à sa propre province (RH Provincial OU SEP). */
+    public function isProvincialUser(?User $user): bool
+    {
+        return $this->isProvincialRh($user) || $this->isProvincialSep($user);
+    }
+
     public function provinceId(?User $user): ?int
     {
         $provinceId = $user?->agent?->province_id;
@@ -52,7 +63,7 @@ class UserDataScope
             return $query;
         }
 
-        if ($this->isProvincialRh($user)) {
+        if ($this->isProvincialUser($user)) {
             $provinceId = $this->provinceId($user);
             if (!$provinceId) {
                 return $query->whereRaw('1 = 0');
@@ -72,7 +83,7 @@ class UserDataScope
             return $query;
         }
 
-        if ($this->isProvincialRh($user)) {
+        if ($this->isProvincialUser($user)) {
             $provinceId = $this->provinceId($user);
 
             if (!$provinceId) {
@@ -97,7 +108,7 @@ class UserDataScope
             return $query;
         }
 
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return $query;
         }
 
@@ -117,7 +128,7 @@ class UserDataScope
             return $query;
         }
 
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return $query;
         }
 
@@ -137,7 +148,7 @@ class UserDataScope
             return $query;
         }
 
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return $query;
         }
 
@@ -168,7 +179,7 @@ class UserDataScope
             return true;
         }
 
-        if ($this->isProvincialRh($user)) {
+        if ($this->isProvincialUser($user)) {
             $provinceId = $this->provinceId($user);
 
             return $provinceId !== null && (int) $agent->province_id === $provinceId;
@@ -185,7 +196,7 @@ class UserDataScope
 
         $agent = $demande->relationLoaded('agent') ? $demande->agent : $demande->agent()->first();
 
-        if ($this->isProvincialRh($user)) {
+        if ($this->isProvincialUser($user)) {
             return $this->canAccessAgent($user, $agent, false);
         }
 
@@ -198,7 +209,7 @@ class UserDataScope
             return true;
         }
 
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return false;
         }
 
@@ -213,7 +224,7 @@ class UserDataScope
             return true;
         }
 
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return false;
         }
 
@@ -228,7 +239,7 @@ class UserDataScope
             return true;
         }
 
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return false;
         }
 
@@ -253,13 +264,13 @@ class UserDataScope
 
     public function enforceAgentPayloadScope(array $validated, ?User $user): array
     {
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return $validated;
         }
 
         $provinceId = $this->provinceId($user);
         if (!$provinceId) {
-            abort(403, 'Aucune province associee a cet utilisateur RH provincial.');
+            abort(403, 'Aucune province associee a cet utilisateur provincial.');
         }
 
         if (!empty($validated['province_id']) && (int) $validated['province_id'] !== $provinceId) {
@@ -281,7 +292,7 @@ class UserDataScope
 
     public function filterDepartments($query, ?User $user)
     {
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return $query->operational();
         }
 
@@ -294,7 +305,7 @@ class UserDataScope
 
     public function filterProvinces($query, ?User $user)
     {
-        if (!$this->isProvincialRh($user)) {
+        if (!$this->isProvincialUser($user)) {
             return $query;
         }
 
