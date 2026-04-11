@@ -31,7 +31,7 @@
             <i class="fas fa-calendar-week"></i>
             <input type="month" v-model="selectedMonth" @change="fetchMonthly" class="pm-month-input">
           </div>
-          <div class="pm-organe-pills">
+          <div class="pm-organe-pills" v-if="!isSEP">
             <button class="pm-pill" :class="{ active: !selectedOrgane }" @click="filterByOrgane('')">Tous</button>
             <button v-for="o in organeOptions" :key="o.code" class="pm-pill"
               :class="{ active: selectedOrgane === o.value }" @click="filterByOrgane(o.value)">
@@ -43,7 +43,7 @@
 
         <!-- Sub-filter dropdown (structure or province) -->
         <transition name="pm-subfilter-slide">
-          <div v-if="selectedOrgane && subFilterType" class="pm-subfilter-bar">
+          <div v-if="selectedOrgane && subFilterType && !isSEP" class="pm-subfilter-bar">
             <div class="pm-subfilter-label">
               <i class="fas" :class="subFilterType === 'structure' ? 'fa-sitemap' : 'fa-map-marked-alt'"></i>
               {{ subFilterLabel }}
@@ -73,7 +73,7 @@
       <template v-else>
 
         <!-- ═══ Organe overview — 3 premium glass cards ═══ -->
-        <div class="pm-organes" v-if="statsByOrgane && !selectedOrgane">
+        <div class="pm-organes" v-if="statsByOrgane && !selectedOrgane && !isSEP">
           <div class="pm-org-card" v-for="o in organeOverview" :key="o.code"
             @click="filterByOrgane(o.value)"
             :style="{ '--org-color': o.color }">
@@ -130,7 +130,7 @@
         </div>
 
         <!-- ═══ Active organe filter indicator ═══ -->
-        <div v-if="selectedOrgane" class="pm-active-filter-bar">
+        <div v-if="selectedOrgane && !isSEP" class="pm-active-filter-bar">
           <div class="pm-filter-indicator">
             <span class="pm-filter-dot" :style="{ background: organeColor(selectedOrgane) }"></span>
             Filtrage : <strong>{{ organeOptions.find(o => o.value === selectedOrgane)?.label || selectedOrgane }}</strong>
@@ -278,10 +278,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import * as pointagesApi from '@/api/pointages'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
+const auth = useAuthStore()
+const isSEP = computed(() => auth.isSEP)
 
 const loading = ref(true)
 const exporting = ref(false)
@@ -505,6 +508,9 @@ async function exportExcel() {
 }
 
 onMounted(() => {
+  if (isSEP.value) {
+    selectedOrgane.value = 'Secrétariat Exécutif Provincial'
+  }
   fetchMonthly()
 })
 </script>

@@ -26,7 +26,7 @@ class AgentStatusController extends Controller
         $scope = $this->scopeService();
         $user = $request->user();
 
-        if ($scope->isProvincialRh($user)) {
+        if ($scope->isProvincialUser($user)) {
             $provinceId = $scope->provinceId($user);
             if (!$provinceId) {
                 $query->whereRaw('1 = 0');
@@ -308,7 +308,7 @@ class AgentStatusController extends Controller
 
         $baseQuery = AgentStatus::whereYear('created_at', $year);
 
-        if ($scope->isProvincialRh($request->user())) {
+        if ($scope->isProvincialUser($request->user())) {
             $provinceId = $scope->provinceId($request->user());
             if (!$provinceId) {
                 $baseQuery->whereRaw('1 = 0');
@@ -416,7 +416,7 @@ class AgentStatusController extends Controller
             ->whereIn('statut', ['en_conge', 'en_mission', 'suspendu', 'en_formation'])
             ->activeBetween($start, $end);
 
-        if ($scope->isProvincialRh($request->user())) {
+        if ($scope->isProvincialUser($request->user())) {
             $provinceId = $scope->provinceId($request->user());
             if (!$provinceId) {
                 $query->whereRaw('1 = 0');

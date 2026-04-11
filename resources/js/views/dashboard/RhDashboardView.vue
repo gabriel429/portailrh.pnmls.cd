@@ -10,8 +10,13 @@
             <i class="fas fa-user-tie" :style="auth.agent?.photo ? { display: 'none' } : {}"></i>
           </div>
           <div>
-            <h1 class="rh-hero-name">{{ auth.agent ? `${auth.agent.prenom} ${auth.agent.nom}` : 'Ressources Humaines' }}</h1>
             <div class="rh-hero-greeting">Tableau de bord</div>
+            <h1 class="rh-hero-name">Ressources Humaines</h1>
+            <div class="rh-hero-welcome" v-if="auth.agent">
+              Bienvenu{{ auth.agent.sexe === 'F' ? 'e' : '' }}
+              {{ auth.agent.sexe === 'F' ? 'Mme' : 'M.' }}
+              {{ auth.agent.prenom }} {{ auth.agent.nom }}
+            </div>
             <div class="rh-hero-agent-fonction-block" v-if="auth.agent?.fonction">{{ auth.agent.fonction }}</div>
             <div class="rh-hero-date">
               <i class="fas fa-calendar-alt me-1"></i>{{ today }}
@@ -1450,9 +1455,10 @@ onMounted(async () => {
 .rh-hero-photo {
   width: 100%; height: 100%; object-fit: cover;
 }
-.rh-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
-.rh-hero-agent-fonction-block { font-size: .9rem; font-weight: 500; color: rgba(255,255,255,.75); font-style: italic; margin: .1rem 0 .3rem; letter-spacing: .2px; }
-.rh-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
+.rh-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-bottom: .1rem; }
+.rh-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .3rem; line-height: 1.15; color: #fff; }
+.rh-hero-welcome { font-size: 1rem; font-weight: 600; color: rgba(255,255,255,.92); margin: .15rem 0 .1rem; letter-spacing: .2px; }
+.rh-hero-agent-fonction-block { font-size: .85rem; font-weight: 400; color: rgba(255,255,255,.65); font-style: italic; margin: 0 0 .3rem; letter-spacing: .2px; }
 .rh-hero-date { font-size: .72rem; opacity: .45; text-transform: capitalize; }
 
 .rh-hero-kpis {
