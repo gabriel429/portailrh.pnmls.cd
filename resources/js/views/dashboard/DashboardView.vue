@@ -13,6 +13,7 @@
         <div class="dash-hero-greeting">{{ heroGreeting }},</div>
         <h2>{{ heroCivility }} {{ heroDisplayName }}</h2>
         <p v-if="heroFonction" class="dash-hero-fonction">{{ heroFonction }}</p>
+        <p v-if="heroStructure" class="dash-hero-structure"><i class="fas fa-map-marker-alt"></i> {{ heroStructure }}</p>
         <p class="dash-hero-date">{{ today }}</p>
       </div>
       <div class="dash-hero-stats">
@@ -298,6 +299,24 @@ const heroGreeting = computed(() => heroIsFemme.value ? 'Bienvenue' : 'Bienvenu'
 
 const heroFonction = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 
+const heroStructure = computed(() => {
+  const agent = auth.agent
+  if (!agent) return null
+  // Priorité 1 : rattaché à un département
+  if (agent.departement_id) {
+    return agent.departement?.nom || null
+  }
+  // Priorité 2 : agent du SEN (sans département ni province)
+  if ((agent.organe ?? '').toLowerCase().includes('national')) {
+    return 'Attaché au SEN'
+  }
+  // Priorité 3 : agent provincial (SEP/SEL)
+  if (agent.province_id) {
+    return agent.province?.nom_province ?? agent.province?.nom ?? null
+  }
+  return null
+})
+
 const heroInitials = computed(() => {
   const agent = auth.agent
   if (agent) {
@@ -526,6 +545,7 @@ watch(profilePhotoCandidates, () => {
 .dash-hero-greeting { font-size: .78rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-bottom: .1rem; }
 .dash-hero-text h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 .2rem; word-break: break-word; }
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
+.dash-hero-structure { font-size: .8rem; opacity: .65; margin: 0 0 .15rem; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
 .dash-hero-stats { display: flex; gap: 1.5rem; margin-left: auto; flex-wrap: wrap; }
 .dash-hero-stat-link {
@@ -727,4 +747,75 @@ a.dash-activity-card { cursor: pointer; }
   .dum-footer { flex-direction: column; align-items: stretch; }
   .dum-btn { justify-content: center; }
 }
+
+/* ──────────────────────────────────────────
+   Mode nuit (.dark sur <html>)
+   ────────────────────────────────────────── */
+:global(.dark) .dash-section-header { border-bottom-color: #334155; }
+:global(.dark) .dash-section-title { color: #e2e8f0; }
+
+/* Hero : déjà blanc sur fond bleu — ok — mais la date/greeting lisibles */
+:global(.dark) .dash-hero-date,
+:global(.dark) .dash-hero-greeting { opacity: .55; }
+
+/* Action cards */
+:global(.dark) .dash-action-card { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:global(.dark) .dash-action-card:hover { border-color: #38bdf8; color: #38bdf8; box-shadow: 0 6px 20px rgba(56,189,248,.08); }
+:global(.dark) .dash-action-name { color: #e2e8f0; }
+:global(.dark) .dash-action-desc { color: #64748b; }
+
+/* Stat cards */
+:global(.dark) .dash-stat-card { background: #1e293b; border-color: #334155; }
+:global(.dark) .dash-stat-card:hover { border-color: #38bdf8; box-shadow: 0 6px 24px rgba(56,189,248,.08); }
+:global(.dark) .dash-stat-val { color: #f1f5f9; }
+:global(.dark) .dash-stat-lbl { color: #64748b; }
+:global(.dark) .dash-stat-bar { background: #334155; }
+
+/* Activity cards */
+:global(.dark) .dash-activity-card { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+:global(.dark) .dash-activity-card:hover { border-color: #38bdf8; box-shadow: 0 6px 24px rgba(56,189,248,.08); }
+:global(.dark) .dash-activity-text { color: #e2e8f0; }
+:global(.dark) .dash-activity-time { color: #64748b; }
+
+/* Empty state */
+:global(.dark) .dash-empty { color: #64748b; }
+:global(.dark) .dash-empty h5 { color: #94a3b8; }
+:global(.dark) .dash-empty p { color: #64748b; }
+:global(.dark) .dash-empty-icon { background: #1e293b; color: #475569; }
+:global(.dark) .dash-action-btn { background: #0c3352; color: #38bdf8; border-color: #1e4d6e; }
+:global(.dark) .dash-action-btn:hover { background: #0077B5; color: #fff; border-color: #0077B5; }
+
+/* Info cards */
+:global(.dark) .dash-info-card { background: #1e293b; border-color: #334155; }
+:global(.dark) .dash-info-card:hover { box-shadow: 0 6px 24px rgba(56,189,248,.08); }
+:global(.dark) .dash-info-title { color: #e2e8f0; }
+:global(.dark) .dash-info-text { color: #94a3b8; }
+:global(.dark) .dash-info-footer { border-top-color: #334155; }
+:global(.dark) .dash-info-link { color: #38bdf8; }
+:global(.dark) .dash-info-link:hover { color: #7dd3fc; }
+
+/* Modal upload (dum-*) */
+:global(.dark) .dum-dialog { background: #1e293b; }
+:global(.dark) .dum-label { color: #94a3b8; }
+:global(.dark) .dum-input { background: #0f172a; border-color: #334155; color: #e2e8f0; }
+:global(.dark) .dum-input::placeholder { color: #475569; }
+:global(.dark) .dum-input:focus { border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56,189,248,.12); }
+:global(.dark) .dum-input.is-invalid { border-color: #ef4444; }
+:global(.dark) .dum-upload-zone { background: #0f172a; border-color: #334155; color: #94a3b8; }
+:global(.dark) .dum-upload-zone:hover,
+:global(.dark) .dum-upload-zone.dragging { border-color: #38bdf8; background: #0c2d45; }
+:global(.dark) .dum-file-preview { background: #0f172a; border-color: #334155; }
+:global(.dark) .dum-file-name { color: #e2e8f0; }
+:global(.dark) .dum-file-size { color: #64748b; }
+:global(.dark) .dum-file-icon-box { background: #1e3a52; }
+:global(.dark) .dum-cat-card { background: #0f172a; border-color: #334155; }
+:global(.dark) .dum-cat-card:hover { border-color: #475569; }
+:global(.dark) .dum-cat-icon { color: #64748b; }
+:global(.dark) .dum-cat-label { color: #94a3b8; }
+:global(.dark) .dum-cat-card.active { background: #0c2d45; border-color: #38bdf8; }
+:global(.dark) .dum-cat-card.active .dum-cat-icon { color: #38bdf8; }
+:global(.dark) .dum-cat-card.active .dum-cat-label { color: #38bdf8; }
+:global(.dark) .dum-footer { border-top-color: #334155; }
+:global(.dark) .dum-btn-cancel { background: #0f172a; color: #94a3b8; border-color: #334155; }
+:global(.dark) .dum-btn-cancel:hover { background: #1e293b; color: #cbd5e1; }
 </style>
