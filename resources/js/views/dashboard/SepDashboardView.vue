@@ -5,14 +5,18 @@
       <div class="sep-hero-bg"></div>
       <div class="sep-hero-inner">
         <div class="sep-hero-left">
-          <div class="sep-hero-badge">
-            <i class="fas fa-map-marked-alt"></i>
+          <!-- Avatar photo / initiales -->
+          <div class="sep-hero-avatar">
+            <img v-if="sepPhotoUrl" :src="sepPhotoUrl" :alt="sepFullName"
+              class="sep-hero-avatar-photo" @error="handlePhotoError">
+            <span v-else class="sep-hero-avatar-initials">{{ sepInitials }}</span>
           </div>
           <div>
-            <div class="sep-hero-greeting">Bienvenue,</div>
-            <h1 class="sep-hero-name">
-              {{ auth.agent ? auth.agent.prenom + ' ' + auth.agent.nom : auth.user?.name || 'SEP' }}
-            </h1>
+            <div class="sep-hero-greeting">{{ sepGreeting }},</div>
+            <h1 class="sep-hero-name">{{ sepCivility }} {{ sepFullName }}</h1>
+            <div class="sep-hero-fonction" v-if="sepFonction">
+              <i class="fas fa-id-badge me-1"></i>{{ sepFonction }}
+            </div>
             <div class="sep-hero-role">
               <i class="fas fa-map-marker-alt me-1"></i>
               Secrétariat Exécutif Provincial
@@ -32,6 +36,7 @@
               <div class="sep-kpi-val">{{ data.agents?.actifs ?? '-' }}</div>
               <div class="sep-kpi-lbl">Agents actifs</div>
             </div>
+            <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="openProvDrilldown('presence')">
@@ -40,6 +45,7 @@
               <div class="sep-kpi-val">{{ data.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="sep-kpi-lbl">Présence</div>
             </div>
+            <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="router.push('/requests')">
@@ -48,6 +54,7 @@
               <div class="sep-kpi-val">{{ data.requests?.en_attente ?? 0 }}</div>
               <div class="sep-kpi-lbl">En attente</div>
             </div>
+            <i class="fas fa-arrow-right sep-kpi-drill-icon" title="Voir les demandes"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="openProvDrilldown('pta')">
@@ -56,6 +63,7 @@
               <div class="sep-kpi-val">{{ data.plan_travail?.avg_completion ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="sep-kpi-lbl">Plan annuel</div>
             </div>
+            <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
           </div>
         </div>
       </div>
@@ -136,6 +144,9 @@
               </div>
               <span v-if="m.alert" class="sep-metric-alert">
                 <i class="fas fa-exclamation-circle"></i>
+              </span>
+              <span v-if="m.drillSection" class="sep-metric-drill-badge" title="Cliquer pour voir le détail">
+                <i class="fas fa-search-plus"></i>
               </span>
             </div>
             <div class="sep-metric-val" :style="{ color: m.color }">{{ m.value }}</div>
@@ -662,7 +673,7 @@
                       <i class="fas fa-user"></i> Agents actifs ({{ provDrillData.agents.length }})
                     </div>
                     <div v-if="provDrillData.agents?.length" class="drill-prov-agents-table">
-                      <div v-for="a in provDrillData.agents" :key="a.id" class="drill-prov-agent-row">
+                      <div v-for="a in provDrillData.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
                         <div class="drill-prov-agent-avatar"
                           :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                           <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
@@ -671,6 +682,7 @@
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                         </div>
+                        <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
                     </div>
                     <div v-else class="drill-empty">
@@ -835,7 +847,7 @@
                       <i class="fas fa-user"></i> Agents ({{ deptDrillData.agents.length }})
                     </div>
                     <div v-if="deptDrillData.agents?.length" class="drill-prov-agents-table">
-                      <div v-for="a in deptDrillData.agents" :key="a.id" class="drill-prov-agent-row">
+                      <div v-for="a in deptDrillData.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
                         <div class="drill-prov-agent-avatar"
                           :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                           <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
@@ -844,6 +856,7 @@
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                         </div>
+                        <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
                     </div>
                     <div v-else class="drill-empty">
@@ -876,7 +889,7 @@
                       <i class="fas fa-user-check"></i> Agents actifs ({{ deptDrillData.presence?.total_active ?? 0 }})
                     </div>
                     <div v-if="deptDrillData.agents?.length" class="drill-prov-agents-table">
-                      <div v-for="a in deptDrillData.agents" :key="a.id" class="drill-prov-agent-row">
+                      <div v-for="a in deptDrillData.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
                         <div class="drill-prov-agent-avatar"
                           :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                           <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
@@ -885,6 +898,7 @@
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                         </div>
+                        <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
                     </div>
                     <div v-else class="drill-empty"><i class="fas fa-inbox"></i><p>Aucune donnée de présence</p></div>
@@ -954,6 +968,37 @@
         </div>
       </div>
     </template>
+
+    <!-- ═══ MODAL CONTACT AGENT ═══ -->
+    <Teleport to="body">
+      <div v-if="selectedAgent" class="agent-contact-overlay" @click.self="selectedAgent = null">
+        <div class="agent-contact-modal">
+          <button class="agent-contact-close" @click="selectedAgent = null">
+            <i class="fas fa-times"></i>
+          </button>
+          <div class="agent-contact-avatar"
+            :style="{ background: selectedAgent.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: selectedAgent.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+            <i :class="selectedAgent.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+          </div>
+          <div class="agent-contact-name">{{ selectedAgent.nom }}</div>
+          <div class="agent-contact-fn">{{ selectedAgent.fonction }}</div>
+          <div v-if="selectedAgent.matricule" class="agent-contact-mat">
+            <i class="fas fa-id-card me-1"></i>{{ selectedAgent.matricule }}
+          </div>
+          <div class="agent-contact-links">
+            <a v-if="selectedAgent.telephone" :href="'tel:' + selectedAgent.telephone" class="agent-contact-btn agent-contact-tel">
+              <i class="fas fa-phone me-1"></i>{{ selectedAgent.telephone }}
+            </a>
+            <a v-if="selectedAgent.email" :href="'mailto:' + selectedAgent.email" class="agent-contact-btn agent-contact-email">
+              <i class="fas fa-envelope me-1"></i>{{ selectedAgent.email }}
+            </a>
+            <div v-if="!selectedAgent.telephone && !selectedAgent.email" class="agent-contact-empty">
+              <i class="fas fa-exclamation-circle me-1"></i>Aucun contact renseigné
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -970,6 +1015,58 @@ const loading = ref(true)
 const loadError = ref(null)
 const data = ref({})
 const currentYear = new Date().getFullYear()
+
+// ─── CONTACT AGENT ───
+const selectedAgent = ref(null)
+
+// ─── PHOTO & IDENTITÉ SEP ───
+const photoIndex = ref(0)
+
+const sepPhotoUrl = computed(() => {
+  const photo = auth.agent?.photo
+  if (!photo) return null
+  const p = photo.trim()
+  const candidates = []
+  if (/^https?:\/\//i.test(p)) {
+    candidates.push(p)
+  } else {
+    const n = p.replace(/^\/+/, '')
+    candidates.push(`/${n}`)
+    if (!n.startsWith('storage/')) candidates.push(`/storage/${n}`)
+    if (!n.startsWith('uploads/') && !n.includes('/')) candidates.push(`/uploads/profiles/${n}`)
+  }
+  const uniq = [...new Set(candidates)]
+  return uniq[photoIndex.value] ?? null
+})
+
+function handlePhotoError() {
+  const photo = auth.agent?.photo
+  if (!photo) return
+  const p = photo.trim()
+  const n = p.replace(/^\/+/, '')
+  const max = [p, `/${n}`, `/storage/${n}`, `/uploads/profiles/${n}`].filter(Boolean).length
+  if (photoIndex.value < max - 1) photoIndex.value++
+  else photoIndex.value = max // force fallback initiales
+}
+
+const isFemme = computed(() => {
+  const s = (auth.agent?.sexe ?? '').toLowerCase()
+  return s === 'f' || s === 'femme' || s === 'féminin'
+})
+
+const sepCivility = computed(() => isFemme.value ? 'Mme' : 'M.')
+const sepGreeting = computed(() => isFemme.value ? 'Bienvenue' : 'Bienvenu')
+const sepFullName = computed(() => {
+  const a = auth.agent
+  if (!a) return auth.user?.name || 'SEP'
+  return `${a.prenom ?? ''} ${a.nom ?? ''}`.trim()
+})
+const sepInitials = computed(() => {
+  const a = auth.agent
+  if (!a) return 'S'
+  return ((a.prenom?.[0] ?? '') + (a.nom?.[0] ?? '')).toUpperCase() || 'S'
+})
+const sepFonction = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 
 const today = computed(() => new Date().toLocaleDateString('fr-FR', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -1145,15 +1242,21 @@ onMounted(async () => {
   display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap;
 }
 .sep-hero-left { display: flex; align-items: center; gap: 1.2rem; color: #fff; }
-.sep-hero-badge {
-  width: 60px; height: 60px; border-radius: 16px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.05));
-  border: 1px solid rgba(255,255,255,.15);
+
+/* Avatar photo/initiales */
+.sep-hero-avatar {
+  width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+  border: 2.5px solid rgba(255,255,255,.35);
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  background: linear-gradient(135deg, rgba(14,165,233,.5), rgba(10,84,115,.6));
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; color: #7dd3fc; backdrop-filter: blur(8px);
 }
+.sep-hero-avatar-photo { width: 100%; height: 100%; object-fit: cover; }
+.sep-hero-avatar-initials { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
+
 .sep-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
-.sep-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
+.sep-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .2rem; line-height: 1.15; color: #fff; }
+.sep-hero-fonction { font-size: .78rem; font-weight: 600; color: #7dd3fc; margin-bottom: .25rem; }
 .sep-hero-role { font-size: .78rem; font-weight: 600; opacity: .75; margin-bottom: .2rem; display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
 .sep-hero-province-badge {
   background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25);
@@ -1166,7 +1269,7 @@ onMounted(async () => {
   background: rgba(255,255,255,.08); border-radius: 16px; padding: .8rem 1.2rem;
   border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(8px);
 }
-.sep-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; }
+.sep-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; position: relative; }
 .sep-kpi-icon {
   width: 38px; height: 38px; border-radius: 10px;
   background: rgba(255,255,255,.1); display: flex; align-items: center;
@@ -1256,8 +1359,20 @@ onMounted(async () => {
 .sep-dept-code { font-size: .68rem; color: #94a3b8; }
 .sep-drill-arrow { font-size: .65rem; color: #cbd5e1; margin-left: auto; transition: all .2s; }
 .sep-dept-card:hover .sep-drill-arrow { color: #0ea5e9; transform: translateX(3px); }
-.sep-kpi-clickable { cursor: pointer; border-radius: 10px; transition: background .15s; }
+.sep-kpi-clickable { cursor: pointer; border-radius: 10px; transition: background .15s; position: relative; }
 .sep-kpi-clickable:hover { background: rgba(255,255,255,.18); }
+.sep-kpi-drill-icon {
+  position: absolute; top: .4rem; right: .5rem;
+  font-size: .6rem; color: rgba(255,255,255,.45);
+  transition: all .2s;
+}
+.sep-kpi-clickable:hover .sep-kpi-drill-icon { color: rgba(255,255,255,.9); transform: scale(1.15); }
+.sep-metric-drill-badge {
+  margin-left: auto; font-size: .6rem; color: #94a3b8;
+  display: flex; align-items: center;
+  transition: color .15s;
+}
+.sep-metric.sep-clickable:hover .sep-metric-drill-badge { color: #0ea5e9; }
 .sep-organe-clickable { cursor: pointer; }
 .sep-organe-clickable:hover { border-color: #7dd3fc; box-shadow: 0 4px 16px rgba(14,165,233,.12); }
 .sep-organe-clickable:hover .sep-drill-arrow { color: #0ea5e9; transform: translateX(3px); }
@@ -1523,12 +1638,53 @@ onMounted(async () => {
   background: #f8fafc; border-radius: 10px; transition: background .15s;
 }
 .drill-prov-agent-row:hover { background: #e0f2fe; }
+.drill-prov-agent-clickable { cursor: pointer; }
+.drill-agent-contact-icon { margin-left: auto; color: #94a3b8; font-size: .75rem; transition: color .15s; }
+.drill-prov-agent-clickable:hover .drill-agent-contact-icon { color: #0ea5e9; }
 .drill-prov-agent-avatar {
   width: 34px; height: 34px; border-radius: 10px; display: flex;
   align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0;
 }
 .drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
 .drill-prov-agent-fn { font-size: .68rem; color: #94a3b8; }
+
+/* ─── Modal contact agent ─── */
+.agent-contact-overlay {
+  position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 9999;
+  display: flex; align-items: center; justify-content: center; padding: 1rem;
+  backdrop-filter: blur(4px);
+}
+.agent-contact-modal {
+  background: #fff; border-radius: 20px; padding: 2rem 2rem 1.5rem;
+  width: 100%; max-width: 340px; box-shadow: 0 24px 48px rgba(0,0,0,.2);
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  position: relative; text-align: center;
+}
+.agent-contact-close {
+  position: absolute; top: .8rem; right: .8rem;
+  background: #f1f5f9; border: none; border-radius: 50%; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; color: #64748b; cursor: pointer; transition: background .15s;
+}
+.agent-contact-close:hover { background: #e2e8f0; color: #1e293b; }
+.agent-contact-avatar {
+  width: 64px; height: 64px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 1.8rem;
+  margin-bottom: .3rem;
+}
+.agent-contact-name { font-size: 1rem; font-weight: 700; color: #0f172a; }
+.agent-contact-fn { font-size: .78rem; color: #64748b; }
+.agent-contact-mat { font-size: .72rem; color: #94a3b8; margin-top: .1rem; }
+.agent-contact-links { display: flex; flex-direction: column; gap: .5rem; width: 100%; margin-top: .8rem; }
+.agent-contact-btn {
+  display: flex; align-items: center; justify-content: center; gap: .4rem;
+  padding: .6rem 1rem; border-radius: 10px; font-size: .82rem; font-weight: 600;
+  text-decoration: none; transition: filter .15s;
+}
+.agent-contact-btn:hover { filter: brightness(.92); }
+.agent-contact-tel { background: #d1fae5; color: #065f46; }
+.agent-contact-email { background: #dbeafe; color: #1e40af; }
+.agent-contact-empty { font-size: .78rem; color: #94a3b8; padding: .5rem 0; }
 
 /* Transitions */
 .drill-fade-enter-active, .drill-fade-leave-active { transition: opacity .25s; }

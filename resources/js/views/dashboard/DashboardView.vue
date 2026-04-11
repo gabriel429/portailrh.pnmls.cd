@@ -10,8 +10,9 @@
         <span v-else class="dash-hero-avatar-fallback">{{ heroInitials }}</span>
       </div>
       <div class="dash-hero-text">
-        <h2>Bienvenu(e), {{ auth.agent ? auth.agent.nom + ' ' + auth.agent.prenom : auth.user?.name || 'Utilisateur' }}</h2>
-        <p v-if="auth.agent?.fonction" class="dash-hero-fonction">{{ auth.agent.fonction }}</p>
+        <div class="dash-hero-greeting">{{ heroGreeting }},</div>
+        <h2>{{ heroCivility }} {{ heroDisplayName }}</h2>
+        <p v-if="heroFonction" class="dash-hero-fonction">{{ heroFonction }}</p>
         <p class="dash-hero-date">{{ today }}</p>
       </div>
       <div class="dash-hero-stats">
@@ -280,8 +281,22 @@ const activities = ref([])
 const profilePhotoIndex = ref(0)
 
 const heroDisplayName = computed(() => {
-  return auth.agent ? `${auth.agent.nom || ''} ${auth.agent.prenom || ''}`.trim() : (auth.user?.name || 'Utilisateur')
+  return auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'Utilisateur')
 })
+
+const heroIsFemme = computed(() => {
+  const s = (auth.agent?.sexe ?? '').toLowerCase()
+  return s === 'f' || s === 'femme' || s === 'féminin'
+})
+
+const heroCivility = computed(() => {
+  if (!auth.agent) return ''
+  return heroIsFemme.value ? 'Mme' : 'M.'
+})
+
+const heroGreeting = computed(() => heroIsFemme.value ? 'Bienvenue' : 'Bienvenu')
+
+const heroFonction = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 
 const heroInitials = computed(() => {
   const agent = auth.agent
@@ -508,10 +523,11 @@ watch(profilePhotoCandidates, () => {
   color: #fff;
 }
 .dash-hero-text { flex: 1; min-width: 150px; }
-.dash-hero-text h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 .2rem; }
+.dash-hero-greeting { font-size: .78rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-bottom: .1rem; }
+.dash-hero-text h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 .2rem; word-break: break-word; }
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
-.dash-hero-stats { display: flex; gap: 1.5rem; margin-left: auto; }
+.dash-hero-stats { display: flex; gap: 1.5rem; margin-left: auto; flex-wrap: wrap; }
 .dash-hero-stat-link {
   text-decoration: none; color: inherit; display: block;
   padding: .3rem .5rem; border-radius: 8px; transition: background .15s;
@@ -627,9 +643,9 @@ a.dash-activity-card { cursor: pointer; }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .dash-hero { padding: 1.5rem 1.2rem; }
+  .dash-hero { padding: 1.5rem 1.2rem; gap: .8rem; }
   .dash-hero-text h2 { font-size: 1.1rem; }
-  .dash-hero-stats { gap: .8rem 1rem; }
+  .dash-hero-stats { gap: .5rem .8rem; margin-left: 0; margin-top: .3rem; width: 100%; }
   .dash-hero-stat-val { font-size: 1.2rem; }
   .dash-action-grid { grid-template-columns: repeat(2, 1fr); gap: .6rem; }
   .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: .75rem; }
@@ -641,14 +657,23 @@ a.dash-activity-card { cursor: pointer; }
 }
 
 @media (max-width: 576px) {
-  .dash-hero { flex-direction: column; align-items: flex-start; padding: 1.5rem 1.2rem; }
-  .dash-hero-stats { margin-left: 0; margin-top: .5rem; gap: .8rem 1.2rem; flex-wrap: wrap; }
-  .dash-hero-stats > div { flex: 0 0 calc(33.33% - 1rem); min-width: 60px; }
+  .dash-hero { flex-direction: column; align-items: flex-start; padding: 1.2rem 1rem; }
+  .dash-hero-stats { margin-left: 0; margin-top: .4rem; gap: .4rem .8rem; flex-wrap: wrap; width: 100%; }
+  /* router-link + div enfants des stats : 3 par ligne */
+  .dash-hero-stats > * { flex: 0 0 calc(33.33% - .6rem); min-width: 56px; }
   .dash-hero-stat-val { font-size: 1.1rem; }
+  .dash-hero-stat-lbl { font-size: .62rem; }
   .dash-action-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-stat-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-activity-grid { grid-template-columns: 1fr; }
   .dash-info-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 380px) {
+  .dash-action-grid { grid-template-columns: 1fr; }
+  .dash-stat-grid { grid-template-columns: 1fr; }
+  .dash-hero-text h2 { font-size: 1rem; }
+  .dash-hero-stats > * { flex: 0 0 calc(33.33% - .4rem); }
 }
 
 /* ── Document Upload Modal (dum-*) ── */
