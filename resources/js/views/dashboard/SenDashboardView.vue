@@ -5,8 +5,11 @@
       <div class="sen-hero-bg"></div>
       <div class="sen-hero-inner">
         <div class="sen-hero-left">
-          <div class="sen-hero-badge">
-            <i class="fas fa-crown"></i>
+          <!-- Avatar photo / initiales -->
+          <div class="sen-hero-avatar">
+            <img v-if="senPhotoUrl" :src="senPhotoUrl" :alt="senFullName"
+              class="sen-hero-avatar-photo" @error="handleSenPhotoError">
+            <span v-else class="sen-hero-avatar-initials">{{ senInitials }}</span>
           </div>
           <div>
             <div class="sen-hero-greeting">{{ senGreeting }},</div>
@@ -1211,6 +1214,39 @@ const senGreeting = computed(() => senIsFemme.value ? 'Bienvenue' : 'Bienvenu')
 const senFullName = computed(() => auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'SEN'))
 const senFonction = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 
+const senInitials = computed(() => {
+  const a = auth.agent
+  if (!a) return 'S'
+  return ((a.prenom?.[0] ?? '') + (a.nom?.[0] ?? '')).toUpperCase() || 'S'
+})
+
+const senPhotoIndex = ref(0)
+const senPhotoUrl = computed(() => {
+  const photo = auth.agent?.photo
+  if (!photo) return null
+  const p = photo.trim()
+  const candidates = []
+  if (/^https?:\/\//i.test(p)) {
+    candidates.push(p)
+  } else {
+    const n = p.replace(/^\/+/, '')
+    candidates.push(`/${n}`)
+    if (!n.startsWith('storage/')) candidates.push(`/storage/${n}`)
+    if (!n.startsWith('uploads/') && !n.includes('/')) candidates.push(`/uploads/profiles/${n}`)
+  }
+  const uniq = [...new Set(candidates)]
+  return uniq[senPhotoIndex.value] ?? null
+})
+function handleSenPhotoError() {
+  const photo = auth.agent?.photo
+  if (!photo) return
+  const p = photo.trim()
+  const n = p.replace(/^\/+/, '')
+  const max = [p, `/${n}`, `/storage/${n}`, `/uploads/profiles/${n}`].filter(Boolean).length
+  if (senPhotoIndex.value < max - 1) senPhotoIndex.value++
+  else senPhotoIndex.value = max
+}
+
 const currentTime = computed(() => new Date().toLocaleTimeString('fr-FR', {
   hour: '2-digit', minute: '2-digit',
 }))
@@ -1430,13 +1466,15 @@ onMounted(async () => {
   display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap;
 }
 .sen-hero-left { display: flex; align-items: center; gap: 1.2rem; color: #fff; }
-.sen-hero-badge {
-  width: 60px; height: 60px; border-radius: 16px; flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,.15), rgba(255,255,255,.05));
-  border: 1px solid rgba(255,255,255,.15);
+.sen-hero-avatar {
+  width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+  border: 2.5px solid rgba(255,255,255,.35);
+  box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  background: linear-gradient(135deg, rgba(251,191,36,.5), rgba(146,64,14,.6));
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.5rem; color: #fbbf24; backdrop-filter: blur(8px);
 }
+.sen-hero-avatar-photo { width: 100%; height: 100%; object-fit: cover; }
+.sen-hero-avatar-initials { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
 .sen-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
 .sen-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
 .sen-hero-role { font-size: .78rem; font-weight: 600; opacity: .75; margin-bottom: .2rem; display: flex; align-items: center; }
