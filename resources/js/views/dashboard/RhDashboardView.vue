@@ -10,14 +10,12 @@
             <i class="fas fa-user-tie" :style="auth.agent?.photo ? { display: 'none' } : {}"></i>
           </div>
           <div>
-            <div class="rh-hero-greeting">Tableau de bord</div>
-            <h1 class="rh-hero-name">Ressources Humaines</h1>
-            <div class="rh-hero-welcome" v-if="auth.agent">
-              Bienvenu{{ auth.agent.sexe === 'F' ? 'e' : '' }}
-              {{ auth.agent.sexe === 'F' ? 'Mme' : 'M.' }}
-              {{ auth.agent.prenom }} {{ auth.agent.nom }}
+            <div class="rh-hero-greeting">{{ rhGreeting }},</div>
+            <h1 class="rh-hero-name">{{ rhCivility }} {{ rhFullName }}</h1>
+            <div class="rh-hero-agent-fonction-block" v-if="rhFonction">{{ rhFonction }}</div>
+            <div class="rh-hero-role">
+              <i class="fas fa-users-cog me-1"></i>Ressources Humaines
             </div>
-            <div class="rh-hero-agent-fonction-block" v-if="auth.agent?.fonction">{{ auth.agent.fonction }}</div>
             <div class="rh-hero-date">
               <i class="fas fa-calendar-alt me-1"></i>{{ today }}
             </div>
@@ -1076,6 +1074,15 @@ const router = useRouter()
 const auth = useAuthStore()
 const loading = ref(true)
 const d = ref({})
+
+const rhIsFemme = computed(() => {
+  const s = (auth.agent?.sexe ?? '').toLowerCase()
+  return s === 'f' || s === 'femme' || s === 'féminin'
+})
+const rhCivility = computed(() => auth.agent ? (rhIsFemme.value ? 'Mme' : 'M.') : '')
+const rhGreeting = computed(() => rhIsFemme.value ? 'Bienvenue' : 'Bienvenu')
+const rhFullName = computed(() => auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'RH'))
+const rhFonction = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 
 const today = computed(() => new Date().toLocaleDateString('fr-FR', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',

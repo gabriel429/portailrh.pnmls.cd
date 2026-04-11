@@ -9,10 +9,11 @@
             <i class="fas fa-crown"></i>
           </div>
           <div>
-            <div class="sen-hero-greeting">Bienvenue,</div>
-            <h1 class="sen-hero-name">
-              {{ auth.agent ? auth.agent.prenom + ' ' + auth.agent.nom : auth.user?.name || 'SEN' }}
-            </h1>
+            <div class="sen-hero-greeting">{{ senGreeting }},</div>
+            <h1 class="sen-hero-name">{{ senCivility }} {{ senFullName }}</h1>
+            <div class="sen-hero-role" v-if="senFonction">
+              <i class="fas fa-briefcase me-1"></i>{{ senFonction }}
+            </div>
             <div class="sen-hero-role">
               <i class="fas fa-shield-alt me-1"></i>
               Secrétariat Exécutif National
@@ -1200,6 +1201,15 @@ const currentYear = new Date().getFullYear()
 const today = computed(() => new Date().toLocaleDateString('fr-FR', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
 }))
+
+const senIsFemme = computed(() => {
+  const s = (auth.agent?.sexe ?? '').toLowerCase()
+  return s === 'f' || s === 'femme' || s === 'féminin'
+})
+const senCivility = computed(() => auth.agent ? (senIsFemme.value ? 'Mme' : 'M.') : '')
+const senGreeting = computed(() => senIsFemme.value ? 'Bienvenue' : 'Bienvenu')
+const senFullName = computed(() => auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'SEN'))
+const senFonction = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 
 const currentTime = computed(() => new Date().toLocaleTimeString('fr-FR', {
   hour: '2-digit', minute: '2-digit',
