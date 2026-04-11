@@ -1055,7 +1055,7 @@ class ExecutiveDashboardController extends ApiController
         $user = $request->user();
 
         if (!$user->hasRole('SEP')) {
-            return response()->json(['message' => 'Acces reserve au SEP.'], 403);
+            return response()->json(['message' => 'Accès réservé au SEP.'], 403);
         }
 
         $scope = $this->scopeService();
