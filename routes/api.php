@@ -87,6 +87,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/executive/province/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'provinceDetail']);
     Route::get('/dashboard/executive/department/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'departmentDetail']);
     Route::get('/dashboard/sep', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'sepIndex']);
+    Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
 
     // Profile (SPA)

@@ -2,6 +2,7 @@
   <SenDashboardView v-if="auth.isSEN" />
   <SepDashboardView v-else-if="auth.isSEP" />
   <RhDashboardView v-else-if="auth.isRH" />
+  <DepartementDashboardView v-else-if="auth.isDepartement" />
   <div v-else class="container py-4">
     <!-- Hero -->
     <div class="dash-hero">
@@ -273,6 +274,7 @@ import RequestCreateModal from '@/components/RequestCreateModal.vue'
 const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenDashboardView.vue'))
 const SepDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SepDashboardView.vue'))
 const RhDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RhDashboardView.vue'))
+const DepartementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/DepartementDashboardView.vue'))
 
 const auth = useAuthStore()
 const ui = useUiStore()

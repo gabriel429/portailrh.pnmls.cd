@@ -40,6 +40,18 @@ export const useAuthStore = defineStore('auth', {
             const role = state.user?.role?.nom_role?.toLowerCase()
             return role === 'sep'
         },
+        isDirecteur(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase()
+            return role === 'directeur de département'
+        },
+        isAssistant(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase()
+            return role === 'assistant de département'
+        },
+        isDepartement(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase()
+            return ['directeur de département', 'assistant de département'].includes(role)
+        },
         canManageDocsTravail(state) {
             if (state.user?.is_super_admin) return true
             return this.isSEN || this.isRH
