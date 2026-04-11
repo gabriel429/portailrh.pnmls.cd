@@ -62,7 +62,7 @@ class HolidayPlanningController extends Controller
 
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvincialUser($user);
         $provinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         $query = HolidayPlanning::with(['createdBy', 'validatedBy'])
@@ -185,7 +185,7 @@ class HolidayPlanningController extends Controller
 
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvincialUser($user);
         $provinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         $start = Carbon::create($year, $month ?: 1, 1)->startOfMonth();
@@ -354,7 +354,7 @@ class HolidayPlanningController extends Controller
 
         $scope = $this->scopeService();
         $user = $request->user();
-        $isProvincial = $scope->isProvincialRh($user);
+        $isProvincial = $scope->isProvincialUser($user);
         $provinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         $baseQuery = DB::table('holiday_plannings as hp')
@@ -433,7 +433,7 @@ class HolidayPlanningController extends Controller
 
         $scope = $this->scopeService();
         $user = $request->user();
-        $provinceId = $scope->isProvincialRh($user) ? $scope->provinceId($user) : null;
+        $provinceId = $scope->isProvincialUser($user) ? $scope->provinceId($user) : null;
 
         $query = HolidayPlanning::with([
             'createdBy',
