@@ -793,7 +793,8 @@ class ExecutiveDashboardController extends ApiController
             ]);
         // Taux utilisation des congés : proportion d'agents actifs ayant un congé approuvé
         $tauxConges = $actifsAgents > 0
-            ? round(($hApproved / $actifsAgents
+            ? round(($hApproved / $actifsAgents) * 100, 1)
+            : 0;
         $affQ   = Affectation::whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
         $affActives= (clone $affQ)->where('actif', true)->count();
         $mobilite  = (clone $affQ)->where('date_debut', '>=', $now->copy()->subDays(30))
