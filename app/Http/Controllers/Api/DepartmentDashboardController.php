@@ -17,7 +17,8 @@ class DepartmentDashboardController extends ApiController
     public function index(Request $request)
     {
         $user     = $request->user();
-        $deptId   = $user->departement_id;
+        // Le département est sur le profil agent (agents.departement_id), pas sur users
+        $deptId   = $user->agent?->departement_id ?? $user->departement_id;
 
         if (!$deptId) {
             return response()->json(['message' => 'Aucun département associé à votre compte.'], 403);

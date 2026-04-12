@@ -817,6 +817,9 @@ class ParametresController extends Controller
             'agent_id' => $agent->id,
             'role_id' => $validated['role_id'],
         ]);
+        // Synchroniser role_id sur le profil agent
+        $agent->role_id = $validated['role_id'];
+        $agent->save();
         $this->recordAudit('CREATE', 'users', $user->id, null, $user->toArray());
         return response()->json($user->load(['agent', 'role']), 201);
     }
@@ -833,6 +836,11 @@ class ParametresController extends Controller
             $user->password = bcrypt($validated['password']);
         }
         $user->save();
+        // Synchroniser role_id sur le profil agent
+        if ($user->agent) {
+            $user->agent->role_id = $validated['role_id'];
+            $user->agent->save();
+        }
         $this->recordAudit('UPDATE', 'users', $user->id, $before, $user->fresh()->toArray());
         return response()->json($user->load(['agent', 'role']));
     }
