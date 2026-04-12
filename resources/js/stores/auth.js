@@ -42,15 +42,15 @@ export const useAuthStore = defineStore('auth', {
         },
         isDirecteur(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
-            return role === 'directeur de département'
+            return ['directeur', 'directeur de département'].includes(role)
         },
         isAssistant(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
-            return role === 'assistant de département'
+            return ['assistant', 'assistant de département'].includes(role)
         },
         isDepartement(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
-            return ['directeur de département', 'assistant de département'].includes(role)
+            return ['directeur', 'directeur de département', 'assistant', 'assistant de département'].includes(role)
         },
         canManageDocsTravail(state) {
             if (state.user?.is_super_admin) return true
