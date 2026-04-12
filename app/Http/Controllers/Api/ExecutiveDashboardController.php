@@ -751,6 +751,37 @@ class ExecutiveDashboardController extends ApiController
         $tOverdue = (clone $tacheQ)->where('statut', '!=', 'terminee')
             ->whereNotNull('date_echeance')->where('date_echeance', '<', $now->toDateString())->count();
 
+        // ─── TÂCHES RÉCENTES (province) ──────────────────────────────────────────
+        $recentTaches = (clone $tacheQ)
+            ->with('agent:id,nom,prenom')
+            ->orderByDesc('updated_at')
+            ->limit(8)
+            ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
+
+        // ─── PERFORMANCE DES DÉPARTEMENTS (province) ─────────────────────────────
+        $deptPerformance = Department::where('province_id', $provinceId)
+            ->get(['id', 'nom', 'code'])
+            ->map(function ($dept) use ($now) {
+                $agentIds = Agent::where('departement_id', $dept->id)->actifs()->pluck('id');
+                $q        = Tache::whereIn('agent_id', $agentIds);
+                $total    = (clone $q)->count();
+                $done     = (clone $q)->where('statut', 'terminee')->count();
+                $overdue  = (clone $q)->where('statut', '!=', 'terminee')
+                    ->whereNotNull('date_echeance')
+                    ->where('date_echeance', '<', $now->toDateString())
+                    ->count();
+                $avgPct   = round((clone $q)->avg('pourcentage') ?? 0, 0);
+                return [
+                    'id'             => $dept->id,
+                    'nom'            => $dept->nom,
+                    'code'           => $dept->code,
+                    'taches_total'   => $total,
+                    'taches_done'    => $done,
+                    'taches_overdue' => $overdue,
+                    'avg_completion' => $avgPct,
+                ];
+            });
+
         // ─── PLAN DE TRAVAIL SEP (niveau_administratif = SEP + province) ────────
         $planQ = ActivitePlan::parAnnee($currentYear)->parNiveau('SEP');
         // Si la table activites_plan a province_id, on filtre; sinon on prend tout le SEP
@@ -854,6 +885,8 @@ class ExecutiveDashboardController extends ApiController
                 'terminee' => $tTerminee,
                 'overdue'  => $tOverdue,
             ],
+            'recent_taches'    => $recentTaches,
+            'dept_performance' => $deptPerformance,
             'plan_travail' => [
                 'total'          => $planTotal,
                 'terminee'       => $planTerminee,

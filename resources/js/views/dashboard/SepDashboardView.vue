@@ -588,6 +588,109 @@
         </div>
       </div>
 
+      <!-- ═══ TÂCHES RÉCENTES ═══ -->
+      <div class="sep-section">
+        <div class="sep-section-head">
+          <div class="sep-section-icon" style="background:#fef3c7;color:#d97706;">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div>
+            <h3 class="sep-section-title">Tâches récentes — province</h3>
+            <p class="sep-section-sub">Dernières mises à jour des tâches dans la province</p>
+          </div>
+          <router-link to="/taches" class="sep-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+        </div>
+        <div v-if="!(data.recent_taches?.length)" class="sep-recent-empty" style="padding:2rem;">
+          <div class="sep-empty-icon-wrap" style="background:#fef9ee;"><i class="fas fa-check-circle" style="color:#16a34a;"></i></div>
+          <span>Aucune tâche pour le moment</span>
+        </div>
+        <div v-else class="sep-tasks-list">
+          <router-link v-for="t in data.recent_taches" :key="t.id" :to="'/taches/' + t.id" class="sep-task-row">
+            <div class="sep-task-priority" :class="'prio-' + t.priorite"></div>
+            <div class="sep-task-info">
+              <div class="sep-task-title">{{ t.titre }}</div>
+              <div class="sep-task-meta">
+                <span class="sep-tag" :class="sepStatutClass(t.statut)">{{ sepStatutLabel(t.statut) }}</span>
+                <span v-if="t.agent" class="sep-task-agent">
+                  <i class="fas fa-user-circle me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
+                </span>
+                <span v-if="t.date_echeance" class="sep-task-due" :class="{ 'sep-overdue': sepIsOverdue(t) }">
+                  <i class="fas fa-clock me-1"></i>{{ sepFormatDate(t.date_echeance) }}
+                </span>
+              </div>
+            </div>
+            <div class="sep-task-prog">
+              <div class="sep-prog-track">
+                <div class="sep-prog-fill" :style="{ width: (t.pourcentage || 0) + '%', background: sepProgressColor(t.pourcentage) }"></div>
+              </div>
+              <span class="sep-prog-pct">{{ t.pourcentage ?? 0 }}%</span>
+            </div>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- ═══ PERFORMANCE DES DÉPARTEMENTS ═══ -->
+      <div class="sep-section">
+        <div class="sep-section-head">
+          <div class="sep-section-icon" style="background:#d1fae5;color:#059669;">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <div>
+            <h3 class="sep-section-title">Performance des départements</h3>
+            <p class="sep-section-sub">Réalisation des tâches par département dans la province</p>
+          </div>
+        </div>
+        <div v-if="!(data.dept_performance?.length)" class="sep-recent-empty" style="padding:2rem;">
+          <div class="sep-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-building" style="color:#059669;"></i></div>
+          <span>Aucun département configuré dans la province</span>
+        </div>
+        <div v-else class="sep-table-wrap">
+          <table class="sep-perf-table">
+            <thead>
+              <tr>
+                <th>Département</th>
+                <th class="text-center">Total tâches</th>
+                <th class="text-center">Terminées</th>
+                <th>Réalisation</th>
+                <th class="text-center">En retard</th>
+                <th class="text-center">Niveau</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="dept in data.dept_performance" :key="dept.id"
+                  class="sep-perf-row" @click="openDeptDrilldown(dept.id)">
+                <td>
+                  <div class="sep-dept-cell">
+                    <div class="sep-dept-cell-badge"><i class="fas fa-building"></i></div>
+                    <div>
+                      <div class="sep-dept-cell-name">{{ dept.nom }}</div>
+                      <div class="sep-dept-cell-code">{{ dept.code }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center"><span class="sep-badge-neutral">{{ dept.taches_total }}</span></td>
+                <td class="text-center"><span class="sep-badge-ok">{{ dept.taches_done }}</span></td>
+                <td>
+                  <div class="sep-prog-cell">
+                    <div class="sep-prog-track">
+                      <div class="sep-prog-fill" :style="{ width: dept.avg_completion + '%', background: sepProgressColor(dept.avg_completion) }"></div>
+                    </div>
+                    <span class="sep-prog-pct">{{ dept.avg_completion }}%</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span v-if="dept.taches_overdue > 0" class="sep-badge-danger">{{ dept.taches_overdue }}</span>
+                  <span v-else class="sep-badge-ok"><i class="fas fa-check"></i></span>
+                </td>
+                <td class="text-center">
+                  <span class="sep-perf-badge" :class="sepPerfClass(dept.avg_completion)">{{ sepPerfLabel(dept.avg_completion) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- ═══ DRILL-DOWN PROVINCE ═══ -->
       <Teleport to="body">
         <Transition name="drill-fade">
@@ -1209,6 +1312,47 @@ function formatTime(iso) {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+function sepFormatDate(val) {
+  if (!val) return ''
+  const d = new Date(val)
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function sepIsOverdue(t) {
+  if (!t.date_echeance || t.statut === 'terminee') return false
+  return new Date(t.date_echeance) < new Date()
+}
+
+function sepProgressColor(pct) {
+  if (pct >= 80) return '#059669'
+  if (pct >= 50) return '#d97706'
+  return '#dc2626'
+}
+
+function sepStatutLabel(s) {
+  const map = { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée', suspendue: 'Suspendue' }
+  return map[s] ?? s
+}
+
+function sepStatutClass(s) {
+  const map = { nouvelle: 'tag-nouvelle', en_cours: 'tag-en-cours', terminee: 'tag-terminee', suspendue: 'tag-suspendue' }
+  return map[s] ?? ''
+}
+
+function sepPerfLabel(pct) {
+  if (pct >= 80) return 'Excellent'
+  if (pct >= 60) return 'Bon'
+  if (pct >= 40) return 'Moyen'
+  return 'Faible'
+}
+
+function sepPerfClass(pct) {
+  if (pct >= 80) return 'perf-excellent'
+  if (pct >= 60) return 'perf-bon'
+  if (pct >= 40) return 'perf-moyen'
+  return 'perf-faible'
+}
+
 onMounted(async () => {
   try {
     const { data: result } = await client.get('/dashboard/sep')
@@ -1562,6 +1706,142 @@ onMounted(async () => {
   background: linear-gradient(90deg, #0ea5e9, #38bdf8); transition: width .8s ease;
 }
 .sep-task-progress-lbl { font-size: .65rem; color: #94a3b8; margin-top: .25rem; text-align: right; }
+
+/* ═══════════ TÂCHES RÉCENTES ═══════════ */
+.sep-section-link {
+  margin-left: auto; font-size: .78rem; color: #0ea5e9; text-decoration: none; font-weight: 600;
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.sep-section-link:hover { color: #0284c7; }
+.sep-tasks-list { display: flex; flex-direction: column; gap: .55rem; margin-top: .75rem; }
+.sep-task-row {
+  display: flex; align-items: center; gap: .75rem; padding: .7rem 1rem;
+  background: #f8fafc; border-radius: 10px; text-decoration: none; color: inherit;
+  border: 1px solid #e2e8f0; transition: box-shadow .15s, background .15s;
+}
+.sep-task-row:hover { background: #f0f9ff; box-shadow: 0 2px 8px rgba(14,165,233,.1); }
+.sep-task-priority {
+  width: 4px; height: 38px; border-radius: 3px; flex-shrink: 0;
+  background: #94a3b8;
+}
+.sep-task-priority.prio-haute { background: #dc2626; }
+.sep-task-priority.prio-urgente { background: #7c3aed; }
+.sep-task-priority.prio-normale { background: #0ea5e9; }
+.sep-task-priority.prio-basse { background: #94a3b8; }
+.sep-task-info { flex: 1; min-width: 0; }
+.sep-task-title { font-size: .85rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sep-task-meta { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .2rem; align-items: center; }
+.sep-tag { font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.tag-nouvelle { background: #dbeafe; color: #1d4ed8; }
+.tag-en-cours { background: #fef3c7; color: #92400e; }
+.tag-terminee { background: #dcfce7; color: #15803d; }
+.tag-suspendue { background: #f1f5f9; color: #64748b; }
+.sep-task-agent { font-size: .72rem; color: #64748b; }
+.sep-task-due { font-size: .72rem; color: #94a3b8; }
+.sep-task-due.sep-overdue { color: #dc2626; font-weight: 600; }
+.sep-task-prog { display: flex; align-items: center; gap: .4rem; min-width: 90px; }
+.sep-prog-track { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.sep-prog-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.sep-prog-pct { font-size: .7rem; color: #64748b; font-weight: 600; white-space: nowrap; }
+
+/* ═══════════ PERFORMANCE DÉPARTEMENTS ═══════════ */
+.sep-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
+.sep-perf-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.sep-perf-table thead tr { background: #f8fafc; }
+.sep-perf-table th {
+  padding: .65rem 1rem; text-align: left; font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .03em; color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sep-perf-table th.text-center { text-align: center; }
+.sep-perf-table td { padding: .65rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.sep-perf-table td.text-center { text-align: center; }
+.sep-perf-row { cursor: pointer; transition: background .15s; }
+.sep-perf-row:hover { background: #f0f9ff; }
+.sep-dept-cell { display: flex; align-items: center; gap: .6rem; }
+.sep-dept-cell-badge {
+  width: 32px; height: 32px; border-radius: 8px; background: #dbeafe; color: #1d4ed8;
+  display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0;
+}
+.sep-dept-cell-name { font-weight: 600; color: #1e293b; }
+.sep-dept-cell-code { font-size: .68rem; color: #94a3b8; }
+.sep-badge-neutral { background: #f1f5f9; color: #475569; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.sep-badge-ok { background: #dcfce7; color: #15803d; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.sep-badge-danger { background: #fee2e2; color: #dc2626; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.sep-prog-cell { display: flex; align-items: center; gap: .4rem; }
+.sep-perf-badge { border-radius: 999px; padding: 2px 8px; font-size: .68rem; font-weight: 700; }
+.perf-excellent { background: #dcfce7; color: #15803d; }
+.perf-bon { background: #dbeafe; color: #1d4ed8; }
+.perf-moyen { background: #fef3c7; color: #92400e; }
+.perf-faible { background: #fee2e2; color: #dc2626; }
+
+/* ═══════════ TÂCHES RÉCENTES ═══════════ */
+.sep-section-link {
+  margin-left: auto; font-size: .78rem; color: #0ea5e9; text-decoration: none; font-weight: 600;
+  display: flex; align-items: center; gap: 4px; white-space: nowrap;
+}
+.sep-section-link:hover { color: #0284c7; }
+.sep-tasks-list { display: flex; flex-direction: column; gap: .55rem; margin-top: .75rem; }
+.sep-task-row {
+  display: flex; align-items: center; gap: .75rem; padding: .7rem 1rem;
+  background: #f8fafc; border-radius: 10px; text-decoration: none; color: inherit;
+  border: 1px solid #e2e8f0; transition: box-shadow .15s, background .15s;
+}
+.sep-task-row:hover { background: #f0f9ff; box-shadow: 0 2px 8px rgba(14,165,233,.1); }
+.sep-task-priority {
+  width: 4px; height: 38px; border-radius: 3px; flex-shrink: 0;
+  background: #94a3b8;
+}
+.sep-task-priority.prio-haute { background: #dc2626; }
+.sep-task-priority.prio-urgente { background: #7c3aed; }
+.sep-task-priority.prio-normale { background: #0ea5e9; }
+.sep-task-priority.prio-basse { background: #94a3b8; }
+.sep-task-info { flex: 1; min-width: 0; }
+.sep-task-title { font-size: .85rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sep-task-meta { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .2rem; align-items: center; }
+.sep-tag { font-size: .65rem; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.tag-nouvelle { background: #dbeafe; color: #1d4ed8; }
+.tag-en-cours { background: #fef3c7; color: #92400e; }
+.tag-terminee { background: #dcfce7; color: #15803d; }
+.tag-suspendue { background: #f1f5f9; color: #64748b; }
+.sep-task-agent { font-size: .72rem; color: #64748b; }
+.sep-task-due { font-size: .72rem; color: #94a3b8; }
+.sep-task-due.sep-overdue { color: #dc2626; font-weight: 600; }
+.sep-task-prog { display: flex; align-items: center; gap: .4rem; min-width: 90px; }
+.sep-prog-track { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
+.sep-prog-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
+.sep-prog-pct { font-size: .7rem; color: #64748b; font-weight: 600; white-space: nowrap; }
+
+/* ═══════════ PERFORMANCE DÉPARTEMENTS ═══════════ */
+.sep-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
+.sep-perf-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.sep-perf-table thead tr { background: #f8fafc; }
+.sep-perf-table th {
+  padding: .65rem 1rem; text-align: left; font-size: .72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .03em; color: #64748b;
+  border-bottom: 1px solid #e2e8f0;
+}
+.sep-perf-table th.text-center { text-align: center; }
+.sep-perf-table td { padding: .65rem 1rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.sep-perf-table td.text-center { text-align: center; }
+.sep-perf-row { cursor: pointer; transition: background .15s; }
+.sep-perf-row:hover { background: #f0f9ff; }
+.sep-dept-cell { display: flex; align-items: center; gap: .6rem; }
+.sep-dept-cell-badge {
+  width: 32px; height: 32px; border-radius: 8px; background: #dbeafe; color: #1d4ed8;
+  display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0;
+}
+.sep-dept-cell-name { font-weight: 600; color: #1e293b; }
+.sep-dept-cell-code { font-size: .68rem; color: #94a3b8; }
+.sep-badge-neutral { background: #f1f5f9; color: #475569; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.sep-badge-ok { background: #dcfce7; color: #15803d; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.sep-badge-danger { background: #fee2e2; color: #dc2626; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
+.sep-prog-cell { display: flex; align-items: center; gap: .4rem; }
+.sep-perf-badge { border-radius: 999px; padding: 2px 8px; font-size: .68rem; font-weight: 700; }
+.perf-excellent { background: #dcfce7; color: #15803d; }
+.perf-bon { background: #dbeafe; color: #1d4ed8; }
+.perf-moyen { background: #fef3c7; color: #92400e; }
+.perf-faible { background: #fee2e2; color: #dc2626; }
 
 /* ═══════════ EMPTY ═══════════ */
 .sep-empty-icon-wrap {
