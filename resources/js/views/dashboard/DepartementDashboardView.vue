@@ -82,8 +82,12 @@
 
     <!-- Loading / Error -->
     <LoadingSpinner v-if="loading" message="Chargement du tableau de bord..." />
-    <div v-else-if="loadError" class="dept-error-banner">
-      <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
+    <div v-else-if="loadError" class="dept-error-banner" :class="{ 'dept-error-info': loadErrorCode === 'DEPT_NOT_FUNCTIONAL' }">
+      <i class="fas me-2" :class="loadErrorCode === 'DEPT_NOT_FUNCTIONAL' ? 'fa-info-circle' : 'fa-exclamation-triangle'"></i>
+      {{ loadError }}
+      <p v-if="loadErrorCode === 'DEPT_NOT_FUNCTIONAL'" class="dept-error-hint">
+        Ce département est conservé à des fins d'affectation et d'historisation. Contactez l'administrateur pour l'activer dans le système.
+      </p>
     </div>
 
     <template v-else>
@@ -447,7 +451,8 @@ const router = useRouter()
 const auth   = useAuthStore()
 
 const loading    = ref(true)
-const loadError  = ref(null)
+const loadError     = ref(null)
+const loadErrorCode = ref(null)
 const data       = ref({})
 const photoIndex = ref(0)
 
@@ -564,7 +569,8 @@ const presenceOffset = computed(() => {
 // ─── Chargement ──────────────────────────────────────────────
 async function loadData() {
   loading.value   = true
-  loadError.value = null
+  loadError.value     = null
+  loadErrorCode.value  = null
   try {
     const res  = await client.get('/dashboard/department')
     data.value = res.data?.data ?? res.data ?? {}
@@ -574,7 +580,8 @@ async function loadData() {
       )
     }
   } catch (err) {
-    loadError.value = err?.response?.data?.message ?? 'Impossible de charger le tableau de bord.'
+    loadError.value     = err?.response?.data?.message ?? 'Impossible de charger le tableau de bord.'
+    loadErrorCode.value  = err?.response?.data?.code ?? null
   } finally {
     loading.value = false
   }
@@ -711,6 +718,12 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
   margin: 1rem 2rem; padding: .85rem 1.25rem;
   background: #fef3c7; color: #92400e;
   border: 1px solid #fcd34d; border-radius: 12px; font-size: .9rem;
+}
+.dept-error-banner.dept-error-info {
+  background: #eff6ff; color: #1e40af; border-color: #93c5fd;
+}
+.dept-error-hint {
+  margin: .5rem 0 0; font-size: .82rem; opacity: .8;
 }
 
 /* ──────────────────────────────────────────────────────────
@@ -1013,6 +1026,7 @@ html.dark .dept-task-global-bar-track,
 html.dark .dept-prog-track { background: #334155 !important; }
 html.dark .dept-recent-tasks-head { color: #e2e8f0 !important; border-color: #334155 !important; }
 html.dark .dept-error-banner { background: #1e293b !important; border-color: #475569 !important; color: #fbbf24 !important; }
+html.dark .dept-error-banner.dept-error-info { background: #1e3a5f !important; border-color: #3b82f6 !important; color: #93c5fd !important; }
 
 /* ──────────────────────────────────────────────────────────
    Responsive

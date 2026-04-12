@@ -22,6 +22,11 @@ class Department extends Model
         'nom',
         'description',
         'province_id',
+        'pris_en_charge',
+    ];
+
+    protected $casts = [
+        'pris_en_charge' => 'boolean',
     ];
 
     // Relations BelongsTo
@@ -46,6 +51,13 @@ class Department extends Model
         return $this->hasMany(Affectation::class);
     }
 
+    /** Agent portant le rôle Directeur dans ce département */
+    public function directeur(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Agent::class, 'departement_id')
+                    ->whereHas('role', fn($q) => $q->where('nom_role', 'Directeur'));
+    }
+
     /** Chef de département actif */
     public function chef()
     {
@@ -58,6 +70,16 @@ class Department extends Model
     }
 
     // Scopes
+
+    /**
+     * Départements fonctionnels pris en charge par le système.
+     * Les autres sont conservés pour l'affectation et l'historisation.
+     */
+    public function scopeFonctionnel($query)
+    {
+        return $query->where('pris_en_charge', true);
+    }
+
     public function scopeByCode($query, $code)
     {
         return $query->where('code', $code);

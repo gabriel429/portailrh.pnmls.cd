@@ -29,6 +29,15 @@ class DepartmentDashboardController extends ApiController
         // ─── Département info ───────────────────────────────────
         $department = Department::with('province:id,nom')->find($deptId);
 
+        // Seuls les départements fonctionnels (pris en charge) ont un dashboard.
+        // Les autres sont conservés pour l'affectation et l'historisation uniquement.
+        if (!$department || !$department->pris_en_charge) {
+            return response()->json([
+                'message' => 'Ce département n\'est pas encore pris en charge par le système.',
+                'code'    => 'DEPT_NOT_FUNCTIONAL',
+            ], 403);
+        }
+
         // ─── Agents ────────────────────────────────────────────
         $agentsActifs = Agent::where('departement_id', $deptId)->actifs()->count();
         $agentsTotal  = Agent::where('departement_id', $deptId)->count();

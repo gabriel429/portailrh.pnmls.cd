@@ -429,11 +429,16 @@ class ParametresController extends Controller
 
     public function apiDepartmentsIndex(Request $request)
     {
-        $q = Department::withCount(['agents', 'sections'])->orderBy('nom');
+        $q = Department::withCount(['agents', 'sections'])
+            ->with(['directeur:id,nom,prenom,departement_id'])
+            ->orderBy('nom');
         if ($request->search) {
             $q->where('nom', 'like', "%{$request->search}%");
         }
-        return response()->json($q->paginate($request->per_page ?? 20));
+        if ($request->filled('pris_en_charge')) {
+            $q->where('pris_en_charge', filter_var($request->pris_en_charge, FILTER_VALIDATE_BOOLEAN));
+        }
+        return response()->json($q->paginate($request->per_page ?? 50));
     }
 
     public function apiDepartmentsShow(Department $department)
@@ -475,6 +480,20 @@ class ParametresController extends Controller
         $department->delete();
         $this->recordAudit('DELETE', 'departments', $department->id, $before);
         return response()->json(['message' => 'Departement supprime.']);
+    }
+
+    public function apiDepartmentsTogglePrisEnCharge(Department $department)
+    {
+        $before = $department->toArray();
+        $department->pris_en_charge = !$department->pris_en_charge;
+        $department->save();
+        $this->recordAudit('UPDATE', 'departments', $department->id, $before, $department->toArray());
+        return response()->json([
+            'message'        => $department->pris_en_charge
+                ? 'Département activé dans le système.'
+                : 'Département désactivé du système (conservé pour historisation).',
+            'pris_en_charge' => $department->pris_en_charge,
+        ]);
     }
 
     // ─── FONCTIONS ───────────────────────────────────────────────

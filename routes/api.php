@@ -265,6 +265,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('departments', [ParametresController::class, 'apiDepartmentsStore']);
         Route::put('departments/{department}', [ParametresController::class, 'apiDepartmentsUpdate']);
         Route::delete('departments/{department}', [ParametresController::class, 'apiDepartmentsDestroy']);
+        Route::patch('departments/{department}/toggle-pris-en-charge', [ParametresController::class, 'apiDepartmentsTogglePrisEnCharge']);
 
         // Fonctions
         Route::get('fonctions', [ParametresController::class, 'apiFonctionsIndex']);
