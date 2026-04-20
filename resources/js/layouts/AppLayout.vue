@@ -78,11 +78,54 @@
                 <span class="nav-link-label">Congés</span>
               </router-link>
             </li>
+            <li v-if="auth.isChefSectionRenforcement" class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'renforcements.index' }" title="Formations RC">
+                <i class="fas fa-graduation-cap nav-icon"></i>
+                <span class="nav-link-label">Formations</span>
+              </router-link>
+            </li>
           </ul>
 
           <div class="mobile-nav-divider d-lg-none"></div>
 
           <ul class="navbar-nav align-items-lg-center navbar-secondary-nav">
+            <!-- ── Menu Renforcement des Capacités ── -->
+            <li v-if="auth.isChefSectionRenforcement" class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle nav-link-rc" href="#" role="button" data-bs-toggle="dropdown">
+                <i class="fas fa-graduation-cap nav-icon"></i>
+                <span class="nav-link-label">Renforcement</span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li>
+                  <router-link class="dropdown-item" :to="{ name: 'renforcements.index' }">
+                    <span class="dd-icon dd-icon-green"><i class="fas fa-chalkboard-teacher"></i></span> Formations
+                  </router-link>
+                </li>
+                <li>
+                  <router-link class="dropdown-item" :to="{ name: 'renforcements.create' }">
+                    <span class="dd-icon dd-icon-teal"><i class="fas fa-plus-circle"></i></span> Planifier une formation
+                  </router-link>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <router-link class="dropdown-item" :to="{ name: 'renforcements.report.monthly' }">
+                    <span class="dd-icon dd-icon-blue"><i class="fas fa-chart-bar"></i></span> Rapport mensuel
+                  </router-link>
+                </li>
+                <li>
+                  <router-link class="dropdown-item" :to="{ name: 'renforcements.report.annual' }">
+                    <span class="dd-icon dd-icon-purple"><i class="fas fa-chart-line"></i></span> Rapport annuel
+                  </router-link>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <router-link class="dropdown-item" :to="{ name: 'requests.index', query: { type: 'renforcement_capacites' } }">
+                    <span class="dd-icon dd-icon-orange"><i class="fas fa-paper-plane"></i></span> Demandes RC
+                  </router-link>
+                </li>
+              </ul>
+            </li>
+
             <li v-if="auth.hasAdminAccess" class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
                 <i class="fas fa-shield-halved nav-icon"></i>

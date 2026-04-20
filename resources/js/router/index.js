@@ -430,6 +430,14 @@ const routes = [
         ],
     },
 
+    // Renforcement des Capacités
+    { path: '/renforcements', name: 'renforcements.index', component: () => import('@/views/renforcements/FormationListView.vue'), meta: { auth: true } },
+    { path: '/renforcements/create', name: 'renforcements.create', component: () => import('@/views/renforcements/FormationFormView.vue'), meta: { auth: true } },
+    { path: '/renforcements/report/monthly', name: 'renforcements.report.monthly', component: () => import('@/views/renforcements/FormationReportView.vue'), meta: { auth: true } },
+    { path: '/renforcements/report/annual', name: 'renforcements.report.annual', component: () => import('@/views/renforcements/FormationReportView.vue'), meta: { auth: true } },
+    { path: '/renforcements/:id', name: 'renforcements.show', component: () => import('@/views/renforcements/FormationShowView.vue'), meta: { auth: true } },
+    { path: '/renforcements/:id/edit', name: 'renforcements.edit', component: () => import('@/views/renforcements/FormationFormView.vue'), meta: { auth: true } },
+
     // 404
     {
         path: '/:pathMatch(.*)*',

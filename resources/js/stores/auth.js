@@ -52,6 +52,10 @@ export const useAuthStore = defineStore('auth', {
             const role = state.user?.role?.nom_role?.toLowerCase() ?? ''
             return role === 'directeur' || role.startsWith('assistant')
         },
+        isChefSectionRenforcement(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase() ?? ''
+            return role === 'chef section renforcement'
+        },
         canManageDocsTravail(state) {
             if (state.user?.is_super_admin) return true
             return this.isSEN || this.isRH

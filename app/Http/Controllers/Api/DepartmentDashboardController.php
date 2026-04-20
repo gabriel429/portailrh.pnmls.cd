@@ -92,11 +92,11 @@ class DepartmentDashboardController extends ApiController
         $teamPerf = Agent::where('departement_id', $deptId)
             ->actifs()
             ->with([
-                'taches' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
+                'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
             ])
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction'])
             ->map(function ($agent) use ($now) {
-                $taches    = $agent->taches;
+                $taches    = $agent->tachesAssignees;
                 $total     = $taches->count();
                 $done      = $taches->where('statut', 'terminee')->count();
                 $inProgress = $taches->whereIn('statut', ['nouvelle', 'en_cours'])->count();
