@@ -3,6 +3,7 @@
   <SepDashboardView v-else-if="auth.isSEP" />
   <RhDashboardView v-else-if="auth.isRH" />
   <DepartementDashboardView v-else-if="auth.isDepartement" />
+  <RenforcementDashboardView v-else-if="auth.isChefSectionRenforcement" />
   <div v-else class="container py-4">
     <!-- Hero -->
     <div class="dash-hero">
@@ -275,6 +276,7 @@ const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/Se
 const SepDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SepDashboardView.vue'))
 const RhDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RhDashboardView.vue'))
 const DepartementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/DepartementDashboardView.vue'))
+const RenforcementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RenforcementDashboardView.vue'))
 
 const auth = useAuthStore()
 const ui = useUiStore()

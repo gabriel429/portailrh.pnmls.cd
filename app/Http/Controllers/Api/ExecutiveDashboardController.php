@@ -24,6 +24,8 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
 use App\Models\Institution;
+use App\Models\Formation;
+use App\Models\FormationBeneficiaire;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -758,29 +760,35 @@ class ExecutiveDashboardController extends ApiController
             ->limit(8)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
 
-        // ─── PERFORMANCE DES DÉPARTEMENTS (province) ─────────────────────────────
-        $deptPerformance = Department::where('province_id', $provinceId)
-            ->get(['id', 'nom', 'code'])
-            ->map(function ($dept) use ($now) {
-                $agentIds = Agent::where('departement_id', $dept->id)->actifs()->pluck('id');
-                $q        = Tache::whereIn('agent_id', $agentIds);
-                $total    = (clone $q)->count();
-                $done     = (clone $q)->where('statut', 'terminee')->count();
-                $overdue  = (clone $q)->where('statut', '!=', 'terminee')
+        // ─── PERFORMANCE DES AGENTS (province) ──────────────────────────────────
+        $agentPerformance = Agent::whereIn('departement_id',
+                Department::where('province_id', $provinceId)->pluck('id')
+            )
+            ->actifs()
+            ->with('departement:id,code')
+            ->get(['id', 'nom', 'prenom', 'departement_id'])
+            ->map(function ($agent) use ($now) {
+                $q       = Tache::where('agent_id', $agent->id);
+                $total   = (clone $q)->count();
+                $done    = (clone $q)->where('statut', 'terminee')->count();
+                $overdue = (clone $q)->where('statut', '!=', 'terminee')
                     ->whereNotNull('date_echeance')
                     ->where('date_echeance', '<', $now->toDateString())
                     ->count();
-                $avgPct   = round((clone $q)->avg('pourcentage') ?? 0, 0);
+                $avgPct  = round((clone $q)->avg('pourcentage') ?? 0, 0);
                 return [
-                    'id'             => $dept->id,
-                    'nom'            => $dept->nom,
-                    'code'           => $dept->code,
+                    'id'             => $agent->id,
+                    'nom'            => $agent->nom,
+                    'prenom'         => $agent->prenom,
+                    'dept_code'      => $agent->departement?->code ?? '—',
                     'taches_total'   => $total,
                     'taches_done'    => $done,
                     'taches_overdue' => $overdue,
                     'avg_completion' => $avgPct,
                 ];
-            });
+            })
+            ->sortByDesc('avg_completion')
+            ->values();
 
         // ─── PLAN DE TRAVAIL SEP (niveau_administratif = SEP + province) ────────
         $planQ = ActivitePlan::parAnnee($currentYear)->parNiveau('SEP');
@@ -885,8 +893,8 @@ class ExecutiveDashboardController extends ApiController
                 'terminee' => $tTerminee,
                 'overdue'  => $tOverdue,
             ],
-            'recent_taches'    => $recentTaches,
-            'dept_performance' => $deptPerformance,
+            'recent_taches'     => $recentTaches,
+            'agent_performance' => $agentPerformance,
             'plan_travail' => [
                 'total'          => $planTotal,
                 'terminee'       => $planTerminee,
@@ -1350,6 +1358,128 @@ class ExecutiveDashboardController extends ApiController
             ],
             'activites' => $activites,
             'agents' => $topAgents,
+        ]);
+    }
+
+    public function renforcementIndex(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->hasAnyPermission(['renforcement.view', 'renforcement.monitor', 'renforcement.plan', 'renforcement.process'])) {
+            return response()->json(['message' => 'Accès réservé à la section Renforcement des Capacités.'], 403);
+        }
+
+        $now         = Carbon::now();
+        $currentYear = $now->year;
+        $agent       = $user->agent;
+
+        // ─── FORMATIONS ──────────────────────────────────────────────────────────
+        $fTotal       = Formation::count();
+        $fPlanifiee   = Formation::planifiee()->count();
+        $fEnCours     = Formation::enCours()->count();
+        $fTerminee    = Formation::terminee()->count();
+        $fAnnee       = Formation::whereYear('date_debut', $currentYear)->count();
+        $fBudgetTotal = Formation::whereYear('date_debut', $currentYear)->sum('budget');
+
+        $recentFormations = Formation::with(['createur:id,nom,prenom', 'beneficiaires'])
+            ->orderByDesc('updated_at')
+            ->limit(8)
+            ->get(['id', 'titre', 'statut', 'date_debut', 'date_fin', 'lieu', 'formateur', 'created_by', 'budget'])
+            ->map(fn($f) => [
+                'id'               => $f->id,
+                'titre'            => $f->titre,
+                'statut'           => $f->statut,
+                'date_debut'       => $f->date_debut?->format('Y-m-d'),
+                'date_fin'         => $f->date_fin?->format('Y-m-d'),
+                'lieu'             => $f->lieu,
+                'formateur'        => $f->formateur,
+                'budget'           => $f->budget,
+                'nb_beneficiaires' => $f->beneficiaires->count(),
+                'createur'         => $f->createur ? $f->createur->prenom . ' ' . $f->createur->nom : null,
+            ]);
+
+        $formationsAVenir = Formation::planifiee()
+            ->where('date_debut', '>=', $now->toDateString())
+            ->where('date_debut', '<=', $now->copy()->addDays(30)->toDateString())
+            ->orderBy('date_debut')
+            ->limit(5)
+            ->get(['id', 'titre', 'date_debut', 'lieu'])
+            ->map(fn($f) => [
+                'id'         => $f->id,
+                'titre'      => $f->titre,
+                'date_debut' => $f->date_debut?->format('Y-m-d'),
+                'lieu'       => $f->lieu,
+            ]);
+
+        $nbBeneficiairesAnnee = FormationBeneficiaire::whereHas('formation', fn($q) =>
+            $q->whereYear('date_debut', $currentYear)
+        )->distinct('agent_id')->count('agent_id');
+
+        // ─── DEMANDES DE RENFORCEMENT ─────────────────────────────────────────────
+        $demandesQ       = RequestModel::where('type', 'renforcement_capacites');
+        $demandesPending = (clone $demandesQ)->enAttente()->count();
+        $demandesApproved= (clone $demandesQ)->approuve()->count();
+        $demandesRejected= (clone $demandesQ)->rejete()->count();
+
+        $recentDemandes = (clone $demandesQ)->enAttente()
+            ->with('agent:id,nom,prenom')
+            ->orderByDesc('created_at')
+            ->limit(6)
+            ->get(['id', 'agent_id', 'type', 'description', 'created_at', 'statut']);
+
+        // ─── TÂCHES DU CHEF ───────────────────────────────────────────────────────
+        $tacheQ    = $agent ? Tache::where('agent_id', $agent->id) : Tache::whereRaw('1=0');
+        $tTotal    = (clone $tacheQ)->count();
+        $tNouvelle = (clone $tacheQ)->nouvelle()->count();
+        $tEnCours  = (clone $tacheQ)->enCours()->count();
+        $tTerminee = (clone $tacheQ)->terminee()->count();
+        $tOverdue  = (clone $tacheQ)->where('statut', '!=', 'terminee')
+            ->whereNotNull('date_echeance')->where('date_echeance', '<', $now->toDateString())->count();
+
+        $recentTaches = (clone $tacheQ)
+            ->orderByDesc('updated_at')
+            ->limit(5)
+            ->get(['id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
+
+        // ─── PLAN DE TRAVAIL ─────────────────────────────────────────────────────
+        $ptaQ        = ActivitePlan::parAnnee($currentYear);
+        $ptaTotal    = (clone $ptaQ)->count();
+        $ptaTerminee = (clone $ptaQ)->terminee()->count();
+        $ptaEnCours  = (clone $ptaQ)->enCours()->count();
+        $ptaAvg      = round((clone $ptaQ)->avg('pourcentage') ?? 0, 0);
+
+        return response()->json([
+            'formations' => [
+                'total'                  => $fTotal,
+                'planifiee'              => $fPlanifiee,
+                'en_cours'               => $fEnCours,
+                'terminee'               => $fTerminee,
+                'annee'                  => $fAnnee,
+                'budget_total'           => $fBudgetTotal,
+                'nb_beneficiaires_annee' => $nbBeneficiairesAnnee,
+            ],
+            'recent_formations'  => $recentFormations,
+            'formations_a_venir' => $formationsAVenir,
+            'demandes' => [
+                'en_attente' => $demandesPending,
+                'approuve'   => $demandesApproved,
+                'rejete'     => $demandesRejected,
+            ],
+            'recent_demandes' => $recentDemandes,
+            'taches' => [
+                'total'    => $tTotal,
+                'nouvelle' => $tNouvelle,
+                'en_cours' => $tEnCours,
+                'terminee' => $tTerminee,
+                'overdue'  => $tOverdue,
+            ],
+            'recent_taches' => $recentTaches,
+            'plan_travail' => [
+                'total'    => $ptaTotal,
+                'terminee' => $ptaTerminee,
+                'en_cours' => $ptaEnCours,
+                'avg'      => $ptaAvg,
+            ],
         ]);
     }
 }

@@ -629,26 +629,26 @@
         </div>
       </div>
 
-      <!-- ═══ PERFORMANCE DES DÉPARTEMENTS ═══ -->
+      <!-- ═══ PERFORMANCE DES AGENTS ═══ -->
       <div class="sep-section">
         <div class="sep-section-head">
           <div class="sep-section-icon" style="background:#d1fae5;color:#059669;">
-            <i class="fas fa-chart-bar"></i>
+            <i class="fas fa-user-chart"></i>
           </div>
           <div>
-            <h3 class="sep-section-title">Performance des départements</h3>
-            <p class="sep-section-sub">Réalisation des tâches par département dans la province</p>
+            <h3 class="sep-section-title">Performance des agents</h3>
+            <p class="sep-section-sub">Réalisation des tâches dans la province</p>
           </div>
         </div>
-        <div v-if="!(data.dept_performance?.length)" class="sep-recent-empty" style="padding:2rem;">
-          <div class="sep-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-building" style="color:#059669;"></i></div>
-          <span>Aucun département configuré dans la province</span>
+        <div v-if="!(data.agent_performance?.length)" class="sep-recent-empty" style="padding:2rem;">
+          <div class="sep-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-users" style="color:#059669;"></i></div>
+          <span>Aucun agent actif dans la province</span>
         </div>
         <div v-else class="sep-table-wrap">
           <table class="sep-perf-table">
             <thead>
               <tr>
-                <th>Département</th>
+                <th>Agent</th>
                 <th class="text-center">Total tâches</th>
                 <th class="text-center">Terminées</th>
                 <th>Réalisation</th>
@@ -657,33 +657,32 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="dept in data.dept_performance" :key="dept.id"
-                  class="sep-perf-row" @click="openDeptDrilldown(dept.id)">
+              <tr v-for="ag in data.agent_performance" :key="ag.id" class="sep-perf-row">
                 <td>
                   <div class="sep-dept-cell">
-                    <div class="sep-dept-cell-badge"><i class="fas fa-building"></i></div>
+                    <div class="sep-agent-avatar">{{ (ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '') }}</div>
                     <div>
-                      <div class="sep-dept-cell-name">{{ dept.nom }}</div>
-                      <div class="sep-dept-cell-code">{{ dept.code }}</div>
+                      <div class="sep-dept-cell-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                      <div class="sep-dept-cell-code">{{ ag.dept_code }}</div>
                     </div>
                   </div>
                 </td>
-                <td class="text-center"><span class="sep-badge-neutral">{{ dept.taches_total }}</span></td>
-                <td class="text-center"><span class="sep-badge-ok">{{ dept.taches_done }}</span></td>
+                <td class="text-center"><span class="sep-badge-neutral">{{ ag.taches_total }}</span></td>
+                <td class="text-center"><span class="sep-badge-ok">{{ ag.taches_done }}</span></td>
                 <td>
                   <div class="sep-prog-cell">
                     <div class="sep-prog-track">
-                      <div class="sep-prog-fill" :style="{ width: dept.avg_completion + '%', background: sepProgressColor(dept.avg_completion) }"></div>
+                      <div class="sep-prog-fill" :style="{ width: ag.avg_completion + '%', background: sepProgressColor(ag.avg_completion) }"></div>
                     </div>
-                    <span class="sep-prog-pct">{{ dept.avg_completion }}%</span>
+                    <span class="sep-prog-pct">{{ ag.avg_completion }}%</span>
                   </div>
                 </td>
                 <td class="text-center">
-                  <span v-if="dept.taches_overdue > 0" class="sep-badge-danger">{{ dept.taches_overdue }}</span>
+                  <span v-if="ag.taches_overdue > 0" class="sep-badge-danger">{{ ag.taches_overdue }}</span>
                   <span v-else class="sep-badge-ok"><i class="fas fa-check"></i></span>
                 </td>
                 <td class="text-center">
-                  <span class="sep-perf-badge" :class="sepPerfClass(dept.avg_completion)">{{ sepPerfLabel(dept.avg_completion) }}</span>
+                  <span class="sep-perf-badge" :class="sepPerfClass(ag.avg_completion)">{{ sepPerfLabel(ag.avg_completion) }}</span>
                 </td>
               </tr>
             </tbody>
@@ -1831,19 +1830,13 @@ onMounted(async () => {
   width: 32px; height: 32px; border-radius: 8px; background: #dbeafe; color: #1d4ed8;
   display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0;
 }
+.sep-agent-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: #dbeafe; color: #1d4ed8;
+  display: flex; align-items: center; justify-content: center; font-size: .72rem;
+  font-weight: 700; flex-shrink: 0; text-transform: uppercase;
+}
 .sep-dept-cell-name { font-weight: 600; color: #1e293b; }
 .sep-dept-cell-code { font-size: .68rem; color: #94a3b8; }
-.sep-badge-neutral { background: #f1f5f9; color: #475569; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
-.sep-badge-ok { background: #dcfce7; color: #15803d; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
-.sep-badge-danger { background: #fee2e2; color: #dc2626; border-radius: 6px; padding: 2px 8px; font-size: .72rem; font-weight: 700; }
-.sep-prog-cell { display: flex; align-items: center; gap: .4rem; }
-.sep-perf-badge { border-radius: 999px; padding: 2px 8px; font-size: .68rem; font-weight: 700; }
-.perf-excellent { background: #dcfce7; color: #15803d; }
-.perf-bon { background: #dbeafe; color: #1d4ed8; }
-.perf-moyen { background: #fef3c7; color: #92400e; }
-.perf-faible { background: #fee2e2; color: #dc2626; }
-
-/* ═══════════ EMPTY ═══════════ */
 .sep-empty-icon-wrap {
   width: 48px; height: 48px; border-radius: 50%; display: flex;
   align-items: center; justify-content: center; font-size: 1.1rem; margin-bottom: .2rem;
