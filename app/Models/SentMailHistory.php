@@ -17,10 +17,16 @@ class SentMailHistory extends Model
         'attachment_name',
         'attachment_path',
         'sent_at',
+        'inbound_uid',
+        'response_from_email',
+        'response_subject',
+        'response_body_preview',
+        'response_received_at',
     ];
 
     protected $casts = [
         'sent_at' => 'datetime',
+        'response_received_at' => 'datetime',
     ];
 
     public function sender(): BelongsTo

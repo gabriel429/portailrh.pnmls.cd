@@ -1,8 +1,11 @@
 <?php
 
 use App\Models\ActivitePlan;
+use App\Models\NotificationPortail;
 use App\Models\Province;
+use App\Models\SentMailHistory;
 use App\Services\PtaDocxImportReader;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schedule;
@@ -259,3 +262,214 @@ Artisan::command('pta:import-docx {file : Chemin vers le fichier DOCX PTA} {--an
 Artisan::command('pta:import-docx:helpers', function () {
 	$this->line('Commande disponible : php artisan pta:import-docx "chemin/docx" --annee=2026 --createur=ID --execute');
 })->purpose('Affiche un exemple d\'utilisation de l\'import PTA DOCX');
+
+Artisan::command('mail:sync-replies {--limit= : Nombre max de mails traites}', function () {
+	if (!config('mail_replies.enabled', false)) {
+		$this->warn('Synchronisation des reponses email desactivee (MAIL_REPLIES_ENABLED=false).');
+
+		return 0;
+	}
+
+	if (!function_exists('imap_open')) {
+		$this->error('Extension PHP IMAP absente. Impossible de lire la boite de reception.');
+
+		return 1;
+	}
+
+	$mailbox = (string) config('mail_replies.mailbox');
+	$username = (string) config('mail_replies.username');
+	$password = (string) config('mail_replies.password');
+	$search = (string) config('mail_replies.search', 'UNSEEN');
+	$limit = (int) ($this->option('limit') ?: config('mail_replies.limit', 30));
+
+	if ($mailbox === '' || $username === '' || $password === '') {
+		$this->error('Configuration IMAP incomplete. Renseignez MAIL_REPLIES_IMAP_MAILBOX/USERNAME/PASSWORD.');
+
+		return 1;
+	}
+
+	$imap = @imap_open($mailbox, $username, $password);
+	if (!$imap) {
+		$this->error('Connexion IMAP echouee: ' . implode(' | ', imap_errors() ?: ['erreur inconnue']));
+
+		return 1;
+	}
+
+	$normalizeSubject = static function (?string $subject): string {
+		$subject = mb_strtolower(trim((string) $subject));
+		if ($subject === '') {
+			return '';
+		}
+
+		do {
+			$previous = $subject;
+			$subject = preg_replace('/^(re|fwd|fw)\s*:\s*/iu', '', $subject) ?? $subject;
+		} while ($previous !== $subject);
+
+		return trim($subject);
+	};
+
+	$decodePart = static function (string $value, int $encoding): string {
+		return match ($encoding) {
+			3 => base64_decode($value, true) ?: '',
+			4 => quoted_printable_decode($value),
+			default => $value,
+		};
+	};
+
+	$extractBodyPreview = static function ($imapStream, int $msgNumber) use ($decodePart): string {
+		$structure = imap_fetchstructure($imapStream, $msgNumber);
+		$body = '';
+
+		if (!$structure || empty($structure->parts)) {
+			$raw = imap_body($imapStream, $msgNumber) ?: '';
+			$body = $decodePart($raw, (int) ($structure->encoding ?? 0));
+		} else {
+			$plainPartNumber = null;
+			$htmlPartNumber = null;
+
+			foreach ($structure->parts as $index => $part) {
+				$partNumber = (string) ($index + 1);
+				$subtype = strtoupper((string) ($part->subtype ?? ''));
+
+				if ($subtype === 'PLAIN' && $plainPartNumber === null) {
+					$plainPartNumber = $partNumber;
+				}
+
+				if ($subtype === 'HTML' && $htmlPartNumber === null) {
+					$htmlPartNumber = $partNumber;
+				}
+			}
+
+			$targetPartNumber = $plainPartNumber ?: $htmlPartNumber;
+			if ($targetPartNumber) {
+				$partIndex = (int) $targetPartNumber - 1;
+				$part = $structure->parts[$partIndex] ?? null;
+				$raw = imap_fetchbody($imapStream, $msgNumber, $targetPartNumber) ?: '';
+				$body = $decodePart($raw, (int) ($part->encoding ?? 0));
+			}
+		}
+
+		$body = strip_tags($body);
+		$body = preg_replace('/\s+/u', ' ', $body) ?? $body;
+
+		return mb_substr(trim($body), 0, 1000);
+	};
+
+	$msgNumbers = imap_search($imap, $search) ?: [];
+	if ($msgNumbers === []) {
+		$this->info('Aucune reponse email a synchroniser.');
+		imap_close($imap);
+
+		return 0;
+	}
+
+	rsort($msgNumbers);
+	$msgNumbers = array_slice($msgNumbers, 0, max(1, $limit));
+
+	$processed = 0;
+	$notified = 0;
+	$skipped = 0;
+
+	foreach ($msgNumbers as $msgNumber) {
+		$overview = imap_fetch_overview($imap, (string) $msgNumber, 0)[0] ?? null;
+		$header = imap_headerinfo($imap, $msgNumber);
+
+		if (!$overview || !$header || empty($header->from[0])) {
+			$skipped++;
+			imap_setflag_full($imap, (string) $msgNumber, '\\Seen');
+			continue;
+		}
+
+		$fromMailbox = $header->from[0]->mailbox ?? '';
+		$fromHost = $header->from[0]->host ?? '';
+		$fromEmail = mb_strtolower(trim($fromMailbox . '@' . $fromHost));
+		if (!str_contains($fromEmail, '@')) {
+			$skipped++;
+			imap_setflag_full($imap, (string) $msgNumber, '\\Seen');
+			continue;
+		}
+
+		$uid = (string) imap_uid($imap, $msgNumber);
+		$alreadyProcessed = SentMailHistory::query()
+			->where('inbound_uid', $uid)
+			->exists();
+
+		if ($alreadyProcessed) {
+			$skipped++;
+			imap_setflag_full($imap, (string) $msgNumber, '\\Seen');
+			continue;
+		}
+
+		$incomingSubject = trim((string) ($overview->subject ?? ''));
+		$normalizedIncomingSubject = $normalizeSubject($incomingSubject);
+		$receivedAt = !empty($overview->date)
+			? Carbon::parse((string) $overview->date)
+			: now();
+
+		$candidates = SentMailHistory::query()
+			->whereNull('response_received_at')
+			->whereRaw('LOWER(recipient_email) = ?', [$fromEmail])
+			->where('sent_at', '<=', $receivedAt)
+			->orderByDesc('sent_at')
+			->limit(20)
+			->get();
+
+		$history = null;
+		if ($normalizedIncomingSubject !== '') {
+			$history = $candidates->first(function (SentMailHistory $item) use ($normalizeSubject, $normalizedIncomingSubject) {
+				return $normalizeSubject($item->subject) === $normalizedIncomingSubject;
+			});
+		}
+
+		$history ??= $candidates->first();
+
+		if (!$history) {
+			$skipped++;
+			imap_setflag_full($imap, (string) $msgNumber, '\\Seen');
+			continue;
+		}
+
+		$preview = $extractBodyPreview($imap, $msgNumber);
+		$history->update([
+			'inbound_uid' => $uid,
+			'response_from_email' => $fromEmail,
+			'response_subject' => $incomingSubject,
+			'response_body_preview' => $preview,
+			'response_received_at' => $receivedAt,
+		]);
+
+		NotificationPortail::create([
+			'user_id' => $history->sender_id,
+			'type' => 'mail_reply',
+			'titre' => 'Reponse email recue',
+			'message' => sprintf(
+				'%s a repondu a votre email "%s".',
+				$history->recipient_name ?: $fromEmail,
+				$history->subject
+			),
+			'icone' => 'fa-reply',
+			'couleur' => '#0ea5e9',
+			'lien' => '/notifications',
+			'emetteur_id' => null,
+			'lu' => false,
+		]);
+
+		imap_setflag_full($imap, (string) $msgNumber, '\\Seen');
+		$processed++;
+		$notified++;
+	}
+
+	imap_close($imap);
+
+	$this->info(sprintf(
+		'Synchronisation terminee: %d traite(s), %d notifie(s), %d ignore(s).',
+		$processed,
+		$notified,
+		$skipped
+	));
+
+	return 0;
+})->purpose('Lit la boite IMAP des reponses et notifie les expediteurs concernes');
+
+Schedule::command('mail:sync-replies')->everyFiveMinutes();

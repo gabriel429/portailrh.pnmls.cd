@@ -25,9 +25,19 @@ class AgentContactMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $replyToAddress = config('mail_replies.reply_to_address');
+        $replyToName = config('mail_replies.reply_to_name', 'E-PNMLS Reponses');
+
+        $replyTo = [];
+        if ($replyToAddress) {
+            $replyTo[] = new \Illuminate\Mail\Mailables\Address($replyToAddress, $replyToName);
+        } elseif ($this->senderEmail) {
+            $replyTo[] = $this->senderEmail;
+        }
+
         return new Envelope(
             subject: '[E-PNMLS] ' . $this->mailSubject,
-            replyTo: $this->senderEmail ? [$this->senderEmail] : [],
+            replyTo: $replyTo,
         );
     }
 
