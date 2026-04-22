@@ -139,6 +139,10 @@ const isDirecteur = ref(false)
 const sourceFilter = ref('all')
 const statusFilter = ref(route.query.statut ?? 'all')
 
+watch(() => route.query.statut, (val) => {
+  statusFilter.value = val ?? 'all'
+})
+
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
 /* ── helper: overdue check ── */
