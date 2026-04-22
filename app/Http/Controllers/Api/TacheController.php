@@ -210,21 +210,39 @@ class TacheController extends ApiController
      */
     public function show(Request $request, Tache $tache): JsonResponse
     {
-        $user = $request->user();
+        $user  = $request->user();
         $agent = $user->agent;
 
-        if (!$agent || ($tache->createur_id !== $agent->id && $tache->agent_id !== $agent->id)) {
+        if (!$agent) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $isCreateur   = $tache->createur_id === $agent->id;
+        $isAssigne    = $tache->agent_id    === $agent->id;
+        $isDeptManager = false;
+
+        if (!$isCreateur && !$isAssigne && $agent->departement_id) {
+            $role = strtolower($user->role?->nom_role ?? '');
+            $isDept = in_array($role, ['directeur', 'directeur de département', 'assistant', 'assistant de département'])
+                   || str_starts_with($role, 'assistant');
+            if ($isDept) {
+                $taskAgent = Agent::find($tache->agent_id);
+                $isDeptManager = $taskAgent && $taskAgent->departement_id === $agent->departement_id;
+            }
+        }
+
+        if (!$isCreateur && !$isAssigne && !$isDeptManager) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
         $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
 
         return $this->resource(TacheResource::make($tache), [
-            'isCreateur' => $tache->createur_id === $agent->id,
-            'isAssigne' => $tache->agent_id === $agent->id,
+            'isCreateur' => $isCreateur,
+            'isAssigne'  => $isAssigne,
         ], [
-            'isCreateur' => $tache->createur_id === $agent->id,
-            'isAssigne' => $tache->agent_id === $agent->id,
+            'isCreateur' => $isCreateur,
+            'isAssigne'  => $isAssigne,
         ]);
     }
 

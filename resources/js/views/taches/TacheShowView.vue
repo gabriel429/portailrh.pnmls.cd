@@ -243,6 +243,13 @@
           </div>
         </div>
       </template>
+      <div v-else class="text-center py-5">
+        <i class="fas fa-lock fa-3x text-muted mb-3 d-block"></i>
+        <p class="text-muted">Tâche introuvable ou accès refusé.</p>
+        <button class="btn btn-outline-primary mt-2" @click="router.back()">
+          <i class="fas fa-arrow-left me-1"></i> Retour
+        </button>
+      </div>
     </div>
   </div>
 </template>
@@ -304,8 +311,7 @@ async function loadTache() {
       contenu: '',
     }
   } catch {
-    ui.addToast('Tâche introuvable.', 'danger')
-    router.push({ name: 'taches.index' })
+    ui.addToast('Tâche introuvable ou accès refusé.', 'danger')
   } finally {
     loading.value = false
   }
