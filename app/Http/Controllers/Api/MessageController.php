@@ -84,7 +84,7 @@ class MessageController extends ApiController
 
         foreach ($allRecipients as $recipient) {
             Mail::to($recipient['email'])->send(new AgentContactMail(
-                subject: $validated['subject'],
+                mailSubject: $validated['subject'],
                 body: $validated['body'],
                 senderName: $senderName,
                 senderEmail: $senderEmail,
