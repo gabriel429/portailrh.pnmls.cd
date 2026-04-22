@@ -1,1 +1,0 @@
-import{r as e}from"./router-6zaThiu0.js";function t(){return e.get(`/profile/full`)}function n(t){return t instanceof FormData?(t.append(`_method`,`PUT`),e.post(`/profile`,t,{headers:{"Content-Type":`multipart/form-data`}})):e.put(`/profile`,t)}function r(t){return e.put(`/profile/password`,t)}export{r as n,n as r,t};
