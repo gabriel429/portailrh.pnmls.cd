@@ -715,7 +715,8 @@ const metrics = computed(() => {
       pct: Math.min(((data.value?.requests?.en_attente ?? 0) / agentTotal) * 100, 100),
       alert: (data.value?.requests?.en_attente ?? 0) > 0 },
     { label: "Congés actifs",        icon: 'fa-umbrella-beach',     color: '#0891b2', bg: '#cffafe',
-      value: data.value?.conges?.actifs ?? 0,              to: '/holiday-planning', alert: false,
+      value: data.value?.conges?.actifs ?? 0,              to: '/mon-planning-conges', alert: false,
+      drillSection: 'conges',
       pct: Math.min(((data.value?.conges?.actifs ?? 0) / agentTotal) * 100, 100) },
   ]
 })
@@ -735,11 +736,6 @@ async function loadData() {
   try {
     const res  = await client.get('/dashboard/department')
     data.value = res.data?.data ?? res.data ?? {}
-    if (data.value.taches && data.value.taches.nouvelle === undefined) {
-      data.value.taches.nouvelle = Math.max(0,
-        (data.value.taches.en_cours ?? 0) - (data.value.taches.overdue ?? 0)
-      )
-    }
   } catch (err) {
     loadError.value     = err?.response?.data?.message ?? 'Impossible de charger le tableau de bord.'
     loadErrorCode.value  = err?.response?.data?.code ?? null
@@ -787,7 +783,14 @@ function agentInitials(ag) {
   return ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() || '?'
 }
 function statutLabel(s) {
-  return { nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée' }[s] ?? s
+  return {
+    // Task statuses
+    nouvelle: 'Nouvelle', en_cours: 'En cours', terminee: 'Terminée',
+    // Agent statuses
+    actif: 'Actif', disponible: 'Disponible', inactif: 'Inactif',
+    suspendu: 'Suspendu', en_conge: 'En congé', en_mission: 'En mission',
+    en_formation: 'En formation',
+  }[s] ?? s
 }
 function statutClass(s) {
   return { nouvelle: 'tag-nouvelle', en_cours: 'tag-en-cours', terminee: 'tag-terminee' }[s] ?? ''

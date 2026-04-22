@@ -46,8 +46,10 @@ class DepartmentDashboardController extends ApiController
         $agentIds     = Agent::where('departement_id', $deptId)->pluck('id');
 
         // ─── Tâches ────────────────────────────────────────────
+        $tachesNouvelle = Tache::whereIn('agent_id', $agentIds)
+            ->where('statut', 'nouvelle')->count();
         $tachesEnCours  = Tache::whereIn('agent_id', $agentIds)
-            ->whereIn('statut', ['nouvelle', 'en_cours'])->count();
+            ->where('statut', 'en_cours')->count();
         $tachesTermine  = Tache::whereIn('agent_id', $agentIds)
             ->where('statut', 'terminee')->count();
         $tachesOverdue  = Tache::whereIn('agent_id', $agentIds)
@@ -147,6 +149,7 @@ class DepartmentDashboardController extends ApiController
                 'actifs' => $agentsActifs,
             ],
             'taches' => [
+                'nouvelle'  => $tachesNouvelle,
                 'en_cours'  => $tachesEnCours,
                 'terminees' => $tachesTermine,
                 'overdue'   => $tachesOverdue,
