@@ -41,8 +41,8 @@ class ExecutiveDashboardController extends ApiController
     {
         $user = $request->user();
 
-        if (!$user->hasRole('SEN')) {
-            return response()->json(['message' => 'Acces reserve au SEN.'], 403);
+        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
+            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
         }
 
         $now = Carbon::now();
@@ -930,6 +930,11 @@ class ExecutiveDashboardController extends ApiController
      */
     public function organeDetail(Request $request, string $code)
     {
+        $user = $request->user();
+        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
+            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        }
+
         $code = strtoupper($code);
         $organes = [
             'SEN' => 'Secrétariat Exécutif National',
@@ -1120,9 +1125,13 @@ class ExecutiveDashboardController extends ApiController
      */
     public function provinceDetail(Request $request, int $id)
     {
+        $user = $request->user();
+        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
+            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        }
+
         // Provincial scoping: RH Provincial AND SEP can only see their own province
         $scope = $this->scopeService();
-        $user = $request->user();
         $isProvincial = $scope->isProvincialUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
@@ -1258,6 +1267,11 @@ class ExecutiveDashboardController extends ApiController
      */
     public function departmentDetail(Request $request, int $id)
     {
+        $user = $request->user();
+        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
+            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        }
+
         $department = Department::find($id);
         if (!$department) {
             return $this->error('Département introuvable', 404);
@@ -1265,7 +1279,6 @@ class ExecutiveDashboardController extends ApiController
 
         // Provincial scoping: RH Provincial AND SEP can only see departments in their province
         $scope = $this->scopeService();
-        $user = $request->user();
         $isProvincial = $scope->isProvincialUser($user);
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 

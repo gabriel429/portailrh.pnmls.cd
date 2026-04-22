@@ -19,7 +19,7 @@
             </div>
             <div class="sen-hero-role">
               <i class="fas fa-shield-alt me-1"></i>
-              Secrétariat Exécutif National
+              {{ executiveRoleLabel }}
             </div>
             <div class="sen-hero-date">
               <i class="fas fa-calendar-alt me-1"></i>{{ today }}
@@ -1209,6 +1209,10 @@ const senIsFemme = computed(() => {
   const s = (auth.agent?.sexe ?? '').toLowerCase()
   return s === 'f' || s === 'femme' || s === 'féminin'
 })
+const isSenaRole = computed(() => (auth.role ?? '').toLowerCase() === 'sena')
+const executiveRoleLabel = computed(() => isSenaRole.value
+  ? 'Secrétariat Exécutif National Adjoint (SENA)'
+  : 'Secrétariat Exécutif National (SEN)')
 const senCivility = computed(() => auth.agent ? (senIsFemme.value ? 'Mme' : 'M.') : '')
 const senGreeting = computed(() => senIsFemme.value ? 'Bienvenue' : 'Bienvenu')
 const senFullName = computed(() => auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'SEN'))

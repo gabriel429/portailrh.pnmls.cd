@@ -34,7 +34,7 @@ export const useAuthStore = defineStore('auth', {
         },
         isSEN(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
-            return role === 'sen'
+            return role === 'sen' || role === 'sena'
         },
         isSEP(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
