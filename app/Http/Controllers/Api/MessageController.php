@@ -155,6 +155,38 @@ class MessageController extends ApiController
         ]));
     }
 
+    /**
+     * List sent mail history for the authenticated user (paginated).
+     */
+    public function history(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $query = SentMailHistory::query()
+            ->where('sender_id', $user->id)
+            ->orderByDesc('sent_at');
+
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('subject', 'like', '%' . $search . '%')
+                  ->orWhere('recipient_name', 'like', '%' . $search . '%')
+                  ->orWhere('recipient_email', 'like', '%' . $search . '%');
+            });
+        }
+
+        $paginated = $query->paginate(20);
+
+        return response()->json([
+            'data' => $paginated->items(),
+            'meta' => [
+                'total' => $paginated->total(),
+                'per_page' => $paginated->perPage(),
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+            ],
+        ]);
+    }
+
     private function storeAttachment(?UploadedFile $file): array
     {
         if (!$file) {
