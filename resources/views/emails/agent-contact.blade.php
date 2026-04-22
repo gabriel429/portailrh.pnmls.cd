@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $subject }}</title>
+    <title>{{ $mailSubject }}</title>
 </head>
 <body style="margin:0;padding:24px;background:#f3f8fb;font-family:Arial,Helvetica,sans-serif;color:#123;">
     <div style="max-width:680px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #d8e8f3;box-shadow:0 12px 34px rgba(2,49,79,.08);">
         <div style="padding:24px 28px;background:linear-gradient(135deg,#005a87,#0b78ad);color:#fff;">
             <div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.85;">E-PNMLS</div>
-            <h1 style="margin:8px 0 0;font-size:24px;line-height:1.2;">{{ $subject }}</h1>
+            <h1 style="margin:8px 0 0;font-size:24px;line-height:1.2;">{{ $mailSubject }}</h1>
         </div>
 
         <div style="padding:28px;">

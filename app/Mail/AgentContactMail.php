@@ -14,7 +14,7 @@ class AgentContactMail extends Mailable
     use Queueable, SerializesModels;
 
     public function __construct(
-        public string $subject,
+        public string $mailSubject,
         public string $body,
         public string $senderName,
         public ?string $senderEmail = null,
@@ -26,7 +26,7 @@ class AgentContactMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: '[E-PNMLS] ' . $this->subject,
+            subject: '[E-PNMLS] ' . $this->mailSubject,
             replyTo: $this->senderEmail ? [$this->senderEmail] : [],
         );
     }
