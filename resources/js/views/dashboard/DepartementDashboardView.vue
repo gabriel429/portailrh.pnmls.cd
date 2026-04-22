@@ -1220,6 +1220,12 @@ html.dark .dept-error-banner.dept-error-info { background: #1e3a5f !important; b
 /* ──────────────────────────────────────────────────────────
    Responsive
 ────────────────────────────────────────────────────────── */
+@media (max-width: 1150px) {
+  .dept-hero-inner { flex-direction: column; align-items: flex-start; }
+  .dept-hero-kpis { width: 100%; justify-content: space-between; flex-wrap: nowrap; }
+  .kpi-divider { display: none; }
+  .dept-kpi-pill { flex: 1; min-width: 0; }
+}
 @media (max-width: 1024px) {
   .dept-duo-row { grid-template-columns: 1fr; }
   .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
