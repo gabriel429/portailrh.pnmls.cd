@@ -853,7 +853,7 @@ function requestLabel(type) {
   display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap; gap: 1.5rem; padding: 2rem 2.5rem;
 }
-.dept-hero-left { display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 0; }
+.dept-hero-left { display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 260px; }
 .dept-hero-text { min-width: 0; flex: 1; }
 
 /* Avatar */
@@ -868,7 +868,7 @@ function requestLabel(type) {
 .dept-hero-avatar-initials { font-size: 1.5rem; font-weight: 800; color: #fff; }
 
 .dept-hero-greeting { font-size: .8rem; opacity: .75; text-transform: uppercase; letter-spacing: 1.2px; }
-h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem; }
+h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dept-hero-fonction { font-size: .85rem; opacity: .88; margin-bottom: .35rem; }
 .dept-hero-role-pill {
   display: flex; align-items: center; gap: .4rem; max-width: 100%;
