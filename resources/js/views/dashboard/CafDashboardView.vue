@@ -912,13 +912,23 @@ onMounted(loadData)
 
 /* ─── RESPONSIVE ─── */
 @media (max-width: 768px) {
-  .caf-hero-inner { flex-direction: column; }
-  .caf-hero-kpis { width: 100%; justify-content: space-around; }
+  .caf-hero-inner { flex-direction: column; gap: 1rem; }
+  .caf-hero-kpis { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: .4rem; padding: .6rem; }
+  .kpi-divider { display: none; }
+  .caf-kpi { gap: .5rem; }
+  .caf-section { padding: 1rem .85rem; }
   .caf-duo { grid-template-columns: 1fr; }
   .caf-dept-grid, .caf-metrics { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 480px) {
+  .caf-hero-avatar { width: 48px; height: 48px; }
+  .caf-hero-name { font-size: 1.1rem; }
+  .caf-kpi-val { font-size: 1.1rem; }
+  .caf-kpi-icon { width: 30px; height: 30px; font-size: .82rem; }
   .caf-dept-grid, .caf-metrics { grid-template-columns: 1fr; }
   .caf-actions { grid-template-columns: 1fr; }
+  .caf-section { padding: .75rem; }
+  .drill-panel { width: 100vw !important; max-width: 100vw !important; border-radius: 16px 16px 0 0; }
+  .drill-overlay { align-items: flex-end; }
 }
 </style>

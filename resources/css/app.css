@@ -1009,7 +1009,7 @@ body {
 
 /* Notification Dropout */
 .notif-dropdown {
-    width: clamp(280px, 90vw, 360px);
+    width: clamp(260px, 90vw, 360px);
     padding: 0;
     border: 1px solid var(--grey-200);
     border-radius: var(--radius-lg);
@@ -1927,6 +1927,10 @@ body {
 
 /* ── Global Mobile Responsive ── */
 @media (max-width: 767.98px) {
+    /* Prevent horizontal scroll globally */
+    body { overflow-x: hidden; }
+    .main-content { padding-top: .75rem; overflow-x: hidden; }
+
     /* Hero sections */
     .rh-hero {
         padding: 1.25rem 1rem;
@@ -2039,7 +2043,7 @@ body {
     .toast-item { font-size: .8rem; padding: 10px 14px; }
 
     /* Notification dropdown */
-    .notif-dropdown { width: clamp(250px, 88vw, 290px); }
+    .notif-dropdown { width: min(300px, calc(100vw - 1.5rem)); }
 
     /* Empty states */
     .empty-state { padding: 2rem 1rem !important; }

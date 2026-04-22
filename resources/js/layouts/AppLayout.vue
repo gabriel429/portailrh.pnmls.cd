@@ -474,6 +474,13 @@ watch(() => auth.user?.id, (userId) => {
   z-index: 0;
 }
 
+@media (max-width: 768px) {
+  .watermark-logo {
+    width: 240px;
+    height: 240px;
+  }
+}
+
 .main-content {
   position: relative;
   z-index: 1;
