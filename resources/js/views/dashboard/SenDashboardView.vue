@@ -1271,14 +1271,120 @@
                   Aucune information de contact disponible.
                 </div>
                 <div class="agent-contact-actions">
-                  <a v-if="selectedAgentContact.telephone" :href="'tel:' + selectedAgentContact.telephone" class="agent-contact-action-btn">
+                  <button v-if="selectedAgentContact.telephone" type="button" class="agent-contact-action-btn" @click="copyPhoneNumber(selectedAgentContact.telephone)">
                     <i class="fas fa-phone"></i> Appeler
-                  </a>
-                  <a v-if="selectedAgentContact.email" :href="'mailto:' + selectedAgentContact.email" class="agent-contact-action-btn">
+                  </button>
+                  <button type="button" class="agent-contact-action-btn" @click="openAgentEmailComposer(selectedAgentContact)">
                     <i class="fas fa-envelope"></i> Envoyer email
-                  </a>
+                  </button>
                 </div>
               </div>
+            </div>
+          </div>
+        </Transition>
+      </Teleport>
+
+      <Teleport to="body">
+        <Transition name="drill-fade">
+          <div v-if="emailComposerOpen" class="agent-email-overlay" @click.self="closeEmailComposer">
+            <div class="agent-email-modal">
+              <div class="agent-email-head">
+                <div>
+                  <div class="agent-email-title">Composer un email</div>
+                  <div class="agent-email-sub">Envoyer un message avec piece jointe et plusieurs destinataires.</div>
+                </div>
+                <button type="button" class="agent-contact-close" @click="closeEmailComposer">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+
+              <form class="agent-email-body" @submit.prevent="sendAgentEmail" enctype="multipart/form-data">
+                <div class="agent-email-section">
+                  <label class="agent-email-label">Destinataire principal</label>
+                  <div v-if="primaryRecipientAgent" class="agent-email-chip agent-email-chip--primary">
+                    <span>{{ primaryRecipientAgent.nom }}</span>
+                    <small>{{ primaryRecipientAgent.email }}</small>
+                  </div>
+                  <div v-else class="agent-contact-empty">Aucun destinataire principal selectionne.</div>
+                </div>
+
+                <div class="agent-email-section">
+                  <label class="agent-email-label">Ajouter un autre agent</label>
+                  <div class="agent-email-inline">
+                    <select v-model="emailAgentToAdd" class="agent-email-input agent-email-select">
+                      <option value="">-- Selectionner un agent --</option>
+                      <option v-for="agent in selectableRecipientAgents" :key="agent.id" :value="String(agent.id)">
+                        {{ agent.nom }} - {{ agent.email }}
+                      </option>
+                    </select>
+                    <button type="button" class="agent-email-add-btn" @click="addSelectedRecipientAgent">Ajouter</button>
+                  </div>
+                </div>
+
+                <div class="agent-email-section">
+                  <label class="agent-email-label">Ajouter une adresse email</label>
+                  <div class="agent-email-inline">
+                    <input v-model.trim="emailManualRecipient" type="email" class="agent-email-input" placeholder="exemple@pnmls.cd">
+                    <button type="button" class="agent-email-add-btn" @click="addManualRecipient">Ajouter</button>
+                  </div>
+                  <div v-if="emailErrors.manual_emails" class="agent-email-error">{{ emailErrors.manual_emails[0] }}</div>
+                </div>
+
+                <div v-if="selectedExtraRecipientAgents.length || emailForm.manualEmails.length" class="agent-email-section">
+                  <label class="agent-email-label">Autres destinataires</label>
+                  <div class="agent-email-chip-list">
+                    <div v-for="agent in selectedExtraRecipientAgents" :key="'agent-' + agent.id" class="agent-email-chip">
+                      <span>{{ agent.nom }}</span>
+                      <small>{{ agent.email }}</small>
+                      <button type="button" @click="removeRecipientAgent(agent.id)"><i class="fas fa-times"></i></button>
+                    </div>
+                    <div v-for="email in emailForm.manualEmails" :key="'mail-' + email" class="agent-email-chip">
+                      <span>{{ email }}</span>
+                      <button type="button" @click="removeManualRecipient(email)"><i class="fas fa-times"></i></button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="agent-email-section">
+                  <label class="agent-email-label">Objet</label>
+                  <input v-model="emailForm.subject" type="text" class="agent-email-input" :class="{ 'is-invalid': emailErrors.subject }" maxlength="180" placeholder="Objet du message">
+                  <div v-if="emailErrors.subject" class="agent-email-error">{{ emailErrors.subject[0] }}</div>
+                </div>
+
+                <div class="agent-email-section">
+                  <label class="agent-email-label">Message</label>
+                  <textarea v-model="emailForm.body" rows="7" class="agent-email-input agent-email-textarea" :class="{ 'is-invalid': emailErrors.body }" placeholder="Redigez votre message..."></textarea>
+                  <div v-if="emailErrors.body" class="agent-email-error">{{ emailErrors.body[0] }}</div>
+                </div>
+
+                <div class="agent-email-section">
+                  <label class="agent-email-label">Piece jointe</label>
+                  <div class="agent-email-upload">
+                    <button type="button" class="agent-email-upload-btn" @click="emailAttachmentInput?.click()">
+                      <i class="fas fa-paperclip"></i>
+                      <span>{{ emailAttachmentPreview ? 'Changer le fichier' : 'Joindre un document' }}</span>
+                    </button>
+                    <input ref="emailAttachmentInput" type="file" class="d-none" @change="handleEmailAttachmentChange">
+                    <div v-if="emailAttachmentPreview" class="agent-email-file-preview">
+                      <div>
+                        <strong>{{ emailAttachmentPreview.name }}</strong>
+                        <small>{{ emailAttachmentPreview.size }}</small>
+                      </div>
+                      <button type="button" @click="removeEmailAttachment"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                  </div>
+                  <div v-if="emailErrors.attachment" class="agent-email-error">{{ emailErrors.attachment[0] }}</div>
+                </div>
+
+                <div class="agent-email-actions">
+                  <button type="button" class="agent-email-secondary" @click="closeEmailComposer">Annuler</button>
+                  <button type="submit" class="agent-email-primary" :disabled="emailSubmitting">
+                    <span v-if="emailSubmitting" class="spinner-border spinner-border-sm me-2"></span>
+                    <i v-else class="fas fa-paper-plane me-2"></i>
+                    Envoyer
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </Transition>
@@ -1304,11 +1410,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const ui = useUiStore()
 const loading = ref(true)
 const data = ref({})
 const currentYear = new Date().getFullYear()
@@ -1379,6 +1487,63 @@ const drilldownLevel = ref('organe') // 'organe' | 'province' | 'department'
 const drilldownSection = ref('effectifs') // 'effectifs' | 'presence' | 'pta'
 const agentContactOpen = ref(false)
 const selectedAgentContact = ref(null)
+const emailComposerOpen = ref(false)
+const emailSubmitting = ref(false)
+const emailErrors = ref({})
+const emailAttachment = ref(null)
+const emailAttachmentPreview = ref(null)
+const emailAttachmentInput = ref(null)
+const emailManualRecipient = ref('')
+const emailAgentToAdd = ref('')
+const emailForm = ref(defaultEmailForm())
+
+function defaultEmailForm() {
+  return {
+    primaryAgentId: null,
+    recipientAgentIds: [],
+    manualEmails: [],
+    subject: '',
+    body: '',
+  }
+}
+
+const visibleRecipientAgents = computed(() => {
+  const pools = [
+    ...(Array.isArray(drilldownProvince.value?.agents) ? drilldownProvince.value.agents : []),
+    ...(Array.isArray(drilldownDepartment.value?.agents) ? drilldownDepartment.value.agents : []),
+    ...(selectedAgentContact.value ? [selectedAgentContact.value] : []),
+  ]
+  const byId = new Map()
+
+  pools.forEach((agent) => {
+    if (!agent?.id || !agent?.email) return
+    if (!byId.has(agent.id)) {
+      byId.set(agent.id, {
+        id: Number(agent.id),
+        nom: agent.nom || 'Agent',
+        email: agent.email,
+      })
+    }
+  })
+
+  return Array.from(byId.values()).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'))
+})
+
+const primaryRecipientAgent = computed(() => {
+  return visibleRecipientAgents.value.find(agent => agent.id === emailForm.value.primaryAgentId) || null
+})
+
+const selectedExtraRecipientAgents = computed(() => {
+  return emailForm.value.recipientAgentIds
+    .map(id => visibleRecipientAgents.value.find(agent => agent.id === id))
+    .filter(Boolean)
+})
+
+const selectableRecipientAgents = computed(() => {
+  return visibleRecipientAgents.value.filter(agent => {
+    return agent.id !== emailForm.value.primaryAgentId && !emailForm.value.recipientAgentIds.includes(agent.id)
+  })
+})
 
 function openAgentContactPopup(agent) {
   selectedAgentContact.value = agent || null
@@ -1386,8 +1551,142 @@ function openAgentContactPopup(agent) {
 }
 
 function closeAgentContactPopup() {
+  closeEmailComposer()
   agentContactOpen.value = false
   selectedAgentContact.value = null
+}
+
+function openAgentEmailComposer(agent = selectedAgentContact.value) {
+  const target = agent || selectedAgentContact.value
+  emailErrors.value = {}
+  emailAgentToAdd.value = ''
+  emailManualRecipient.value = ''
+  emailAttachment.value = null
+  emailAttachmentPreview.value = null
+  if (emailAttachmentInput.value) emailAttachmentInput.value.value = ''
+
+  emailForm.value = {
+    primaryAgentId: target?.id ?? null,
+    recipientAgentIds: [],
+    manualEmails: [],
+    subject: target?.nom ? `Prise de contact - ${target.nom}` : 'Prise de contact',
+    body: target?.nom ? `Bonjour ${target.nom},\n\n` : 'Bonjour,\n\n',
+  }
+
+  emailComposerOpen.value = true
+}
+
+function closeEmailComposer() {
+  emailComposerOpen.value = false
+  emailSubmitting.value = false
+  emailErrors.value = {}
+  emailAgentToAdd.value = ''
+  emailManualRecipient.value = ''
+  emailAttachment.value = null
+  emailAttachmentPreview.value = null
+  emailForm.value = defaultEmailForm()
+  if (emailAttachmentInput.value) emailAttachmentInput.value.value = ''
+}
+
+function addSelectedRecipientAgent() {
+  const id = Number(emailAgentToAdd.value)
+  if (!id || emailForm.value.recipientAgentIds.includes(id)) return
+  emailForm.value.recipientAgentIds.push(id)
+  emailAgentToAdd.value = ''
+}
+
+function addManualRecipient() {
+  const email = emailManualRecipient.value.trim().toLowerCase()
+  if (!email) return
+
+  const isValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  if (!isValid) {
+    ui.addToast('Adresse email invalide.', 'warning')
+    return
+  }
+
+  const alreadySelectedAgent = visibleRecipientAgents.value.some(agent => {
+    return agent.email.toLowerCase() === email && (agent.id === emailForm.value.primaryAgentId || emailForm.value.recipientAgentIds.includes(agent.id))
+  })
+
+  if (!alreadySelectedAgent && !emailForm.value.manualEmails.includes(email)) {
+    emailForm.value.manualEmails.push(email)
+  }
+
+  emailManualRecipient.value = ''
+}
+
+function removeRecipientAgent(id) {
+  emailForm.value.recipientAgentIds = emailForm.value.recipientAgentIds.filter(agentId => agentId !== id)
+}
+
+function removeManualRecipient(email) {
+  emailForm.value.manualEmails = emailForm.value.manualEmails.filter(item => item !== email)
+}
+
+function handleEmailAttachmentChange(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+
+  emailAttachment.value = file
+  emailAttachmentPreview.value = {
+    name: file.name,
+    size: `${(file.size / 1024 / 1024).toFixed(2)} Mo`,
+  }
+}
+
+function removeEmailAttachment() {
+  emailAttachment.value = null
+  emailAttachmentPreview.value = null
+  if (emailAttachmentInput.value) emailAttachmentInput.value.value = ''
+}
+
+async function copyPhoneNumber(phone) {
+  if (!phone) return
+
+  try {
+    await navigator.clipboard.writeText(phone)
+    ui.addToast('Numero copie dans le presse-papiers.', 'success')
+  } catch (error) {
+    ui.addToast(`Numero: ${phone}`, 'info', 6000)
+  }
+}
+
+async function sendAgentEmail() {
+  emailErrors.value = {}
+
+  const hasRecipients = emailForm.value.primaryAgentId || emailForm.value.recipientAgentIds.length || emailForm.value.manualEmails.length
+  if (!hasRecipients) {
+    ui.addToast('Ajoutez au moins un destinataire.', 'warning')
+    return
+  }
+
+  emailSubmitting.value = true
+
+  const payload = new FormData()
+  if (emailForm.value.primaryAgentId) payload.append('primary_agent_id', emailForm.value.primaryAgentId)
+  emailForm.value.recipientAgentIds.forEach(id => payload.append('recipient_agent_ids[]', id))
+  emailForm.value.manualEmails.forEach(email => payload.append('manual_emails[]', email))
+  payload.append('subject', emailForm.value.subject || '')
+  payload.append('body', emailForm.value.body || '')
+  if (emailAttachment.value) payload.append('attachment', emailAttachment.value)
+
+  try {
+    const { data: result } = await client.post('/messages', payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    const sentCount = result?.data?.sent ?? 0
+    ui.addToast(sentCount > 0 ? `Email envoye a ${sentCount} destinataire(s).` : 'Email envoye avec succes.', 'success')
+    closeEmailComposer()
+  } catch (error) {
+    if (error.response?.status === 422) {
+      emailErrors.value = error.response.data.errors || {}
+    } else {
+      ui.addToast(error.response?.data?.message || 'Erreur lors de l\'envoi de l\'email.', 'danger')
+    }
+  } finally {
+    emailSubmitting.value = false
+  }
 }
 
 async function openOrganeDrilldown(code, section = 'effectifs') {
@@ -2242,9 +2541,84 @@ onMounted(async () => {
 .agent-contact-action-btn {
   font-size: .72rem; font-weight: 700; color: #0369a1;
   background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 8px;
-  padding: .35rem .55rem; text-decoration: none;
+  padding: .35rem .55rem; text-decoration: none; cursor: pointer;
 }
 .agent-contact-action-btn:hover { background: #bae6fd; }
+
+.agent-email-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .6);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 12120; padding: 1rem;
+}
+.agent-email-modal {
+  width: min(760px, 100%); max-height: calc(100vh - 2rem); overflow: auto;
+  background: #fff; border-radius: 18px; border: 1px solid #dbe7f0;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .33);
+}
+.agent-email-head {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem;
+  padding: 1rem 1.1rem; border-bottom: 1px solid #e2e8f0;
+}
+.agent-email-title { font-size: 1rem; font-weight: 800; color: #0f172a; }
+.agent-email-sub { font-size: .76rem; color: #64748b; margin-top: .15rem; }
+.agent-email-body { padding: 1rem 1.1rem 1.15rem; display: grid; gap: .95rem; }
+.agent-email-section { display: grid; gap: .45rem; }
+.agent-email-label { font-size: .76rem; font-weight: 800; color: #334155; }
+.agent-email-inline { display: grid; grid-template-columns: 1fr auto; gap: .55rem; }
+.agent-email-input {
+  width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; background: #fff;
+  padding: .7rem .8rem; font-size: .84rem; color: #0f172a;
+}
+.agent-email-input:focus {
+  outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, .15);
+}
+.agent-email-input.is-invalid { border-color: #fca5a5; box-shadow: none; }
+.agent-email-textarea { resize: vertical; min-height: 150px; }
+.agent-email-select { background: #fff; }
+.agent-email-add-btn,
+.agent-email-upload-btn,
+.agent-email-secondary,
+.agent-email-primary {
+  border: none; border-radius: 10px; padding: .72rem .9rem; font-size: .8rem; font-weight: 700;
+}
+.agent-email-add-btn,
+.agent-email-upload-btn,
+.agent-email-secondary {
+  background: #e2e8f0; color: #334155;
+}
+.agent-email-add-btn:hover,
+.agent-email-upload-btn:hover,
+.agent-email-secondary:hover { background: #cbd5e1; }
+.agent-email-primary {
+  background: linear-gradient(135deg, #0077B5, #0ea5e9); color: #fff;
+}
+.agent-email-primary:hover { filter: brightness(1.03); }
+.agent-email-primary:disabled { opacity: .65; cursor: not-allowed; }
+.agent-email-chip-list { display: flex; flex-wrap: wrap; gap: .45rem; }
+.agent-email-chip {
+  display: inline-flex; align-items: center; gap: .45rem; max-width: 100%;
+  background: #f8fafc; border: 1px solid #dbe7f0; border-radius: 999px;
+  padding: .45rem .6rem; font-size: .73rem; color: #0f172a;
+}
+.agent-email-chip small { color: #64748b; }
+.agent-email-chip button {
+  border: none; background: transparent; color: #64748b; cursor: pointer; padding: 0;
+}
+.agent-email-chip--primary {
+  border-radius: 12px; background: #eff6ff; border-color: #bfdbfe; width: fit-content;
+}
+.agent-email-upload { display: grid; gap: .55rem; }
+.agent-email-file-preview {
+  display: flex; align-items: center; justify-content: space-between; gap: .8rem;
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: .7rem .8rem;
+}
+.agent-email-file-preview strong { display: block; font-size: .78rem; color: #0f172a; }
+.agent-email-file-preview small { color: #64748b; }
+.agent-email-file-preview button {
+  border: none; background: transparent; color: #dc2626; cursor: pointer;
+}
+.agent-email-error { font-size: .72rem; color: #b91c1c; }
+.agent-email-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: .2rem; }
 
 /* ═══════════ ACTIVITES PTA ═══════════ */
 .drill-prov-activites { display: flex; flex-direction: column; gap: .5rem; }
@@ -2285,5 +2659,8 @@ onMounted(async () => {
   .drill-dept-grid { grid-template-columns: repeat(2, 1fr); }
   .drill-prov-dept-grid { grid-template-columns: 1fr; }
   .drill-item-stats { grid-template-columns: repeat(2, 1fr); }
+  .agent-email-inline { grid-template-columns: 1fr; }
+  .agent-email-actions { flex-direction: column-reverse; }
+  .agent-email-secondary, .agent-email-primary { width: 100%; }
 }
 </style>

@@ -145,6 +145,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('documents-travail/{doc}/download', [DocumentTravailController::class, 'download']);
 
     // Messages
+    Route::post('messages', [MessageController::class, 'store']);
     Route::get('messages/{message}', [MessageController::class, 'show']);
 
     // RH Agents (role-protected)
