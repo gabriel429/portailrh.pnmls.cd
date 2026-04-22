@@ -13,7 +13,7 @@
               class="dept-hero-avatar-photo" @error="handlePhotoError">
             <span v-else class="dept-hero-avatar-initials">{{ deptInitials }}</span>
           </div>
-          <div>
+          <div class="dept-hero-text">
             <div class="dept-hero-greeting">{{ deptGreeting }},</div>
             <h1 class="dept-hero-name">{{ deptCivility }} {{ deptFullName }}</h1>
             <div class="dept-hero-fonction" v-if="deptFonction">
@@ -854,6 +854,7 @@ function requestLabel(type) {
   flex-wrap: wrap; gap: 1.5rem; padding: 2rem 2.5rem;
 }
 .dept-hero-left { display: flex; align-items: center; gap: 1.25rem; flex: 1; min-width: 0; }
+.dept-hero-text { min-width: 0; flex: 1; }
 
 /* Avatar */
 .dept-hero-avatar {
@@ -870,7 +871,7 @@ function requestLabel(type) {
 h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem; }
 .dept-hero-fonction { font-size: .85rem; opacity: .88; margin-bottom: .35rem; }
 .dept-hero-role-pill {
-  display: inline-flex; align-items: center; gap: .4rem;
+  display: flex; align-items: center; gap: .4rem; max-width: 100%;
   background: rgba(255,255,255,.15); backdrop-filter: blur(4px);
   border-radius: 100px; padding: .28rem .85rem; font-size: .8rem; margin-bottom: .3rem;
 }
