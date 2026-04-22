@@ -166,27 +166,27 @@
             <h3 class="dept-section-title">Tâches du département</h3>
             <p class="dept-section-sub">{{ totalTaches }} tâches au total — {{ data.taches?.terminees ?? 0 }} terminées</p>
           </div>
-          <router-link to="/taches" class="dept-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+          <router-link to="/taches/assignees-par-moi" class="dept-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
         </div>
 
         <!-- Mini-cards statuts -->
         <div class="dept-task-cards">
-          <div class="dept-task-card" @click="router.push('/taches')">
+          <div class="dept-task-card" @click="router.push('/taches/assignees-par-moi?statut=nouvelle')">
             <div class="dept-task-card-icon" style="background:#dbeafe;color:#3b82f6;"><i class="fas fa-plus-circle"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.nouvelle ?? 0 }}</div>
             <div class="dept-task-card-lbl">Nouvelles</div>
           </div>
-          <div class="dept-task-card" @click="router.push('/taches')">
+          <div class="dept-task-card" @click="router.push('/taches/assignees-par-moi?statut=en_cours')">
             <div class="dept-task-card-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-spinner"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.en_cours ?? 0 }}</div>
             <div class="dept-task-card-lbl">En cours</div>
           </div>
-          <div class="dept-task-card" @click="router.push('/taches')">
+          <div class="dept-task-card" @click="router.push('/taches/assignees-par-moi?statut=terminee')">
             <div class="dept-task-card-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.terminees ?? 0 }}</div>
             <div class="dept-task-card-lbl">Terminées</div>
           </div>
-          <div class="dept-task-card" :class="{ 'dept-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push('/taches')">
+          <div class="dept-task-card" :class="{ 'dept-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push('/taches/assignees-par-moi?statut=en_retard')">
             <div class="dept-task-card-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-exclamation-triangle"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.overdue ?? 0 }}</div>
             <div class="dept-task-card-lbl">En retard</div>
@@ -662,12 +662,10 @@ const today = computed(() =>
 // ─── Actions rapides ─────────────────────────────────────────
 const quickActions = computed(() => {
   const base = [
-    { fn: () => openDrill('effectifs'), icon: 'fa-users',          color: '#059669', bg: '#d1fae5', label: 'Agents',            desc: 'Voir les agents du département' },
-    { fn: () => openDrill('presence'),  icon: 'fa-user-clock',     color: '#d97706', bg: '#fef3c7', label: 'Présences',         desc: 'Suivi de présence du département' },
-    { to: '/taches/create',             icon: 'fa-plus-circle',    color: '#0077B5', bg: '#e0f2fe', label: 'Nouvelle tâche',    desc: 'Créer et attribuer une tâche' },
-    { to: '/requests',                  icon: 'fa-file-signature', color: '#7c3aed', bg: '#ede9fe', label: 'Demandes',          desc: auth.isDirecteur ? 'Viser et valider les demandes' : 'Suivre les demandes' },
-    { to: '/taches',                    icon: 'fa-tasks',           color: '#dc2626', bg: '#fee2e2', label: 'Toutes les tâches', desc: 'Tableau de bord des tâches' },
-    { to: '/mon-planning-conges',       icon: 'fa-calendar-alt',   color: '#0891b2', bg: '#cffafe', label: 'Congés',            desc: 'Planning et demandes de congé' },
+    { to: '/taches/create',                    icon: 'fa-plus-circle',    color: '#0077B5', bg: '#e0f2fe', label: 'Nouvelle tâche',       desc: 'Créer et attribuer une tâche' },
+    { to: '/taches/assignees-par-moi',          icon: 'fa-tasks',          color: '#dc2626', bg: '#fee2e2', label: 'Tâches du département', desc: 'Toutes les tâches assignées aux agents' },
+    { to: '/requests',                          icon: 'fa-file-signature', color: '#7c3aed', bg: '#ede9fe', label: 'Demandes',              desc: auth.isDirecteur ? 'Viser et valider les demandes' : 'Suivre les demandes' },
+    { to: '/mon-planning-conges',               icon: 'fa-calendar-alt',   color: '#0891b2', bg: '#cffafe', label: 'Congés',                desc: 'Planning et demandes de congé' },
   ]
   if (auth.isDirecteur) {
     base.push({ to: '/requests?statut=en_attente', icon: 'fa-stamp', color: '#b45309', bg: '#fef9c3', label: 'Visa Directeur', desc: 'Demandes à viser en priorité' })
