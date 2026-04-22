@@ -77,6 +77,13 @@ class UserDataScope
         });
     }
 
+    public function isDepartmentManager(?User $user): bool
+    {
+        $role = strtolower($user?->role?->nom_role ?? '');
+        return in_array($role, ['directeur', 'directeur de département', 'assistant', 'assistant de département'])
+            || str_starts_with($role, 'assistant');
+    }
+
     public function applyRequestScope($query, ?User $user)
     {
         if ($this->hasGlobalAdminAccess($user)) {
@@ -93,6 +100,15 @@ class UserDataScope
             return $query->whereHas('agent', function ($agentQuery) use ($provinceId) {
                 $agentQuery->where('province_id', $provinceId);
             });
+        }
+
+        // Directeurs and assistants can see all requests from agents in their department
+        if ($this->isDepartmentManager($user)) {
+            $deptId = $user?->agent?->departement_id;
+            if ($deptId) {
+                $deptAgentIds = Agent::where('departement_id', $deptId)->pluck('id');
+                return $query->whereIn('agent_id', $deptAgentIds);
+            }
         }
 
         $agentId = $user?->agent?->id;
@@ -198,6 +214,13 @@ class UserDataScope
 
         if ($this->isProvincialUser($user)) {
             return $this->canAccessAgent($user, $agent, false);
+        }
+
+        if ($this->isDepartmentManager($user)) {
+            $deptId = $user?->agent?->departement_id;
+            if ($deptId && $agent && (int) $agent->departement_id === (int) $deptId) {
+                return true;
+            }
         }
 
         return $allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $demande->agent_id;
