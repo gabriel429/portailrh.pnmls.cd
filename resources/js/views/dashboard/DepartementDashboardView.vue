@@ -43,7 +43,7 @@
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi-pill" @click="router.push('/taches')">
+          <div class="dept-kpi-pill" @click="router.push('/taches?statut=en_cours')">
             <div class="dept-kpi-pill-icon"><i class="fas fa-tasks"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.taches?.en_cours ?? 0 }}</div>
@@ -701,13 +701,13 @@ const metrics = computed(() => {
       pct: data.value?.attendance?.today_rate ?? 0,
       alert: (data.value?.attendance?.today_rate ?? 0) > 0 && (data.value?.attendance?.today_rate ?? 0) < 50 },
     { label: "Tâches en cours",      icon: 'fa-spinner',            color: '#d97706', bg: '#fef3c7',
-      value: data.value?.taches?.en_cours ?? 0,            to: '/taches',          alert: false,
+      value: data.value?.taches?.en_cours ?? 0,            to: '/taches?statut=en_cours',  alert: false,
       pct: Math.min(((data.value?.taches?.en_cours ?? 0) / tTotal) * 100, 100) },
     { label: "Tâches terminées",     icon: 'fa-check-circle',       color: '#059669', bg: '#dcfce7',
-      value: data.value?.taches?.terminees ?? 0,           to: '/taches',          alert: false,
+      value: data.value?.taches?.terminees ?? 0,           to: '/taches?statut=terminee',  alert: false,
       pct: taskCompletionPct.value },
     { label: "En retard",            icon: 'fa-exclamation-triangle',color: '#dc2626', bg: '#fee2e2',
-      value: data.value?.taches?.overdue ?? 0,             to: '/taches',
+      value: data.value?.taches?.overdue ?? 0,             to: '/taches?statut=en_retard',
       pct: Math.min(((data.value?.taches?.overdue ?? 0) / tTotal) * 100, 100),
       alert: (data.value?.taches?.overdue ?? 0) > 0 },
     { label: "Demandes en attente",  icon: 'fa-hourglass-half',     color: '#7c3aed', bg: '#ede9fe',

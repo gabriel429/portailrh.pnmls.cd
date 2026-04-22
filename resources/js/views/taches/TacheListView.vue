@@ -137,7 +137,7 @@ const mesTaches = ref([])
 const tachesCreees = ref([])
 const isDirecteur = ref(false)
 const sourceFilter = ref('all')
-const statusFilter = ref('all')
+const statusFilter = ref(route.query.statut ?? 'all')
 
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
