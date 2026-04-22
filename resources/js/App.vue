@@ -80,7 +80,7 @@ onMounted(() => {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   launchTimer = window.setTimeout(() => {
     showLaunchScreen.value = false
-  }, prefersReducedMotion ? 900 : 2400)
+  }, prefersReducedMotion ? 1800 : 3600)
 })
 
 onBeforeUnmount(() => {
