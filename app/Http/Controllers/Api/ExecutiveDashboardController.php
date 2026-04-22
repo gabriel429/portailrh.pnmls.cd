@@ -1190,20 +1190,32 @@ class ExecutiveDashboardController extends ApiController
 
         // Top agents (noms/prénoms/fonctions + contact)
         $topAgents = Agent::where('province_id', $id)->actifs()
+            ->with(['agentStatuses' => function ($q) {
+                $q->where('actuel', true)->orderByDesc('created_at');
+            }])
             ->orderBy('nom')
             ->limit(20)
             ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
-            ->map(fn($a) => [
-                'id' => $a->id,
-                'nom' => $a->prenom . ' ' . $a->nom,
-                'organe' => $a->organe,
-                'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
-                'sexe' => $a->sexe,
-                'email' => $a->email_professionnel ?: $a->email ?: null,
-                'telephone' => $a->telephone,
-                'matricule' => $a->matricule_etat,
-                'grade' => $a->grade_etat,
-            ]);
+            ->map(function ($a) {
+                $currentStatus = $a->agentStatuses->first();
+                $isAbsenceStatus = in_array(optional($currentStatus)->statut, ['en_conge', 'en_mission', 'suspendu', 'en_formation'], true);
+
+                return [
+                    'id' => $a->id,
+                    'nom' => $a->prenom . ' ' . $a->nom,
+                    'organe' => $a->organe,
+                    'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
+                    'sexe' => $a->sexe,
+                    'email' => $a->email_professionnel ?: $a->email ?: null,
+                    'telephone' => $a->telephone,
+                    'matricule' => $a->matricule_etat,
+                    'grade' => $a->grade_etat,
+                    'absence_statut' => $isAbsenceStatus ? $currentStatus->statut : null,
+                    'absence_observation' => $isAbsenceStatus ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
+                    'absence_debut' => $isAbsenceStatus ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
+                    'absence_fin' => $isAbsenceStatus ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
+                ];
+            });
 
         // Activités PTA de cette province
         $activites = ActivitePlan::parAnnee($currentYear)
@@ -1298,20 +1310,32 @@ class ExecutiveDashboardController extends ApiController
 
         // Agents du département
         $topAgents = Agent::where('departement_id', $id)->actifs()
+            ->with(['agentStatuses' => function ($q) {
+                $q->where('actuel', true)->orderByDesc('created_at');
+            }])
             ->orderBy('nom')
             ->limit(50)
             ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
-            ->map(fn($a) => [
-                'id' => $a->id,
-                'nom' => $a->prenom . ' ' . $a->nom,
-                'organe' => $a->organe,
-                'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
-                'sexe' => $a->sexe,
-                'email' => $a->email_professionnel ?: $a->email ?: null,
-                'telephone' => $a->telephone,
-                'matricule' => $a->matricule_etat,
-                'grade' => $a->grade_etat,
-            ]);
+            ->map(function ($a) {
+                $currentStatus = $a->agentStatuses->first();
+                $isAbsenceStatus = in_array(optional($currentStatus)->statut, ['en_conge', 'en_mission', 'suspendu', 'en_formation'], true);
+
+                return [
+                    'id' => $a->id,
+                    'nom' => $a->prenom . ' ' . $a->nom,
+                    'organe' => $a->organe,
+                    'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
+                    'sexe' => $a->sexe,
+                    'email' => $a->email_professionnel ?: $a->email ?: null,
+                    'telephone' => $a->telephone,
+                    'matricule' => $a->matricule_etat,
+                    'grade' => $a->grade_etat,
+                    'absence_statut' => $isAbsenceStatus ? $currentStatus->statut : null,
+                    'absence_observation' => $isAbsenceStatus ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
+                    'absence_debut' => $isAbsenceStatus ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
+                    'absence_fin' => $isAbsenceStatus ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
+                ];
+            });
 
         // PTA du département
         $currentYear = $now->year;

@@ -983,7 +983,11 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
+                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1007,7 +1011,11 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
+                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1086,7 +1094,11 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
+                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1138,7 +1150,11 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
+                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1219,6 +1235,10 @@
               </div>
 
               <div class="agent-contact-body">
+                <div class="agent-contact-item" v-if="selectedAgentContact.absence_statut">
+                  <i class="fas fa-user-clock"></i>
+                  <span>Statut: {{ selectedAgentContact.absence_statut }}</span>
+                </div>
                 <div class="agent-contact-item" v-if="selectedAgentContact.organe">
                   <i class="fas fa-sitemap"></i>
                   <span>{{ selectedAgentContact.organe }}</span>
@@ -1239,8 +1259,24 @@
                   <i class="fas fa-phone"></i>
                   <span>{{ selectedAgentContact.telephone }}</span>
                 </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.absence_observation">
+                  <i class="fas fa-comment-alt"></i>
+                  <span>{{ selectedAgentContact.absence_observation }}</span>
+                </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.absence_debut || selectedAgentContact.absence_fin">
+                  <i class="fas fa-calendar-alt"></i>
+                  <span>{{ selectedAgentContact.absence_debut || '?' }} - {{ selectedAgentContact.absence_fin || '?' }}</span>
+                </div>
                 <div class="agent-contact-empty" v-if="!selectedAgentContact.email && !selectedAgentContact.telephone && !selectedAgentContact.matricule && !selectedAgentContact.grade && !selectedAgentContact.organe">
                   Aucune information de contact disponible.
+                </div>
+                <div class="agent-contact-actions">
+                  <a v-if="selectedAgentContact.telephone" :href="'tel:' + selectedAgentContact.telephone" class="agent-contact-action-btn">
+                    <i class="fas fa-phone"></i> Appeler
+                  </a>
+                  <a v-if="selectedAgentContact.email" :href="'mailto:' + selectedAgentContact.email" class="agent-contact-action-btn">
+                    <i class="fas fa-envelope"></i> Envoyer email
+                  </a>
                 </div>
               </div>
             </div>
@@ -2159,6 +2195,11 @@ onMounted(async () => {
 .drill-prov-agent-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .drill-prov-agent-meta span { font-size: .62rem; color: #64748b; display: flex; align-items: center; gap: 3px; }
 .drill-prov-agent-meta i { font-size: .6rem; opacity: .7; }
+.drill-prov-agent-note {
+  margin-top: 4px; font-size: .62rem; color: #7c2d12;
+  background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px;
+  padding: .2rem .35rem; display: flex; align-items: center; gap: 4px;
+}
 .drill-prov-agent-link {
   display: inline-block; margin-top: 4px; font-size: .62rem; color: #0077B5;
   text-decoration: none; font-weight: 600; background: transparent; border: none;
@@ -2169,7 +2210,7 @@ onMounted(async () => {
 .agent-contact-overlay {
   position: fixed; inset: 0; background: rgba(15, 23, 42, .5);
   display: flex; align-items: center; justify-content: center;
-  z-index: 6000; padding: 1rem;
+  z-index: 12050; padding: 1rem;
 }
 .agent-contact-modal {
   width: min(520px, 100%); background: #fff; border-radius: 14px;
@@ -2197,6 +2238,13 @@ onMounted(async () => {
   font-size: .74rem; color: #64748b; background: #f8fafc;
   border: 1px dashed #cbd5e1; border-radius: 8px; padding: .55rem .65rem;
 }
+.agent-contact-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .3rem; }
+.agent-contact-action-btn {
+  font-size: .72rem; font-weight: 700; color: #0369a1;
+  background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 8px;
+  padding: .35rem .55rem; text-decoration: none;
+}
+.agent-contact-action-btn:hover { background: #bae6fd; }
 
 /* ═══════════ ACTIVITES PTA ═══════════ */
 .drill-prov-activites { display: flex; flex-direction: column; gap: .5rem; }
