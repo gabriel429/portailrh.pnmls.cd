@@ -355,7 +355,7 @@
       </div>
 
       <!-- ════════ PRÉSENCE & CONGÉS ════════ -->
-      <div class="dept-section" style="padding-bottom:2rem;">
+      <div class="dept-section">
         <div class="dept-duo-row">
 
           <!-- Présence -->
@@ -829,15 +829,17 @@ function requestLabel(type) {
 /* ──────────────────────────────────────────────────────────
    Conteneur
 ────────────────────────────────────────────────────────── */
-.dept-dashboard { min-height: 100vh; background: #f0f4fa; }
+.dept-dashboard { max-width: 1200px; margin: 0 auto; padding: 0 1rem 2rem; }
 
 /* ──────────────────────────────────────────────────────────
    HERO
 ────────────────────────────────────────────────────────── */
 .dept-hero {
   position: relative;
-  background: linear-gradient(135deg, #1e3a5f 0%, #1565c0 60%, #0d47a1 100%);
-  color: #fff; overflow: hidden;
+  border-radius: 20px; overflow: hidden; margin-bottom: 1.8rem;
+  background: linear-gradient(135deg, #0a1628 0%, #0f2847 30%, #0c4a6e 60%, #0077B5 100%);
+  box-shadow: 0 8px 32px rgba(0, 30, 60, .25);
+  color: #fff;
 }
 .dept-hero-bg {
   position: absolute; inset: 0;
@@ -901,7 +903,7 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
 
 /* Error */
 .dept-error-banner {
-  margin: 1rem 2rem; padding: .85rem 1.25rem;
+  margin-bottom: 1.8rem; padding: .85rem 1.25rem;
   background: #fef3c7; color: #92400e;
   border: 1px solid #fcd34d; border-radius: 12px; font-size: .9rem;
 }
@@ -915,7 +917,7 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
 /* ──────────────────────────────────────────────────────────
    Sections
 ────────────────────────────────────────────────────────── */
-.dept-section { padding: 1.75rem 2rem 0; }
+.dept-section { margin-bottom: 1.8rem; }
 .dept-section-head { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.1rem; }
 .dept-section-icon {
   width: 42px; height: 42px; border-radius: 12px;
@@ -1176,7 +1178,6 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
 /* ──────────────────────────────────────────────────────────
    Dark mode
 ────────────────────────────────────────────────────────── */
-html.dark .dept-dashboard { background: #0f172a; }
 html.dark .dept-action,
 html.dark .dept-metric,
 html.dark .dept-task-card,
@@ -1224,13 +1225,13 @@ html.dark .dept-error-banner.dept-error-info { background: #1e3a5f !important; b
   .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
+  .dept-hero { border-radius: 16px; margin-bottom: 1.2rem; }
   .dept-hero-inner { flex-direction: column; align-items: flex-start; padding: 1.25rem 1rem; gap: 1rem; }
   .dept-hero-left { gap: .85rem; }
   h1.dept-hero-name { font-size: 1.2rem; }
   .dept-hero-kpis { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: .4rem; }
   .dept-kpi-pill { min-width: 0; }
   .kpi-divider { display: none; }
-  .dept-section { padding: 1rem 1rem 0; }
   .dept-section-head { flex-wrap: wrap; gap: .5rem; }
   .dept-section-link, .dept-section-link-btn { margin-left: 0; width: 100%; text-align: right; }
   .dept-actions { grid-template-columns: repeat(2, 1fr); }
@@ -1250,8 +1251,7 @@ html.dark .dept-error-banner.dept-error-info { background: #1e3a5f !important; b
   .dept-kpi-pill-icon { width: 30px; height: 30px; font-size: .85rem; }
   .dept-metrics { grid-template-columns: 1fr; }
   .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
-  .dept-section { padding: .75rem .75rem 0; }
-  .dept-error-banner { margin: .75rem; }
+  .dept-error-banner { margin-bottom: .75rem; }
   .dept-actions { grid-template-columns: 1fr; }
   .dept-action-desc { display: block; }
 }
