@@ -1,1 +1,0 @@
-import{r as e}from"./router-mlLu4LqM.js";function t(t={}){return e.get(`/notifications`,{params:t})}function n(t){return e.post(`/notifications/${t}/read`)}function r(){return e.post(`/notifications/mark-all-read`)}function i(t){return e.delete(`/notifications/${t}`)}export{t as list,r as markAllRead,n as markRead,i as remove};

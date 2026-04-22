@@ -983,7 +983,7 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
+                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1007,7 +1007,7 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
+                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1086,7 +1086,7 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
+                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1138,7 +1138,7 @@
                               <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
                               <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
                             </div>
-                            <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
+                            <button type="button" class="drill-prov-agent-link" @click="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
                         </div>
                       </div>
@@ -1200,6 +1200,50 @@
                 </div>
               </div>
             </Transition>
+          </div>
+        </Transition>
+      </Teleport>
+
+      <Teleport to="body">
+        <Transition name="drill-fade">
+          <div v-if="agentContactOpen && selectedAgentContact" class="agent-contact-overlay" @click.self="closeAgentContactPopup">
+            <div class="agent-contact-modal">
+              <div class="agent-contact-head">
+                <div>
+                  <div class="agent-contact-title">{{ selectedAgentContact.nom || 'Agent' }}</div>
+                  <div class="agent-contact-sub">{{ selectedAgentContact.fonction || '-' }}</div>
+                </div>
+                <button type="button" class="agent-contact-close" @click="closeAgentContactPopup">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+
+              <div class="agent-contact-body">
+                <div class="agent-contact-item" v-if="selectedAgentContact.organe">
+                  <i class="fas fa-sitemap"></i>
+                  <span>{{ selectedAgentContact.organe }}</span>
+                </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.grade">
+                  <i class="fas fa-layer-group"></i>
+                  <span>{{ selectedAgentContact.grade }}</span>
+                </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.matricule">
+                  <i class="fas fa-id-badge"></i>
+                  <span>{{ selectedAgentContact.matricule }}</span>
+                </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.email">
+                  <i class="fas fa-envelope"></i>
+                  <span>{{ selectedAgentContact.email }}</span>
+                </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.telephone">
+                  <i class="fas fa-phone"></i>
+                  <span>{{ selectedAgentContact.telephone }}</span>
+                </div>
+                <div class="agent-contact-empty" v-if="!selectedAgentContact.email && !selectedAgentContact.telephone && !selectedAgentContact.matricule && !selectedAgentContact.grade && !selectedAgentContact.organe">
+                  Aucune information de contact disponible.
+                </div>
+              </div>
+            </div>
           </div>
         </Transition>
       </Teleport>
@@ -1297,6 +1341,18 @@ const drilldownProvince = ref(null) // { province, effectifs, by_organe, presenc
 const drilldownDepartment = ref(null) // { department, effectifs, presence, agents }
 const drilldownLevel = ref('organe') // 'organe' | 'province' | 'department'
 const drilldownSection = ref('effectifs') // 'effectifs' | 'presence' | 'pta'
+const agentContactOpen = ref(false)
+const selectedAgentContact = ref(null)
+
+function openAgentContactPopup(agent) {
+  selectedAgentContact.value = agent || null
+  agentContactOpen.value = !!agent
+}
+
+function closeAgentContactPopup() {
+  agentContactOpen.value = false
+  selectedAgentContact.value = null
+}
 
 async function openOrganeDrilldown(code, section = 'effectifs') {
   drilldownOpen.value = true
@@ -1347,6 +1403,7 @@ function closeDrilldown() {
   drilldownDepartment.value = null
   drilldownLevel.value = 'organe'
   drilldownSection.value = 'effectifs'
+  closeAgentContactPopup()
 }
 
 function backToOrgane() {
@@ -2102,8 +2159,44 @@ onMounted(async () => {
 .drill-prov-agent-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .drill-prov-agent-meta span { font-size: .62rem; color: #64748b; display: flex; align-items: center; gap: 3px; }
 .drill-prov-agent-meta i { font-size: .6rem; opacity: .7; }
-.drill-prov-agent-link { display: inline-block; margin-top: 4px; font-size: .62rem; color: #0077B5; text-decoration: none; font-weight: 600; }
+.drill-prov-agent-link {
+  display: inline-block; margin-top: 4px; font-size: .62rem; color: #0077B5;
+  text-decoration: none; font-weight: 600; background: transparent; border: none;
+  padding: 0; cursor: pointer;
+}
 .drill-prov-agent-link:hover { text-decoration: underline; }
+
+.agent-contact-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .5);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 6000; padding: 1rem;
+}
+.agent-contact-modal {
+  width: min(520px, 100%); background: #fff; border-radius: 14px;
+  border: 1px solid #e2e8f0; box-shadow: 0 20px 50px rgba(15, 23, 42, .28);
+}
+.agent-contact-head {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  gap: .7rem; padding: .9rem 1rem; border-bottom: 1px solid #e2e8f0;
+}
+.agent-contact-title { font-size: .95rem; font-weight: 800; color: #1e293b; }
+.agent-contact-sub { font-size: .75rem; color: #64748b; margin-top: .1rem; }
+.agent-contact-close {
+  border: none; background: #f8fafc; color: #64748b; border-radius: 8px;
+  width: 30px; height: 30px; cursor: pointer;
+}
+.agent-contact-close:hover { background: #e2e8f0; color: #334155; }
+.agent-contact-body { padding: .8rem 1rem 1rem; display: flex; flex-direction: column; gap: .45rem; }
+.agent-contact-item {
+  display: flex; align-items: center; gap: .45rem; font-size: .78rem;
+  color: #334155; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+  padding: .45rem .55rem;
+}
+.agent-contact-item i { width: 14px; color: #0077B5; }
+.agent-contact-empty {
+  font-size: .74rem; color: #64748b; background: #f8fafc;
+  border: 1px dashed #cbd5e1; border-radius: 8px; padding: .55rem .65rem;
+}
 
 /* ═══════════ ACTIVITES PTA ═══════════ */
 .drill-prov-activites { display: flex; flex-direction: column; gap: .5rem; }
