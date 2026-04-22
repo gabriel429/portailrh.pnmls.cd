@@ -87,8 +87,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/executive/province/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'provinceDetail']);
     Route::get('/dashboard/executive/department/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'departmentDetail']);
     Route::get('/dashboard/sep', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'sepIndex']);
+    Route::get('/dashboard/caf', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'cafIndex']);
     Route::get('/dashboard/renforcement', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'renforcementIndex']);
     Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
+    Route::get('/dashboard/department/agents', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'agentsDrill']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
 
     // Profile (SPA)
@@ -147,6 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Messages
     Route::post('messages', [MessageController::class, 'store']);
     Route::get('messages/{message}', [MessageController::class, 'show']);
+    Route::get('mail-history', [MessageController::class, 'history']);
 
     // RH Agents (role-protected)
     Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN,SEP')->group(function () {

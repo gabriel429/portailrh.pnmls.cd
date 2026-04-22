@@ -8,6 +8,7 @@ use App\Models\Pointage;
 use App\Models\Tache;
 use App\Models\Holiday;
 use App\Models\Department;
+use App\Models\AgentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -165,6 +166,99 @@ class DepartmentDashboardController extends ApiController
             'team_performance' => $teamPerf,
             'recent_taches'    => $recentTaches,
             'pending_requests' => $pendingRequests,
+        ]);
+    }
+
+    /**
+     * Drill-down agents du département pour le directeur
+     * Retourne la liste complète des agents avec statut, présence, tâches
+     */
+    public function agentsDrill(Request $request)
+    {
+        $user   = $request->user();
+        $deptId = $user->agent?->departement_id ?? $user->departement_id;
+
+        if (!$deptId) {
+            return response()->json(['message' => 'Aucun département associé à votre compte.'], 403);
+        }
+
+        $now          = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $agentIds     = Agent::where('departement_id', $deptId)->pluck('id');
+
+        // Présences du mois par agent
+        $monthlyPresence = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereIn('agent_id', $agentIds)
+            ->whereNotNull('heure_entree')
+            ->select('agent_id', DB::raw('COUNT(DISTINCT date_pointage) as jours_presents'))
+            ->groupBy('agent_id')
+            ->pluck('jours_presents', 'agent_id');
+
+        $joursOuvrables = max(
+            Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                ->select(DB::raw('COUNT(DISTINCT date_pointage) as jours'))
+                ->value('jours'),
+            1
+        );
+
+        // Statuts actuels
+        $statuts = AgentStatus::actuel()
+            ->whereIn('agent_id', $agentIds)
+            ->get(['agent_id', 'statut'])
+            ->keyBy('agent_id');
+
+        // Congés actifs
+        $congesActifs = Holiday::whereIn('agent_id', $agentIds)
+            ->where('statut_demande', 'approuve')
+            ->where('date_debut', '<=', $now->toDateString())
+            ->where('date_fin', '>=', $now->toDateString())
+            ->pluck('agent_id')
+            ->flip();
+
+        $agents = Agent::where('departement_id', $deptId)
+            ->with([
+                'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
+            ])
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'statut'])
+            ->map(function ($agent) use ($monthlyPresence, $joursOuvrables, $statuts, $congesActifs, $now) {
+                $taches     = $agent->tachesAssignees;
+                $total      = $taches->count();
+                $done       = $taches->where('statut', 'terminee')->count();
+                $inProgress = $taches->whereIn('statut', ['nouvelle', 'en_cours'])->count();
+                $overdue    = $taches->whereNotIn('statut', ['terminee'])
+                    ->filter(fn($t) => $t->date_echeance && $t->date_echeance->lt($now))
+                    ->count();
+                $avgPct     = $total > 0 ? round($taches->avg('pourcentage'), 0) : 0;
+
+                $joursPresents = $monthlyPresence[$agent->id] ?? 0;
+                $tauxPresence  = round(($joursPresents / $joursOuvrables) * 100, 1);
+
+                $statutActuel = $statuts[$agent->id]?->statut ?? null;
+                if (!$statutActuel) {
+                    $statutActuel = isset($congesActifs[$agent->id]) ? 'en_conge' : $agent->statut;
+                }
+
+                return [
+                    'id'              => $agent->id,
+                    'nom'             => $agent->nom,
+                    'prenom'          => $agent->prenom,
+                    'photo'           => $agent->photo,
+                    'fonction'        => $agent->poste_actuel ?: $agent->fonction,
+                    'statut'          => $statutActuel,
+                    'taches_total'    => $total,
+                    'taches_done'     => $done,
+                    'taches_en_cours' => $inProgress,
+                    'taches_overdue'  => $overdue,
+                    'avg_completion'  => $avgPct,
+                    'jours_presents'  => $joursPresents,
+                    'taux_presence'   => $tauxPresence,
+                ];
+            });
+
+        return $this->success([
+            'agents'          => $agents,
+            'jours_ouvrables' => $joursOuvrables,
         ]);
     }
 }

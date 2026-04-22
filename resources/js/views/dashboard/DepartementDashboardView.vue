@@ -34,7 +34,7 @@
 
         <!-- Droite : KPIs -->
         <div class="dept-hero-kpis">
-          <div class="dept-kpi-pill" @click="router.push('/agents')">
+          <div class="dept-kpi-pill" @click="openDrill('effectifs')">
             <div class="dept-kpi-pill-icon"><i class="fas fa-users"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.agents?.actifs ?? '—' }}</div>
@@ -61,20 +61,22 @@
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi-pill">
+          <div class="dept-kpi-pill" @click="openDrill('presence')">
             <div class="dept-kpi-pill-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="dept-kpi-pill-lbl">Présence</div>
             </div>
+            <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi-pill">
+          <div class="dept-kpi-pill" @click="openDrill('conges')">
             <div class="dept-kpi-pill-icon"><i class="fas fa-umbrella-beach"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.conges?.actifs ?? 0 }}</div>
               <div class="dept-kpi-pill-lbl">Congés actifs</div>
             </div>
+            <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
         </div>
       </div>
@@ -130,7 +132,8 @@
           </div>
         </div>
         <div class="dept-metrics">
-          <div v-for="m in metrics" :key="m.label" class="dept-metric" @click="router.push(m.to)">
+          <div v-for="m in metrics" :key="m.label" class="dept-metric"
+            @click="m.drillSection ? openDrill(m.drillSection) : router.push(m.to)">
             <div class="dept-metric-header">
               <div class="dept-metric-icon" :style="{ background: m.bg, color: m.color }">
                 <i class="fas" :class="m.icon"></i>
@@ -438,6 +441,149 @@
 
     </template>
   </div>
+
+  <!-- ════════════════════ DRILL-DOWN PANEL ════════════════════ -->
+  <Teleport to="body">
+    <div v-if="drillOpen" class="drill-overlay" @click.self="closeDrill">
+      <div class="drill-panel">
+
+        <!-- Header -->
+        <div class="drill-header" :style="{ background: '#0077B5' }">
+          <div class="drill-header-left">
+            <div class="drill-header-icon">
+              <i class="fas" :class="drillSection === 'effectifs' ? 'fa-users' : drillSection === 'presence' ? 'fa-user-check' : 'fa-umbrella-beach'"></i>
+            </div>
+            <div>
+              <div class="drill-header-title">
+                {{ drillSection === 'effectifs' ? 'Agents du département' : drillSection === 'presence' ? 'Présence — agents du département' : 'Congés — agents du département' }}
+              </div>
+              <div class="drill-header-sub">{{ data?.department?.nom }}</div>
+            </div>
+          </div>
+          <button class="drill-close-btn" @click="closeDrill"><i class="fas fa-times"></i></button>
+        </div>
+
+        <!-- Tabs -->
+        <div class="drill-tabs">
+          <button class="drill-tab" :class="{ active: drillSection === 'effectifs' }" @click="drillSection = 'effectifs'">
+            <i class="fas fa-users me-1"></i> Effectifs
+          </button>
+          <button class="drill-tab" :class="{ active: drillSection === 'presence' }" @click="drillSection = 'presence'">
+            <i class="fas fa-user-check me-1"></i> Présence
+          </button>
+          <button class="drill-tab" :class="{ active: drillSection === 'conges' }" @click="drillSection = 'conges'">
+            <i class="fas fa-umbrella-beach me-1"></i> Congés
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="drill-body">
+
+          <!-- Loading -->
+          <div v-if="drillLoading" class="drill-loading">
+            <i class="fas fa-spinner fa-spin"></i> Chargement…
+          </div>
+
+          <template v-else-if="drillAgents">
+
+            <!-- Summary bar -->
+            <div class="drill-summary">
+              <div class="drill-summary-item">
+                <div class="drill-summary-val">{{ drillAgents.length }}</div>
+                <div class="drill-summary-lbl">Total agents</div>
+              </div>
+              <div class="drill-summary-sep"></div>
+              <div class="drill-summary-item">
+                <div class="drill-summary-val" style="color:#059669">{{ drillAgents.filter(a => a.statut === 'actif' || a.statut === 'disponible').length }}</div>
+                <div class="drill-summary-lbl">Disponibles</div>
+              </div>
+              <div class="drill-summary-sep"></div>
+              <div class="drill-summary-item">
+                <div class="drill-summary-val" style="color:#0891b2">{{ drillAgents.filter(a => a.statut === 'en_conge').length }}</div>
+                <div class="drill-summary-lbl">En congé</div>
+              </div>
+              <div class="drill-summary-sep"></div>
+              <div class="drill-summary-item">
+                <div class="drill-summary-val" style="color:#d97706">{{ drillAgents.filter(a => a.statut === 'en_mission').length }}</div>
+                <div class="drill-summary-lbl">En mission</div>
+              </div>
+            </div>
+
+            <!-- Agent list — Effectifs tab -->
+            <template v-if="drillSection === 'effectifs'">
+              <div class="drill-agent-list">
+                <div v-for="ag in drillAgents" :key="ag.id" class="drill-agent-row">
+                  <div class="drill-agent-avatar" :style="{ background: '#e0f2fe', color: '#0077B5' }">
+                    <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
+                    <span v-else>{{ ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() }}</span>
+                  </div>
+                  <div class="drill-agent-info">
+                    <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                    <div class="drill-agent-fonction">{{ ag.fonction || '—' }}</div>
+                  </div>
+                  <div class="drill-agent-meta">
+                    <span class="drill-agent-statut" :class="`statut-${ag.statut}`">{{ statutLabel(ag.statut) }}</span>
+                    <div class="drill-agent-tasks">
+                      <i class="fas fa-tasks me-1" style="color:#d97706"></i>{{ ag.taches_en_cours }} en cours
+                      <span v-if="ag.taches_overdue > 0" style="color:#dc2626;margin-left:.4rem"><i class="fas fa-exclamation-circle"></i> {{ ag.taches_overdue }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Présence tab -->
+            <template v-else-if="drillSection === 'presence'">
+              <div class="drill-agent-list">
+                <div v-for="ag in drillAgents" :key="ag.id" class="drill-agent-row">
+                  <div class="drill-agent-avatar" :style="{ background: '#dcfce7', color: '#059669' }">
+                    <span>{{ ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() }}</span>
+                  </div>
+                  <div class="drill-agent-info">
+                    <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                    <div class="drill-agent-fonction">{{ ag.fonction || '—' }}</div>
+                  </div>
+                  <div class="drill-agent-meta">
+                    <div class="drill-presence-bar-wrap">
+                      <div class="drill-presence-bar">
+                        <div class="drill-presence-bar-fill" :style="{ width: ag.taux_presence + '%', background: ag.taux_presence >= 80 ? '#059669' : ag.taux_presence >= 50 ? '#d97706' : '#dc2626' }"></div>
+                      </div>
+                      <span class="drill-presence-pct">{{ ag.taux_presence }}%</span>
+                    </div>
+                    <div style="font-size:.72rem;color:#94a3b8">{{ ag.jours_presents }}j présents ce mois</div>
+                  </div>
+                </div>
+              </div>
+            </template>
+
+            <!-- Congés tab -->
+            <template v-else>
+              <div class="drill-agent-list">
+                <div v-for="ag in drillAgents.filter(a => a.statut === 'en_conge')" :key="ag.id" class="drill-agent-row">
+                  <div class="drill-agent-avatar" :style="{ background: '#cffafe', color: '#0891b2' }">
+                    <span>{{ ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() }}</span>
+                  </div>
+                  <div class="drill-agent-info">
+                    <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                    <div class="drill-agent-fonction">{{ ag.fonction || '—' }}</div>
+                  </div>
+                  <div class="drill-agent-meta">
+                    <span class="drill-agent-statut statut-en_conge">En congé</span>
+                  </div>
+                </div>
+                <div v-if="!drillAgents.some(a => a.statut === 'en_conge')" class="drill-empty">
+                  <i class="fas fa-check-circle" style="color:#059669;font-size:1.5rem;margin-bottom:.5rem"></i>
+                  <div>Aucun agent en congé actuellement</div>
+                </div>
+              </div>
+            </template>
+
+          </template>
+        </div>
+
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <script setup>
@@ -455,6 +601,12 @@ const loadError     = ref(null)
 const loadErrorCode = ref(null)
 const data       = ref({})
 const photoIndex = ref(0)
+
+// ─── DRILL-DOWN STATE ───────────────────────────────────────────────────────
+const drillOpen    = ref(false)
+const drillLoading = ref(false)
+const drillAgents  = ref(null)
+const drillSection = ref('effectifs') // 'effectifs' | 'presence' | 'conges'
 
 // ─── Identité ────────────────────────────────────────────────
 const deptIsFemme = computed(() => {
@@ -534,9 +686,11 @@ const metrics = computed(() => {
   return [
     { label: "Agents actifs",        icon: 'fa-users',              color: '#0077B5', bg: '#e0f2fe',
       value: data.value?.agents?.actifs ?? 0,             to: '/agents',          alert: false,
+      drillSection: 'effectifs',
       pct: Math.min(((data.value?.agents?.actifs ?? 0) / agentTotal) * 100, 100) },
     { label: "Présence aujourd'hui", icon: 'fa-user-check',         color: '#059669', bg: '#d1fae5',
       value: (data.value?.attendance?.today_rate ?? 0) + '%', to: '/pointages',
+      drillSection: 'presence',
       pct: data.value?.attendance?.today_rate ?? 0,
       alert: (data.value?.attendance?.today_rate ?? 100) < 60 },
     { label: "Tâches en cours",      icon: 'fa-spinner',            color: '#d97706', bg: '#fef3c7',
@@ -587,6 +741,28 @@ async function loadData() {
   }
 }
 onMounted(loadData)
+
+// ─── DRILL-DOWN METHODS ────────────────────────────────────────────────────
+async function openDrill(section = 'effectifs') {
+  drillSection.value = section
+  drillOpen.value    = true
+  if (drillAgents.value) return // already loaded
+  drillLoading.value = true
+  try {
+    const { data: res } = await client.get('/dashboard/department/agents')
+    drillAgents.value = res.data?.agents ?? res.agents ?? []
+  } catch {
+    drillAgents.value = []
+  } finally {
+    drillLoading.value = false
+  }
+}
+
+function closeDrill() {
+  drillOpen.value   = false
+  drillAgents.value = null
+  drillSection.value = 'effectifs'
+}
 
 // ─── Helpers ─────────────────────────────────────────────────
 function formatDate(d) {
@@ -1046,5 +1222,48 @@ html.dark .dept-error-banner.dept-error-info { background: #1e3a5f !important; b
 }
 @media (max-width: 480px) {
   .dept-metrics { grid-template-columns: 1fr; }
+
+/* ─── DRILL-DOWN PANEL ─────────────────────────────────────────────── */
+.drill-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(0,0,0,.45); display: flex; align-items: stretch; justify-content: flex-end; }
+.drill-panel { width: min(480px, 100vw); background: #fff; display: flex; flex-direction: column; box-shadow: -8px 0 32px rgba(0,0,0,.18); animation: drillSlideIn .25s ease-out; }
+@keyframes drillSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.drill-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.25rem; color: #fff; }
+.drill-header-left { display: flex; align-items: center; gap: .9rem; }
+.drill-header-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+.drill-header-title { font-size: .98rem; font-weight: 700; line-height: 1.2; }
+.drill-header-sub { font-size: .75rem; opacity: .8; margin-top: .15rem; }
+.drill-close-btn { width: 34px; height: 34px; border-radius: 9px; border: none; background: rgba(255,255,255,.18); color: #fff; font-size: .9rem; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .2s; }
+.drill-close-btn:hover { background: rgba(255,255,255,.3); }
+.drill-tabs { display: flex; border-bottom: 2px solid #f1f5f9; background: #fafbfc; }
+.drill-tab { flex: 1; padding: .65rem .5rem; border: none; background: none; font-size: .78rem; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
+.drill-tab.active { color: #0077B5; border-bottom-color: #0077B5; }
+.drill-body { flex: 1; overflow-y: auto; padding: 1rem; }
+.drill-loading { display: flex; align-items: center; justify-content: center; padding: 2rem; gap: .5rem; color: #94a3b8; }
+.drill-summary { display: flex; align-items: center; gap: .5rem; background: #f8fafc; border-radius: 12px; padding: .75rem 1rem; margin-bottom: 1rem; }
+.drill-summary-item { flex: 1; text-align: center; }
+.drill-summary-val { font-size: 1.2rem; font-weight: 700; color: #1e293b; }
+.drill-summary-lbl { font-size: .68rem; color: #94a3b8; margin-top: .1rem; }
+.drill-summary-sep { width: 1px; height: 28px; background: #e2e8f0; }
+.drill-agent-list { display: flex; flex-direction: column; gap: .5rem; }
+.drill-agent-row { display: flex; align-items: center; gap: .75rem; padding: .65rem .8rem; border-radius: 10px; background: #f8fafc; border: 1px solid #f1f5f9; transition: background .15s; }
+.drill-agent-row:hover { background: #f0f7ff; }
+.drill-agent-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.drill-agent-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.drill-agent-info { flex: 1; min-width: 0; }
+.drill-agent-name { font-size: .84rem; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drill-agent-fonction { font-size: .72rem; color: #94a3b8; margin-top: .1rem; }
+.drill-agent-meta { display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; flex-shrink: 0; }
+.drill-agent-statut { font-size: .68rem; font-weight: 600; padding: .2rem .5rem; border-radius: 6px; }
+.statut-actif, .statut-disponible { background: #dcfce7; color: #16a34a; }
+.statut-en_conge { background: #cffafe; color: #0891b2; }
+.statut-en_mission { background: #fef3c7; color: #d97706; }
+.statut-suspendu { background: #fee2e2; color: #dc2626; }
+.statut-en_formation { background: #ede9fe; color: #7c3aed; }
+.drill-agent-tasks { font-size: .72rem; color: #64748b; }
+.drill-presence-bar-wrap { display: flex; align-items: center; gap: .4rem; }
+.drill-presence-bar { width: 60px; height: 6px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
+.drill-presence-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
+.drill-presence-pct { font-size: .72rem; font-weight: 600; color: #475569; }
+.drill-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; color: #94a3b8; font-size: .84rem; }
 }
 </style>

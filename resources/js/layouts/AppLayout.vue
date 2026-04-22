@@ -168,6 +168,12 @@
                       <span class="dd-icon dd-icon-teal"><i class="fas fa-chart-line"></i></span> Tableau de Bord
                     </router-link>
                   </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <router-link class="dropdown-item" :to="{ name: 'mail.history' }">
+                      <span class="dd-icon dd-icon-blue"><i class="fas fa-paper-plane"></i></span> Historique emails
+                    </router-link>
+                  </li>
                 </template>
                 <template v-if="auth.isAdminNT">
                   <li v-if="auth.isRH || auth.isSEN"><hr class="dropdown-divider"></li>

@@ -1856,27 +1856,28 @@ onMounted(async () => {
 
 /* ═══════════ DRILL-DOWN ═══════════ */
 .drill-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 1050;
+  position: fixed; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(6px); z-index: 9999;
   display: flex; align-items: stretch; justify-content: flex-end;
 }
 .drill-panel {
-  width: 480px; max-width: 95vw; background: #fff; display: flex; flex-direction: column;
-  box-shadow: -8px 0 40px rgba(0,0,0,.15); overflow: hidden;
+  width: 580px; max-width: 95vw; background: #f8fafc; display: flex; flex-direction: column;
+  box-shadow: -12px 0 48px rgba(0,0,0,.18); overflow: hidden;
 }
 .drill-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 1.2rem 1.4rem; color: #fff; flex-shrink: 0;
+  padding: 1.5rem 1.8rem; color: #fff; flex-shrink: 0;
 }
-.drill-header-left { display: flex; align-items: center; gap: 1rem; }
-.drill-header-title { font-size: 1rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
-.drill-header-sub { font-size: .72rem; opacity: .7; margin-top: .2rem; }
+.drill-header-left { display: flex; align-items: center; gap: .8rem; min-width: 0; }
+.drill-header-title { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
+.drill-header-sub { font-size: .72rem; opacity: .8; margin-top: .2rem; }
 .drill-close {
-  background: rgba(255,255,255,.15); border: none; color: #fff;
-  width: 32px; height: 32px; border-radius: 8px; cursor: pointer; font-size: .85rem;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 10px; border: 1px solid rgba(255,255,255,.2);
+  background: rgba(255,255,255,.08); color: #fff;
+  display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: .85rem;
+  flex-shrink: 0; transition: all .2s;
 }
-.drill-close:hover { background: rgba(255,255,255,.25); }
-.drill-body { flex: 1; overflow-y: auto; padding: 1.2rem; }
+.drill-close:hover { background: rgba(255,255,255,.2); }
+.drill-body { flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; }
 .drill-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: #94a3b8; }
 .drill-empty { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: 2rem; color: #94a3b8; font-size: .85rem; }
 .drill-empty i { font-size: 1.5rem; }

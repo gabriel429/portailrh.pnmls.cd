@@ -49,6 +49,14 @@ const routes = [
         component: () => import('@/views/notifications/NotificationListView.vue'),
         meta: { auth: true },
     },
+
+    // Historique emails
+    {
+        path: '/mail-history',
+        name: 'mail.history',
+        component: () => import('@/views/messages/MailHistoryView.vue'),
+        meta: { auth: true },
+    },
     {
         path: '/notifications/:id/read',
         name: 'notifications.read',
