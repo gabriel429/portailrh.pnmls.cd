@@ -6,6 +6,7 @@ use App\Mail\AgentContactMail;
 use App\Http\Resources\MessageResource;
 use App\Models\Agent;
 use App\Models\Message;
+use App\Models\SentMailHistory;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -93,6 +94,18 @@ class MessageController extends ApiController
                 attachmentName: $attachmentMeta['name'] ?? null,
             ));
 
+            SentMailHistory::create([
+                'sender_id' => $user->id,
+                'agent_id' => $recipient['agent_id'],
+                'recipient_name' => $recipient['name'],
+                'recipient_email' => $recipient['email'],
+                'subject' => $validated['subject'],
+                'body' => $validated['body'],
+                'attachment_name' => $attachmentMeta['name'] ?? null,
+                'attachment_path' => $attachmentMeta['path'] ?? null,
+                'sent_at' => now(),
+            ]);
+
             if ($recipient['agent_id']) {
                 Message::create([
                     'agent_id' => $recipient['agent_id'],
@@ -107,6 +120,7 @@ class MessageController extends ApiController
         return $this->success([
             'sent' => $allRecipients->count(),
             'saved_messages' => $recipientPayloads->count(),
+            'saved_history' => $allRecipients->count(),
         ], [], [
             'message' => 'Email envoye avec succes.',
         ], 201);
