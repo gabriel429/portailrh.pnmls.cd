@@ -220,59 +220,59 @@
               </div>
             </div>
           </div>
-
-          <!-- Collègues en congé -->
-          <div class="dash-panel mt-3">
-            <header class="panel-head">
-              <div>
-                <h3 class="panel-title">
-                  <i class="fas fa-users me-2 text-info"></i>Collègues en congé
-                  <span v-if="colleagues.length" class="badge bg-info ms-2" style="font-size: 0.7rem;">{{ colleagues.length }}</span>
-                </h3>
-              </div>
-            </header>
-
-            <div v-if="colleagues.length" class="table-responsive">
-              <table class="table table-hover mb-0">
-                <thead>
-                  <tr class="text-muted small">
-                    <th>Agent</th>
-                    <th>Type</th>
-                    <th class="d-none d-sm-table-cell">Début</th>
-                    <th class="d-none d-sm-table-cell">Fin</th>
-                    <th class="d-sm-none">Période</th>
-                    <th>Jours</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="h in colleagues" :key="h.id">
-                    <td>
-                      <strong>{{ agentName(h.agent) }}</strong>
-                      <div v-if="h.agent?.fonction" class="small text-muted">{{ h.agent.fonction }}</div>
-                    </td>
-                    <td>
-                      <span class="badge" :class="typeCongeClass(h.type_conge)">
-                        {{ typeCongeLabel(h.type_conge) }}
-                      </span>
-                    </td>
-                    <td class="d-none d-sm-table-cell">{{ formatDate(h.date_debut) }}</td>
-                    <td class="d-none d-sm-table-cell">{{ formatDate(h.date_fin) }}</td>
-                    <td class="d-sm-none">
-                      <div class="small">{{ formatDateShort(h.date_debut) }}</div>
-                      <div class="small text-muted">{{ formatDateShort(h.date_fin) }}</div>
-                    </td>
-                    <td><strong>{{ h.nombre_jours }}j</strong></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div v-else class="text-center py-4 text-muted">
-              <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
-              <p class="mb-0">Aucun collègue en congé approuvé pour cette année.</p>
-            </div>
-          </div>
         </template>
+
+        <!-- Collègues en congé (visible même sans planning si données disponibles) -->
+        <div class="dash-panel mt-3">
+          <header class="panel-head">
+            <div>
+              <h3 class="panel-title">
+                <i class="fas fa-users me-2 text-info"></i>Collègues en congé
+                <span v-if="colleagues.length" class="badge bg-info ms-2" style="font-size: 0.7rem;">{{ colleagues.length }}</span>
+              </h3>
+            </div>
+          </header>
+
+          <div v-if="colleagues.length" class="table-responsive">
+            <table class="table table-hover mb-0">
+              <thead>
+                <tr class="text-muted small">
+                  <th>Agent</th>
+                  <th>Type</th>
+                  <th class="d-none d-sm-table-cell">Début</th>
+                  <th class="d-none d-sm-table-cell">Fin</th>
+                  <th class="d-sm-none">Période</th>
+                  <th>Jours</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="h in colleagues" :key="h.id">
+                  <td>
+                    <strong>{{ agentName(h.agent) }}</strong>
+                    <div v-if="h.agent?.fonction" class="small text-muted">{{ h.agent.fonction }}</div>
+                  </td>
+                  <td>
+                    <span class="badge" :class="typeCongeClass(h.type_conge)">
+                      {{ typeCongeLabel(h.type_conge) }}
+                    </span>
+                  </td>
+                  <td class="d-none d-sm-table-cell">{{ formatDate(h.date_debut) }}</td>
+                  <td class="d-none d-sm-table-cell">{{ formatDate(h.date_fin) }}</td>
+                  <td class="d-sm-none">
+                    <div class="small">{{ formatDateShort(h.date_debut) }}</div>
+                    <div class="small text-muted">{{ formatDateShort(h.date_fin) }}</div>
+                  </td>
+                  <td><strong>{{ h.nombre_jours }}j</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div v-else class="text-center py-4 text-muted">
+            <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
+            <p class="mb-0">Aucun collègue en congé approuvé pour cette année.</p>
+          </div>
+        </div>
       </template>
     </div>
   </div>

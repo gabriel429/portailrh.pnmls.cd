@@ -56,17 +56,34 @@ class MyHolidayPlanningController extends Controller
 
         // Congés approuvés des collègues (même structure, même année)
         $colleagues = [];
-        if ($planning && Schema::hasTable('holidays')) {
-            $colleagues = Holiday::with(['agent:id,nom,postnom,prenom,fonction'])
-                ->where('holiday_planning_id', $planning->id)
-                ->where('statut_demande', 'approuve')
-                ->select([
-                    'id', 'agent_id', 'holiday_planning_id',
-                    'type_conge', 'date_debut', 'date_fin',
-                    'nombre_jours', 'statut_demande',
-                ])
-                ->orderBy('date_debut', 'desc')
-                ->get();
+        if (Schema::hasTable('holidays')) {
+            if ($planning) {
+                // Planning existe : congés liés au planning
+                $colleagues = Holiday::with(['agent:id,nom,postnom,prenom,fonction'])
+                    ->where('holiday_planning_id', $planning->id)
+                    ->where('statut_demande', 'approuve')
+                    ->select([
+                        'id', 'agent_id', 'holiday_planning_id',
+                        'type_conge', 'date_debut', 'date_fin',
+                        'nombre_jours', 'statut_demande',
+                    ])
+                    ->orderBy('date_debut', 'desc')
+                    ->get();
+            } elseif ($structure['type'] === 'department') {
+                // Pas de planning mais département identifié : tous les congés approuvés du département
+                $deptAgentIds = Agent::where('departement_id', $structure['id'])->pluck('id');
+                $colleagues = Holiday::with(['agent:id,nom,postnom,prenom,fonction'])
+                    ->whereIn('agent_id', $deptAgentIds)
+                    ->where('statut_demande', 'approuve')
+                    ->whereYear('date_debut', $year)
+                    ->select([
+                        'id', 'agent_id', 'holiday_planning_id',
+                        'type_conge', 'date_debut', 'date_fin',
+                        'nombre_jours', 'statut_demande',
+                    ])
+                    ->orderBy('date_debut', 'desc')
+                    ->get();
+            }
         }
 
         // Statistiques
