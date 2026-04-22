@@ -37,12 +37,36 @@ class ExecutiveDashboardController extends ApiController
     {
         return app(UserDataScope::class);
     }
-    public function index(Request $request)
+
+    private function ensureExecutiveAccess(Request $request)
     {
         $user = $request->user();
 
-        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
+        if (!$user || (!$user->hasRole('SEN') && !$user->hasRole('SENA'))) {
             return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        }
+
+        return null;
+    }
+
+    private function organeMapLower(): array
+    {
+        return [
+            'sen' => 'Secrétariat Exécutif National',
+            'sep' => 'Secrétariat Exécutif Provincial',
+            'sel' => 'Secrétariat Exécutif Local',
+        ];
+    }
+
+    private function organeMapUpper(): array
+    {
+        return array_change_key_case($this->organeMapLower(), CASE_UPPER);
+    }
+
+    public function index(Request $request)
+    {
+        if ($forbidden = $this->ensureExecutiveAccess($request)) {
+            return $forbidden;
         }
 
         $now = Carbon::now();
@@ -50,11 +74,7 @@ class ExecutiveDashboardController extends ApiController
         $startOfMonth = $now->copy()->startOfMonth();
 
         // ─── ORGANES mapping ───
-        $organes = [
-            'sen' => 'Secrétariat Exécutif National',
-            'sep' => 'Secrétariat Exécutif Provincial',
-            'sel' => 'Secrétariat Exécutif Local',
-        ];
+        $organes = $this->organeMapLower();
 
         // ─── AGENTS ───
         $agentsTotal = Agent::count();
@@ -648,11 +668,7 @@ class ExecutiveDashboardController extends ApiController
         $anciensAgents  = (clone $agentsQ)->anciens()->count();
 
         // Par organe dans la province
-        $organeMap = [
-            'sen' => 'Secrétariat Exécutif National',
-            'sep' => 'Secrétariat Exécutif Provincial',
-            'sel' => 'Secrétariat Exécutif Local',
-        ];
+        $organeMap = $this->organeMapLower();
         $byOrgane = [];
         foreach ($organeMap as $code => $nom) {
             $byOrgane[$code] = (clone $agentsQ)->where('organe', $nom)->actifs()->count();
@@ -930,17 +946,12 @@ class ExecutiveDashboardController extends ApiController
      */
     public function organeDetail(Request $request, string $code)
     {
-        $user = $request->user();
-        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
-            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        if ($forbidden = $this->ensureExecutiveAccess($request)) {
+            return $forbidden;
         }
 
         $code = strtoupper($code);
-        $organes = [
-            'SEN' => 'Secrétariat Exécutif National',
-            'SEP' => 'Secrétariat Exécutif Provincial',
-            'SEL' => 'Secrétariat Exécutif Local',
-        ];
+        $organes = $this->organeMapUpper();
 
         if (!isset($organes[$code])) {
             return $this->error('Organe invalide', 404);
@@ -1125,10 +1136,11 @@ class ExecutiveDashboardController extends ApiController
      */
     public function provinceDetail(Request $request, int $id)
     {
-        $user = $request->user();
-        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
-            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        if ($forbidden = $this->ensureExecutiveAccess($request)) {
+            return $forbidden;
         }
+
+        $user = $request->user();
 
         // Provincial scoping: RH Provincial AND SEP can only see their own province
         $scope = $this->scopeService();
@@ -1155,7 +1167,7 @@ class ExecutiveDashboardController extends ApiController
         $anciens = (clone $agents)->anciens()->count();
 
         // Par organe dans cette province
-        $organes = ['sen' => 'Secrétariat Exécutif National', 'sep' => 'Secrétariat Exécutif Provincial', 'sel' => 'Secrétariat Exécutif Local'];
+        $organes = $this->organeMapLower();
         $byOrgane = [];
         foreach ($organes as $oCode => $oNom) {
             $byOrgane[$oCode] = Agent::where('province_id', $id)->where('organe', $oNom)->actifs()->count();
@@ -1267,10 +1279,11 @@ class ExecutiveDashboardController extends ApiController
      */
     public function departmentDetail(Request $request, int $id)
     {
-        $user = $request->user();
-        if (!$user->hasRole('SEN') && !$user->hasRole('SENA')) {
-            return response()->json(['message' => 'Acces reserve au SEN/SENA.'], 403);
+        if ($forbidden = $this->ensureExecutiveAccess($request)) {
+            return $forbidden;
         }
+
+        $user = $request->user();
 
         $department = Department::find($id);
         if (!$department) {

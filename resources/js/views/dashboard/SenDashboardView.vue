@@ -976,7 +976,15 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div class="drill-prov-agent-meta">
+                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                              <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
+                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                            </div>
                           </div>
+                          <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
                         </div>
                       </div>
                     </template>
@@ -992,7 +1000,15 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div class="drill-prov-agent-meta">
+                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                              <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
+                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                            </div>
                           </div>
+                          <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
                         </div>
                       </div>
                     </template>
@@ -1063,7 +1079,15 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div class="drill-prov-agent-meta">
+                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                              <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
+                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                            </div>
                           </div>
+                          <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
                         </div>
                       </div>
                       <div v-else class="drill-empty">
@@ -1107,7 +1131,15 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div class="drill-prov-agent-meta">
+                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                              <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
+                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                            </div>
                           </div>
+                          <router-link :to="'/rh/agents/' + a.id" class="drill-prov-agent-link">Voir fiche</router-link>
                         </div>
                       </div>
                       <div v-else class="drill-empty">
@@ -2071,6 +2103,38 @@ onMounted(async () => {
 .drill-prov-agent-info { flex: 1; min-width: 0; }
 .drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
 .drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
+.drill-prov-agent-meta {
+  margin-top: .18rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .28rem;
+}
+.drill-prov-agent-meta span {
+  font-size: .62rem;
+  color: #475569;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: .08rem .4rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+}
+.drill-prov-agent-link {
+  flex-shrink: 0;
+  font-size: .64rem;
+  font-weight: 700;
+  color: #0077B5;
+  text-decoration: none;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  border-radius: 8px;
+  padding: .28rem .46rem;
+}
+.drill-prov-agent-link:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
 
 /* ═══════════ ACTIVITES PTA ═══════════ */
 .drill-prov-activites { display: flex; flex-direction: column; gap: .5rem; }
