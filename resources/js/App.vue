@@ -4,6 +4,7 @@
       <div class="launch-screen__backdrop" aria-hidden="true"></div>
       <div class="launch-screen__veil" aria-hidden="true"></div>
       <div class="launch-screen__halo" aria-hidden="true"></div>
+      <div class="launch-screen__grain" aria-hidden="true"></div>
 
       <div class="launch-brand">
         <div class="launch-brand__logo-wrap" role="img" aria-label="Logo PNMLS">
@@ -139,9 +140,18 @@ watch(isOnline, (val) => {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 20% 20%, rgba(103, 232, 249, 0.24), transparent 36%),
-    radial-gradient(circle at 80% 10%, rgba(56, 189, 248, 0.24), transparent 32%),
-    linear-gradient(135deg, rgba(2, 49, 79, 0.88) 0%, rgba(3, 88, 132, 0.82) 45%, rgba(11, 120, 173, 0.76) 100%);
+    radial-gradient(circle at 20% 20%, rgba(147, 229, 255, 0.29), transparent 36%),
+    radial-gradient(circle at 80% 10%, rgba(56, 189, 248, 0.28), transparent 32%),
+    linear-gradient(135deg, rgba(2, 49, 79, 0.9) 0%, rgba(3, 88, 132, 0.84) 45%, rgba(11, 120, 173, 0.8) 100%);
+}
+
+.launch-screen__grain {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.16) 0.55px, transparent 0.55px);
+  background-size: 3px 3px;
+  opacity: 0.16;
+  mix-blend-mode: soft-light;
 }
 
 .launch-screen__halo {
@@ -163,22 +173,34 @@ watch(isOnline, (val) => {
   gap: 1rem;
   padding: clamp(1.15rem, 2.8vw, 2rem);
   border-radius: 24px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  backdrop-filter: blur(4px);
-  box-shadow: 0 22px 60px rgba(2, 23, 37, 0.36);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.48);
+  backdrop-filter: blur(7px);
+  box-shadow: 0 24px 64px rgba(2, 23, 37, 0.42);
   animation: launchMessageIn 0.8s ease forwards;
 }
 
 .launch-brand__logo-wrap {
   display: grid;
   place-items: center;
+  position: relative;
   width: clamp(160px, 26vw, 270px);
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.96), rgba(240, 249, 255, 0.88));
-  border: 2px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 0 18px 40px rgba(2, 23, 37, 0.35);
+  background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.98), rgba(240, 249, 255, 0.9));
+  border: 2px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 18px 42px rgba(2, 23, 37, 0.4);
+  animation: logoFloat 4.5s ease-in-out infinite;
+}
+
+.launch-brand__logo-wrap::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid rgba(186, 230, 253, 0.58);
+  opacity: 0.8;
+  animation: logoRingPulse 2.4s ease-in-out infinite;
 }
 
 .launch-brand__logo {
@@ -200,18 +222,18 @@ watch(isOnline, (val) => {
   letter-spacing: .08em;
   font-weight: 900;
   text-transform: uppercase;
-  color: #f8fbff;
-  text-shadow: 0 10px 24px rgba(3, 19, 31, 0.48);
+  color: #ffffff;
+  text-shadow: 0 12px 28px rgba(3, 19, 31, 0.56);
 }
 
 .launch-brand__subtitle {
   margin: 0;
   font-size: clamp(0.86rem, 0.82rem + .65vw, 1.18rem);
-  font-weight: 700;
+  font-weight: 800;
   line-height: 1.5;
-  color: rgba(241, 248, 255, 0.98);
+  color: rgba(245, 251, 255, 0.99);
   text-wrap: balance;
-  text-shadow: 0 6px 18px rgba(3, 19, 31, 0.45);
+  text-shadow: 0 8px 20px rgba(3, 19, 31, 0.5);
 }
 
 @keyframes launchMessageIn {
@@ -234,6 +256,37 @@ watch(isOnline, (val) => {
   50% {
     transform: scale(1.04);
     opacity: 1;
+  }
+}
+
+@keyframes logoFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes logoRingPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-screen__halo,
+  .launch-brand,
+  .launch-brand__logo-wrap,
+  .launch-brand__logo-wrap::after {
+    animation: none !important;
   }
 }
 
