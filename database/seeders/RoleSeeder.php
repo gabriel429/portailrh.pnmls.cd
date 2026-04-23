@@ -45,6 +45,10 @@ class RoleSeeder extends Seeder
                 'nom_role' => 'SEN',
                 'description' => 'Secrétaire Exécutif National',
             ],
+            [
+                'nom_role' => 'DAF',
+                'description' => 'Directeur du Département Administration et Finances',
+            ],
         ];
 
         foreach ($roles as $role) {

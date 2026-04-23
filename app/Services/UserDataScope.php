@@ -31,7 +31,29 @@ class UserDataScope
             return true;
         }
 
-        return $user->hasRole($this->globalAdminRoles);
+        if ($user->hasRole($this->globalAdminRoles)) {
+            return true;
+        }
+
+        // Le Directeur du Département Administration et Finances (DAF) a accès global RH
+        if ($this->isDafDirecteur($user)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    public function isDafDirecteur(?User $user): bool
+    {
+        if ($user?->hasRole('DAF')) {
+            return true;
+        }
+        $role = strtolower($user?->role?->nom_role ?? '');
+        if (!str_contains($role, 'directeur')) {
+            return false;
+        }
+        $deptCode = $user?->agent?->departement?->code ?? '';
+        return strtoupper($deptCode) === 'DAF';
     }
 
     public function isProvincialRh(?User $user): bool
