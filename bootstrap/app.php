@@ -47,8 +47,21 @@ $app = Application::configure(basePath: dirname(__DIR__))
                 } elseif ($e instanceof \Illuminate\Auth\AuthenticationException) {
                     $status = 401;
                 }
+
+                // Ne jamais exposer les détails de l'erreur en production
+                $message = app()->isLocal() || app()->environment('testing')
+                    ? ($e->getMessage() ?: 'Server Error')
+                    : match (true) {
+                        $status === 401 => 'Non authentifié.',
+                        $status === 403 => 'Accès refusé.',
+                        $status === 404 => 'Ressource introuvable.',
+                        $status === 419 => 'Session expirée.',
+                        $status === 429 => 'Trop de requêtes.',
+                        default => 'Erreur interne du serveur.',
+                    };
+
                 return response()->json([
-                    'message' => $e->getMessage() ?: 'Server Error',
+                    'message' => $message,
                 ], $status);
             }
         });

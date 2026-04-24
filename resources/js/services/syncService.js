@@ -72,6 +72,7 @@ class SyncService {
 
     /**
      * SYNCHRONISATION PRINCIPALE
+     * Envoie tous les pointages en attente en un seul appel bulk.
      */
     async syncAll() {
         if (!this.isOnline || this.isSyncing) {
@@ -89,39 +90,68 @@ class SyncService {
                 return true
             }
 
-            console.log(`📤 Synchronisation de ${pending.length} pointage(s)`)
+            console.log(`📤 Synchronisation de ${pending.length} pointage(s) en lot`)
 
-            let synced = 0
-            let errors = 0
+            try {
+                // Regrouper tous les pointages par date et les envoyer en un seul appel bulk
+                const grouped = this.groupPointagesByDate(pending)
+                const bulkPayload = this.buildBulkPayload(grouped)
 
-            // Synchroniser chaque pointage
-            for (const pointage of pending) {
-                try {
-                    await this.syncPointage(pointage)
-                    synced++
-                } catch (error) {
-                    console.error(`❌ Échec sync pointage ${pointage.tempId}:`, error)
-                    errors++
+                let syncedCount = 0
+                let errorCount = 0
+
+                for (const payload of bulkPayload) {
+                    try {
+                        const response = await client.post('/pointages', payload)
+                        syncedCount += payload.pointages.length
+                    } catch (err) {
+                        // Fallback : tenter un par un si le lot échoue
+                        for (const pt of payload.pointages) {
+                            try {
+                                await this.syncSinglePointage(pt)
+                                syncedCount++
+                            } catch (singleErr) {
+                                console.error(`❌ Échec sync pointage ${pt.tempId}:`, singleErr)
+                                errorCount++
+                            }
+                        }
+                    }
                 }
 
-                // Pause légère entre les synchronisations
-                await new Promise(resolve => setTimeout(resolve, 100))
-            }
+                // Marquer les succès comme synchronisés
+                if (syncedCount > 0) {
+                    const allTempIds = pending.map(p => p.tempId)
+                    for (const tempId of allTempIds) {
+                        await offlineStorage.updatePointageStatus(tempId, 'synced')
+                    }
+                    // Supprimer de la queue après un délai
+                    setTimeout(async () => {
+                        for (const tempId of allTempIds) {
+                            await offlineStorage.removePointageFromQueue(tempId)
+                        }
+                    }, 5000)
+                }
 
-            // Notification du résultat
-            if (synced > 0) {
-                this.notifyUser(
-                    `✅ ${synced} pointage(s) synchronisé(s)${errors > 0 ? `, ${errors} erreur(s)` : ''}`,
-                    errors > 0 ? 'warning' : 'success'
-                )
-            }
+                // Notification du résultat
+                if (syncedCount > 0) {
+                    this.notifyUser(
+                        `✅ ${syncedCount} pointage(s) synchronisé(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
+                        errorCount > 0 ? 'warning' : 'success'
+                    )
+                }
 
-            if (errors > 0 && synced === 0) {
-                this.notifyUser(`❌ Impossible de synchroniser ${errors} pointage(s)`, 'danger')
-            }
+                if (errorCount > 0 && syncedCount === 0) {
+                    this.notifyUser(`❌ Impossible de synchroniser ${errorCount} pointage(s)`, 'danger')
+                }
 
-            console.log(`✅ Synchronisation terminée: ${synced} succès, ${errors} erreurs`)
-            return errors === 0
+                console.log(`✅ Synchronisation terminée: ${syncedCount} succès, ${errorCount} erreurs`)
+                return errorCount === 0
+
+            } catch (bulkError) {
+                console.error('❌ Erreur synchronisation bulk:', bulkError)
+                this.notifyUser('Erreur de synchronisation', 'danger')
+                return false
+            }
 
         } catch (error) {
             console.error('❌ Erreur synchronisation globale:', error)
@@ -134,108 +164,71 @@ class SyncService {
     }
 
     /**
-     * SYNCHRONISATION D'UN POINTAGE INDIVIDUEL
+     * Regroupe les pointages en attente par date pour l'envoi bulk.
      */
-    async syncPointage(pointage) {
-        const { tempId } = pointage
+    groupPointagesByDate(pending) {
+        const grouped = {}
 
-        try {
-            // Marquer comme en cours de synchronisation
-            await offlineStorage.updatePointageStatus(tempId, 'syncing')
-
-            // Préparer les données pour l'API
-            const apiData = this.preparePointageForAPI(pointage)
-
-            // Envoyer à l'API
-            const response = await this.sendPointageToAPI(apiData)
-
-            // Marquer comme synchronisé
-            await offlineStorage.updatePointageStatus(tempId, 'synced')
-
-            // Supprimer de la queue après un délai
-            setTimeout(() => {
-                offlineStorage.removePointageFromQueue(tempId)
-            }, 5000)
-
-            console.log(`✅ Pointage ${tempId} synchronisé avec succès`)
-            return response
-
-        } catch (error) {
-            console.error(`❌ Erreur sync pointage ${tempId}:`, error)
-
-            // Gestion des erreurs spécifiques
-            if (error.response?.status === 422) {
-                // Erreur de validation - ne pas retenter
-                await offlineStorage.updatePointageStatus(
-                    tempId,
-                    'error',
-                    `Validation: ${error.response.data.message || 'Données invalides'}`
-                )
-                throw new Error('Validation failed - will not retry')
-
-            } else if (error.response?.status === 409) {
-                // Conflit - pointage déjà existe
-                await offlineStorage.updatePointageStatus(
-                    tempId,
-                    'error',
-                    'Pointage déjà existant'
-                )
-                console.log(`⚠️ Pointage ${tempId} déjà existant - marqué comme erreur`)
-                return null
-
-            } else {
-                // Erreur temporaire - programmer un retry
-                await this.scheduleRetry(pointage, error)
-                throw error
+        for (const pt of pending) {
+            const date = pt.date_pointage
+            if (!grouped[date]) {
+                grouped[date] = []
             }
+            grouped[date].push(pt)
         }
+
+        return grouped
     }
 
     /**
-     * Prépare les données du pointage pour l'API
+     * Construit les payloads bulk compatibles avec POST /pointages.
+     * Format attendu : { date_pointage, pointages: [ { agent_id, heure_entree, heure_sortie, observations } ] }
      */
-    preparePointageForAPI(pointage) {
-        const {
-            tempId,
-            status,
-            created_at,
-            offline_created,
-            attempts,
-            last_error,
-            ...apiData
-        } = pointage
+    buildBulkPayload(grouped) {
+        const payloads = []
 
-        // Ajouter des métadonnées de synchronisation
-        return {
-            ...apiData,
-            _sync_metadata: {
-                offline_created: true,
-                created_offline_at: created_at,
-                sync_attempt: attempts + 1,
-                client_temp_id: tempId
-            }
-        }
-    }
-
-    /**
-     * Envoie le pointage à l'API
-     */
-    async sendPointageToAPI(pointageData) {
-        try {
-            // Essayer l'endpoint de création batch si disponible
-            const response = await client.post('/pointages/batch', {
-                pointages: [pointageData]
+        for (const [date, pointages] of Object.entries(grouped)) {
+            const entries = pointages.map(pt => {
+                const { tempId, status, created_at, offline_created, attempts, last_error, date_pointage, ...rest } = pt
+                return {
+                    agent_id: rest.agent_id,
+                    heure_entree: rest.heure_entree || null,
+                    heure_sortie: rest.heure_sortie || null,
+                    observations: rest.observations || null,
+                }
             })
-            return response.data
 
-        } catch (error) {
-            // Fallback sur l'endpoint individuel
-            if (error.response?.status === 404) {
-                const response = await client.post('/pointages', pointageData)
-                return response.data
-            }
-            throw error
+            payloads.push({
+                date_pointage: date,
+                pointages: entries,
+            })
         }
+
+        return payloads
+    }
+
+    /**
+     * Synchronisation d'un pointage individuel (fallback si bulk échoue).
+     */
+    async syncSinglePointage(pointage) {
+        const { tempId, date_pointage, agent_id, heure_entree, heure_sortie, observations } = pointage
+
+        await offlineStorage.updatePointageStatus(tempId, 'syncing')
+
+        const response = await client.post('/pointages', {
+            date_pointage: date_pointage,
+            pointages: [{
+                agent_id,
+                heure_entree: heure_entree || null,
+                heure_sortie: heure_sortie || null,
+                observations: observations || null,
+            }],
+        })
+
+        await offlineStorage.updatePointageStatus(tempId, 'synced')
+
+        console.log(`✅ Pointage ${tempId} synchronisé avec succès`)
+        return response.data
     }
 
     /**

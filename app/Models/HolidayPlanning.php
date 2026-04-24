@@ -107,6 +107,8 @@ class HolidayPlanning extends Model
 
     public function decrementJoursUtilises(int $jours): void
     {
-        $this->decrement('jours_utilises', $jours);
+        // Ne jamais passer en négatif
+        $this->decrement('jours_utilises', min($jours, $this->jours_utilises));
     }
 }
+

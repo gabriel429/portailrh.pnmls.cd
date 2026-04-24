@@ -165,7 +165,7 @@ class TacheController extends ApiController
             'titre'         => 'required|string|max:255',
             'description'   => 'nullable|string',
             'source_type'   => 'required|in:pta,hors_pta',
-            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,sep,sel,autre',
+            'source_emetteur' => 'required|in:directeur,sen,sep,sel,autre',
             'activite_plan_id' => 'nullable|required_if:source_type,pta|exists:activite_plans,id',
             'priorite'      => 'required|in:normale,haute,urgente',
             'date_echeance' => 'nullable|date',

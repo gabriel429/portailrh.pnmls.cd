@@ -283,7 +283,7 @@ class Holiday extends Model
             }
 
             if (!$holiday->date_retour_prevu) {
-                $holiday->date_retour_prevu = $holiday->date_fin->addDay();
+                $holiday->date_retour_prevu = $holiday->date_fin->copy()->addDay();
             }
         });
 
@@ -293,7 +293,7 @@ class Holiday extends Model
                     $holiday->date_debut,
                     $holiday->date_fin
                 );
-                $holiday->date_retour_prevu = $holiday->date_fin->addDay();
+                $holiday->date_retour_prevu = $holiday->date_fin->copy()->addDay();
             }
         });
     }

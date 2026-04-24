@@ -19,8 +19,8 @@ class AdminNTMiddleware
             abort(403, 'Accès refusé.');
         }
 
-        // SuperAdmin bypasses all role checks
-        if ($user->is_super_admin) {
+                // SuperAdmin bypasses all role checks
+        if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
             return $next($request);
         }
 
