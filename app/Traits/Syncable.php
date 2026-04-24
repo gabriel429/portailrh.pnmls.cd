@@ -21,38 +21,28 @@ trait Syncable
     protected static array $syncColumnsCache = [];
 
     /**
-     * Guard against recursive hasSyncColumns() calls during model instantiation.
-     */
-    protected static bool $checkingSync = false;
-
-    /**
      * Check if sync columns exist on this model's table.
+     *
+     * First checks config (fast, no DB query), then falls back to schema inspection.
      */
     public static function hasSyncColumns(): bool
     {
-        // Prevent infinite recursion: (new static)->getTable() triggers
-        // initializeSyncable() which calls hasSyncColumns() again.
-        if (static::$checkingSync) {
-            return false;
+        // Fast path: config-based, avoids DB query on every request
+        if (config('sync.enabled', false)) {
+            return true;
         }
 
-        static::$checkingSync = true;
+        $table = (new static)->getTable();
 
-        try {
-            $table = (new static)->getTable();
-
-            if (!isset(static::$syncColumnsCache[$table])) {
-                try {
-                    static::$syncColumnsCache[$table] = Schema::hasColumn($table, 'uuid');
-                } catch (\Throwable) {
-                    static::$syncColumnsCache[$table] = false;
-                }
+        if (!isset(static::$syncColumnsCache[$table])) {
+            try {
+                static::$syncColumnsCache[$table] = Schema::hasColumn($table, 'uuid');
+            } catch (\Throwable) {
+                static::$syncColumnsCache[$table] = false;
             }
-
-            return static::$syncColumnsCache[$table];
-        } finally {
-            static::$checkingSync = false;
         }
+
+        return static::$syncColumnsCache[$table];
     }
 
     /**

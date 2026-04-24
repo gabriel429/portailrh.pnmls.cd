@@ -12,7 +12,7 @@ class SuperAdminMiddleware
     {
         $user = $request->user();
 
-        if (!$user || !$user->is_super_admin) {
+        if (!$user || !$user->isSuperAdmin()) {
             if ($request->expectsJson()) {
                 return response()->json(['message' => 'Acces reserve.'], 403);
             }

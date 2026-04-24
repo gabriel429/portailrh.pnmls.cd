@@ -13,6 +13,7 @@ use App\Models\Department;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class HolidayController extends Controller
@@ -193,7 +194,7 @@ class HolidayController extends Controller
             'motif' => $isPlanning ? 'nullable|string|max:1000' : 'required|string|max:1000',
             'observation' => 'nullable|string|max:1000',
             'interim_assure_par' => 'nullable|exists:agents,id',
-            'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|mimetypes:application/pdf,image/jpeg,image/png|max:2048',
             'holiday_planning_id' => 'nullable|exists:holiday_plannings,id'
         ];
 
@@ -307,6 +308,9 @@ class HolidayController extends Controller
         $created = [];
         $errors = [];
 
+        DB::beginTransaction();
+
+        try {
         foreach ($request->entries as $entry) {
             $dateDebut = Carbon::parse($entry['date_debut']);
             $dateFin = Carbon::parse($entry['date_fin']);
@@ -362,6 +366,18 @@ class HolidayController extends Controller
             }
 
             $created[] = $holiday;
+        }
+
+        DB::commit();
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Erreur lors de la création en lot : ' . $e->getMessage(),
+                'created_count' => 0,
+                'error_count' => count($request->entries),
+                'errors' => [$e->getMessage()],
+            ], 500);
         }
 
         $msg = count($created) . ' congé(s) planifié(s) avec succès';
@@ -706,8 +722,8 @@ class HolidayController extends Controller
             'motif'              => 'required|string|max:1000',
             'observation'        => 'nullable|string|max:1000',
             'interim_assure_par' => 'nullable|exists:agents,id',
-            'document_medical'   => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'lettre_demande'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+            'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|mimetypes:application/pdf,image/jpeg,image/png|max:2048',
+            'lettre_demande'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png|max:5120',
         ]);
 
         $dateDebut = Carbon::parse($validated['date_debut']);

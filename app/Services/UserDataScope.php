@@ -9,6 +9,8 @@ use App\Models\Pointage;
 use App\Models\Request as RequestModel;
 use App\Models\Signalement;
 use App\Models\User;
+use App\Services\RoleService;
+
 class UserDataScope
 {
     private array $globalAdminRoles = [
@@ -27,7 +29,9 @@ class UserDataScope
             return false;
         }
 
-        if (method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin()) {
+        $roleService = app(RoleService::class);
+
+        if ($roleService->isSuperAdmin($user)) {
             return true;
         }
 
@@ -35,25 +39,12 @@ class UserDataScope
             return true;
         }
 
-        // Le Directeur du Département Administration et Finances (DAF) a accès global RH
-        if ($this->isDafDirecteur($user)) {
+        // Le DAF (Directeur Administratif et Financier) a accès global RH
+        if ($roleService->hasDirecteurOrDafRole($user)) {
             return true;
         }
 
         return false;
-    }
-
-    public function isDafDirecteur(?User $user): bool
-    {
-        if ($user?->hasRole('DAF')) {
-            return true;
-        }
-        $role = strtolower($user?->role?->nom_role ?? '');
-        if (!str_contains($role, 'directeur')) {
-            return false;
-        }
-        $deptCode = $user?->agent?->departement?->code ?? '';
-        return strtoupper($deptCode) === 'DAF';
     }
 
     public function isProvincialRh(?User $user): bool
@@ -101,9 +92,7 @@ class UserDataScope
 
     public function isDepartmentManager(?User $user): bool
     {
-        $role = strtolower($user?->role?->nom_role ?? '');
-        return in_array($role, ['directeur', 'directeur de département', 'assistant', 'assistant de département'])
-            || str_starts_with($role, 'assistant');
+        return app(RoleService::class)->isDepartmentManager($user);
     }
 
     public function applyRequestScope($query, ?User $user)

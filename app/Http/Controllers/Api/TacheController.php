@@ -10,19 +10,14 @@ use App\Models\TacheCommentaire;
 use App\Models\TacheDocument;
 use App\Models\TaskReport;
 use App\Models\Agent;
+use App\Services\RoleService;
+use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class TacheController extends ApiController
 {
-    /**
-     * Vérifie si l'utilisateur a un rôle de gestionnaire de département (Directeur ou DAF).
-     */
-    private function hasDirecteurOrDafRole($user): bool
-    {
-        return $user->hasRole('Directeur') || $user->hasRole('DAF');
-    }
 
     /**
      * Display listing of taches.
@@ -33,7 +28,7 @@ class TacheController extends ApiController
     {
         $user = $request->user();
         $agent = $user->agent;
-        $isDirecteur = $this->hasDirecteurOrDafRole($user);
+        $isDirecteur = app(RoleService::class)->hasDirecteurOrDafRole($user);
 
         $mesTachesQuery = $agent
             ? Tache::query()->parAgent($agent->id)
@@ -106,7 +101,7 @@ class TacheController extends ApiController
     public function create(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$this->hasDirecteurOrDafRole($user)) {
+        if (!app(RoleService::class)->hasDirecteurOrDafRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -164,7 +159,7 @@ class TacheController extends ApiController
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$this->hasDirecteurOrDafRole($user)) {
+        if (!app(RoleService::class)->hasDirecteurOrDafRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -270,7 +265,7 @@ class TacheController extends ApiController
             'statut'  => 'required|in:en_cours,terminee',
             'contenu' => 'required|string|max:1000',
             'pourcentage' => 'required|integer|min:0|max:100',
-            'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
+            'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png',
         ]);
 
         $pourcentageChanged = (int) $validated['pourcentage'] !== (int) $tache->pourcentage;
