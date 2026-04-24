@@ -17,6 +17,14 @@ use Illuminate\Support\Str;
 class TacheController extends ApiController
 {
     /**
+     * Vérifie si l'utilisateur a un rôle de gestionnaire de département (Directeur ou DAF).
+     */
+    private function hasDirecteurOrDafRole($user): bool
+    {
+        return $user->hasRole('Directeur') || $user->hasRole('DAF');
+    }
+
+    /**
      * Display listing of taches.
      * - Regular agents see taches assigned to them.
      * - Directeurs also see taches they created.
@@ -25,7 +33,7 @@ class TacheController extends ApiController
     {
         $user = $request->user();
         $agent = $user->agent;
-        $isDirecteur = $user->hasRole('Directeur');
+        $isDirecteur = $this->hasDirecteurOrDafRole($user);
 
         $mesTachesQuery = $agent
             ? Tache::query()->parAgent($agent->id)
@@ -98,7 +106,7 @@ class TacheController extends ApiController
     public function create(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasRole('Directeur')) {
+        if (!$this->hasDirecteurOrDafRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -156,7 +164,7 @@ class TacheController extends ApiController
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        if (!$user->hasRole('Directeur')) {
+        if (!$this->hasDirecteurOrDafRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -223,7 +231,7 @@ class TacheController extends ApiController
 
         if (!$isCreateur && !$isAssigne && $agent->departement_id) {
             $role = strtolower($user->role?->nom_role ?? '');
-            $isDept = in_array($role, ['directeur', 'directeur de département', 'assistant', 'assistant de département'])
+            $isDept = in_array($role, ['directeur', 'directeur de département', 'daf', 'assistant', 'assistant de département'])
                    || str_starts_with($role, 'assistant');
             if ($isDept) {
                 $taskAgent = Agent::find($tache->agent_id);
@@ -451,7 +459,7 @@ class TacheController extends ApiController
     {
         $user = $request->user();
 
-        if (!$user->hasRole('Directeur') && !$user->hasAdminAccess()) {
+        if (!$this->hasDirecteurOrDafRole($user) && !$user->hasAdminAccess()) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -460,7 +468,7 @@ class TacheController extends ApiController
 
         $query = Tache::query()->whereYear('created_at', $annee);
 
-        if ($user->hasRole('Directeur') && !$user->hasAdminAccess()) {
+        if (!$user->hasAdminAccess()) {
             $query->where(function ($q) use ($user) {
                 $q->where('createur_id', $user->agent?->id);
             });
