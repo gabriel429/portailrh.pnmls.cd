@@ -1719,6 +1719,7 @@ async function openProvinceDrilldown(id) {
 }
 
 async function openDepartmentDrilldown(id) {
+  if (!id) return
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   try {

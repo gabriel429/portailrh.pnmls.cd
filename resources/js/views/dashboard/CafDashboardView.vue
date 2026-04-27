@@ -633,6 +633,7 @@ const deptDrillData = ref(null)
 const deptDrillSection = ref('effectifs')
 
 async function openDeptDrilldown(id, section = 'effectifs') {
+  if (!id) return
   provDrillOpen.value = false
   deptDrillOpen.value = true
   deptDrillLoading.value = true

@@ -1305,8 +1305,12 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
     /**
      * Drill-down département : détail complet d'un département
      */
-    public function departmentDetail(Request $request, int $id)
+    public function departmentDetail(Request $request, string $id)
     {
+        if (!is_numeric($id) || (int) $id <= 0) {
+            return $this->error('ID département invalide', 422);
+        }
+        $id = (int) $id;
         $department = Department::find($id);
         if (!$department) {
             return $this->error('Département introuvable', 404);
