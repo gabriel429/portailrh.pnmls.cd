@@ -1,5 +1,6 @@
 <template>
   <SenDashboardView v-if="auth.isSEN" />
+  <SenaDashboardView v-else-if="auth.isSENA" />
   <SepDashboardView v-else-if="auth.isSEP" />
   <RhDashboardView v-else-if="auth.isRH" />
   <DepartementDashboardView v-else-if="auth.isDepartement" />
@@ -279,6 +280,7 @@ const RhDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RhD
 const DepartementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/DepartementDashboardView.vue'))
 const RenforcementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RenforcementDashboardView.vue'))
 const CafDashboardView = defineAsyncComponent(() => import('@/views/dashboard/CafDashboardView.vue'))
+const SenaDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenaDashboardView.vue'))
 
 const auth = useAuthStore()
 const ui = useUiStore()

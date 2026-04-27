@@ -89,6 +89,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/sep', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'sepIndex']);
     Route::get('/dashboard/caf', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'cafIndex']);
     Route::get('/dashboard/renforcement', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'renforcementIndex']);
+    Route::get('/dashboard/sena', [\App\Http\Controllers\Api\SenaDashboardController::class, 'index']);
     Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
     Route::get('/dashboard/department/agents', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'agentsDrill']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
