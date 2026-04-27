@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use App\Models\Affectation;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -167,9 +168,9 @@ class Agent extends Authenticatable
         return $this->hasMany(Message::class);
     }
 
-    public function user(): HasMany
+    public function user(): HasOne
     {
-        return $this->hasMany(User::class);
+        return $this->hasOne(User::class);
     }
 
     public function tachesCreees(): HasMany
