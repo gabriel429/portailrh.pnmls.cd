@@ -46,11 +46,12 @@ export const useAuthStore = defineStore('auth', {
         },
         isAssistant(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
-            return ['assistant', 'assistant de département'].includes(role)
+            return ['assistant', 'assistant de département', 'secrétaire de département', 'secretaire de departement'].includes(role)
         },
         isDepartement(state) {
             const role = state.user?.role?.nom_role?.toLowerCase() ?? ''
-            return role === 'directeur' || role.startsWith('assistant')
+            return role === 'directeur' || role.startsWith('assistant') ||
+                   role === 'secrétaire de département' || role === 'secretaire de departement'
         },
         isChefSectionRenforcement(state) {
             const role = state.user?.role?.nom_role?.toLowerCase() ?? ''

@@ -21,7 +21,7 @@
             </div>
             <div class="dept-hero-role-pill">
               <i :class="auth.isDirecteur ? `fas fa-user-tie` : `fas fa-user-cog`" class="me-1"></i>
-              {{ auth.isDirecteur ? 'Directeur de Département' : 'Assistant de Département' }}
+              {{ auth.isDirecteur ? 'Directeur de Département' : deptRoleLabel }}
               <span v-if="data?.department?.nom" class="dept-hero-dept-badge">
                 {{ data.department.nom }}
               </span>
@@ -153,6 +153,44 @@
               <div class="dept-metric-bar-fill" :style="{ background: m.color, width: m.pct + '%' }"></div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ════════ MES TÂCHES ════════ -->
+      <div v-if="!auth.isDirecteur" class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#ede9fe;color:#7c3aed;">
+            <i class="fas fa-user-check"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Mes tâches</h3>
+            <p class="dept-section-sub">Tâches qui vous sont assignées personnellement</p>
+          </div>
+          <router-link to="/taches" class="dept-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+        </div>
+        <div v-if="!data.my_tasks?.length" class="dept-empty">
+          <div class="dept-empty-icon-wrap" style="background:#ede9fe;"><i class="fas fa-check-circle" style="color:#7c3aed;"></i></div>
+          <span>Aucune tâche assignée à vous pour le moment</span>
+        </div>
+        <div v-else class="dept-tasks-list">
+          <router-link v-for="t in data.my_tasks" :key="t.id" :to="'/taches/' + t.id" class="dept-task-row">
+            <div class="dept-task-priority" :class="'prio-' + t.priorite"></div>
+            <div class="dept-task-info">
+              <div class="dept-task-title">{{ t.titre }}</div>
+              <div class="dept-task-meta">
+                <span class="dept-tag" :class="statutClass(t.statut)">{{ statutLabel(t.statut) }}</span>
+                <span v-if="t.date_echeance" class="dept-task-due" :class="{ 'dept-overdue': isOverdue(t) }">
+                  <i class="fas fa-clock me-1"></i>{{ formatDate(t.date_echeance) }}
+                </span>
+              </div>
+            </div>
+            <div class="dept-task-prog">
+              <div class="dept-prog-track">
+                <div class="dept-prog-fill" :style="{ width: (t.pourcentage || 0) + '%', background: progressColor(t.pourcentage) }"></div>
+              </div>
+              <span class="dept-prog-pct">{{ t.pourcentage ?? 0 }}%</span>
+            </div>
+          </router-link>
         </div>
       </div>
 
@@ -351,6 +389,82 @@
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- ════════ AGENDA — ÉCHÉANCES À VENIR ════════ -->
+      <div class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#fce7f3;color:#db2777;">
+            <i class="fas fa-calendar-day"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Agenda — Échéances à venir</h3>
+            <p class="dept-section-sub">Tâches avec échéance dans les 7 prochains jours</p>
+          </div>
+        </div>
+        <div v-if="!data.upcoming_deadlines?.length" class="dept-empty">
+          <div class="dept-empty-icon-wrap" style="background:#fce7f3;"><i class="fas fa-calendar-check" style="color:#db2777;"></i></div>
+          <span>Aucune échéance dans les 7 prochains jours</span>
+        </div>
+        <div v-else class="dept-agenda-list">
+          <router-link
+            v-for="t in data.upcoming_deadlines" :key="t.id"
+            :to="'/taches/' + t.id"
+            class="dept-agenda-row"
+            :class="{ 'dept-agenda-urgent': daysUntil(t.date_echeance) <= 1 }"
+          >
+            <div class="dept-agenda-date-block">
+              <div class="dept-agenda-day">{{ agendaDay(t.date_echeance) }}</div>
+              <div class="dept-agenda-month">{{ agendaMonth(t.date_echeance) }}</div>
+            </div>
+            <div class="dept-agenda-info">
+              <div class="dept-agenda-title">{{ t.titre }}</div>
+              <div class="dept-agenda-meta">
+                <span v-if="t.agent" class="dept-agenda-agent">
+                  <i class="fas fa-user me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
+                </span>
+                <span class="dept-tag" :class="statutClass(t.statut)">{{ statutLabel(t.statut) }}</span>
+              </div>
+            </div>
+            <div class="dept-agenda-badge" :class="daysUntil(t.date_echeance) <= 1 ? 'dept-agenda-badge-urgent' : 'dept-agenda-badge-normal'">
+              {{ daysUntil(t.date_echeance) === 0 ? 'Aujourd\'hui' : daysUntil(t.date_echeance) === 1 ? 'Demain' : 'J-' + daysUntil(t.date_echeance) }}
+            </div>
+          </router-link>
+        </div>
+      </div>
+
+      <!-- ════════ AGENTS DU DÉPARTEMENT ════════ -->
+      <div v-if="!auth.isDirecteur" class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#e0f2fe;color:#0077B5;">
+            <i class="fas fa-id-card-alt"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Agents du département</h3>
+            <p class="dept-section-sub">{{ data.agent_list?.length ?? 0 }} agents actifs — {{ data.department?.nom }}</p>
+          </div>
+          <router-link to="/agents" class="dept-section-link">Fiche agents <i class="fas fa-arrow-right"></i></router-link>
+        </div>
+        <div v-if="!data.agent_list?.length" class="dept-empty">
+          <div class="dept-empty-icon-wrap" style="background:#e0f2fe;"><i class="fas fa-users" style="color:#0077B5;"></i></div>
+          <span>Aucun agent actif dans le département</span>
+        </div>
+        <div v-else class="dept-agents-compact">
+          <router-link
+            v-for="ag in data.agent_list" :key="ag.id"
+            :to="'/agents/' + ag.id"
+            class="dept-agent-compact-row"
+          >
+            <div class="dept-agent-avatar">
+              <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
+                class="dept-agent-photo" @error="$event.target.style.display='none'">
+              <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
+            </div>
+            <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+            <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
+            <i class="fas fa-chevron-right" style="color:#cbd5e1;font-size:.8rem;margin-left:auto;"></i>
+          </router-link>
         </div>
       </div>
 
@@ -821,6 +935,29 @@ function requestBg(type) {
 function requestLabel(type) {
   return { conge: 'Congé', formation: 'Formation', autorisation: 'Autorisation', attestation: 'Attestation' }[type] ?? (type ?? 'Demande')
 }
+
+// ─── Rôle pill label ─────────────────────────────────────────
+const deptRoleLabel = computed(() => {
+  const role = auth.user?.role?.nom_role?.toLowerCase() ?? ''
+  if (role.includes('secrétaire') || role.includes('secretaire')) return 'Secrétaire de Département'
+  return 'Assistant de Département'
+})
+
+// ─── Agenda helpers ──────────────────────────────────────────
+function daysUntil(dateStr) {
+  if (!dateStr) return 999
+  const today = new Date(); today.setHours(0,0,0,0)
+  const d = new Date(dateStr); d.setHours(0,0,0,0)
+  return Math.max(0, Math.round((d - today) / 86400000))
+}
+function agendaDay(dateStr) {
+  if (!dateStr) return '—'
+  return new Date(dateStr).toLocaleDateString('fr-CD', { day: '2-digit' })
+}
+function agendaMonth(dateStr) {
+  if (!dateStr) return ''
+  return new Date(dateStr).toLocaleDateString('fr-CD', { month: 'short' }).replace('.', '')
+}
 </script>
 
 <style scoped>
@@ -1175,6 +1312,48 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
 .dept-empty-hint { font-size: .78rem; color: #cbd5e1; }
 
 /* ──────────────────────────────────────────────────────────
+   Agents compacts (assistant/secrétaire)
+────────────────────────────────────────────────────────── */
+.dept-agents-compact { display: flex; flex-direction: column; gap: .45rem; }
+.dept-agent-compact-row {
+  display: flex; align-items: center; gap: .75rem;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: .65rem 1rem; text-decoration: none; color: inherit;
+  transition: background .15s, box-shadow .15s;
+}
+.dept-agent-compact-row:hover { background: #f0f9ff; box-shadow: 0 2px 8px rgba(0,119,181,.1); }
+
+/* ──────────────────────────────────────────────────────────
+   Agenda
+────────────────────────────────────────────────────────── */
+.dept-agenda-list { display: flex; flex-direction: column; gap: .5rem; }
+.dept-agenda-row {
+  display: flex; align-items: center; gap: 1rem;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
+  padding: .75rem 1rem; text-decoration: none; color: inherit;
+  transition: background .15s, box-shadow .15s;
+}
+.dept-agenda-row:hover { background: #fdf4ff; box-shadow: 0 2px 8px rgba(219,39,119,.1); }
+.dept-agenda-urgent { border-color: #fca5a5; background: #fff5f5; }
+.dept-agenda-date-block {
+  min-width: 44px; text-align: center;
+  background: #fce7f3; border-radius: 10px; padding: .35rem .4rem;
+  flex-shrink: 0;
+}
+.dept-agenda-day { font-size: 1.25rem; font-weight: 800; color: #db2777; line-height: 1; }
+.dept-agenda-month { font-size: .65rem; font-weight: 600; color: #db2777; text-transform: uppercase; }
+.dept-agenda-info { flex: 1; min-width: 0; }
+.dept-agenda-title { font-size: .88rem; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dept-agenda-meta { display: flex; align-items: center; gap: .5rem; margin-top: .2rem; flex-wrap: wrap; }
+.dept-agenda-agent { font-size: .72rem; color: #64748b; }
+.dept-agenda-badge {
+  padding: .2rem .6rem; border-radius: 8px; font-size: .72rem; font-weight: 700;
+  flex-shrink: 0; white-space: nowrap;
+}
+.dept-agenda-badge-normal { background: #f0f9ff; color: #0369a1; }
+.dept-agenda-badge-urgent { background: #fee2e2; color: #dc2626; }
+
+/* ──────────────────────────────────────────────────────────
    Dark mode
 ────────────────────────────────────────────────────────── */
 html.dark .dept-action,
@@ -1215,6 +1394,13 @@ html.dark .dept-prog-track { background: #334155 !important; }
 html.dark .dept-recent-tasks-head { color: #e2e8f0 !important; border-color: #334155 !important; }
 html.dark .dept-error-banner { background: #1e293b !important; border-color: #475569 !important; color: #fbbf24 !important; }
 html.dark .dept-error-banner.dept-error-info { background: #1e3a5f !important; border-color: #3b82f6 !important; color: #93c5fd !important; }
+html.dark .dept-agent-compact-row { background: #1e293b !important; border-color: #334155 !important; }
+html.dark .dept-agent-compact-row:hover { background: #1e3a5f !important; }
+html.dark .dept-agenda-row { background: #1e293b !important; border-color: #334155 !important; }
+html.dark .dept-agenda-urgent { background: #2d1515 !important; border-color: #7f1d1d !important; }
+html.dark .dept-agenda-title { color: #f1f5f9 !important; }
+html.dark .dept-agenda-date-block { background: #3b0764 !important; }
+html.dark .dept-agenda-day, html.dark .dept-agenda-month { color: #e879f9 !important; }
 
 /* ──────────────────────────────────────────────────────────
    Responsive

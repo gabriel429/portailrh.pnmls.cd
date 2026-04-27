@@ -137,6 +137,39 @@ class DepartmentDashboardController extends ApiController
             ->limit(8)
             ->get(['id', 'agent_id', 'type', 'description', 'statut', 'created_at']);
 
+        // ─── Mes tâches (tâches de l'agent connecté) ──────────
+        $myAgentId = $user->agent?->id;
+        $myTasks = $myAgentId
+            ? Tache::where('agent_id', $myAgentId)
+                ->orderByDesc('updated_at')
+                ->limit(10)
+                ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at'])
+            : collect();
+
+        // ─── Agenda : tâches du département avec échéance dans 7 jours ──
+        $nextWeek = $now->copy()->addDays(7);
+        $upcomingDeadlines = Tache::whereIn('agent_id', $agentIds)
+            ->whereNotIn('statut', ['terminee'])
+            ->whereNotNull('date_echeance')
+            ->whereBetween('date_echeance', [$now->toDateString(), $nextWeek->toDateString()])
+            ->with('agent:id,nom,prenom')
+            ->orderBy('date_echeance')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
+
+        // ─── Liste agents du département ──────────────────────
+        $agentList = Agent::where('departement_id', $deptId)
+            ->actifs()
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'prenom', 'fonction', 'photo'])
+            ->map(fn($a) => [
+                'id'       => $a->id,
+                'nom'      => $a->nom,
+                'prenom'   => $a->prenom,
+                'fonction' => $a->fonction,
+                'photo'    => $a->photo,
+            ]);
+
         return $this->success([
             'department' => [
                 'id'       => $department?->id,
@@ -166,9 +199,12 @@ class DepartmentDashboardController extends ApiController
             'conges' => [
                 'actifs' => $activeLeaves,
             ],
-            'team_performance' => $teamPerf,
-            'recent_taches'    => $recentTaches,
-            'pending_requests' => $pendingRequests,
+            'team_performance'   => $teamPerf,
+            'recent_taches'      => $recentTaches,
+            'pending_requests'   => $pendingRequests,
+            'my_tasks'           => $myTasks,
+            'upcoming_deadlines' => $upcomingDeadlines,
+            'agent_list'         => $agentList,
         ]);
     }
 
