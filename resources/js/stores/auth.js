@@ -40,6 +40,10 @@ export const useAuthStore = defineStore('auth', {
             const role = state.user?.role?.nom_role?.toLowerCase()
             return role === 'sena'
         },
+        isPlanification(state) {
+            const role = state.user?.role?.nom_role?.toLowerCase() ?? ''
+            return ['chef section planification', 'cellule planification'].includes(role)
+        },
         isSEP(state) {
             const role = state.user?.role?.nom_role?.toLowerCase()
             return role === 'sep'

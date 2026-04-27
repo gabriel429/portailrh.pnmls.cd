@@ -82,6 +82,18 @@ class ActivitePlanResource extends JsonResource
                     ];
                 })->values()->all();
             }),
+            'assigned_agents' => $this->whenLoaded('agents', function () {
+                return $this->agents->map(fn ($a) => [
+                    'id'         => $a->id,
+                    'nom_complet' => trim($a->prenom . ' ' . $a->nom),
+                    'photo'      => $a->photo,
+                    'organe'     => $a->organe,
+                    'fonction'   => $a->fonction,
+                ])->values()->all();
+            }),
+            'assigned_agent_ids' => $this->whenLoaded('agents', function () {
+                return $this->agents->pluck('id')->values()->all();
+            }),
         ];
     }
 }

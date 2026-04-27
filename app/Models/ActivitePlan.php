@@ -91,6 +91,12 @@ class ActivitePlan extends Model
         return $this->hasMany(Tache::class, 'activite_plan_id');
     }
 
+    public function agents(): BelongsToMany
+    {
+        return $this->belongsToMany(Agent::class, 'activite_plan_agent', 'activite_plan_id', 'agent_id')
+            ->withTimestamps();
+    }
+
     public function scopePlanifiee($query)
     {
         return $query->where('statut', 'planifiee');

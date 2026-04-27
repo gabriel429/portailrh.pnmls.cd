@@ -82,6 +82,27 @@
       </button>
     </div>
 
+    <!-- Planification global filters (dept / province / niveau) -->
+    <div v-if="isGlobalPta && (filterDepts.length || filterProvinces.length)" class="pt-planif-filters">
+      <select v-model="filters.departement_id" class="pt-filter-select" @change="loadPlan">
+        <option value="">Tous les departements</option>
+        <option v-for="d in filterDepts" :key="d.id" :value="d.id">{{ d.nom }}</option>
+      </select>
+      <select v-model="filters.province_id" class="pt-filter-select" @change="loadPlan">
+        <option value="">Toutes les provinces</option>
+        <option v-for="p in filterProvinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
+      </select>
+      <select v-model="filters.niveau_administratif" class="pt-filter-select" @change="loadPlan">
+        <option value="">Tous les niveaux</option>
+        <option value="SEN">SEN (National)</option>
+        <option value="SEP">SEP (Provincial)</option>
+        <option value="SEL">SEL (Local)</option>
+      </select>
+      <button v-if="filters.departement_id || filters.province_id || filters.niveau_administratif" class="pt-reset-planif-btn" @click="resetPlanifFilters">
+        <i class="fas fa-times me-1"></i>Reinitialiser
+      </button>
+    </div>
+
     <!-- Global progress bar -->
     <div v-if="stats.total > 0" class="pt-progress-bar">
       <div class="pt-progress-header">
@@ -180,6 +201,9 @@
               </button>
               <button v-if="canEdit" class="pt-act-btn pt-act-edit" @click.stop="openEditModal(a.id)">
                 <i class="fas fa-edit"></i> Modifier
+              </button>
+              <button v-if="canEdit" class="pt-act-btn pt-act-delete" @click.stop="handleDeleteFromCard(a.id, $event)">
+                <i class="fas fa-trash"></i>
               </button>
             </div>
           </div>
@@ -332,6 +356,17 @@
                 <div class="ptd-meta">
                   <span><i class="fas fa-user me-1"></i> {{ detailActivite.createur?.nom_complet ?? 'N/A' }}</span>
                   <span><i class="fas fa-clock me-1"></i> {{ detailFormatDateTime(detailActivite.created_at) }}</span>
+                </div>
+
+                <!-- Agents assignes -->
+                <div v-if="detailActivite.assigned_agents?.length" class="ptd-section">
+                  <h6><i class="fas fa-users me-1"></i> Agents assignes ({{ detailActivite.assigned_agents.length }})</h6>
+                  <div class="ptd-agents-list">
+                    <span v-for="a in detailActivite.assigned_agents" :key="a.id" class="ptd-agent-pill">
+                      <i class="fas fa-user-circle me-1"></i>{{ a.nom_complet }}
+                      <span v-if="a.fonction" class="ptd-agent-fn"> &mdash; {{ a.fonction }}</span>
+                    </span>
+                  </div>
                 </div>
 
                 <!-- Mise a jour rapide -->
@@ -545,6 +580,27 @@
               <textarea v-model="createForm.observations" class="ptm-input ptm-textarea" rows="2" placeholder="Observations (facultatif)..."></textarea>
             </div>
 
+            <!-- Agents assignes (SEN attachés, visible when list loaded by planification role) -->
+            <div v-if="createAgentsSen.length" class="ptm-field">
+              <label class="ptm-label">Agents assignes <span class="ptm-hint">(Attaches SEN responsables)</span></label>
+              <div class="ptm-agents-check-list">
+                <label
+                  v-for="a in createAgentsSen"
+                  :key="a.id"
+                  class="ptm-agent-check"
+                  :class="{ active: createForm.assigned_agent_ids.includes(a.id) }"
+                >
+                  <input type="checkbox" :value="a.id" v-model="createForm.assigned_agent_ids" style="display:none">
+                  <i class="fas fa-user-circle me-1"></i>
+                  {{ a.nom_complet }}
+                  <span v-if="a.fonction" class="ptm-agent-fn"> &mdash; {{ a.fonction }}</span>
+                </label>
+              </div>
+              <div v-if="createForm.assigned_agent_ids.length" class="ptm-field-hint">
+                {{ createForm.assigned_agent_ids.length }} agent(s) selectionne(s)
+              </div>
+            </div>
+
             <!-- Footer -->
             <div class="ptm-footer">
               <button type="button" class="ptm-btn-cancel" @click="closeCreateModal">Annuler</button>
@@ -573,12 +629,15 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { list, create, get, getCreateData, updateStatut } from '@/api/planTravail'
+import { useAuthStore } from '@/stores/auth'
+import { list, create, get, getCreateData, updateStatut, remove } from '@/api/planTravail'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
 
 const ui = useUiStore()
 const router = useRouter()
+const auth = useAuthStore()
+const isPlanification = computed(() => auth.isPlanification || auth.isSEN || auth.isAdminNT || auth.isSuperAdmin)
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
@@ -587,7 +646,10 @@ const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre de
 const groupees = ref({})
 const stats = ref({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 })
 const canEdit = ref(false)
-const filters = ref({ annee: new Date().getFullYear(), trimestre: '', statut: '' })
+const isGlobalPta = ref(false)
+const filterDepts = ref([])
+const filterProvinces = ref([])
+const filters = ref({ annee: new Date().getFullYear(), trimestre: '', statut: '', departement_id: '', province_id: '', niveau_administratif: '' })
 
 const trimestres = [
   { value: '', label: 'Tous' },
@@ -623,10 +685,18 @@ async function loadPlan() {
     const params = { annee: filters.value.annee }
     if (filters.value.trimestre) params.trimestre = filters.value.trimestre
     if (filters.value.statut) params.statut = filters.value.statut
+    if (filters.value.departement_id) params.departement_id = filters.value.departement_id
+    if (filters.value.province_id) params.province_id = filters.value.province_id
+    if (filters.value.niveau_administratif) params.niveau_administratif = filters.value.niveau_administratif
     const { data } = await list(params)
     groupees.value = data.groupees
     stats.value = data.stats
     canEdit.value = data.canEdit
+    isGlobalPta.value = data.isGlobalPta ?? false
+    if (data.filterOptions) {
+      filterDepts.value = data.filterOptions.departments || []
+      filterProvinces.value = data.filterOptions.provinces || []
+    }
   } catch (err) {
     if (err.response?.status === 403) {
       accessDenied.value = true
@@ -648,6 +718,13 @@ async function loadPlan() {
 function setFilter(statut, trimestre) {
   filters.value.statut = statut
   filters.value.trimestre = trimestre
+  loadPlan()
+}
+
+function resetPlanifFilters() {
+  filters.value.departement_id = ''
+  filters.value.province_id = ''
+  filters.value.niveau_administratif = ''
   loadPlan()
 }
 
@@ -710,6 +787,7 @@ const createResponsables = ref([])
 /* ── Edit modal ── */
 const showEditModal = ref(false)
 const editingPlanTravailId = ref(null)
+const createAgentsSen = ref([])
 
 const niveauOptions = [
   { value: 'SEN', label: 'SEN (National)' },
@@ -755,6 +833,7 @@ function defaultCreateForm() {
     description: '',
     resultat_attendu: '',
     observations: '',
+    assigned_agent_ids: [],
   }
 }
 const createForm = ref(defaultCreateForm())
@@ -770,6 +849,7 @@ async function openCreateModal() {
     createLocalites.value = data.localites || []
     createCategories.value = data.categories || []
     createResponsables.value = data.responsables || []
+    createAgentsSen.value = data.agents_sen || []
   } catch (err) {
     if (err.response?.status === 403) {
       ui.addToast(err.response?.data?.message || 'Vous ne pouvez creer des activites PTA que pour votre departement.', 'warning')
@@ -808,6 +888,7 @@ async function handleCreateSubmit() {
     if (!payload.categorie) delete payload.categorie
     if (!payload.responsable_code) delete payload.responsable_code
     if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
+    if (!payload.assigned_agent_ids?.length) delete payload.assigned_agent_ids
     await create(payload)
     ui.addToast('Activite creee avec succes !', 'success')
     showCreateModal.value = false
@@ -838,6 +919,18 @@ function closeEditModal() {
 
 function handlePlanTravailUpdated() {
   loadPlan()
+}
+
+async function handleDeleteFromCard(id, evt) {
+  evt.stopPropagation()
+  if (!confirm('Supprimer cette activite PTA ? Cette action est irreversible.')) return
+  try {
+    await remove(id)
+    ui.addToast('Activite supprimee.', 'success')
+    loadPlan()
+  } catch (err) {
+    ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
+  }
 }
 
 function activeTrimestres(activite) {
@@ -1419,4 +1512,98 @@ onMounted(() => loadPlan())
   .ptd-actions { flex-direction: column; }
   .ptd-act-btn { justify-content: center; width: 100%; }
 }
+
+/* ── Planification global filters ── */
+.pt-planif-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  align-items: center;
+  padding: .5rem 1rem;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+}
+.pt-filter-select {
+  padding: .3rem .6rem;
+  border: 1px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  font-size: .82rem;
+  color: #495057;
+  cursor: pointer;
+  min-width: 160px;
+}
+.pt-filter-select:focus { outline: none; border-color: #0d6efd; }
+.pt-reset-planif-btn {
+  padding: .3rem .7rem;
+  border: 1px solid #dc3545;
+  border-radius: 6px;
+  background: transparent;
+  color: #dc3545;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pt-reset-planif-btn:hover { background: #dc3545; color: #fff; }
+
+/* ── Delete card button ── */
+.pt-act-delete {
+  background: transparent;
+  border: 1px solid #dc3545;
+  color: #dc3545;
+  padding: .25rem .5rem;
+  border-radius: 5px;
+  font-size: .78rem;
+  cursor: pointer;
+  transition: background .15s;
+}
+.pt-act-delete:hover { background: #dc3545; color: #fff; }
+
+/* ── Detail popup: agents ── */
+.ptd-agents-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .35rem;
+}
+.ptd-agent-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: .25rem .6rem;
+  background: rgba(13,110,253,.08);
+  border: 1px solid rgba(13,110,253,.2);
+  border-radius: 20px;
+  font-size: .8rem;
+  color: #495057;
+}
+.ptd-agent-fn { color: #6c757d; font-size: .75rem; }
+
+/* ── Create modal: agents checkboxes ── */
+.ptm-agents-check-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .25rem;
+}
+.ptm-agent-check {
+  display: inline-flex;
+  align-items: center;
+  padding: .3rem .7rem;
+  border: 1px solid #dee2e6;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: .82rem;
+  color: #495057;
+  transition: background .15s, border-color .15s;
+  user-select: none;
+}
+.ptm-agent-check:hover { border-color: #0d6efd; }
+.ptm-agent-check.active {
+  background: rgba(13,110,253,.1);
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+.ptm-agent-fn { color: #6c757d; font-size: .76rem; }
+.ptm-hint { color: #6c757d; font-size: .78rem; font-weight: 400; }
+.ptm-field-hint { font-size: .77rem; color: #6c757d; margin-top: .2rem; }
 </style>

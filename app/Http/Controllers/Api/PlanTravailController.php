@@ -26,11 +26,28 @@ class PlanTravailController extends ApiController
         return app(UserDataScope::class);
     }
 
+    /**
+     * Returns true if the authenticated user has a Section Planification role.
+     * These roles have global read/write access to the full PTA.
+     */
+    private function isPlanificationRole(): bool
+    {
+        $user = auth()->user();
+        if (!$user) return false;
+        $role = $user->role?->nom_role ?? '';
+        return in_array($role, ['Chef Section Planification', 'Cellule Planification']);
+    }
+
     private function getScopedAgent(): ?Agent
     {
         $user = auth()->user();
 
         if (!$user || $this->scopeService()->hasGlobalAdminAccess($user)) {
+            return null;
+        }
+
+        // Planification roles have unrestricted access to all PTA activities.
+        if ($this->isPlanificationRole()) {
             return null;
         }
 
@@ -222,6 +239,11 @@ class PlanTravailController extends ApiController
             return true;
         }
 
+        // Chef Section Planification and Cellule Planification manage the entire PTA.
+        if ($this->isPlanificationRole()) {
+            return true;
+        }
+
         $agent = $user->agent;
         if (!$agent) {
             return false;
@@ -336,11 +358,30 @@ class PlanTravailController extends ApiController
         $trimestre = $request->input('trimestre');
         $statut = $request->input('statut');
 
+        $departementId = $request->input('departement_id');
+        $provinceId    = $request->input('province_id');
+        $niveauFilter  = $request->input('niveau_administratif');
+
         $query = ActivitePlan::with('createur', 'departement', 'province', 'localite')
             ->with('provinces')
+            ->with('agents')
             ->parAnnee($annee);
 
         $this->applyScopedAccess($query, $agent);
+
+        // Extra filters available for planification / global users.
+        if ($departementId && !$agent) {
+            $query->where('departement_id', (int) $departementId);
+        }
+        if ($provinceId && !$agent) {
+            $query->where(function (Builder $q) use ($provinceId) {
+                $q->where('province_id', (int) $provinceId)
+                  ->orWhereHas('provinces', fn (Builder $r) => $r->where('provinces.id', (int) $provinceId));
+            });
+        }
+        if ($niveauFilter && !$agent) {
+            $query->where('niveau_administratif', $niveauFilter);
+        }
 
         if ($trimestre) {
             $query->parTrimestre($trimestre);
@@ -361,6 +402,12 @@ class PlanTravailController extends ApiController
         $resources = ActivitePlanResource::collection($activites)->resolve();
         $activitesGroupees = collect($resources)->groupBy(fn($a) => $a['trimestre'] ?? 'Annuel')->toArray();
 
+        $isGlobalPta = !$agent;
+        $filterOptions = $isGlobalPta ? [
+            'departments' => Department::operational()->orderBy('nom')->get(['id', 'nom']),
+            'provinces'   => Province::orderBy('nom')->get(['id', 'nom']),
+        ] : null;
+
         return $this->success($resources, [
             'stats' => [
                 'total' => $totalCount,
@@ -375,6 +422,8 @@ class PlanTravailController extends ApiController
                 'statut' => $statut,
             ],
             'canEdit' => $this->canManage(),
+            'isGlobalPta' => $isGlobalPta,
+            'filterOptions' => $filterOptions,
         ], [
             'groupees' => $activitesGroupees,
             'stats' => [
@@ -390,6 +439,8 @@ class PlanTravailController extends ApiController
                 'statut' => $statut,
             ],
             'canEdit' => $this->canManage(),
+            'isGlobalPta' => $isGlobalPta,
+            'filterOptions' => $filterOptions,
         ]);
     }
 
@@ -415,6 +466,22 @@ class PlanTravailController extends ApiController
             ->get(['id', 'nom']);
         $localites = class_exists(Localite::class) ? Localite::orderBy('nom')->get(['id', 'nom']) : collect();
 
+        $agentsSen = $this->isPlanificationRole()
+            ? Agent::where(function ($q) {
+                    $q->where('organe', 'like', '%National%')
+                      ->orWhere('organe', 'like', '%Secrétariat Exécutif National%');
+                })
+                ->actifs()
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'prenom', 'organe', 'fonction'])
+                ->map(fn ($a) => [
+                    'id'         => $a->id,
+                    'nom_complet' => trim($a->prenom . ' ' . $a->nom),
+                    'organe'     => $a->organe,
+                    'fonction'   => $a->fonction,
+                ])
+            : [];
+
         $payload = [
             'departments' => $departments,
             'provinces' => $provinces,
@@ -427,6 +494,7 @@ class PlanTravailController extends ApiController
                 ['value' => 'coordination_nationale', 'label' => 'Coordination nationale'],
                 ['value' => 'coordination_provinciale', 'label' => 'Coordination provinciale'],
             ],
+            'agents_sen' => $agentsSen,
         ];
 
         return $this->success($payload, [], $payload);
@@ -469,7 +537,12 @@ class PlanTravailController extends ApiController
             'date_fin'             => 'nullable|date',
             'pourcentage'          => 'integer|min:0|max:100',
             'observations'         => 'nullable|string',
+            'assigned_agent_ids'   => 'nullable|array',
+            'assigned_agent_ids.*' => 'integer|exists:agents,id',
         ]);
+
+        $assignedAgentIds = $validated['assigned_agent_ids'] ?? [];
+        unset($validated['assigned_agent_ids']);
 
         $validated = $this->normalizeTrimestreFlags($validated);
         $validated = $this->enforceManagedScope($validated, $agent);
@@ -480,6 +553,7 @@ class PlanTravailController extends ApiController
 
         $activite = ActivitePlan::create($validated);
         $this->syncActiviteProvinces($activite, $provinceIds);
+        $activite->agents()->sync($assignedAgentIds);
 
         PtaModified::dispatch($activite, 'created');
 
@@ -491,7 +565,7 @@ class PlanTravailController extends ApiController
             auth()->id()
         );
 
-        $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'provinces', 'localite'));
+        $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'provinces', 'localite', 'agents'));
 
         return $this->resource($resource, [], [
             'message' => 'Activite creee avec succes.',
@@ -507,7 +581,7 @@ class PlanTravailController extends ApiController
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $activitePlan->load(['createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent']);
+        $activitePlan->load(['createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent', 'agents']);
 
         return $this->resource(ActivitePlanResource::make($activitePlan), [
             'canEdit' => $this->canManage(),
@@ -559,7 +633,12 @@ class PlanTravailController extends ApiController
             'date_fin'             => 'nullable|date',
             'pourcentage'          => 'integer|min:0|max:100',
             'observations'         => 'nullable|string',
+            'assigned_agent_ids'   => 'nullable|array',
+            'assigned_agent_ids.*' => 'integer|exists:agents,id',
         ]);
+
+        $assignedAgentIds = $validated['assigned_agent_ids'] ?? [];
+        unset($validated['assigned_agent_ids']);
 
         $validated = $this->normalizeTrimestreFlags($validated);
         $validated = $this->enforceManagedScope($validated, $agent);
@@ -568,6 +647,7 @@ class PlanTravailController extends ApiController
 
         $activitePlan->update($validated);
         $this->syncActiviteProvinces($activitePlan, $provinceIds);
+        $activitePlan->agents()->sync($assignedAgentIds);
 
         PtaModified::dispatch($activitePlan, 'updated');
 
@@ -579,7 +659,7 @@ class PlanTravailController extends ApiController
             auth()->id()
         );
 
-        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite'));
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'agents'));
 
         return $this->resource($resource, [], [
             'message' => 'Activite mise a jour.',
@@ -625,7 +705,7 @@ class PlanTravailController extends ApiController
 
         PtaModified::dispatch($activitePlan, 'status_changed');
 
-        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent'));
+        $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent', 'agents'));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour.',
