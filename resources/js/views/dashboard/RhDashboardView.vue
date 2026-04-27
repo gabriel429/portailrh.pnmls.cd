@@ -201,6 +201,67 @@
         </div>
       </div>
 
+      <!-- CONGÉS & ABSENCES -->
+      <div class="rh-section">
+        <div class="rh-section-head">
+          <div class="rh-section-icon" style="background:#e0f2fe;color:#0ea5e9;">
+            <i class="fas fa-umbrella-beach"></i>
+          </div>
+          <div>
+            <h3 class="rh-section-title">Congés & Absences</h3>
+            <p class="rh-section-sub">{{ d.holidays?.active_today ?? 0 }} agent(s) en congé aujourd'hui · {{ d.holidays?.pending ?? 0 }} demande(s) en attente</p>
+          </div>
+          <router-link to="/rh/holidays/planning" class="rh-section-link ms-auto">
+            Voir tout <i class="fas fa-chevron-right"></i>
+          </router-link>
+        </div>
+        <div class="rh-conge-stats">
+          <div class="rh-conge-stat">
+            <div class="rh-conge-stat-icon" style="background:#e0f2fe;color:#0ea5e9;"><i class="fas fa-umbrella-beach"></i></div>
+            <div class="rh-conge-stat-val" style="color:#0ea5e9;">{{ d.holidays?.active_today ?? 0 }}</div>
+            <div class="rh-conge-stat-lbl">En congé aujourd'hui</div>
+          </div>
+          <div class="rh-conge-stat">
+            <div class="rh-conge-stat-icon" style="background:#fff7ed;color:#ea580c;"><i class="fas fa-hourglass-half"></i></div>
+            <div class="rh-conge-stat-val" style="color:#ea580c;">{{ d.holidays?.pending ?? 0 }}</div>
+            <div class="rh-conge-stat-lbl">En attente d'approbation</div>
+          </div>
+          <div class="rh-conge-stat">
+            <div class="rh-conge-stat-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
+            <div class="rh-conge-stat-val" style="color:#16a34a;">{{ d.holidays?.approved ?? 0 }}</div>
+            <div class="rh-conge-stat-lbl">Approuvés</div>
+          </div>
+          <div class="rh-conge-stat">
+            <div class="rh-conge-stat-icon" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-chart-pie"></i></div>
+            <div class="rh-conge-stat-val" style="color:#7c3aed;">{{ d.holidays?.taux_utilisation_pct ?? 0 }}<span style="font-size:.85rem;font-weight:600;">%</span></div>
+            <div class="rh-conge-stat-lbl">Taux utilisation</div>
+          </div>
+        </div>
+        <div v-if="upcomingReturns.length" class="rh-returns">
+          <div class="rh-returns-title"><i class="fas fa-calendar-check" style="color:#10b981;"></i> Retours prévus (7 prochains jours)</div>
+          <div class="rh-returns-list">
+            <div v-for="r in upcomingReturns" :key="r.id" class="rh-return-item">
+              <div class="rh-return-avatar">{{ returnInitials(r.agent) }}</div>
+              <div class="rh-return-info">
+                <div class="rh-return-name">{{ r.agent?.prenom }} {{ r.agent?.nom }}</div>
+                <div class="rh-return-meta">
+                  <span v-if="r.agent?.organe"><i class="fas fa-building"></i> {{ r.agent.organe }}</span>
+                  <span v-if="r.type_conge"><i class="fas fa-tag"></i> {{ r.type_conge }}</span>
+                  <span v-if="r.nombre_jours"><i class="fas fa-sun"></i> {{ r.nombre_jours }} j.</span>
+                </div>
+              </div>
+              <div class="rh-return-date">
+                <i class="fas fa-calendar-alt"></i> {{ formatShortDate(r.date_retour_prevu) }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div v-else class="rh-returns-empty">
+          <i class="fas fa-calendar-check"></i>
+          <span>Aucun retour de congé prévu dans les 7 prochains jours</span>
+        </div>
+      </div>
+
       <!-- EFFECTIFS PAR ORGANE -->
       <div class="rh-section">
         <div class="rh-section-head">
@@ -307,6 +368,53 @@
                 </div>
                 <div class="rh-bar-label">{{ day.label }}</div>
               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PLAN DE TRAVAIL (PTA) -->
+      <div class="rh-section">
+        <div class="rh-section-head">
+          <div class="rh-section-icon" style="background:#dbeafe;color:#2563eb;">
+            <i class="fas fa-clipboard-list"></i>
+          </div>
+          <div>
+            <h3 class="rh-section-title">Plan de travail (PTA)</h3>
+            <p class="rh-section-sub">{{ currentYear }} · {{ d.plan_travail?.total ?? 0 }} activité(s) · {{ d.plan_travail?.avg_completion ?? 0 }}% d'avancement moyen</p>
+          </div>
+          <router-link to="/plan-travail" class="rh-section-link ms-auto">
+            Voir tout <i class="fas fa-chevron-right"></i>
+          </router-link>
+        </div>
+        <div class="rh-pta-card">
+          <div class="rh-pta-progress-header">
+            <span class="rh-pta-progress-title">Avancement global {{ currentYear }}</span>
+            <span class="rh-pta-progress-pct">{{ d.plan_travail?.avg_completion ?? 0 }}%</span>
+          </div>
+          <div class="rh-pta-progress-bar-bg">
+            <div class="rh-pta-progress-bar-fill" :style="{ width: (d.plan_travail?.avg_completion ?? 0) + '%' }"></div>
+          </div>
+          <div class="rh-pta-stats">
+            <div class="rh-pta-stat">
+              <div class="rh-pta-stat-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-tasks"></i></div>
+              <div class="rh-pta-stat-val" style="color:#1e293b;">{{ d.plan_travail?.total ?? 0 }}</div>
+              <div class="rh-pta-stat-lbl">Total</div>
+            </div>
+            <div class="rh-pta-stat">
+              <div class="rh-pta-stat-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
+              <div class="rh-pta-stat-val" style="color:#059669;">{{ d.plan_travail?.terminee ?? 0 }}</div>
+              <div class="rh-pta-stat-lbl">Terminées</div>
+            </div>
+            <div class="rh-pta-stat">
+              <div class="rh-pta-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-spinner"></i></div>
+              <div class="rh-pta-stat-val" style="color:#d97706;">{{ d.plan_travail?.en_cours ?? 0 }}</div>
+              <div class="rh-pta-stat-lbl">En cours</div>
+            </div>
+            <div class="rh-pta-stat">
+              <div class="rh-pta-stat-icon" style="background:#f1f5f9;color:#64748b;"><i class="fas fa-clock"></i></div>
+              <div class="rh-pta-stat-val" style="color:#64748b;">{{ Math.max(0, (d.plan_travail?.total ?? 0) - (d.plan_travail?.terminee ?? 0) - (d.plan_travail?.en_cours ?? 0)) }}</div>
+              <div class="rh-pta-stat-lbl">Non démarrées</div>
             </div>
           </div>
         </div>
@@ -1229,6 +1337,15 @@ function formatShortDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
 }
 
+const currentYear = new Date().getFullYear()
+
+const upcomingReturns = computed(() => d.value.holidays?.upcoming_returns || [])
+
+function returnInitials(agent) {
+  if (!agent) return '?'
+  return ((agent.prenom || '').charAt(0) + (agent.nom || '').charAt(0)).toUpperCase()
+}
+
 // ═══════════ PENDING REQUESTS (VALIDATION RAPIDE) ═══════════
 const pendingRequests = ref([])
 const pendingLoading = ref(false)
@@ -2006,4 +2123,91 @@ onMounted(async () => {
   border-color: #93c5fd; transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0,119,181,.1);
 }
+
+/* SECTION LINK */
+.rh-section-link {
+  display: inline-flex; align-items: center; gap: .3rem;
+  font-size: .75rem; font-weight: 600; color: #0077B5;
+  text-decoration: none; border: 1px solid #bfdbfe;
+  background: #eff6ff; border-radius: 8px; padding: .3rem .7rem;
+  transition: all .2s; white-space: nowrap;
+}
+.rh-section-link:hover { background: #0077B5; color: #fff; border-color: #0077B5; }
+
+/* CONGÉS & ABSENCES */
+.rh-conge-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; margin-bottom: 1rem; }
+.rh-conge-stat {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.1rem; text-align: center;
+}
+.rh-conge-stat-icon {
+  width: 38px; height: 38px; border-radius: 12px; display: flex;
+  align-items: center; justify-content: center; font-size: .9rem;
+  margin: 0 auto .6rem;
+}
+.rh-conge-stat-val { font-size: 1.75rem; font-weight: 800; line-height: 1; margin-bottom: .2rem; }
+.rh-conge-stat-lbl { font-size: .68rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
+
+.rh-returns {
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
+  padding: 1rem 1.2rem;
+}
+.rh-returns-title {
+  font-size: .8rem; font-weight: 700; color: #065f46; margin-bottom: .75rem;
+  display: flex; align-items: center; gap: .4rem;
+}
+.rh-returns-list { display: flex; flex-direction: column; gap: .5rem; }
+.rh-return-item {
+  display: flex; align-items: center; gap: .75rem;
+  background: #fff; border-radius: 10px; padding: .65rem .9rem;
+  border: 1px solid #d1fae5;
+}
+.rh-return-avatar {
+  width: 34px; height: 34px; border-radius: 10px; flex-shrink: 0;
+  background: #d1fae5; color: #059669;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 800;
+}
+.rh-return-info { flex: 1; min-width: 0; }
+.rh-return-name { font-size: .82rem; font-weight: 700; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rh-return-meta { display: flex; gap: .6rem; flex-wrap: wrap; margin-top: .15rem; }
+.rh-return-meta span { font-size: .68rem; color: #64748b; display: flex; align-items: center; gap: .25rem; }
+.rh-return-date { font-size: .75rem; font-weight: 700; color: #059669; white-space: nowrap; flex-shrink: 0; display: flex; align-items: center; gap: .3rem; }
+
+.rh-returns-empty {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  padding: 1rem; background: #f8fafc; border-radius: 12px; border: 1px dashed #e2e8f0;
+  font-size: .8rem; color: #94a3b8;
+}
+
+/* PLAN DE TRAVAIL (PTA) */
+.rh-pta-card {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  padding: 1.4rem 1.6rem;
+}
+.rh-pta-progress-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: .6rem;
+}
+.rh-pta-progress-title { font-size: .82rem; font-weight: 700; color: #475569; }
+.rh-pta-progress-pct { font-size: 1.5rem; font-weight: 800; color: #2563eb; }
+.rh-pta-progress-bar-bg {
+  height: 10px; background: #e2e8f0; border-radius: 10px; overflow: hidden; margin-bottom: 1.2rem;
+}
+.rh-pta-progress-bar-fill {
+  height: 100%; border-radius: 10px;
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  transition: width 1s ease; min-width: 2px;
+}
+.rh-pta-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.rh-pta-stat {
+  background: #f8fafc; border-radius: 12px; padding: .9rem;
+  text-align: center; border: 1px solid #f1f5f9;
+}
+.rh-pta-stat-icon {
+  width: 36px; height: 36px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: .85rem; margin: 0 auto .5rem;
+}
+.rh-pta-stat-val { font-size: 1.5rem; font-weight: 800; line-height: 1; margin-bottom: .15rem; }
+.rh-pta-stat-lbl { font-size: .65rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
 </style>
