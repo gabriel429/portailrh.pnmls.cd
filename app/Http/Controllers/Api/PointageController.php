@@ -508,8 +508,32 @@ class PointageController extends ApiController
         $departmentId = $request->query('department_id');
         $date = $request->query('date');
 
-        if (!$departmentId) {
+        if ($departmentId === null || $departmentId === '') {
             return $this->success([]);
+        }
+
+        // Cas spécial id=0 : agents SEN sans département (rattachement direct)
+        if ((string) $departmentId === '0') {
+            $agentsQuery = Agent::actifs()
+                ->where('organe', 'Secrétariat Exécutif National')
+                ->whereNull('departement_id')
+                ->orderBy('nom');
+            $scope->applyAgentScope($agentsQuery, $request->user());
+            $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+            if ($date) {
+                $pointages = Pointage::where('date_pointage', $date)
+                    ->whereIn('agent_id', $agents->pluck('id'))
+                    ->get()->keyBy('agent_id');
+                $agents->each(function ($agent) use ($pointages) {
+                    $p = $pointages->get($agent->id);
+                    $agent->pointage_existant = $p ? [
+                        'heure_entree' => $p->heure_entree ? \Carbon\Carbon::parse($p->heure_entree)->format('H:i') : null,
+                        'heure_sortie' => $p->heure_sortie ? \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') : null,
+                        'observations' => $p->observations,
+                    ] : null;
+                });
+            }
+            return $this->success($agents, [], ['agents' => $agents]);
         }
 
         $agentsQuery = Agent::actifs()

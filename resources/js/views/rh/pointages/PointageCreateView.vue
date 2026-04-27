@@ -201,7 +201,7 @@ function clearAll() {
 }
 
 async function loadAgents() {
-    if (!selectedDepartment.value) {
+    if (selectedDepartment.value === '') {
         ui.addToast('Veuillez selectionner un departement.', 'warning')
         return
     }

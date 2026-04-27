@@ -576,7 +576,19 @@ class AgentController extends ApiController
         $scope = $this->scopeService();
         $user = request()->user();
         $organeOptions = Schema::hasTable('organes') ? Organe::where('actif', true)->orderBy('nom')->pluck('nom') : collect();
-        $departments = $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom']);
+        $departmentsCollection = $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom']);
+        // Ajouter l'option SEN (rattachement direct) si des agents actifs SEN sans département existent
+        $hasSenDirect = Agent::actifs()
+            ->where('organe', 'Secrétariat Exécutif National')
+            ->whereNull('departement_id')
+            ->exists();
+        if ($hasSenDirect) {
+            $senDirect = new \stdClass();
+            $senDirect->id = 0;
+            $senDirect->nom = 'SEN (rattachement direct)';
+            $departmentsCollection = $departmentsCollection->prepend($senDirect);
+        }
+        $departments = $departmentsCollection;
         $provinces = $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get();
         $grades = Schema::hasTable('grades') ? Grade::orderBy('ordre')->get() : collect();
         $institutionCategories = Schema::hasTable('institution_categories')

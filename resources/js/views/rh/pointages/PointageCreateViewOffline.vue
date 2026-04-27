@@ -331,7 +331,7 @@ async function fetchDepartments() {
 
 // Chargement agents
 async function loadAgents() {
-  if (!selectedDepartment.value) {
+  if (selectedDepartment.value === '') {
     ui.addToast('Veuillez sélectionner un département', 'warning')
     return
   }

@@ -461,7 +461,7 @@ function cm_clearAll() {
 }
 
 async function cm_loadAgents() {
-    if (!cm_department.value) { ui.addToast('Selectionnez un departement.', 'warning'); return }
+    if (cm_department.value === '') { ui.addToast('Selectionnez un departement.', 'warning'); return }
     if (!cm_date.value) { ui.addToast('Selectionnez une date.', 'warning'); return }
     cm_loadingAgents.value = true
     cm_agentsLoaded.value = false
