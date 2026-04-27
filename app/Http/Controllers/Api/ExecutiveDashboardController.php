@@ -1090,7 +1090,7 @@ class ExecutiveDashboardController extends ApiController
                     $monthlyRateSD = $monthlySD->count() > 0 ? round(($monthlySD->avg('present') / $sansDeptActifsCount) * 100, 1) : 0;
 
                     $items[] = [
-                        'id' => null,
+                        'id' => 0,
                         'nom' => 'SEN (rattachement direct)',
                         'code' => 'SEN-DIRECT',
                         'effectifs' => ['total' => $sansDeptTotal, 'actifs' => $sansDeptActifs, 'suspendus' => $sansDeptSuspendus],
@@ -1303,14 +1303,92 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
     }
 
     /**
+     * Agents SEN sans département (rattachement direct, id=0)
+     */
+    protected function senDirectDetail(Request $request)
+    {
+        $nom = 'Secrétariat Exécutif National';
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $currentYear  = $now->year;
+
+        $agents = Agent::where('organe', $nom)->whereNull('departement_id');
+        $total     = (clone $agents)->count();
+        $actifs    = (clone $agents)->actifs()->count();
+        $suspendus = (clone $agents)->suspendu()->count();
+        $anciens   = (clone $agents)->anciens()->count();
+
+        $deptActifs = $actifs ?: 1;
+
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('organe', $nom)->whereNull('departement_id'))
+            ->distinct('agent_id')->count('agent_id');
+
+        $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', fn($q) => $q->where('organe', $nom)->whereNull('departement_id'))
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')->get();
+        $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
+
+        $topAgents = (clone $agents)->actifs()
+            ->with(['agentStatuses' => function ($q) {
+                $q->where('actuel', true)->orderByDesc('created_at');
+            }])
+            ->orderBy('nom')
+            ->limit(100)
+            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
+            ->map(function ($a) {
+                $currentStatus  = $a->agentStatuses->first();
+                $isAbsence      = in_array(optional($currentStatus)->statut, ['en_conge', 'en_mission', 'suspendu', 'en_formation'], true);
+                return [
+                    'id'                  => $a->id,
+                    'nom'                 => $a->prenom . ' ' . $a->nom,
+                    'organe'              => $a->organe,
+                    'fonction'            => $a->fonction ?? $a->poste_actuel ?? '-',
+                    'sexe'                => $a->sexe,
+                    'email'               => $a->email_professionnel ?: $a->email ?: null,
+                    'telephone'           => $a->telephone,
+                    'matricule'           => $a->matricule_etat,
+                    'grade'               => $a->grade_etat,
+                    'absence_statut'      => $isAbsence ? $currentStatus->statut : null,
+                    'absence_observation' => $isAbsence ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
+                    'absence_debut'       => $isAbsence ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
+                    'absence_fin'         => $isAbsence ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
+                ];
+            });
+
+        return $this->success([
+            'department' => ['id' => 0, 'nom' => 'SEN (rattachement direct)', 'code' => 'SEN-DIRECT'],
+            'effectifs'  => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'presence'   => [
+                'today_present' => $todayPresent,
+                'today_rate'    => round(($todayPresent / $deptActifs) * 100, 1),
+                'monthly_rate'  => $monthlyRate,
+                'total_active'  => $actifs,
+            ],
+            'pta'        => ['total' => 0, 'terminee' => 0, 'en_cours' => 0, 'avg' => 0],
+            'activites'  => [],
+            'agents'     => $topAgents,
+        ]);
+    }
+
+    /**
      * Drill-down département : détail complet d'un département
      */
     public function departmentDetail(Request $request, string $id)
     {
-        if (!is_numeric($id) || (int) $id <= 0) {
+        if (!is_numeric($id) || (int) $id < 0) {
             return $this->error('ID département invalide', 422);
         }
         $id = (int) $id;
+
+        // Cas spécial id=0 : agents SEN sans département (rattachement direct)
+        if ($id === 0) {
+            return $this->senDirectDetail($request);
+        }
+
         $department = Department::find($id);
         if (!$department) {
             return $this->error('Département introuvable', 404);
