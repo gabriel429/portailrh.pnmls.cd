@@ -70,7 +70,7 @@
                 <tr>
                   <th>Titre</th>
                   <th>Origine</th>
-                  <th>{{ showAssignedByMe ? 'Assigné à' : 'De' }}</th>
+                  <th>{{ showAssignedByMe || isDeptScope ? 'Assigné à' : 'De' }}</th>
                   <th>Priorité</th>
                   <th>Statut</th>
                   <th>Échéance</th>
@@ -89,7 +89,7 @@
                     <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
                     <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
-                  <td>{{ showAssignedByMe ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
+                  <td>{{ (showAssignedByMe || isDeptScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
                   <td><span :class="statutBadge(t.statut)">{{ statutLabel(t.statut) }}</span></td>
                   <td>
@@ -139,11 +139,16 @@ const isDirecteur = ref(false)
 const sourceFilter = ref('all')
 const statusFilter = ref(route.query.statut ?? 'all')
 
+const isDeptScope = computed(() => route.query.scope === 'departement')
+const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
+
 watch(() => route.query.statut, (val) => {
   statusFilter.value = val ?? 'all'
 })
 
-const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
+watch(() => route.query.scope, () => {
+  loadTaches()
+})
 
 /* ── helper: overdue check ── */
 function isOverdue(tache) {
@@ -180,19 +185,35 @@ const filteredTaches = computed(() => {
   return items
 })
 
-const pageTitle = computed(() => showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches')
-const pageSubtitle = computed(() => showAssignedByMe.value
-  ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
-  : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.')
-const panelTitle = computed(() => showAssignedByMe.value ? 'Tâches que j\'ai assignées' : 'Tâches qui me sont assignées')
-const panelSubtitle = computed(() => showAssignedByMe.value
-  ? 'Liste des tâches que vous avez affectées aux agents.'
-  : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.')
-const emptyStateText = computed(() => showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.')
+const pageTitle = computed(() => {
+  if (isDeptScope.value) return 'Tâches du département'
+  return showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches'
+})
+const pageSubtitle = computed(() => {
+  if (isDeptScope.value) return 'Vue d\'ensemble des tâches assignées aux agents du département.'
+  return showAssignedByMe.value
+    ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
+    : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.'
+})
+const panelTitle = computed(() => {
+  if (isDeptScope.value) return 'Tâches du département'
+  return showAssignedByMe.value ? 'Tâches que j\'ai assignées' : 'Tâches qui me sont assignées'
+})
+const panelSubtitle = computed(() => {
+  if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
+  return showAssignedByMe.value
+    ? 'Liste des tâches que vous avez affectées aux agents.'
+    : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.'
+})
+const emptyStateText = computed(() => {
+  if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
+  return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
+})
 
 async function loadTaches() {
   try {
-    const { data } = await list()
+    const params = isDeptScope.value ? { scope: 'departement' } : {}
+    const { data } = await list(params)
     mesTaches.value = data.mesTaches
     tachesCreees.value = data.tachesCreees
     isDirecteur.value = data.isDirecteur

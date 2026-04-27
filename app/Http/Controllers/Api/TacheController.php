@@ -38,6 +38,27 @@ class TacheController extends ApiController
             ? Tache::query()->parCreateur($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
+        // Scope département : retourne toutes les tâches des agents du même département.
+        // Réservé aux agents ayant un departement_id (directeurs, assistants, secrétaires).
+        if ($request->input('scope') === 'departement') {
+            $deptId = $agent?->departement_id;
+            if ($deptId) {
+                $agentIds = Agent::where('departement_id', $deptId)->pluck('id');
+                $deptTaches = Tache::query()
+                    ->whereIn('agent_id', $agentIds)
+                    ->with(['agent', 'createur', 'activitePlan', 'documents.agent'])
+                    ->latest()
+                    ->get();
+                $deptResource = TacheResource::collection($deptTaches)->resolve();
+                return $this->success(
+                    ['mes_taches' => $deptResource, 'taches_creees' => []],
+                    ['isDirecteur' => $isDirecteur, 'isDeptScope' => true],
+                    ['mesTaches' => $deptResource, 'tachesCreees' => [], 'isDirecteur' => $isDirecteur, 'isDeptScope' => true]
+                );
+            }
+            // Pas de département → on retombe sur les tâches personnelles
+        }
+
         if ($request->boolean('summary')) {
             $assignedCount = (clone $mesTachesQuery)->count();
             $newAssignedCount = (clone $mesTachesQuery)

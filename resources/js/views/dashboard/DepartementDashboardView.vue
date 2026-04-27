@@ -43,7 +43,7 @@
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi-pill" @click="router.push(taskBaseRoute + '?statut=en_cours')">
+          <div class="dept-kpi-pill" @click="router.push(taskBaseRoute + '&statut=en_cours')">
             <div class="dept-kpi-pill-icon"><i class="fas fa-tasks"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.taches?.en_cours ?? 0 }}</div>
@@ -209,22 +209,22 @@
 
         <!-- Mini-cards statuts -->
         <div class="dept-task-cards">
-          <div class="dept-task-card" @click="router.push(taskBaseRoute + '?statut=nouvelle')">
+          <div class="dept-task-card" @click="router.push(taskBaseRoute + '&statut=nouvelle')">
             <div class="dept-task-card-icon" style="background:#dbeafe;color:#3b82f6;"><i class="fas fa-plus-circle"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.nouvelle ?? 0 }}</div>
             <div class="dept-task-card-lbl">Nouvelles</div>
           </div>
-          <div class="dept-task-card" @click="router.push(taskBaseRoute + '?statut=en_cours')">
+          <div class="dept-task-card" @click="router.push(taskBaseRoute + '&statut=en_cours')">
             <div class="dept-task-card-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-spinner"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.en_cours ?? 0 }}</div>
             <div class="dept-task-card-lbl">En cours</div>
           </div>
-          <div class="dept-task-card" @click="router.push(taskBaseRoute + '?statut=terminee')">
+          <div class="dept-task-card" @click="router.push(taskBaseRoute + '&statut=terminee')">
             <div class="dept-task-card-icon" style="background:#dcfce7;color:#16a34a;"><i class="fas fa-check-circle"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.terminees ?? 0 }}</div>
             <div class="dept-task-card-lbl">Terminées</div>
           </div>
-          <div class="dept-task-card" :class="{ 'dept-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push(taskBaseRoute + '?statut=en_retard')">
+          <div class="dept-task-card" :class="{ 'dept-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push(taskBaseRoute + '&statut=en_retard')">
             <div class="dept-task-card-icon" style="background:#fee2e2;color:#dc2626;"><i class="fas fa-exclamation-triangle"></i></div>
             <div class="dept-task-card-val">{{ data.taches?.overdue ?? 0 }}</div>
             <div class="dept-task-card-lbl">En retard</div>
@@ -719,7 +719,7 @@ const auth   = useAuthStore()
 
 // Pour les non-directeurs, /taches/assignees-par-moi retourne toujours vide
 // → rediriger vers /taches (mes tâches assignées) pour ces rôles
-const taskBaseRoute = computed(() => auth.isDirecteur ? '/taches/assignees-par-moi' : '/taches')
+const taskBaseRoute = computed(() => '/taches?scope=departement')
 
 const loading    = ref(true)
 const loadError     = ref(null)
@@ -817,13 +817,13 @@ const metrics = computed(() => {
       pct: data.value?.attendance?.today_rate ?? 0,
       alert: (data.value?.attendance?.today_rate ?? 0) > 0 && (data.value?.attendance?.today_rate ?? 0) < 50 },
     { label: "Tâches en cours",      icon: 'fa-spinner',            color: '#d97706', bg: '#fef3c7',
-      value: data.value?.taches?.en_cours ?? 0,            to: taskBaseRoute.value + '?statut=en_cours',  alert: false,
+      value: data.value?.taches?.en_cours ?? 0,            to: taskBaseRoute.value + '&statut=en_cours',  alert: false,
       pct: Math.min(((data.value?.taches?.en_cours ?? 0) / tTotal) * 100, 100) },
     { label: "Tâches terminées",     icon: 'fa-check-circle',       color: '#059669', bg: '#dcfce7',
-      value: data.value?.taches?.terminees ?? 0,           to: taskBaseRoute.value + '?statut=terminee',  alert: false,
+      value: data.value?.taches?.terminees ?? 0,           to: taskBaseRoute.value + '&statut=terminee',  alert: false,
       pct: taskCompletionPct.value },
     { label: "En retard",            icon: 'fa-exclamation-triangle',color: '#dc2626', bg: '#fee2e2',
-      value: data.value?.taches?.overdue ?? 0,             to: taskBaseRoute.value + '?statut=en_retard',
+      value: data.value?.taches?.overdue ?? 0,             to: taskBaseRoute.value + '&statut=en_retard',
       pct: Math.min(((data.value?.taches?.overdue ?? 0) / tTotal) * 100, 100),
       alert: (data.value?.taches?.overdue ?? 0) > 0 },
     { label: "Demandes en attente",  icon: 'fa-hourglass-half',     color: '#7c3aed', bg: '#ede9fe',
