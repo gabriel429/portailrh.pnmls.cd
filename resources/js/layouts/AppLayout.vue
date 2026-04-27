@@ -400,6 +400,10 @@ const currentProfilePhotoUrl = computed(() => {
   return profilePhotoCandidates.value[profilePhotoIndex.value] || null
 })
 
+watch(profilePhotoCandidates, () => {
+  profilePhotoIndex.value = 0
+})
+
 function handleProfilePhotoError() {
   if (profilePhotoIndex.value < profilePhotoCandidates.value.length - 1) {
     profilePhotoIndex.value += 1
