@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 trait Syncable
 {
     /**
-     * Cache of which tables have sync columns.
+     * Cache of which tables have sync columns (keyed by class name).
      */
     protected static array $syncColumnsCache = [];
 
@@ -24,6 +24,8 @@ trait Syncable
      * Check if sync columns exist on this model's table.
      *
      * First checks config (fast, no DB query), then falls back to schema inspection.
+     * Keyed by class name to prevent infinite recursion: new static() in this method
+     * triggers initializeSyncable() which calls hasSyncColumns() again.
      */
     public static function hasSyncColumns(): bool
     {
@@ -32,17 +34,26 @@ trait Syncable
             return true;
         }
 
-        $table = (new static)->getTable();
+        $class = static::class;
 
-        if (!isset(static::$syncColumnsCache[$table])) {
-            try {
-                static::$syncColumnsCache[$table] = Schema::hasColumn($table, 'uuid');
-            } catch (\Throwable) {
-                static::$syncColumnsCache[$table] = false;
-            }
+        // Already resolved (or recursion guard is active) – return cached value
+        if (array_key_exists($class, static::$syncColumnsCache)) {
+            return static::$syncColumnsCache[$class];
         }
 
-        return static::$syncColumnsCache[$table];
+        // Set recursion guard to false BEFORE new static() so that any re-entrant
+        // call from initializeSyncable() / bootSyncable() returns false immediately
+        // instead of looping forever.
+        static::$syncColumnsCache[$class] = false;
+
+        try {
+            $table = (new static)->getTable();
+            static::$syncColumnsCache[$class] = Schema::hasColumn($table, 'uuid');
+        } catch (\Throwable) {
+            // keep false
+        }
+
+        return static::$syncColumnsCache[$class];
     }
 
     /**
