@@ -378,14 +378,18 @@ const profilePhotoCandidates = computed(() => {
   } else {
     const normalizedPhoto = trimmedPhoto.replace(/^\/+/, '')
 
-    candidates.push(`/${normalizedPhoto}`)
-
-    if (!normalizedPhoto.startsWith('storage/')) {
-      candidates.push(`/storage/${normalizedPhoto}`)
-    }
-
-    if (!normalizedPhoto.startsWith('uploads/') && !normalizedPhoto.includes('/')) {
+    // Si la photo est juste un nom de fichier (sans répertoire), essayer
+    // /uploads/profiles/ en premier car c'est là qu'elles sont stockées.
+    // Mettre /xxx.jpg en dernier pour éviter un 422 CDN inutile.
+    if (!normalizedPhoto.includes('/')) {
       candidates.push(`/uploads/profiles/${normalizedPhoto}`)
+      candidates.push(`/storage/uploads/profiles/${normalizedPhoto}`)
+    } else {
+      candidates.push(`/${normalizedPhoto}`)
+
+      if (!normalizedPhoto.startsWith('storage/')) {
+        candidates.push(`/storage/${normalizedPhoto}`)
+      }
     }
   }
 
