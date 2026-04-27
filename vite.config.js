@@ -42,14 +42,13 @@ export default defineConfig({
         VitePWA({
             registerType: 'autoUpdate',
             workbox: {
-                globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+                globPatterns: ['**/*.{js,css,woff2}'],
                 cleanupOutdatedCaches: true,
                 skipWaiting: true,
                 clientsClaim: true,
-                navigateFallback: 'index.html',
-                navigateFallbackDenylist: [/^\/api\//]
+                navigateFallback: null,
             },
-            includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'index.html'],
+            includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
             manifest: {
                 name: 'E-PNMLS',
                 short_name: 'E-PNMLS',
