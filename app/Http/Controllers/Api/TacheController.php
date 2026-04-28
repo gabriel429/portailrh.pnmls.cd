@@ -290,24 +290,29 @@ class TacheController extends ApiController
         $isAssigne    = $agent && $tache->agent_id    === $agent->id;
         $isDeptManager = false;
 
-        $isSENTask = false;
-        if ($isSENOrSENA && $tache->agent_id) {
-            $isSENTask = Agent::where('id', $tache->agent_id)
-                ->where('organe', 'Secrétariat Exécutif National')
-                ->exists();
+        // SEN/SENA : accès garanti à toutes les tâches (ils sont gestionnaires nationaux)
+        if ($isSENOrSENA) {
+            $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
+            return $this->resource(TacheResource::make($tache), [
+                'isCreateur' => $isCreateur,
+                'isAssigne'  => $isAssigne,
+            ], [
+                'isCreateur' => $isCreateur,
+                'isAssigne'  => $isAssigne,
+            ]);
         }
 
-        if (!$isCreateur && !$isAssigne && !$isSENTask && $agent?->departement_id) {
+        if (!$isCreateur && !$isAssigne && $agent?->departement_id) {
             $role = strtolower($user->role?->nom_role ?? '');
             $isDept = in_array($role, ['directeur', 'directeur de département', 'daf', 'assistant', 'assistant de département'])
                    || str_starts_with($role, 'assistant');
             if ($isDept) {
-                $taskAgentForDept = isset($taskAgent) ? $taskAgent : Agent::find($tache->agent_id);
-                $isDeptManager = $taskAgentForDept && $taskAgentForDept->departement_id === $agent->departement_id;
+                $taskAgent = Agent::find($tache->agent_id);
+                $isDeptManager = $taskAgent && $taskAgent->departement_id === $agent->departement_id;
             }
         }
 
-        if (!$isCreateur && !$isAssigne && !$isSENTask && !$isDeptManager) {
+        if (!$isCreateur && !$isAssigne && !$isDeptManager) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
