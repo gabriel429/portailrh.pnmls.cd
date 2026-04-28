@@ -31,16 +31,22 @@ class TacheController extends ApiController
         $isDirecteur = app(RoleService::class)->hasDirecteurOrDafRole($user);
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
+        // Personnel SEN (assistants, secrétaires) : accès aux tâches SEN
+        $isSENStaff = false;
+        if (!$isSENOrSENA && $agent) {
+            $isSENStaff = ($agent->organe ?? '') === 'Secrétariat Exécutif National';
+        }
+
         $mesTachesQuery = $agent
             ? Tache::query()->parAgent($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
-        $tachesCreeesQuery = (($isDirecteur || $isSENOrSENA) && $agent)
+        $tachesCreeesQuery = (($isDirecteur || $isSENOrSENA || $isSENStaff) && $agent)
             ? Tache::query()->parCreateur($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
-        // Scope SEN : toutes les tâches des agents du SEN (pour SEN/SENA).
-        if ($request->input('scope') === 'sen' && $isSENOrSENA) {
+        // Scope SEN : toutes les tâches des agents du SEN (pour SEN/SENA et personnel SEN).
+        if ($request->input('scope') === 'sen' && ($isSENOrSENA || $isSENStaff)) {
             $senOrgane   = 'Secrétariat Exécutif National';
             $senAgentIds = Agent::where('organe', $senOrgane)->pluck('id');
             $senTaches   = Tache::query()
@@ -282,6 +288,15 @@ class TacheController extends ApiController
         // SEN/SENA : accès à toutes les tâches des agents du SEN (pas besoin d'agent record)
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
+        // Vérification élargie pour les assistants/secrétaires du SEN/SENA
+        // On regarde l'organe de l'agent connecté plutôt que le nom exact du rôle
+        $isSENStaff = false;
+        if (!$isSENOrSENA && $agent) {
+            // Vérifie si l'agent est au Secrétariat Exécutif National (SEN)
+            $agentOrgane = $agent->organe ?? '';
+            $isSENStaff = $agentOrgane === 'Secrétariat Exécutif National';
+        }
+
         if (!$agent && !$isSENOrSENA) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
@@ -290,8 +305,8 @@ class TacheController extends ApiController
         $isAssigne    = $agent && $tache->agent_id    === $agent->id;
         $isDeptManager = false;
 
-        // SEN/SENA : accès garanti à toutes les tâches (ils sont gestionnaires nationaux)
-        if ($isSENOrSENA) {
+        // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
+        if ($isSENOrSENA || $isSENStaff) {
             $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
             return $this->resource(TacheResource::make($tache), [
                 'isCreateur' => $isCreateur,
