@@ -502,9 +502,13 @@ class TacheController extends ApiController
 
     protected function storeDocumentForTache(Tache $tache, Agent $agent, $uploadedFile, string $typeDocument, ?TacheCommentaire $commentaire = null): TacheDocument
     {
-        $extension = $uploadedFile->getClientOriginalExtension();
-        $filename = Str::uuid() . ($extension ? '.' . $extension : '');
-        $directory = public_path('uploads/taches');
+        $extension   = $uploadedFile->getClientOriginalExtension();
+        $filename    = Str::uuid() . ($extension ? '.' . $extension : '');
+        $directory   = public_path('uploads/taches');
+        $mimeType    = $uploadedFile->getMimeType();
+        $taille      = $uploadedFile->getSize();
+        $nomOriginal = $uploadedFile->getClientOriginalName();
+
         if (!is_dir($directory)) {
             mkdir($directory, 0755, true);
         }
@@ -516,11 +520,11 @@ class TacheController extends ApiController
             'agent_id' => $agent->id,
             'tache_commentaire_id' => $commentaire?->id,
             'type_document' => $typeDocument,
-            'titre' => pathinfo($uploadedFile->getClientOriginalName(), PATHINFO_FILENAME),
+            'titre' => pathinfo($nomOriginal, PATHINFO_FILENAME),
             'fichier' => 'uploads/taches/' . $filename,
-            'nom_original' => $uploadedFile->getClientOriginalName(),
-            'mime_type' => $uploadedFile->getMimeType(),
-            'taille' => $uploadedFile->getSize(),
+            'nom_original' => $nomOriginal,
+            'mime_type' => $mimeType,
+            'taille' => $taille,
         ]);
     }
 
