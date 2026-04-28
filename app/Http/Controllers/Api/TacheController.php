@@ -486,18 +486,25 @@ class TacheController extends ApiController
         $isCreateur  = $agent && $tache->createur_id === $agent->id;
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
+        // Vérification élargie pour les assistants/secrétaires du SEN/SENA
+        $isSENStaff = false;
+        if (!$isSENOrSENA && $agent) {
+            $agentOrgane = $agent->organe ?? '';
+            $isSENStaff = $agentOrgane === 'Secrétariat Exécutif National';
+        }
+
         $isSENTask = false;
-        if ($isSENOrSENA && $tache->agent_id) {
+        if (($isSENOrSENA || $isSENStaff) && $tache->agent_id) {
             $isSENTask = Agent::where('id', $tache->agent_id)
                 ->where('organe', 'Secrétariat Exécutif National')
                 ->exists();
         }
 
-        if (!$isCreateur && !($isSENOrSENA && $isSENTask)) {
+        if (!$isCreateur && !(($isSENOrSENA || $isSENStaff) && $isSENTask)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        if ($tache->statut === 'terminee' && !$isSENOrSENA) {
+        if ($tache->statut === 'terminee' && !($isSENOrSENA || $isSENStaff)) {
             return response()->json(['message' => 'Impossible de supprimer une tâche terminée.'], 422);
         }
 
