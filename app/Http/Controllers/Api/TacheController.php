@@ -157,7 +157,7 @@ class TacheController extends ApiController
                 ->where('organe', $senOrgane)
                 ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'id_agent'])
+                ->get(['id', 'nom', 'prenom'])
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
 
             $activitesPta = ActivitePlan::query()
@@ -175,7 +175,7 @@ class TacheController extends ApiController
                 ->where('departement_id', $agent->departement_id)
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'id_agent'])
+                ->get(['id', 'nom', 'prenom'])
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
 
             $activitesPta = ActivitePlan::query()
