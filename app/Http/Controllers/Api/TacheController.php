@@ -308,9 +308,24 @@ class TacheController extends ApiController
         // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
         if ($isSENOrSENA || $isSENStaff) {
             $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
-            return $this->resource(TacheResource::make($tache), [
+            $resource = TacheResource::make($tache);
+            $resolved = $resource->resolve();
+            return $this->resource($resource, [
                 'isCreateur' => $isCreateur,
                 'isAssigne'  => $isAssigne,
+                'debug' => [
+                    'createur_exists' => !is_null($tache->createur),
+                    'agent_exists' => !is_null($tache->agent),
+                    'createur_id' => $tache->createur_id,
+                    'agent_id' => $tache->agent_id,
+                    'has_nom_complet_createur' => $tache->createur ? isset($tache->createur->nom_complet) : false,
+                    'has_nom_complet_agent' => $tache->agent ? isset($tache->agent->nom_complet) : false,
+                    'resolved_keys' => array_keys($resolved),
+                    'createur_key_exists' => array_key_exists('createur', $resolved),
+                    'agent_key_exists' => array_key_exists('agent', $resolved),
+                    'createur_value' => $resolved['createur'] ?? null,
+                    'agent_value' => $resolved['agent'] ?? null,
+                ],
             ], [
                 'isCreateur' => $isCreateur,
                 'isAssigne'  => $isAssigne,
