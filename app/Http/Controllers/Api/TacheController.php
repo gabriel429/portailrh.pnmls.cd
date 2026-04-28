@@ -328,15 +328,22 @@ class TacheController extends ApiController
     }
 
     /**
-     * Update the status of a tache (assigned agent only).
+     * Update the status of a tache (assigned agent or SEN/SENA).
      */
     public function updateStatut(Request $request, Tache $tache): JsonResponse
     {
-        $user = $request->user();
-        $agent = $user->agent;
+        $user        = $request->user();
+        $agent       = $user->agent;
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
-        if (!$agent || $tache->agent_id !== $agent->id) {
+        $isAssigne = $agent && $tache->agent_id === $agent->id;
+
+        if (!$isAssigne && !$isSENOrSENA) {
             return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        if (!$agent) {
+            return response()->json(['message' => 'Vous devez être enregistré comme agent pour effectuer cette action.'], 422);
         }
 
         $validated = $request->validate([

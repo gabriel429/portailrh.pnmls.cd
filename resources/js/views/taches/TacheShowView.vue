@@ -16,6 +16,7 @@
             </div>
             <div class="col-lg-4">
               <div class="hero-tools">
+                <span v-if="isOverdue" class="badge bg-danger me-2"><i class="fas fa-clock me-1"></i>En retard</span>
                 <router-link :to="{ name: 'taches.index' }" class="btn-rh alt">
                   <i class="fas fa-arrow-left me-1"></i> Retour
                 </router-link>
@@ -132,8 +133,8 @@
               </div>
             </div>
 
-            <!-- Formulaire changement de statut (agent assigne uniquement) -->
-            <div v-if="isAssigne && tache.statut !== 'terminee'" class="dash-panel mt-3">
+            <!-- Formulaire changement de statut (agent assigné, SEN, SENA, créateur) -->
+            <div v-if="(isAssigne || canManage) && tache.statut !== 'terminee'" class="dash-panel mt-3">
               <header class="panel-head">
                 <div>
                   <h3 class="panel-title"><i class="fas fa-exchange-alt me-2 text-warning"></i>Mettre à jour le statut</h3>
