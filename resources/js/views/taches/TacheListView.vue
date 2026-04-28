@@ -97,7 +97,7 @@
                   <td>
                     <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
                     <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
-                    <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
+                    <br v-if="t.activite_plan"><small v-if="t.activite_plan" class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
                   <td>{{ (showAssignedByMe || isDeptScope || isSENScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
