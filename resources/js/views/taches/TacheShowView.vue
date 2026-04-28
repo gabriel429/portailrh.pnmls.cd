@@ -321,7 +321,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -370,6 +370,8 @@ const statusDocumentName = computed(() => statusDocument.value?.name || '')
 async function loadTache() {
   try {
     const { data } = await get(route.params.id)
+    // DEBUG TEMPORAIRE - à supprimer après diagnostic
+    console.log('[TacheShow] API response:', JSON.stringify({ keys: Object.keys(data || {}), data_keys: Object.keys(data?.data || {}), titre: data?.data?.titre, statut: data?.data?.statut }))
     tache.value = data.data
     isCreateur.value = data.isCreateur
     isAssigne.value = data.isAssigne
@@ -384,6 +386,17 @@ async function loadTache() {
     loading.value = false
   }
 }
+
+onMounted(() => loadTache())
+
+// Re-charger si navigation SPA entre deux taches (Vue Router réutilise le composant)
+watch(() => route.params.id, (newId, oldId) => {
+  if (newId && newId !== oldId) {
+    tache.value = null
+    loading.value = true
+    loadTache()
+  }
+})
 
 async function handleUpdateStatut() {
   updatingStatut.value = true
@@ -511,7 +524,7 @@ async function handleEdit() {
   saving.value = true
   try {
     const { data } = await update(route.params.id, editForm.value)
-    tache.value = data.data?.data ?? data.tache ?? tache.value
+    tache.value = data.data?.tache ?? tache.value
     showEditPanel.value = false
     ui.addToast('Tâche mise à jour.', 'success')
   } catch (err) {
