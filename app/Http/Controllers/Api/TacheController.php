@@ -236,9 +236,17 @@ class TacheController extends ApiController
                 return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents du SEN.'], 403);
             }
         } else {
+            if (!$agent) {
+                return response()->json(['message' => 'Vous devez être affecté à un agent pour créer des tâches.'], 422);
+            }
             if ($targetAgent->departement_id !== $agent->departement_id) {
                 return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre departement.'], 403);
             }
+        }
+
+        // createur_id : utilise l'agent SEN/SENA s'il existe, sinon l'agent du département
+        if (!$agent) {
+            return response()->json(['message' => 'Vous devez être enregistré comme agent pour créer des tâches.'], 422);
         }
 
         $validated['createur_id'] = $agent->id;
@@ -271,23 +279,24 @@ class TacheController extends ApiController
         $user  = $request->user();
         $agent = $user->agent;
 
-        if (!$agent) {
+        // SEN/SENA : accès à toutes les tâches des agents du SEN (pas besoin d'agent record)
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+
+        if (!$agent && !$isSENOrSENA) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $isCreateur   = $tache->createur_id === $agent->id;
-        $isAssigne    = $tache->agent_id    === $agent->id;
+        $isCreateur   = $agent && $tache->createur_id === $agent->id;
+        $isAssigne    = $agent && $tache->agent_id    === $agent->id;
         $isDeptManager = false;
 
-        // SEN/SENA : accès à toutes les tâches des agents du SEN
-        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
-        $isSENTask   = false;
+        $isSENTask = false;
         if ($isSENOrSENA) {
             $taskAgent = Agent::find($tache->agent_id);
             $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
         }
 
-        if (!$isCreateur && !$isAssigne && !$isSENTask && $agent->departement_id) {
+        if (!$isCreateur && !$isAssigne && !$isSENTask && $agent?->departement_id) {
             $role = strtolower($user->role?->nom_role ?? '');
             $isDept = in_array($role, ['directeur', 'directeur de département', 'daf', 'assistant', 'assistant de département'])
                    || str_starts_with($role, 'assistant');
