@@ -117,59 +117,68 @@ class TacheController extends ApiController
     }
 
     /**
-     * Return agents in the same department (for task creation).
+     * Return agents available for task creation.
+     * - Directeur/DAF: agents in their department.
+     * - SEN/SENA: all agents of the SEN organe.
      */
     public function create(Request $request): JsonResponse
     {
-        $user = $request->user();
-        if (!app(RoleService::class)->hasDirecteurOrDafRole($user)) {
+        $user  = $request->user();
+        $roles = app(RoleService::class);
+
+        if (!$roles->hasTacheManagerRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $agent = $user->agent;
-        if (!$agent || !$agent->departement_id) {
-            return response()->json([
-                'message' => 'Vous devez etre affecte a un departement pour creer des taches.',
-            ], 422);
+        $agent       = $user->agent;
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+
+        if ($isSENOrSENA) {
+            $senOrgane         = 'Secrétariat Exécutif National';
+            $agentsDisponibles = Agent::actifs()
+                ->where('organe', $senOrgane)
+                ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'prenom', 'id_agent'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+
+            $activitesPta = ActivitePlan::query()
+                ->where('annee', now()->year)
+                ->where('niveau_administratif', 'SEN')
+                ->orderBy('titre')
+                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+                ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
+        } else {
+            if (!$agent || !$agent->departement_id) {
+                return response()->json(['message' => 'Vous devez etre affecte a un departement pour creer des taches.'], 422);
+            }
+
+            $agentsDisponibles = Agent::actifs()
+                ->where('departement_id', $agent->departement_id)
+                ->where('id', '!=', $agent->id)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'prenom', 'id_agent'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+
+            $activitesPta = ActivitePlan::query()
+                ->where('annee', now()->year)
+                ->when($agent->departement_id, fn($q) => $q->where('departement_id', $agent->departement_id))
+                ->when(!$agent->departement_id && $agent->province_id, fn($q) => $q->where('province_id', $agent->province_id))
+                ->orderBy('titre')
+                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+                ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
         }
 
-        $agentsDuDepartement = Agent::actifs()
-            ->where('departement_id', $agent->departement_id)
-            ->where('id', '!=', $agent->id)
-            ->orderBy('nom')
-            ->get(['id', 'nom', 'prenom'])
-            ->map(fn($a) => [
-                'id' => $a->id,
-                'nom' => $a->nom,
-                'prenom' => $a->prenom,
-                'id_agent' => $a->id_agent,
-            ]);
-
-        $activitesPta = ActivitePlan::query()
-            ->where('annee', now()->year)
-            ->when($agent->departement_id, fn($query) => $query->where('departement_id', $agent->departement_id))
-            ->when(!$agent->departement_id && $agent->province_id, fn($query) => $query->where('province_id', $agent->province_id))
-            ->orderBy('titre')
-            ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
-            ->map(function ($activite) {
-                return [
-                    'id' => $activite->id,
-                    'titre' => $activite->titre,
-                    'annee' => $activite->annee,
-                    'trimestre' => $activite->trimestre,
-                    'niveau_administratif' => $activite->niveau_administratif,
-                ];
-            });
-
         return $this->success([
-            'agents' => $agentsDuDepartement,
-            'activites_pta' => $activitesPta,
+            'agents'          => $agentsDisponibles,
+            'activites_pta'   => $activitesPta,
+            'isSENScope'      => $isSENOrSENA,
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
-                ['value' => 'sen', 'label' => 'SEN'],
-                ['value' => 'sep', 'label' => 'SEP'],
-                ['value' => 'sel', 'label' => 'SEL'],
-                ['value' => 'autre', 'label' => 'Autre'],
+                ['value' => 'sen',       'label' => 'SEN'],
+                ['value' => 'sep',       'label' => 'SEP'],
+                ['value' => 'sel',       'label' => 'SEL'],
+                ['value' => 'autre',     'label' => 'Autre'],
             ],
         ]);
     }
@@ -179,32 +188,39 @@ class TacheController extends ApiController
      */
     public function store(Request $request): JsonResponse
     {
-        $user = $request->user();
-        if (!app(RoleService::class)->hasDirecteurOrDafRole($user)) {
+        $user  = $request->user();
+        $roles = app(RoleService::class);
+
+        if (!$roles->hasTacheManagerRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
         $validated = $request->validate([
-            'agent_id'      => 'required|exists:agents,id',
-            'titre'         => 'required|string|max:255',
-            'description'   => 'nullable|string',
-            'source_type'   => 'required|in:pta,hors_pta',
+            'agent_id'        => 'required|exists:agents,id',
+            'titre'           => 'required|string|max:255',
+            'description'     => 'nullable|string',
+            'source_type'     => 'required|in:pta,hors_pta',
             'source_emetteur' => 'required|in:directeur,sen,sep,sel,autre',
-            'activite_plan_id' => 'nullable|required_if:source_type,pta|exists:activite_plans,id',
-            'priorite'      => 'required|in:normale,haute,urgente',
-            'date_echeance' => 'nullable|date',
-            'date_tache'    => 'nullable|date',
-            'documents' => 'nullable|array',
-            'documents.*' => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
+            'activite_plan_id'=> 'nullable|required_if:source_type,pta|exists:activite_plans,id',
+            'priorite'        => 'required|in:normale,haute,urgente',
+            'date_echeance'   => 'nullable|date',
+            'date_tache'      => 'nullable|date',
+            'documents'       => 'nullable|array',
+            'documents.*'     => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
         ]);
 
-        $agent = $user->agent;
+        $agent       = $user->agent;
         $targetAgent = Agent::findOrFail($validated['agent_id']);
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
-        if ($targetAgent->departement_id !== $agent->departement_id) {
-            return response()->json([
-                'message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre departement.',
-            ], 403);
+        if ($isSENOrSENA) {
+            if ($targetAgent->organe !== 'Secrétariat Exécutif National') {
+                return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents du SEN.'], 403);
+            }
+        } else {
+            if ($targetAgent->departement_id !== $agent->departement_id) {
+                return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre departement.'], 403);
+            }
         }
 
         $validated['createur_id'] = $agent->id;
@@ -245,17 +261,25 @@ class TacheController extends ApiController
         $isAssigne    = $tache->agent_id    === $agent->id;
         $isDeptManager = false;
 
-        if (!$isCreateur && !$isAssigne && $agent->departement_id) {
+        // SEN/SENA : accès à toutes les tâches des agents du SEN
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+        $isSENTask   = false;
+        if ($isSENOrSENA) {
+            $taskAgent = Agent::find($tache->agent_id);
+            $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
+        }
+
+        if (!$isCreateur && !$isAssigne && !$isSENTask && $agent->departement_id) {
             $role = strtolower($user->role?->nom_role ?? '');
             $isDept = in_array($role, ['directeur', 'directeur de département', 'daf', 'assistant', 'assistant de département'])
                    || str_starts_with($role, 'assistant');
             if ($isDept) {
-                $taskAgent = Agent::find($tache->agent_id);
-                $isDeptManager = $taskAgent && $taskAgent->departement_id === $agent->departement_id;
+                $taskAgentForDept = isset($taskAgent) ? $taskAgent : Agent::find($tache->agent_id);
+                $isDeptManager = $taskAgentForDept && $taskAgentForDept->departement_id === $agent->departement_id;
             }
         }
 
-        if (!$isCreateur && !$isAssigne && !$isDeptManager) {
+        if (!$isCreateur && !$isAssigne && !$isSENTask && !$isDeptManager) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -340,6 +364,72 @@ class TacheController extends ApiController
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour avec succes.',
         ]);
+    }
+
+    /**
+     * Update editable fields of a tache (createur, SEN, SENA).
+     */
+    public function update(Request $request, Tache $tache): JsonResponse
+    {
+        $user  = $request->user();
+        $agent = $user->agent;
+
+        $isCreateur  = $agent && $tache->createur_id === $agent->id;
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+
+        if ($isSENOrSENA) {
+            $taskAgent = Agent::find($tache->agent_id);
+            $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
+        }
+
+        if (!$isCreateur && !($isSENOrSENA && ($isSENTask ?? false))) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $validated = $request->validate([
+            'titre'           => 'sometimes|required|string|max:255',
+            'description'     => 'nullable|string',
+            'priorite'        => 'sometimes|required|in:normale,haute,urgente',
+            'date_echeance'   => 'nullable|date',
+            'date_tache'      => 'nullable|date',
+            'source_emetteur' => 'sometimes|required|in:directeur,sen,sep,sel,autre',
+        ]);
+
+        $tache->update($validated);
+
+        return $this->success([
+            'tache'   => TacheResource::make($tache->fresh(['createur', 'agent', 'activitePlan'])),
+            'message' => 'Tâche mise à jour avec succès.',
+        ]);
+    }
+
+    /**
+     * Delete a tache (SENA/SEN only, or createur for non-terminee tasks).
+     */
+    public function destroy(Request $request, Tache $tache): JsonResponse
+    {
+        $user  = $request->user();
+        $agent = $user->agent;
+
+        $isCreateur  = $agent && $tache->createur_id === $agent->id;
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+
+        if ($isSENOrSENA) {
+            $taskAgent = Agent::find($tache->agent_id);
+            $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
+        }
+
+        if (!$isCreateur && !($isSENOrSENA && ($isSENTask ?? false))) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        if ($tache->statut === 'terminee' && !$isSENOrSENA) {
+            return response()->json(['message' => 'Impossible de supprimer une tâche terminée.'], 422);
+        }
+
+        $tache->delete();
+
+        return response()->json(null, 204);
     }
 
     /**

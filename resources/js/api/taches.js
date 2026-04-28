@@ -44,3 +44,11 @@ export function updateStatut(id, data) {
 export function addCommentaire(id, data) {
     return client.post(`/taches/${id}/commentaire`, data)
 }
+
+export function update(id, data) {
+    return client.put(`/taches/${id}`, data)
+}
+
+export function destroy(id) {
+    return client.delete(`/taches/${id}`)
+}

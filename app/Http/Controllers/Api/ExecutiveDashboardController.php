@@ -160,6 +160,19 @@ class ExecutiveDashboardController extends ApiController
             ->where('date_echeance', '<', $now->toDateString())
             ->count();
 
+        // ─── AGENDA : tâches SEN avec échéance dans 7 jours ──
+        $senOrgane     = 'Secrétariat Exécutif National';
+        $senAgentIds   = Agent::where('organe', $senOrgane)->pluck('id');
+        $nextWeek      = $now->copy()->addDays(7);
+        $upcomingDeadlines = Tache::whereIn('agent_id', $senAgentIds)
+            ->whereNotIn('statut', ['terminee'])
+            ->whereNotNull('date_echeance')
+            ->whereBetween('date_echeance', [$now->toDateString(), $nextWeek->toDateString()])
+            ->with('agent:id,nom,prenom')
+            ->orderBy('date_echeance')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
+
         // ─── PLAN DE TRAVAIL ───
         $planQuery = ActivitePlan::parAnnee($currentYear);
         $planTotal = (clone $planQuery)->count();
@@ -526,6 +539,7 @@ class ExecutiveDashboardController extends ApiController
                 'terminee' => $tachesTerminee,
                 'overdue' => $tachesOverdue,
             ],
+            'upcoming_deadlines' => $upcomingDeadlines,
             'plan_travail' => [
                 'total' => $planTotal,
                 'planifiee' => $planPlanifiee,

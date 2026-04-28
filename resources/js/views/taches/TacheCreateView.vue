@@ -5,7 +5,7 @@
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Tâche</h1>
-            <p class="rh-sub">Assigner une tâche à un agent de votre département.</p>
+            <p class="rh-sub">Assigner une tâche à un agent de votre département ou du SEN.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -183,7 +183,7 @@ async function loadAgents() {
     sourceEmetteurs.value = data.data.source_emetteurs || []
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Accès refusé. Seuls les directeurs peuvent créer des tâches.', 'danger')
+      ui.addToast('Accès refusé. Seuls les directeurs, DAF et l\'assistante du SEN peuvent créer des tâches.', 'danger')
       router.push({ name: 'taches.index' })
     } else {
       ui.addToast(err.response?.data?.message || 'Erreur lors du chargement.', 'danger')

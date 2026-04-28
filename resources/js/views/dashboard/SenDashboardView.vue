@@ -629,6 +629,48 @@
         </div>
       </div>
 
+      <!-- ═══ AGENDA : ÉCHÉANCES À VENIR ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fef9c3;color:#ca8a04;">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Agenda — Échéances à venir</h3>
+            <p class="sen-section-sub">Tâches SEN avec échéance dans les 7 prochains jours</p>
+          </div>
+          <router-link to="/taches" class="sen-section-btn ms-auto">
+            Tout voir <i class="fas fa-arrow-right ms-1"></i>
+          </router-link>
+        </div>
+        <div v-if="!(data.upcoming_deadlines?.length)" class="sen-empty-state">
+          <i class="fas fa-calendar-check sen-empty-icon"></i>
+          <span>Aucune échéance imminente.</span>
+        </div>
+        <div v-else class="sen-agenda-list">
+          <div v-for="t in data.upcoming_deadlines" :key="t.id"
+            class="sen-agenda-row"
+            :class="senAgendaDaysUntil(t.date_echeance) <= 1 ? 'sen-agenda-urgent' : ''">
+            <div class="sen-agenda-date-block">
+              <div class="sen-agenda-day">{{ senAgendaDay(t.date_echeance) }}</div>
+              <div class="sen-agenda-month">{{ senAgendaMonth(t.date_echeance) }}</div>
+            </div>
+            <div class="sen-agenda-info">
+              <router-link :to="`/taches/${t.id}`" class="sen-agenda-title">{{ t.titre }}</router-link>
+              <div class="sen-agenda-meta">
+                <span v-if="t.agent" class="sen-agenda-agent">
+                  <i class="fas fa-user-circle me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
+                </span>
+              </div>
+            </div>
+            <div class="sen-agenda-badge"
+              :class="senAgendaDaysUntil(t.date_echeance) <= 1 ? 'sen-agenda-badge-urgent' : 'sen-agenda-badge-normal'">
+              {{ senAgendaDaysUntil(t.date_echeance) === 0 ? "Aujourd'hui" : senAgendaDaysUntil(t.date_echeance) === 1 ? 'Demain' : `J-${senAgendaDaysUntil(t.date_echeance)}` }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ DRILL-DOWN MODAL ═══ -->
       <Teleport to="body">
         <Transition name="drill-fade">
@@ -1856,6 +1898,15 @@ function formatTime(iso) {
   return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+// ─── Agenda helpers ───────────────────────────────────────
+function senAgendaDay(dateStr)   { return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit' }) }
+function senAgendaMonth(dateStr) { return new Date(dateStr).toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '') }
+function senAgendaDaysUntil(dateStr) {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const due   = new Date(dateStr); due.setHours(0, 0, 0, 0)
+  return Math.max(0, Math.round((due - today) / 86400000))
+}
+
 const loadError = ref(null)
 
 onMounted(async () => {
@@ -2137,6 +2188,38 @@ onMounted(async () => {
   background: linear-gradient(90deg, #7c3aed, #a78bfa); transition: width .8s ease;
 }
 .sen-task-progress-lbl { font-size: .65rem; color: #94a3b8; margin-top: .25rem; text-align: right; }
+
+/* ═══════════ AGENDA ═══════════ */
+.sen-empty-state { display: flex; align-items: center; gap: .6rem; padding: 1.5rem; color: #94a3b8; font-size: .85rem; }
+.sen-empty-icon { font-size: 1.2rem; }
+.sen-agenda-list { display: flex; flex-direction: column; gap: .45rem; margin-top: .5rem; }
+.sen-agenda-row {
+  display: flex; align-items: center; gap: .85rem;
+  background: #fff; border: 1px solid #e5e7eb;
+  border-radius: 12px; padding: .65rem .9rem;
+  transition: box-shadow .15s;
+}
+.sen-agenda-row:hover { box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+.sen-agenda-urgent { border-color: #fca5a5; background: #fef2f2; }
+.sen-agenda-date-block {
+  min-width: 38px; text-align: center;
+  background: #f8fafc; border: 1px solid #e5e7eb;
+  border-radius: 8px; padding: .3rem .4rem; flex-shrink: 0;
+}
+.sen-agenda-urgent .sen-agenda-date-block { background: #fee2e2; border-color: #fca5a5; }
+.sen-agenda-day   { font-size: 1rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.sen-agenda-month { font-size: .6rem; text-transform: uppercase; color: #64748b; font-weight: 600; letter-spacing: .4px; }
+.sen-agenda-info  { flex: 1; min-width: 0; }
+.sen-agenda-title { font-size: .82rem; font-weight: 600; color: #1e293b; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sen-agenda-title:hover { color: #0077B5; }
+.sen-agenda-meta  { display: flex; align-items: center; gap: .5rem; margin-top: .15rem; flex-wrap: wrap; }
+.sen-agenda-agent { font-size: .7rem; color: #64748b; }
+.sen-agenda-badge {
+  flex-shrink: 0; font-size: .65rem; font-weight: 700;
+  padding: .22rem .55rem; border-radius: 20px; white-space: nowrap;
+}
+.sen-agenda-badge-normal { background: #e0f2fe; color: #0369a1; }
+.sen-agenda-badge-urgent { background: #fee2e2; color: #b91c1c; }
 
 /* ═══════════ AUDIT COMPACT (in duo) ═══════════ */
 .sen-audit-compact {

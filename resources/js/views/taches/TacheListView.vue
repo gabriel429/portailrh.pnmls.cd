@@ -7,7 +7,7 @@
             <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ pageTitle }}</h1>
             <p class="rh-sub">{{ pageSubtitle }}</p>
           </div>
-          <div v-if="isDirecteur" class="col-lg-4">
+          <div v-if="isDirecteur || auth.isSENA" class="col-lg-4">
             <div class="hero-tools">
               <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
                 <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
@@ -126,12 +126,14 @@
 import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import { list } from '@/api/taches'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
 const ui = useUiStore()
+const auth = useAuthStore()
 const loading = ref(true)
 const mesTaches = ref([])
 const tachesCreees = ref([])

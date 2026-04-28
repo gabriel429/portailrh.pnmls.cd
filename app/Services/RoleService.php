@@ -40,6 +40,26 @@ class RoleService
     }
 
     /**
+     * Vérifie si l'utilisateur est SENA (assistante de direction du SEN).
+     */
+    public function hasSENARole(?User $user): bool
+    {
+        if (!$user) return false;
+        return $user->hasRole('SENA');
+    }
+
+    /**
+     * Vérifie si l'utilisateur peut créer/gérer des tâches (Directeur, DAF, SEN, SENA).
+     */
+    public function hasTacheManagerRole(?User $user): bool
+    {
+        if (!$user) return false;
+        return $this->hasDirecteurOrDafRole($user)
+            || $user->hasRole('SEN')
+            || $user->hasRole('SENA');
+    }
+
+    /**
      * Vérifie si le département de l'agent est le DAF (via le code du département).
      * Utile pour les directeurs qui n'ont pas explicitement le rôle DAF.
      */

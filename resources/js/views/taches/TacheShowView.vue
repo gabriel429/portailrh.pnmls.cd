@@ -19,6 +19,14 @@
                 <router-link :to="{ name: 'taches.index' }" class="btn-rh alt">
                   <i class="fas fa-arrow-left me-1"></i> Retour
                 </router-link>
+                <template v-if="canManage && tache.statut !== 'terminee'">
+                  <button class="btn-rh main" @click="openEditPanel">
+                    <i class="fas fa-edit me-1"></i> Modifier
+                  </button>
+                  <button class="btn-rh danger" :disabled="deleting" @click="handleDelete">
+                    <i class="fas fa-trash me-1"></i> Supprimer
+                  </button>
+                </template>
               </div>
             </div>
           </div>
@@ -243,6 +251,63 @@
           </div>
         </div>
       </template>
+
+      <!-- ═══ PANNEAU MODIFICATION (SENA / créateur) ═══ -->
+      <div v-if="showEditPanel" class="modal-backdrop-overlay" @click.self="showEditPanel = false">
+        <div class="edit-tache-panel">
+          <div class="edit-tache-head">
+            <h5><i class="fas fa-edit me-2"></i>Modifier la tâche</h5>
+            <button class="btn-close" @click="showEditPanel = false"></button>
+          </div>
+          <div class="edit-tache-body">
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Titre *</label>
+              <input v-model="editForm.titre" type="text" class="form-control" />
+            </div>
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Description</label>
+              <textarea v-model="editForm.description" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold">Priorité</label>
+                <select v-model="editForm.priorite" class="form-select">
+                  <option value="normale">Normale</option>
+                  <option value="haute">Haute</option>
+                  <option value="urgente">Urgente</option>
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold">Source émetteur</label>
+                <select v-model="editForm.source_emetteur" class="form-select">
+                  <option value="directeur">Directeur</option>
+                  <option value="sen">SEN</option>
+                  <option value="sep">SEP</option>
+                  <option value="sel">SEL</option>
+                  <option value="autre">Autre</option>
+                </select>
+              </div>
+            </div>
+            <div class="row g-3 mb-3">
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold">Échéance</label>
+                <input v-model="editForm.date_echeance" type="date" class="form-control" />
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label fw-semibold">Date de la tâche</label>
+                <input v-model="editForm.date_tache" type="date" class="form-control" />
+              </div>
+            </div>
+            <div class="d-flex gap-2 justify-content-end">
+              <button class="btn btn-outline-secondary" @click="showEditPanel = false">Annuler</button>
+              <button class="btn btn-primary" :disabled="saving" @click="handleEdit">
+                <i class="fas fa-save me-1"></i>{{ saving ? 'Enregistrement...' : 'Enregistrer' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-else class="text-center py-5">
         <i class="fas fa-lock fa-3x text-muted mb-3 d-block"></i>
         <p class="text-muted">Tâche introuvable ou accès refusé.</p>
@@ -258,12 +323,14 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { get, updateStatut, addCommentaire } from '@/api/taches'
+import { useAuthStore } from '@/stores/auth'
+import { get, updateStatut, addCommentaire, update, destroy } from '@/api/taches'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
 const ui = useUiStore()
+const auth = useAuthStore()
 
 const loading = ref(true)
 const tache = ref(null)
@@ -419,6 +486,52 @@ function sourceEmetteurLabel(source) {
 }
 
 onMounted(() => loadTache())
+
+/* ── Edition / Suppression (SENA / créateur) ── */
+const canManage = computed(() => auth.isSENA || auth.isSEN || isCreateur.value)
+const showEditPanel = ref(false)
+const saving = ref(false)
+const deleting = ref(false)
+const editForm = ref({ titre: '', description: '', priorite: 'normale', date_echeance: '', date_tache: '', source_emetteur: '' })
+
+function openEditPanel() {
+  editForm.value = {
+    titre:          tache.value.titre          || '',
+    description:    tache.value.description    || '',
+    priorite:       tache.value.priorite       || 'normale',
+    date_echeance:  tache.value.date_echeance  ? tache.value.date_echeance.substring(0, 10) : '',
+    date_tache:     tache.value.date_tache     ? tache.value.date_tache.substring(0, 10) : '',
+    source_emetteur: tache.value.source_emetteur || '',
+  }
+  showEditPanel.value = true
+}
+
+async function handleEdit() {
+  saving.value = true
+  try {
+    const { data } = await update(route.params.id, editForm.value)
+    tache.value = data.data?.data ?? data.tache ?? tache.value
+    showEditPanel.value = false
+    ui.addToast('Tâche mise à jour.', 'success')
+  } catch (err) {
+    ui.addToast(err.response?.data?.message || 'Erreur lors de la modification.', 'danger')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function handleDelete() {
+  if (!confirm('Supprimer cette tâche définitivement ?')) return
+  deleting.value = true
+  try {
+    await destroy(route.params.id)
+    ui.addToast('Tâche supprimée.', 'success')
+    router.push({ name: 'taches.index' })
+  } catch (err) {
+    ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
+    deleting.value = false
+  }
+}
 </script>
 
 <style scoped>
@@ -478,4 +591,30 @@ onMounted(() => loadTache())
     .badge { font-size: .7rem; }
   .task-progress-wrap { align-items: flex-start; flex-direction: column; }
 }
+
+/* Bouton danger hero-tools */
+.btn-rh.danger {
+  background: #ef4444; color: #fff; border: none; border-radius: 8px;
+  padding: .45rem 1rem; font-size: .85rem; cursor: pointer; font-weight: 600;
+  display: inline-flex; align-items: center; gap: .3rem;
+  transition: background .2s;
+}
+.btn-rh.danger:hover { background: #dc2626; }
+.btn-rh.danger:disabled { opacity: .6; cursor: not-allowed; }
+
+/* Panneau édition tâche */
+.modal-backdrop-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  z-index: 1050; display: flex; align-items: center; justify-content: center; padding: 1rem;
+}
+.edit-tache-panel {
+  background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,.18);
+  width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto;
+}
+.edit-tache-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 1.25rem; border-bottom: 1px solid #e5e7eb;
+}
+.edit-tache-head h5 { margin: 0; font-weight: 700; color: #1e293b; }
+.edit-tache-body { padding: 1.25rem; }
 </style>
