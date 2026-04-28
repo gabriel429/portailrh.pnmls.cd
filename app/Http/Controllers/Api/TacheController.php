@@ -29,14 +29,32 @@ class TacheController extends ApiController
         $user = $request->user();
         $agent = $user->agent;
         $isDirecteur = app(RoleService::class)->hasDirecteurOrDafRole($user);
+        $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
         $mesTachesQuery = $agent
             ? Tache::query()->parAgent($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
-        $tachesCreeesQuery = ($isDirecteur && $agent)
+        $tachesCreeesQuery = (($isDirecteur || $isSENOrSENA) && $agent)
             ? Tache::query()->parCreateur($agent->id)
             : Tache::query()->whereRaw('1 = 0');
+
+        // Scope SEN : toutes les tâches des agents du SEN (pour SEN/SENA).
+        if ($request->input('scope') === 'sen' && $isSENOrSENA) {
+            $senOrgane   = 'Secrétariat Exécutif National';
+            $senAgentIds = Agent::where('organe', $senOrgane)->pluck('id');
+            $senTaches   = Tache::query()
+                ->whereIn('agent_id', $senAgentIds)
+                ->with(['agent', 'createur', 'activitePlan', 'documents.agent'])
+                ->latest()
+                ->get();
+            $senResource = TacheResource::collection($senTaches)->resolve();
+            return $this->success(
+                ['mes_taches' => $senResource, 'taches_creees' => []],
+                ['isDirecteur' => false, 'isSENScope' => true],
+                ['mesTaches' => $senResource, 'tachesCreees' => [], 'isDirecteur' => false, 'isSENScope' => true]
+            );
+        }
 
         // Scope département : retourne toutes les tâches des agents du même département.
         // Réservé aux agents ayant un departement_id (directeurs, assistants, secrétaires).
@@ -94,7 +112,7 @@ class TacheController extends ApiController
             : collect();
 
         $tachesCreees = collect();
-        if ($isDirecteur && $agent) {
+        if (($isDirecteur || $isSENOrSENA) && $agent) {
             $tachesCreees = (clone $tachesCreeesQuery)
                 ->with(['agent', 'activitePlan', 'documents.agent'])
                 ->latest()

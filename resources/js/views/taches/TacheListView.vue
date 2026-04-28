@@ -9,12 +9,22 @@
           </div>
           <div v-if="isDirecteur || auth.isSENA" class="col-lg-4">
             <div class="hero-tools">
-              <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
-                <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
-              </router-link>
-              <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                <i class="fas fa-arrow-left me-1"></i> Retour à mes tâches
-              </router-link>
+              <template v-if="auth.isSENA">
+                <router-link v-if="!isSENScope" :to="{ name: 'taches.index', query: { scope: 'sen' } }" class="btn-rh alt">
+                  <i class="fas fa-users me-1"></i> Tâches du SEN
+                </router-link>
+                <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
+                  <i class="fas fa-arrow-left me-1"></i> Mes tâches
+                </router-link>
+              </template>
+              <template v-else>
+                <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
+                  <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
+                </router-link>
+                <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
+                  <i class="fas fa-arrow-left me-1"></i> Retour à mes tâches
+                </router-link>
+              </template>
               <router-link :to="{ name: 'taches.create' }" class="btn-rh main">
                 <i class="fas fa-plus-circle me-1"></i> Nouvelle tâche
               </router-link>
@@ -70,7 +80,7 @@
                 <tr>
                   <th>Titre</th>
                   <th>Origine</th>
-                  <th>{{ showAssignedByMe || isDeptScope ? 'Assigné à' : 'De' }}</th>
+                  <th>{{ showAssignedByMe || isDeptScope || isSENScope ? 'Assigné à' : 'De' }}</th>
                   <th>Priorité</th>
                   <th>Statut</th>
                   <th>Échéance</th>
@@ -89,7 +99,7 @@
                     <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
                     <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
-                  <td>{{ (showAssignedByMe || isDeptScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
+                  <td>{{ (showAssignedByMe || isDeptScope || isSENScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
                   <td><span :class="statutBadge(t.statut)">{{ statutLabel(t.statut) }}</span></td>
                   <td>
@@ -142,6 +152,7 @@ const sourceFilter = ref('all')
 const statusFilter = ref(route.query.statut ?? 'all')
 
 const isDeptScope = computed(() => route.query.scope === 'departement')
+const isSENScope = computed(() => route.query.scope === 'sen')
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
 watch(() => route.query.statut, (val) => {
@@ -189,32 +200,37 @@ const filteredTaches = computed(() => {
 
 const pageTitle = computed(() => {
   if (isDeptScope.value) return 'Tâches du département'
+  if (isSENScope.value) return 'Tâches du SEN'
   return showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches'
 })
 const pageSubtitle = computed(() => {
   if (isDeptScope.value) return 'Vue d\'ensemble des tâches assignées aux agents du département.'
+  if (isSENScope.value) return 'Toutes les tâches assignées aux attachés du Secrétariat Exécutif National.'
   return showAssignedByMe.value
     ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
     : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.'
 })
 const panelTitle = computed(() => {
   if (isDeptScope.value) return 'Tâches du département'
+  if (isSENScope.value) return 'Tâches du SEN'
   return showAssignedByMe.value ? 'Tâches que j\'ai assignées' : 'Tâches qui me sont assignées'
 })
 const panelSubtitle = computed(() => {
   if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
+  if (isSENScope.value) return 'Vue d\'ensemble des tâches assignées aux attachés du SEN.'
   return showAssignedByMe.value
     ? 'Liste des tâches que vous avez affectées aux agents.'
     : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.'
 })
 const emptyStateText = computed(() => {
   if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
+  if (isSENScope.value) return 'Aucune tâche SEN pour ce filtre.'
   return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
 })
 
 async function loadTaches() {
   try {
-    const params = isDeptScope.value ? { scope: 'departement' } : {}
+    const params = isDeptScope.value ? { scope: 'departement' } : isSENScope.value ? { scope: 'sen' } : {}
     const { data } = await list(params)
     mesTaches.value = data.mesTaches
     tachesCreees.value = data.tachesCreees
