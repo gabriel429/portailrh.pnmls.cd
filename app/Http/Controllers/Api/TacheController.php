@@ -291,9 +291,10 @@ class TacheController extends ApiController
         $isDeptManager = false;
 
         $isSENTask = false;
-        if ($isSENOrSENA) {
-            $taskAgent = Agent::find($tache->agent_id);
-            $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
+        if ($isSENOrSENA && $tache->agent_id) {
+            $isSENTask = Agent::where('id', $tache->agent_id)
+                ->where('organe', 'Secrétariat Exécutif National')
+                ->exists();
         }
 
         if (!$isCreateur && !$isAssigne && !$isSENTask && $agent?->departement_id) {
@@ -404,12 +405,14 @@ class TacheController extends ApiController
         $isCreateur  = $agent && $tache->createur_id === $agent->id;
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
-        if ($isSENOrSENA) {
-            $taskAgent = Agent::find($tache->agent_id);
-            $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
+        $isSENTask = false;
+        if ($isSENOrSENA && $tache->agent_id) {
+            $isSENTask = Agent::where('id', $tache->agent_id)
+                ->where('organe', 'Secrétariat Exécutif National')
+                ->exists();
         }
 
-        if (!$isCreateur && !($isSENOrSENA && ($isSENTask ?? false))) {
+        if (!$isCreateur && !($isSENOrSENA && $isSENTask)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -441,12 +444,14 @@ class TacheController extends ApiController
         $isCreateur  = $agent && $tache->createur_id === $agent->id;
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
 
-        if ($isSENOrSENA) {
-            $taskAgent = Agent::find($tache->agent_id);
-            $isSENTask = $taskAgent && $taskAgent->organe === 'Secrétariat Exécutif National';
+        $isSENTask = false;
+        if ($isSENOrSENA && $tache->agent_id) {
+            $isSENTask = Agent::where('id', $tache->agent_id)
+                ->where('organe', 'Secrétariat Exécutif National')
+                ->exists();
         }
 
-        if (!$isCreateur && !($isSENOrSENA && ($isSENTask ?? false))) {
+        if (!$isCreateur && !($isSENOrSENA && $isSENTask)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
