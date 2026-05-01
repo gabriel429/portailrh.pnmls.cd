@@ -39,12 +39,8 @@ class TacheResource extends JsonResource
                     'trimestre' => $this->activitePlan->trimestre,
                 ];
             }),
-            'createur' => $this->whenLoaded('createur', function () use ($request) {
-                return $this->createur ? AgentResource::make($this->createur)->resolve($request) : null;
-            }),
-            'agent' => $this->whenLoaded('agent', function () use ($request) {
-                return $this->agent ? AgentResource::make($this->agent)->resolve($request) : null;
-            }),
+            'createur' => $this->whenLoaded('createur', fn () => $this->createur ? AgentResource::make($this->createur) : null),
+            'agent' => $this->whenLoaded('agent', fn () => $this->agent ? AgentResource::make($this->agent) : null),
             'commentaires' => $this->whenLoaded('commentaires', function () use ($request) {
                 return $this->commentaires->map(function ($commentaire) use ($request) {
                     return [
