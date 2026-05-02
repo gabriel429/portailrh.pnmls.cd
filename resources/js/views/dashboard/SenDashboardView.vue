@@ -603,27 +603,6 @@
                   <div class="sen-audit-compact-lbl">Échecs login 24h</div>
                 </div>
               </div>
-              <div class="sen-audit-compact-list sen-clickable" @click="router.push('/admin/audit-logs')">
-                <div class="sen-audit-compact-list-head">
-                  <i class="fas fa-history"></i> Actions sensibles récentes
-                </div>
-                <template v-if="(data.audit?.actions_sensibles ?? []).length">
-                  <div v-for="a in (data.audit.actions_sensibles ?? []).slice(0, 4)" :key="a.id" class="sen-audit-compact-item">
-                    <div class="sen-audit-dot"></div>
-                    <div class="sen-audit-compact-item-info">
-                      <div class="sen-audit-compact-item-action">{{ a.action }}</div>
-                      <div class="sen-audit-compact-item-meta">
-                        <span v-if="a.user">{{ a.user }}</span>
-                        <span v-if="a.description"> · {{ a.description }}</span>
-                        <span class="sen-audit-compact-item-time">{{ formatTime(a.created_at) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </template>
-                <div v-else class="sen-audit-compact-empty">
-                  <i class="fas fa-check-circle"></i> Aucune action sensible
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -820,12 +799,12 @@
                               <span class="drill-stat-lbl">Présents</span>
                             </div>
                             <div class="drill-item-stat">
-                              <span class="drill-stat-val" style="color:#d97706;">{{ item.presence.monthly_rate }}%</span>
-                              <span class="drill-stat-lbl">Moy. mois</span>
+                              <span class="drill-stat-val" style="color:#dc2626;">{{ Math.max(0, (item.presence.total_active || 0) - (item.presence.today_present || 0)) }}</span>
+                              <span class="drill-stat-lbl">Absents</span>
                             </div>
                             <div class="drill-item-stat">
-                              <span class="drill-stat-val" style="color:#64748b;">{{ item.effectifs.actifs }}</span>
-                              <span class="drill-stat-lbl">Actifs</span>
+                              <span class="drill-stat-val" style="color:#d97706;">{{ item.presence.monthly_rate }}%</span>
+                              <span class="drill-stat-lbl">Moy. mois</span>
                             </div>
                           </template>
                           <template v-else>
@@ -1016,9 +995,16 @@
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
                           <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-name">
+                              {{ a.nom }}
+                              <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                              </span>
+                            </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                             <div class="drill-prov-agent-meta">
+                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> EntrÃ©e {{ a.heure_entree }}</span>
+                              <span v-if="a.heure_sortie"><i class="fas fa-sign-out-alt"></i> Sortie {{ a.heure_sortie }}</span>
                               <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
                               <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
                               <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
@@ -1028,6 +1014,10 @@
                             <div v-if="a.absence_observation" class="drill-prov-agent-note">
                               <i class="fas fa-comment-alt"></i>
                               <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.pointage_observation }}</span>
                             </div>
                             <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
@@ -1044,9 +1034,16 @@
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
                           <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-name">
+                              {{ a.nom }}
+                              <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                              </span>
+                            </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                             <div class="drill-prov-agent-meta">
+                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> EntrÃ©e {{ a.heure_entree }}</span>
+                              <span v-if="a.heure_sortie"><i class="fas fa-sign-out-alt"></i> Sortie {{ a.heure_sortie }}</span>
                               <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
                               <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
                               <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
@@ -1056,6 +1053,10 @@
                             <div v-if="a.absence_observation" class="drill-prov-agent-note">
                               <i class="fas fa-comment-alt"></i>
                               <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.pointage_observation }}</span>
                             </div>
                             <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
@@ -1751,7 +1752,8 @@ async function openProvinceDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
   try {
-    const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
+    const params = drilldownOrgane.value?.organe ? { organe: drilldownOrgane.value.organe } : {}
+    const { data: result } = await client.get(`/dashboard/executive/province/${id}`, { params })
     drilldownProvince.value = result.data ?? result
   } catch (e) {
     drilldownProvince.value = null
@@ -1765,7 +1767,8 @@ async function openDepartmentDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   try {
-    const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
+    const params = drilldownOrgane.value?.organe ? { organe: drilldownOrgane.value.organe } : {}
+    const { data: result } = await client.get(`/dashboard/executive/department/${id}`, { params })
     drilldownDepartment.value = result.data ?? result
   } catch (e) {
     drilldownDepartment.value = null
@@ -1806,6 +1809,32 @@ const drilldownColor = computed(() => {
   if (code === 'SEL') return '#0d9488'
   return '#0077B5'
 })
+
+function presenceStatusLabel(agent) {
+  const labels = {
+    present: 'PrÃ©sent',
+    absent: 'Absent',
+    en_conge: 'En congÃ©',
+    en_mission: 'En mission',
+    en_formation: 'En formation',
+    suspendu: 'Suspendu',
+  }
+
+  return agent?.presence_label || labels[agent?.presence_status] || 'Absent'
+}
+
+function presenceStatusIcon(agent) {
+  const icons = {
+    present: 'fas fa-check-circle',
+    absent: 'fas fa-user-times',
+    en_conge: 'fas fa-calendar-minus',
+    en_mission: 'fas fa-route',
+    en_formation: 'fas fa-graduation-cap',
+    suspendu: 'fas fa-ban',
+  }
+
+  return icons[agent?.presence_status] || 'fas fa-user-times'
+}
 
 const quickActions = [
   { to: '/rh/communiques/create?from=sen', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
@@ -2229,7 +2258,6 @@ onMounted(async () => {
 .sen-audit-compact-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
 .sen-audit-compact-stat {
   text-align: center; padding: 1rem .5rem;
-  border-bottom: 1px solid #f1f5f9;
 }
 .sen-audit-compact-stat:first-child { border-right: 1px solid #f1f5f9; }
 .sen-audit-compact-icon {
@@ -2238,23 +2266,6 @@ onMounted(async () => {
 }
 .sen-audit-compact-val { font-size: 1.4rem; font-weight: 800; color: #1e293b; line-height: 1; }
 .sen-audit-compact-lbl { font-size: .62rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .15rem; }
-
-.sen-audit-compact-list { padding: 0; }
-.sen-audit-compact-list-head {
-  padding: .7rem 1rem; font-size: .78rem; font-weight: 700; color: #475569;
-  background: #f8fafc; border-bottom: 1px solid #f1f5f9;
-}
-.sen-audit-compact-item {
-  display: flex; align-items: flex-start; gap: .5rem; padding: .55rem 1rem;
-  border-bottom: 1px solid #f8fafc; transition: background .15s;
-}
-.sen-audit-compact-item:hover { background: #fef2f2; }
-.sen-audit-compact-item-action { font-size: .74rem; font-weight: 600; color: #1e293b; }
-.sen-audit-compact-item-meta { font-size: .62rem; color: #94a3b8; margin-top: .1rem; display: flex; gap: .2rem; flex-wrap: wrap; }
-.sen-audit-compact-item-time { margin-left: auto; white-space: nowrap; }
-.sen-audit-compact-empty {
-  padding: 1.2rem 1rem; color: #94a3b8; font-size: .78rem; text-align: center;
-}
 
 /* ═══════════ EMPTY STATES (enhanced) ═══════════ */
 .sen-empty-icon-wrap {
@@ -2574,6 +2585,17 @@ onMounted(async () => {
 }
 .drill-prov-agent-info { flex: 1; min-width: 0; }
 .drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
+.drill-presence-badge {
+  display: inline-flex; align-items: center; gap: 4px; margin-left: 8px;
+  padding: 2px 7px; border-radius: 999px; font-size: .58rem; font-weight: 800;
+  vertical-align: middle; white-space: nowrap; border: 1px solid transparent;
+}
+.drill-presence-present { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+.drill-presence-absent { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.drill-presence-en_conge { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+.drill-presence-en_mission { background: #fef3c7; color: #a16207; border-color: #fde68a; }
+.drill-presence-en_formation { background: #ede9fe; color: #6d28d9; border-color: #ddd6fe; }
+.drill-presence-suspendu { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
 .drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
 .drill-prov-agent-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
 .drill-prov-agent-meta span { font-size: .62rem; color: #64748b; display: flex; align-items: center; gap: 3px; }

@@ -10,6 +10,7 @@ use App\Models\TacheCommentaire;
 use App\Models\TacheDocument;
 use App\Models\TaskReport;
 use App\Models\Agent;
+use App\Services\NotificationService;
 use App\Services\RoleService;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
@@ -429,6 +430,21 @@ class TacheController extends ApiController
             );
         }
 
+        $message = sprintf(
+            '%s a mis a jour la tache "%s" : statut %s, progression %d%%.',
+            $this->agentDisplayName($agent),
+            $tache->titre,
+            $this->tacheStatutLabel($validated['statut']),
+            (int) $nouveauPourcentage
+        );
+
+        $this->notifyTacheParticipants(
+            $tache,
+            $user->id,
+            'Tache mise a jour',
+            $message
+        );
+
         $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']));
 
         return $this->resource($resource, [], [
@@ -467,7 +483,26 @@ class TacheController extends ApiController
             'source_emetteur' => 'sometimes|required|in:directeur,sen,sep,sel,autre',
         ]);
 
-        $tache->update($validated);
+        $tache->fill($validated);
+        $changedFields = array_keys($tache->getDirty());
+
+        if (!empty($changedFields)) {
+            $tache->save();
+
+            $message = sprintf(
+                '%s a modifie %s de la tache "%s".',
+                $this->agentDisplayName($agent),
+                $this->formatTacheChangedFields($changedFields),
+                $tache->titre
+            );
+
+            $this->notifyTacheParticipants(
+                $tache,
+                $user->id,
+                'Tache modifiee',
+                $message
+            );
+        }
 
         return $this->success([
             'tache'   => TacheResource::make($tache->fresh(['createur', 'agent', 'activitePlan'])),
@@ -535,6 +570,20 @@ class TacheController extends ApiController
             'contenu'  => $validated['contenu'],
         ]);
 
+        $message = sprintf(
+            '%s a ajoute un commentaire sur la tache "%s" : %s',
+            $this->agentDisplayName($agent),
+            $tache->titre,
+            Str::limit($validated['contenu'], 140)
+        );
+
+        $this->notifyTacheParticipants(
+            $tache,
+            $user->id,
+            'Nouveau commentaire sur une tache',
+            $message
+        );
+
         $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']));
 
         return $this->resource($resource, [], [
@@ -561,6 +610,85 @@ class TacheController extends ApiController
         }
 
         return response()->download($filePath, $document->nom_original);
+    }
+
+    protected function notifyTacheParticipants(Tache $tache, ?int $emetteurId, string $titre, string $message): void
+    {
+        $tache->loadMissing(['agent.user', 'createur.user']);
+
+        $recipientIds = collect([
+            $tache->agent?->user?->id,
+            $tache->createur?->user?->id,
+        ])
+            ->filter(fn($id) => $id && (!$emetteurId || (int) $id !== (int) $emetteurId))
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($recipientIds)) {
+            return;
+        }
+
+        NotificationService::envoyerMultiple(
+            $recipientIds,
+            'tache',
+            $titre,
+            $message,
+            '/taches/' . $tache->id,
+            $emetteurId
+        );
+    }
+
+    protected function agentDisplayName(?Agent $agent): string
+    {
+        if (!$agent) {
+            return 'Un utilisateur';
+        }
+
+        $name = trim(($agent->prenom ?? '') . ' ' . ($agent->nom ?? ''));
+
+        return $name !== '' ? $name : 'Un utilisateur';
+    }
+
+    protected function tacheStatutLabel(?string $statut): string
+    {
+        return [
+            'nouvelle' => 'nouvelle',
+            'en_cours' => 'en cours',
+            'terminee' => 'terminee',
+        ][$statut] ?? 'mis a jour';
+    }
+
+    protected function formatTacheChangedFields(array $fields): string
+    {
+        $labels = [
+            'titre' => 'le titre',
+            'description' => 'la description',
+            'priorite' => 'la priorite',
+            'date_echeance' => "l'echeance",
+            'date_tache' => "la date de l'agenda",
+            'source_emetteur' => 'la source',
+        ];
+
+        $names = collect($fields)
+            ->filter(fn($field) => $field !== 'updated_at')
+            ->map(fn($field) => $labels[$field] ?? $field)
+            ->values();
+
+        if ($names->isEmpty()) {
+            return 'les informations';
+        }
+
+        if ($names->count() === 1) {
+            return $names->first();
+        }
+
+        if ($names->count() === 2) {
+            return $names->implode(' et ');
+        }
+
+        return $names->slice(0, -1)->implode(', ') . ' et ' . $names->last();
     }
 
     protected function storeDocumentForTache(Tache $tache, Agent $agent, $uploadedFile, string $typeDocument, ?TacheCommentaire $commentaire = null): TacheDocument

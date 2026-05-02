@@ -23,6 +23,7 @@
       <button class="notif-action-btn" :class="{ active: filtre === 'demande' }" @click="setFiltre('demande')">Demandes</button>
       <button class="notif-action-btn" :class="{ active: filtre === 'communique' }" @click="setFiltre('communique')">Communiques</button>
       <button class="notif-action-btn" :class="{ active: filtre === 'plan_travail' }" @click="setFiltre('plan_travail')">Plan de travail</button>
+      <button class="notif-action-btn" :class="{ active: filtre === 'tache' }" @click="setFiltre('tache')">Taches</button>
       <button class="notif-action-btn" :class="{ active: filtre === 'document_travail' }" @click="setFiltre('document_travail')">Documents</button>
       <button v-if="nonLuesCount > 0" class="notif-action-btn mark-all ms-auto" @click="handleMarkAllRead">
         <i class="fas fa-check-double me-1"></i> Tout marquer lu
@@ -201,6 +202,7 @@ function typeLabel(type) {
     demande_approuvee: 'Approbation',
     demande_rejetee: 'Rejet',
     plan_travail: 'Plan de travail',
+    tache: 'Tache',
     communique: 'Communique',
     message: 'Message',
     document_travail: 'Document',

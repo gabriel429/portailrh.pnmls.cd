@@ -37,6 +37,61 @@ class ExecutiveDashboardController extends ApiController
     {
         return app(UserDataScope::class);
     }
+
+    private function organeNameFromCode(?string $code): ?string
+    {
+        return [
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
+        ][strtoupper((string) $code)] ?? null;
+    }
+
+    private function presenceAgents($query, Carbon $date, int $limit = 100)
+    {
+        $agents = (clone $query)->actifs()
+            ->with(['agentStatuses' => function ($q) {
+                $q->where('actuel', true)->orderByDesc('created_at');
+            }])
+            ->orderBy('nom')
+            ->limit($limit)
+            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat']);
+
+        $pointages = Pointage::byDate($date->toDateString())
+            ->whereIn('agent_id', $agents->pluck('id'))
+            ->get()
+            ->keyBy('agent_id');
+
+        return $agents->map(function ($a) use ($pointages) {
+            $currentStatus = $a->agentStatuses->first();
+            $absenceStatuses = ['en_conge', 'en_mission', 'suspendu', 'en_formation'];
+            $isAbsenceStatus = in_array(optional($currentStatus)->statut, $absenceStatuses, true);
+            $pointage = $pointages->get($a->id);
+            $isPresent = (bool) optional($pointage)->heure_entree;
+
+            return [
+                'id' => $a->id,
+                'nom' => trim($a->prenom . ' ' . $a->nom),
+                'organe' => $a->organe,
+                'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
+                'sexe' => $a->sexe,
+                'email' => $a->email_professionnel ?: $a->email ?: null,
+                'telephone' => $a->telephone,
+                'matricule' => $a->matricule_etat,
+                'grade' => $a->grade_etat,
+                'presence_status' => $isPresent ? 'present' : ($isAbsenceStatus ? $currentStatus->statut : 'absent'),
+                'presence_label' => $isPresent ? 'Présent' : ($isAbsenceStatus ? $currentStatus->statut_label : 'Absent'),
+                'heure_entree' => optional($pointage?->heure_entree)->format('H:i'),
+                'heure_sortie' => optional($pointage?->heure_sortie)->format('H:i'),
+                'pointage_observation' => $pointage?->observations,
+                'absence_statut' => $isAbsenceStatus ? $currentStatus->statut : null,
+                'absence_observation' => $isAbsenceStatus ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
+                'absence_debut' => $isAbsenceStatus ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
+                'absence_fin' => $isAbsenceStatus ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
+            ];
+        });
+    }
+
     public function index(Request $request)
     {
         $user = $request->user();
@@ -1189,8 +1244,12 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $now = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
         $currentYear = $now->year;
+        $organeFilter = $this->organeNameFromCode($request->query('organe'));
 
         $agents = Agent::where('province_id', $id);
+        if ($organeFilter) {
+            $agents->where('organe', $organeFilter);
+        }
         $total = (clone $agents)->count();
         $actifs = (clone $agents)->actifs()->count();
         $suspendus = (clone $agents)->suspendu()->count();
@@ -1207,12 +1266,12 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $provActifs = $actifs ?: 1;
         $todayPresent = Pointage::byDate($now->toDateString())
             ->whereNotNull('heure_entree')
-            ->whereHas('agent', fn($q) => $q->where('province_id', $id))
+            ->whereHas('agent', fn($q) => $q->where('province_id', $id)->when($organeFilter, fn($sub) => $sub->where('organe', $organeFilter)))
             ->distinct('agent_id')->count('agent_id');
 
         $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
             ->whereNotNull('heure_entree')
-            ->whereHas('agent', fn($q) => $q->where('province_id', $id))
+            ->whereHas('agent', fn($q) => $q->where('province_id', $id)->when($organeFilter, fn($sub) => $sub->where('organe', $organeFilter)))
             ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
             ->groupBy('date_pointage')->get();
         $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $provActifs) * 100, 1) : 0;
@@ -1240,33 +1299,11 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             ]);
 
         // Top agents (noms/prénoms/fonctions + contact)
-        $topAgents = Agent::where('province_id', $id)->actifs()
-            ->with(['agentStatuses' => function ($q) {
-                $q->where('actuel', true)->orderByDesc('created_at');
-            }])
-            ->orderBy('nom')
-            ->limit(20)
-            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
-            ->map(function ($a) {
-                $currentStatus = $a->agentStatuses->first();
-                $isAbsenceStatus = in_array(optional($currentStatus)->statut, ['en_conge', 'en_mission', 'suspendu', 'en_formation'], true);
-
-                return [
-                    'id' => $a->id,
-                    'nom' => $a->prenom . ' ' . $a->nom,
-                    'organe' => $a->organe,
-                    'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
-                    'sexe' => $a->sexe,
-                    'email' => $a->email_professionnel ?: $a->email ?: null,
-                    'telephone' => $a->telephone,
-                    'matricule' => $a->matricule_etat,
-                    'grade' => $a->grade_etat,
-                    'absence_statut' => $isAbsenceStatus ? $currentStatus->statut : null,
-                    'absence_observation' => $isAbsenceStatus ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
-                    'absence_debut' => $isAbsenceStatus ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
-                    'absence_fin' => $isAbsenceStatus ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
-                ];
-            });
+        $agentListQuery = Agent::where('province_id', $id);
+        if ($organeFilter) {
+            $agentListQuery->where('organe', $organeFilter);
+        }
+        $topAgents = $this->presenceAgents($agentListQuery, $now, 150);
 
         // Activités PTA de cette province
         $activites = ActivitePlan::parAnnee($currentYear)
@@ -1346,32 +1383,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             ->groupBy('date_pointage')->get();
         $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
 
-        $topAgents = (clone $agents)->actifs()
-            ->with(['agentStatuses' => function ($q) {
-                $q->where('actuel', true)->orderByDesc('created_at');
-            }])
-            ->orderBy('nom')
-            ->limit(100)
-            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
-            ->map(function ($a) {
-                $currentStatus  = $a->agentStatuses->first();
-                $isAbsence      = in_array(optional($currentStatus)->statut, ['en_conge', 'en_mission', 'suspendu', 'en_formation'], true);
-                return [
-                    'id'                  => $a->id,
-                    'nom'                 => $a->prenom . ' ' . $a->nom,
-                    'organe'              => $a->organe,
-                    'fonction'            => $a->fonction ?? $a->poste_actuel ?? '-',
-                    'sexe'                => $a->sexe,
-                    'email'               => $a->email_professionnel ?: $a->email ?: null,
-                    'telephone'           => $a->telephone,
-                    'matricule'           => $a->matricule_etat,
-                    'grade'               => $a->grade_etat,
-                    'absence_statut'      => $isAbsence ? $currentStatus->statut : null,
-                    'absence_observation' => $isAbsence ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
-                    'absence_debut'       => $isAbsence ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
-                    'absence_fin'         => $isAbsence ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
-                ];
-            });
+        $topAgents = $this->presenceAgents($agents, $now, 150);
 
         return $this->success([
             'department' => ['id' => 0, 'nom' => 'SEN (rattachement direct)', 'code' => 'SEN-DIRECT'],
@@ -1420,8 +1432,12 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
 
         $now = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
+        $organeFilter = $this->organeNameFromCode($request->query('organe'));
 
         $agents = Agent::where('departement_id', $id);
+        if ($organeFilter) {
+            $agents->where('organe', $organeFilter);
+        }
         $total = (clone $agents)->count();
         $actifs = (clone $agents)->actifs()->count();
         $suspendus = (clone $agents)->suspendu()->count();
@@ -1431,44 +1447,22 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $deptActifs = $actifs ?: 1;
         $todayPresent = Pointage::byDate($now->toDateString())
             ->whereNotNull('heure_entree')
-            ->whereHas('agent', fn($q) => $q->where('departement_id', $id))
+            ->whereHas('agent', fn($q) => $q->where('departement_id', $id)->when($organeFilter, fn($sub) => $sub->where('organe', $organeFilter)))
             ->distinct('agent_id')->count('agent_id');
 
         $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
             ->whereNotNull('heure_entree')
-            ->whereHas('agent', fn($q) => $q->where('departement_id', $id))
+            ->whereHas('agent', fn($q) => $q->where('departement_id', $id)->when($organeFilter, fn($sub) => $sub->where('organe', $organeFilter)))
             ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
             ->groupBy('date_pointage')->get();
         $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
 
         // Agents du département
-        $topAgents = Agent::where('departement_id', $id)->actifs()
-            ->with(['agentStatuses' => function ($q) {
-                $q->where('actuel', true)->orderByDesc('created_at');
-            }])
-            ->orderBy('nom')
-            ->limit(50)
-            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat'])
-            ->map(function ($a) {
-                $currentStatus = $a->agentStatuses->first();
-                $isAbsenceStatus = in_array(optional($currentStatus)->statut, ['en_conge', 'en_mission', 'suspendu', 'en_formation'], true);
-
-                return [
-                    'id' => $a->id,
-                    'nom' => $a->prenom . ' ' . $a->nom,
-                    'organe' => $a->organe,
-                    'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
-                    'sexe' => $a->sexe,
-                    'email' => $a->email_professionnel ?: $a->email ?: null,
-                    'telephone' => $a->telephone,
-                    'matricule' => $a->matricule_etat,
-                    'grade' => $a->grade_etat,
-                    'absence_statut' => $isAbsenceStatus ? $currentStatus->statut : null,
-                    'absence_observation' => $isAbsenceStatus ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
-                    'absence_debut' => $isAbsenceStatus ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
-                    'absence_fin' => $isAbsenceStatus ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
-                ];
-            });
+        $agentListQuery = Agent::where('departement_id', $id);
+        if ($organeFilter) {
+            $agentListQuery->where('organe', $organeFilter);
+        }
+        $topAgents = $this->presenceAgents($agentListQuery, $now, 150);
 
         // PTA du département
         $currentYear = $now->year;
