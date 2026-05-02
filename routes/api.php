@@ -61,6 +61,10 @@ Route::prefix('mobile')->group(function () {
         // Dashboard RH étendu (accès RH et NT)
         Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,SEN,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie')
             ->get('/rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index']);
+
+        // Dashboard SECOM Provincial (SEP et CAF)
+        Route::middleware('role:SEP,RH Provincial')
+            ->get('/secom/dashboard', [\App\Http\Controllers\Api\SecomDashboardController::class, 'index']);
     });
 });
 
@@ -90,6 +94,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/caf', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'cafIndex']);
     Route::get('/dashboard/renforcement', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'renforcementIndex']);
     Route::get('/dashboard/sena', [\App\Http\Controllers\Api\SenaDashboardController::class, 'index']);
+    Route::middleware('role:SEP,RH Provincial')->get('/dashboard/secom', [\App\Http\Controllers\Api\SecomDashboardController::class, 'index']);
     Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
     Route::get('/dashboard/department/agents', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'agentsDrill']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
