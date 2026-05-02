@@ -7,11 +7,19 @@
             <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ pageTitle }}</h1>
             <p class="rh-sub">{{ pageSubtitle }}</p>
           </div>
-          <div v-if="isDirecteur || auth.isSENA" class="col-lg-4">
+          <div v-if="canManageTaches" class="col-lg-4">
             <div class="hero-tools">
               <template v-if="auth.isSENA">
                 <router-link v-if="!isSENScope" :to="{ name: 'taches.index', query: { scope: 'sen' } }" class="btn-rh alt">
                   <i class="fas fa-users me-1"></i> Tâches du SEN
+                </router-link>
+                <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
+                  <i class="fas fa-arrow-left me-1"></i> Mes tâches
+                </router-link>
+              </template>
+              <template v-else-if="auth.isSEP">
+                <router-link v-if="!isProvinceScope" :to="{ name: 'taches.index', query: { scope: 'province' } }" class="btn-rh alt">
+                  <i class="fas fa-map-marker-alt me-1"></i> Tâches province
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
                   <i class="fas fa-arrow-left me-1"></i> Mes tâches
@@ -80,7 +88,7 @@
                 <tr>
                   <th>Titre</th>
                   <th>Origine</th>
-                  <th>{{ showAssignedByMe || isDeptScope || isSENScope ? 'Assigné à' : 'De' }}</th>
+                  <th>{{ showAssignedByMe || isDeptScope || isSENScope || isProvinceScope ? 'Assigné à' : 'De' }}</th>
                   <th>Priorité</th>
                   <th>Statut</th>
                   <th>Échéance</th>
@@ -99,7 +107,7 @@
                     <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
                     <br v-if="t.activite_plan"><small v-if="t.activite_plan" class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
-                  <td>{{ (showAssignedByMe || isDeptScope || isSENScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
+                  <td>{{ (showAssignedByMe || isDeptScope || isSENScope || isProvinceScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
                   <td><span :class="statutBadge(t.statut)">{{ statutLabel(t.statut) }}</span></td>
                   <td>
@@ -148,11 +156,13 @@ const loading = ref(true)
 const mesTaches = ref([])
 const tachesCreees = ref([])
 const isDirecteur = ref(false)
+const canManageTaches = ref(false)
 const sourceFilter = ref('all')
 const statusFilter = ref(route.query.statut ?? 'all')
 
 const isDeptScope = computed(() => route.query.scope === 'departement')
 const isSENScope = computed(() => route.query.scope === 'sen')
+const isProvinceScope = computed(() => route.query.scope === 'province')
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
 watch(() => route.query.statut, (val) => {
@@ -201,11 +211,13 @@ const filteredTaches = computed(() => {
 const pageTitle = computed(() => {
   if (isDeptScope.value) return 'Tâches du département'
   if (isSENScope.value) return 'Tâches du SEN'
+  if (isProvinceScope.value) return 'Tâches de la province'
   return showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches'
 })
 const pageSubtitle = computed(() => {
   if (isDeptScope.value) return 'Vue d\'ensemble des tâches assignées aux agents du département.'
   if (isSENScope.value) return 'Toutes les tâches assignées aux attachés du Secrétariat Exécutif National.'
+  if (isProvinceScope.value) return 'Vue provinciale des tâches assignées aux agents de votre province.'
   return showAssignedByMe.value
     ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
     : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.'
@@ -213,11 +225,13 @@ const pageSubtitle = computed(() => {
 const panelTitle = computed(() => {
   if (isDeptScope.value) return 'Tâches du département'
   if (isSENScope.value) return 'Tâches du SEN'
+  if (isProvinceScope.value) return 'Tâches de la province'
   return showAssignedByMe.value ? 'Tâches que j\'ai assignées' : 'Tâches qui me sont assignées'
 })
 const panelSubtitle = computed(() => {
   if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
   if (isSENScope.value) return 'Vue d\'ensemble des tâches assignées aux attachés du SEN.'
+  if (isProvinceScope.value) return 'Toutes les tâches assignées aux agents de la province.'
   return showAssignedByMe.value
     ? 'Liste des tâches que vous avez affectées aux agents.'
     : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.'
@@ -225,16 +239,24 @@ const panelSubtitle = computed(() => {
 const emptyStateText = computed(() => {
   if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
   if (isSENScope.value) return 'Aucune tâche SEN pour ce filtre.'
+  if (isProvinceScope.value) return 'Aucune tâche pour ce filtre dans cette province.'
   return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
 })
 
 async function loadTaches() {
   try {
-    const params = isDeptScope.value ? { scope: 'departement' } : isSENScope.value ? { scope: 'sen' } : {}
+    const params = isDeptScope.value
+      ? { scope: 'departement' }
+      : isSENScope.value
+        ? { scope: 'sen' }
+        : isProvinceScope.value
+          ? { scope: 'province' }
+          : {}
     const { data } = await list(params)
     mesTaches.value = data.mesTaches
     tachesCreees.value = data.tachesCreees
     isDirecteur.value = data.isDirecteur
+    canManageTaches.value = data.canManageTaches || data.isDirecteur || auth.isSENA || auth.isAssistant || auth.isSEP
   } catch {
     ui.addToast('Erreur lors du chargement des tâches.', 'danger')
   } finally {

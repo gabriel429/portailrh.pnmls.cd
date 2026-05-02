@@ -829,6 +829,16 @@ class ExecutiveDashboardController extends ApiController
             ->limit(8)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
 
+        $nextWeek = $now->copy()->addDays(7);
+        $upcomingDeadlines = (clone $tacheQ)
+            ->whereNotIn('statut', ['terminee'])
+            ->whereNotNull('date_echeance')
+            ->whereBetween('date_echeance', [$now->toDateString(), $nextWeek->toDateString()])
+            ->with('agent:id,nom,prenom')
+            ->orderBy('date_echeance')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
+
         // ─── PERFORMANCE DES AGENTS (province) ──────────────────────────────────
         $agentPerformance = Agent::whereIn('departement_id',
                 Department::where('province_id', $provinceId)->pluck('id')
@@ -963,6 +973,7 @@ class ExecutiveDashboardController extends ApiController
                 'overdue'  => $tOverdue,
             ],
             'recent_taches'     => $recentTaches,
+            'upcoming_deadlines' => $upcomingDeadlines,
             'agent_performance' => $agentPerformance,
             'plan_travail' => [
                 'total'          => $planTotal,

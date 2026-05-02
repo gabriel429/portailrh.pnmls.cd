@@ -29,8 +29,12 @@ class TacheController extends ApiController
     {
         $user = $request->user();
         $agent = $user->agent;
-        $isDirecteur = app(RoleService::class)->hasDirecteurOrDafRole($user);
+        $roles = app(RoleService::class);
+        $isDirecteur = $roles->hasDirecteurOrDafRole($user);
+        $isDeptManager = $roles->isDepartmentManager($user);
+        $isTaskManager = $roles->hasTacheManagerRole($user);
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+        $isSEP = $user->hasRole('SEP');
 
         // Personnel SEN (assistants, secrétaires) : accès aux tâches SEN
         $isSENStaff = false;
@@ -42,7 +46,7 @@ class TacheController extends ApiController
             ? Tache::query()->parAgent($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
-        $tachesCreeesQuery = (($isDirecteur || $isSENOrSENA || $isSENStaff) && $agent)
+        $tachesCreeesQuery = (($isTaskManager || $isSENStaff) && $agent)
             ? Tache::query()->parCreateur($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
@@ -58,14 +62,14 @@ class TacheController extends ApiController
             $senResource = TacheResource::collection($senTaches)->resolve();
             return $this->success(
                 ['mes_taches' => $senResource, 'taches_creees' => []],
-                ['isDirecteur' => false, 'isSENScope' => true],
-                ['mesTaches' => $senResource, 'tachesCreees' => [], 'isDirecteur' => false, 'isSENScope' => true]
+                ['isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isSENScope' => true],
+                ['mesTaches' => $senResource, 'tachesCreees' => [], 'isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isSENScope' => true]
             );
         }
 
         // Scope département : retourne toutes les tâches des agents du même département.
         // Réservé aux agents ayant un departement_id (directeurs, assistants, secrétaires).
-        if ($request->input('scope') === 'departement') {
+        if ($request->input('scope') === 'departement' && $isDeptManager) {
             $deptId = $agent?->departement_id;
             if ($deptId) {
                 $agentIds = Agent::where('departement_id', $deptId)->pluck('id');
@@ -77,11 +81,28 @@ class TacheController extends ApiController
                 $deptResource = TacheResource::collection($deptTaches)->resolve();
                 return $this->success(
                     ['mes_taches' => $deptResource, 'taches_creees' => []],
-                    ['isDirecteur' => $isDirecteur, 'isDeptScope' => true],
-                    ['mesTaches' => $deptResource, 'tachesCreees' => [], 'isDirecteur' => $isDirecteur, 'isDeptScope' => true]
+                    ['isDirecteur' => $isDirecteur, 'canManageTaches' => $isTaskManager, 'isDeptScope' => true],
+                    ['mesTaches' => $deptResource, 'tachesCreees' => [], 'isDirecteur' => $isDirecteur, 'canManageTaches' => $isTaskManager, 'isDeptScope' => true]
                 );
             }
             // Pas de département → on retombe sur les tâches personnelles
+        }
+
+        if ($request->input('scope') === 'province' && $isSEP) {
+            $provinceId = $agent?->province_id;
+            if ($provinceId) {
+                $provinceTaches = Tache::query()
+                    ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
+                    ->with(['agent', 'createur', 'activitePlan', 'documents.agent'])
+                    ->latest()
+                    ->get();
+                $provinceResource = TacheResource::collection($provinceTaches)->resolve();
+                return $this->success(
+                    ['mes_taches' => $provinceResource, 'taches_creees' => []],
+                    ['isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isProvinceScope' => true],
+                    ['mesTaches' => $provinceResource, 'tachesCreees' => [], 'isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isProvinceScope' => true]
+                );
+            }
         }
 
         if ($request->boolean('summary')) {
@@ -100,12 +121,14 @@ class TacheController extends ApiController
                 'in_progress_assigned_count' => $inProgressAssignedCount,
                 'created_count' => $createdCount,
                 'is_directeur' => $isDirecteur,
+                'can_manage_taches' => $isTaskManager,
             ], [], [
                 'assignedCount' => $assignedCount,
                 'newAssignedCount' => $newAssignedCount,
                 'inProgressAssignedCount' => $inProgressAssignedCount,
                 'createdCount' => $createdCount,
                 'isDirecteur' => $isDirecteur,
+                'canManageTaches' => $isTaskManager,
             ]);
         }
 
@@ -119,7 +142,7 @@ class TacheController extends ApiController
             : collect();
 
         $tachesCreees = collect();
-        if (($isDirecteur || $isSENOrSENA) && $agent) {
+        if (($isTaskManager || $isSENStaff) && $agent) {
             $tachesCreees = (clone $tachesCreeesQuery)
                 ->with(['agent', 'activitePlan', 'documents.agent'])
                 ->latest()
@@ -134,10 +157,12 @@ class TacheController extends ApiController
             'taches_creees' => $tachesCreeesResource,
         ], [
             'isDirecteur' => $isDirecteur,
+            'canManageTaches' => $isTaskManager,
         ], [
             'mesTaches' => $mesTachesResource,
             'tachesCreees' => $tachesCreeesResource,
             'isDirecteur' => $isDirecteur,
+            'canManageTaches' => $isTaskManager,
         ]);
     }
 
@@ -157,6 +182,7 @@ class TacheController extends ApiController
 
         $agent       = $user->agent;
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+        $isSEP = $user->hasRole('SEP');
 
         if ($isSENOrSENA) {
             $senOrgane         = 'Secrétariat Exécutif National';
@@ -164,12 +190,34 @@ class TacheController extends ApiController
                 ->where('organe', $senOrgane)
                 ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom'])
+                ->get(['id', 'nom', 'prenom', 'id_agent'])
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
                 ->where('niveau_administratif', 'SEN')
+                ->orderBy('titre')
+                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+                ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
+        } elseif ($isSEP) {
+            if (!$agent || !$agent->province_id) {
+                return response()->json(['message' => 'Vous devez etre affecte a une province pour creer des taches.'], 422);
+            }
+
+            $agentsDisponibles = Agent::actifs()
+                ->where('province_id', $agent->province_id)
+                ->where('id', '!=', $agent->id)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'prenom', 'id_agent'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+
+            $activitesPta = ActivitePlan::query()
+                ->where('annee', now()->year)
+                ->where('niveau_administratif', 'SEP')
+                ->where(function ($q) use ($agent) {
+                    $q->where('province_id', $agent->province_id)
+                        ->orWhereHas('provinces', fn($pq) => $pq->where('provinces.id', $agent->province_id));
+                })
                 ->orderBy('titre')
                 ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
                 ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
@@ -182,7 +230,7 @@ class TacheController extends ApiController
                 ->where('departement_id', $agent->departement_id)
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom'])
+                ->get(['id', 'nom', 'prenom', 'id_agent'])
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
 
             $activitesPta = ActivitePlan::query()
@@ -198,6 +246,7 @@ class TacheController extends ApiController
             'agents'          => $agentsDisponibles,
             'activites_pta'   => $activitesPta,
             'isSENScope'      => $isSENOrSENA,
+            'isProvinceScope' => $isSEP,
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
                 ['value' => 'sen',       'label' => 'SEN'],
@@ -237,10 +286,18 @@ class TacheController extends ApiController
         $agent       = $user->agent;
         $targetAgent = Agent::findOrFail($validated['agent_id']);
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+        $isSEP = $user->hasRole('SEP');
 
         if ($isSENOrSENA) {
             if ($targetAgent->organe !== 'Secrétariat Exécutif National') {
                 return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents du SEN.'], 403);
+            }
+        } elseif ($isSEP) {
+            if (!$agent || !$agent->province_id) {
+                return response()->json(['message' => 'Vous devez etre affecte a une province pour creer des taches.'], 422);
+            }
+            if ((int) $targetAgent->province_id !== (int) $agent->province_id) {
+                return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre province.'], 403);
             }
         } else {
             if (!$agent) {
@@ -285,6 +342,7 @@ class TacheController extends ApiController
     {
         $user  = $request->user();
         $agent = $user->agent;
+        $isSEP = $user->hasRole('SEP');
 
         // SEN/SENA : accès à toutes les tâches des agents du SEN (pas besoin d'agent record)
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
@@ -305,6 +363,7 @@ class TacheController extends ApiController
         $isCreateur   = $agent && $tache->createur_id === $agent->id;
         $isAssigne    = $agent && $tache->agent_id    === $agent->id;
         $isDeptManager = false;
+        $isProvinceManager = false;
 
         // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
         if ($isSENOrSENA || $isSENStaff) {
@@ -343,7 +402,12 @@ class TacheController extends ApiController
             }
         }
 
-        if (!$isCreateur && !$isAssigne && !$isDeptManager) {
+        if (!$isCreateur && !$isAssigne && !$isDeptManager && $isSEP && $agent?->province_id) {
+            $taskAgent = $taskAgent ?? Agent::find($tache->agent_id);
+            $isProvinceManager = $taskAgent && (int) $taskAgent->province_id === (int) $agent->province_id;
+        }
+
+        if (!$isCreateur && !$isAssigne && !$isDeptManager && !$isProvinceManager) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -352,9 +416,11 @@ class TacheController extends ApiController
         return $this->resource(TacheResource::make($tache), [
             'isCreateur' => $isCreateur,
             'isAssigne'  => $isAssigne,
+            'isProvinceManager' => $isProvinceManager,
         ], [
             'isCreateur' => $isCreateur,
             'isAssigne'  => $isAssigne,
+            'isProvinceManager' => $isProvinceManager,
         ]);
     }
 
@@ -556,7 +622,7 @@ class TacheController extends ApiController
         $user = $request->user();
         $agent = $user->agent;
 
-        if (!$agent || ($tache->createur_id !== $agent->id && $tache->agent_id !== $agent->id)) {
+        if (!$this->canAccessTacheConsultation($user, $tache)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -596,7 +662,7 @@ class TacheController extends ApiController
         $user = $request->user();
         $agent = $user->agent;
 
-        if (!$agent || ($tache->createur_id !== $agent->id && $tache->agent_id !== $agent->id)) {
+        if (!$this->canAccessTacheConsultation($user, $tache)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -610,6 +676,36 @@ class TacheController extends ApiController
         }
 
         return response()->download($filePath, $document->nom_original);
+    }
+
+    protected function canAccessTacheConsultation($user, Tache $tache): bool
+    {
+        $agent = $user?->agent;
+
+        if ($agent && ((int) $tache->createur_id === (int) $agent->id || (int) $tache->agent_id === (int) $agent->id)) {
+            return true;
+        }
+
+        $isSENOrSENA = $user?->hasRole('SEN') || $user?->hasRole('SENA');
+        $isSENStaff = !$isSENOrSENA && $agent && ($agent->organe ?? '') === 'Secrétariat Exécutif National';
+        if ($isSENOrSENA || $isSENStaff) {
+            return true;
+        }
+
+        $taskAgent = $tache->agent_id ? Agent::find($tache->agent_id) : null;
+        if (!$taskAgent || !$agent) {
+            return false;
+        }
+
+        if (app(RoleService::class)->isDepartmentManager($user) && $agent->departement_id) {
+            return (int) $taskAgent->departement_id === (int) $agent->departement_id;
+        }
+
+        if ($user?->hasRole('SEP') && $agent->province_id) {
+            return (int) $taskAgent->province_id === (int) $agent->province_id;
+        }
+
+        return false;
     }
 
     protected function notifyTacheParticipants(Tache $tache, ?int $emetteurId, string $titre, string $message): void

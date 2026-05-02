@@ -551,28 +551,28 @@
           </div>
         </div>
         <div class="sep-task-grid">
-          <div class="sep-task-card sep-clickable" @click="router.push('/taches?statut=nouvelle')">
+          <div class="sep-task-card sep-clickable" @click="router.push(provinceTaskUrl('nouvelle'))">
             <div class="sep-task-card-icon" style="background:#dbeafe;color:#3b82f6;">
               <i class="fas fa-plus-circle"></i>
             </div>
             <div class="sep-task-card-val">{{ data.taches?.nouvelle ?? 0 }}</div>
             <div class="sep-task-card-lbl">Nouvelles</div>
           </div>
-          <div class="sep-task-card sep-clickable" @click="router.push('/taches?statut=en_cours')">
+          <div class="sep-task-card sep-clickable" @click="router.push(provinceTaskUrl('en_cours'))">
             <div class="sep-task-card-icon" style="background:#fef3c7;color:#d97706;">
               <i class="fas fa-spinner"></i>
             </div>
             <div class="sep-task-card-val">{{ data.taches?.en_cours ?? 0 }}</div>
             <div class="sep-task-card-lbl">En cours</div>
           </div>
-          <div class="sep-task-card sep-clickable" @click="router.push('/taches?statut=terminee')">
+          <div class="sep-task-card sep-clickable" @click="router.push(provinceTaskUrl('terminee'))">
             <div class="sep-task-card-icon" style="background:#dcfce7;color:#16a34a;">
               <i class="fas fa-check-circle"></i>
             </div>
             <div class="sep-task-card-val">{{ data.taches?.terminee ?? 0 }}</div>
             <div class="sep-task-card-lbl">Terminées</div>
           </div>
-          <div class="sep-task-card sep-clickable" :class="{ 'sep-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push('/taches?statut=en_retard')">
+          <div class="sep-task-card sep-clickable" :class="{ 'sep-task-card-alert': (data.taches?.overdue ?? 0) > 0 }" @click="router.push(provinceTaskUrl('en_retard'))">
             <div class="sep-task-card-icon" style="background:#fee2e2;color:#dc2626;">
               <i class="fas fa-exclamation-triangle"></i>
             </div>
@@ -598,7 +598,20 @@
             <h3 class="sep-section-title">Tâches récentes — province</h3>
             <p class="sep-section-sub">Dernières mises à jour des tâches dans la province</p>
           </div>
-          <router-link to="/taches" class="sep-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+          <router-link :to="provinceTaskUrl()" class="sep-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
+        </div>
+        <div class="sep-agenda-strip">
+          <div class="sep-agenda-title">
+            <i class="fas fa-calendar-check me-1"></i>Agenda - 7 prochains jours
+          </div>
+          <div v-if="!(data.upcoming_deadlines?.length)" class="sep-agenda-empty">Aucune échéance proche</div>
+          <div v-else class="sep-agenda-list">
+            <router-link v-for="t in data.upcoming_deadlines" :key="t.id" :to="'/taches/' + t.id" class="sep-agenda-item">
+              <span class="sep-tag" :class="sepStatutClass(t.statut)">{{ sepStatutLabel(t.statut) }}</span>
+              <span class="sep-agenda-name">{{ t.titre }}</span>
+              <span class="sep-task-due" :class="{ 'sep-overdue': sepIsOverdue(t) }">{{ sepFormatDate(t.date_echeance) }}</span>
+            </router-link>
+          </div>
         </div>
         <div v-if="!(data.recent_taches?.length)" class="sep-recent-empty" style="padding:2rem;">
           <div class="sep-empty-icon-wrap" style="background:#fef9ee;"><i class="fas fa-check-circle" style="color:#16a34a;"></i></div>
@@ -796,19 +809,19 @@
                   <!-- ─── PRÉSENCE ─── -->
                   <template v-else-if="provDrillSection === 'presence'">
                     <div class="drill-dept-grid">
-                      <div class="drill-prov-stat-card" style="border-color:#059669;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" style="border-color:#059669;" role="button" tabindex="0" @click="setDrillPresenceFilter('present')" @keydown.enter.prevent="setDrillPresenceFilter('present')">
                         <div class="drill-prov-stat-val">{{ provDrillData.presence?.today_present ?? 0 }}</div>
                         <div class="drill-prov-stat-lbl">Présents</div>
                       </div>
-                      <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" style="border-color:#d97706;" role="button" tabindex="0" @click="setDrillPresenceFilter('absent')" @keydown.enter.prevent="setDrillPresenceFilter('absent')">
                         <div class="drill-prov-stat-val">{{ (provDrillData.presence?.total_active ?? 0) - (provDrillData.presence?.today_present ?? 0) }}</div>
                         <div class="drill-prov-stat-lbl">Absents</div>
                       </div>
-                      <div class="drill-prov-stat-card" style="border-color:#0ea5e9;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#0ea5e9;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                         <div class="drill-prov-stat-val">{{ provDrillData.presence?.today_rate ?? 0 }}%</div>
                         <div class="drill-prov-stat-lbl">Taux jour</div>
                       </div>
-                      <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#7c3aed;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                         <div class="drill-prov-stat-val">{{ provDrillData.presence?.monthly_rate ?? 0 }}%</div>
                         <div class="drill-prov-stat-lbl">Moy. mois</div>
                       </div>
@@ -822,6 +835,22 @@
                         {{ dept.code || dept.nom }}
                         <i class="fas fa-chevron-right" style="font-size:.6em;margin-left:4px;"></i>
                       </button>
+                    </div>
+                    <div v-if="provDrillData.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                      <i class="fas fa-user-check"></i> {{ presenceFilterTitle(filteredPresenceAgents(provDrillData.agents).length) }}
+                    </div>
+                    <div v-if="provDrillData.agents?.length" class="drill-prov-agents-table">
+                      <div v-for="a in filteredPresenceAgents(provDrillData.agents)" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
+                        <div class="drill-prov-agent-avatar"
+                          :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                          <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                        </div>
+                        <div class="drill-prov-agent-info">
+                          <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                          <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                        </div>
+                        <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
+                      </div>
                     </div>
                   </template>
 
@@ -970,28 +999,28 @@
                   <!-- ─── PRÉSENCE ─── -->
                   <template v-else-if="deptDrillSection === 'presence'">
                     <div class="drill-dept-grid">
-                      <div class="drill-prov-stat-card" style="border-color:#059669;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" style="border-color:#059669;" role="button" tabindex="0" @click="setDrillPresenceFilter('present')" @keydown.enter.prevent="setDrillPresenceFilter('present')">
                         <div class="drill-prov-stat-val">{{ deptDrillData.presence?.today_present ?? 0 }}</div>
                         <div class="drill-prov-stat-lbl">Présents</div>
                       </div>
-                      <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" style="border-color:#d97706;" role="button" tabindex="0" @click="setDrillPresenceFilter('absent')" @keydown.enter.prevent="setDrillPresenceFilter('absent')">
                         <div class="drill-prov-stat-val">{{ (deptDrillData.presence?.total_active ?? 0) - (deptDrillData.presence?.today_present ?? 0) }}</div>
                         <div class="drill-prov-stat-lbl">Absents</div>
                       </div>
-                      <div class="drill-prov-stat-card" style="border-color:#0ea5e9;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#0ea5e9;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                         <div class="drill-prov-stat-val">{{ deptDrillData.presence?.today_rate ?? 0 }}%</div>
                         <div class="drill-prov-stat-lbl">Taux jour</div>
                       </div>
-                      <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                      <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#7c3aed;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                         <div class="drill-prov-stat-val">{{ deptDrillData.presence?.monthly_rate ?? 0 }}%</div>
                         <div class="drill-prov-stat-lbl">Moy. mois</div>
                       </div>
                     </div>
                     <div v-if="deptDrillData.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
-                      <i class="fas fa-user-check"></i> Agents actifs ({{ deptDrillData.presence?.total_active ?? 0 }})
+                      <i class="fas fa-user-check"></i> {{ presenceFilterTitle(filteredPresenceAgents(deptDrillData.agents).length) }}
                     </div>
                     <div v-if="deptDrillData.agents?.length" class="drill-prov-agents-table">
-                      <div v-for="a in deptDrillData.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
+                      <div v-for="a in filteredPresenceAgents(deptDrillData.agents)" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
                         <div class="drill-prov-agent-avatar"
                           :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                           <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
@@ -1189,6 +1218,7 @@ const deptDrillOpen = ref(false)
 const deptDrillLoading = ref(false)
 const deptDrillData = ref(null)
 const deptDrillSection = ref('effectifs')
+const drillPresenceFilter = ref('all')
 
 async function openDeptDrilldown(id, section = 'effectifs') {
   if (!id) return
@@ -1197,6 +1227,7 @@ async function openDeptDrilldown(id, section = 'effectifs') {
   deptDrillLoading.value = true
   deptDrillData.value = null
   deptDrillSection.value = section
+  drillPresenceFilter.value = 'all'
   try {
     const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
     deptDrillData.value = result.data ?? result
@@ -1211,6 +1242,7 @@ function closeDeptDrilldown() {
   deptDrillOpen.value = false
   deptDrillData.value = null
   deptDrillSection.value = 'effectifs'
+  drillPresenceFilter.value = 'all'
 }
 
 // ─── DRILL-DOWN PROVINCE ───
@@ -1226,6 +1258,7 @@ async function openProvDrilldown(section = 'effectifs') {
   provDrillLoading.value = true
   provDrillData.value = null
   provDrillSection.value = section
+  drillPresenceFilter.value = 'all'
   try {
     const { data: result } = await client.get(`/dashboard/executive/province/${provinceId}`)
     provDrillData.value = result.data ?? result
@@ -1240,6 +1273,31 @@ function closeProvDrilldown() {
   provDrillOpen.value = false
   provDrillData.value = null
   provDrillSection.value = 'effectifs'
+  drillPresenceFilter.value = 'all'
+}
+
+function setDrillPresenceFilter(filter = 'all') {
+  drillPresenceFilter.value = filter
+}
+
+function filteredPresenceAgents(agents = []) {
+  if (!Array.isArray(agents)) return []
+  if (drillPresenceFilter.value === 'present') {
+    return agents.filter(agent => agent?.presence_status === 'present')
+  }
+  if (drillPresenceFilter.value === 'absent') {
+    return agents.filter(agent => agent?.presence_status !== 'present')
+  }
+  return agents
+}
+
+function presenceFilterTitle(total = 0) {
+  const labels = {
+    all: 'Agents actifs',
+    present: 'Agents présents',
+    absent: 'Agents absents',
+  }
+  return `${labels[drillPresenceFilter.value] || labels.all} (${total})`
 }
 
 // ─── QUICK ACTIONS ───
@@ -1274,11 +1332,17 @@ const metrics = computed(() => [
   { label: 'Agents actifs', value: data.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(data.value.agents?.actifs), alert: false, route: '/rh/agents', drillSection: 'effectifs' },
   { label: 'Demandes en attente', value: data.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#d97706', bg: '#fef3c7', pct: pct(data.value.requests?.en_attente), alert: (data.value.requests?.en_attente ?? 0) > 5, route: '/requests', drillSection: null },
   { label: 'Signalements ouverts', value: data.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(data.value.signalements?.ouvert), alert: (data.value.signalements?.ouvert ?? 0) > 0, route: '/signalements', drillSection: null },
-  { label: 'Tâches en cours', value: data.value.taches?.en_cours ?? 0, icon: 'fa-spinner', color: '#7c3aed', bg: '#ede9fe', pct: pct(data.value.taches?.en_cours), alert: false, route: '/taches', drillSection: null },
+  { label: 'Tâches en cours', value: data.value.taches?.en_cours ?? 0, icon: 'fa-spinner', color: '#7c3aed', bg: '#ede9fe', pct: pct(data.value.taches?.en_cours), alert: false, route: provinceTaskUrl('en_cours'), drillSection: null },
   { label: 'Congés actifs', value: data.value.holidays?.active_today ?? 0, icon: 'fa-umbrella-beach', color: '#f59e0b', bg: '#fef3c7', pct: pct(data.value.holidays?.active_today), alert: false, route: '/rh/conges', drillSection: null },
 ])
 
 // ─── PRÉSENCE PAR ORGANE ───
+function provinceTaskUrl(statut = null) {
+  const params = new URLSearchParams({ scope: 'province' })
+  if (statut) params.set('statut', statut)
+  return `/taches?${params.toString()}`
+}
+
 const presenceOrganes = computed(() => {
   const att = data.value.attendance?.by_organe || {}
   return [
@@ -1743,6 +1807,26 @@ onMounted(async () => {
 .sep-prog-track { flex: 1; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; }
 .sep-prog-fill { height: 100%; border-radius: 3px; transition: width .6s ease; }
 .sep-prog-pct { font-size: .7rem; color: #64748b; font-weight: 600; white-space: nowrap; }
+.sep-agenda-strip {
+  margin: .75rem 0 1rem;
+  padding: .85rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+.sep-agenda-title { font-size: .78rem; font-weight: 800; color: #0f172a; margin-bottom: .55rem; }
+.sep-agenda-empty { font-size: .78rem; color: #94a3b8; }
+.sep-agenda-list { display: flex; flex-direction: column; gap: .4rem; }
+.sep-agenda-item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .55rem;
+  text-decoration: none;
+  color: inherit;
+  font-size: .78rem;
+}
+.sep-agenda-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; font-weight: 600; }
 
 /* ═══════════ PERFORMANCE DÉPARTEMENTS ═══════════ */
 .sep-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
@@ -1885,6 +1969,22 @@ onMounted(async () => {
 .drill-dept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; margin-bottom: 1rem; }
 .drill-prov-stat-card {
   background: #f8fafc; border-radius: 12px; border-left: 3px solid; padding: .8rem 1rem; text-align: center;
+}
+.drill-stat-clickable {
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+.drill-stat-clickable:hover,
+.drill-stat-clickable:focus-visible {
+  transform: translateY(-2px);
+  border-color: #38bdf8 !important;
+  box-shadow: 0 10px 24px rgba(14, 165, 233, .16);
+  outline: none;
+}
+.drill-stat-clickable.active {
+  background: linear-gradient(180deg, #ffffff, #eef8ff);
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 10px 28px rgba(14, 165, 233, .18);
 }
 .drill-prov-stat-val { font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1; }
 .drill-prov-stat-lbl { font-size: .65rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: .2rem; }

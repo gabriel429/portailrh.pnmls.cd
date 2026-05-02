@@ -895,22 +895,22 @@
                         </div>
                       </template>
                       <template v-else-if="drilldownSection === 'presence'">
-                        <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" role="button" tabindex="0" @click="setDrillPresenceFilter('present')" @keydown.enter.prevent="setDrillPresenceFilter('present')">
                           <div class="drill-prov-stat-icon" style="background:#d1fae5;color:#059669;"><i class="fas fa-user-check"></i></div>
                           <div class="drill-prov-stat-val">{{ drilldownProvince.presence.today_present }}</div>
                           <div class="drill-prov-stat-lbl">Présents</div>
                         </div>
-                        <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" role="button" tabindex="0" @click="setDrillPresenceFilter('absent')" @keydown.enter.prevent="setDrillPresenceFilter('absent')">
                           <div class="drill-prov-stat-icon" style="background:#fef3c7;color:#d97706;"><i class="fas fa-user-times"></i></div>
                           <div class="drill-prov-stat-val">{{ drilldownProvince.presence.total_active - drilldownProvince.presence.today_present }}</div>
                           <div class="drill-prov-stat-lbl">Absents</div>
                         </div>
-                        <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                           <div class="drill-prov-stat-icon" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-chart-line"></i></div>
                           <div class="drill-prov-stat-val">{{ drilldownProvince.presence.today_rate }}%</div>
                           <div class="drill-prov-stat-lbl">Taux jour</div>
                         </div>
-                        <div class="drill-prov-stat-card">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                           <div class="drill-prov-stat-icon" style="background:#e0f2fe;color:#0077B5;"><i class="fas fa-calendar-check"></i></div>
                           <div class="drill-prov-stat-val">{{ drilldownProvince.presence.monthly_rate }}%</div>
                           <div class="drill-prov-stat-lbl">Moy. mois</div>
@@ -977,6 +977,38 @@
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
+                      </div>
+                    </template>
+
+                    <template v-else-if="drilldownSection === 'presence'">
+                      <div v-if="drilldownProvince.departments?.length" class="drill-prov-section-title">
+                        <i class="fas fa-building"></i> Présence par département
+                      </div>
+                      <div v-if="drilldownProvince.departments?.length" class="drill-prov-dept-grid">
+                        <div v-for="dept in drilldownProvince.departments" :key="dept.id" class="drill-prov-dept drill-item-clickable" @click="openDepartmentDrilldown(dept.id)">
+                          <div class="drill-prov-dept-name">{{ dept.nom }} <i class="fas fa-chevron-right" style="font-size:0.7em;opacity:0.5;margin-left:4px;"></i></div>
+                          <div class="drill-prov-dept-count">{{ dept.presence?.today_present ?? 0 }} <small>presents</small> / {{ dept.presence?.total_active ?? dept.actifs ?? 0 }}</div>
+                        </div>
+                      </div>
+
+                      <div v-if="drilldownProvince.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                        <i class="fas fa-user"></i> {{ presenceFilterTitle(filteredPresenceAgents(drilldownProvince.agents).length) }}
+                      </div>
+                      <div v-if="drilldownProvince.agents?.length" class="drill-prov-agents-table">
+                        <div v-for="a in filteredPresenceAgents(drilldownProvince.agents)" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
+                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                          </div>
+                          <div class="drill-prov-agent-info">
+                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          </div>
+                          <i class="fas fa-address-card drill-agent-contact-icon"></i>
+                        </div>
+                      </div>
+                      <div v-else class="drill-empty">
+                        <i class="fas fa-inbox"></i>
+                        <p>Aucun agent dans cette province</p>
                       </div>
                     </template>
 
@@ -1050,28 +1082,28 @@
 
                     <template v-else-if="drilldownSection === 'presence'">
                       <div class="drill-dept-grid">
-                        <div class="drill-prov-stat-card" style="border-color:#059669;">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" style="border-color:#059669;" role="button" tabindex="0" @click="setDrillPresenceFilter('present')" @keydown.enter.prevent="setDrillPresenceFilter('present')">
                           <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_present ?? 0 }}</div>
                           <div class="drill-prov-stat-lbl">Présents auj.</div>
                         </div>
-                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" style="border-color:#d97706;" role="button" tabindex="0" @click="setDrillPresenceFilter('absent')" @keydown.enter.prevent="setDrillPresenceFilter('absent')">
                           <div class="drill-prov-stat-val">{{ (drilldownDepartment.presence?.total_active ?? 0) - (drilldownDepartment.presence?.today_present ?? 0) }}</div>
                           <div class="drill-prov-stat-lbl">Absents</div>
                         </div>
-                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#0077B5;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                           <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.today_rate ?? 0 }}%</div>
                           <div class="drill-prov-stat-lbl">Taux auj.</div>
                         </div>
-                        <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
+                        <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#7c3aed;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                           <div class="drill-prov-stat-val">{{ drilldownDepartment.presence?.monthly_rate ?? 0 }}%</div>
                           <div class="drill-prov-stat-lbl">Moy. mensuelle</div>
                         </div>
                       </div>
                       <div v-if="drilldownDepartment.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
-                        <i class="fas fa-user"></i> Agents actifs ({{ drilldownDepartment.agents.length }})
+                        <i class="fas fa-user"></i> {{ presenceFilterTitle(filteredPresenceAgents(drilldownDepartment.agents).length) }}
                       </div>
                       <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
-                        <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
+                        <div v-for="a in filteredPresenceAgents(drilldownDepartment.agents)" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
                           <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
@@ -1411,6 +1443,7 @@ const drilldownProvince = ref(null)
 const drilldownDepartment = ref(null)
 const drilldownLevel = ref('organe')
 const drilldownSection = ref('effectifs')
+const drillPresenceFilter = ref('all')
 const selectedAgent = ref(null)
 
 const drilldownColor = computed(() => {
@@ -1431,6 +1464,7 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   drilldownLoading.value = true
   drilldownLevel.value = 'organe'
   drilldownSection.value = section
+  drillPresenceFilter.value = 'all'
   drilldownOrgane.value = null
   drilldownProvince.value = null
   drilldownDepartment.value = null
@@ -1449,6 +1483,7 @@ async function openProvinceDrilldown(id, section = 'effectifs') {
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
   drilldownSection.value = section
+  drillPresenceFilter.value = 'all'
   drilldownProvince.value = null
   selectedAgent.value = null
   try {
@@ -1466,6 +1501,7 @@ async function openDepartmentDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   drilldownDepartment.value = null
+  drillPresenceFilter.value = 'all'
   selectedAgent.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
@@ -1484,6 +1520,7 @@ function closeDrilldown() {
   selectedAgent.value = null
   drilldownDepartment.value = null
   drilldownLevel.value = 'organe'
+  drillPresenceFilter.value = 'all'
   selectedAgent.value = null
 }
 
@@ -1492,6 +1529,7 @@ function backToOrgane() {
   drilldownLevel.value = 'organe'
   drilldownProvince.value = null
   drilldownDepartment.value = null
+  drillPresenceFilter.value = 'all'
   selectedAgent.value = null
 }
 
@@ -1499,12 +1537,37 @@ function backToPrevious() {
   if (drilldownLevel.value === 'department') {
     drilldownLevel.value = 'province'
     drilldownDepartment.value = null
+    drillPresenceFilter.value = 'all'
     selectedAgent.value = null
   } else if (drilldownOrgane.value) {
     backToOrgane()
   } else {
     closeDrilldown()
   }
+}
+
+function setDrillPresenceFilter(filter = 'all') {
+  drillPresenceFilter.value = filter
+}
+
+function filteredPresenceAgents(agents = []) {
+  if (!Array.isArray(agents)) return []
+  if (drillPresenceFilter.value === 'present') {
+    return agents.filter(agent => agent?.presence_status === 'present')
+  }
+  if (drillPresenceFilter.value === 'absent') {
+    return agents.filter(agent => agent?.presence_status !== 'present')
+  }
+  return agents
+}
+
+function presenceFilterTitle(total = 0) {
+  const labels = {
+    all: 'Agents actifs',
+    present: 'Agents présents',
+    absent: 'Agents absents',
+  }
+  return `${labels[drillPresenceFilter.value] || labels.all} (${total})`
 }
 
 onMounted(async () => {
@@ -1984,6 +2047,22 @@ onMounted(async () => {
 .drill-prov-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-bottom: 1.2rem; }
 .drill-prov-stat-card {
   background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: .8rem; text-align: center;
+}
+.drill-stat-clickable {
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+.drill-stat-clickable:hover,
+.drill-stat-clickable:focus-visible {
+  transform: translateY(-2px);
+  border-color: #38bdf8 !important;
+  box-shadow: 0 10px 24px rgba(14, 165, 233, .16);
+  outline: none;
+}
+.drill-stat-clickable.active {
+  background: linear-gradient(180deg, #ffffff, #eef8ff);
+  border-color: #0ea5e9 !important;
+  box-shadow: 0 10px 28px rgba(14, 165, 233, .18);
 }
 .drill-prov-stat-icon {
   width: 36px; height: 36px; border-radius: 10px; display: flex;

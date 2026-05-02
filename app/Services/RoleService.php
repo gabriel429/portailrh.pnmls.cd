@@ -55,8 +55,10 @@ class RoleService
     {
         if (!$user) return false;
         return $this->hasDirecteurOrDafRole($user)
+            || $this->isDepartmentManager($user)
             || $user->hasRole('SEN')
-            || $user->hasRole('SENA');
+            || $user->hasRole('SENA')
+            || $user->hasRole('SEP');
     }
 
     /**
