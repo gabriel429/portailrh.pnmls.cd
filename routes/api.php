@@ -115,7 +115,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Taches
     Route::get('taches/create', [TacheController::class, 'create']);
     Route::get('taches/performance', [TacheController::class, 'performanceReport']);
-    Route::apiResource('taches', TacheController::class)->except(['edit']);
+    Route::apiResource('taches', TacheController::class)
+        ->parameters(['taches' => 'tache'])
+        ->except(['edit']);
 
     Route::put('taches/{tache}/statut', [TacheController::class, 'updateStatut']);
     Route::post('taches/{tache}/commentaire', [TacheController::class, 'addCommentaire']);
@@ -408,7 +410,10 @@ Route::prefix('v1')->as('v1.')->group(function () {
         Route::post('requests/{request}/reject', [RequestController::class, 'rejectStep'])->name('requests.reject');
 
         Route::get('taches/create', [TacheController::class, 'create'])->name('taches.create');
-        Route::apiResource('taches', TacheController::class)->except(['edit'])->names('taches');
+        Route::apiResource('taches', TacheController::class)
+            ->parameters(['taches' => 'tache'])
+            ->except(['edit'])
+            ->names('taches');
         Route::put('taches/{tache}/statut', [TacheController::class, 'updateStatut'])->name('taches.update-statut');
         Route::post('taches/{tache}/commentaire', [TacheController::class, 'addCommentaire'])->name('taches.add-commentaire');
 

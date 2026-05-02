@@ -5,7 +5,7 @@
         <LoadingSpinner message="Chargement de la tâche..." />
       </div>
 
-      <template v-else-if="tache">
+      <template v-else-if="hasLoadedTache">
         <section class="rh-hero">
           <div class="row g-3 align-items-center">
             <div class="col-lg-8">
@@ -309,7 +309,7 @@
         </div>
       </div>
 
-      <div v-else class="text-center py-5">
+      <div v-else-if="!hasLoadedTache" class="text-center py-5">
         <i class="fas fa-lock fa-3x text-muted mb-3 d-block"></i>
         <p class="text-muted">Tâche introuvable ou accès refusé.</p>
         <button class="btn btn-outline-primary mt-2" @click="router.back()">
@@ -337,6 +337,7 @@ const loading = ref(true)
 const tache = ref(null)
 const isCreateur = ref(false)
 const isAssigne = ref(false)
+const hasLoadedTache = computed(() => !!tache.value?.id)
 
 const updatingStatut = ref(false)
 const addingComment = ref(false)
@@ -367,27 +368,46 @@ const documentsByType = computed(() => {
 
 const statusDocumentName = computed(() => statusDocument.value?.name || '')
 
+function extractTachePayload(responseData) {
+  const payload = responseData?.data?.tache ?? responseData?.data ?? responseData?.tache ?? responseData
+
+  if (!payload || typeof payload !== 'object' || !payload.id) {
+    return null
+  }
+
+  return payload
+}
+
+function applyTacheResponse(responseData) {
+  const payload = extractTachePayload(responseData)
+
+  if (!payload) {
+    throw new Error('Payload tache invalide')
+  }
+
+  tache.value = payload
+  isCreateur.value = Boolean(responseData?.isCreateur ?? responseData?.meta?.isCreateur ?? isCreateur.value)
+  isAssigne.value = Boolean(responseData?.isAssigne ?? responseData?.meta?.isAssigne ?? isAssigne.value)
+  statutForm.value = {
+    statut: payload.statut === 'nouvelle' ? 'en_cours' : (payload.statut || 'en_cours'),
+    pourcentage: payload.pourcentage ?? 0,
+    contenu: '',
+  }
+}
+
 async function loadTache() {
   try {
     const { data } = await get(route.params.id)
-    // DEBUG TEMPORAIRE - à supprimer après diagnostic
-    console.log('[TacheShow] API response:', JSON.stringify({ keys: Object.keys(data || {}), data_keys: Object.keys(data?.data || {}), titre: data?.data?.titre, statut: data?.data?.statut }))
-    tache.value = data.data
-    isCreateur.value = data.isCreateur
-    isAssigne.value = data.isAssigne
-    statutForm.value = {
-      statut: data.data.statut === 'nouvelle' ? 'en_cours' : data.data.statut,
-      pourcentage: data.data.pourcentage ?? 0,
-      contenu: '',
-    }
+    applyTacheResponse(data)
   } catch {
+    tache.value = null
+    isCreateur.value = false
+    isAssigne.value = false
     ui.addToast('Tâche introuvable ou accès refusé.', 'danger')
   } finally {
     loading.value = false
   }
 }
-
-onMounted(() => loadTache())
 
 // Re-charger si navigation SPA entre deux taches (Vue Router réutilise le composant)
 watch(() => route.params.id, (newId, oldId) => {
@@ -410,12 +430,7 @@ async function handleUpdateStatut() {
     }
 
     const { data } = await updateStatut(route.params.id, payload)
-    tache.value = data.data
-    statutForm.value = {
-      statut: data.data.statut === 'nouvelle' ? 'en_cours' : data.data.statut,
-      pourcentage: data.data.pourcentage ?? 0,
-      contenu: '',
-    }
+    applyTacheResponse(data)
     removeStatusDocument()
     ui.addToast('Statut mis à jour avec succès.', 'success')
   } catch (err) {
@@ -429,7 +444,7 @@ async function handleAddComment() {
   addingComment.value = true
   try {
     const { data } = await addCommentaire(route.params.id, commentForm.value)
-    tache.value = data.data
+    applyTacheResponse(data)
     commentForm.value = { contenu: '' }
     ui.addToast('Commentaire ajouté.', 'success')
   } catch (err) {
@@ -524,7 +539,7 @@ async function handleEdit() {
   saving.value = true
   try {
     const { data } = await update(route.params.id, editForm.value)
-    tache.value = data.data?.tache ?? tache.value
+    applyTacheResponse(data)
     showEditPanel.value = false
     ui.addToast('Tâche mise à jour.', 'success')
   } catch (err) {
