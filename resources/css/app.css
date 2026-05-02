@@ -3484,3 +3484,302 @@ html.dark body :is(.table, .data-table, .rh-table, .ast-table) thead th {
         transform: none !important;
     }
 }
+
+/* Responsive hardening */
+html,
+body,
+#app {
+    max-width: 100%;
+}
+
+body {
+    overflow-x: hidden;
+}
+
+body :where(.main-content, .admin-content, .container, .container-fluid, .rh-modern, .dept-dashboard, .rh-dashboard, .caf-dashboard, .sena-dashboard, .sen-dashboard, .sep-dashboard, .rc-dashboard) {
+    max-width: 100%;
+}
+
+body :where(.table-responsive, .rh-table-wrap, .dept-table-wrap, .ast-table-wrap, .error-table-wrap) {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-table-wrap .rh-table, .dept-table-wrap .dept-table, .ast-table-wrap .ast-table, .error-table-wrap .table) {
+    min-width: max-content;
+}
+
+@media (max-width: 767.98px) {
+    body :where(.main-content) {
+        padding-left: .65rem;
+        padding-right: .65rem;
+    }
+
+    body :where(.container, .container-fluid, .rh-modern, .dept-dashboard, .rh-dashboard, .caf-dashboard, .sena-dashboard, .sen-dashboard, .sep-dashboard, .rc-dashboard) {
+        width: 100%;
+        max-width: 100%;
+        padding-left: .65rem !important;
+        padding-right: .65rem !important;
+        overflow-x: clip;
+    }
+
+    body :where(
+        .dash-hero,
+        .rh-hero,
+        .page-hero,
+        .doc-hero,
+        .dt-hero,
+        .notif-hero,
+        .mailhist-hero,
+        .fl-hero,
+        .fv-hero,
+        .dept-hero,
+        .agents-hero,
+        .ast-hero,
+        .communique-hero,
+        .affectation-hero,
+        .agent-form-hero,
+        .req-hero,
+        .upload-hero,
+        .caf-hero,
+        .sena-hero,
+        .sep-hero,
+        .sen-hero,
+        .pt-hero
+    ) {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important;
+        overflow: hidden !important;
+        border-radius: 16px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+    }
+
+    body :where(
+        .dash-hero-text,
+        .rh-hero-text,
+        .dept-hero-text,
+        .caf-hero-text,
+        .sena-hero-text,
+        .sep-hero-text,
+        .sen-hero-text,
+        .pt-hero-text,
+        .fl-hero-text,
+        .hero-text,
+        .page-hero-content,
+        .doc-hero-content
+    ) {
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    body :where(
+        .dash-hero-text h2,
+        .rh-hero-name,
+        .dept-hero-name,
+        .caf-hero-name,
+        .sena-hero-name,
+        .sep-hero-name,
+        .sen-hero-name,
+        .hero-title,
+        .rh-title,
+        .page-hero h4,
+        .pt-hero-text h2,
+        .doc-hero h2,
+        .dt-hero h2,
+        .notif-hero h2
+    ) {
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        overflow-wrap: anywhere;
+        line-height: 1.18;
+    }
+
+    body :where(
+        .dash-hero-stats,
+        .rh-hero-kpis,
+        .dept-hero-kpis,
+        .caf-hero-kpis,
+        .sena-hero-kpis,
+        .sep-hero-kpis,
+        .sen-hero-kpis,
+        .pt-hero-stats,
+        .doc-hero-stats,
+        .dt-hero-stats,
+        .notif-hero-stats,
+        .mailhist-hero-stats,
+        .fl-hero-stats
+    ) {
+        display: grid !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: .5rem !important;
+        margin-left: 0 !important;
+        overflow: visible !important;
+    }
+
+    body :where(
+        .dash-hero-stats > *,
+        .rh-hero-kpis > *,
+        .dept-hero-kpis > *,
+        .caf-hero-kpis > *,
+        .sena-hero-kpis > *,
+        .sep-hero-kpis > *,
+        .sen-hero-kpis > *,
+        .pt-hero-stats > *,
+        .doc-hero-stats > *,
+        .dt-hero-stats > *,
+        .notif-hero-stats > *,
+        .mailhist-hero-stats > *,
+        .fl-hero-stats > *
+    ) {
+        min-width: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
+    }
+
+    body :where(
+        .hero-tools,
+        .hero-actions,
+        .fl-hero-actions,
+        .fv-hero-actions,
+        .pt-hero-actions,
+        .req-hero-actions,
+        .doc-card-actions,
+        .dept-request-actions
+    ) {
+        max-width: 100%;
+        flex-wrap: wrap !important;
+        gap: .5rem !important;
+    }
+
+    body :where(.btn, .btn-rh, .hero-btn, .req-hero-btn, .pt-hero-btn, .dash-action-btn, .doc-action-btn, .dept-btn) {
+        min-width: 0 !important;
+        max-width: 100%;
+        white-space: normal !important;
+        line-height: 1.2;
+    }
+
+    body :where(
+        .dash-action-grid,
+        .dash-activity-grid,
+        .dash-info-grid,
+        .rh-actions,
+        .dept-actions,
+        .caf-actions,
+        .sena-section-split,
+        .dept-requests-grid,
+        .caf-dept-grid,
+        .pt-card-grid,
+        .doc-grid,
+        .dt-grid,
+        .agents-grid
+    ) {
+        grid-template-columns: 1fr !important;
+        gap: .75rem !important;
+    }
+
+    body :where(
+        .dash-stat-grid,
+        .rh-metrics,
+        .dept-metrics,
+        .dept-task-cards,
+        .caf-metrics,
+        .caf-presence-cards,
+        .rh-conge-stats,
+        .rh-pta-stats,
+        .dum-cat-grid,
+        .cat-cards,
+        .doc-cat-grid,
+        .pt-filter-grid
+    ) {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: .65rem !important;
+    }
+
+    body :where(
+        .dash-action-card,
+        .dash-stat-card,
+        .dash-activity-card,
+        .dash-info-card,
+        .rh-action,
+        .dept-action,
+        .caf-action,
+        .sena-task-row,
+        .sena-agenda-row,
+        .sena-request-row,
+        .sena-communique-row,
+        .sena-signalement-row,
+        .dept-task-row,
+        .dept-agenda-row,
+        .dept-agent-compact-row,
+        .caf-req-row
+    ) {
+        min-width: 0 !important;
+        max-width: 100% !important;
+    }
+
+    body :where(.modal-dialog) {
+        width: calc(100vw - 1rem) !important;
+        max-width: calc(100vw - 1rem) !important;
+        margin: .5rem auto !important;
+    }
+
+    body :where(.modal-content, .dum-dialog, .drill-panel) {
+        max-width: calc(100vw - 1rem) !important;
+        max-height: calc(100dvh - 1rem) !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    body :where(.hero-tools, .hero-actions, .fl-hero-actions, .fv-hero-actions, .pt-hero-actions, .req-hero-actions) {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+    }
+
+    body :where(.hero-tools > *, .hero-actions > *, .fl-hero-actions > *, .fv-hero-actions > *, .pt-hero-actions > *, .req-hero-actions > *) {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+    body :where(.dash-hero-avatar, .rh-hero-badge, .dept-hero-avatar, .caf-hero-avatar, .sena-hero-avatar, .sep-hero-avatar, .sen-hero-avatar) {
+        width: 48px !important;
+        height: 48px !important;
+        flex: 0 0 48px !important;
+    }
+
+    body :where(.dept-task-row, .dept-agenda-row, .dept-request-footer, .caf-req-row, .rh-pending-item, .sena-task-row, .sena-agenda-row, .sena-request-row) {
+        flex-wrap: wrap !important;
+        align-items: flex-start !important;
+    }
+
+    body :where(.dept-task-prog, .dept-request-actions, .doc-card-actions) {
+        width: 100% !important;
+        min-width: 0 !important;
+        justify-content: flex-start !important;
+    }
+}
+
+@media (max-width: 380px) {
+    body :where(
+        .dash-stat-grid,
+        .rh-metrics,
+        .dept-metrics,
+        .dept-task-cards,
+        .caf-metrics,
+        .caf-presence-cards,
+        .rh-conge-stats,
+        .rh-pta-stats,
+        .dum-cat-grid,
+        .cat-cards,
+        .doc-cat-grid,
+        .pt-filter-grid
+    ) {
+        grid-template-columns: 1fr !important;
+    }
+}

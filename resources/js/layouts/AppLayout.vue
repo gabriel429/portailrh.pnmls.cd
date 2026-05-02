@@ -285,14 +285,14 @@
       @click="closeMobileNav"
     ></button>
 
-    <div class="watermark-logo"></div>
+    <div v-if="auth.isAuthenticated" class="watermark-logo"></div>
 
-    <div class="container-fluid main-content">
+    <div class="container-fluid main-content" :class="{ 'guest-content': !auth.isAuthenticated }">
       <AppToast />
       <slot />
     </div>
 
-    <footer class="footer mt-5">
+    <footer v-if="auth.isAuthenticated" class="footer mt-5">
       <p class="mb-0">&copy; 2026 E-PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
     </footer>
   </div>
@@ -492,5 +492,10 @@ watch(() => auth.user?.id, (userId) => {
 .main-content {
   position: relative;
   z-index: 1;
+}
+
+.main-content.guest-content {
+  min-height: 100dvh;
+  padding: 0 !important;
 }
 </style>

@@ -8,7 +8,7 @@
         <h1 class="brand-title">PNMLS</h1>
         <p class="brand-tagline">Programme National Multisectoriel<br>de Lutte contre le Sida</p>
         <div class="brand-separator"></div>
-        <p class="brand-portal">Système de Gestion des Ressources Humaines</p>
+        <p class="brand-portal">Syst&egrave;me de Gestion des Ressources Humaines</p>
       </div>
     </div>
 
@@ -20,7 +20,7 @@
             <i class="fas fa-sign-in-alt"></i>
           </div>
           <h2>Connexion</h2>
-          <p>Accédez à votre espace personnel</p>
+          <p>Acc&eacute;dez &agrave; votre espace personnel</p>
         </div>
 
         <div v-if="errorMessage" class="alert alert-dismissible fade show"
@@ -61,7 +61,13 @@
                 placeholder="Mot de passe"
                 required
               >
-              <button class="password-toggle" type="button" @click="showPassword = !showPassword" tabindex="-1">
+              <button
+                class="password-toggle"
+                type="button"
+                @click="showPassword = !showPassword"
+                tabindex="-1"
+                :aria-label="showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'"
+              >
                 <i :class="showPassword ? 'fas fa-eye-slash' : 'fas fa-eye'"></i>
               </button>
             </div>
@@ -146,39 +152,63 @@ async function handleLogin() {
    ═══════════════════════════════════════════ */
 .login-page {
     min-height: 100vh;
-    display: flex;
-    background: #f0f4f8;
+    min-height: 100dvh;
+    display: grid;
+    grid-template-columns: minmax(360px, 45%) minmax(0, 1fr);
+    background:
+        linear-gradient(135deg, rgba(224,242,254,.92), rgba(255,255,255,.98) 48%, rgba(236,253,245,.9)),
+        radial-gradient(70% 55% at 0% 0%, rgba(0,119,181,.16), transparent 62%),
+        radial-gradient(62% 48% at 100% 100%, rgba(15,118,110,.13), transparent 64%);
+    overflow-x: hidden;
+    position: relative;
 }
 
 /* ── Left Brand Panel ── */
 .login-brand {
-    flex: 0 0 45%;
-    background: linear-gradient(160deg, #0077B5 0%, #005a87 40%, #003f5f 100%);
+    min-height: 100vh;
+    min-height: 100dvh;
+    background:
+        linear-gradient(160deg, rgba(0,119,181,.96) 0%, rgba(0,90,135,.92) 42%, rgba(15,76,95,.94) 100%),
+        radial-gradient(85% 70% at 20% 12%, rgba(255,255,255,.24), transparent 58%);
     display: flex;
     align-items: center;
     justify-content: center;
     position: relative;
     overflow: hidden;
+    padding: clamp(2rem, 5vw, 4rem);
+    border-right: 1px solid rgba(255,255,255,.20);
+    box-shadow: 24px 0 60px rgba(15,35,58,.12);
 }
 
 .brand-bg {
     position: absolute;
     inset: -20px;
     background: url('/images/pnmls.jpeg') center/cover no-repeat;
-    filter: blur(6px);
-    opacity: 0.15;
+    filter: blur(8px) saturate(110%);
+    opacity: 0.13;
+}
+
+.login-brand::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(125deg, rgba(255,255,255,.20), transparent 28%, rgba(255,255,255,.08) 62%, transparent),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.08) 0, rgba(255,255,255,.08) 1px, transparent 1px, transparent 82px);
+    pointer-events: none;
 }
 
 .brand-content {
     position: relative;
     z-index: 2;
     text-align: center;
-    padding: 2rem;
+    width: min(100%, 420px);
+    padding: 0;
 }
 
 .brand-logo {
-    width: 140px;
-    height: 140px;
+    width: clamp(104px, 12vw, 142px);
+    height: clamp(104px, 12vw, 142px);
     border-radius: 50%;
     object-fit: cover;
     border: 4px solid rgba(255,255,255,.25);
@@ -193,10 +223,10 @@ async function handleLogin() {
 }
 
 .brand-title {
-    font-size: 2.5rem;
+    font-size: clamp(2rem, 4vw, 2.7rem);
     font-weight: 900;
     color: #fff;
-    letter-spacing: 6px;
+    letter-spacing: .18em;
     margin-bottom: .5rem;
     text-shadow: 0 2px 10px rgba(0,0,0,.2);
 }
@@ -221,21 +251,33 @@ async function handleLogin() {
     font-weight: 600;
     color: rgba(255,255,255,.5);
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: .16em;
+    line-height: 1.7;
 }
 
 /* ── Right Form Panel ── */
 .login-form-panel {
-    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 2rem;
+    min-width: 0;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    background: transparent !important;
 }
 
 .login-card {
     width: 100%;
-    max-width: 400px;
+    max-width: 430px;
+    padding: clamp(1.35rem, 3vw, 2.1rem);
+    border-radius: 26px;
+    background:
+        linear-gradient(145deg, rgba(255,255,255,.90), rgba(255,255,255,.62)),
+        linear-gradient(315deg, rgba(14,165,233,.09), rgba(15,118,110,.06)) !important;
+    border: 1px solid rgba(125,211,252,.32);
+    box-shadow: 0 24px 68px rgba(15,35,58,.14), inset 0 1px 0 rgba(255,255,255,.74) !important;
+    backdrop-filter: blur(20px) saturate(155%);
+    -webkit-backdrop-filter: blur(20px) saturate(155%);
+    overflow: hidden;
 }
 
 .login-header {
@@ -246,8 +288,10 @@ async function handleLogin() {
 .login-icon {
     width: 56px;
     height: 56px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, #0077B5, #005a87);
+    border-radius: 18px;
+    background:
+        linear-gradient(135deg, rgba(0,119,181,.98), rgba(15,118,110,.92)),
+        radial-gradient(100% 90% at 20% 0%, rgba(255,255,255,.32), transparent 48%);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -291,6 +335,7 @@ async function handleLogin() {
 .form-control {
     border-radius: 12px;
     border: 1.5px solid #e2e8f0;
+    min-height: 46px;
     padding: .7rem 1rem;
     font-size: .9rem;
     transition: all .2s ease;
@@ -319,7 +364,7 @@ async function handleLogin() {
     right: 1px;
     top: 1px;
     bottom: 1px;
-    width: 2.8rem;
+    width: 2.9rem;
     background: none;
     border: none;
     color: #94a3b8;
@@ -368,10 +413,13 @@ async function handleLogin() {
 /* ── Login button ── */
 .btn-login {
     width: 100%;
+    min-height: 48px;
     padding: .75rem;
     border: none;
     border-radius: 12px;
-    background: linear-gradient(135deg, #0077B5, #005a87);
+    background:
+        linear-gradient(135deg, rgba(0,119,181,.98), rgba(15,118,110,.92)),
+        radial-gradient(100% 90% at 20% 0%, rgba(255,255,255,.28), transparent 48%);
     color: #fff;
     font-size: .95rem;
     font-weight: 700;
@@ -451,67 +499,74 @@ async function handleLogin() {
    ═══════════════════════════════════════════ */
 @media (max-width: 768px) {
     .login-page {
-        flex-direction: column;
-        min-height: 100vh;
+        grid-template-columns: 1fr;
+        min-height: 100dvh;
     }
 
     /* Brand panel becomes a compact header on mobile */
     .login-brand {
-        flex: none;
-        padding: 2rem 1.5rem 1.5rem;
-        min-height: auto;
+        min-height: 0;
+        padding: 1.35rem 1rem 2.65rem;
+        border-right: 0;
+        box-shadow: 0 20px 44px rgba(15,35,58,.16);
     }
 
     .brand-content {
-        padding: 1rem 0;
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        align-items: center;
+        gap: .15rem .85rem;
+        text-align: left;
     }
 
     .brand-logo {
-        width: 80px;
-        height: 80px;
-        margin-bottom: 1rem;
+        grid-row: span 3;
+        width: 68px;
+        height: 68px;
+        margin: 0;
         border-width: 3px;
         box-shadow: 0 4px 20px rgba(0,0,0,.25), 0 0 0 5px rgba(255,255,255,.08);
     }
 
     .brand-title {
-        font-size: 1.5rem;
-        letter-spacing: 4px;
-        margin-bottom: .3rem;
+        font-size: 1.32rem;
+        letter-spacing: .16em;
+        margin: 0;
     }
 
     .brand-tagline {
-        font-size: .78rem;
-        margin-bottom: 1rem;
+        font-size: .74rem;
+        margin: 0;
         line-height: 1.4;
     }
 
     .brand-separator {
-        width: 40px;
-        height: 2px;
-        margin: 0 auto .75rem;
+        display: none;
     }
 
     .brand-portal {
-        font-size: .7rem;
-        letter-spacing: 2px;
+        font-size: .64rem;
+        letter-spacing: .08em;
+        line-height: 1.35;
+        margin: .15rem 0 0;
     }
 
     /* Form panel takes remaining space */
     .login-form-panel {
-        flex: 1;
-        padding: 1.5rem 1.25rem 2rem;
+        padding: 0 1rem 1rem;
         align-items: flex-start;
-        background: #fff;
+        background: transparent !important;
         border-radius: 24px 24px 0 0;
-        margin-top: -1rem;
+        margin-top: -1.8rem;
         position: relative;
         z-index: 3;
-        box-shadow: 0 -4px 20px rgba(0,0,0,.08);
+        box-shadow: none;
     }
 
     .login-card {
         max-width: 100%;
+        padding: 1.25rem;
+        border-radius: 22px;
     }
 
     .login-header {
@@ -556,7 +611,7 @@ async function handleLogin() {
     }
 
     .login-footer {
-        margin-top: 1.5rem;
+        margin-top: 1.25rem;
     }
 
     .alert-danger {
@@ -568,29 +623,65 @@ async function handleLogin() {
 /* Extra small screens */
 @media (max-width: 380px) {
     .login-brand {
-        padding: 1.5rem 1rem 1.25rem;
+        padding: 1rem .75rem 2.2rem;
     }
 
     .brand-logo {
-        width: 65px;
-        height: 65px;
+        width: 58px;
+        height: 58px;
     }
 
     .brand-title {
-        font-size: 1.3rem;
-        letter-spacing: 3px;
+        font-size: 1.12rem;
+        letter-spacing: .13em;
     }
 
     .brand-tagline {
-        font-size: .72rem;
+        font-size: .68rem;
     }
 
     .login-form-panel {
-        padding: 1.25rem 1rem 1.5rem;
+        padding: 0 .75rem .85rem;
     }
 
     .login-header h2 {
         font-size: 1.15rem;
+    }
+
+    .brand-portal {
+        display: none;
+    }
+}
+
+@media (max-height: 700px) and (max-width: 768px) {
+    .login-brand {
+        padding-top: .9rem;
+        padding-bottom: 2rem;
+    }
+
+    .brand-logo {
+        width: 54px;
+        height: 54px;
+    }
+
+    .login-header {
+        margin-bottom: 1rem;
+    }
+
+    .login-icon {
+        width: 42px;
+        height: 42px;
+        margin-bottom: .55rem;
+    }
+
+    .form-group {
+        margin-bottom: .8rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .brand-logo {
+        animation: none;
     }
 }
 </style>
