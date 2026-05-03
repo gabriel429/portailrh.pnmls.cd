@@ -3,11 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use App\Models\User;
 
 class AuthController extends Controller
 {
@@ -45,7 +45,6 @@ class AuthController extends Controller
             return 'Android';
         }
 
-        // Desktop
         if (preg_match('/Edg\/([\d.]+)/i', $ua)) {
             $model = 'Microsoft Edge';
         } elseif (preg_match('/Chrome\/([\d.]+)/i', $ua)) {
@@ -83,25 +82,30 @@ class AuthController extends Controller
 
             $user = Auth::user();
 
-            // Check if account is frozen
             if ($user->is_frozen) {
                 Auth::guard('web')->logout();
-                try { $request->session()->invalidate(); $request->session()->regenerateToken(); } catch (\Throwable $e) {}
+                try {
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                } catch (\Throwable $e) {
+                }
 
                 return response()->json([
-                    'message' => 'Votre compte a été gelé. Veuillez contacter la Section Nouvelle Technologie.',
+                    'message' => 'Votre compte a ete gele. Veuillez contacter la Section Nouvelle Technologie.',
                 ], 403);
             }
 
-            // Record login IP and timestamp
             $user->update([
                 'last_login_ip' => $request->ip(),
                 'last_login_at' => now(),
             ]);
 
-            // SuperAdmin bypasses concurrent session limits
             if ($user->is_super_admin) {
-                try { $request->session()->regenerate(); } catch (\Throwable $e) {}
+                try {
+                    $request->session()->regenerate();
+                } catch (\Throwable $e) {
+                }
+
                 return response()->json([
                     'message' => 'Connexion reussie.',
                     'user' => $user,
@@ -109,38 +113,55 @@ class AuthController extends Controller
             }
 
             $currentUA = $request->userAgent() ?? '';
+            $currentIp = $request->ip();
             $currentIsMobile = $this->isMobile($currentUA);
 
-            // Clean up expired sessions for this user first
             DB::table('sessions')
                 ->where('user_id', $user->id)
                 ->where('last_activity', '<', now()->subMinutes(config('session.lifetime', 120))->timestamp)
                 ->delete();
 
-            // Check existing active sessions for this user (same device type)
-            // Exclude current session — Auth::attempt() already assigned user_id to it
             $currentSessionId = null;
-            try { $currentSessionId = session()->getId(); } catch (\Throwable $e) {}
+            try {
+                $currentSessionId = session()->getId();
+            } catch (\Throwable $e) {
+            }
+
             $existingSessions = DB::table('sessions')
                 ->where('user_id', $user->id)
                 ->where('id', '!=', $currentSessionId)
                 ->get(['id', 'user_agent', 'ip_address']);
 
             foreach ($existingSessions as $session) {
-                $sessionIsMobile = $this->isMobile($session->user_agent ?? '');
+                $sessionUserAgent = $session->user_agent ?? '';
+                $sessionIpAddress = $session->ip_address ?? '';
+                $sessionIsMobile = $this->isMobile($sessionUserAgent);
 
-                // Same device type already has an active session → block
-                if ($sessionIsMobile === $currentIsMobile) {
-                    // Log the user back out since Auth::attempt already logged them in
+                $sameDeviceType = $sessionIsMobile === $currentIsMobile;
+                $sameBrowser = $sessionUserAgent === $currentUA;
+                $sameIpAddress = $sessionIpAddress === $currentIp;
+
+                // Ghost session from the same browser on the same machine:
+                // replace it instead of blocking the user with a false conflict.
+                if ($sameDeviceType && $sameBrowser && $sameIpAddress) {
+                    DB::table('sessions')->where('id', $session->id)->delete();
+                    continue;
+                }
+
+                if ($sameDeviceType) {
                     Auth::guard('web')->logout();
-                    try { $request->session()->invalidate(); $request->session()->regenerateToken(); } catch (\Throwable $e) {}
+                    try {
+                        $request->session()->invalidate();
+                        $request->session()->regenerateToken();
+                    } catch (\Throwable $e) {
+                    }
 
-                    $deviceType = $currentIsMobile ? 'téléphone' : 'ordinateur';
-                    $deviceModel = $this->parseDeviceModel($session->user_agent ?? '');
+                    $deviceType = $currentIsMobile ? 'telephone' : 'ordinateur';
+                    $deviceModel = $this->parseDeviceModel($sessionUserAgent);
                     $deviceInfo = $deviceModel ? "{$deviceType} ({$deviceModel})" : $deviceType;
 
                     return response()->json([
-                        'message' => "Votre compte est déjà connecté sur un autre {$deviceInfo}. Veuillez vous déconnecter de l'autre appareil ou contacter la Section Nouvelle Technologie.",
+                        'message' => "Votre compte est deja connecte sur un autre {$deviceInfo}. Veuillez vous deconnecter de l'autre appareil ou contacter la Section Nouvelle Technologie.",
                     ], 409);
                 }
             }
@@ -151,7 +172,6 @@ class AuthController extends Controller
                 \Log::warning('Session regenerate failed: ' . $e->getMessage());
             }
 
-            // Safely load relations - don't crash if they fail
             try {
                 $user->load(['agent', 'role']);
             } catch (\Throwable $e) {
@@ -166,6 +186,7 @@ class AuthController extends Controller
             throw $e;
         } catch (\Throwable $e) {
             \Log::error('API login error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+
             return response()->json([
                 'message' => 'Erreur serveur: ' . $e->getMessage(),
             ], 500);
@@ -174,15 +195,22 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
-        $userId = Auth::id();
         $sessionId = null;
-        try { $sessionId = session()->getId(); } catch (\Throwable $e) {}
+        try {
+            $sessionId = session()->getId();
+        } catch (\Throwable $e) {
+        }
 
         Auth::guard('web')->logout();
-        try { $request->session()->invalidate(); $request->session()->regenerateToken(); } catch (\Throwable $e) {}
+        try {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        } catch (\Throwable $e) {
+        }
 
-        // Explicitly remove the session from database to prevent ghost sessions
-        if ($sessionId) { DB::table('sessions')->where('id', $sessionId)->delete(); }
+        if ($sessionId) {
+            DB::table('sessions')->where('id', $sessionId)->delete();
+        }
 
         return response()->json(['message' => 'Deconnexion reussie.']);
     }
@@ -194,12 +222,10 @@ class AuthController extends Controller
 
         $data = $user->toArray();
 
-        // Expose super admin flag only to the super admin themselves
         if ($user->is_super_admin) {
             $data['is_super_admin'] = true;
         }
 
-        // Expose permission codes for the frontend
         $permissions = collect();
         if ($user->role) {
             $permissions = $user->role->permissions()->pluck('code');
@@ -213,18 +239,11 @@ class AuthController extends Controller
         return response()->json($data);
     }
 
-    // =========================================================================
-    // Mobile Token-based Authentication (Sanctum Personal Access Tokens)
-    // =========================================================================
-
-    /**
-     * Mobile login — returns a Bearer token instead of a session cookie.
-     */
     public function mobileLogin(Request $request)
     {
         $request->validate([
-            'email'       => 'required|email',
-            'password'    => 'required|string',
+            'email' => 'required|email',
+            'password' => 'required|string',
             'device_name' => 'required|string|max:255',
         ]);
 
@@ -236,17 +255,15 @@ class AuthController extends Controller
 
         if ($user->is_frozen) {
             return response()->json([
-                'message' => 'Votre compte a été gelé. Veuillez contacter la Section Nouvelle Technologie.',
+                'message' => 'Votre compte a ete gele. Veuillez contacter la Section Nouvelle Technologie.',
             ], 403);
         }
 
-        // Record login
         $user->update([
             'last_login_ip' => $request->ip(),
             'last_login_at' => now(),
         ]);
 
-        // Revoke previous tokens for the same device (one token per device)
         $user->tokens()->where('name', $request->device_name)->delete();
 
         $token = $user->createToken($request->device_name)->plainTextToken;
@@ -254,46 +271,40 @@ class AuthController extends Controller
         $user->load(['agent.departement', 'agent.province', 'role']);
 
         return response()->json([
-            'message' => 'Connexion réussie.',
-            'token'   => $token,
-            'user'    => $user,
+            'message' => 'Connexion reussie.',
+            'token' => $token,
+            'user' => $user,
         ]);
     }
 
-    /**
-     * Mobile register — creates user + returns a Bearer token.
-     */
     public function mobileRegister(Request $request)
     {
         $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|unique:users,email',
-            'password'    => 'required|string|min:8|confirmed',
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:8|confirmed',
             'device_name' => 'required|string|max:255',
         ]);
 
         $user = User::create([
-            'name'     => $request->name,
-            'email'    => $request->email,
+            'name' => $request->name,
+            'email' => $request->email,
             'password' => Hash::make($request->password),
         ]);
 
         $token = $user->createToken($request->device_name)->plainTextToken;
 
         return response()->json([
-            'message' => 'Inscription réussie.',
-            'token'   => $token,
-            'user'    => $user,
+            'message' => 'Inscription reussie.',
+            'token' => $token,
+            'user' => $user,
         ], 201);
     }
 
-    /**
-     * Mobile logout — revokes the current token.
-     */
     public function mobileLogout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Déconnexion réussie.']);
+        return response()->json(['message' => 'Deconnexion reussie.']);
     }
 }
