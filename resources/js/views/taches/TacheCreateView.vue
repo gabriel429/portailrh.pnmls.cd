@@ -181,9 +181,14 @@ async function loadAgents() {
     agents.value = data.data.agents || []
     activitesPta.value = data.data.activites_pta || []
     sourceEmetteurs.value = data.data.source_emetteurs || []
+    if (data.data.isProvinceScope) {
+      form.value.source_emetteur = 'sep'
+    } else if (data.data.isSENScope) {
+      form.value.source_emetteur = 'sen'
+    }
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Accès refusé. Seuls les directeurs, DAF et l\'assistante du SEN peuvent créer des tâches.', 'danger')
+      ui.addToast('Accès refusé. Seuls les gestionnaires habilités peuvent créer des tâches.', 'danger')
       router.push({ name: 'taches.index' })
     } else {
       ui.addToast(err.response?.data?.message || 'Erreur lors du chargement.', 'danger')

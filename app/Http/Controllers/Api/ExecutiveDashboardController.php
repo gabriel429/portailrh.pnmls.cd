@@ -47,6 +47,59 @@ class ExecutiveDashboardController extends ApiController
         ][strtoupper((string) $code)] ?? null;
     }
 
+    private function normalizedRoleName($user): string
+    {
+        return strtolower(trim((string) ($user->role?->nom_role ?? '')));
+    }
+
+    private function isCafDashboardUser($user): bool
+    {
+        if ($user->is_super_admin) {
+            return true;
+        }
+
+        $roleName = $this->normalizedRoleName($user);
+        if (in_array($roleName, [
+            'cellule administrative et financiÃ¨re',
+            'cellule administrative et financiere',
+            'caf',
+            'chef caf',
+            'responsable caf',
+        ], true)) {
+            return true;
+        }
+
+        if ($roleName !== 'secom') {
+            return false;
+        }
+
+        $agent = $user->agent;
+        $deptCode = strtolower((string) ($agent?->departement?->code ?? ''));
+        $deptName = strtolower((string) ($agent?->departement?->nom ?? ''));
+
+        return $deptCode === 'caf' || str_contains($deptName, 'cellule administrative et financ');
+    }
+
+    private function isSepDashboardUser($user): bool
+    {
+        $roleName = $this->normalizedRoleName($user);
+        if ($roleName === 'sep') {
+            return true;
+        }
+
+        if ($roleName !== 'secom') {
+            return false;
+        }
+
+        if ($this->isCafDashboardUser($user)) {
+            return false;
+        }
+
+        $organe = strtolower((string) ($user->agent?->organe ?? ''));
+
+        return str_contains($organe, 'provincial');
+    }
+
     private function presenceAgents($query, Carbon $date, int $limit = 100)
     {
         $agents = (clone $query)->actifs()
@@ -689,7 +742,7 @@ class ExecutiveDashboardController extends ApiController
     {
         $user = $request->user();
 
-        if (!$user->hasRole('SEP')) {
+        if (!$this->isSepDashboardUser($user)) {
             return response()->json(['message' => 'Accès réservé au SEP.'], 403);
         }
 
@@ -829,6 +882,16 @@ class ExecutiveDashboardController extends ApiController
             ->limit(8)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
 
+        $nextWeek = $now->copy()->addDays(7);
+        $upcomingDeadlines = (clone $tacheQ)
+            ->whereNotIn('statut', ['terminee'])
+            ->whereNotNull('date_echeance')
+            ->whereBetween('date_echeance', [$now->toDateString(), $nextWeek->toDateString()])
+            ->with('agent:id,nom,prenom')
+            ->orderBy('date_echeance')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
+
         // ─── PERFORMANCE DES AGENTS (province) ──────────────────────────────────
         $agentPerformance = Agent::whereIn('departement_id',
                 Department::where('province_id', $provinceId)->pluck('id')
@@ -963,6 +1026,7 @@ class ExecutiveDashboardController extends ApiController
                 'overdue'  => $tOverdue,
             ],
             'recent_taches'     => $recentTaches,
+            'upcoming_deadlines' => $upcomingDeadlines,
             'agent_performance' => $agentPerformance,
             'plan_travail' => [
                 'total'          => $planTotal,
@@ -1649,7 +1713,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             'responsable caf',
         ];
         $roleName = strtolower($user->role?->nom_role ?? '');
-        if (!in_array($roleName, $cafRoles) && !$user->is_super_admin) {
+        if (!$this->isCafDashboardUser($user)) {
             return response()->json(['message' => 'Accès réservé à la CAF.'], 403);
         }
 

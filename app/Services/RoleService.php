@@ -49,14 +49,45 @@ class RoleService
     }
 
     /**
+     * Vérifie si l'utilisateur pilote le périmètre provincial SEP.
+     */
+    public function isSepManager(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasRole('SEP')) {
+            return true;
+        }
+
+        if (!$user->hasRole('SECOM')) {
+            return false;
+        }
+
+        $agent = $user->agent;
+        $organe = strtolower((string) ($agent?->organe ?? ''));
+        $deptCode = strtolower((string) ($agent?->departement?->code ?? ''));
+        $deptName = strtolower((string) ($agent?->departement?->nom ?? ''));
+
+        if ($deptCode === 'caf' || str_contains($deptName, 'cellule administrative et financ')) {
+            return false;
+        }
+
+        return str_contains($organe, 'provincial');
+    }
+
+    /**
      * Vérifie si l'utilisateur peut créer/gérer des tâches (Directeur, DAF, SEN, SENA).
      */
     public function hasTacheManagerRole(?User $user): bool
     {
         if (!$user) return false;
         return $this->hasDirecteurOrDafRole($user)
+            || $this->isDepartmentManager($user)
             || $user->hasRole('SEN')
-            || $user->hasRole('SENA');
+            || $user->hasRole('SENA')
+            || $this->isSepManager($user);
     }
 
     /**
