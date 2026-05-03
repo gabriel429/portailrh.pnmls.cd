@@ -1,5 +1,6 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
+import { registerSW } from 'virtual:pwa-register'
 import router from './router'
 import App from './App.vue'
 
@@ -8,34 +9,21 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
-// Initialize Offline Services for PWA functionality
-import './services/offlineStorage'
-import './services/cacheService'
-import './services/syncService'
+console.log('PWA: Service Worker re-enabled after clean deployment')
 
-console.log('🗄️ Offline services initialized for PWA pointage system')
-
-// Progressive Web App Setup - Service Worker Re-enabled
-console.log('🚀 PWA: Service Worker re-enabled after clean deployment')
-
-// Service Worker Registration with proper error handling
-import { registerSW } from 'virtual:pwa-register'
-
-const updateSW = registerSW({
+registerSW({
     onNeedRefresh() {
-        console.log('📱 PWA: New version available — will update on next navigation')
-        // Don't force reload mid-session. Let the new SW activate naturally
-        // on next page load to avoid blank-page flicker.
+        console.log('PWA: New version available; update will apply on next navigation')
     },
     onOfflineReady() {
-        console.log('📱 PWA: App ready for offline use')
+        console.log('PWA: App ready for offline use')
     },
-    onRegistered(r) {
-        console.log('✅ PWA: Service Worker registered successfully')
+    onRegistered() {
+        console.log('PWA: Service Worker registered successfully')
     },
     onRegisterError(error) {
-        console.error('❌ PWA: Service Worker registration failed:', error)
-    }
+        console.error('PWA: Service Worker registration failed:', error)
+    },
 })
 
 const app = createApp(App)
