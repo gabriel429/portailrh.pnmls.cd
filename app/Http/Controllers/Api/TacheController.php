@@ -13,8 +13,11 @@ use App\Models\Agent;
 use App\Services\NotificationService;
 use App\Services\RoleService;
 use App\Services\UserDataScope;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class TacheController extends ApiController
@@ -211,16 +214,7 @@ class TacheController extends ApiController
                 ->get(['id', 'nom', 'prenom', 'id_agent'])
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
 
-            $activitesPta = ActivitePlan::query()
-                ->where('annee', now()->year)
-                ->where('niveau_administratif', 'SEP')
-                ->where(function ($q) use ($agent) {
-                    $q->where('province_id', $agent->province_id)
-                        ->orWhereHas('provinces', fn($pq) => $pq->where('provinces.id', $agent->province_id));
-                })
-                ->orderBy('titre')
-                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
-                ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
+            $activitesPta = $this->resolveProvinceActivitesPta($agent->province_id);
         } else {
             if (!$agent || !$agent->departement_id) {
                 return response()->json(['message' => 'Vous devez etre affecte a un departement pour creer des taches.'], 422);
@@ -311,6 +305,25 @@ class TacheController extends ApiController
         // createur_id : utilise l'agent SEN/SENA s'il existe, sinon l'agent du département
         if (!$agent) {
             return response()->json(['message' => 'Vous devez être enregistré comme agent pour créer des tâches.'], 422);
+        }
+
+        if ($validated['source_type'] === 'pta' && $isSEP) {
+            $allowedActiviteIds = $this->resolveProvinceActivitesPta((int) $agent->province_id)
+                ->pluck('id')
+                ->map(fn($id) => (int) $id)
+                ->all();
+
+            if (
+                !empty($validated['activite_plan_id'])
+                && !in_array((int) $validated['activite_plan_id'], $allowedActiviteIds, true)
+            ) {
+                return response()->json([
+                    'message' => 'L activite PTA selectionnee n est pas disponible pour votre province.',
+                    'errors' => [
+                        'activite_plan_id' => ['L activite PTA selectionnee n est pas disponible pour votre province.'],
+                    ],
+                ], 422);
+            }
         }
 
         $validated['createur_id'] = $agent->id;
@@ -422,6 +435,52 @@ class TacheController extends ApiController
             'isAssigne'  => $isAssigne,
             'isProvinceManager' => $isProvinceManager,
         ]);
+    }
+
+    protected function resolveProvinceActivitesPta(int $provinceId)
+    {
+        $query = ActivitePlan::query()
+            ->where('annee', now()->year)
+            ->where('niveau_administratif', 'SEP')
+            ->where(function ($builder) use ($provinceId) {
+                $builder->where('province_id', $provinceId);
+
+                if (Schema::hasTable('activite_plan_province')) {
+                    $builder->orWhereHas('provinces', fn($provinceQuery) => $provinceQuery->where('provinces.id', $provinceId));
+                }
+            })
+            ->orderBy('titre');
+
+        try {
+            return $query
+                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+                ->map(fn($a) => [
+                    'id' => $a->id,
+                    'titre' => $a->titre,
+                    'annee' => $a->annee,
+                    'trimestre' => $a->trimestre,
+                    'niveau_administratif' => $a->niveau_administratif,
+                ]);
+        } catch (QueryException $exception) {
+            Log::warning('Provincial PTA lookup fallback during task creation.', [
+                'province_id' => $provinceId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return ActivitePlan::query()
+                ->where('annee', now()->year)
+                ->where('niveau_administratif', 'SEP')
+                ->where('province_id', $provinceId)
+                ->orderBy('titre')
+                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+                ->map(fn($a) => [
+                    'id' => $a->id,
+                    'titre' => $a->titre,
+                    'annee' => $a->annee,
+                    'trimestre' => $a->trimestre,
+                    'niveau_administratif' => $a->niveau_administratif,
+                ]);
+        }
     }
 
     /**

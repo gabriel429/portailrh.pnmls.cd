@@ -51,7 +51,43 @@
       </div>
 
       <div v-else class="data-card">
-        <div class="table-responsive">
+        <div class="mobile-role-list d-md-none">
+          <article v-for="role in roles" :key="role.id" class="mobile-role-card">
+            <div class="mobile-role-card-head">
+              <div class="mobile-role-title-wrap">
+                <div class="role-icon-sm">
+                  <i class="fas fa-user-tag"></i>
+                </div>
+                <div class="mobile-role-title-block">
+                  <div class="mobile-role-title">{{ role.nom_role }}</div>
+                  <div class="mobile-role-desc">{{ role.description || 'Aucune description' }}</div>
+                </div>
+              </div>
+              <span class="agent-count-badge">{{ role.agents_count ?? 0 }} agent(s)</span>
+            </div>
+
+            <div class="mobile-role-actions">
+              <router-link
+                :to="`/admin/roles/${role.id}/edit`"
+                class="mobile-action-btn"
+                title="Modifier"
+              >
+                <i class="fas fa-edit"></i>
+                <span>Modifier</span>
+              </router-link>
+              <button
+                class="mobile-action-btn mobile-action-btn-danger"
+                title="Supprimer"
+                @click="deleteRole(role)"
+              >
+                <i class="fas fa-trash"></i>
+                <span>Supprimer</span>
+              </button>
+            </div>
+          </article>
+        </div>
+
+        <div class="table-responsive d-none d-md-block">
           <table class="table data-table">
             <thead>
               <tr>
@@ -397,6 +433,91 @@ onMounted(() => {
 }
 
 /* ── Mobile Responsive ── */
+.mobile-role-list {
+  display: grid;
+  gap: .85rem;
+  padding: .9rem;
+}
+
+.mobile-role-card {
+  border: 1px solid #e5eef5;
+  border-radius: 14px;
+  padding: .95rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbfc 100%);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+}
+
+.mobile-role-card-head {
+  display: grid;
+  gap: .8rem;
+}
+
+.mobile-role-title-wrap {
+  display: flex;
+  align-items: flex-start;
+  gap: .7rem;
+  min-width: 0;
+}
+
+.mobile-role-title-block {
+  min-width: 0;
+}
+
+.mobile-role-title {
+  font-size: .92rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.mobile-role-desc {
+  margin-top: .28rem;
+  font-size: .78rem;
+  color: #64748b;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.mobile-role-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  margin-top: .9rem;
+}
+
+.mobile-action-btn {
+  min-height: 42px;
+  border-radius: 12px;
+  border: 1px solid #d9e4ec;
+  background: #fff;
+  color: #0f766e;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  font-size: .82rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all .2s ease;
+}
+
+.mobile-action-btn:hover {
+  border-color: #14b8a6;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.mobile-action-btn-danger {
+  color: #b91c1c;
+}
+
+.mobile-action-btn-danger:hover {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
 @media (max-width: 767.98px) {
   .page-hero {
     padding: 1.25rem 1rem;
@@ -422,11 +543,18 @@ onMounted(() => {
     border-radius: 10px;
     padding: .85rem 1rem;
   }
+  .count-badge {
+    display: inline-flex;
+    width: 100%;
+    justify-content: center;
+    margin-top: .5rem;
+  }
   .search-input {
     font-size: .82rem;
   }
   .data-card {
     border-radius: 10px;
+    overflow: hidden;
   }
   .data-table thead th {
     font-size: .72rem;
@@ -451,6 +579,20 @@ onMounted(() => {
   .modern-pagination .page-link {
     font-size: .75rem;
     padding: .3rem .6rem;
+  }
+  .mobile-role-list {
+    padding: .75rem;
+    gap: .75rem;
+  }
+  .mobile-role-card {
+    padding: .85rem;
+    border-radius: 12px;
+  }
+  .mobile-role-actions {
+    grid-template-columns: 1fr;
+  }
+  .mobile-action-btn {
+    width: 100%;
   }
 }
 </style>

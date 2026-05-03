@@ -31,6 +31,19 @@
             </button>
           </div>
 
+          <div class="mobile-nav-usercard d-lg-none">
+            <div class="mobile-nav-usercard-avatar">
+              <img v-if="currentProfilePhotoUrl" :src="currentProfilePhotoUrl" alt="Photo" class="nav-user-photo" @error="handleProfilePhotoError">
+              <span v-else class="nav-user-avatar">{{ initials }}</span>
+            </div>
+            <div class="mobile-nav-usercard-meta">
+              <div class="mobile-nav-usercard-name">{{ auth.agent?.prenom }} {{ auth.agent?.nom || auth.user?.name }}</div>
+              <div class="mobile-nav-usercard-role">{{ auth.user?.role?.nom_role || 'Agent' }}</div>
+            </div>
+          </div>
+
+          <div class="mobile-nav-section-title d-lg-none">Accès rapide</div>
+
           <ul class="navbar-nav mx-auto navbar-primary-nav">
             <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'dashboard' }" title="Accueil">
@@ -87,6 +100,8 @@
           </ul>
 
           <div class="mobile-nav-divider d-lg-none"></div>
+
+          <div class="mobile-nav-section-title d-lg-none">Outils</div>
 
           <ul class="navbar-nav align-items-lg-center navbar-secondary-nav">
             <!-- ── Menu Renforcement des Capacités ── -->
@@ -187,6 +202,15 @@
             </li>
 
             <div class="nav-divider d-none d-lg-block"></div>
+
+            <li class="nav-item d-lg-none">
+              <button class="mobile-theme-toggle" type="button" @click="ui.toggleDarkMode()">
+                <span class="mobile-theme-toggle-icon">
+                  <i :class="ui.isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                </span>
+                <span>{{ ui.isDark ? 'Mode jour' : 'Mode nuit' }}</span>
+              </button>
+            </li>
 
             <li class="nav-item d-none d-lg-flex align-items-center">
               <button class="dark-toggle-btn" @click="ui.toggleDarkMode()" :title="ui.isDark ? 'Passer en mode jour' : 'Passer en mode nuit'">
