@@ -13,6 +13,7 @@ use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class RequestController extends ApiController
 {
@@ -184,14 +185,11 @@ class RequestController extends ApiController
         $this->authorizeAccess($request->user(), $demande);
 
         $workflow = $this->workflowService();
-        $demande->loadMissing('validationHistories.agent');
+        $validationHistory = collect();
 
-        return $this->resource(RequestResource::make($demande), [], [
-            'isRH' => $request->user()->hasAdminAccess(),
-            'isOwner' => $request->user()->agent?->id === $demande->agent_id,
-            'canValidate' => $workflow->canValidate($request->user(), $demande),
-            'workflow' => $workflow->getWorkflowStatus($demande),
-            'validationHistory' => $demande->validationHistories->map(fn($history) => [
+        if (Schema::hasTable('request_validation_histories')) {
+            $demande->loadMissing('validationHistories.agent');
+            $validationHistory = $demande->validationHistories->map(fn($history) => [
                 'id' => $history->id,
                 'step' => $history->step,
                 'action' => $history->action,
@@ -202,7 +200,15 @@ class RequestController extends ApiController
                     'id' => $history->agent->id,
                     'nom_complet' => trim(($history->agent->prenom ?? '') . ' ' . ($history->agent->nom ?? '')),
                 ] : null,
-            ])->values(),
+            ])->values();
+        }
+
+        return $this->resource(RequestResource::make($demande), [], [
+            'isRH' => $request->user()->hasAdminAccess(),
+            'isOwner' => $request->user()->agent?->id === $demande->agent_id,
+            'canValidate' => $workflow->canValidate($request->user(), $demande),
+            'workflow' => $workflow->getWorkflowStatus($demande),
+            'validationHistory' => $validationHistory,
         ]);
     }
 

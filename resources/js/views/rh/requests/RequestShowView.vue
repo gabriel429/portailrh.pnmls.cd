@@ -372,6 +372,7 @@ onMounted(async () => {
       ui.addToast('Vous n\'avez pas acces a cette demande.', 'danger')
       router.push({ name: 'requests.index' })
     } else {
+      console.error('Erreur chargement demande:', err)
       ui.addToast('Erreur lors du chargement de la demande.', 'danger')
     }
   } finally {
