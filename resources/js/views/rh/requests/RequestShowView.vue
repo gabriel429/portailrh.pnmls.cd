@@ -103,8 +103,8 @@
         </div>
 
         <!-- Workflow Timeline -->
-        <div v-if="workflow.length" class="dash-panel mt-3">
-          <WorkflowTimeline :steps="workflow" />
+        <div v-if="workflowSteps.length" class="dash-panel mt-3">
+          <WorkflowTimeline :steps="workflowSteps" />
         </div>
 
         <!-- Validation actions (for authorized users on pending requests) -->
@@ -237,8 +237,14 @@ const validating = ref(false)
 const showRejectForm = ref(false)
 const rejectRemarques = ref('')
 
+const workflowSteps = computed(() => {
+  if (Array.isArray(workflow.value)) return workflow.value
+  if (workflow.value && typeof workflow.value === 'object') return Object.values(workflow.value)
+  return []
+})
+
 const currentStepLabel = computed(() => {
-  const current = workflow.value.find(s => s.status === 'current')
+  const current = workflowSteps.value.find(s => s?.status === 'current')
   return current?.label || ''
 })
 
@@ -368,6 +374,7 @@ onMounted(async () => {
     canValidate.value = data.canValidate || false
     workflow.value = data.workflow || []
   } catch (err) {
+    console.error('Erreur ouverture demande:', err)
     if (err.response?.status === 403) {
       ui.addToast('Vous n\'avez pas acces a cette demande.', 'danger')
       router.push({ name: 'requests.index' })
