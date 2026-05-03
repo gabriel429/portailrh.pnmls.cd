@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use App\Traits\Syncable;
 
@@ -24,10 +25,15 @@ class Request extends Model
         'remarques',
         'lettre_demande',
         'current_step',
+        'workflow_level',
         'validated_by_director',
         'validated_at_director',
         'validated_by_rh',
         'validated_at_rh',
+        'validated_by_caf',
+        'validated_at_caf',
+        'validated_by_aaf',
+        'validated_at_aaf',
         'validated_by_sep',
         'validated_at_sep',
         'validated_by_sen',
@@ -39,6 +45,8 @@ class Request extends Model
         'date_fin'             => 'date',
         'validated_at_director' => 'datetime',
         'validated_at_rh'      => 'datetime',
+        'validated_at_caf'     => 'datetime',
+        'validated_at_aaf'     => 'datetime',
         'validated_at_sep'     => 'datetime',
         'validated_at_sen'     => 'datetime',
     ];
@@ -64,9 +72,24 @@ class Request extends Model
         return $this->belongsTo(Agent::class, 'validated_by_sep');
     }
 
+    public function validatedByCaf(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'validated_by_caf');
+    }
+
+    public function validatedByAaf(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'validated_by_aaf');
+    }
+
     public function validatedBySen(): BelongsTo
     {
         return $this->belongsTo(Agent::class, 'validated_by_sen');
+    }
+
+    public function validationHistories(): HasMany
+    {
+        return $this->hasMany(RequestValidationHistory::class)->orderBy('acted_at');
     }
 
     // Scopes
@@ -95,4 +118,3 @@ class Request extends Model
         return $query->where('type', $type);
     }
 }
-

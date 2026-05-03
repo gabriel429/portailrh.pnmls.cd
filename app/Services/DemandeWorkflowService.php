@@ -2,71 +2,49 @@
 
 namespace App\Services;
 
-use App\Models\Request as RequestModel;
 use App\Models\Agent;
+use App\Models\Request as RequestModel;
+use App\Models\RequestValidationHistory;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 
 class DemandeWorkflowService
 {
-    /**
-     * Workflow steps in order.
-     * Each step maps to: validated_by_{step}, validated_at_{step}
-     */
-    private const STEPS = ['director', 'rh', 'sep', 'sen'];
-
-    /**
-     * Roles allowed to validate each step.
-     */
-    private const STEP_ROLES = [
-        'director' => [
-            'Directeur',
-            'Chef Section RH',
-            'Chef Section Renforcement',
-            'Chef Cellule Renforcement',
-            'Chef Section Planification',
-            'Chef Section Juridique',
-        ],
-        'rh' => [
-            'Section ressources humaines',
-            'Chef Section RH',
-            'RH National',
-            'RH Provincial',
-        ],
-        'sep' => [
-            'SEP',
-        ],
-        'sen' => [
-            'SEN',
-            'SENA',
-        ],
+    private const WORKFLOWS = [
+        'national_with_department' => ['director', 'rh', 'sen'],
+        'national_sen_direct' => ['sen'],
+        'provincial' => ['caf', 'sep'],
+        'local' => ['aaf', 'sep'],
     ];
 
-    /**
-     * Permission codes for each validation step.
-     */
+    private const STEP_ROLE_LABELS = [
+        'director' => 'Directeur de departement',
+        'rh' => 'Section ressources humaines',
+        'caf' => 'CAF',
+        'aaf' => 'Assistant Administratif et Financier',
+        'sep' => 'SEP',
+        'sen' => 'SEN',
+    ];
+
     private const STEP_PERMISSIONS = [
         'director' => 'demande.validate_director',
-        'rh'       => 'demande.validate_rh',
-        'sep'      => 'demande.validate_sep',
-        'sen'      => 'demande.validate_sen',
+        'rh' => 'demande.validate_rh',
+        'caf' => 'demande.validate_sep',
+        'aaf' => 'demande.validate_sep',
+        'sep' => 'demande.validate_sep',
+        'sen' => 'demande.validate_sen',
     ];
 
-    /**
-     * Get the current pending step for a request.
-     */
     public function getCurrentStep(RequestModel $request): ?string
     {
         return $request->current_step;
     }
 
-    /**
-     * Get the full workflow status for display.
-     */
     public function getWorkflowStatus(RequestModel $request): array
     {
         $steps = [];
 
-        foreach (self::STEPS as $step) {
+        foreach ($this->getWorkflowSteps($request) as $step) {
             $validatedBy = $request->{"validated_by_{$step}"};
             $validatedAt = $request->{"validated_at_{$step}"};
 
@@ -75,7 +53,7 @@ class DemandeWorkflowService
                 $agent = Agent::select('id', 'nom', 'prenom', 'poste_actuel')->find($validatedBy);
                 $validator = $agent ? [
                     'id' => $agent->id,
-                    'nom_complet' => $agent->prenom . ' ' . $agent->nom,
+                    'nom_complet' => trim(($agent->prenom ?? '') . ' ' . ($agent->nom ?? '')),
                     'poste' => $agent->poste_actuel,
                 ] : null;
             }
@@ -84,21 +62,16 @@ class DemandeWorkflowService
             if ($validatedBy) {
                 $status = 'validated';
             } elseif ($request->statut === 'rejeté') {
-                // If rejected and this step has no validator, it's the rejection point
-                if ($request->current_step === $step) {
-                    $status = 'rejected';
-                } else {
-                    $status = 'skipped';
-                }
+                $status = $request->current_step === $step ? 'rejected' : 'skipped';
             } elseif ($request->current_step === $step) {
                 $status = 'current';
-            } elseif ($this->isStepAfter($step, $request->current_step)) {
+            } elseif ($this->isStepAfter($request, $step, $request->current_step)) {
                 $status = 'waiting';
             }
 
             $steps[] = [
                 'step' => $step,
-                'label' => $this->getStepLabel($step),
+                'label' => $this->getStepLabel($step, $request),
                 'status' => $status,
                 'validator' => $validator,
                 'validated_at' => $validatedAt?->toISOString(),
@@ -108,9 +81,6 @@ class DemandeWorkflowService
         return $steps;
     }
 
-    /**
-     * Check if the user can validate the current step of a request.
-     */
     public function canValidate(User $user, RequestModel $request): bool
     {
         if ($request->statut !== 'en_attente') {
@@ -118,11 +88,10 @@ class DemandeWorkflowService
         }
 
         $currentStep = $request->current_step;
-        if (!$currentStep || !in_array($currentStep, self::STEPS)) {
+        if (!$currentStep || !in_array($currentStep, $this->getWorkflowSteps($request), true)) {
             return false;
         }
 
-        // Interdire l'auto-approbation : un agent ne peut pas valider sa propre demande
         if ($user->agent?->id && $user->agent->id === (int) $request->agent_id) {
             return false;
         }
@@ -131,24 +100,18 @@ class DemandeWorkflowService
             return true;
         }
 
-        // Check permission first
-        $permissionCode = self::STEP_PERMISSIONS[$currentStep] ?? null;
-        if ($permissionCode && $user->hasPermission($permissionCode)) {
-            return true;
+        if ($permissionCode = (self::STEP_PERMISSIONS[$currentStep] ?? null)) {
+            if ($user->hasPermission($permissionCode) && $this->matchesStepScope($user, $request, $currentStep)) {
+                return true;
+            }
         }
 
-        // Fallback: check role
-        $allowedRoles = self::STEP_ROLES[$currentStep] ?? [];
-        return $user->hasRole($allowedRoles);
+        return $this->matchesStepScope($user, $request, $currentStep);
     }
 
-    /**
-     * Check if the user can validate a specific workflow step (regardless of request state).
-     * Useful for filtering requests by validatable steps.
-     */
     public function canValidateAtStep(User $user, string $step): bool
     {
-        if (!in_array($step, self::STEPS)) {
+        if (!isset(self::STEP_ROLE_LABELS[$step])) {
             return false;
         }
 
@@ -161,78 +124,97 @@ class DemandeWorkflowService
             return true;
         }
 
-        $allowedRoles = self::STEP_ROLES[$step] ?? [];
-        return $user->hasRole($allowedRoles);
+        return $this->hasStepRole($user, $step);
     }
 
-    /**
-     * Return the list of workflow steps this user is authorized to validate.
-     */
     public function getValidatableSteps(User $user): array
     {
-        return array_values(array_filter(self::STEPS, fn($step) => $this->canValidateAtStep($user, $step)));
+        return array_values(array_filter(array_keys(self::STEP_ROLE_LABELS), fn($step) => $this->canValidateAtStep($user, $step)));
     }
 
-    /**
-     * Validate (approve) the current step.
-     */
+    public function applyValidationInboxScope(Builder $query, User $user, array $steps): Builder
+    {
+        $agentId = $user->agent?->id;
+
+        return $query->where(function (Builder $outer) use ($user, $steps, $agentId) {
+            if ($agentId) {
+                $outer->where('agent_id', $agentId);
+            }
+
+            foreach ($steps as $step) {
+                $outer->orWhere(function (Builder $stepQuery) use ($user, $step) {
+                    $stepQuery->where('current_step', $step);
+
+                    if (in_array($step, ['caf', 'sep', 'aaf'], true)) {
+                        $provinceId = $user->agent?->province_id;
+                        $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId));
+                    } elseif ($step === 'director') {
+                        $deptId = $user->agent?->departement_id;
+                        $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('departement_id', $deptId));
+                    } elseif ($step === 'sen') {
+                        $stepQuery->whereHas('agent', function (Builder $agentQuery) {
+                            $agentQuery->where(function (Builder $scope) {
+                                $scope->whereNull('departement_id')
+                                    ->orWhere('organe', 'Secrétariat Exécutif National');
+                            });
+                        });
+                    }
+                });
+            }
+        });
+    }
+
     public function approve(User $user, RequestModel $request): array
     {
         if (!$this->canValidate($user, $request)) {
-            return ['success' => false, 'message' => 'Vous n\'êtes pas autorisé à valider cette étape.'];
+            return ['success' => false, 'message' => 'Vous n êtes pas autorise a valider cette etape.'];
         }
 
         $currentStep = $request->current_step;
         $agent = $user->agent;
 
         if (!$agent) {
-            return ['success' => false, 'message' => 'Votre compte n\'est pas associé à un agent.'];
+            return ['success' => false, 'message' => 'Votre compte n est pas associe a un agent.'];
         }
 
         $request->{"validated_by_{$currentStep}"} = $agent->id;
         $request->{"validated_at_{$currentStep}"} = now();
 
-        // Move to next step or approve
-        $nextStep = $this->getNextStep($currentStep);
+        $nextStep = $this->getNextStep($request, $currentStep);
         if ($nextStep) {
             $request->current_step = $nextStep;
         } else {
-            // All steps completed → approve
             $request->statut = 'approuvé';
             $request->current_step = null;
         }
 
         $request->save();
 
-        // Notify
+        $this->recordHistory($request, $user, $currentStep, 'approved');
         $this->notifyStepCompleted($request, $currentStep, $user, 'approved');
 
         return [
             'success' => true,
             'message' => $nextStep
-                ? 'Étape validée. La demande passe à l\'étape suivante.'
-                : 'Demande approuvée définitivement.',
+                ? 'Etape validee. La demande passe a l etape suivante.'
+                : 'Demande approuvee definitivement.',
             'next_step' => $nextStep,
             'statut' => $request->statut,
         ];
     }
 
-    /**
-     * Reject the request at the current step.
-     */
     public function reject(User $user, RequestModel $request, ?string $remarques = null): array
     {
         if (!$this->canValidate($user, $request)) {
-            return ['success' => false, 'message' => 'Vous n\'êtes pas autorisé à rejeter cette demande.'];
+            return ['success' => false, 'message' => 'Vous n êtes pas autorise a rejeter cette demande.'];
         }
 
         $agent = $user->agent;
         if (!$agent) {
-            return ['success' => false, 'message' => 'Votre compte n\'est pas associé à un agent.'];
+            return ['success' => false, 'message' => 'Votre compte n est pas associe a un agent.'];
         }
 
         $currentStep = $request->current_step;
-
         $request->statut = 'rejeté';
         $request->{"validated_by_{$currentStep}"} = $agent->id;
         $request->{"validated_at_{$currentStep}"} = now();
@@ -243,131 +225,273 @@ class DemandeWorkflowService
 
         $request->save();
 
-        // Notify
+        $this->recordHistory($request, $user, $currentStep, 'rejected', $remarques);
         $this->notifyStepCompleted($request, $currentStep, $user, 'rejected');
 
         return [
             'success' => true,
-            'message' => 'Demande rejetée à l\'étape ' . $this->getStepLabel($currentStep) . '.',
+            'message' => 'Demande rejetee a l etape ' . $this->getStepLabel($currentStep, $request) . '.',
         ];
     }
 
-    /**
-     * Initialize workflow for a new request.
-     */
     public function initializeWorkflow(RequestModel $request): void
     {
-        $request->current_step = self::STEPS[0]; // Start at 'director'
+        $workflowLevel = $this->resolveWorkflowLevel($request);
+        $steps = self::WORKFLOWS[$workflowLevel] ?? self::WORKFLOWS['national_with_department'];
+
+        $request->workflow_level = $workflowLevel;
+        $request->current_step = $steps[0] ?? null;
         $request->save();
     }
 
-    /**
-     * Get the next step after the given step.
-     */
-    private function getNextStep(string $currentStep): ?string
+    private function getWorkflowSteps(RequestModel $request): array
     {
-        $index = array_search($currentStep, self::STEPS);
-        if ($index === false || $index >= count(self::STEPS) - 1) {
-            return null;
-        }
-        return self::STEPS[$index + 1];
+        $level = $request->workflow_level ?: $this->resolveWorkflowLevel($request);
+        return self::WORKFLOWS[$level] ?? self::WORKFLOWS['national_with_department'];
     }
 
-    /**
-     * Check if $step comes after $referenceStep in the workflow.
-     */
-    private function isStepAfter(string $step, ?string $referenceStep): bool
+    private function getNextStep(RequestModel $request, string $currentStep): ?string
     {
-        if (!$referenceStep) return false;
-        $stepIndex = array_search($step, self::STEPS);
-        $refIndex = array_search($referenceStep, self::STEPS);
+        $steps = $this->getWorkflowSteps($request);
+        $index = array_search($currentStep, $steps, true);
+
+        if ($index === false || $index >= count($steps) - 1) {
+            return null;
+        }
+
+        return $steps[$index + 1];
+    }
+
+    private function isStepAfter(RequestModel $request, string $step, ?string $referenceStep): bool
+    {
+        if (!$referenceStep) {
+            return false;
+        }
+
+        $steps = $this->getWorkflowSteps($request);
+        $stepIndex = array_search($step, $steps, true);
+        $refIndex = array_search($referenceStep, $steps, true);
+
         return $stepIndex !== false && $refIndex !== false && $stepIndex > $refIndex;
     }
 
-    /**
-     * Get human label for a workflow step.
-     */
-    private function getStepLabel(string $step): string
+    private function getStepLabel(string $step, ?RequestModel $request = null): string
     {
-        return match ($step) {
-            'director' => 'Chef de Section',
-            'rh'       => 'Ressources Humaines',
-            'sep'      => 'SEP',
-            'sen'      => 'SEN',
-            default    => ucfirst($step),
-        };
+        if ($step === 'sen' && $request && $request->workflow_level === 'national_sen_direct') {
+            return 'Assistant de direction / SEN';
+        }
+
+        if ($step === 'sep' && $request && in_array($request->workflow_level, ['provincial', 'local'], true)) {
+            return 'SEP';
+        }
+
+        return self::STEP_ROLE_LABELS[$step] ?? ucfirst($step);
     }
 
-    /**
-     * Send notifications after a step is completed.
-     */
     private function notifyStepCompleted(RequestModel $request, string $step, User $actionBy, string $action): void
     {
+        $request->loadMissing('agent.user');
         $agent = $request->agent;
-        if (!$agent) return;
+        $agentUser = $agent?->user;
+        $stepLabel = $this->getStepLabel($step, $request);
 
-        $agentUser = User::where('agent_id', $agent->id)->first();
-        if (!$agentUser) return;
-
-        $stepLabel = $this->getStepLabel($step);
-
-        if ($action === 'approved') {
-            $nextStep = $this->getNextStep($step);
-            if ($nextStep) {
-                // Notify agent: step validated, moving to next
-                NotificationService::envoyer(
-                    $agentUser->id,
-                    'demande_validee_etape',
-                    'Demande validée - ' . $stepLabel,
-                    'Votre demande de ' . $request->type . ' a été validée par ' . $stepLabel . '. Elle est maintenant en attente de validation par ' . $this->getStepLabel($nextStep) . '.',
-                    '/requests/' . $request->id,
-                    $actionBy->id
-                );
-
-                // Notify next step validators
-                $this->notifyNextStepValidators($request, $nextStep, $actionBy);
+        if ($agentUser) {
+            if ($action === 'approved') {
+                $nextStep = $this->getNextStep($request, $step);
+                if ($nextStep) {
+                    NotificationService::envoyer(
+                        $agentUser->id,
+                        'demande_modifiee',
+                        'Demande validee - ' . $stepLabel,
+                        'Votre demande de ' . $request->type . ' a ete validee par ' . $stepLabel . '.',
+                        '/requests/' . $request->id,
+                        $actionBy->id
+                    );
+                } else {
+                    NotificationService::envoyer(
+                        $agentUser->id,
+                        'demande_approuvee',
+                        'Demande approuvee',
+                        'Votre demande de ' . $request->type . ' a ete approuvee par toutes les instances.',
+                        '/requests/' . $request->id,
+                        $actionBy->id
+                    );
+                }
             } else {
-                // Final approval
                 NotificationService::envoyer(
                     $agentUser->id,
-                    'demande_approuvee',
-                    'Demande approuvée',
-                    'Votre demande de ' . $request->type . ' a été approuvée par toutes les instances.',
+                    'demande_rejetee',
+                    'Demande rejetee - ' . $stepLabel,
+                    'Votre demande de ' . $request->type . ' a ete rejetee a l etape ' . $stepLabel . '.',
                     '/requests/' . $request->id,
                     $actionBy->id
                 );
             }
-        } else {
-            // Rejected
-            NotificationService::envoyer(
-                $agentUser->id,
-                'demande_rejetee',
-                'Demande rejetée - ' . $stepLabel,
-                'Votre demande de ' . $request->type . ' a été rejetée à l\'étape ' . $stepLabel . '.',
-                '/requests/' . $request->id,
-                $actionBy->id
-            );
+        }
+
+        if ($action === 'approved') {
+            $nextStep = $this->getNextStep($request, $step);
+            if ($nextStep) {
+                $this->notifyNextStepValidators($request, $nextStep, $actionBy);
+            }
         }
     }
 
-    /**
-     * Notify users who can validate the next step.
-     */
-    private function notifyNextStepValidators(RequestModel $request, string $step, User $actionBy): void
+    public function notifyNextStepValidators(RequestModel $request, string $step, User $actionBy): void
     {
+        $request->loadMissing('agent.departement', 'agent.province');
         $agent = $request->agent;
-        $nomAgent = $agent ? $agent->prenom . ' ' . $agent->nom : 'Un agent';
+        $nomAgent = $agent ? trim(($agent->prenom ?? '') . ' ' . ($agent->nom ?? '')) : 'Un agent';
 
-        // Notify based on role
-        $roles = self::STEP_ROLES[$step] ?? [];
-        if (empty($roles)) return;
+        $validators = $this->resolveStepValidators($request, $step);
+        $userIds = $validators->pluck('id')->unique()->values()->all();
 
-        NotificationService::notifierRH(
-            'demande_validation_requise',
-            'Validation requise - ' . $this->getStepLabel($step),
-            'La demande de ' . $request->type . ' de ' . $nomAgent . ' nécessite votre validation.',
+        if (empty($userIds)) {
+            return;
+        }
+
+        NotificationService::envoyerMultiple(
+            $userIds,
+            'demande',
+            'Validation requise - ' . $this->getStepLabel($step, $request),
+            'La demande de ' . $request->type . ' de ' . $nomAgent . ' necessite votre validation.',
             '/requests/' . $request->id,
             $actionBy->id
         );
+    }
+
+    private function resolveWorkflowLevel(RequestModel $request): string
+    {
+        $request->loadMissing('agent.departement', 'agent.province');
+        $agent = $request->agent;
+
+        $organe = strtolower((string) ($agent?->organe ?? ''));
+        $hasDepartment = !empty($agent?->departement_id);
+
+        if (str_contains($organe, 'local')) {
+            return 'local';
+        }
+
+        if (str_contains($organe, 'provincial')) {
+            return 'provincial';
+        }
+
+        if (!$hasDepartment) {
+            return 'national_sen_direct';
+        }
+
+        return 'national_with_department';
+    }
+
+    private function matchesStepScope(User $user, RequestModel $request, string $step): bool
+    {
+        if (!$this->hasStepRole($user, $step)) {
+            return false;
+        }
+
+        $request->loadMissing('agent.departement', 'agent.province');
+        $agent = $request->agent;
+        $validatorAgent = $user->agent;
+        $role = strtolower(trim((string) ($user->role?->nom_role ?? '')));
+
+        return match ($step) {
+            'director' => (int) ($validatorAgent?->departement_id ?? 0) === (int) ($agent?->departement_id ?? 0),
+            'rh' => true,
+            'caf' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
+            'aaf' => str_contains((string) ($validatorAgent?->organe ?? ''), 'Local')
+                && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
+            'sep' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
+            'sen' => $request->workflow_level === 'national_sen_direct'
+                ? in_array($role, ['sen', 'sena'], true)
+                : in_array($role, ['sen', 'sena'], true),
+            default => false,
+        };
+    }
+
+    private function hasStepRole(User $user, string $step): bool
+    {
+        $role = strtolower(trim((string) ($user->role?->nom_role ?? '')));
+        $deptCode = strtolower(trim((string) ($user->agent?->departement?->code ?? '')));
+        $deptName = strtolower(trim((string) ($user->agent?->departement?->nom ?? '')));
+        $fonction = strtolower(trim((string) ($user->agent?->fonction ?? '')));
+        $poste = strtolower(trim((string) ($user->agent?->poste_actuel ?? '')));
+
+        return match ($step) {
+            'director' => in_array($role, [
+                'directeur',
+                'assistant',
+                'assistant de département',
+                'assistant de departement',
+                'secrétaire de département',
+                'secretaire de departement',
+            ], true) || str_starts_with($role, 'assistant'),
+            'rh' => in_array($role, [
+                'section ressources humaines',
+                'chef section rh',
+                'rh national',
+                'rh provincial',
+            ], true),
+            'caf' => in_array($role, ['caf', 'chef caf', 'responsable caf'], true)
+                || $deptCode === 'caf'
+                || str_contains($deptName, 'cellule administrative et financ'),
+            'aaf' => str_contains($fonction, 'assistant administratif et financier')
+                || str_contains($poste, 'assistant administratif et financier'),
+            'sep' => in_array($role, ['sep', 'secom'], true),
+            'sen' => in_array($role, ['sen', 'sena'], true),
+            default => false,
+        };
+    }
+
+    private function resolveStepValidators(RequestModel $request, string $step)
+    {
+        $request->loadMissing('agent.departement', 'agent.province');
+        $agent = $request->agent;
+
+        $query = User::query()->with('agent.departement');
+
+        return match ($step) {
+            'director' => $query
+                ->whereHas('agent', fn($q) => $q->where('departement_id', $agent?->departement_id))
+                ->get()
+                ->filter(fn(User $user) => $this->hasStepRole($user, 'director')),
+            'rh' => $query
+                ->whereHas('role', fn($q) => $q->whereIn('nom_role', [
+                    'Section ressources humaines',
+                    'Chef Section RH',
+                    'RH National',
+                    'RH Provincial',
+                ]))
+                ->get(),
+            'caf' => $query
+                ->whereHas('agent', fn($q) => $q->where('province_id', $agent?->province_id))
+                ->get()
+                ->filter(fn(User $user) => $this->hasStepRole($user, 'caf')),
+            'aaf' => $query
+                ->whereHas('agent', fn($q) => $q->where('province_id', $agent?->province_id)->where('organe', 'Secrétariat Exécutif Local'))
+                ->get()
+                ->filter(fn(User $user) => $this->hasStepRole($user, 'aaf')),
+            'sep' => $query
+                ->whereHas('agent', fn($q) => $q->where('province_id', $agent?->province_id))
+                ->get()
+                ->filter(fn(User $user) => $this->hasStepRole($user, 'sep')),
+            'sen' => $query
+                ->whereHas('role', fn($q) => $q->whereIn('nom_role', ['SEN', 'SENA']))
+                ->get(),
+            default => collect(),
+        };
+    }
+
+    private function recordHistory(RequestModel $request, User $user, string $step, string $action, ?string $commentaire = null): void
+    {
+        RequestValidationHistory::create([
+            'request_id' => $request->id,
+            'agent_id' => $user->agent?->id,
+            'user_id' => $user->id,
+            'step' => $step,
+            'action' => $action,
+            'role_label' => $this->getStepLabel($step, $request),
+            'commentaire' => $commentaire,
+            'acted_at' => now(),
+        ]);
     }
 }

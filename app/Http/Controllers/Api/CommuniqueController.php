@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Events\CommuniquePublished;
 use App\Http\Resources\CommuniqueResource;
 use App\Models\Communique;
-use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -42,16 +41,8 @@ class CommuniqueController extends ApiController
 
         $communique = Communique::create($validated);
 
-        // Notifier tous les utilisateurs du nouveau communique
         if ($communique->actif) {
             CommuniquePublished::dispatch($communique);
-            NotificationService::notifierTous(
-                'communique',
-                'Nouveau communique : ' . $communique->titre,
-                'Un nouveau communique a ete publie' . ($communique->urgence !== 'normal' ? ' (' . strtoupper($communique->urgence) . ')' : '') . '.',
-                '/communiques/' . $communique->id,
-                auth()->id()
-            );
         }
 
         $communique->load('auteur');

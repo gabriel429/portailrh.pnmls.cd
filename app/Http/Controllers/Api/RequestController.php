@@ -46,21 +46,11 @@ class RequestController extends ApiController
         }
 
         if (!empty($validatableSteps)) {
-            $agentId = $user->agent?->id;
-            $steps   = $validatableSteps;
-            $query   = RequestModel::with(['agent'])->where(function ($q) use ($agentId, $steps) {
-                if ($agentId) {
-                    $q->where('agent_id', $agentId);
-                }
-                $q->orWhereIn('current_step', $steps);
-            });
-            // Cloner la base de requête pour les compteurs (avant filtres statut/type)
-            $countQuery = RequestModel::where(function ($q) use ($agentId, $steps) {
-                if ($agentId) {
-                    $q->where('agent_id', $agentId);
-                }
-                $q->orWhereIn('current_step', $steps);
-            });
+            $query = RequestModel::with(['agent']);
+            $workflowSvc->applyValidationInboxScope($query, $user, $validatableSteps);
+
+            $countQuery = RequestModel::query();
+            $workflowSvc->applyValidationInboxScope($countQuery, $user, $validatableSteps);
         } else {
             $query = RequestModel::with(['agent']);
             $scope->applyRequestScope($query, $user);
@@ -162,16 +152,19 @@ class RequestController extends ApiController
         // Fire event for listeners (renforcement routing, etc.)
         DemandeCreated::dispatch($demande);
 
-        // Notify RH staff of a new request
         $agent = Agent::find($validated['agent_id']);
         $nomAgent = $agent ? $agent->prenom . ' ' . $agent->nom : 'Un agent';
-        NotificationService::notifierRH(
-            'demande',
-            'Nouvelle demande de ' . $validated['type'],
-            $nomAgent . ' a soumis une demande de ' . $validated['type'] . '.',
-            '/requests/' . $demande->id,
-            $user->id
-        );
+        if ($demande->current_step) {
+            NotificationService::envoyer(
+                $user->id,
+                'demande',
+                'Demande enregistree',
+                'Votre demande suit maintenant le circuit de validation ' . ($demande->workflow_level ?? 'standard') . '.',
+                '/requests/' . $demande->id,
+                $user->id
+            );
+            $this->workflowService()->notifyNextStepValidators($demande, $demande->current_step, $user);
+        }
 
         $demande->load('agent');
         $resource = RequestResource::make($demande);
@@ -191,12 +184,25 @@ class RequestController extends ApiController
         $this->authorizeAccess($request->user(), $demande);
 
         $workflow = $this->workflowService();
+        $demande->loadMissing('validationHistories.agent');
 
         return $this->resource(RequestResource::make($demande), [], [
             'isRH' => $request->user()->hasAdminAccess(),
             'isOwner' => $request->user()->agent?->id === $demande->agent_id,
             'canValidate' => $workflow->canValidate($request->user(), $demande),
             'workflow' => $workflow->getWorkflowStatus($demande),
+            'validationHistory' => $demande->validationHistories->map(fn($history) => [
+                'id' => $history->id,
+                'step' => $history->step,
+                'action' => $history->action,
+                'role_label' => $history->role_label,
+                'commentaire' => $history->commentaire,
+                'acted_at' => $history->acted_at?->toISOString(),
+                'agent' => $history->agent ? [
+                    'id' => $history->agent->id,
+                    'nom_complet' => trim(($history->agent->prenom ?? '') . ' ' . ($history->agent->nom ?? '')),
+                ] : null,
+            ])->values(),
         ]);
     }
 

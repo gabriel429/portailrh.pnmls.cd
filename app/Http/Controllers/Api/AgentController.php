@@ -13,6 +13,7 @@ use App\Models\Organe;
 use App\Models\Province;
 use App\Models\Section;
 use App\Services\SpreadsheetImportReader;
+use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -431,6 +432,15 @@ class AgentController extends ApiController
 
         $agent->update($validated);
         $agent->load(['role', 'province', 'departement', 'grade', 'institution']);
+
+        NotificationService::notifierAgent(
+            $agent,
+            'message',
+            'Votre fiche agent a ete mise a jour',
+            'Des informations de votre dossier agent ont ete modifiees dans E-PNMLS.',
+            '/profile',
+            $request->user()->id
+        );
 
         $resource = AgentResource::make($agent);
 

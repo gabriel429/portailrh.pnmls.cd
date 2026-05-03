@@ -785,7 +785,7 @@ class TacheController extends ApiController
             return;
         }
 
-        NotificationService::envoyerMultiple(
+        NotificationService::envoyerMultipleAvecEmail(
             $recipientIds,
             'tache',
             $titre,

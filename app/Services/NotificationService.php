@@ -2,8 +2,12 @@
 
 namespace App\Services;
 
+use App\Mail\NotificationMail;
+use App\Models\Agent;
 use App\Models\NotificationPortail;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class NotificationService
 {
@@ -76,7 +80,7 @@ class NotificationService
     {
         $config = self::$types[$type] ?? ['icone' => 'fa-bell', 'couleur' => '#0077B5'];
 
-        return NotificationPortail::create([
+        $notification = NotificationPortail::create([
             'user_id' => $userId,
             'type' => $type,
             'titre' => $titre,
@@ -86,6 +90,13 @@ class NotificationService
             'lien' => $lien,
             'emetteur_id' => $emetteurId,
         ]);
+
+        $user = User::with('agent')->find($userId);
+        if ($user) {
+            self::envoyerEmailProfessionnel($user, $titre, $message, $lien);
+        }
+
+        return $notification;
     }
 
     /**
@@ -114,6 +125,48 @@ class NotificationService
         }
 
         NotificationPortail::insert($records);
+
+        User::with('agent')
+            ->whereIn('id', $userIds)
+            ->get()
+            ->each(fn(User $user) => self::envoyerEmailProfessionnel($user, $titre, $message, $lien));
+    }
+
+    /**
+     * Envoyer une notification interne + un e-mail professionnel.
+     */
+    public static function envoyerAvecEmail(int $userId, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): ?NotificationPortail
+    {
+        return self::envoyer($userId, $type, $titre, $message, $lien, $emetteurId);
+    }
+
+    /**
+     * Envoyer une notification interne + e-mail à plusieurs users.
+     */
+    public static function envoyerMultipleAvecEmail(array $userIds, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): void
+    {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+
+        if (empty($userIds)) {
+            return;
+        }
+
+        self::envoyerMultiple($userIds, $type, $titre, $message, $lien, $emetteurId);
+    }
+
+    /**
+     * Notifier un agent concerné: notification interne si un user est lié, email pro sinon.
+     */
+    public static function notifierAgent(Agent $agent, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): void
+    {
+        $agent->loadMissing('user');
+
+        if ($agent->user) {
+            self::envoyerAvecEmail($agent->user->id, $type, $titre, $message, $lien, $emetteurId);
+            return;
+        }
+
+        self::envoyerEmailProfessionnel(null, $titre, $message, $lien, $agent);
     }
 
     /**
@@ -172,26 +225,58 @@ class NotificationService
     }
 
     /**
-     * Send email + DB notification if mail is configured.
+     * Notifier tous les utilisateurs avec notification interne + email.
      */
-    public static function envoyerAvecEmail(int $userId, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): NotificationPortail
+    public static function notifierTousAvecEmail(string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): void
     {
-        $notification = self::envoyer($userId, $type, $titre, $message, $lien, $emetteurId);
+        $userIds = User::pluck('id')->toArray();
 
-        // Attempt email if MAIL_MAILER is configured
+        if (!empty($userIds)) {
+            self::envoyerMultipleAvecEmail($userIds, $type, $titre, $message, $lien, $emetteurId);
+        }
+    }
+
+    protected static function envoyerEmailProfessionnel(?User $user, string $titre, string $message, ?string $lien = null, ?Agent $agent = null): void
+    {
+        if (!config('mail.mailer') || config('mail.mailer') === 'log') {
+            return;
+        }
+
+        $agent = $agent ?: $user?->agent;
+        $email = self::resolveProfessionalEmail($user, $agent);
+
+        if (!$email) {
+            return;
+        }
+
         try {
-            $user = User::find($userId);
-            if ($user && $user->email && config('mail.mailer') && config('mail.mailer') !== 'log') {
-                \Illuminate\Support\Facades\Mail::to($user->email)
-                    ->send(new \App\Mail\NotificationMail($titre, $message, $lien));
-            }
+            Mail::to($email)->send(new NotificationMail($titre, $message, $lien));
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::warning('Email notification failed', [
-                'user_id' => $userId,
+            Log::warning('Email notification failed', [
+                'user_id' => $user?->id,
+                'agent_id' => $agent?->id,
+                'email' => $email,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
 
-        return $notification;
+    protected static function resolveProfessionalEmail(?User $user = null, ?Agent $agent = null): ?string
+    {
+        $candidates = array_filter([
+            $agent?->email_professionnel,
+            $user?->email,
+            $agent?->email,
+            $agent?->email_prive,
+        ]);
+
+        foreach ($candidates as $candidate) {
+            $candidate = trim((string) $candidate);
+            if (filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 }

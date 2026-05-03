@@ -958,6 +958,15 @@ class ParametresController extends Controller
             'uploaded_by' => $request->user()->id,
         ]);
         $this->recordAudit('CREATE', 'documents_travail', $doc->id, null, $doc->toArray());
+
+        NotificationService::notifierTousAvecEmail(
+            'document_travail',
+            'Nouveau document de travail disponible',
+            'Un nouveau document a ete publie : ' . $doc->titre . '.',
+            '/documents-travail',
+            $request->user()->id
+        );
+
         return response()->json($doc, 201);
     }
 
@@ -977,6 +986,15 @@ class ParametresController extends Controller
         }
         $documentTravail->update($data);
         $this->recordAudit('UPDATE', 'documents_travail', $documentTravail->id, $before, $documentTravail->fresh()->toArray());
+
+        NotificationService::notifierTousAvecEmail(
+            'document_travail',
+            'Document de travail mis a jour',
+            'Le document de travail "' . $documentTravail->titre . '" a ete mis a jour.',
+            '/documents-travail',
+            $request->user()->id
+        );
+
         return response()->json($documentTravail);
     }
 

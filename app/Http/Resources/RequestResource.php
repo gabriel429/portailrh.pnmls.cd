@@ -21,6 +21,7 @@ class RequestResource extends JsonResource
             'remarques' => $this->remarques,
             'lettre_demande' => $this->lettre_demande,
             'current_step' => $this->current_step,
+            'workflow_level' => $this->workflow_level,
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
             'agent' => $this->whenLoaded('agent', fn () => [

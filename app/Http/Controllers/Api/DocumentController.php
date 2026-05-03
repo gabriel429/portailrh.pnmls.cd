@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\DocumentResource;
 use App\Models\Document;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -94,6 +95,15 @@ class DocumentController extends ApiController
 
         $document->load('agent');
 
+        NotificationService::notifierAgent(
+            $document->agent,
+            'document_travail',
+            'Nouveau document dans votre dossier',
+            'Un nouveau document a ete ajoute a votre dossier agent : ' . ($validated['nom_document'] ?? 'document') . '.',
+            '/documents/' . $document->id,
+            $request->user()->id
+        );
+
         $resource = DocumentResource::make($document);
 
         return $this->resource($resource, [], [
@@ -136,6 +146,64 @@ class DocumentController extends ApiController
                 'extension' => strtolower($extension),
                 'exists' => file_exists($filePath),
             ],
+        ]);
+    }
+
+    /**
+     * Update an existing document.
+     */
+    public function update(Request $request, Document $document)
+    {
+        $user = $request->user();
+
+        if ($document->agent_id !== $user->agent?->id && !$user->hasAdminAccess()) {
+            return response()->json(['message' => 'Non autorise.'], 403);
+        }
+
+        $validated = $request->validate([
+            'nom_document' => 'required|string|max:255',
+            'fichier' => 'nullable|file|max:10240',
+            'categories_document_id' => 'nullable|string|in:identite,parcours,carriere,mission',
+            'description' => 'nullable|string|max:500',
+            'statut' => 'nullable|string|max:100',
+            'date_expiration' => 'nullable|date',
+        ]);
+
+        $data = [
+            'type' => $validated['categories_document_id'] ?? $document->type,
+            'description' => ($validated['nom_document'] ?? '')
+                . (!empty($validated['description']) ? ' | ' . $validated['description'] : ''),
+            'statut' => $validated['statut'] ?? $document->statut,
+            'date_expiration' => $validated['date_expiration'] ?? $document->date_expiration,
+        ];
+
+        if ($request->hasFile('fichier')) {
+            $oldFilePath = public_path($document->fichier);
+            if (file_exists($oldFilePath)) {
+                @unlink($oldFilePath);
+            }
+
+            $file = $request->file('fichier');
+            $extension = $file->getClientOriginalExtension();
+            $filename = Str::uuid() . '.' . $extension;
+            $file->move(public_path('uploads/documents'), $filename);
+            $data['fichier'] = 'uploads/documents/' . $filename;
+        }
+
+        $document->update($data);
+        $document->load('agent');
+
+        NotificationService::notifierAgent(
+            $document->agent,
+            'document_travail',
+            'Document de dossier mis a jour',
+            'Un document de votre dossier agent a ete modifie : ' . ($validated['nom_document'] ?? 'document') . '.',
+            '/documents/' . $document->id,
+            $user->id
+        );
+
+        return $this->resource(DocumentResource::make($document), [], [
+            'message' => 'Document mis a jour avec succes.',
         ]);
     }
 

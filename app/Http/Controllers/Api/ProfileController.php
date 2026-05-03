@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\AgentResource;
 use App\Http\Resources\PointageResource;
 use App\Models\Pointage;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -86,6 +87,15 @@ class ProfileController extends ApiController
         }
 
         $agent->update($validated);
+
+        NotificationService::notifierAgent(
+            $agent,
+            'message',
+            'Votre profil a ete mis a jour',
+            'Une modification a ete enregistree sur votre profil E-PNMLS.',
+            '/profile',
+            $user->id
+        );
 
         // Reload relations for the response
         $agent->load([

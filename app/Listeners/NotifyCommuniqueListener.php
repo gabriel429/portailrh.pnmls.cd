@@ -11,7 +11,7 @@ class NotifyCommuniqueListener
     {
         $communique = $event->communique;
 
-        NotificationService::notifierTous(
+        NotificationService::notifierTousAvecEmail(
             'communique',
             'Nouveau communiqué',
             $communique->titre,
