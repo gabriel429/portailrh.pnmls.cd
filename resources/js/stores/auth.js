@@ -74,16 +74,37 @@ export const useAuthStore = defineStore('auth', {
         },
         isDirecteur(state) {
             const role = normalizedRole(state)
-            return ['directeur', 'directeur de département'].includes(role)
+            return [
+                'directeur',
+                'directrice',
+                'directeur de département',
+                'directeur de departement',
+                'directrice de département',
+                'directrice de departement',
+            ].includes(role)
         },
         isAssistant(state) {
             const role = normalizedRole(state)
-            return ['assistant', 'assistant de département', 'secrétaire de département', 'secretaire de departement'].includes(role)
+            return [
+                'assistant',
+                'assistant de département',
+                'assistant de departement',
+                'secrétaire de département',
+                'secretaire de departement',
+            ].includes(role)
         },
         isDepartement(state) {
             const role = normalizedRole(state)
-            return role === 'directeur' || role.startsWith('assistant') ||
-                   role === 'secrétaire de département' || role === 'secretaire de departement'
+            return [
+                'directeur',
+                'directrice',
+                'directeur de département',
+                'directeur de departement',
+                'directrice de département',
+                'directrice de departement',
+                'secrétaire de département',
+                'secretaire de departement',
+            ].includes(role) || role.startsWith('assistant')
         },
         isChefSectionRenforcement(state) {
             return normalizedRole(state) === 'chef section renforcement'

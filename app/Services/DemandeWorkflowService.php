@@ -7,6 +7,7 @@ use App\Models\Request as RequestModel;
 use App\Models\RequestValidationHistory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
 
 class DemandeWorkflowService
 {
@@ -167,7 +168,7 @@ class DemandeWorkflowService
     public function approve(User $user, RequestModel $request): array
     {
         if (!$this->canValidate($user, $request)) {
-            return ['success' => false, 'message' => 'Vous n êtes pas autorise a valider cette etape.'];
+            return ['success' => false, 'message' => 'Vous n etes pas autorise a valider cette etape.'];
         }
 
         $currentStep = $request->current_step;
@@ -206,7 +207,7 @@ class DemandeWorkflowService
     public function reject(User $user, RequestModel $request, ?string $remarques = null): array
     {
         if (!$this->canValidate($user, $request)) {
-            return ['success' => false, 'message' => 'Vous n êtes pas autorise a rejeter cette demande.'];
+            return ['success' => false, 'message' => 'Vous n etes pas autorise a rejeter cette demande.'];
         }
 
         $agent = $user->agent;
@@ -392,7 +393,7 @@ class DemandeWorkflowService
         $request->loadMissing('agent.departement', 'agent.province');
         $agent = $request->agent;
         $validatorAgent = $user->agent;
-        $role = strtolower(trim((string) ($user->role?->nom_role ?? '')));
+        $role = $this->normalizeValue($user->role?->nom_role);
 
         return match ($step) {
             'director' => (int) ($validatorAgent?->departement_id ?? 0) === (int) ($agent?->departement_id ?? 0),
@@ -401,28 +402,27 @@ class DemandeWorkflowService
             'aaf' => str_contains((string) ($validatorAgent?->organe ?? ''), 'Local')
                 && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
             'sep' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
-            'sen' => $request->workflow_level === 'national_sen_direct'
-                ? in_array($role, ['sen', 'sena'], true)
-                : in_array($role, ['sen', 'sena'], true),
+            'sen' => in_array($role, ['sen', 'sena'], true),
             default => false,
         };
     }
 
     private function hasStepRole(User $user, string $step): bool
     {
-        $role = strtolower(trim((string) ($user->role?->nom_role ?? '')));
-        $deptCode = strtolower(trim((string) ($user->agent?->departement?->code ?? '')));
-        $deptName = strtolower(trim((string) ($user->agent?->departement?->nom ?? '')));
-        $fonction = strtolower(trim((string) ($user->agent?->fonction ?? '')));
-        $poste = strtolower(trim((string) ($user->agent?->poste_actuel ?? '')));
+        $role = $this->normalizeValue($user->role?->nom_role);
+        $deptCode = $this->normalizeValue($user->agent?->departement?->code);
+        $deptName = $this->normalizeValue($user->agent?->departement?->nom);
+        $fonction = $this->normalizeValue($user->agent?->fonction);
+        $poste = $this->normalizeValue($user->agent?->poste_actuel);
 
         return match ($step) {
             'director' => in_array($role, [
                 'directeur',
+                'directrice',
+                'directeur de departement',
+                'directrice de departement',
                 'assistant',
-                'assistant de département',
                 'assistant de departement',
-                'secrétaire de département',
                 'secretaire de departement',
             ], true) || str_starts_with($role, 'assistant'),
             'rh' => in_array($role, [
@@ -493,5 +493,13 @@ class DemandeWorkflowService
             'commentaire' => $commentaire,
             'acted_at' => now(),
         ]);
+    }
+
+    private function normalizeValue(?string $value): string
+    {
+        $value = Str::ascii((string) $value);
+        $value = strtolower(trim($value));
+
+        return preg_replace('/\s+/', ' ', $value) ?? '';
     }
 }

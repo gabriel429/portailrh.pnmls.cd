@@ -20,6 +20,17 @@ class DepartmentDashboardController extends ApiController
         $user     = $request->user();
         // Le département est sur le profil agent (agents.departement_id), pas sur users
         $deptId   = $user->agent?->departement_id ?? $user->departement_id;
+        $roleName = \Illuminate\Support\Str::ascii((string) ($user->role?->nom_role ?? ''));
+        $roleName = strtolower(trim($roleName));
+        $isDepartmentWorkflowValidator = in_array($roleName, [
+            'directeur',
+            'directrice',
+            'directeur de departement',
+            'directrice de departement',
+            'assistant',
+            'assistant de departement',
+            'secretaire de departement',
+        ], true) || str_starts_with($roleName, 'assistant');
 
         if (!$deptId) {
             return response()->json(['message' => 'Aucun département associé à votre compte.'], 403);
@@ -59,8 +70,14 @@ class DepartmentDashboardController extends ApiController
             ->count();
 
         // ─── Demandes ──────────────────────────────────────────
-        $requestsPending = RequestModel::whereIn('agent_id', $agentIds)
-            ->enAttente()->count();
+        $requestsPendingQuery = RequestModel::whereIn('agent_id', $agentIds)
+            ->enAttente();
+
+        if ($isDepartmentWorkflowValidator) {
+            $requestsPendingQuery->where('current_step', 'director');
+        }
+
+        $requestsPending = (clone $requestsPendingQuery)->count();
 
         // ─── Présence ──────────────────────────────────────────
         $totalActive   = max($agentsActifs, 1);
@@ -130,12 +147,11 @@ class DepartmentDashboardController extends ApiController
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
 
         // ─── Demandes en attente ───────────────────────────────
-        $pendingRequests = RequestModel::whereIn('agent_id', $agentIds)
-            ->enAttente()
+        $pendingRequests = $requestsPendingQuery
             ->with('agent:id,nom,prenom')
             ->orderByDesc('created_at')
             ->limit(8)
-            ->get(['id', 'agent_id', 'type', 'description', 'statut', 'created_at']);
+            ->get(['id', 'agent_id', 'type', 'description', 'statut', 'current_step', 'created_at']);
 
         // ─── Mes tâches (tâches de l'agent connecté) ──────────
         $myAgentId = $user->agent?->id;
