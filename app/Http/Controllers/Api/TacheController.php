@@ -202,8 +202,8 @@ class TacheController extends ApiController
                 ->where('organe', $senOrgane)
                 ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'id_agent'])
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
@@ -220,8 +220,8 @@ class TacheController extends ApiController
                 ->where('province_id', $agent->province_id)
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'id_agent'])
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = $this->resolveProvinceActivitesPta($agent->province_id);
         } elseif ($isSEL) {
@@ -234,8 +234,8 @@ class TacheController extends ApiController
                 ->where('organe', 'Secrétariat Exécutif Local')
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'id_agent'])
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
@@ -253,8 +253,8 @@ class TacheController extends ApiController
                 ->where('departement_id', $agent->departement_id)
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'id_agent'])
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
