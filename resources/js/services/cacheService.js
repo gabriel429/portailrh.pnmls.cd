@@ -8,6 +8,7 @@
 import offlineStorage from './offlineStorage'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
+import { debugLog, reportError } from '@/utils/logger'
 
 class CacheService {
     constructor() {
@@ -19,13 +20,13 @@ class CacheService {
     initNetworkListener() {
         window.addEventListener('online', () => {
             this.isOnline = true
-            console.log('🌐 Connexion rétablie - Mode online')
+            debugLog('🌐 Connexion rétablie - Mode online')
             this.notifyUser('Connexion rétablie! Synchronisation...', 'success')
         })
 
         window.addEventListener('offline', () => {
             this.isOnline = false
-            console.log('📱 Mode offline activé')
+            debugLog('📱 Mode offline activé')
             this.notifyUser('Mode offline - Les données sont sauvegardées localement', 'warning')
         })
     }
@@ -42,7 +43,7 @@ class CacheService {
      * DÉPARTEMENTS : Récupération avec cache intelligent
      */
     async getDepartments(forceRefresh = false) {
-        console.log('📂 Récupération départements...')
+        debugLog('📂 Récupération départements...')
 
         try {
             if (!forceRefresh) {
@@ -54,7 +55,7 @@ class CacheService {
                 const maxAge = this.isOnline ? 24 * 60 * 60 * 1000 : Infinity
 
                 if (cached.length > 0 && cacheAge < maxAge) {
-                    console.log(`✅ Départements depuis cache (${cacheAge}h)`)
+                    debugLog(`✅ Départements depuis cache (${cacheAge}h)`)
 
                     // Mise à jour en arrière-plan si en ligne
                     if (this.isOnline && cacheAge > 60 * 60 * 1000) { // 1h
@@ -69,7 +70,7 @@ class CacheService {
             if (!this.isOnline) {
                 const cached = await offlineStorage.getCachedDepartments()
                 if (cached.length > 0) {
-                    console.log('📱 Départements depuis cache (hors ligne)')
+                    debugLog('📱 Départements depuis cache (hors ligne)')
                     return cached
                 }
 
@@ -83,18 +84,18 @@ class CacheService {
             // 4. Mise en cache si succès
             if (response.length > 0) {
                 await offlineStorage.cacheDepartments(response)
-                console.log('✅ Départements mis en cache')
+                debugLog('✅ Départements mis en cache')
             }
 
             return response
 
         } catch (error) {
-            console.error('❌ Erreur récupération départements:', error)
+            reportError('❌ Erreur récupération départements:', error)
 
             // Fallback sur le cache en cas d'erreur
             const cached = await offlineStorage.getCachedDepartments()
             if (cached.length > 0) {
-                console.log('📱 Fallback: départements depuis cache')
+                debugLog('📱 Fallback: départements depuis cache')
                 this.notifyUser('Données depuis le cache local', 'info')
                 return cached
             }
@@ -117,7 +118,7 @@ class CacheService {
 
     async refreshDepartmentsBackground() {
         try {
-            console.log('🔄 Mise à jour départements en arrière-plan')
+            debugLog('🔄 Mise à jour départements en arrière-plan')
             const fresh = await this.fetchDepartmentsFromAPI()
 
             if (fresh.length > 0) {
@@ -125,7 +126,7 @@ class CacheService {
                 this.notifyUser('Départements mis à jour', 'success', 2000)
             }
         } catch (error) {
-            console.log('⚠️ Échec mise à jour arrière-plan départements:', error.message)
+            debugLog('⚠️ Échec mise à jour arrière-plan départements:', error.message)
         }
     }
 
@@ -133,7 +134,7 @@ class CacheService {
      * AGENTS : Récupération par département avec cache intelligent
      */
     async getAgentsByDepartment(departmentId, forceRefresh = false) {
-        console.log(`👥 Récupération agents département ${departmentId}`)
+        debugLog(`👥 Récupération agents département ${departmentId}`)
 
         if (!departmentId) return []
 
@@ -148,7 +149,7 @@ class CacheService {
                 const maxAge = this.isOnline ? 6 * 60 * 60 * 1000 : Infinity
 
                 if (cached.length > 0 && cacheAge < maxAge) {
-                    console.log(`✅ Agents depuis cache (${Math.round(cacheAge / 1000 / 60)}min)`)
+                    debugLog(`✅ Agents depuis cache (${Math.round(cacheAge / 1000 / 60)}min)`)
 
                     // Mise à jour arrière-plan si nécessaire
                     if (this.isOnline && cacheAge > 30 * 60 * 1000) { // 30min
@@ -163,7 +164,7 @@ class CacheService {
             if (!this.isOnline) {
                 const cached = await offlineStorage.getCachedAgents(departmentId)
                 if (cached.length > 0) {
-                    console.log('📱 Agents depuis cache (hors ligne)')
+                    debugLog('📱 Agents depuis cache (hors ligne)')
                     return cached
                 }
 
@@ -177,18 +178,18 @@ class CacheService {
             // 4. Mise en cache
             if (response.length > 0) {
                 await offlineStorage.cacheAgents(departmentId, response)
-                console.log(`✅ ${response.length} agents mis en cache`)
+                debugLog(`✅ ${response.length} agents mis en cache`)
             }
 
             return response
 
         } catch (error) {
-            console.error(`❌ Erreur agents département ${departmentId}:`, error)
+            reportError(`❌ Erreur agents département ${departmentId}:`, error)
 
             // Fallback cache
             const cached = await offlineStorage.getCachedAgents(departmentId)
             if (cached.length > 0) {
-                console.log('📱 Fallback: agents depuis cache')
+                debugLog('📱 Fallback: agents depuis cache')
                 this.notifyUser('Agents depuis le cache local', 'info')
                 return cached
             }
@@ -205,15 +206,15 @@ class CacheService {
 
     async refreshAgentsBackground(departmentId) {
         try {
-            console.log(`🔄 Mise à jour agents département ${departmentId} en arrière-plan`)
+            debugLog(`🔄 Mise à jour agents département ${departmentId} en arrière-plan`)
             const fresh = await this.fetchAgentsFromAPI(departmentId)
 
             if (fresh.length > 0) {
                 await offlineStorage.cacheAgents(departmentId, fresh)
-                console.log('✅ Agents mis à jour en arrière-plan')
+                debugLog('✅ Agents mis à jour en arrière-plan')
             }
         } catch (error) {
-            console.log('⚠️ Échec mise à jour arrière-plan agents:', error.message)
+            debugLog('⚠️ Échec mise à jour arrière-plan agents:', error.message)
         }
     }
 
@@ -234,7 +235,7 @@ class CacheService {
     async preloadFrequentData() {
         if (!this.isOnline) return
 
-        console.log('🚀 Préchargement des données fréquentes...')
+        debugLog('🚀 Préchargement des données fréquentes...')
 
         try {
             // 1. Précharger les départements
@@ -244,16 +245,16 @@ class CacheService {
             const activeDepts = await this.getMostActiveDepartments(3)
 
             const preloadPromises = activeDepts.map(dept =>
-                this.getAgentsByDepartment(dept.id).catch(() => console.log(`⚠️ Échec préchargement ${dept.nom}`))
+                this.getAgentsByDepartment(dept.id).catch(() => debugLog(`⚠️ Échec préchargement ${dept.nom}`))
             )
 
             await Promise.allSettled(preloadPromises)
 
-            console.log('✅ Préchargement terminé')
+            debugLog('✅ Préchargement terminé')
             this.notifyUser('Données préchargées pour usage offline', 'success', 3000)
 
         } catch (error) {
-            console.log('⚠️ Échec préchargement:', error.message)
+            debugLog('⚠️ Échec préchargement:', error.message)
         }
     }
 
@@ -308,7 +309,7 @@ class CacheService {
             return false
         }
 
-        console.log('🔄 Actualisation forcée de toutes les données')
+        debugLog('🔄 Actualisation forcée de toutes les données')
 
         try {
             // Actualiser départements
@@ -326,7 +327,7 @@ class CacheService {
             return true
 
         } catch (error) {
-            console.error('❌ Erreur actualisation forcée:', error)
+            reportError('❌ Erreur actualisation forcée:', error)
             this.notifyUser('Erreur lors de l\'actualisation', 'danger')
             return false
         }

@@ -11,6 +11,8 @@
  * - Gestion des conflits
  */
 
+import { debugLog, reportError } from '@/utils/logger'
+
 class OfflineStorage {
     constructor() {
         this.dbName = 'PortailRH_OfflineDB'
@@ -26,13 +28,13 @@ class OfflineStorage {
             const request = indexedDB.open(this.dbName, this.dbVersion)
 
             request.onerror = () => {
-                console.error('❌ Erreur IndexedDB:', request.error)
+                reportError('❌ Erreur IndexedDB:', request.error)
                 reject(request.error)
             }
 
             request.onsuccess = () => {
                 this.db = request.result
-                console.log('✅ IndexedDB initialisé:', this.dbName)
+                debugLog('✅ IndexedDB initialisé:', this.dbName)
                 resolve()
             }
 
@@ -70,7 +72,7 @@ class OfflineStorage {
                     db.createObjectStore('sync_metadata', { keyPath: 'key' })
                 }
 
-                console.log('🗄️ Tables IndexedDB créées')
+                debugLog('🗄️ Tables IndexedDB créées')
             }
         })
     }
@@ -94,7 +96,7 @@ class OfflineStorage {
 
         await Promise.all(promises)
         await transaction.complete
-        console.log(`✅ ${departments.length} départements mis en cache`)
+        debugLog(`✅ ${departments.length} départements mis en cache`)
 
         // Sauvegarder le timestamp de synchronisation
         await this.setSyncTimestamp('departments', timestamp)
@@ -123,7 +125,7 @@ class OfflineStorage {
 
         await Promise.all(promises)
         await transaction.complete
-        console.log(`✅ ${agents.length} agents du département ${departmentId} mis en cache`)
+        debugLog(`✅ ${agents.length} agents du département ${departmentId} mis en cache`)
 
         await this.setSyncTimestamp(`agents_${departmentId}`, timestamp)
     }
@@ -139,7 +141,7 @@ class OfflineStorage {
             const request = store.getAll()
             request.onsuccess = () => {
                 const departments = request.result || []
-                console.log(`📂 ${departments.length} départements récupérés du cache`)
+                debugLog(`📂 ${departments.length} départements récupérés du cache`)
                 resolve(departments)
             }
             request.onerror = () => resolve([])
@@ -158,7 +160,7 @@ class OfflineStorage {
             const request = index.getAll(departmentId)
             request.onsuccess = () => {
                 const agents = request.result || []
-                console.log(`👥 ${agents.length} agents du département ${departmentId} récupérés du cache`)
+                debugLog(`👥 ${agents.length} agents du département ${departmentId} récupérés du cache`)
                 resolve(agents)
             }
             request.onerror = () => resolve([])
@@ -184,7 +186,7 @@ class OfflineStorage {
         return new Promise((resolve, reject) => {
             const request = store.add(queueItem)
             request.onsuccess = () => {
-                console.log('📝 Pointage ajouté à la queue offline:', request.result)
+                debugLog('📝 Pointage ajouté à la queue offline:', request.result)
                 resolve(request.result)
             }
             request.onerror = () => reject(request.error)
@@ -203,7 +205,7 @@ class OfflineStorage {
             const request = index.getAll('pending')
             request.onsuccess = () => {
                 const pending = request.result || []
-                console.log(`⏳ ${pending.length} pointages en attente de synchronisation`)
+                debugLog(`⏳ ${pending.length} pointages en attente de synchronisation`)
                 resolve(pending)
             }
             request.onerror = () => resolve([])
@@ -227,7 +229,7 @@ class OfflineStorage {
                 item.updated_at = new Date().toISOString()
 
                 store.put(item)
-                console.log(`🔄 Pointage ${tempId} mis à jour:`, status)
+                debugLog(`🔄 Pointage ${tempId} mis à jour:`, status)
             }
         }
     }
@@ -242,7 +244,7 @@ class OfflineStorage {
         return new Promise((resolve) => {
             const request = store.delete(tempId)
             request.onsuccess = () => {
-                console.log('🗑️ Pointage supprimé de la queue:', tempId)
+                debugLog('🗑️ Pointage supprimé de la queue:', tempId)
                 resolve()
             }
             request.onerror = () => resolve() // Continue même en cas d'erreur
@@ -343,7 +345,7 @@ class OfflineStorage {
                 }
                 cursor.continue()
             } else {
-                console.log(`🧹 ${cleaned} anciens pointages nettoyés`)
+                debugLog(`🧹 ${cleaned} anciens pointages nettoyés`)
             }
         }
     }

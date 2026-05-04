@@ -8,6 +8,7 @@
 import offlineStorage from './offlineStorage'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
+import { debugLog, reportError } from '@/utils/logger'
 
 class SyncService {
     constructor() {
@@ -25,7 +26,7 @@ class SyncService {
     initNetworkListener() {
         window.addEventListener('online', () => {
             this.isOnline = true
-            console.log('🌐 Connexion rétablie - Début synchronisation')
+            debugLog('🌐 Connexion rétablie - Début synchronisation')
             this.notifyUser('Synchronisation en cours...', 'info')
 
             // Synchronisation immédiate quand on revient en ligne
@@ -35,7 +36,7 @@ class SyncService {
         window.addEventListener('offline', () => {
             this.isOnline = false
             this.stopAutoSync()
-            console.log('📱 Mode offline - Synchronisation suspendue')
+            debugLog('📱 Mode offline - Synchronisation suspendue')
         })
     }
 
@@ -59,14 +60,14 @@ class SyncService {
             }
         }, 30000)
 
-        console.log('⏰ Synchronisation automatique démarrée')
+        debugLog('⏰ Synchronisation automatique démarrée')
     }
 
     stopAutoSync() {
         if (this.syncInterval) {
             clearInterval(this.syncInterval)
             this.syncInterval = null
-            console.log('⏸️ Synchronisation automatique arrêtée')
+            debugLog('⏸️ Synchronisation automatique arrêtée')
         }
     }
 
@@ -80,17 +81,17 @@ class SyncService {
         }
 
         this.isSyncing = true
-        console.log('🔄 Début synchronisation...')
+        debugLog('🔄 Début synchronisation...')
 
         try {
             const pending = await offlineStorage.getPendingPointages()
 
             if (pending.length === 0) {
-                console.log('✅ Aucun pointage en attente')
+                debugLog('✅ Aucun pointage en attente')
                 return true
             }
 
-            console.log(`📤 Synchronisation de ${pending.length} pointage(s) en lot`)
+            debugLog(`📤 Synchronisation de ${pending.length} pointage(s) en lot`)
 
             try {
                 // Regrouper tous les pointages par date et les envoyer en un seul appel bulk
@@ -111,7 +112,7 @@ class SyncService {
                                 await this.syncSinglePointage(pt)
                                 syncedCount++
                             } catch (singleErr) {
-                                console.error(`❌ Échec sync pointage ${pt.tempId}:`, singleErr)
+                                reportError(`❌ Échec sync pointage ${pt.tempId}:`, singleErr)
                                 errorCount++
                             }
                         }
@@ -144,17 +145,17 @@ class SyncService {
                     this.notifyUser(`❌ Impossible de synchroniser ${errorCount} pointage(s)`, 'danger')
                 }
 
-                console.log(`✅ Synchronisation terminée: ${syncedCount} succès, ${errorCount} erreurs`)
+                debugLog(`✅ Synchronisation terminée: ${syncedCount} succès, ${errorCount} erreurs`)
                 return errorCount === 0
 
             } catch (bulkError) {
-                console.error('❌ Erreur synchronisation bulk:', bulkError)
+                reportError('❌ Erreur synchronisation bulk:', bulkError)
                 this.notifyUser('Erreur de synchronisation', 'danger')
                 return false
             }
 
         } catch (error) {
-            console.error('❌ Erreur synchronisation globale:', error)
+            reportError('❌ Erreur synchronisation globale:', error)
             this.notifyUser('Erreur de synchronisation', 'danger')
             return false
 
@@ -227,7 +228,7 @@ class SyncService {
 
         await offlineStorage.updatePointageStatus(tempId, 'synced')
 
-        console.log(`✅ Pointage ${tempId} synchronisé avec succès`)
+        debugLog(`✅ Pointage ${tempId} synchronisé avec succès`)
         return response.data
     }
 
@@ -244,7 +245,7 @@ class SyncService {
                 'error',
                 `Échec après ${this.maxRetries} tentatives: ${error.message}`
             )
-            console.log(`❌ Pointage ${tempId} abandonné après ${this.maxRetries} tentatives`)
+            debugLog(`❌ Pointage ${tempId} abandonné après ${this.maxRetries} tentatives`)
             return
         }
 
@@ -255,7 +256,7 @@ class SyncService {
             `Retry ${attempts + 1}/${this.maxRetries} dans ${nextDelay/1000}s`
         )
 
-        console.log(`⏳ Retry pointage ${tempId} dans ${nextDelay/1000}s (tentative ${attempts + 1}/${this.maxRetries})`)
+        debugLog(`⏳ Retry pointage ${tempId} dans ${nextDelay/1000}s (tentative ${attempts + 1}/${this.maxRetries})`)
 
         // Programmer le retry
         setTimeout(() => {
@@ -289,12 +290,12 @@ class SyncService {
     async cancelPointage(tempId) {
         try {
             await offlineStorage.removePointageFromQueue(tempId)
-            console.log(`🗑️ Pointage ${tempId} annulé`)
+            debugLog(`🗑️ Pointage ${tempId} annulé`)
             this.notifyUser('Pointage supprimé de la queue', 'info')
             return true
 
         } catch (error) {
-            console.error('❌ Erreur annulation pointage:', error)
+            reportError('❌ Erreur annulation pointage:', error)
             this.notifyUser('Impossible d\'annuler le pointage', 'danger')
             return false
         }
@@ -323,7 +324,7 @@ class SyncService {
             return true
 
         } catch (error) {
-            console.error(`❌ Erreur retry pointage ${tempId}:`, error)
+            reportError(`❌ Erreur retry pointage ${tempId}:`, error)
             this.notifyUser('Échec de la synchronisation', 'danger')
             return false
         }
@@ -354,10 +355,10 @@ class SyncService {
     async cleanupQueue() {
         try {
             await offlineStorage.cleanup()
-            console.log('🧹 Queue nettoyée')
+            debugLog('🧹 Queue nettoyée')
             return true
         } catch (error) {
-            console.error('❌ Erreur nettoyage queue:', error)
+            reportError('❌ Erreur nettoyage queue:', error)
             return false
         }
     }
@@ -368,7 +369,7 @@ class SyncService {
     destroy() {
         this.stopAutoSync()
         this.isSyncing = false
-        console.log('🛑 Service de synchronisation arrêté')
+        debugLog('🛑 Service de synchronisation arrêté')
     }
 }
 

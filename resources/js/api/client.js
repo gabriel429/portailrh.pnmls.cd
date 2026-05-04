@@ -2,6 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import router from '@/router'
+import { debugLog, reportError } from '@/utils/logger'
 
 // Services offline
 import offlineStorage from '@/services/offlineStorage'
@@ -23,9 +24,9 @@ async function initializeOffline() {
         try {
             await offlineStorage.init()
             offlineInitialized = true
-            console.log('🗄️ Stockage offline initialisé')
+            debugLog('🗄️ Stockage offline initialisé')
         } catch (error) {
-            console.error('❌ Erreur initialisation offline:', error)
+            reportError('❌ Erreur initialisation offline:', error)
         }
     }
 }
@@ -98,7 +99,7 @@ client.interceptors.request.use(
                 }
 
             } catch (error) {
-                console.error('❌ Erreur cache offline:', error)
+                reportError('❌ Erreur cache offline:', error)
             }
         }
 
@@ -137,7 +138,7 @@ client.interceptors.response.use(
                 }
 
             } catch (error) {
-                console.error('⚠️ Erreur mise en cache:', error)
+                reportError('⚠️ Erreur mise en cache:', error)
             }
         }
 
@@ -173,7 +174,7 @@ client.interceptors.response.use(
                                error.config.url.includes('/departments')
 
             if (isDataFetch) {
-                console.log('🔄 Tentative fallback cache après erreur réseau...')
+                debugLog('🔄 Tentative fallback cache après erreur réseau...')
 
                 // Essayer de récupérer depuis le cache
                 return initializeOffline().then(async () => {
@@ -202,7 +203,7 @@ client.interceptors.response.use(
                             }
                         }
                     } catch (cacheError) {
-                        console.error('❌ Échec fallback cache:', cacheError)
+                        reportError('❌ Échec fallback cache:', cacheError)
                     }
 
                     // Si pas de cache, propager l'erreur originale
