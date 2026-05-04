@@ -9,6 +9,7 @@ use App\Models\Pointage;
 use App\Models\Request as RequestModel;
 use App\Models\Signalement;
 use App\Models\Tache;
+use App\Services\RoleService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -18,6 +19,8 @@ class SenaDashboardController extends ApiController
     public function index(Request $request)
     {
         $user = $request->user();
+        $roles = app(RoleService::class);
+        $isSENA = $roles->hasSENARole($user);
 
         $now          = Carbon::now();
         $nextWeek     = $now->copy()->addDays(7);
@@ -26,8 +29,12 @@ class SenaDashboardController extends ApiController
         $senOrgane    = 'Secrétariat Exécutif National';
 
         // ─── Agents SEN (organe national) ─────────────────────
-        $senAgentIds = Agent::where('organe', $senOrgane)->pluck('id');
-        $senActifs   = Agent::where('organe', $senOrgane)->actifs()->count();
+        $senAgentIds = $isSENA
+            ? $roles->senaScopedAgentsQuery($user)->pluck('id')
+            : Agent::where('organe', $senOrgane)->pluck('id');
+        $senActifs   = $isSENA
+            ? $roles->senaScopedAgentsQuery($user)->actifs()->count()
+            : Agent::where('organe', $senOrgane)->actifs()->count();
 
         // ─── Mes tâches (agent connecté) ──────────────────────
         $myAgentId = $user->agent?->id;
@@ -51,6 +58,7 @@ class SenaDashboardController extends ApiController
         // ─── Demandes en attente de validation SEN ────────────
         // Demandes dont le statut indique qu'elles attendent la validation SEN
         $pendingRequests = RequestModel::with('agent:id,nom,prenom,photo')
+            ->whereIn('agent_id', $senAgentIds)
             ->where(function ($q) {
                 $q->where('current_step', 'sen')
                   ->orWhere('statut', 'en_attente_sen')
@@ -111,6 +119,8 @@ class SenaDashboardController extends ApiController
             ->get(['id', 'type', 'statut', 'severite', 'is_anonymous', 'created_at']);
 
         return response()->json([
+            'scope_label'        => $isSENA ? 'sena' : 'sen',
+            'managed_agents_count' => $senAgentIds->count(),
             'my_tasks'           => $myTasks,
             'upcoming_deadlines' => $upcomingDeadlines,
             'pending_requests'   => $pendingRequests,

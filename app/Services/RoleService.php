@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Agent;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 class RoleService
@@ -34,6 +35,65 @@ class RoleService
     public function hasSENARole(?User $user): bool
     {
         return (bool) $user && $user->hasRole('SENA');
+    }
+
+    public function senaScopedAgentsQuery(?User $user): Builder
+    {
+        $query = Agent::query();
+
+        if (!$this->hasSENARole($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $senOrgane = Agent::ORGANES[0] ?? 'Secrétariat Exécutif National';
+        $sepOrgane = Agent::ORGANES[1] ?? 'Secrétariat Exécutif Provincial';
+
+        return $query->where(function (Builder $scope) use ($senOrgane, $sepOrgane) {
+            $scope
+                ->where(function (Builder $directSen) use ($senOrgane) {
+                    $directSen
+                        ->where('organe', $senOrgane)
+                        ->whereNull('departement_id');
+                })
+                ->orWhere(function (Builder $directeurs) {
+                    $directeurs
+                        ->whereNotNull('departement_id')
+                        ->whereHas('role', function (Builder $roleQuery) {
+                            $roleQuery->whereIn('nom_role', [
+                                'Directeur',
+                                'Directrice',
+                                'Directeur de département',
+                                'Directeur de departement',
+                                'Directrice de département',
+                                'Directrice de departement',
+                            ]);
+                        });
+                })
+                ->orWhere(function (Builder $sep) use ($sepOrgane) {
+                    $sep
+                        ->where('organe', $sepOrgane)
+                        ->whereHas('role', fn (Builder $roleQuery) => $roleQuery->where('nom_role', 'SEP'));
+                });
+        });
+    }
+
+    public function senaScopedAgentIds(?User $user): array
+    {
+        return $this->senaScopedAgentsQuery($user)
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    public function canManageSenaScopedAgent(?User $user, ?Agent $targetAgent): bool
+    {
+        if (!$targetAgent || !$this->hasSENARole($user)) {
+            return false;
+        }
+
+        return $this->senaScopedAgentsQuery($user)
+            ->whereKey($targetAgent->id)
+            ->exists();
     }
 
     public function isSepManager(?User $user): bool

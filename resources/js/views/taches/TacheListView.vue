@@ -11,7 +11,7 @@
             <div class="hero-tools">
               <template v-if="auth.isSENA">
                 <router-link v-if="!isSENScope" :to="{ name: 'taches.index', query: { scope: 'sen' } }" class="btn-rh alt">
-                  <i class="fas fa-users me-1"></i> Taches du SEN
+                  <i class="fas fa-users me-1"></i> Taches sous mon suivi
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
                   <i class="fas fa-arrow-left me-1"></i> Mes taches
@@ -169,7 +169,7 @@ watch(() => route.query.statut, (val) => {
   statusFilter.value = val ?? 'all'
 })
 
-watch(() => route.query.scope, () => {
+watch(() => route.fullPath, () => {
   loadTaches()
 })
 
@@ -207,14 +207,16 @@ const filteredTaches = computed(() => {
 
 const pageTitle = computed(() => {
   if (isDeptScope.value) return 'Taches du departement'
-  if (isSENScope.value) return 'Taches du SEN'
+  if (isSENScope.value) return auth.isSENA ? 'Taches sous mon suivi' : 'Taches du SEN'
   if (isProvinceScope.value) return 'Taches de la province'
   return showAssignedByMe.value ? 'Taches assignees par moi' : 'Mes taches'
 })
 
 const pageSubtitle = computed(() => {
   if (isDeptScope.value) return 'Vue d ensemble des taches assignees aux agents du departement.'
-  if (isSENScope.value) return 'Toutes les taches assignees aux agents du Secretariat Executif National.'
+  if (isSENScope.value) return auth.isSENA
+    ? 'Taches des attaches du SEN, des directeurs de departement et des SEP suivis par le Secretariat de Direction.'
+    : 'Toutes les taches assignees aux agents du Secretariat Executif National.'
   if (isProvinceScope.value) return 'Vue provinciale des taches assignees aux agents de votre province.'
   return showAssignedByMe.value
     ? 'Suivi des taches que vous attribuez aux agents de votre structure.'
@@ -223,14 +225,16 @@ const pageSubtitle = computed(() => {
 
 const panelTitle = computed(() => {
   if (isDeptScope.value) return 'Taches du departement'
-  if (isSENScope.value) return 'Taches du SEN'
+  if (isSENScope.value) return auth.isSENA ? 'Taches sous mon suivi' : 'Taches du SEN'
   if (isProvinceScope.value) return 'Taches de la province'
   return showAssignedByMe.value ? 'Taches que j ai assignees' : 'Taches qui me sont assignees'
 })
 
 const panelSubtitle = computed(() => {
   if (isDeptScope.value) return 'Toutes les taches assignees aux agents du departement.'
-  if (isSENScope.value) return 'Vue d ensemble des taches assignees aux agents du SEN.'
+  if (isSENScope.value) return auth.isSENA
+    ? 'Vue d ensemble des taches autorisees dans votre perimetre SENA.'
+    : 'Vue d ensemble des taches assignees aux agents du SEN.'
   if (isProvinceScope.value) return 'Toutes les taches assignees aux agents de la province.'
   return showAssignedByMe.value
     ? 'Liste des taches que vous avez affectees aux agents.'
@@ -239,7 +243,7 @@ const panelSubtitle = computed(() => {
 
 const emptyStateText = computed(() => {
   if (isDeptScope.value) return 'Aucune tache pour ce filtre dans ce departement.'
-  if (isSENScope.value) return 'Aucune tache SEN pour ce filtre.'
+  if (isSENScope.value) return auth.isSENA ? 'Aucune tache dans votre perimetre SENA pour ce filtre.' : 'Aucune tache SEN pour ce filtre.'
   if (isProvinceScope.value) return 'Aucune tache pour ce filtre dans cette province.'
   return showAssignedByMe.value ? 'Aucune tache assignee par vous pour ce filtre.' : 'Aucune tache assignee pour ce filtre.'
 })

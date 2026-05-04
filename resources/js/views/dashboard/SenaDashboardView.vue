@@ -21,7 +21,10 @@
             </div>
             <div class="sena-hero-role-pill">
               <i class="fas fa-star me-1"></i>
-              Secrétariat de Direction — SEN / SENA
+              Secretariat de Direction
+              <span v-if="data?.scope_label === 'sena'" class="sena-hero-scope-badge">
+                {{ data?.managed_agents_count ?? 0 }} agents cibles
+              </span>
             </div>
             <div class="sena-hero-date">
               <i class="fas fa-calendar-alt me-1"></i>{{ today }}
@@ -53,7 +56,7 @@
             <div class="sena-kpi-pill-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="sena-kpi-pill-val">{{ data?.attendance?.today_rate ?? 0 }}<span style="font-size:.7rem;">%</span></div>
-              <div class="sena-kpi-pill-lbl">Présence SEN</div>
+              <div class="sena-kpi-pill-lbl">{{ data?.scope_label === 'sena' ? 'Présence périmètre' : 'Présence SEN' }}</div>
             </div>
           </div>
           <div class="kpi-divider"></div>
@@ -128,7 +131,11 @@
             </div>
             <div>
               <h3 class="sena-section-title">Agenda — Échéances à venir</h3>
-              <p class="sena-section-sub">Tâches SEN avec échéance dans les 7 prochains jours</p>
+              <p class="sena-section-sub">
+                {{ data?.scope_label === 'sena'
+                  ? 'Taches de votre perimetre avec echeance dans les 7 prochains jours'
+                  : 'Taches SEN avec echeance dans les 7 prochains jours' }}
+              </p>
             </div>
           </div>
           <div v-if="!data.upcoming_deadlines?.length" class="sena-empty">
@@ -218,7 +225,7 @@
               </div>
               <div>
                 <h3 class="sena-section-title">Présence du jour</h3>
-                <p class="sena-section-sub">Agents SEN · {{ today }}</p>
+                <p class="sena-section-sub">{{ data?.scope_label === 'sena' ? 'Agents suivis' : 'Agents SEN' }} · {{ today }}</p>
               </div>
             </div>
             <div class="sena-presence-stats">
@@ -261,7 +268,7 @@
                 <i class="fas fa-chart-pie"></i>
               </div>
               <div>
-                <h3 class="sena-section-title">PTA — Avancement SEN</h3>
+                <h3 class="sena-section-title">{{ data?.scope_label === 'sena' ? 'PTA — Avancement du périmètre' : 'PTA — Avancement SEN' }}</h3>
                 <p class="sena-section-sub">{{ currentYear }} · {{ data.pta?.total ?? 0 }} activité(s)</p>
               </div>
             </div>
@@ -529,6 +536,17 @@ onMounted(async () => {
   font-size: .72rem; font-weight: 700; padding: .25rem .65rem;
   border-radius: 20px; border: 1px solid rgba(251,191,36,.3);
   margin-bottom: .25rem; letter-spacing: .2px;
+}
+.sena-hero-scope-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: .12rem .42rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,.14);
+  color: #fff7ed;
+  border: 1px solid rgba(255,255,255,.18);
+  font-size: .62rem;
+  font-weight: 700;
 }
 .sena-hero-date { font-size: .7rem; opacity: .4; text-transform: capitalize; }
 

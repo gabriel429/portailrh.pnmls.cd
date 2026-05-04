@@ -451,6 +451,7 @@ const loading = ref(true)
 const tache = ref(null)
 const isCreateur = ref(false)
 const isAssigne = ref(false)
+const canManageTask = ref(false)
 const canValidateFinal = ref(false)
 const validationRoleLabel = ref('Responsable')
 const hasLoadedTache = computed(() => !!tache.value?.id)
@@ -495,7 +496,7 @@ const documentsByType = computed(() => {
 })
 
 const statusDocumentName = computed(() => statusDocument.value?.name || '')
-const canManage = computed(() => auth.isSENA || auth.isSEN || isCreateur.value)
+const canManage = computed(() => canManageTask.value || isCreateur.value)
 const showEditPanel = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
@@ -513,6 +514,7 @@ function applyTacheResponse(responseData) {
   tache.value = payload
   isCreateur.value = Boolean(responseData?.isCreateur ?? responseData?.meta?.isCreateur ?? isCreateur.value)
   isAssigne.value = Boolean(responseData?.isAssigne ?? responseData?.meta?.isAssigne ?? isAssigne.value)
+  canManageTask.value = Boolean(responseData?.canManage ?? responseData?.meta?.canManage ?? false)
   canValidateFinal.value = Boolean(responseData?.canValidateFinal ?? responseData?.meta?.canValidateFinal ?? false)
   validationRoleLabel.value = responseData?.validationRoleLabel ?? responseData?.meta?.validationRoleLabel ?? payload.validation_responsable_role ?? 'Responsable'
   statutForm.value = {

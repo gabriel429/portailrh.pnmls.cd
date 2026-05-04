@@ -169,7 +169,7 @@ const activitesPta = ref([])
 const sourceEmetteurs = ref([])
 const selectedDocuments = ref([])
 const documentsInput = ref(null)
-const scopeFlags = ref({ isSENScope: false, isProvinceScope: false, isLocalScope: false })
+const scopeFlags = ref({ isSENScope: false, isSENAScope: false, isProvinceScope: false, isLocalScope: false })
 const form = ref({
   agent_id: '',
   titre: '',
@@ -185,6 +185,7 @@ const form = ref({
 const pageSubtitle = computed(() => {
   if (scopeFlags.value.isLocalScope) return 'Assigner une tache a un agent local de votre ressort.'
   if (scopeFlags.value.isProvinceScope) return 'Assigner une tache a un agent provincial et organiser son suivi.'
+  if (scopeFlags.value.isSENAScope) return 'Assigner une tache uniquement aux attaches du SEN, aux directeurs de departement et aux SEP suivis par le Secretariat de Direction.'
   if (scopeFlags.value.isSENScope) return 'Assigner une tache a un agent du Secretariat Executif National.'
   return 'Assigner une tache a un agent de votre departement.'
 })
@@ -197,6 +198,7 @@ async function loadAgents() {
     sourceEmetteurs.value = data.data.source_emetteurs || []
     scopeFlags.value = {
       isSENScope: Boolean(data.data.isSENScope),
+      isSENAScope: Boolean(data.data.isSENAScope),
       isProvinceScope: Boolean(data.data.isProvinceScope),
       isLocalScope: Boolean(data.data.isLocalScope),
     }
