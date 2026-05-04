@@ -209,7 +209,9 @@ class TacheController extends ApiController
                 ->where('organe', $senOrgane)
                 ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
+                ->get()
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
@@ -223,7 +225,9 @@ class TacheController extends ApiController
                 ->actifs()
                 ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
+                ->get()
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
@@ -241,7 +245,9 @@ class TacheController extends ApiController
                 ->where('province_id', $agent->province_id)
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
+                ->get()
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = $this->resolveProvinceActivitesPta($agent->province_id);
@@ -255,7 +261,9 @@ class TacheController extends ApiController
                 ->where('organe', 'Secrétariat Exécutif Local')
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
+                ->get()
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
@@ -274,7 +282,9 @@ class TacheController extends ApiController
                 ->where('departement_id', $agent->departement_id)
                 ->where('id', '!=', $agent->id)
                 ->orderBy('nom')
-                ->get(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
+                ->get()
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
 
             $activitesPta = ActivitePlan::query()
