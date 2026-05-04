@@ -38,6 +38,7 @@ class TacheController extends ApiController
         $user = $request->user();
         $agent = $user->agent;
         $roles = app(RoleService::class);
+        $workflow = $this->workflowService();
         $isDirecteur = $roles->hasDirecteurOrDafRole($user);
         $isDeptManager = $roles->isDepartmentManager($user);
         $isTaskManager = $roles->hasTacheManagerRole($user);
