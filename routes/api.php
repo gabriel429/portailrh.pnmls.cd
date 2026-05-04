@@ -121,6 +121,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::put('taches/{tache}/statut', [TacheController::class, 'updateStatut']);
     Route::post('taches/{tache}/commentaire', [TacheController::class, 'addCommentaire']);
+    Route::post('taches/{tache}/validate', [TacheController::class, 'validateTask']);
+    Route::post('taches/{tache}/reject', [TacheController::class, 'rejectTask']);
     Route::get('taches/{tache}/documents/{document}/download', [TacheController::class, 'downloadDocument']);
     Route::post('taches/{tache}/report', [TacheController::class, 'submitReport']);
     Route::get('taches/{tache}/reports', [TacheController::class, 'viewReports']);
@@ -416,6 +418,8 @@ Route::prefix('v1')->as('v1.')->group(function () {
             ->names('taches');
         Route::put('taches/{tache}/statut', [TacheController::class, 'updateStatut'])->name('taches.update-statut');
         Route::post('taches/{tache}/commentaire', [TacheController::class, 'addCommentaire'])->name('taches.add-commentaire');
+        Route::post('taches/{tache}/validate', [TacheController::class, 'validateTask'])->name('taches.validate');
+        Route::post('taches/{tache}/reject', [TacheController::class, 'rejectTask'])->name('taches.reject');
 
         Route::get('plan-travail/create', [PlanTravailController::class, 'create'])->name('plan-travail.create');
         Route::apiResource('plan-travail', PlanTravailController::class)

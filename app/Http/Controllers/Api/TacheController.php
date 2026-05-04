@@ -12,6 +12,7 @@ use App\Models\TaskReport;
 use App\Models\Agent;
 use App\Services\NotificationService;
 use App\Services\RoleService;
+use App\Services\TacheWorkflowService;
 use App\Services\UserDataScope;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +23,10 @@ use Illuminate\Support\Str;
 
 class TacheController extends ApiController
 {
+    protected function workflowService(): TacheWorkflowService
+    {
+        return app(TacheWorkflowService::class);
+    }
 
     /**
      * Display listing of taches.
@@ -38,6 +43,7 @@ class TacheController extends ApiController
         $isTaskManager = $roles->hasTacheManagerRole($user);
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
         $isSEP = $roles->isSepManager($user);
+        $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
 
         // Personnel SEN (assistants, secrétaires) : accès aux tâches SEN
         $isSENStaff = false;
@@ -178,6 +184,7 @@ class TacheController extends ApiController
     {
         $user  = $request->user();
         $roles = app(RoleService::class);
+        $workflow = $this->workflowService();
 
         if (!$roles->hasTacheManagerRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
@@ -186,6 +193,7 @@ class TacheController extends ApiController
         $agent       = $user->agent;
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
         $isSEP = $roles->isSepManager($user);
+        $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
 
         if ($isSENOrSENA) {
             $senOrgane         = 'Secrétariat Exécutif National';
@@ -215,6 +223,26 @@ class TacheController extends ApiController
                 ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
 
             $activitesPta = $this->resolveProvinceActivitesPta($agent->province_id);
+        } elseif ($isSEL) {
+            if (!$agent || !$agent->province_id) {
+                return response()->json(['message' => 'Vous devez etre affecte a une province pour creer des taches locales.'], 422);
+            }
+
+            $agentsDisponibles = Agent::actifs()
+                ->where('province_id', $agent->province_id)
+                ->where('organe', 'Secrétariat Exécutif Local')
+                ->where('id', '!=', $agent->id)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'prenom', 'id_agent'])
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent]);
+
+            $activitesPta = ActivitePlan::query()
+                ->where('annee', now()->year)
+                ->where('niveau_administratif', 'SEL')
+                ->when($agent->province_id, fn($q) => $q->where('province_id', $agent->province_id))
+                ->orderBy('titre')
+                ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
+                ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
         } else {
             if (!$agent || !$agent->departement_id) {
                 return response()->json(['message' => 'Vous devez etre affecte a un departement pour creer des taches.'], 422);
@@ -241,11 +269,16 @@ class TacheController extends ApiController
             'activites_pta'   => $activitesPta,
             'isSENScope'      => $isSENOrSENA,
             'isProvinceScope' => $isSEP,
+            'isLocalScope'    => $isSEL,
+            'validation_role' => $workflow->determineValidationRole($user),
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
+                ['value' => 'assistant_departement', 'label' => 'Assistant / Secretaire du departement'],
                 ['value' => 'sen',       'label' => 'SEN'],
                 ['value' => 'sep',       'label' => 'SEP'],
+                ['value' => 'secom',     'label' => 'SECOM'],
                 ['value' => 'sel',       'label' => 'SEL'],
+                ['value' => 'aaf_local', 'label' => 'AAF / RH local'],
                 ['value' => 'autre',     'label' => 'Autre'],
             ],
         ]);
@@ -258,6 +291,7 @@ class TacheController extends ApiController
     {
         $user  = $request->user();
         $roles = app(RoleService::class);
+        $workflow = $this->workflowService();
 
         if (!$roles->hasTacheManagerRole($user)) {
             return response()->json(['message' => 'Acces refuse.'], 403);
@@ -268,9 +302,9 @@ class TacheController extends ApiController
             'titre'           => 'required|string|max:255',
             'description'     => 'nullable|string',
             'source_type'     => 'required|in:pta,hors_pta',
-            'source_emetteur' => 'required|in:directeur,sen,sep,sel,autre',
+            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,sep,secom,sel,aaf_local,autre',
             'activite_plan_id'=> 'nullable|required_if:source_type,pta|exists:activite_plans,id',
-            'priorite'        => 'required|in:normale,haute,urgente',
+            'priorite'        => 'required|in:faible,normale,haute,urgente',
             'date_echeance'   => 'nullable|date',
             'date_tache'      => 'nullable|date',
             'documents'       => 'nullable|array',
@@ -281,6 +315,7 @@ class TacheController extends ApiController
         $targetAgent = Agent::findOrFail($validated['agent_id']);
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
         $isSEP = $roles->isSepManager($user);
+        $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
 
         if ($isSENOrSENA) {
             if ($targetAgent->organe !== 'Secrétariat Exécutif National') {
@@ -292,6 +327,13 @@ class TacheController extends ApiController
             }
             if ((int) $targetAgent->province_id !== (int) $agent->province_id) {
                 return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre province.'], 403);
+            }
+        } elseif ($isSEL) {
+            if (!$agent || !$agent->province_id) {
+                return response()->json(['message' => 'Vous devez etre affecte a une structure locale pour creer des taches.'], 422);
+            }
+            if ((int) $targetAgent->province_id !== (int) $agent->province_id || $targetAgent->organe !== 'Secrétariat Exécutif Local') {
+                return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents locaux de votre ressort.'], 403);
             }
         } else {
             if (!$agent) {
@@ -329,11 +371,30 @@ class TacheController extends ApiController
         $validated['createur_id'] = $agent->id;
         $validated['statut'] = 'nouvelle';
         $validated['pourcentage'] = 0;
+        $validated['niveau_gestion'] = $workflow->determineManagementLevel($user);
+        $validated['validation_responsable_role'] = $workflow->determineValidationRole($user);
+        $validated['validation_statut'] = 'non_requise';
         if ($validated['source_type'] !== 'pta') {
             $validated['activite_plan_id'] = null;
         }
 
         $tache = Tache::create($validated);
+        $workflow->recordHistory(
+            $tache,
+            $agent,
+            'creation',
+            'Creation de la tache',
+            null,
+            $tache->statut,
+            null,
+            $tache->validation_statut,
+            $validated['description'] ?? null,
+            [
+                'priorite' => $tache->priorite,
+                'niveau_gestion' => $tache->niveau_gestion,
+                'validation_responsable_role' => $tache->validation_responsable_role,
+            ]
+        );
 
         TacheAssigned::dispatch($tache);
 
@@ -355,7 +416,9 @@ class TacheController extends ApiController
     {
         $user  = $request->user();
         $agent = $user->agent;
-        $isSEP = app(RoleService::class)->isSepManager($user);
+        $roles = app(RoleService::class);
+        $workflow = $this->workflowService();
+        $isSEP = $roles->isSepManager($user);
 
         // SEN/SENA : accès à toutes les tâches des agents du SEN (pas besoin d'agent record)
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
@@ -380,36 +443,23 @@ class TacheController extends ApiController
 
         // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
         if ($isSENOrSENA || $isSENStaff) {
-            $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
+            $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
             $resource = TacheResource::make($tache);
-            $resolved = $resource->resolve();
             return $this->resource($resource, [
                 'isCreateur' => $isCreateur,
                 'isAssigne'  => $isAssigne,
-                'debug' => [
-                    'createur_exists' => !is_null($tache->createur),
-                    'agent_exists' => !is_null($tache->agent),
-                    'createur_id' => $tache->createur_id,
-                    'agent_id' => $tache->agent_id,
-                    'has_nom_complet_createur' => $tache->createur ? isset($tache->createur->nom_complet) : false,
-                    'has_nom_complet_agent' => $tache->agent ? isset($tache->agent->nom_complet) : false,
-                    'resolved_keys' => array_keys($resolved),
-                    'createur_key_exists' => array_key_exists('createur', $resolved),
-                    'agent_key_exists' => array_key_exists('agent', $resolved),
-                    'createur_value' => $resolved['createur'] ?? null,
-                    'agent_value' => $resolved['agent'] ?? null,
-                ],
+                'canValidateFinal' => $workflow->canFinalValidate($user, $tache),
+                'validationRoleLabel' => $workflow->validationRoleLabel($tache->validation_responsable_role),
             ], [
                 'isCreateur' => $isCreateur,
                 'isAssigne'  => $isAssigne,
+                'canValidateFinal' => $workflow->canFinalValidate($user, $tache),
+                'validationRoleLabel' => $workflow->validationRoleLabel($tache->validation_responsable_role),
             ]);
         }
 
         if (!$isCreateur && !$isAssigne && $agent?->departement_id) {
-            $role = strtolower($user->role?->nom_role ?? '');
-            $isDept = in_array($role, ['directeur', 'directeur de département', 'daf', 'assistant', 'assistant de département'])
-                   || str_starts_with($role, 'assistant');
-            if ($isDept) {
+            if ($roles->isDepartmentManager($user)) {
                 $taskAgent = Agent::find($tache->agent_id);
                 $isDeptManager = $taskAgent && $taskAgent->departement_id === $agent->departement_id;
             }
@@ -420,20 +470,34 @@ class TacheController extends ApiController
             $isProvinceManager = $taskAgent && (int) $taskAgent->province_id === (int) $agent->province_id;
         }
 
-        if (!$isCreateur && !$isAssigne && !$isDeptManager && !$isProvinceManager) {
+        $isLocalManager = false;
+        if (!$isCreateur && !$isAssigne && !$isDeptManager && !$isProvinceManager && $isSEL && $agent?->province_id) {
+            $taskAgent = $taskAgent ?? Agent::find($tache->agent_id);
+            $isLocalManager = $taskAgent
+                && (int) $taskAgent->province_id === (int) $agent->province_id
+                && Str::ascii((string) $taskAgent->organe) === Str::ascii((string) $agent->organe);
+        }
+
+        if (!$isCreateur && !$isAssigne && !$isDeptManager && !$isProvinceManager && !$isLocalManager) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
-        $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']);
+        $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
 
         return $this->resource(TacheResource::make($tache), [
             'isCreateur' => $isCreateur,
             'isAssigne'  => $isAssigne,
             'isProvinceManager' => $isProvinceManager,
+            'isLocalManager' => $isLocalManager,
+            'canValidateFinal' => $workflow->canFinalValidate($user, $tache),
+            'validationRoleLabel' => $workflow->validationRoleLabel($tache->validation_responsable_role),
         ], [
             'isCreateur' => $isCreateur,
             'isAssigne'  => $isAssigne,
             'isProvinceManager' => $isProvinceManager,
+            'isLocalManager' => $isLocalManager,
+            'canValidateFinal' => $workflow->canFinalValidate($user, $tache),
+            'validationRoleLabel' => $workflow->validationRoleLabel($tache->validation_responsable_role),
         ]);
     }
 
@@ -491,6 +555,7 @@ class TacheController extends ApiController
         $user        = $request->user();
         $agent       = $user->agent;
         $isSENOrSENA = $user->hasRole('SEN') || $user->hasRole('SENA');
+        $workflow = $this->workflowService();
 
         $isAssigne = $agent && $tache->agent_id === $agent->id;
 
@@ -503,7 +568,7 @@ class TacheController extends ApiController
         }
 
         $validated = $request->validate([
-            'statut'  => 'required|in:en_cours,terminee',
+            'statut'  => 'required|in:en_cours,terminee,bloquee',
             'contenu' => 'required|string|max:1000',
             'pourcentage' => 'required|integer|min:0|max:100',
             'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png',
@@ -528,10 +593,17 @@ class TacheController extends ApiController
 
         $ancienStatut = $tache->statut;
 
+        $typeCommentaire = match ($validated['statut']) {
+            'bloquee' => 'blocage',
+            'terminee' => 'validation',
+            default => 'commentaire',
+        };
+
         $commentaire = TacheCommentaire::create([
             'tache_id'       => $tache->id,
             'agent_id'       => $agent->id,
             'contenu'        => $validated['contenu'],
+            'type_commentaire' => $typeCommentaire,
             'ancien_statut'  => $ancienStatut,
             'nouveau_statut' => $validated['statut'],
         ]);
@@ -540,37 +612,91 @@ class TacheController extends ApiController
             ? 100
             : $validated['pourcentage'];
 
-        $tache->update([
-            'statut' => $validated['statut'],
-            'pourcentage' => $nouveauPourcentage,
-        ]);
+        if ($validated['statut'] === 'bloquee') {
+            $workflow->markBlocked($tache, $agent, $validated['contenu']);
+        } else {
+            if ($ancienStatut === 'bloquee' && $validated['statut'] === 'en_cours') {
+                $workflow->reopenAfterBlocked($tache, $agent, $validated['contenu']);
+            }
+
+            $tache->update([
+                'statut' => $validated['statut'],
+                'pourcentage' => $nouveauPourcentage,
+                'validation_statut' => $validated['statut'] === 'terminee' ? 'a_valider' : 'non_requise',
+                'soumise_validation_at' => $validated['statut'] === 'terminee' ? now() : null,
+                'validation_commentaire' => $validated['statut'] === 'terminee' ? $validated['contenu'] : null,
+                'blocked_by' => null,
+                'blocked_at' => null,
+                'blocking_reason' => null,
+            ]);
+
+            if ($validated['statut'] === 'terminee') {
+                $workflow->recordHistory(
+                    $tache,
+                    $agent,
+                    'soumission_validation',
+                    'Soumission pour validation',
+                    $ancienStatut,
+                    $validated['statut'],
+                    'non_requise',
+                    'a_valider',
+                    $validated['contenu']
+                );
+            } else {
+                $workflow->recordHistory(
+                    $tache,
+                    $agent,
+                    'mise_a_jour_statut',
+                    'Mise a jour du statut',
+                    $ancienStatut,
+                    $validated['statut'],
+                    $tache->validation_statut,
+                    $tache->validation_statut,
+                    $validated['contenu']
+                );
+            }
+        }
 
         if ($hasDocument) {
             $this->storeDocumentForTache(
                 $tache,
                 $agent,
                 $request->file('document'),
-                $validated['statut'] === 'terminee' ? 'final' : 'progression',
-                $commentaire
+                  $validated['statut'] === 'terminee' ? 'final' : 'progression',
+                  $commentaire
+              );
+          }
+
+        if ($validated['statut'] === 'terminee') {
+            $validatorIds = $workflow->finalValidators($tache)->pluck('id')->all();
+            if (!empty($validatorIds)) {
+                NotificationService::envoyerMultipleAvecEmail(
+                    $validatorIds,
+                    'tache',
+                    'Tache soumise pour validation',
+                    $this->agentDisplayName($agent) . ' a soumis la tache "' . $tache->titre . '" pour validation finale.',
+                    '/taches/' . $tache->id,
+                    $user->id
+                );
+            }
+        } else {
+            $message = sprintf(
+                '%s a mis a jour la tache "%s" : statut %s, progression %d%%.',
+                $this->agentDisplayName($agent),
+                $tache->titre,
+                $this->tacheStatutLabel($validated['statut']),
+                (int) $nouveauPourcentage
+            );
+
+            $this->notifyTacheParticipants(
+                $tache,
+                $user->id,
+                'Tache mise a jour',
+                $message
             );
         }
 
-        $message = sprintf(
-            '%s a mis a jour la tache "%s" : statut %s, progression %d%%.',
-            $this->agentDisplayName($agent),
-            $tache->titre,
-            $this->tacheStatutLabel($validated['statut']),
-            (int) $nouveauPourcentage
-        );
-
-        $this->notifyTacheParticipants(
-            $tache,
-            $user->id,
-            'Tache mise a jour',
-            $message
-        );
-
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis a jour avec succes.',
@@ -602,10 +728,10 @@ class TacheController extends ApiController
         $validated = $request->validate([
             'titre'           => 'sometimes|required|string|max:255',
             'description'     => 'nullable|string',
-            'priorite'        => 'sometimes|required|in:normale,haute,urgente',
+            'priorite'        => 'sometimes|required|in:faible,normale,haute,urgente',
             'date_echeance'   => 'nullable|date',
             'date_tache'      => 'nullable|date',
-            'source_emetteur' => 'sometimes|required|in:directeur,sen,sep,sel,autre',
+            'source_emetteur' => 'sometimes|required|in:directeur,assistant_departement,sen,sep,secom,sel,aaf_local,autre',
         ]);
 
         $tache->fill($validated);
@@ -613,6 +739,18 @@ class TacheController extends ApiController
 
         if (!empty($changedFields)) {
             $tache->save();
+            $this->workflowService()->recordHistory(
+                $tache,
+                $agent,
+                'modification',
+                'Modification de la tache',
+                $tache->statut,
+                $tache->statut,
+                $tache->validation_statut,
+                $tache->validation_statut,
+                null,
+                ['fields' => $changedFields]
+            );
 
             $message = sprintf(
                 '%s a modifie %s de la tache "%s".',
@@ -687,13 +825,28 @@ class TacheController extends ApiController
 
         $validated = $request->validate([
             'contenu' => 'required|string|max:1000',
+            'type_commentaire' => 'nullable|in:commentaire,relance,correction',
         ]);
 
         TacheCommentaire::create([
             'tache_id' => $tache->id,
             'agent_id' => $agent->id,
             'contenu'  => $validated['contenu'],
+            'type_commentaire' => $validated['type_commentaire'] ?? 'commentaire',
         ]);
+
+        $this->workflowService()->recordHistory(
+            $tache,
+            $agent,
+            'commentaire',
+            'Ajout de commentaire',
+            $tache->statut,
+            $tache->statut,
+            $tache->validation_statut,
+            $tache->validation_statut,
+            $validated['contenu'],
+            ['type_commentaire' => $validated['type_commentaire'] ?? 'commentaire']
+        );
 
         $message = sprintf(
             '%s a ajoute un commentaire sur la tache "%s" : %s',
@@ -709,11 +862,89 @@ class TacheController extends ApiController
             $message
         );
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
             'message' => 'Commentaire ajoute.',
         ]);
+    }
+
+    public function validateTask(Request $request, Tache $tache): JsonResponse
+    {
+        $user = $request->user();
+        $agent = $user->agent;
+        $workflow = $this->workflowService();
+
+        if (!$agent || !$workflow->canFinalValidate($user, $tache)) {
+            return response()->json(['message' => 'Acces refuse pour cette validation finale.'], 403);
+        }
+
+        $validated = $request->validate([
+            'commentaire' => 'nullable|string|max:1000',
+        ]);
+
+        $workflow->validateTask($tache, $agent, $validated['commentaire'] ?? null);
+
+        TacheCommentaire::create([
+            'tache_id' => $tache->id,
+            'agent_id' => $agent->id,
+            'contenu' => $validated['commentaire'] ?: 'Tache validee.',
+            'type_commentaire' => 'validation',
+            'ancien_statut' => $tache->statut,
+            'nouveau_statut' => $tache->statut,
+        ]);
+
+        $this->notifyTacheParticipants(
+            $tache,
+            $user->id,
+            'Tache validee',
+            $this->agentDisplayName($agent) . ' a valide la tache "' . $tache->titre . '".'
+        );
+
+        return $this->resource(
+            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
+            [],
+            ['message' => 'Tache validee avec succes.']
+        );
+    }
+
+    public function rejectTask(Request $request, Tache $tache): JsonResponse
+    {
+        $user = $request->user();
+        $agent = $user->agent;
+        $workflow = $this->workflowService();
+
+        if (!$agent || !$workflow->canFinalValidate($user, $tache)) {
+            return response()->json(['message' => 'Acces refuse pour ce rejet.'], 403);
+        }
+
+        $validated = $request->validate([
+            'commentaire' => 'required|string|max:1000',
+        ]);
+
+        $workflow->rejectTask($tache, $agent, $validated['commentaire']);
+
+        TacheCommentaire::create([
+            'tache_id' => $tache->id,
+            'agent_id' => $agent->id,
+            'contenu' => $validated['commentaire'],
+            'type_commentaire' => 'rejet',
+            'ancien_statut' => 'terminee',
+            'nouveau_statut' => 'en_cours',
+        ]);
+
+        $this->notifyTacheParticipants(
+            $tache,
+            $user->id,
+            'Tache retournee pour correction',
+            $this->agentDisplayName($agent) . ' a retourne la tache "' . $tache->titre . '" pour correction.'
+        );
+
+        return $this->resource(
+            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
+            [],
+            ['message' => 'Tache retournee pour correction.']
+        );
     }
 
     public function downloadDocument(Request $request, Tache $tache, TacheDocument $document)
@@ -764,6 +995,12 @@ class TacheController extends ApiController
             return (int) $taskAgent->province_id === (int) $agent->province_id;
         }
 
+        $workflow = $this->workflowService();
+        if (($workflow->isSelManager($user) || $workflow->isLocalSupport($user)) && $agent->province_id) {
+            return (int) $taskAgent->province_id === (int) $agent->province_id
+                && Str::ascii((string) $taskAgent->organe) === Str::ascii((string) $agent->organe);
+        }
+
         return false;
     }
 
@@ -809,9 +1046,10 @@ class TacheController extends ApiController
     protected function tacheStatutLabel(?string $statut): string
     {
         return [
-            'nouvelle' => 'nouvelle',
+            'nouvelle' => 'en attente',
             'en_cours' => 'en cours',
             'terminee' => 'terminee',
+            'bloquee' => 'bloquee',
         ][$statut] ?? 'mis a jour';
     }
 
@@ -903,7 +1141,26 @@ class TacheController extends ApiController
             'fichier' => $fichierPath,
         ]);
 
-        return $this->success($report, [], ['message' => 'Rapport soumis avec succès.'], 201);
+        $this->workflowService()->recordHistory(
+            $tache,
+            $agent,
+            'rapport',
+            'Rapport d execution soumis',
+            $tache->statut,
+            $tache->statut,
+            $tache->validation_statut,
+            $tache->validation_statut,
+            $validated['rapport']
+        );
+
+        $this->notifyTacheParticipants(
+            $tache,
+            $user->id,
+            'Rapport de tache soumis',
+            $this->agentDisplayName($agent) . ' a soumis un rapport pour la tache "' . $tache->titre . '".'
+        );
+
+        return $this->success($report, [], ['message' => 'Rapport soumis avec succes.'], 201);
     }
 
     /**
@@ -912,9 +1169,8 @@ class TacheController extends ApiController
     public function viewReports(Request $request, Tache $tache): JsonResponse
     {
         $user = $request->user();
-        $agent = $user->agent;
 
-        if (!$agent || ($tache->createur_id !== $agent->id && $tache->agent_id !== $agent->id && !$user->hasAdminAccess())) {
+        if (!$this->canAccessTacheConsultation($user, $tache) && !$user->hasAdminAccess()) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -932,8 +1188,10 @@ class TacheController extends ApiController
     public function performanceReport(Request $request): JsonResponse
     {
         $user = $request->user();
+        $roles = app(RoleService::class);
+        $workflow = $this->workflowService();
 
-        if (!$this->hasDirecteurOrDafRole($user) && !$user->hasAdminAccess()) {
+        if (!$roles->hasTacheManagerRole($user) && !$user->hasAdminAccess()) {
             return response()->json(['message' => 'Acces refuse.'], 403);
         }
 
@@ -942,10 +1200,22 @@ class TacheController extends ApiController
 
         $query = Tache::query()->whereYear('created_at', $annee);
 
-        if (!$user->hasAdminAccess()) {
-            $query->where(function ($q) use ($user) {
-                $q->where('createur_id', $user->agent?->id);
-            });
+        if (!$user->hasAdminAccess() && $user->agent) {
+            $agent = $user->agent;
+
+            if ($user->hasRole('SEN') || $user->hasRole('SENA') || str_contains(Str::ascii((string) $agent->organe), 'National')) {
+                $query->whereHas('agent', fn($q) => $q->where('organe', 'Secrétariat Exécutif National'));
+            } elseif ($roles->isSepManager($user) && $agent->province_id) {
+                $query->whereHas('agent', fn($q) => $q->where('province_id', $agent->province_id));
+            } elseif (($workflow->isSelManager($user) || $workflow->isLocalSupport($user)) && $agent->province_id) {
+                $query->whereHas('agent', fn($q) => $q
+                    ->where('province_id', $agent->province_id)
+                    ->where('organe', $agent->organe));
+            } elseif ($roles->isDepartmentManager($user) && $agent->departement_id) {
+                $query->whereHas('agent', fn($q) => $q->where('departement_id', $agent->departement_id));
+            } else {
+                $query->where('createur_id', $agent->id);
+            }
         }
 
         if ($agentId) {
@@ -963,6 +1233,7 @@ class TacheController extends ApiController
                 'terminees' => $group->where('statut', 'terminee')->count(),
                 'en_cours' => $group->where('statut', 'en_cours')->count(),
                 'nouvelles' => $group->where('statut', 'nouvelle')->count(),
+                'bloquees' => $group->where('statut', 'bloquee')->count(),
                 'taux_completion' => $group->count() > 0
                     ? round($group->where('statut', 'terminee')->count() / $group->count() * 100, 1)
                     : 0,

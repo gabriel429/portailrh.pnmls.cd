@@ -4,8 +4,8 @@
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Tâche</h1>
-            <p class="rh-sub">Assigner une tâche à un agent de votre département ou du SEN.</p>
+            <h1 class="rh-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Tache</h1>
+            <p class="rh-sub">{{ pageSubtitle }}</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -48,21 +48,20 @@
             </div>
 
             <div class="col-md-4">
-              <label for="date_tache" class="form-label fw-bold">Date de la tâche</label>
+              <label for="date_tache" class="form-label fw-bold">Date de la tache</label>
               <input v-model="form.date_tache" type="date" class="form-control" id="date_tache">
             </div>
 
             <div v-if="form.source_type === 'pta'" class="col-12">
-              <label for="activite_plan_id" class="form-label fw-bold">Activité PTA liée <span class="text-danger">*</span></label>
+              <label for="activite_plan_id" class="form-label fw-bold">Activite PTA liee <span class="text-danger">*</span></label>
               <select v-model="form.activite_plan_id" class="form-select" id="activite_plan_id" required>
-                <option value="">-- Choisir une activité du PTA --</option>
+                <option value="">-- Choisir une activite du PTA --</option>
                 <option v-for="activite in activitesPta" :key="activite.id" :value="activite.id">
                   {{ activiteLabel(activite) }}
                 </option>
               </select>
             </div>
 
-            <!-- Agent -->
             <div class="col-md-6">
               <label for="agent_id" class="form-label fw-bold">Assigner a <span class="text-danger">*</span></label>
               <select v-model="form.agent_id" class="form-select" id="agent_id" required>
@@ -73,34 +72,42 @@
               </select>
             </div>
 
-            <!-- Priorite -->
             <div class="col-md-3">
-              <label for="priorite" class="form-label fw-bold">Priorité <span class="text-danger">*</span></label>
+              <label for="priorite" class="form-label fw-bold">Priorite <span class="text-danger">*</span></label>
               <select v-model="form.priorite" class="form-select" id="priorite" required>
+                <option value="faible">Faible</option>
                 <option value="normale">Normale</option>
                 <option value="haute">Haute</option>
                 <option value="urgente">Urgente</option>
               </select>
             </div>
 
-            <!-- Date echeance -->
             <div class="col-md-3">
-              <label for="date_echeance" class="form-label fw-bold">Échéance</label>
+              <label for="date_echeance" class="form-label fw-bold">Echeance</label>
               <input v-model="form.date_echeance" type="date" class="form-control" id="date_echeance">
             </div>
 
-            <!-- Titre -->
             <div class="col-12">
-              <label for="titre" class="form-label fw-bold">Titre de la tâche <span class="text-danger">*</span></label>
-              <input v-model="form.titre" type="text" class="form-control" id="titre" required
-                     placeholder="Ex: Préparer le rapport mensuel">
+              <label for="titre" class="form-label fw-bold">Titre de la tache <span class="text-danger">*</span></label>
+              <input
+                v-model="form.titre"
+                type="text"
+                class="form-control"
+                id="titre"
+                required
+                placeholder="Ex: Preparer le rapport mensuel"
+              >
             </div>
 
-            <!-- Description -->
             <div class="col-12">
               <label for="description" class="form-label fw-bold">Description</label>
-              <textarea v-model="form.description" class="form-control" id="description" rows="5"
-                        placeholder="Détails et instructions pour l'agent..."></textarea>
+              <textarea
+                v-model="form.description"
+                class="form-control"
+                id="description"
+                rows="5"
+                placeholder="Details et instructions pour l'agent..."
+              ></textarea>
             </div>
 
             <div class="col-12">
@@ -130,11 +137,10 @@
               </div>
             </div>
 
-            <!-- Boutons -->
             <div class="col-12 mt-3">
               <button type="submit" class="btn btn-primary" :disabled="submitting">
                 <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                <i v-else class="fas fa-paper-plane me-1"></i> Assigner la tâche
+                <i v-else class="fas fa-paper-plane me-1"></i> Assigner la tache
               </button>
               <router-link :to="{ name: 'taches.index' }" class="btn btn-outline-secondary ms-2">Annuler</router-link>
             </div>
@@ -146,7 +152,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { create, getCreateData } from '@/api/taches'
@@ -163,6 +169,7 @@ const activitesPta = ref([])
 const sourceEmetteurs = ref([])
 const selectedDocuments = ref([])
 const documentsInput = ref(null)
+const scopeFlags = ref({ isSENScope: false, isProvinceScope: false, isLocalScope: false })
 const form = ref({
   agent_id: '',
   titre: '',
@@ -175,20 +182,35 @@ const form = ref({
   date_echeance: '',
 })
 
+const pageSubtitle = computed(() => {
+  if (scopeFlags.value.isLocalScope) return 'Assigner une tache a un agent local de votre ressort.'
+  if (scopeFlags.value.isProvinceScope) return 'Assigner une tache a un agent provincial et organiser son suivi.'
+  if (scopeFlags.value.isSENScope) return 'Assigner une tache a un agent du Secretariat Executif National.'
+  return 'Assigner une tache a un agent de votre departement.'
+})
+
 async function loadAgents() {
   try {
     const { data } = await getCreateData()
     agents.value = data.data.agents || []
     activitesPta.value = data.data.activites_pta || []
     sourceEmetteurs.value = data.data.source_emetteurs || []
-    if (data.data.isProvinceScope) {
+    scopeFlags.value = {
+      isSENScope: Boolean(data.data.isSENScope),
+      isProvinceScope: Boolean(data.data.isProvinceScope),
+      isLocalScope: Boolean(data.data.isLocalScope),
+    }
+
+    if (scopeFlags.value.isLocalScope) {
+      form.value.source_emetteur = 'aaf_local'
+    } else if (scopeFlags.value.isProvinceScope) {
       form.value.source_emetteur = 'sep'
-    } else if (data.data.isSENScope) {
+    } else if (scopeFlags.value.isSENScope) {
       form.value.source_emetteur = 'sen'
     }
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Accès refusé. Seuls les gestionnaires habilités peuvent créer des tâches.', 'danger')
+      ui.addToast('Acces refuse. Seuls les gestionnaires habilites peuvent creer des taches.', 'danger')
       router.push({ name: 'taches.index' })
     } else {
       ui.addToast(err.response?.data?.message || 'Erreur lors du chargement.', 'danger')
@@ -204,13 +226,8 @@ async function handleSubmit() {
   try {
     const payload = new FormData()
     Object.entries(form.value).forEach(([key, value]) => {
-      if (key === 'activite_plan_id' && form.value.source_type !== 'pta') {
-        return
-      }
-
-      if (value !== null && value !== undefined && value !== '') {
-        payload.append(key, value)
-      }
+      if (key === 'activite_plan_id' && form.value.source_type !== 'pta') return
+      if (value !== null && value !== undefined && value !== '') payload.append(key, value)
     })
 
     selectedDocuments.value.forEach((file) => {
@@ -218,7 +235,7 @@ async function handleSubmit() {
     })
 
     await create(payload)
-    ui.addToast('Tâche créée avec succès.', 'success')
+    ui.addToast('Tache creee avec succes.', 'success')
     router.push({ name: 'taches.index' })
   } catch (err) {
     if (err.response?.status === 422) {
@@ -233,8 +250,7 @@ async function handleSubmit() {
 }
 
 function handleDocumentsChange(event) {
-  const files = Array.from(event.target.files || [])
-  selectedDocuments.value = files
+  selectedDocuments.value = Array.from(event.target.files || [])
 }
 
 function removeDocument(index) {
@@ -252,36 +268,52 @@ function formatFileSize(size) {
   return `${Math.round(size / 1024)} Ko`
 }
 
-
 function activiteLabel(activite) {
   const trimestre = activite.trimestre ? ` (${activite.trimestre})` : ''
   return `${activite.titre} - ${activite.annee}${trimestre}`
 }
+
 onMounted(() => loadAgents())
 </script>
 
 <style scoped>
 @media (max-width: 767.98px) {
-    .rh-list-card, .dash-panel { border-radius: 12px; padding: 1rem; }
-    .card { border-radius: 12px; }
-    .card-body { padding: .85rem; }
-    .form-label { font-size: .82rem; }
-    .btn { font-size: .85rem; }
+  .rh-list-card,
+  .dash-panel {
+    border-radius: 12px;
+    padding: 1rem;
+  }
+
+  .card {
+    border-radius: 12px;
+  }
+
+  .card-body {
+    padding: .85rem;
+  }
+
+  .form-label {
+    font-size: .82rem;
+  }
+
+  .btn {
+    font-size: .85rem;
+  }
 }
 
-  .task-file-list {
-    display: grid;
-    gap: .65rem;
-  }
+.task-file-list {
+  display: grid;
+  gap: .65rem;
+}
 
-  .task-file-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .75rem;
-    padding: .75rem .9rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    background: #f8fafc;
-  }
+.task-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem .9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
 </style>

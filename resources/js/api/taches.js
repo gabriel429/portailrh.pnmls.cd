@@ -45,6 +45,28 @@ export function addCommentaire(id, data) {
     return client.post(`/taches/${id}/commentaire`, data)
 }
 
+export function validateTask(id, data = {}) {
+    return client.post(`/taches/${id}/validate`, data)
+}
+
+export function rejectTask(id, data = {}) {
+    return client.post(`/taches/${id}/reject`, data)
+}
+
+export function submitReport(id, data) {
+    if (data instanceof FormData) {
+        return client.post(`/taches/${id}/report`, data, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        })
+    }
+
+    return client.post(`/taches/${id}/report`, data)
+}
+
+export function viewReports(id) {
+    return client.get(`/taches/${id}/reports`)
+}
+
 export function update(id, data) {
     return client.put(`/taches/${id}`, data)
 }

@@ -11,30 +11,30 @@
             <div class="hero-tools">
               <template v-if="auth.isSENA">
                 <router-link v-if="!isSENScope" :to="{ name: 'taches.index', query: { scope: 'sen' } }" class="btn-rh alt">
-                  <i class="fas fa-users me-1"></i> Tâches du SEN
+                  <i class="fas fa-users me-1"></i> Taches du SEN
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                  <i class="fas fa-arrow-left me-1"></i> Mes tâches
+                  <i class="fas fa-arrow-left me-1"></i> Mes taches
                 </router-link>
               </template>
               <template v-else-if="auth.isSEP">
                 <router-link v-if="!isProvinceScope" :to="{ name: 'taches.index', query: { scope: 'province' } }" class="btn-rh alt">
-                  <i class="fas fa-map-marker-alt me-1"></i> Tâches province
+                  <i class="fas fa-map-marker-alt me-1"></i> Taches province
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                  <i class="fas fa-arrow-left me-1"></i> Mes tâches
+                  <i class="fas fa-arrow-left me-1"></i> Mes taches
                 </router-link>
               </template>
               <template v-else>
                 <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
-                  <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
+                  <i class="fas fa-clipboard-list me-1"></i> Taches assignees par moi
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                  <i class="fas fa-arrow-left me-1"></i> Retour à mes tâches
+                  <i class="fas fa-arrow-left me-1"></i> Retour a mes taches
                 </router-link>
               </template>
               <router-link :to="{ name: 'taches.create' }" class="btn-rh main">
-                <i class="fas fa-plus-circle me-1"></i> Nouvelle tâche
+                <i class="fas fa-plus-circle me-1"></i> Nouvelle tache
               </router-link>
             </div>
           </div>
@@ -42,11 +42,10 @@
       </section>
 
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement des tâches..." />
+        <LoadingSpinner message="Chargement des taches..." />
       </div>
 
       <template v-else>
-        <!-- ── Status Tabs ── -->
         <div class="tache-status-tabs mt-3">
           <button
             v-for="tab in statusTabs"
@@ -77,7 +76,9 @@
                 <option value="direction">Direction</option>
                 <option value="sen">SEN</option>
                 <option value="sep">SEP</option>
+                <option value="secom">SECOM</option>
                 <option value="sel">SEL</option>
+                <option value="aaf_local">AAF / RH local</option>
                 <option value="autre">Autre</option>
               </select>
             </div>
@@ -88,10 +89,10 @@
                 <tr>
                   <th>Titre</th>
                   <th>Origine</th>
-                  <th>{{ showAssignedByMe || isDeptScope || isSENScope || isProvinceScope ? 'Assigné à' : 'De' }}</th>
-                  <th>Priorité</th>
+                  <th>{{ showAssignedByMe || isDeptScope || isSENScope || isProvinceScope ? 'Assigne a' : 'De' }}</th>
+                  <th>Priorite</th>
                   <th>Statut</th>
-                  <th>Échéance</th>
+                  <th>Echeance</th>
                   <th>Date</th>
                   <th></th>
                 </tr>
@@ -100,12 +101,12 @@
                 <tr v-for="t in filteredTaches" :key="t.id">
                   <td>
                     <strong>{{ t.titre }}</strong>
-                    <br v-if="t.description"><small v-if="t.description" class="text-muted">{{ truncate(t.description, 60) }}</small>
+                    <br v-if="t.description"><small class="text-muted">{{ truncate(t.description, 60) }}</small>
                   </td>
                   <td>
                     <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
                     <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
-                    <br v-if="t.activite_plan"><small v-if="t.activite_plan" class="text-muted">{{ t.activite_plan.titre }}</small>
+                    <br v-if="t.activite_plan"><small class="text-muted">{{ t.activite_plan.titre }}</small>
                   </td>
                   <td>{{ (showAssignedByMe || isDeptScope || isSENScope || isProvinceScope) ? (t.agent?.nom_complet ?? '-') : (t.createur?.nom_complet ?? '-') }}</td>
                   <td><span :class="prioriteBadge(t.priorite)">{{ capitalize(t.priorite) }}</span></td>
@@ -113,7 +114,7 @@
                   <td>
                     <template v-if="t.date_echeance">
                       {{ formatDate(t.date_echeance) }}
-                      <br v-if="isOverdue(t)"><small v-if="isOverdue(t)" class="text-danger">En retard</small>
+                      <br v-if="isOverdue(t)"><small class="text-danger">En retard</small>
                     </template>
                     <span v-else class="text-muted">-</span>
                   </td>
@@ -134,7 +135,6 @@
             </table>
           </div>
         </div>
-
       </template>
     </div>
   </div>
@@ -173,77 +173,79 @@ watch(() => route.query.scope, () => {
   loadTaches()
 })
 
-/* ── helper: overdue check ── */
 function isOverdue(tache) {
-  if (!tache.date_echeance || tache.statut === 'terminee') return false
+  if (!tache.date_echeance || tache.validation_statut === 'validee') return false
   return new Date(tache.date_echeance) < new Date()
 }
 
-/* ── Source-filtered base list ── */
 const sourceFilteredTaches = computed(() => {
   const items = showAssignedByMe.value ? tachesCreees.value : mesTaches.value
   return items.filter((t) => matchesSourceFilter(t.source_emetteur))
 })
 
-/* ── Status tabs with live counts ── */
 const statusTabs = computed(() => {
   const items = sourceFilteredTaches.value
   return [
-    { key: 'all',       label: 'Toutes',    icon: 'fas fa-list',           color: 'tab-all',       count: items.length },
-    { key: 'nouvelle',  label: 'Nouvelles',  icon: 'fas fa-star',           color: 'tab-nouvelle',  count: items.filter(t => t.statut === 'nouvelle').length },
-    { key: 'en_cours',  label: 'En cours',   icon: 'fas fa-spinner',        color: 'tab-en-cours',  count: items.filter(t => t.statut === 'en_cours').length },
-    { key: 'terminee',  label: 'Terminées',  icon: 'fas fa-check-circle',   color: 'tab-terminee',  count: items.filter(t => t.statut === 'terminee').length },
-    { key: 'en_retard', label: 'En retard',  icon: 'fas fa-exclamation-triangle', color: 'tab-en-retard', count: items.filter(t => isOverdue(t)).length },
+    { key: 'all', label: 'Toutes', icon: 'fas fa-list', color: 'tab-all', count: items.length },
+    { key: 'nouvelle', label: 'En attente', icon: 'fas fa-star', color: 'tab-nouvelle', count: items.filter((t) => t.statut === 'nouvelle').length },
+    { key: 'en_cours', label: 'En cours', icon: 'fas fa-spinner', color: 'tab-en-cours', count: items.filter((t) => t.statut === 'en_cours').length },
+    { key: 'bloquee', label: 'Bloquees', icon: 'fas fa-ban', color: 'tab-bloquee', count: items.filter((t) => t.statut === 'bloquee').length },
+    { key: 'terminee', label: 'Terminees', icon: 'fas fa-check-circle', color: 'tab-terminee', count: items.filter((t) => t.statut === 'terminee').length },
+    { key: 'en_retard', label: 'En retard', icon: 'fas fa-exclamation-triangle', color: 'tab-en-retard', count: items.filter((t) => isOverdue(t)).length },
   ]
 })
 
-/* ── Final filtered list (source + status) ── */
 const filteredTaches = computed(() => {
   let items = sourceFilteredTaches.value
   if (statusFilter.value === 'en_retard') {
-    items = items.filter(t => isOverdue(t))
+    items = items.filter((t) => isOverdue(t))
   } else if (statusFilter.value !== 'all') {
-    items = items.filter(t => t.statut === statusFilter.value)
+    items = items.filter((t) => t.statut === statusFilter.value)
   }
   return items
 })
 
 const pageTitle = computed(() => {
-  if (isDeptScope.value) return 'Tâches du département'
-  if (isSENScope.value) return 'Tâches du SEN'
-  if (isProvinceScope.value) return 'Tâches de la province'
-  return showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes Tâches'
+  if (isDeptScope.value) return 'Taches du departement'
+  if (isSENScope.value) return 'Taches du SEN'
+  if (isProvinceScope.value) return 'Taches de la province'
+  return showAssignedByMe.value ? 'Taches assignees par moi' : 'Mes taches'
 })
+
 const pageSubtitle = computed(() => {
-  if (isDeptScope.value) return 'Vue d\'ensemble des tâches assignées aux agents du département.'
-  if (isSENScope.value) return 'Toutes les tâches assignées aux attachés du Secrétariat Exécutif National.'
-  if (isProvinceScope.value) return 'Vue provinciale des tâches assignées aux agents de votre province.'
+  if (isDeptScope.value) return 'Vue d ensemble des taches assignees aux agents du departement.'
+  if (isSENScope.value) return 'Toutes les taches assignees aux agents du Secretariat Executif National.'
+  if (isProvinceScope.value) return 'Vue provinciale des taches assignees aux agents de votre province.'
   return showAssignedByMe.value
-    ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
-    : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.'
+    ? 'Suivi des taches que vous attribuez aux agents de votre structure.'
+    : 'Espace des taches qui vous sont attribuees par votre direction, le SEN, le SEP ou le SEL.'
 })
+
 const panelTitle = computed(() => {
-  if (isDeptScope.value) return 'Tâches du département'
-  if (isSENScope.value) return 'Tâches du SEN'
-  if (isProvinceScope.value) return 'Tâches de la province'
-  return showAssignedByMe.value ? 'Tâches que j\'ai assignées' : 'Tâches qui me sont assignées'
+  if (isDeptScope.value) return 'Taches du departement'
+  if (isSENScope.value) return 'Taches du SEN'
+  if (isProvinceScope.value) return 'Taches de la province'
+  return showAssignedByMe.value ? 'Taches que j ai assignees' : 'Taches qui me sont assignees'
 })
+
 const panelSubtitle = computed(() => {
-  if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
-  if (isSENScope.value) return 'Vue d\'ensemble des tâches assignées aux attachés du SEN.'
-  if (isProvinceScope.value) return 'Toutes les tâches assignées aux agents de la province.'
+  if (isDeptScope.value) return 'Toutes les taches assignees aux agents du departement.'
+  if (isSENScope.value) return 'Vue d ensemble des taches assignees aux agents du SEN.'
+  if (isProvinceScope.value) return 'Toutes les taches assignees aux agents de la province.'
   return showAssignedByMe.value
-    ? 'Liste des tâches que vous avez affectées aux agents.'
-    : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.'
+    ? 'Liste des taches que vous avez affectees aux agents.'
+    : 'Taches attribuees par votre direction, le SEN, le SEP ou le SEL.'
 })
+
 const emptyStateText = computed(() => {
-  if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
-  if (isSENScope.value) return 'Aucune tâche SEN pour ce filtre.'
-  if (isProvinceScope.value) return 'Aucune tâche pour ce filtre dans cette province.'
-  return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
+  if (isDeptScope.value) return 'Aucune tache pour ce filtre dans ce departement.'
+  if (isSENScope.value) return 'Aucune tache SEN pour ce filtre.'
+  if (isProvinceScope.value) return 'Aucune tache pour ce filtre dans cette province.'
+  return showAssignedByMe.value ? 'Aucune tache assignee par vous pour ce filtre.' : 'Aucune tache assignee pour ce filtre.'
 })
 
 async function loadTaches() {
+  loading.value = true
   try {
     const params = isDeptScope.value
       ? { scope: 'departement' }
@@ -252,13 +254,21 @@ async function loadTaches() {
         : isProvinceScope.value
           ? { scope: 'province' }
           : {}
+
     const { data } = await list(params)
-    mesTaches.value = data.mesTaches
-    tachesCreees.value = data.tachesCreees
-    isDirecteur.value = data.isDirecteur
-    canManageTaches.value = data.canManageTaches || data.isDirecteur || auth.isSENA || auth.isAssistant || auth.isSEP
+    mesTaches.value = data.mesTaches || []
+    tachesCreees.value = data.tachesCreees || []
+    isDirecteur.value = Boolean(data.isDirecteur)
+    canManageTaches.value = Boolean(
+      data.canManageTaches ||
+      data.isDirecteur ||
+      auth.isSENA ||
+      auth.isAssistant ||
+      auth.isSEP ||
+      auth.user?.role?.nom_role === 'SEL'
+    )
   } catch {
-    ui.addToast('Erreur lors du chargement des tâches.', 'danger')
+    ui.addToast('Erreur lors du chargement des taches.', 'danger')
   } finally {
     loading.value = false
   }
@@ -271,21 +281,36 @@ function capitalize(str) {
 
 function truncate(str, len) {
   if (!str) return ''
-  return str.length > len ? str.substring(0, len) + '...' : str
+  return str.length > len ? `${str.substring(0, len)}...` : str
 }
 
 function prioriteBadge(priorite) {
-  const map = { urgente: 'badge bg-danger', haute: 'badge bg-warning text-dark', normale: 'badge bg-secondary' }
+  const map = {
+    urgente: 'badge bg-danger',
+    haute: 'badge bg-warning text-dark',
+    normale: 'badge bg-secondary',
+    faible: 'badge bg-info text-dark',
+  }
   return map[priorite] || 'badge bg-secondary'
 }
 
 function statutBadge(statut) {
-  const map = { terminee: 'badge bg-success', en_cours: 'badge bg-primary', nouvelle: 'badge bg-secondary' }
+  const map = {
+    terminee: 'badge bg-success',
+    en_cours: 'badge bg-primary',
+    nouvelle: 'badge bg-secondary',
+    bloquee: 'badge bg-danger',
+  }
   return map[statut] || 'badge bg-secondary'
 }
 
 function statutLabel(statut) {
-  const map = { terminee: 'Terminée', en_cours: 'En cours', nouvelle: 'Nouvelle' }
+  const map = {
+    terminee: 'Terminee',
+    en_cours: 'En cours',
+    nouvelle: 'En attente',
+    bloquee: 'Bloquee',
+  }
   return map[statut] || capitalize(statut)
 }
 
@@ -299,7 +324,9 @@ function sourceEmetteurLabel(source) {
     assistant_departement: 'Direction',
     sen: 'SEN',
     sep: 'SEP',
+    secom: 'SECOM',
     sel: 'SEL',
+    aaf_local: 'AAF / RH local',
     autre: 'Autre',
   }
   return map[source] || source
@@ -307,9 +334,7 @@ function sourceEmetteurLabel(source) {
 
 function matchesSourceFilter(source) {
   if (sourceFilter.value === 'all') return true
-  if (sourceFilter.value === 'direction') {
-    return ['directeur', 'assistant_departement'].includes(source)
-  }
+  if (sourceFilter.value === 'direction') return ['directeur', 'assistant_departement'].includes(source)
   return source === sourceFilter.value
 }
 
@@ -320,15 +345,12 @@ function formatDate(dateStr) {
 
 onMounted(() => {
   if (route.query.statut) {
-    const valid = ['nouvelle', 'en_cours', 'terminee', 'en_retard']
-    if (valid.includes(route.query.statut)) {
-      statusFilter.value = route.query.statut
-    }
+    const valid = ['nouvelle', 'en_cours', 'bloquee', 'terminee', 'en_retard']
+    if (valid.includes(route.query.statut)) statusFilter.value = route.query.statut
   }
   loadTaches()
 })
 
-/* ── Sync tab → URL query param ── */
 watch(statusFilter, (val) => {
   const query = { ...route.query }
   if (val === 'all') {
@@ -341,52 +363,53 @@ watch(statusFilter, (val) => {
 </script>
 
 <style scoped>
-/* ── Mobile responsive styles ── */
 @media (max-width: 767.98px) {
-  .rh-hero .row {
-    text-align: center;
-  }
+  .rh-hero .row,
   .rh-hero .col-lg-4 {
     text-align: center;
   }
+
   .hero-tools {
     justify-content: center;
     display: flex;
     flex-wrap: wrap;
     gap: .5rem;
   }
+
   .rh-title {
     font-size: 1.3rem;
   }
+
   .rh-sub {
-    font-size: 0.85rem;
+    font-size: .85rem;
   }
 
-  /* Panel headers */
   .panel-title {
     font-size: 1rem;
   }
+
   .panel-sub {
-    font-size: 0.8rem;
+    font-size: .8rem;
   }
+
   .task-filters {
     width: 100%;
     justify-content: center;
   }
 
-  /* Table compact */
   .table {
-    font-size: 0.82rem;
+    font-size: .82rem;
   }
+
   .table th,
   .table td {
-    padding: 0.5rem 0.4rem;
+    padding: .5rem .4rem;
   }
+
   .table td:last-child {
     white-space: nowrap;
   }
 
-  /* Hide De/Assigne (2nd), Echeance (5th), Date (6th) */
   .table th:nth-child(2),
   .table td:nth-child(2),
   .table th:nth-child(6),
@@ -396,15 +419,13 @@ watch(statusFilter, (val) => {
     display: none;
   }
 
-  /* Compact action buttons */
   .btn {
-    padding: 0.25rem 0.4rem;
-    font-size: 0.75rem;
+    padding: .25rem .4rem;
+    font-size: .75rem;
   }
 
-  /* Dash panels spacing */
   .dash-panel {
-    margin-top: 0.75rem !important;
+    margin-top: .75rem !important;
   }
 }
 
@@ -424,7 +445,6 @@ watch(statusFilter, (val) => {
   min-width: 150px;
 }
 
-/* ── Status Tabs ── */
 .tache-status-tabs {
   display: flex;
   gap: .5rem;
@@ -445,7 +465,11 @@ watch(statusFilter, (val) => {
   cursor: pointer;
   transition: all .2s;
 }
-.tache-tab:hover { border-color: #94a3b8; color: #334155; }
+
+.tache-tab:hover {
+  border-color: #94a3b8;
+  color: #334155;
+}
 
 .tache-tab-count {
   display: inline-flex;
@@ -461,34 +485,87 @@ watch(statusFilter, (val) => {
   color: #475569;
 }
 
-/* ── Active states ── */
-.tache-tab.active.tab-all          { border-color: #475569; color: #1e293b; background: #f1f5f9; }
-.tache-tab.active.tab-all .tache-tab-count { background: #475569; color: #fff; }
+.tache-tab.active.tab-all {
+  border-color: #475569;
+  color: #1e293b;
+  background: #f1f5f9;
+}
 
-.tache-tab.active.tab-nouvelle     { border-color: #6366f1; color: #4338ca; background: #eef2ff; }
-.tache-tab.active.tab-nouvelle .tache-tab-count { background: #6366f1; color: #fff; }
+.tache-tab.active.tab-all .tache-tab-count {
+  background: #475569;
+  color: #fff;
+}
 
-.tache-tab.active.tab-en-cours     { border-color: #3b82f6; color: #1d4ed8; background: #eff6ff; }
-.tache-tab.active.tab-en-cours .tache-tab-count { background: #3b82f6; color: #fff; }
+.tache-tab.active.tab-nouvelle {
+  border-color: #6366f1;
+  color: #4338ca;
+  background: #eef2ff;
+}
 
-.tache-tab.active.tab-terminee     { border-color: #22c55e; color: #15803d; background: #f0fdf4; }
-.tache-tab.active.tab-terminee .tache-tab-count { background: #22c55e; color: #fff; }
+.tache-tab.active.tab-nouvelle .tache-tab-count {
+  background: #6366f1;
+  color: #fff;
+}
 
-.tache-tab.active.tab-en-retard    { border-color: #ef4444; color: #b91c1c; background: #fef2f2; }
-.tache-tab.active.tab-en-retard .tache-tab-count { background: #ef4444; color: #fff; }
+.tache-tab.active.tab-en-cours {
+  border-color: #3b82f6;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.tache-tab.active.tab-en-cours .tache-tab-count {
+  background: #3b82f6;
+  color: #fff;
+}
+
+.tache-tab.active.tab-bloquee {
+  border-color: #ef4444;
+  color: #b91c1c;
+  background: #fff1f2;
+}
+
+.tache-tab.active.tab-bloquee .tache-tab-count {
+  background: #ef4444;
+  color: #fff;
+}
+
+.tache-tab.active.tab-terminee {
+  border-color: #22c55e;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.tache-tab.active.tab-terminee .tache-tab-count {
+  background: #22c55e;
+  color: #fff;
+}
+
+.tache-tab.active.tab-en-retard {
+  border-color: #ef4444;
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.tache-tab.active.tab-en-retard .tache-tab-count {
+  background: #ef4444;
+  color: #fff;
+}
 
 @media (max-width: 767.98px) {
   .tache-status-tabs {
     gap: .3rem;
   }
+
   .tache-tab {
     padding: .35rem .6rem;
     font-size: .75rem;
     border-radius: .45rem;
   }
+
   .tache-tab-label {
     display: none;
   }
+
   .tache-tab-count {
     font-size: .68rem;
     min-width: 1.2rem;

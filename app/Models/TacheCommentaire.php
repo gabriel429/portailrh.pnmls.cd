@@ -18,6 +18,7 @@ class TacheCommentaire extends Model
         'tache_id',
         'agent_id',
         'contenu',
+        'type_commentaire',
         'ancien_statut',
         'nouveau_statut',
     ];

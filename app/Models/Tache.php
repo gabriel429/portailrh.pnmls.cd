@@ -19,10 +19,22 @@ class Tache extends Model
         'description',
         'source_type',
         'source_emetteur',
+        'niveau_gestion',
+        'validation_responsable_role',
         'activite_plan_id',
         'priorite',
         'statut',
         'pourcentage',
+        'validation_statut',
+        'validation_commentaire',
+        'soumise_validation_at',
+        'validated_by',
+        'validated_at',
+        'rejected_by',
+        'rejected_at',
+        'blocked_by',
+        'blocked_at',
+        'blocking_reason',
         'date_echeance',
         'date_tache',
     ];
@@ -31,6 +43,10 @@ class Tache extends Model
         'pourcentage' => 'integer',
         'date_echeance' => 'date',
         'date_tache' => 'date',
+        'soumise_validation_at' => 'datetime',
+        'validated_at' => 'datetime',
+        'rejected_at' => 'datetime',
+        'blocked_at' => 'datetime',
     ];
 
     public function createur(): BelongsTo
@@ -56,6 +72,26 @@ class Tache extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(TacheDocument::class)->latest();
+    }
+
+    public function histories(): HasMany
+    {
+        return $this->hasMany(TacheHistory::class)->latest();
+    }
+
+    public function validateur(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'validated_by');
+    }
+
+    public function rejecteur(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'rejected_by');
+    }
+
+    public function bloqueur(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'blocked_by');
     }
 
     public function scopeNouvelle($query)
