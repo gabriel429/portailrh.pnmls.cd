@@ -485,7 +485,10 @@ router.onError((error, to) => {
 router.beforeEach(async (to) => {
     const auth = useAuthStore()
 
-    if (auth.loading) {
+    if (to.meta.auth && auth.loading && !auth.hasSessionHint()) {
+        auth.loading = false
+        auth.clearUser()
+    } else if (auth.loading) {
         await auth.fetchUser()
     }
 

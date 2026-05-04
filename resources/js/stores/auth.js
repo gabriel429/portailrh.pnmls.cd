@@ -152,12 +152,43 @@ export const useAuthStore = defineStore('auth', {
         },
     },
     actions: {
-        async fetchUser() {
+        hasSessionHint() {
+            if (typeof window === 'undefined') return false
+
+            const authHint = window.localStorage.getItem('epnmls_auth_hint') === '1'
+            const hasXsrfCookie = document.cookie.split(';').some((cookie) =>
+                cookie.trim().startsWith('XSRF-TOKEN=')
+            )
+
+            return authHint || hasXsrfCookie
+        },
+        markSessionHint(enabled = true) {
+            if (typeof window === 'undefined') return
+
+            if (enabled) {
+                window.localStorage.setItem('epnmls_auth_hint', '1')
+            } else {
+                window.localStorage.removeItem('epnmls_auth_hint')
+            }
+        },
+        async fetchUser(options = {}) {
+            const { force = false } = options
+
+            if (!force && !this.hasSessionHint()) {
+                this.user = null
+                this.loading = false
+                return null
+            }
+
             try {
                 const { data } = await client.get('/user')
                 this.user = data
+                this.markSessionHint(true)
+                return data
             } catch {
                 this.user = null
+                this.markSessionHint(false)
+                return null
             } finally {
                 this.loading = false
             }
@@ -165,17 +196,20 @@ export const useAuthStore = defineStore('auth', {
         async login(email, password, remember = false) {
             await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
             await client.post('/login', { email, password, remember })
-            await this.fetchUser()
+            this.markSessionHint(true)
+            await this.fetchUser({ force: true })
         },
         async logout() {
             await client.post('/logout')
             this.user = null
+            this.markSessionHint(false)
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' })
             }
         },
         clearUser() {
             this.user = null
+            this.markSessionHint(false)
         },
     },
 })
