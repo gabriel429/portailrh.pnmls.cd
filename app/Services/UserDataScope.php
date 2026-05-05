@@ -54,7 +54,28 @@ class UserDataScope
 
     public function isProvincialSep(?User $user): bool
     {
-        return (bool) $user?->hasRole('SEP');
+        if (!$user) {
+            return false;
+        }
+
+        if ($user->hasRole('SEP')) {
+            return true;
+        }
+
+        if (!$user->hasRole('SECOM')) {
+            return false;
+        }
+
+        $agent = $user->agent;
+        $organe = strtolower((string) ($agent?->organe ?? ''));
+        $deptCode = strtolower((string) ($agent?->departement?->code ?? ''));
+        $deptName = strtolower((string) ($agent?->departement?->nom ?? ''));
+
+        if ($deptCode === 'caf' || str_contains($deptName, 'cellule administrative et financ')) {
+            return false;
+        }
+
+        return str_contains($organe, 'provincial');
     }
 
     /** Vrai si l'utilisateur doit être scopé à sa propre province (RH Provincial OU SEP). */

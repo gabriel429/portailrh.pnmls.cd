@@ -497,13 +497,39 @@ class TacheController extends ApiController
         $isSENA = $roles->hasSENARole($user);
         $isSENOrSENA = $isSEN || $isSENA;
 
-        // Vérification élargie pour les assistants/secrétaires du SEN/SENA
-        // On regarde l'organe de l'agent connecté plutôt que le nom exact du rôle
-        $isSENStaff = false;
+                // Vérification élargie pour les assistants/secrétaires
+        // Ils peuvent voir les tâches assignées à leur responsable (créateur)
+        $isAssistant = false;
         if (!$isSENOrSENA && $agent) {
-            // Vérifie si l'agent est au Secrétariat Exécutif National (SEN)
-            $agentOrgane = $agent->organe ?? '';
-            $isSENStaff = $agentOrgane === 'Secrétariat Exécutif National';
+            $userRole = strtolower($user->role?->nom_role ?? '');
+            // Détection des rôles d'assistant/secrétaire : Assistant de département,
+            // Assistant, Assistante, Secrétaire de direction, SECOM, etc.
+            $isAssistant = str_contains($userRole, 'assistant') 
+                        || str_contains($userRole, 'assistante')
+                        || str_contains($userRole, 'secretaire')
+                        || str_contains($userRole, 'secrétaire')
+                        || str_contains($userRole, 'secom')
+                        || str_contains($userRole, 'secretariat')
+                        || str_contains($userRole, 'secrétariat');
+        }
+
+        // Détection du responsable de l'assistant (même département/province)
+        $isManagerTask = false;
+        if ($isAssistant && $agent) {
+            // L'assistant peut voir les tâches dont le créateur ou l'agent assigné
+            // est dans le même département ou la même province que lui
+            $taskCreateur = Agent::find($tache->createur_id);
+            $taskAgent = Agent::find($tache->agent_id);
+            
+            if ($agent->departement_id) {
+                // Assistant départemental : voir les tâches du département
+                $isManagerTask = ($taskCreateur && $taskCreateur->departement_id === $agent->departement_id)
+                              || ($taskAgent && $taskAgent->departement_id === $agent->departement_id);
+            } elseif ($agent->province_id) {
+                // Assistant provincial (SECOM) : voir les tâches de la province
+                $isManagerTask = ($taskCreateur && $taskCreateur->province_id === $agent->province_id)
+                              || ($taskAgent && $taskAgent->province_id === $agent->province_id);
+            }
         }
 
         if (!$agent && !$isSENOrSENA) {
@@ -516,7 +542,7 @@ class TacheController extends ApiController
         $isProvinceManager = false;
 
         // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
-        if ($isSEN || ($isSENA && $roles->canManageSenaScopedAgent($user, $taskAgent)) || $isSENStaff) {
+        if ($isSEN || ($isSENA && $roles->canManageSenaScopedAgent($user, $taskAgent)) || $isAssistant) {
             $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
             $resource = TacheResource::make($tache);
             return $this->resource($resource, [
@@ -1057,7 +1083,7 @@ class TacheController extends ApiController
         $isSENA = $roles->hasSENARole($user);
         $isSENOrSENA = $isSEN || $isSENA;
         $isSENStaff = !$isSENOrSENA && $agent && ($agent->organe ?? '') === 'Secrétariat Exécutif National';
-        if ($isSEN || $isSENStaff) {
+        if ($isSEN || $isAssistant) {
             return true;
         }
 
