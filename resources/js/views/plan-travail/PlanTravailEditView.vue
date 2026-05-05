@@ -47,14 +47,6 @@
                 </div>
 
                 <div class="col-md-4">
-                  <label for="responsable_code" class="form-label fw-bold">Responsable</label>
-                  <input v-model="form.responsable_code" list="pta-responsables-edit" type="text" class="form-control" id="responsable_code" placeholder="Ex. DPSE">
-                  <datalist id="pta-responsables-edit">
-                    <option v-for="item in formData.responsables" :key="item" :value="item"></option>
-                  </datalist>
-                </div>
-
-                <div class="col-md-4">
                   <label for="cout_cdf" class="form-label fw-bold">Cout en CDF</label>
                   <input v-model.number="form.cout_cdf" type="number" step="0.01" min="0" class="form-control" id="cout_cdf" placeholder="0">
                 </div>
@@ -92,7 +84,39 @@
                   </select>
                 </div>
 
-                <div v-if="form.niveau_administratif === 'SEN'" class="col-md-4">
+                <div v-if="isPlanificationSenAssignment" class="col-md-6">
+                  <label for="assignment_target" class="form-label fw-bold">
+                    Departement ou Attaches du SEN <span class="text-danger">*</span>
+                  </label>
+                  <select v-model="form.assignment_target" class="form-select" id="assignment_target" required @change="onAssignmentTargetChange">
+                    <option value="">-- Choisir d'abord la cible --</option>
+                    <option v-for="target in assignmentTargets" :key="target.value" :value="target.value">
+                      {{ target.label }} ({{ target.agent_count }} agent{{ target.agent_count > 1 ? 's' : '' }})
+                    </option>
+                  </select>
+                  <div class="form-text">Les agents affiches ci-dessous dependent uniquement de ce choix.</div>
+                </div>
+
+                <div v-if="isPlanificationSenAssignment && form.assignment_target" class="col-md-6">
+                  <label for="assigned_agent_id" class="form-label fw-bold">
+                    Attribuer l'activite a <span v-if="assignableAgents.length" class="text-danger">*</span>
+                  </label>
+                  <select
+                    :value="selectedAssignedAgentId"
+                    class="form-select"
+                    id="assigned_agent_id"
+                    :required="assignableAgents.length > 0"
+                    :disabled="assignableAgents.length === 0"
+                    @change="setAssignedAgent($event.target.value)"
+                  >
+                    <option value="">{{ assignableAgents.length ? '-- Choisir un agent --' : 'Aucun agent disponible pour cette cible' }}</option>
+                    <option v-for="agent in assignableAgents" :key="agent.id" :value="agent.id">
+                      {{ agentOptionLabel(agent) }}
+                    </option>
+                  </select>
+                </div>
+
+                <div v-else-if="form.niveau_administratif === 'SEN'" class="col-md-4">
                   <label for="departement_id" class="form-label fw-bold">Departement</label>
                   <select v-model="form.departement_id" class="form-select" id="departement_id">
                     <option value="">-- Direction / Tous --</option>
@@ -205,7 +229,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { get, update, getCreateData } from '@/api/planTravail'
@@ -218,12 +242,14 @@ const ui = useUiStore()
 const loading = ref(true)
 const submitting = ref(false)
 const errors = ref([])
-const formData = ref({ departments: [], provinces: [], localites: [], categories: [], responsables: [] })
+const formData = ref({ departments: [], provinces: [], localites: [], categories: [], responsables: [], assignment_targets: [], sen_attache_agents: [], department_agents: {} })
 const form = ref({
   titre: '',
   categorie: '',
   objectif: '',
   responsable_code: '',
+  assignment_target: '',
+  assigned_agent_ids: [],
   cout_cdf: '',
   niveau_administratif: '',
   validation_niveau: '',
@@ -246,6 +272,31 @@ const form = ref({
   observations: '',
 })
 
+const isPlanificationSenAssignment = computed(() =>
+  Boolean(formData.value.is_planification_role) && form.value.niveau_administratif === 'SEN'
+)
+
+const assignmentTargets = computed(() => formData.value.assignment_targets || [])
+const selectedAssignedAgentId = computed(() => form.value.assigned_agent_ids?.[0] || '')
+
+const assignableAgents = computed(() => {
+  const target = form.value.assignment_target
+
+  if (!target) return []
+
+  if (target === 'sen_attaches') {
+    return formData.value.sen_attache_agents || formData.value.agents_sen || []
+  }
+
+  if (target.startsWith('department:')) {
+    const departmentId = target.replace('department:', '')
+    const grouped = formData.value.department_agents || {}
+    return grouped[departmentId] || grouped[Number(departmentId)] || []
+  }
+
+  return []
+})
+
 async function loadActivite() {
   try {
     const [activiteResp, createResp] = await Promise.all([
@@ -259,6 +310,8 @@ async function loadActivite() {
       categorie: a.categorie || '',
       objectif: a.objectif || '',
       responsable_code: a.responsable_code || '',
+      assignment_target: resolveAssignmentTarget(a, createResp.data),
+      assigned_agent_ids: (a.assigned_agent_ids || []).slice(0, 1),
       cout_cdf: a.cout_cdf ?? '',
       niveau_administratif: a.niveau_administratif || '',
       validation_niveau: a.validation_niveau || '',
@@ -289,11 +342,79 @@ async function loadActivite() {
 }
 
 function onNiveauChange() {
-  if (form.value.niveau_administratif !== 'SEN') form.value.departement_id = ''
+  if (form.value.niveau_administratif !== 'SEN') {
+    form.value.departement_id = ''
+    form.value.assignment_target = ''
+    form.value.assigned_agent_ids = []
+  }
   if (form.value.niveau_administratif !== 'SEL') form.value.province_id = ''
   if (form.value.niveau_administratif !== 'SEP') form.value.province_ids = []
   if (form.value.niveau_administratif !== 'SEL') form.value.localite_id = ''
 }
+
+function resolveAssignmentTarget(activity, options) {
+  const assignedId = Number(activity.assigned_agent_ids?.[0] || 0)
+  const departmentId = activity.departement_id
+  const grouped = options.department_agents || {}
+
+  if (assignedId) {
+    if (departmentId) {
+      const departmentAgents = grouped[departmentId] || grouped[Number(departmentId)] || []
+      if (departmentAgents.some((agent) => Number(agent.id) === assignedId)) {
+        return `department:${departmentId}`
+      }
+    }
+
+    const senAgents = options.sen_attache_agents || options.agents_sen || []
+    if (senAgents.some((agent) => Number(agent.id) === assignedId)) {
+      return 'sen_attaches'
+    }
+
+    const matchedDepartment = Object.entries(grouped).find(([, agents]) =>
+      (agents || []).some((agent) => Number(agent.id) === assignedId)
+    )
+    if (matchedDepartment) return `department:${matchedDepartment[0]}`
+  }
+
+  if (departmentId) return `department:${departmentId}`
+  if ((activity.responsable_code || '').toLowerCase().includes('attache')) return 'sen_attaches'
+
+  return ''
+}
+
+function onAssignmentTargetChange() {
+  form.value.assigned_agent_ids = []
+
+  if (form.value.assignment_target === 'sen_attaches') {
+    form.value.departement_id = ''
+    form.value.responsable_code = 'Attaches SEN'
+    return
+  }
+
+  if (form.value.assignment_target?.startsWith('department:')) {
+    const departmentId = form.value.assignment_target.replace('department:', '')
+    const target = assignmentTargets.value.find((item) => item.value === form.value.assignment_target)
+    form.value.departement_id = departmentId
+    form.value.responsable_code = target?.label?.slice(0, 30) || ''
+  }
+}
+
+function setAssignedAgent(agentId) {
+  form.value.assigned_agent_ids = agentId ? [Number(agentId)] : []
+}
+
+function agentOptionLabel(agent) {
+  return agent?.fonction ? `${agent.nom_complet} - ${agent.fonction}` : agent?.nom_complet
+}
+
+watch(assignableAgents, (agents) => {
+  if (!selectedAssignedAgentId.value) return
+
+  const stillAvailable = agents.some((agent) => Number(agent.id) === Number(selectedAssignedAgentId.value))
+  if (!stillAvailable) {
+    form.value.assigned_agent_ids = []
+  }
+})
 
 function buildPayload() {
   const payload = { ...form.value }
@@ -310,14 +431,38 @@ function buildPayload() {
   if (!payload.observations) delete payload.observations
   if (!payload.categorie) delete payload.categorie
   if (!payload.responsable_code) delete payload.responsable_code
+  if (!isPlanificationSenAssignment.value) {
+    delete payload.assignment_target
+    delete payload.assigned_agent_ids
+  } else {
+    if (!payload.assignment_target) delete payload.assignment_target
+    if (!payload.assigned_agent_ids?.length && !payload.assignment_target) delete payload.assigned_agent_ids
+  }
   if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
   if (!payload.province_ids?.length) delete payload.province_ids
 
   return payload
 }
 
+function validateAssignmentSelection() {
+  if (!isPlanificationSenAssignment.value) return true
+
+  if (!form.value.assignment_target) {
+    errors.value = ['Choisissez d abord un departement ou les attaches du SEN.']
+    return false
+  }
+
+  if (assignableAgents.value.length > 0 && !selectedAssignedAgentId.value) {
+    errors.value = ['Choisissez l agent a qui attribuer cette activite.']
+    return false
+  }
+
+  return true
+}
+
 async function handleSubmit() {
   errors.value = []
+  if (!validateAssignmentSelection()) return
   submitting.value = true
   try {
     await update(route.params.id, buildPayload())
