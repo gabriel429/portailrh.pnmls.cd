@@ -167,7 +167,14 @@ class RoleService
             'assistant',
             'assistant de departement',
             'secretaire de departement',
-        ], true) || str_starts_with($role, 'assistant');
+            'secretaire de direction',
+            'secretaire du sen',
+            'secretaire du sena',
+            'secretaire sen',
+            'secretaire sena',
+        ], true) || str_starts_with($role, 'assistant')
+                  || str_starts_with($role, 'secretaire')
+                  || str_starts_with($role, 'secom');
     }
 
     public function isSuperAdmin(?User $user): bool
@@ -202,7 +209,11 @@ class RoleService
             'directrice',
             'directeur de departement',
             'directrice de departement',
-        ], true);
+            'directeur general',
+            'directrice generale',
+        ], true) || str_starts_with($role, 'direct')
+                  || str_starts_with($role, 'chief')
+                  || str_starts_with($role, 'chef');
     }
 
     private function normalize(?string $value): string
