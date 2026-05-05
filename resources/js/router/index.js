@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { recoverFromAssetLoadFailure } from '@/utils/runtimeNoiseFilter'
 
 const routes = [
     // Guest
@@ -467,19 +468,7 @@ const router = createRouter({
 // After a new deployment, old chunk hashes become invalid.
 // Catch the import error and reload the page once to get fresh assets.
 router.onError((error, to) => {
-    const chunkFailure =
-        error.message?.includes('Failed to fetch dynamically imported module') ||
-        error.message?.includes('Importing a module script failed') ||
-        error.message?.includes('Loading chunk') ||
-        error.message?.includes('Loading CSS chunk')
-
-    if (chunkFailure) {
-        const reloadKey = 'chunk_reload_' + to.fullPath
-        if (!sessionStorage.getItem(reloadKey)) {
-            sessionStorage.setItem(reloadKey, '1')
-            window.location.assign(to.fullPath)
-        }
-    }
+    recoverFromAssetLoadFailure(error, to.fullPath)
 })
 
 router.beforeEach(async (to) => {
