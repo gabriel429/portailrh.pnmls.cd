@@ -41,6 +41,13 @@ $app = Application::configure(basePath: dirname(__DIR__))
         // ALWAYS return JSON for API routes — catch everything
         $exceptions->render(function (\Throwable $e, $request) {
             if ($request->is('api/*') || $request->expectsJson() || $request->ajax()) {
+                if ($e instanceof \Illuminate\Validation\ValidationException) {
+                    return response()->json([
+                        'message' => $e->getMessage() ?: 'Les donnees fournies sont invalides.',
+                        'errors' => $e->errors(),
+                    ], $e->status);
+                }
+
                 $status = 500;
                 if (method_exists($e, 'getStatusCode')) {
                     $status = $e->getStatusCode();
