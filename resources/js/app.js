@@ -4,6 +4,7 @@ import { registerSW } from 'virtual:pwa-register'
 import router from './router'
 import App from './App.vue'
 import { debugLog, reportError } from '@/utils/logger'
+import { registerRuntimeNoiseFilter } from '@/utils/runtimeNoiseFilter'
 
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
@@ -11,6 +12,7 @@ import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
 debugLog('PWA: Service Worker re-enabled after clean deployment')
+registerRuntimeNoiseFilter()
 
 registerSW({
     onNeedRefresh() {
