@@ -4,6 +4,11 @@
 
 RewriteEngine On
 
+# Missing hashed assets are usually stale browser/PWA references.
+# Serve the current matching asset instead of returning Hostinger's HTML 404.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^assets/(.+\.(js|css))$ serve-asset.php?file=$1 [L,QSA]
+
 # PRIMARY METHOD: Try standard ForceType (might work)
 <FilesMatch "\.(js)$">
     ForceType application/javascript
