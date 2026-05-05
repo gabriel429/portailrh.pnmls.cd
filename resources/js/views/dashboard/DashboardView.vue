@@ -267,20 +267,20 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { create as createDocument } from '@/api/documents'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RequestCreateModal from '@/components/RequestCreateModal.vue'
-const SenDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenDashboardView.vue'))
-const SepDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SepDashboardView.vue'))
-const RhDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RhDashboardView.vue'))
-const DepartementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/DepartementDashboardView.vue'))
-const RenforcementDashboardView = defineAsyncComponent(() => import('@/views/dashboard/RenforcementDashboardView.vue'))
-const CafDashboardView = defineAsyncComponent(() => import('@/views/dashboard/CafDashboardView.vue'))
-const SenaDashboardView = defineAsyncComponent(() => import('@/views/dashboard/SenaDashboardView.vue'))
+import SenDashboardView from '@/views/dashboard/SenDashboardView.vue'
+import SepDashboardView from '@/views/dashboard/SepDashboardView.vue'
+import RhDashboardView from '@/views/dashboard/RhDashboardView.vue'
+import DepartementDashboardView from '@/views/dashboard/DepartementDashboardView.vue'
+import RenforcementDashboardView from '@/views/dashboard/RenforcementDashboardView.vue'
+import CafDashboardView from '@/views/dashboard/CafDashboardView.vue'
+import SenaDashboardView from '@/views/dashboard/SenaDashboardView.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
