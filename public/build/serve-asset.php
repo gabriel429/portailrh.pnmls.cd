@@ -22,6 +22,37 @@ if (strpos($requestedFile, '..') !== false || strpos($requestedFile, '/') === 0)
 // Map to physical file in assets directory
 $assetPath = __DIR__ . '/assets/' . $requestedFile;
 
+if (!file_exists($assetPath) || !is_file($assetPath)) {
+    $extension = strtolower(pathinfo($requestedFile, PATHINFO_EXTENSION));
+    $stem = pathinfo($requestedFile, PATHINFO_FILENAME);
+    $prefix = explode('-', $stem)[0] ?? '';
+    $manifestPath = __DIR__ . '/manifest.json';
+
+    if ($prefix !== '' && in_array($extension, ['js', 'css'], true) && is_file($manifestPath)) {
+        $manifest = json_decode((string) file_get_contents($manifestPath), true);
+
+        if (is_array($manifest)) {
+            foreach ($manifest as $entry) {
+                $manifestFile = is_array($entry) ? ($entry['file'] ?? '') : '';
+                $manifestName = basename((string) $manifestFile);
+
+                if (
+                    $manifestName !== ''
+                    && str_ends_with($manifestName, '.' . $extension)
+                    && str_starts_with($manifestName, $prefix . '-')
+                ) {
+                    $fallbackPath = __DIR__ . '/' . $manifestFile;
+
+                    if (is_file($fallbackPath)) {
+                        $assetPath = $fallbackPath;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
 // Check if file exists
 if (!file_exists($assetPath) || !is_file($assetPath)) {
     http_response_code(404);
