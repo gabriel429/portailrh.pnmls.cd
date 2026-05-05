@@ -18,6 +18,11 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Serve stale build asset URLs through the MIME-safe asset resolver.
+    RewriteCond %{REQUEST_URI} ^/build/assets/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^build/assets/(.+)$ public/asset.php?f=$1 [L,QSA]
+
     # Serve /build/* from public/build/ when file not found at root
     # (Vite outputs to public/build/, but document root is repo root)
     RewriteCond %{REQUEST_URI} ^/build/
