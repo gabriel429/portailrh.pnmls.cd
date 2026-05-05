@@ -196,19 +196,12 @@ async function loadAgents() {
     agents.value = data.data.agents || []
     activitesPta.value = data.data.activites_pta || []
     sourceEmetteurs.value = data.data.source_emetteurs || []
+    form.value.source_emetteur = data.data.default_source_emetteur || 'directeur'
     scopeFlags.value = {
       isSENScope: Boolean(data.data.isSENScope),
       isSENAScope: Boolean(data.data.isSENAScope),
       isProvinceScope: Boolean(data.data.isProvinceScope),
       isLocalScope: Boolean(data.data.isLocalScope),
-    }
-
-    if (scopeFlags.value.isLocalScope) {
-      form.value.source_emetteur = 'aaf_local'
-    } else if (scopeFlags.value.isProvinceScope) {
-      form.value.source_emetteur = 'sep'
-    } else if (scopeFlags.value.isSENScope) {
-      form.value.source_emetteur = 'sen'
     }
   } catch (err) {
     if (err.response?.status === 403) {

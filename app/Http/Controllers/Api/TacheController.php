@@ -304,6 +304,7 @@ class TacheController extends ApiController
             'isProvinceScope' => $isSEP,
             'isLocalScope'    => $isSEL,
             'validation_role' => $workflow->determineValidationRole($user),
+            'default_source_emetteur' => $this->defaultSourceEmetteurForUser($user, $roles, $workflow),
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
                 ['value' => 'assistant_departement', 'label' => 'Assistant / Secretaire du departement'],
@@ -315,6 +316,37 @@ class TacheController extends ApiController
                 ['value' => 'autre',     'label' => 'Autre'],
             ],
         ]);
+    }
+
+    protected function defaultSourceEmetteurForUser($user, RoleService $roles, TacheWorkflowService $workflow): string
+    {
+        if ($user->hasRole('SEN') || $roles->hasSENARole($user)) {
+            return 'sen';
+        }
+
+        if ($roles->isSepManager($user)) {
+            return 'sep';
+        }
+
+        if ($workflow->isSelManager($user)) {
+            return 'sel';
+        }
+
+        if ($workflow->isLocalSupport($user)) {
+            return 'aaf_local';
+        }
+
+        $role = Str::of((string) $user->role?->nom_role)
+            ->ascii()
+            ->lower()
+            ->squish()
+            ->toString();
+
+        if ($role === 'assistant' || str_starts_with($role, 'assistant') || str_contains($role, 'secretaire')) {
+            return 'assistant_departement';
+        }
+
+        return 'directeur';
     }
 
     /**

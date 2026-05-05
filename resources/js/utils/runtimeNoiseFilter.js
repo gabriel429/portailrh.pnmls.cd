@@ -12,7 +12,7 @@ function shouldIgnoreMessage(message) {
 }
 
 export function registerRuntimeNoiseFilter() {
-    if (import.meta.env.DEV || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
         return
     }
 
@@ -25,11 +25,11 @@ export function registerRuntimeNoiseFilter() {
         if (shouldIgnoreMessage(reasonMessage)) {
             event.preventDefault()
         }
-    })
+    }, true)
 
     window.addEventListener('error', (event) => {
         if (shouldIgnoreMessage(event.message)) {
             event.preventDefault()
         }
-    })
+    }, true)
 }
