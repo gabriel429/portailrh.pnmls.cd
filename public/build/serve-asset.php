@@ -33,19 +33,27 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
 
         if (is_array($manifest)) {
             foreach ($manifest as $entry) {
-                $manifestFile = is_array($entry) ? ($entry['file'] ?? '') : '';
-                $manifestName = basename((string) $manifestFile);
+                $manifestFiles = [];
 
-                if (
-                    $manifestName !== ''
-                    && str_ends_with($manifestName, '.' . $extension)
-                    && str_starts_with($manifestName, $prefix . '-')
-                ) {
-                    $fallbackPath = __DIR__ . '/' . $manifestFile;
+                if (is_array($entry)) {
+                    $manifestFiles[] = $entry['file'] ?? '';
+                    $manifestFiles = array_merge($manifestFiles, $entry['css'] ?? []);
+                }
 
-                    if (is_file($fallbackPath)) {
-                        $assetPath = $fallbackPath;
-                        break;
+                foreach ($manifestFiles as $manifestFile) {
+                    $manifestName = basename((string) $manifestFile);
+
+                    if (
+                        $manifestName !== ''
+                        && str_ends_with($manifestName, '.' . $extension)
+                        && str_starts_with($manifestName, $prefix . '-')
+                    ) {
+                        $fallbackPath = __DIR__ . '/' . $manifestFile;
+
+                        if (is_file($fallbackPath)) {
+                            $assetPath = $fallbackPath;
+                            break 2;
+                        }
                     }
                 }
             }
