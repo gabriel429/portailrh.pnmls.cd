@@ -4,7 +4,12 @@
     <div class="login-brand">
       <div class="brand-bg"></div>
       <div class="brand-content">
-        <img src="/images/pnmls.jpeg" alt="PNMLS" class="brand-logo">
+        <div class="brand-logo-shell" aria-hidden="true">
+          <span class="brand-logo-pulse brand-logo-pulse--outer"></span>
+          <span class="brand-logo-pulse brand-logo-pulse--inner"></span>
+          <span class="brand-logo-shine"></span>
+          <img src="/images/logo-pnmls.png" alt="PNMLS" class="brand-logo">
+        </div>
         <h1 class="brand-title">PNMLS</h1>
         <p class="brand-tagline">Programme National Multisectoriel<br>de Lutte contre le Sida</p>
         <div class="brand-separator"></div>
@@ -206,20 +211,127 @@ async function handleLogin() {
     padding: 0;
 }
 
-.brand-logo {
+.brand-logo-shell {
+    position: relative;
+    display: grid;
+    place-items: center;
     width: clamp(104px, 12vw, 142px);
     height: clamp(104px, 12vw, 142px);
     border-radius: 50%;
-    object-fit: cover;
-    border: 4px solid rgba(255,255,255,.25);
-    box-shadow: 0 8px 40px rgba(0,0,0,.3), 0 0 0 8px rgba(255,255,255,.08);
     margin-bottom: 1.75rem;
-    animation: logoFloat 6s ease-in-out infinite;
+    background:
+        radial-gradient(circle at 50% 38%, rgba(255,255,255,.98), rgba(240,249,255,.92) 66%, rgba(219,234,254,.86));
+    border: 1px solid rgba(255,255,255,.82);
+    box-shadow:
+        0 16px 48px rgba(0,0,0,.28),
+        0 0 0 7px rgba(255,255,255,.08),
+        0 0 70px rgba(213,25,32,.22);
+    overflow: hidden;
+    animation: loginLogoEnter .82s cubic-bezier(.16, 1, .3, 1) both, loginLogoFloat 5.6s ease-in-out .9s infinite;
 }
 
-@keyframes logoFloat {
+.brand-logo-shell::after {
+    content: "";
+    position: absolute;
+    left: 18%;
+    right: 18%;
+    bottom: -1px;
+    height: 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #d51920, #ffef00, #00a1de);
+    box-shadow: 0 0 22px rgba(255,255,255,.36);
+}
+
+.brand-logo-pulse {
+    position: absolute;
+    inset: -10px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.22);
+    pointer-events: none;
+}
+
+.brand-logo-pulse--outer {
+    animation: loginLogoPulse 2.45s ease-out infinite;
+}
+
+.brand-logo-pulse--inner {
+    inset: 9px;
+    border-color: rgba(213,25,32,.28);
+    animation: loginLogoBreath 2.1s ease-in-out infinite;
+}
+
+.brand-logo-shine {
+    position: absolute;
+    inset: -22%;
+    background: linear-gradient(115deg, transparent 34%, rgba(255,255,255,.74) 49%, transparent 64%);
+    transform: translateX(-125%) rotate(8deg);
+    animation: loginLogoShine 4.6s ease-in-out 1.2s infinite;
+    pointer-events: none;
+}
+
+.brand-logo {
+    position: relative;
+    z-index: 1;
+    width: 84%;
+    height: 84%;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 14px rgba(2,23,37,.22));
+}
+
+@keyframes loginLogoEnter {
+    0% {
+        opacity: 0;
+        transform: scale(.78);
+    }
+    62% {
+        opacity: 1;
+        transform: scale(1.06);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes loginLogoFloat {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    50% { transform: translateY(-7px); }
+}
+
+@keyframes loginLogoPulse {
+    0% {
+        opacity: .7;
+        transform: scale(.92);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(1.18);
+    }
+}
+
+@keyframes loginLogoBreath {
+    0%, 100% {
+        opacity: .45;
+        transform: scale(.98);
+    }
+    50% {
+        opacity: .92;
+        transform: scale(1.03);
+    }
+}
+
+@keyframes loginLogoShine {
+    0%, 42% {
+        opacity: 0;
+        transform: translateX(-125%) rotate(8deg);
+    }
+    55% {
+        opacity: .55;
+    }
+    70%, 100% {
+        opacity: 0;
+        transform: translateX(125%) rotate(8deg);
+    }
 }
 
 .brand-title {
@@ -519,12 +631,11 @@ async function handleLogin() {
         text-align: left;
     }
 
-    .brand-logo {
+    .brand-logo-shell {
         grid-row: span 3;
         width: 68px;
         height: 68px;
         margin: 0;
-        border-width: 3px;
         box-shadow: 0 4px 20px rgba(0,0,0,.25), 0 0 0 5px rgba(255,255,255,.08);
     }
 
@@ -626,7 +737,7 @@ async function handleLogin() {
         padding: 1rem .75rem 2.2rem;
     }
 
-    .brand-logo {
+    .brand-logo-shell {
         width: 58px;
         height: 58px;
     }
@@ -659,7 +770,7 @@ async function handleLogin() {
         padding-bottom: 2rem;
     }
 
-    .brand-logo {
+    .brand-logo-shell {
         width: 54px;
         height: 54px;
     }
@@ -680,8 +791,10 @@ async function handleLogin() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .brand-logo {
-        animation: none;
+    .brand-logo-shell,
+    .brand-logo-pulse,
+    .brand-logo-shine {
+        animation: none !important;
     }
 }
 </style>
