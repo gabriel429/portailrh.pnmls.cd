@@ -760,12 +760,31 @@ const deptPhotoUrl = computed(() => {
   const p = photo.trim()
   if (/^https?:\/\//i.test(p)) return p
   const n = p.replace(/^\/+/, '')
-  const candidates = [`/${n}`, `/storage/${n}`, `/uploads/profiles/${n}`]
+  const candidates = [`/${n}`]
+
+  if (!n.startsWith('storage/')) {
+    candidates.push(`/storage/${n}`)
+  }
+
+  if (!n.startsWith('uploads/') && !n.includes('/')) {
+    candidates.push(`/uploads/profiles/${n}`)
+  }
+
   return [...new Set(candidates)][photoIndex.value] ?? null
 })
 function handlePhotoError() {
   const p = (auth.agent?.photo ?? '').trim().replace(/^\/+/, '')
-  const max = 3
+  const candidates = [`/${p}`]
+
+  if (p && !p.startsWith('storage/')) {
+    candidates.push(`/storage/${p}`)
+  }
+
+  if (p && !p.startsWith('uploads/') && !p.includes('/')) {
+    candidates.push(`/uploads/profiles/${p}`)
+  }
+
+  const max = [...new Set(candidates)].length
   if (photoIndex.value < max - 1) photoIndex.value++
   else photoIndex.value = max
 }
