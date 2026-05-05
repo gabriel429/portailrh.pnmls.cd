@@ -83,13 +83,50 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
 `.trim();
 
     const content = readFileSync(file, 'utf8');
-
-    if (content.includes('$manifestPath = __DIR__ . \'/manifest.json\';')) {
-        return;
-    }
+    let patched = content;
 
     const marker = "$assetPath = __DIR__ . '/assets/' . $requestedFile;";
-    writeFileSync(file, content.replace(marker, `${marker}\n\n${fallbackBlock}`));
+
+    if (!patched.includes('$manifestPath = __DIR__ . \'/manifest.json\';')) {
+        patched = patched.replace(marker, `${marker}\n\n${fallbackBlock}`);
+    }
+
+    const staleAssetBlock = String.raw`
+    // Stale Vite asset reload shim: avoid returning Hostinger HTML for old chunks.
+    $missingExtension = strtolower(pathinfo($requestedFile, PATHINFO_EXTENSION));
+
+    if ($missingExtension === 'js') {
+        $payload = "console.warn('E-PNMLS: stale build asset, forcing a clean reload.');\n"
+            . "window.location.reload();\n"
+            . "export default {};\n";
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: application/javascript; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Content-Length: ' . strlen($payload));
+        echo $payload;
+        exit;
+    }
+
+    if ($missingExtension === 'css') {
+        $payload = "/* E-PNMLS: stale CSS asset ignored. */\n";
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: text/css; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Content-Length: ' . strlen($payload));
+        echo $payload;
+        exit;
+    }
+`.trimEnd();
+
+    const missingFileMarker = "// Check if file exists\nif (!file_exists($assetPath) || !is_file($assetPath)) {\n";
+
+    if (!patched.includes('Stale Vite asset reload shim')) {
+        patched = patched.replace(missingFileMarker, `${missingFileMarker}${staleAssetBlock}\n\n`);
+    }
+
+    if (patched !== content) {
+        writeFileSync(file, patched);
+    }
 }
 
 function patchBuildFallbacks(buildDir) {

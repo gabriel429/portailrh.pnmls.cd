@@ -63,6 +63,31 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
 
 // Check if file exists
 if (!file_exists($assetPath) || !is_file($assetPath)) {
+    // Stale Vite asset reload shim: avoid returning Hostinger HTML for old chunks.
+    $missingExtension = strtolower(pathinfo($requestedFile, PATHINFO_EXTENSION));
+
+    if ($missingExtension === 'js') {
+        $payload = "console.warn('E-PNMLS: stale build asset, forcing a clean reload.');\n"
+            . "window.location.reload();\n"
+            . "export default {};\n";
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: application/javascript; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Content-Length: ' . strlen($payload));
+        echo $payload;
+        exit;
+    }
+
+    if ($missingExtension === 'css') {
+        $payload = "/* E-PNMLS: stale CSS asset ignored. */\n";
+        header('X-Content-Type-Options: nosniff');
+        header('Content-Type: text/css; charset=utf-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Content-Length: ' . strlen($payload));
+        echo $payload;
+        exit;
+    }
+
     http_response_code(404);
     exit('File not found: ' . htmlspecialchars($requestedFile));
 }
