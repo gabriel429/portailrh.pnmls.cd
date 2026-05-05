@@ -64,8 +64,15 @@
                   <dt class="col-sm-4 text-muted">Resultat attendu</dt>
                   <dd class="col-sm-8">{{ activite.resultat_attendu || 'Non renseigne' }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Responsable</dt>
-                  <dd class="col-sm-8">{{ activite.responsable_code || 'Non renseigne' }}</dd>
+                  <dt class="col-sm-4 text-muted">Attribution</dt>
+                  <dd class="col-sm-8">
+                    <template v-if="activite.assigned_agents?.length">
+                      <span v-for="agent in activite.assigned_agents" :key="agent.id" class="badge bg-primary-subtle text-primary border me-1 mb-1">
+                        <i class="fas fa-user-check me-1"></i>{{ agent.nom_complet }}
+                      </span>
+                    </template>
+                    <span v-else>{{ activite.responsable_code || 'Non renseigne' }}</span>
+                  </dd>
 
                   <dt class="col-sm-4 text-muted">Cout en CDF</dt>
                   <dd class="col-sm-8">{{ activite.cout_cdf !== null && activite.cout_cdf !== undefined ? formatCurrency(activite.cout_cdf) + ' CDF' : 'Non renseigne' }}</dd>

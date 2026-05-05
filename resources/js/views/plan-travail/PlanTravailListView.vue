@@ -167,7 +167,10 @@
               <i class="fas fa-building me-1"></i>{{ a.niveau_administratif }}
               <template v-if="a.departement"> - {{ a.departement.nom }}</template>
             </span>
-              <span v-if="a.responsable_code" class="pt-meta-item">
+              <span v-if="a.assigned_agents?.length" class="pt-meta-item">
+                <i class="fas fa-user-check me-1"></i>{{ assignedAgentsLabel(a) }}
+              </span>
+              <span v-else-if="a.responsable_code" class="pt-meta-item">
                 <i class="fas fa-user-tie me-1"></i>{{ a.responsable_code }}
               </span>
               <span v-if="provinceSummary(a)" class="pt-meta-item">
@@ -287,7 +290,7 @@
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-user-tie"></i>
-                    <div><span class="ptd-info-lbl">Responsable</span><span class="ptd-info-val">{{ detailActivite.responsable_code || 'Non renseigne' }}</span></div>
+                    <div><span class="ptd-info-lbl">Attribution</span><span class="ptd-info-val">{{ assignedAgentsLabel(detailActivite) || detailActivite.responsable_code || 'Non renseigne' }}</span></div>
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-coins"></i>
@@ -438,17 +441,9 @@
                   </datalist>
                 </div>
                 <div class="ptm-field ptm-half">
-                  <label class="ptm-label">Responsable</label>
-                  <input v-model="createForm.responsable_code" list="pta-responsables-list" type="text" class="ptm-input" placeholder="Ex. DPSE">
-                  <datalist id="pta-responsables-list">
-                    <option v-for="item in createResponsables" :key="item" :value="item"></option>
-                  </datalist>
+                  <label class="ptm-label">Cout en CDF</label>
+                  <input v-model.number="createForm.cout_cdf" type="number" class="ptm-input" min="0" step="0.01" placeholder="0">
                 </div>
-              </div>
-
-              <div class="ptm-field">
-                <label class="ptm-label">Cout en CDF</label>
-                <input v-model.number="createForm.cout_cdf" type="number" class="ptm-input" min="0" step="0.01" placeholder="0">
               </div>
 
             <div class="ptm-field">
@@ -472,8 +467,35 @@
               <span v-if="createErrors.niveau_administratif" class="ptm-err-msg">{{ createErrors.niveau_administratif[0] }}</span>
             </div>
 
+            <div v-if="isCreatePlanificationSenAssignment" class="ptm-field">
+              <label class="ptm-label">Departement ou Attaches du SEN <span class="ptm-req">*</span></label>
+              <select v-model="createForm.assignment_target" class="ptm-input" required @change="onCreateAssignmentTargetChange">
+                <option value="">-- Choisir d'abord la cible --</option>
+                <option v-for="target in createAssignmentTargets" :key="target.value" :value="target.value">
+                  {{ target.label }} ({{ target.agent_count }} agent{{ target.agent_count > 1 ? 's' : '' }})
+                </option>
+              </select>
+              <div class="ptm-field-hint">Les agents proposes dependent uniquement de ce choix.</div>
+            </div>
+
+            <div v-if="isCreatePlanificationSenAssignment && createForm.assignment_target" class="ptm-field">
+              <label class="ptm-label">Attribuer l'activite a <span v-if="createAssignableAgents.length" class="ptm-req">*</span></label>
+              <select
+                :value="createSelectedAssignedAgentId"
+                class="ptm-input"
+                :required="createAssignableAgents.length > 0"
+                :disabled="createAssignableAgents.length === 0"
+                @change="setCreateAssignedAgent($event.target.value)"
+              >
+                <option value="">{{ createAssignableAgents.length ? '-- Choisir un agent --' : 'Aucun agent disponible pour cette cible' }}</option>
+                <option v-for="agent in createAssignableAgents" :key="agent.id" :value="agent.id">
+                  {{ agentOptionLabel(agent) }}
+                </option>
+              </select>
+            </div>
+
             <!-- Departement (SEN) -->
-            <div v-if="createForm.niveau_administratif === 'SEN'" class="ptm-field">
+            <div v-else-if="createForm.niveau_administratif === 'SEN'" class="ptm-field">
               <label class="ptm-label">Departement</label>
               <select v-model="createForm.departement_id" class="ptm-input">
                 <option value="">-- Choisir --</option>
@@ -578,27 +600,6 @@
             <div class="ptm-field">
               <label class="ptm-label">Observations</label>
               <textarea v-model="createForm.observations" class="ptm-input ptm-textarea" rows="2" placeholder="Observations (facultatif)..."></textarea>
-            </div>
-
-            <!-- Agents assignes (SEN attachés, visible when list loaded by planification role) -->
-            <div v-if="createAgentsSen.length" class="ptm-field">
-              <label class="ptm-label">Agents assignes <span class="ptm-hint">(Attaches SEN responsables)</span></label>
-              <div class="ptm-agents-check-list">
-                <label
-                  v-for="a in createAgentsSen"
-                  :key="a.id"
-                  class="ptm-agent-check"
-                  :class="{ active: createForm.assigned_agent_ids.includes(a.id) }"
-                >
-                  <input type="checkbox" :value="a.id" v-model="createForm.assigned_agent_ids" style="display:none">
-                  <i class="fas fa-user-circle me-1"></i>
-                  {{ a.nom_complet }}
-                  <span v-if="a.fonction" class="ptm-agent-fn"> &mdash; {{ a.fonction }}</span>
-                </label>
-              </div>
-              <div v-if="createForm.assigned_agent_ids.length" class="ptm-field-hint">
-                {{ createForm.assigned_agent_ids.length }} agent(s) selectionne(s)
-              </div>
             </div>
 
             <!-- Footer -->
@@ -774,6 +775,16 @@ function formatDate(dateStr) {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function assignedAgentsLabel(activite) {
+  const agents = activite?.assigned_agents || []
+  if (!agents.length) return ''
+
+  const names = agents.map((agent) => agent.nom_complet).filter(Boolean)
+  if (names.length <= 2) return names.join(', ')
+
+  return `${names.slice(0, 2).join(', ')} +${names.length - 2}`
+}
+
 /* ── Create modal ── */
 const showCreateModal = ref(false)
 const createSubmitting = ref(false)
@@ -783,6 +794,10 @@ const createProvinces = ref([])
 const createLocalites = ref([])
 const createCategories = ref([])
 const createResponsables = ref([])
+const createAssignmentTargets = ref([])
+const createDepartmentAgents = ref({})
+const createSenAttacheAgents = ref([])
+const createIsPlanificationRole = ref(false)
 
 /* ── Edit modal ── */
 const showEditModal = ref(false)
@@ -813,6 +828,7 @@ function defaultCreateForm() {
     categorie: '',
     objectif: '',
     responsable_code: '',
+    assignment_target: '',
     cout_cdf: '',
     niveau_administratif: '',
     validation_niveau: '',
@@ -838,6 +854,29 @@ function defaultCreateForm() {
 }
 const createForm = ref(defaultCreateForm())
 
+const isCreatePlanificationSenAssignment = computed(() =>
+  createIsPlanificationRole.value && createForm.value.niveau_administratif === 'SEN'
+)
+
+const createSelectedAssignedAgentId = computed(() => createForm.value.assigned_agent_ids?.[0] || '')
+
+const createAssignableAgents = computed(() => {
+  const target = createForm.value.assignment_target
+
+  if (!target) return []
+
+  if (target === 'sen_attaches') {
+    return createSenAttacheAgents.value || createAgentsSen.value || []
+  }
+
+  if (target.startsWith('department:')) {
+    const departmentId = target.replace('department:', '')
+    return createDepartmentAgents.value[departmentId] || createDepartmentAgents.value[Number(departmentId)] || []
+  }
+
+  return []
+})
+
 async function openCreateModal() {
   createForm.value = defaultCreateForm()
   createErrors.value = {}
@@ -850,6 +889,10 @@ async function openCreateModal() {
     createCategories.value = data.categories || []
     createResponsables.value = data.responsables || []
     createAgentsSen.value = data.agents_sen || []
+    createSenAttacheAgents.value = data.sen_attache_agents || data.agents_sen || []
+    createDepartmentAgents.value = data.department_agents || {}
+    createAssignmentTargets.value = data.assignment_targets || []
+    createIsPlanificationRole.value = Boolean(data.is_planification_role)
   } catch (err) {
     if (err.response?.status === 403) {
       ui.addToast(err.response?.data?.message || 'Vous ne pouvez creer des activites PTA que pour votre departement.', 'warning')
@@ -863,10 +906,39 @@ function closeCreateModal() {
 }
 
 function onNiveauChange() {
-  if (createForm.value.niveau_administratif !== 'SEN') createForm.value.departement_id = ''
+  if (createForm.value.niveau_administratif !== 'SEN') {
+    createForm.value.departement_id = ''
+    createForm.value.assignment_target = ''
+    createForm.value.assigned_agent_ids = []
+  }
   if (createForm.value.niveau_administratif !== 'SEL') createForm.value.province_id = ''
   if (createForm.value.niveau_administratif !== 'SEP') createForm.value.province_ids = []
   if (createForm.value.niveau_administratif !== 'SEL') createForm.value.localite_id = ''
+}
+
+function onCreateAssignmentTargetChange() {
+  createForm.value.assigned_agent_ids = []
+
+  if (createForm.value.assignment_target === 'sen_attaches') {
+    createForm.value.departement_id = ''
+    createForm.value.responsable_code = 'Attaches SEN'
+    return
+  }
+
+  if (createForm.value.assignment_target?.startsWith('department:')) {
+    const departmentId = createForm.value.assignment_target.replace('department:', '')
+    const target = createAssignmentTargets.value.find((item) => item.value === createForm.value.assignment_target)
+    createForm.value.departement_id = departmentId
+    createForm.value.responsable_code = target?.label?.slice(0, 30) || ''
+  }
+}
+
+function setCreateAssignedAgent(agentId) {
+  createForm.value.assigned_agent_ids = agentId ? [Number(agentId)] : []
+}
+
+function agentOptionLabel(agent) {
+  return agent?.fonction ? `${agent.nom_complet} - ${agent.fonction}` : agent?.nom_complet
 }
 
 async function handleCreateSubmit() {
@@ -887,6 +959,7 @@ async function handleCreateSubmit() {
     if (!payload.observations) delete payload.observations
     if (!payload.categorie) delete payload.categorie
     if (!payload.responsable_code) delete payload.responsable_code
+    if (!payload.assignment_target) delete payload.assignment_target
     if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
     if (!payload.assigned_agent_ids?.length) delete payload.assigned_agent_ids
     await create(payload)

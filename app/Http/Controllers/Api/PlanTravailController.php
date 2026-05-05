@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\ValidationException;
 
 class PlanTravailController extends ApiController
 {
@@ -90,11 +91,41 @@ class PlanTravailController extends ApiController
             return $query;
         }
 
-        if ($this->isProvincialAgent($agent)) {
-            return $this->applyProvinceScope($query, $agent);
-        }
+        return $query->where(function (Builder $accessQuery) use ($agent) {
+            $accessQuery->whereHas('agents', fn (Builder $assignedQuery) => $assignedQuery->where('agents.id', $agent->id));
 
-        return $this->applyDepartmentScope($query, $agent);
+            if ($this->isProvincialAgent($agent)) {
+                if (!$agent->province_id) {
+                    return;
+                }
+
+                $accessQuery->orWhere(function (Builder $provinceAccess) use ($agent) {
+                    $provinceAccess
+                        ->where('niveau_administratif', 'SEP')
+                        ->where(function (Builder $provinceQuery) use ($agent) {
+                            $provinceQuery
+                                ->where('province_id', $agent->province_id)
+                                ->orWhereHas('provinces', function (Builder $relationQuery) use ($agent) {
+                                    $relationQuery->where('provinces.id', $agent->province_id);
+                                });
+                        });
+                });
+
+                return;
+            }
+
+            if (!$agent->departement_id) {
+                return;
+            }
+
+            $familyIds = $this->getActiveDepartmentFamily($agent->departement_id);
+
+            $accessQuery->orWhere(function (Builder $departmentAccess) use ($familyIds) {
+                count($familyIds) === 1
+                    ? $departmentAccess->where('departement_id', $familyIds[0])
+                    : $departmentAccess->whereIn('departement_id', $familyIds);
+            });
+        });
     }
 
     private function applyDepartmentScope(Builder $query, ?Agent $agent): Builder
@@ -180,6 +211,14 @@ class PlanTravailController extends ApiController
             return true;
         }
 
+        if ($activite->relationLoaded('agents')) {
+            if ($activite->agents->contains('id', $agent->id)) {
+                return true;
+            }
+        } elseif ($activite->agents()->where('agents.id', $agent->id)->exists()) {
+            return true;
+        }
+
         if ($this->isProvincialAgent($agent)) {
             return (bool) $agent->province_id
                 && $activite->niveau_administratif === 'SEP'
@@ -247,6 +286,14 @@ class PlanTravailController extends ApiController
         $agent = $user->agent;
         if (!$agent) {
             return false;
+        }
+
+        if ($activite->relationLoaded('agents')) {
+            if ($activite->agents->contains('id', $agent->id)) {
+                return true;
+            }
+        } elseif ($activite->agents()->where('agents.id', $agent->id)->exists()) {
+            return true;
         }
 
         $nomFonction = $this->getNomFonctionAgent($agent);
@@ -347,6 +394,99 @@ class PlanTravailController extends ApiController
 
         return mb_strtolower($agent->fonction ?? '');
     }
+
+    private function formatAssignableAgent(Agent $agent): array
+    {
+        return [
+            'id' => $agent->id,
+            'nom_complet' => trim($agent->prenom . ' ' . $agent->nom),
+            'organe' => $agent->organe,
+            'fonction' => $agent->fonction,
+            'departement_id' => $agent->departement_id,
+        ];
+    }
+
+    private function ptaSenAttacheAgents()
+    {
+        return Agent::actifs()
+            ->whereNull('departement_id')
+            ->where(function (Builder $query) {
+                $query
+                    ->where('organe', 'like', '%National%')
+                    ->orWhere('organe', 'like', '%SEN%');
+            })
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'departement_id'])
+            ->map(fn (Agent $agent) => $this->formatAssignableAgent($agent))
+            ->values();
+    }
+
+    private function ptaDepartmentAgents(array $departmentIds): array
+    {
+        if ($departmentIds === []) {
+            return [];
+        }
+
+        return Agent::actifs()
+            ->whereIn('departement_id', $departmentIds)
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'departement_id'])
+            ->groupBy('departement_id')
+            ->map(fn ($agents) => $agents->map(fn (Agent $agent) => $this->formatAssignableAgent($agent))->values()->all())
+            ->all();
+    }
+
+    private function assertAssignedAgentsMatchTarget(array $validated, array $assignedAgentIds): array
+    {
+        $assignmentTarget = $validated['assignment_target'] ?? null;
+        unset($validated['assignment_target']);
+
+        if (!$this->isPlanificationRole() || ($assignedAgentIds === [] && !$assignmentTarget)) {
+            return $validated;
+        }
+
+        $allowedAgentIds = [];
+
+        if ($assignmentTarget === 'sen_attaches') {
+            $validated['niveau_administratif'] = 'SEN';
+            $validated['departement_id'] = null;
+            $validated['responsable_code'] = $validated['responsable_code'] ?? 'Attaches SEN';
+            $allowedAgentIds = $this->ptaSenAttacheAgents()->pluck('id')->map(fn ($id) => (int) $id)->all();
+        } elseif (str_starts_with((string) $assignmentTarget, 'department:')) {
+            $departmentId = (int) substr((string) $assignmentTarget, strlen('department:'));
+            $validated['niveau_administratif'] = 'SEN';
+            $validated['departement_id'] = $departmentId;
+            $allowedAgentIds = Agent::actifs()
+                ->where('departement_id', $departmentId)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        } elseif (!empty($validated['departement_id'])) {
+            $departmentId = (int) $validated['departement_id'];
+            $allowedAgentIds = Agent::actifs()
+                ->where('departement_id', $departmentId)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+        } else {
+            throw ValidationException::withMessages([
+                'assignment_target' => ['Choisissez d abord un departement ou les attaches du SEN.'],
+            ]);
+        }
+
+        $invalidAgentIds = array_diff(array_map('intval', $assignedAgentIds), $allowedAgentIds);
+
+        if ($invalidAgentIds !== []) {
+            throw ValidationException::withMessages([
+                'assigned_agent_ids' => ['Un agent selectionne ne correspond pas a la cible choisie.'],
+            ]);
+        }
+
+        return $validated;
+    }
+
     /**
      * Display listing of PTA activities.
      */
@@ -482,6 +622,28 @@ class PlanTravailController extends ApiController
                 ])
             : [];
 
+        $isPlanification = $this->isPlanificationRole();
+        $departmentIds = $departments->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+        $departmentAgents = $isPlanification ? $this->ptaDepartmentAgents($departmentIds) : [];
+        $agentsSen = $isPlanification ? $this->ptaSenAttacheAgents() : collect();
+        $assignmentTargets = $isPlanification
+            ? collect([
+                [
+                    'value' => 'sen_attaches',
+                    'type' => 'sen_attaches',
+                    'department_id' => null,
+                    'label' => 'Attaches du SEN',
+                    'agent_count' => $agentsSen->count(),
+                ],
+            ])->merge($departments->map(fn ($department) => [
+                'value' => 'department:' . $department->id,
+                'type' => 'department',
+                'department_id' => $department->id,
+                'label' => $department->nom,
+                'agent_count' => count($departmentAgents[$department->id] ?? []),
+            ]))->values()
+            : collect();
+
         $payload = [
             'departments' => $departments,
             'provinces' => $provinces,
@@ -494,7 +656,11 @@ class PlanTravailController extends ApiController
                 ['value' => 'coordination_nationale', 'label' => 'Coordination nationale'],
                 ['value' => 'coordination_provinciale', 'label' => 'Coordination provinciale'],
             ],
-            'agents_sen' => $agentsSen,
+            'agents_sen' => $agentsSen->values(),
+            'sen_attache_agents' => $agentsSen->values(),
+            'department_agents' => $departmentAgents,
+            'assignment_targets' => $assignmentTargets,
+            'is_planification_role' => $isPlanification,
         ];
 
         return $this->success($payload, [], $payload);
@@ -519,6 +685,7 @@ class PlanTravailController extends ApiController
             'resultat_attendu'     => 'nullable|string',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
             'validation_niveau'    => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
+            'assignment_target'    => 'nullable|string|max:60',
             'responsable_code'     => 'nullable|string|max:30',
             'cout_cdf'             => 'nullable|numeric|min:0',
             'departement_id'       => 'nullable|exists:departments,id',
@@ -541,9 +708,11 @@ class PlanTravailController extends ApiController
             'assigned_agent_ids.*' => 'integer|exists:agents,id',
         ]);
 
+        $hasAssignedAgents = array_key_exists('assigned_agent_ids', $validated);
         $assignedAgentIds = $validated['assigned_agent_ids'] ?? [];
         unset($validated['assigned_agent_ids']);
 
+        $validated = $this->assertAssignedAgentsMatchTarget($validated, $assignedAgentIds);
         $validated = $this->normalizeTrimestreFlags($validated);
         $validated = $this->enforceManagedScope($validated, $agent);
         $provinceIds = $this->normalizeProvinceIds($validated);
@@ -553,7 +722,9 @@ class PlanTravailController extends ApiController
 
         $activite = ActivitePlan::create($validated);
         $this->syncActiviteProvinces($activite, $provinceIds);
-        $activite->agents()->sync($assignedAgentIds);
+        if ($hasAssignedAgents) {
+            $activite->agents()->sync($assignedAgentIds);
+        }
 
         PtaModified::dispatch($activite, 'created');
 
@@ -615,6 +786,7 @@ class PlanTravailController extends ApiController
             'resultat_attendu'     => 'nullable|string',
             'niveau_administratif' => 'required|in:SEN,SEP,SEL',
             'validation_niveau'    => 'nullable|in:direction,coordination_nationale,coordination_provinciale',
+            'assignment_target'    => 'nullable|string|max:60',
             'responsable_code'     => 'nullable|string|max:30',
             'cout_cdf'             => 'nullable|numeric|min:0',
             'departement_id'       => 'nullable|exists:departments,id',
@@ -637,9 +809,11 @@ class PlanTravailController extends ApiController
             'assigned_agent_ids.*' => 'integer|exists:agents,id',
         ]);
 
+        $hasAssignedAgents = array_key_exists('assigned_agent_ids', $validated);
         $assignedAgentIds = $validated['assigned_agent_ids'] ?? [];
         unset($validated['assigned_agent_ids']);
 
+        $validated = $this->assertAssignedAgentsMatchTarget($validated, $assignedAgentIds);
         $validated = $this->normalizeTrimestreFlags($validated);
         $validated = $this->enforceManagedScope($validated, $agent);
         $provinceIds = $this->normalizeProvinceIds($validated);
@@ -647,7 +821,9 @@ class PlanTravailController extends ApiController
 
         $activitePlan->update($validated);
         $this->syncActiviteProvinces($activitePlan, $provinceIds);
-        $activitePlan->agents()->sync($assignedAgentIds);
+        if ($hasAssignedAgents) {
+            $activitePlan->agents()->sync($assignedAgentIds);
+        }
 
         PtaModified::dispatch($activitePlan, 'updated');
 
