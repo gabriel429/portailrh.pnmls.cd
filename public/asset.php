@@ -28,6 +28,37 @@ foreach ($candidatePaths as $candidatePath) {
 }
 
 if ($path === null) {
+    $manifestPath = dirname(__DIR__) . '/public/build/manifest.json';
+    $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+    $stem = pathinfo($file, PATHINFO_FILENAME);
+    $prefix = explode('-', $stem)[0] ?? '';
+
+    if ($prefix !== '' && in_array($extension, ['js', 'css'], true) && is_file($manifestPath)) {
+        $manifest = json_decode((string) file_get_contents($manifestPath), true);
+
+        if (is_array($manifest)) {
+            foreach ($manifest as $entry) {
+                $manifestFile = is_array($entry) ? ($entry['file'] ?? '') : '';
+                $manifestName = basename((string) $manifestFile);
+
+                if (
+                    $manifestName !== ''
+                    && str_ends_with($manifestName, '.' . $extension)
+                    && str_starts_with($manifestName, $prefix . '-')
+                ) {
+                    $fallbackPath = dirname(__DIR__) . '/public/build/' . $manifestFile;
+
+                    if (is_file($fallbackPath)) {
+                        $path = $fallbackPath;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+}
+
+if ($path === null) {
     http_response_code(404);
     exit();
 }
