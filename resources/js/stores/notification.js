@@ -9,17 +9,27 @@ export const useNotificationStore = defineStore('notification', {
     }),
     actions: {
         async fetch() {
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+                return
+            }
+
             try {
                 const { data } = await client.get('/notifications/unread-count')
                 this.count = data.count
                 this.recent = data.recent || []
-            } catch {
-                // silently fail
+            } catch (error) {
+                if ([401, 419].includes(error.response?.status)) {
+                    this.stopPolling()
+                    this.count = 0
+                    this.recent = []
+                }
             }
         },
         startPolling() {
             if (this.polling) return
-            this.fetch()
+            if (typeof navigator === 'undefined' || navigator.onLine) {
+                this.fetch()
+            }
             this.polling = setInterval(() => {
                 if (navigator.onLine) this.fetch()
             }, 30000)

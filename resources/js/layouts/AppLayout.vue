@@ -457,11 +457,6 @@ async function handleLogout() {
 onMounted(() => {
   ui.initDarkMode()
 
-  if (auth.isAuthenticated) {
-    notifStore.startPolling()
-    loadTaskSummary()
-  }
-
   window.addEventListener('resize', handleViewportChange)
   document.body.classList.toggle('mobile-nav-open', isMobileNavOpen.value)
 })
@@ -480,12 +475,16 @@ watch(profilePhotoCandidates, () => {
   profilePhotoIndex.value = 0
 }, { immediate: true })
 
-watch(() => auth.user?.id, (userId) => {
-  if (userId) {
+watch(() => auth.isAuthenticated, (isAuthenticated) => {
+  if (isAuthenticated) {
+    notifStore.startPolling()
     loadTaskSummary()
     return
   }
 
+  notifStore.stopPolling()
+  notifStore.count = 0
+  notifStore.recent = []
   taskNewCount.value = 0
   taskInProgressCount.value = 0
 }, { immediate: true })
