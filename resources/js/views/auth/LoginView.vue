@@ -218,7 +218,7 @@ async function handleLogin() {
     width: clamp(104px, 12vw, 142px);
     height: clamp(104px, 12vw, 142px);
     border-radius: 50%;
-    margin-bottom: 1.75rem;
+    margin: 0 auto 1.75rem;
     background:
         radial-gradient(circle at 50% 38%, rgba(255,255,255,.98), rgba(240,249,255,.92) 66%, rgba(219,234,254,.86));
     border: 1px solid rgba(255,255,255,.82);
@@ -272,6 +272,7 @@ async function handleLogin() {
 .brand-logo {
     position: relative;
     z-index: 1;
+    display: block;
     width: 84%;
     height: 84%;
     object-fit: contain;
