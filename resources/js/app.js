@@ -14,7 +14,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker re-enabled after clean deployment')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-06-mobile-nav-v1'
+const BUILD_CACHE_VERSION = '2026-05-07-forum-mobile-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 
 async function clearBuildCachesOnVersionChange() {

@@ -8,7 +8,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
-    private const CACHE_CLEAN_VERSION = '2026-05-06-mobile-nav-build-cache-v1';
+    private const CACHE_CLEAN_VERSION = '2026-05-07-forum-mobile-build-cache-v1';
 
     /**
      * Handle an incoming request.
