@@ -19,6 +19,7 @@ $candidatePaths = [
 ];
 
 $path = null;
+$servedFallbackAsset = false;
 
 foreach ($candidatePaths as $candidatePath) {
     if (is_file($candidatePath)) {
@@ -57,6 +58,7 @@ if ($path === null) {
 
                         if (is_file($fallbackPath)) {
                             $path = $fallbackPath;
+                            $servedFallbackAsset = true;
                             break 2;
                         }
                     }
@@ -89,7 +91,13 @@ $mime = match ($ext) {
 };
 
 header('Content-Type: ' . $mime);
-header('Cache-Control: public, max-age=31536000, immutable');
+if ($servedFallbackAsset) {
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+} else {
+    header('Cache-Control: public, max-age=31536000, immutable');
+}
 header('X-Content-Type-Options: nosniff');
 header('Content-Length: ' . filesize($path));
 

@@ -21,6 +21,7 @@ if (strpos($requestedFile, '..') !== false || strpos($requestedFile, '/') === 0)
 
 // Map to physical file in assets directory
 $assetPath = __DIR__ . '/assets/' . $requestedFile;
+$servedFallbackAsset = false;
 
 if (!file_exists($assetPath) || !is_file($assetPath)) {
     $extension = strtolower(pathinfo($requestedFile, PATHINFO_EXTENSION));
@@ -52,6 +53,7 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
 
                         if (is_file($fallbackPath)) {
                             $assetPath = $fallbackPath;
+                            $servedFallbackAsset = true;
                             break 2;
                         }
                     }
@@ -125,7 +127,11 @@ header('X-XSS-Protection: 1; mode=block');
 header('Content-Type: ' . $mimeType);
 
 // Set cache headers for better performance
-if (in_array($extension, ['js', 'css', 'woff2', 'woff', 'png', 'jpg', 'svg', 'ico'])) {
+if ($servedFallbackAsset) {
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+} elseif (in_array($extension, ['js', 'css', 'woff2', 'woff', 'png', 'jpg', 'svg', 'ico'])) {
     header('Cache-Control: public, max-age=31536000, immutable');
     header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 31536000) . ' GMT');
 } else {

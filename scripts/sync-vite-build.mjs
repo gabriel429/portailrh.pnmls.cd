@@ -72,6 +72,7 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
 
                         if (is_file($fallbackPath)) {
                             $assetPath = $fallbackPath;
+                            $servedFallbackAsset = true;
                             break 2;
                         }
                     }
@@ -88,7 +89,7 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
     const marker = "$assetPath = __DIR__ . '/assets/' . $requestedFile;";
 
     if (!patched.includes('$manifestPath = __DIR__ . \'/manifest.json\';')) {
-        patched = patched.replace(marker, `${marker}\n\n${fallbackBlock}`);
+        patched = patched.replace(marker, `${marker}\n$servedFallbackAsset = false;\n\n${fallbackBlock}`);
     }
 
     const staleAssetBlock = String.raw`
@@ -122,6 +123,17 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
 
     if (!patched.includes('Stale Vite asset reload shim')) {
         patched = patched.replace(missingFileMarker, `${missingFileMarker}${staleAssetBlock}\n\n`);
+    }
+
+    const cacheMarker = "if (in_array($extension, ['js', 'css', 'woff2', 'woff', 'png', 'jpg', 'svg', 'ico'])) {";
+    const cacheReplacement = String.raw`if ($servedFallbackAsset) {
+    header('Cache-Control: no-cache, no-store, must-revalidate');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+} elseif (in_array($extension, ['js', 'css', 'woff2', 'woff', 'png', 'jpg', 'svg', 'ico'])) {`;
+
+    if (!patched.includes('if ($servedFallbackAsset) {')) {
+        patched = patched.replace(cacheMarker, cacheReplacement);
     }
 
     if (patched !== content) {
