@@ -14,6 +14,66 @@ import '../css/app.css'
 debugLog('PWA: Service Worker re-enabled after clean deployment')
 registerRuntimeNoiseFilter()
 
+const BUILD_CACHE_VERSION = '2026-05-06-dashboard-css-refresh-v2'
+const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
+
+async function clearBuildCachesOnVersionChange() {
+    if (typeof window === 'undefined') return false
+
+    let currentVersion = null
+    try {
+        currentVersion = window.localStorage.getItem(BUILD_CACHE_KEY)
+    } catch (_) {
+        currentVersion = null
+    }
+
+    if (currentVersion === BUILD_CACHE_VERSION) {
+        return false
+    }
+
+    const jobs = []
+
+    if ('caches' in window) {
+        jobs.push(
+            window.caches.keys()
+                .then((keys) => Promise.all(
+                    keys
+                        .filter((key) => /workbox|precache|runtime|vite|pnmls|e-pnmls/i.test(key))
+                        .map((key) => window.caches.delete(key))
+                ))
+        )
+    }
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+        jobs.push(
+            navigator.serviceWorker.getRegistrations()
+                .then((registrations) => Promise.all(
+                    registrations.map((registration) => registration.unregister().catch(() => false))
+                ))
+        )
+    }
+
+    try {
+        await Promise.allSettled(jobs)
+        window.localStorage.setItem(BUILD_CACHE_KEY, BUILD_CACHE_VERSION)
+    } catch (error) {
+        reportError('PWA: Build cache cleanup failed:', error)
+    }
+
+    try {
+        const reloadKey = `${BUILD_CACHE_KEY}:reloaded:${BUILD_CACHE_VERSION}`
+        if (!window.sessionStorage.getItem(reloadKey)) {
+            window.sessionStorage.setItem(reloadKey, '1')
+            window.location.reload()
+            return true
+        }
+    } catch (_) {
+        return false
+    }
+
+    return false
+}
+
 async function clearLegacyRootServiceWorkers() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
@@ -47,23 +107,33 @@ async function clearLegacyRootServiceWorkers() {
     }
 }
 
-clearLegacyRootServiceWorkers()
+function registerCurrentServiceWorker() {
+    registerSW({
+        onNeedRefresh() {
+            debugLog('PWA: New version available; update will apply on next navigation')
+        },
+        onOfflineReady() {
+            debugLog('PWA: App ready for offline use')
+        },
+        onRegistered(registration) {
+            registration?.update()
+            debugLog('PWA: Service Worker registered successfully')
+        },
+        onRegisterError(error) {
+            reportError('PWA: Service Worker registration failed:', error)
+        },
+    })
+}
 
-registerSW({
-    onNeedRefresh() {
-        debugLog('PWA: New version available; update will apply on next navigation')
-    },
-    onOfflineReady() {
-        debugLog('PWA: App ready for offline use')
-    },
-    onRegistered(registration) {
-        registration?.update()
-        debugLog('PWA: Service Worker registered successfully')
-    },
-    onRegisterError(error) {
-        reportError('PWA: Service Worker registration failed:', error)
-    },
-})
+async function prepareRuntimeCaches() {
+    const reloadScheduled = await clearBuildCachesOnVersionChange()
+    if (reloadScheduled) return
+
+    await clearLegacyRootServiceWorkers()
+    registerCurrentServiceWorker()
+}
+
+prepareRuntimeCaches()
 
 const app = createApp(App)
 app.config.errorHandler = (error) => {

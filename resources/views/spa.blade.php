@@ -37,14 +37,17 @@
             if (is_array($manifest)) {
                 foreach ($dashboardManifestEntries as $entry) {
                     foreach (($manifest[$entry]['css'] ?? []) as $cssFile) {
-                        $dashboardCssFiles[$cssFile] = $cssFile;
+                        $dashboardCssPath = public_path('build/' . ltrim($cssFile, '/'));
+                        $dashboardCssFiles[$cssFile] = is_file($dashboardCssPath)
+                            ? filemtime($dashboardCssPath)
+                            : time();
                     }
                 }
             }
         }
     @endphp
-    @foreach ($dashboardCssFiles as $dashboardCssFile)
-    <link rel="stylesheet" href="/build/{{ ltrim($dashboardCssFile, '/') }}">
+    @foreach ($dashboardCssFiles as $dashboardCssFile => $dashboardCssVersion)
+    <link rel="stylesheet" href="{{ asset('build/' . ltrim($dashboardCssFile, '/')) }}?v={{ $dashboardCssVersion }}">
     @endforeach
     <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
 </head>
