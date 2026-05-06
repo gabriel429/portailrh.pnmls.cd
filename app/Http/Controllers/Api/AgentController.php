@@ -71,6 +71,63 @@ class AgentController extends ApiController
         }
     }
 
+    private function resolveNationalExecutiveSecretaryName(): ?string
+    {
+        $candidates = Agent::query()
+            ->with('role')
+            ->where(function ($query) {
+                $query
+                    ->whereHas('role', fn ($roleQuery) => $roleQuery->where('nom_role', 'SEN'))
+                    ->orWhere('fonction', 'like', '%Executif National%')
+                    ->orWhere('fonction', 'like', '%Exécutif National%')
+                    ->orWhere('poste_actuel', 'like', '%Executif National%')
+                    ->orWhere('poste_actuel', 'like', '%Exécutif National%');
+            })
+            ->orderByRaw("CASE WHEN statut = 'actif' THEN 0 ELSE 1 END")
+            ->limit(25)
+            ->get();
+
+        $sen = $candidates->first(function (Agent $candidate) {
+            $role = $this->normalizeSignatureText($candidate->role?->nom_role);
+            $fonction = $this->normalizeSignatureText($candidate->fonction);
+            $poste = $this->normalizeSignatureText($candidate->poste_actuel);
+            $text = trim($fonction . ' ' . $poste . ' ' . $role);
+
+            $isPrincipalSen = $role === 'sen' || str_contains($text, 'secretaire executif national');
+            $isAdjoint = $role === 'sena' || str_contains($text, 'adjoint');
+
+            return $isPrincipalSen && !$isAdjoint;
+        });
+
+        if (!$sen) {
+            return null;
+        }
+
+        return trim(collect([$sen->prenom, $sen->nom, $sen->postnom])->filter()->implode(' ')) ?: null;
+    }
+
+    private function normalizeSignatureText(?string $value): string
+    {
+        return Str::lower(Str::ascii(trim((string) $value)));
+    }
+
+    private function pnmlsLogoDataUri(): string
+    {
+        foreach (['images/logo-pnmls.png', 'images/pnmls.jpeg'] as $relativePath) {
+            $path = public_path($relativePath);
+
+            if (!is_file($path)) {
+                continue;
+            }
+
+            $mime = str_ends_with($relativePath, '.jpeg') ? 'image/jpeg' : 'image/png';
+
+            return 'data:' . $mime . ';base64,' . base64_encode((string) file_get_contents($path));
+        }
+
+        return '';
+    }
+
     /**
      * Organe labels used for grouping.
      */
@@ -364,6 +421,10 @@ class AgentController extends ApiController
         $agentPayload['permissions'] = [
             'can_manage_documents' => $this->canManageAgentDocuments(request()->user()),
         ];
+        $agentPayload['signature'] = [
+            'sen_name' => $this->resolveNationalExecutiveSecretaryName(),
+            'sen_title' => 'Secrétaire Exécutif National (SEN)',
+        ];
 
         return $this->resource($resource, [], [
             'agent' => $agentPayload,
@@ -456,9 +517,16 @@ class AgentController extends ApiController
             '<div class="info"><span>' . e($item[0]) . '</span><strong>' . e($item[1] ?: 'Non renseigne') . '</strong></div>'
         )->implode('');
 
+        $senSignatureName = $this->resolveNationalExecutiveSecretaryName() ?: 'Nom du SEN non renseigne';
+        $logoDataUri = $this->pnmlsLogoDataUri();
+        $logoHtml = $logoDataUri !== ''
+            ? '<img src="' . e($logoDataUri) . '" alt="Logo PNMLS">'
+            : '<div class="brand-fallback">PNMLS</div>';
+
         return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiche agent</title>'
-            . '<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px}h1,h2{margin:0}h1{font-size:26px;color:#075985}.sub{color:#64748b;margin-top:6px}.hero{border-bottom:4px solid #0ea5e9;padding-bottom:18px;margin-bottom:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.section{margin-top:24px}.section h2{font-size:16px;color:#0369a1;margin-bottom:10px}.info{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}.info span{display:block;color:#64748b;font-size:12px;margin-bottom:4px}.info strong{font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:9px;text-align:left;font-size:13px}th{background:#f1f5f9;color:#334155}.muted{color:#64748b}.footer{margin-top:28px;color:#64748b;font-size:12px}</style>'
+            . '<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px}h1,h2{margin:0}h1{font-size:26px;color:#075985}.letterhead{display:flex;align-items:center;gap:14px;border-bottom:1px solid #dbeafe;padding-bottom:14px;margin-bottom:18px}.letterhead img{width:74px;height:74px;object-fit:contain}.letterhead small{display:block;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-size:11px;font-weight:700}.letterhead strong{display:block;color:#075985;font-size:18px;margin-top:4px}.brand-fallback{width:74px;height:74px;border-radius:12px;background:#075985;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}.sub{color:#64748b;margin-top:6px}.hero{border-bottom:4px solid #0ea5e9;padding-bottom:18px;margin-bottom:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.section{margin-top:24px}.section h2{font-size:16px;color:#0369a1;margin-bottom:10px}.info{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}.info span{display:block;color:#64748b;font-size:12px;margin-bottom:4px}.info strong{font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:9px;text-align:left;font-size:13px}th{background:#f1f5f9;color:#334155}.muted{color:#64748b}.signature{display:flex;justify-content:flex-end;margin-top:46px;break-inside:avoid}.signature-box{width:300px;text-align:center}.signature-title{font-size:13px;color:#334155;font-weight:700}.signature-line{border-top:1px solid #111827;margin:52px 0 10px}.signature-name{font-size:15px;color:#111827;font-weight:800;text-transform:uppercase}.signature-note{font-size:12px;color:#64748b;margin-top:4px}.footer{margin-top:28px;color:#64748b;font-size:12px}</style>'
             . '</head><body>'
+            . '<div class="letterhead">' . $logoHtml . '<div><small>Programme National Multisectoriel de Lutte contre le Sida</small><strong>Fiche complete de l agent</strong></div></div>'
             . '<div class="hero"><h1>' . e($agent->nom_complet) . '</h1><div class="sub">' . e($agent->id_agent) . ' - ' . e($agent->fonction ?? $agent->poste_actuel ?? 'Fonction non renseignee') . '</div></div>'
             . '<div class="section"><h2>Informations essentielles</h2><div class="grid">' . $rows([
                 ['Matricule Etat', $agent->matricule_etat],
@@ -482,6 +550,7 @@ class AgentController extends ApiController
             ]) . '</div></div>'
             . '<div class="section"><h2>Parcours</h2><table><thead><tr><th>Fonction</th><th>Departement</th><th>Province</th><th>Debut</th><th>Fin</th></tr></thead><tbody>' . $affectationRows . '</tbody></table></div>'
             . '<div class="section"><h2>Documents disponibles</h2><table><thead><tr><th>Document</th><th>Categorie</th><th>Statut</th><th>Date</th></tr></thead><tbody>' . $documentsRows . '</tbody></table></div>'
+            . '<div class="signature"><div class="signature-box"><div class="signature-title">Le Secrétaire Exécutif National (SEN)</div><div class="signature-line"></div><div class="signature-name">' . e($senSignatureName) . '</div><div class="signature-note">Signature et cachet</div></div></div>'
             . '<div class="footer">Dossier genere depuis E-PNMLS le ' . e(now()->format('d/m/Y H:i')) . '.</div>'
             . '</body></html>';
     }

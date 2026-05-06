@@ -4,6 +4,14 @@
     <LoadingSpinner v-if="loading" message="Chargement du profil agent..." />
 
     <template v-else-if="agent">
+      <div class="agent-letterhead">
+        <img src="/images/logo-pnmls.png" alt="Logo PNMLS" class="agent-letterhead-logo">
+        <div>
+          <span>Programme National Multisectoriel de Lutte contre le Sida</span>
+          <strong>Fiche agent</strong>
+        </div>
+      </div>
+
       <!-- Agent header -->
       <div class="agent-header">
         <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
@@ -540,6 +548,18 @@
           </div>
         </div>
       </div>
+
+      <div class="agent-signature-panel">
+        <div>
+          <span class="agent-signature-kicker">Validation du dossier administratif</span>
+          <strong>{{ senSignatureTitle }}</strong>
+        </div>
+        <div class="agent-signature-box">
+          <div class="agent-signature-line"></div>
+          <strong>{{ senSignatureName }}</strong>
+          <span>Signature et cachet</span>
+        </div>
+      </div>
     </template>
 
     <!-- Delete Confirmation Modal -->
@@ -698,6 +718,12 @@ const isNational = computed(() =>
 )
 const canManageAgentDocuments = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
+)
+const senSignatureTitle = computed(() =>
+    agent.value?.signature?.sen_title || 'Secrétaire Exécutif National (SEN)'
+)
+const senSignatureName = computed(() =>
+    agent.value?.signature?.sen_name || 'Nom du SEN non renseigné'
 )
 
 // Sorted arrays
@@ -910,6 +936,37 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.agent-letterhead {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: #fff;
+    border: 1px solid #dbeafe;
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+}
+.agent-letterhead-logo {
+    width: 68px;
+    height: 68px;
+    object-fit: contain;
+    flex: 0 0 auto;
+}
+.agent-letterhead span {
+    display: block;
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+}
+.agent-letterhead strong {
+    display: block;
+    color: #075985;
+    font-size: 1.2rem;
+    margin-top: 3px;
+}
 .agent-header {
     background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
     color: white;
@@ -1043,9 +1100,66 @@ onMounted(() => {
     border-left-color: #ffc107;
     background: #fffef5;
 }
+.agent-signature-panel {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 20px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 22px;
+    margin: 22px 0 4px;
+    break-inside: avoid;
+}
+.agent-signature-kicker {
+    display: block;
+    color: #64748b;
+    font-size: .78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.agent-signature-panel > div:first-child strong {
+    color: #0f172a;
+    font-size: 1rem;
+}
+.agent-signature-box {
+    width: min(320px, 100%);
+    text-align: center;
+}
+.agent-signature-line {
+    border-top: 1px solid #0f172a;
+    margin: 48px 0 10px;
+}
+.agent-signature-box strong,
+.agent-signature-box span {
+    display: block;
+}
+.agent-signature-box strong {
+    color: #0f172a;
+    font-size: .95rem;
+    text-transform: uppercase;
+}
+.agent-signature-box span {
+    color: #64748b;
+    font-size: .78rem;
+    margin-top: 4px;
+}
 
 /* Mobile responsive */
 @media (max-width: 767.98px) {
+    .agent-letterhead {
+        align-items: flex-start;
+        padding: 12px;
+    }
+    .agent-letterhead-logo {
+        width: 52px;
+        height: 52px;
+    }
+    .agent-letterhead strong {
+        font-size: 1rem;
+    }
     .agent-header {
         padding: 20px 16px;
         border-radius: 6px;
@@ -1085,6 +1199,13 @@ onMounted(() => {
     .card-body {
         padding: 0.75rem;
     }
+    .agent-signature-panel {
+        display: block;
+        padding: 16px;
+    }
+    .agent-signature-box {
+        margin-top: 18px;
+    }
     .table th, .table td {
         padding: 0.4rem 0.5rem;
         font-size: 0.85rem;
@@ -1093,6 +1214,12 @@ onMounted(() => {
 
 /* Print styles */
 @media print {
+    .agent-letterhead {
+        box-shadow: none !important;
+        border: 1px solid #dbeafe !important;
+        padding: 10px 12px;
+        margin-bottom: 12px;
+    }
     .agent-header {
         background: #0077B5 !important;
         -webkit-print-color-adjust: exact !important;
@@ -1103,6 +1230,11 @@ onMounted(() => {
     .agent-header::after { display: none; }
 
     .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
+    .agent-signature-panel {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        margin-top: 20px;
+    }
 
     .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; margin-bottom: 12px; }
     .card-header { padding: 10px 15px; }
