@@ -284,6 +284,11 @@
                   </div>
                 </li>
                 <li>
+                  <router-link class="dropdown-item" :to="{ name: 'forum.index' }">
+                    <span class="dd-icon dd-icon-green"><i class="fas fa-comments"></i></span> Forum
+                  </router-link>
+                </li>
+                <li>
                   <router-link class="dropdown-item" :to="{ name: 'profile.show' }">
                     <span class="dd-icon dd-icon-blue"><i class="fas fa-user"></i></span> Mon Profil
                   </router-link>

@@ -23,6 +23,14 @@ const routes = [
         meta: { auth: true },
     },
 
+    // Forum interne
+    {
+        path: '/forum',
+        name: 'forum.index',
+        component: () => import('@/views/forum/ForumView.vue'),
+        meta: { auth: true },
+    },
+
     // Profile
     {
         path: '/profile',

@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\NotificationController as ApiNotificationController
 use App\Http\Controllers\Api\SignalementController;
 use App\Http\Controllers\Api\CommuniqueController;
 use App\Http\Controllers\Api\DocumentTravailController;
+use App\Http\Controllers\Api\ForumPostController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
@@ -98,6 +99,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile/full', [ApiProfileController::class, 'show']);
     Route::put('/profile', [ApiProfileController::class, 'update']);
     Route::put('/profile/password', [ApiProfileController::class, 'updatePassword']);
+
+    // Forum interne
+    Route::get('forum', [ForumPostController::class, 'index']);
+    Route::post('forum', [ForumPostController::class, 'store']);
+    Route::delete('forum/{forumPost}', [ForumPostController::class, 'destroy']);
 
     // Notifications
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
