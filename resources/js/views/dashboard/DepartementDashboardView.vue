@@ -274,73 +274,6 @@
         </div>
       </div>
 
-      <!-- ════════ PERFORMANCE ÉQUIPE ════════ -->
-      <div class="dept-section">
-        <div class="dept-section-head">
-          <div class="dept-section-icon" style="background:#d1fae5;color:#059669;">
-            <i class="fas fa-chart-bar"></i>
-          </div>
-          <div>
-            <h3 class="dept-section-title">Performance de l'équipe</h3>
-            <p class="dept-section-sub">{{ data.agents?.actifs ?? 0 }} agents actifs — réalisation des tâches par agent</p>
-          </div>
-          <button class="dept-section-link-btn" @click="openDrill('effectifs')">Voir tous <i class="fas fa-arrow-right"></i></button>
-        </div>
-        <div v-if="!data.team_performance?.length" class="dept-empty">
-          <div class="dept-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-users" style="color:#059669;"></i></div>
-          <span>Aucun agent actif dans le département</span>
-        </div>
-        <div v-else class="dept-table-wrap">
-          <table class="dept-table">
-            <thead>
-              <tr>
-                <th>Agent</th>
-                <th class="text-center">Total tâches</th>
-                <th class="text-center">Terminées</th>
-                <th>Réalisation</th>
-                <th class="text-center">En retard</th>
-                <th class="text-center">Niveau</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="ag in data.team_performance" :key="ag.id"
-                class="dept-table-row" @click="openDrill('effectifs')">
-                <td>
-                  <div class="dept-agent-cell">
-                    <div class="dept-agent-avatar">
-                      <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
-                        class="dept-agent-photo" @error="$event.target.style.display='none'">
-                      <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
-                    </div>
-                    <div>
-                      <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                      <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-center"><span class="dept-badge-neutral">{{ ag.taches_total }}</span></td>
-                <td class="text-center"><span class="dept-badge-ok">{{ ag.taches_done }}</span></td>
-                <td>
-                  <div class="dept-prog-cell">
-                    <div class="dept-prog-track">
-                      <div class="dept-prog-fill" :style="{ width: ag.avg_completion + '%', background: progressColor(ag.avg_completion) }"></div>
-                    </div>
-                    <span class="dept-prog-pct">{{ ag.avg_completion }}%</span>
-                  </div>
-                </td>
-                <td class="text-center">
-                  <span v-if="ag.taches_overdue > 0" class="dept-badge-danger">{{ ag.taches_overdue }}</span>
-                  <span v-else class="dept-badge-ok"><i class="fas fa-check"></i></span>
-                </td>
-                <td class="text-center">
-                  <span class="dept-perf-badge" :class="perfClass(ag.avg_completion)">{{ perfLabel(ag.avg_completion) }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       <!-- ════════ DEMANDES EN ATTENTE ════════ -->
       <div class="dept-section">
         <div class="dept-section-head">
@@ -557,6 +490,73 @@
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- ════════ PERFORMANCE ÉQUIPE ════════ -->
+      <div class="dept-section">
+        <div class="dept-section-head">
+          <div class="dept-section-icon" style="background:#d1fae5;color:#059669;">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <div>
+            <h3 class="dept-section-title">Performance de l'équipe</h3>
+            <p class="dept-section-sub">{{ data.agents?.actifs ?? 0 }} agents actifs — réalisation des tâches par agent</p>
+          </div>
+          <button class="dept-section-link-btn" @click="openDrill('effectifs')">Voir tous <i class="fas fa-arrow-right"></i></button>
+        </div>
+        <div v-if="!data.team_performance?.length" class="dept-empty">
+          <div class="dept-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-users" style="color:#059669;"></i></div>
+          <span>Aucun agent actif dans le département</span>
+        </div>
+        <div v-else class="dept-table-wrap">
+          <table class="dept-table">
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th class="text-center">Total tâches</th>
+                <th class="text-center">Terminées</th>
+                <th>Réalisation</th>
+                <th class="text-center">En retard</th>
+                <th class="text-center">Niveau</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="ag in data.team_performance" :key="ag.id"
+                class="dept-table-row" @click="openDrill('effectifs')">
+                <td>
+                  <div class="dept-agent-cell">
+                    <div class="dept-agent-avatar">
+                      <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
+                        class="dept-agent-photo" @error="$event.target.style.display='none'">
+                      <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
+                    </div>
+                    <div>
+                      <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                      <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center"><span class="dept-badge-neutral">{{ ag.taches_total }}</span></td>
+                <td class="text-center"><span class="dept-badge-ok">{{ ag.taches_done }}</span></td>
+                <td>
+                  <div class="dept-prog-cell">
+                    <div class="dept-prog-track">
+                      <div class="dept-prog-fill" :style="{ width: ag.avg_completion + '%', background: progressColor(ag.avg_completion) }"></div>
+                    </div>
+                    <span class="dept-prog-pct">{{ ag.avg_completion }}%</span>
+                  </div>
+                </td>
+                <td class="text-center">
+                  <span v-if="ag.taches_overdue > 0" class="dept-badge-danger">{{ ag.taches_overdue }}</span>
+                  <span v-else class="dept-badge-ok"><i class="fas fa-check"></i></span>
+                </td>
+                <td class="text-center">
+                  <span class="dept-perf-badge" :class="perfClass(ag.avg_completion)">{{ perfLabel(ag.avg_completion) }}</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
