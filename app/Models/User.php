@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->hasMany(ForumPost::class);
     }
 
+    public function forumComments(): HasMany
+    {
+        return $this->hasMany(ForumComment::class);
+    }
+
     /**
      * Check if user has a specific role
      */

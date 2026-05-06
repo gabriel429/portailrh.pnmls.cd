@@ -175,6 +175,11 @@ class Agent extends Authenticatable
         return $this->hasMany(ForumPost::class);
     }
 
+    public function forumComments(): HasMany
+    {
+        return $this->hasMany(ForumComment::class);
+    }
+
     public function user(): HasOne
     {
         return $this->hasOne(User::class);

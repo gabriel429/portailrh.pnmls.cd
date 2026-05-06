@@ -103,7 +103,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Forum interne
     Route::get('forum', [ForumPostController::class, 'index']);
     Route::post('forum', [ForumPostController::class, 'store']);
+    Route::post('forum/{forumPost}/comments', [ForumPostController::class, 'storeComment']);
     Route::delete('forum/{forumPost}', [ForumPostController::class, 'destroy']);
+    Route::delete('forum/comments/{forumComment}', [ForumPostController::class, 'destroyComment']);
 
     // Notifications
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);

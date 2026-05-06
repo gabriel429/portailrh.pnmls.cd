@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\ForumPostResource;
+use App\Http\Resources\ForumCommentResource;
+use App\Models\ForumComment;
 use App\Models\ForumPost;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -21,7 +23,18 @@ class ForumPostController extends ApiController
         $perPage = (int) ($validated['per_page'] ?? 12);
 
         $posts = ForumPost::query()
-            ->with(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement'])
+            ->active()
+            ->with([
+                'user.role',
+                'user.agent.role',
+                'user.agent.departement',
+                'agent.role',
+                'agent.departement',
+                'comments' => fn ($query) => $query
+                    ->with(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'forumPost'])
+                    ->oldest(),
+            ])
+            ->withCount('comments')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery
@@ -33,6 +46,9 @@ class ForumPostController extends ApiController
                                 ->where('nom', 'like', '%' . $search . '%')
                                 ->orWhere('prenom', 'like', '%' . $search . '%')
                                 ->orWhere('postnom', 'like', '%' . $search . '%');
+                        })
+                        ->orWhereHas('comments', function ($commentQuery) use ($search) {
+                            $commentQuery->where('contenu', 'like', '%' . $search . '%');
                         });
                 });
             })
@@ -58,11 +74,54 @@ class ForumPostController extends ApiController
             'contenu' => $validated['contenu'],
         ]);
 
-        $post->load(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement']);
+        $post->load(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'comments']);
+        $post->loadCount('comments');
 
         return $this->resource(ForumPostResource::make($post), [], [
             'message' => 'Message publie avec succes.',
         ], 201);
+    }
+
+    public function storeComment(Request $request, ForumPost $forumPost): JsonResponse
+    {
+        if ($forumPost->isExpired()) {
+            return response()->json([
+                'message' => 'Ce sujet a depasse sa duree de vie de deux semaines.',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'contenu' => 'required|string|min:1|max:2000',
+        ]);
+
+        $user = $request->user();
+
+        $comment = $forumPost->comments()->create([
+            'user_id' => $user->id,
+            'agent_id' => $user->agent_id,
+            'contenu' => $validated['contenu'],
+        ]);
+
+        $comment->load(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'forumPost']);
+
+        return $this->resource(ForumCommentResource::make($comment), [], [
+            'message' => 'Commentaire publie.',
+        ], 201);
+    }
+
+    public function destroyComment(Request $request, ForumComment $forumComment): JsonResponse
+    {
+        $forumComment->loadMissing('forumPost');
+
+        if (! $this->canDeleteComment($request->user(), $forumComment)) {
+            abort(403, 'Vous ne pouvez pas supprimer ce commentaire.');
+        }
+
+        $forumComment->delete();
+
+        return $this->success(null, [], [
+            'message' => 'Commentaire supprime.',
+        ]);
     }
 
     public function destroy(Request $request, ForumPost $forumPost): JsonResponse
@@ -81,6 +140,14 @@ class ForumPostController extends ApiController
     private function canDelete(User $user, ForumPost $post): bool
     {
         return $user->id === $post->user_id
+            || $user->isSuperAdmin()
+            || $user->hasAdminAccess();
+    }
+
+    private function canDeleteComment(User $user, ForumComment $comment): bool
+    {
+        return $user->id === $comment->user_id
+            || $user->id === $comment->forumPost?->user_id
             || $user->isSuperAdmin()
             || $user->hasAdminAccess();
     }

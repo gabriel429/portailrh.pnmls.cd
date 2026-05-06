@@ -18,6 +18,13 @@ class ForumPostResource extends JsonResource
             'contenu' => $this->contenu,
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
+            'expires_at' => optional($this->expiresAt())?->toIso8601String(),
+            'is_expired' => $this->isExpired(),
+            'can_comment' => (bool) ($user && ! $this->isExpired()),
+            'comments_count' => (int) ($this->comments_count ?? $this->whenLoaded('comments', fn () => $this->comments->count(), 0)),
+            'commentaires' => $this->whenLoaded('comments', function () {
+                return ForumCommentResource::collection($this->comments)->resolve();
+            }),
             'can_delete' => (bool) ($user && (
                 $user->id === $this->user_id
                 || $user->isSuperAdmin()

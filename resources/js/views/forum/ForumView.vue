@@ -45,7 +45,7 @@
         <i class="fas fa-search"></i>
         <input v-model.trim="search" type="search" placeholder="Rechercher dans le forum" @keyup.enter="loadPosts(1)">
       </div>
-      <button class="forum-refresh" type="button" @click="loadPosts(1)">
+      <button class="forum-refresh" type="button" title="Actualiser" @click="loadPosts(1)">
         <i class="fas fa-rotate-right"></i>
       </button>
     </section>
@@ -69,24 +69,77 @@
             </div>
             <button
               v-if="post.can_delete"
-              class="forum-post-delete"
+              class="forum-icon-btn danger"
               type="button"
-              title="Supprimer"
+              title="Supprimer le sujet"
               @click="deletePost(post)"
             >
               <i class="fas fa-trash"></i>
             </button>
           </div>
+
+          <div class="forum-post-status">
+            <span><i class="fas fa-hourglass-half"></i>{{ lifetimeLabel(post) }}</span>
+            <span><i class="fas fa-message"></i>{{ post.comments_count || 0 }} {{ commentLabel(post.comments_count || 0) }}</span>
+          </div>
+
           <h3 v-if="post.titre">{{ post.titre }}</h3>
           <p class="forum-post-content">{{ post.contenu }}</p>
+
+          <section class="forum-comments">
+            <div class="forum-comments-head">
+              <h4>Commentaires</h4>
+              <span>{{ post.commentaires.length }}</span>
+            </div>
+
+            <div v-if="post.commentaires.length" class="forum-comment-list">
+              <article v-for="item in post.commentaires" :key="item.id" class="forum-comment">
+                <div class="forum-comment-avatar">{{ commentInitials(item) }}</div>
+                <div class="forum-comment-body">
+                  <div class="forum-comment-head">
+                    <div>
+                      <strong>{{ item.auteur?.name || 'Agent PNMLS' }}</strong>
+                      <span>{{ timeAgo(item.created_at) }}</span>
+                    </div>
+                    <button
+                      v-if="item.can_delete"
+                      class="forum-comment-delete"
+                      type="button"
+                      title="Supprimer le commentaire"
+                      @click="deleteComment(post, item)"
+                    >
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                  <p>{{ item.contenu }}</p>
+                </div>
+              </article>
+            </div>
+
+            <form v-if="post.can_comment" class="forum-comment-form" @submit.prevent="submitComment(post)">
+              <textarea
+                v-model.trim="post.commentForm"
+                rows="2"
+                maxlength="2000"
+                placeholder="Ajouter un commentaire..."
+              ></textarea>
+              <button type="submit" :disabled="post.commenting || !post.commentForm">
+                <i class="fas fa-reply"></i>
+                <span>{{ post.commenting ? 'Envoi...' : 'Commenter' }}</span>
+              </button>
+            </form>
+            <div v-else class="forum-comments-closed">
+              Ce sujet est ferme.
+            </div>
+          </section>
         </div>
       </article>
     </section>
 
     <section v-else class="forum-empty">
       <i class="fas fa-comments"></i>
-      <h2>Aucun message pour le moment</h2>
-      <p>Le premier message publie apparaitra ici.</p>
+      <h2>Aucun sujet actif</h2>
+      <p>Les sujets restent visibles pendant deux semaines.</p>
     </section>
 
     <nav v-if="meta.last_page > 1" class="forum-pagination" aria-label="Pagination forum">
@@ -112,7 +165,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { create, list, remove } from '@/api/forum'
+import { comment, create, list, remove, removeComment } from '@/api/forum'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const auth = useAuthStore()
@@ -149,7 +202,7 @@ async function loadPosts(page = 1) {
       search: search.value || undefined,
       per_page: 12,
     })
-    posts.value = data.data || []
+    posts.value = (data.data || []).map(normalizePost)
     meta.value = data.meta || { current_page: 1, last_page: 1, total: 0 }
   } catch {
     ui.addToast('Impossible de charger le forum.', 'danger')
@@ -164,28 +217,70 @@ async function submitPost() {
   posting.value = true
   try {
     const { data } = await create(form.value)
-    posts.value = [data.data, ...posts.value]
+    posts.value = [normalizePost(data.data), ...posts.value]
     meta.value.total = (meta.value.total || 0) + 1
     form.value = { titre: '', contenu: '' }
-    ui.addToast(data.message || 'Message publie.', 'success')
+    ui.addToast(data.message || 'Sujet publie.', 'success')
   } catch (error) {
-    const message = error.response?.data?.message || 'Impossible de publier le message.'
+    const message = error.response?.data?.message || 'Impossible de publier le sujet.'
     ui.addToast(message, 'danger')
   } finally {
     posting.value = false
   }
 }
 
+async function submitComment(post) {
+  const contenu = (post.commentForm || '').trim()
+  if (post.commenting || !contenu) return
+
+  post.commenting = true
+  try {
+    const { data } = await comment(post.id, { contenu })
+    post.commentaires = [...post.commentaires, data.data]
+    post.comments_count = (post.comments_count || 0) + 1
+    post.commentForm = ''
+    ui.addToast(data.message || 'Commentaire publie.', 'success')
+  } catch (error) {
+    const message = error.response?.data?.message || 'Impossible de publier le commentaire.'
+    ui.addToast(message, 'danger')
+  } finally {
+    post.commenting = false
+  }
+}
+
 async function deletePost(post) {
-  if (!window.confirm('Supprimer ce message du forum ?')) return
+  if (!window.confirm('Supprimer ce sujet du forum ?')) return
 
   try {
     const { data } = await remove(post.id)
     posts.value = posts.value.filter(item => item.id !== post.id)
     meta.value.total = Math.max(0, (meta.value.total || 0) - 1)
-    ui.addToast(data.message || 'Message supprime.', 'success')
+    ui.addToast(data.message || 'Sujet supprime.', 'success')
   } catch {
-    ui.addToast('Impossible de supprimer ce message.', 'danger')
+    ui.addToast('Impossible de supprimer ce sujet.', 'danger')
+  }
+}
+
+async function deleteComment(post, item) {
+  if (!window.confirm('Supprimer ce commentaire ?')) return
+
+  try {
+    const { data } = await removeComment(item.id)
+    post.commentaires = post.commentaires.filter(commentaire => commentaire.id !== item.id)
+    post.comments_count = Math.max(0, (post.comments_count || 0) - 1)
+    ui.addToast(data.message || 'Commentaire supprime.', 'success')
+  } catch {
+    ui.addToast('Impossible de supprimer ce commentaire.', 'danger')
+  }
+}
+
+function normalizePost(post) {
+  return {
+    ...post,
+    commentaires: post.commentaires || [],
+    comments_count: post.comments_count || (post.commentaires || []).length,
+    commentForm: '',
+    commenting: false,
   }
 }
 
@@ -193,9 +288,28 @@ function postInitials(post) {
   return initialsFromName(post.auteur?.name || 'Agent PNMLS')
 }
 
+function commentInitials(item) {
+  return initialsFromName(item.auteur?.name || 'Agent PNMLS')
+}
+
 function initialsFromName(name) {
   const parts = (name || '').split(/\s+/).filter(Boolean)
-  return (parts[0]?.[0] || 'P') + (parts[1]?.[0] || 'N')
+  return ((parts[0]?.[0] || 'P') + (parts[1]?.[0] || 'N')).toUpperCase()
+}
+
+function commentLabel(count) {
+  return count > 1 ? 'commentaires' : 'commentaire'
+}
+
+function lifetimeLabel(post) {
+  if (!post.expires_at) return 'Sujet actif 14 jours'
+
+  const diffMs = new Date(post.expires_at).getTime() - Date.now()
+  const diffDays = Math.ceil(diffMs / 86400000)
+
+  if (diffDays <= 0) return 'Sujet ferme'
+  if (diffDays === 1) return '1 jour restant'
+  return `${diffDays} jours restants`
 }
 
 function timeAgo(dateStr) {
@@ -297,9 +411,8 @@ onMounted(() => loadPosts())
 }
 
 .forum-avatar,
-.forum-post-avatar {
-  width: 52px;
-  height: 52px;
+.forum-post-avatar,
+.forum-comment-avatar {
   display: grid;
   place-items: center;
   border-radius: 8px;
@@ -309,6 +422,18 @@ onMounted(() => loadPosts())
   text-transform: uppercase;
 }
 
+.forum-avatar,
+.forum-post-avatar {
+  width: 52px;
+  height: 52px;
+}
+
+.forum-comment-avatar {
+  width: 36px;
+  height: 36px;
+  font-size: .78rem;
+}
+
 .forum-form {
   display: grid;
   gap: .75rem;
@@ -316,7 +441,8 @@ onMounted(() => loadPosts())
 
 .forum-input,
 .forum-textarea,
-.forum-search input {
+.forum-search input,
+.forum-comment-form textarea {
   width: 100%;
   border: 1px solid rgba(148, 163, 184, .35);
   border-radius: 8px;
@@ -336,9 +462,16 @@ onMounted(() => loadPosts())
   padding: .85rem .9rem;
 }
 
+.forum-comment-form textarea {
+  min-height: 54px;
+  padding: .7rem .8rem;
+  resize: vertical;
+}
+
 .forum-input:focus,
 .forum-textarea:focus,
-.forum-search input:focus {
+.forum-search input:focus,
+.forum-comment-form textarea:focus {
   border-color: #0f766e;
   box-shadow: 0 0 0 3px rgba(15, 118, 110, .12);
 }
@@ -354,7 +487,10 @@ onMounted(() => loadPosts())
 
 .forum-submit,
 .forum-refresh,
-.forum-pagination button {
+.forum-pagination button,
+.forum-comment-form button,
+.forum-icon-btn,
+.forum-comment-delete {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -371,7 +507,8 @@ onMounted(() => loadPosts())
   color: #fff;
 }
 
-.forum-submit:disabled {
+.forum-submit:disabled,
+.forum-comment-form button:disabled {
   opacity: .55;
   cursor: not-allowed;
 }
@@ -458,6 +595,25 @@ onMounted(() => loadPosts())
   vertical-align: middle;
 }
 
+.forum-post-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .8rem;
+}
+
+.forum-post-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .35rem .6rem;
+  border-radius: 8px;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
 .forum-post h3 {
   margin: .8rem 0 .35rem;
   color: #0f766e;
@@ -473,13 +629,121 @@ onMounted(() => loadPosts())
   overflow-wrap: anywhere;
 }
 
-.forum-post-delete {
+.forum-icon-btn {
   width: 38px;
   height: 38px;
-  border: 0;
-  border-radius: 8px;
+  color: #334155;
+  background: #f1f5f9;
+}
+
+.forum-icon-btn.danger {
   background: #fee2e2;
   color: #b91c1c;
+}
+
+.forum-comments {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(148, 163, 184, .22);
+}
+
+.forum-comments-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .75rem;
+}
+
+.forum-comments-head h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: .95rem;
+  font-weight: 900;
+}
+
+.forum-comments-head span {
+  min-width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #e0f2fe;
+  color: #075985;
+  font-size: .8rem;
+  font-weight: 900;
+}
+
+.forum-comment-list {
+  display: grid;
+  gap: .65rem;
+  margin-bottom: .85rem;
+}
+
+.forum-comment {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: .65rem;
+}
+
+.forum-comment-body {
+  padding: .7rem .8rem;
+  border: 1px solid rgba(148, 163, 184, .18);
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.forum-comment-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+}
+
+.forum-comment-head strong {
+  display: block;
+  color: #0f172a;
+  font-size: .88rem;
+}
+
+.forum-comment-head span {
+  color: #64748b;
+  font-size: .75rem;
+}
+
+.forum-comment-delete {
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  color: #b91c1c;
+}
+
+.forum-comment-body p {
+  margin: .35rem 0 0;
+  color: #334155;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.forum-comment-form {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: .6rem;
+}
+
+.forum-comment-form button {
+  min-height: 42px;
+  padding: 0 .9rem;
+  background: #0f766e;
+  color: #fff;
+}
+
+.forum-comments-closed {
+  padding: .7rem .8rem;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: .9rem;
 }
 
 .forum-empty {
@@ -556,12 +820,18 @@ onMounted(() => loadPosts())
     height: 44px;
   }
 
-  .forum-composer-footer {
+  .forum-composer-footer,
+  .forum-comment-form {
     align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .forum-composer-footer {
     flex-direction: column;
   }
 
-  .forum-submit {
+  .forum-submit,
+  .forum-comment-form button {
     width: 100%;
   }
 }
