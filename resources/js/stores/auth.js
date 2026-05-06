@@ -3,7 +3,16 @@ import axios from 'axios'
 import client from '@/api/client'
 
 function normalizedRole(state) {
-    return state.user?.role?.nom_role?.toLowerCase() ?? ''
+    const role = state.user?.role?.nom_role
+        ?? state.user?.nom_role
+        ?? (typeof state.user?.role === 'string' ? state.user.role : '')
+
+    return role
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
 }
 
 function normalizedDepartmentCode(state) {
@@ -29,11 +38,13 @@ export const useAuthStore = defineStore('auth', {
         role: (state) => state.user?.role?.nom_role,
         isRH(state) {
             const role = normalizedRole(state)
-            return role.includes('ressources humaines') || [
+            return role.includes('ressource humaine') || role.includes('ressources humaines') || [
+                'rh',
                 'section ressources humaines',
                 'chef section rh',
                 'chef de section rh',
                 'chef section ressources humaines',
+                'ressources humaines',
                 'rh national',
                 'rh provincial',
             ].includes(role)

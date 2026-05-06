@@ -515,6 +515,15 @@
 
             <!-- Footer -->
             <div class="asm-footer">
+              <button
+                v-if="sm_canManageAgentDocuments"
+                class="asm-btn-download"
+                :disabled="dossierDownloading"
+                @click="downloadSelectedAgentDossier"
+              >
+                <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="fas fa-download me-1"></i> Télécharger le dossier
+              </button>
               <button class="asm-btn-print" @click="printAgentFiche">
                 <i class="fas fa-print me-1"></i> Imprimer
               </button>
@@ -549,7 +558,8 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { list, get, remove, exportCsv, getFormOptions } from '@/api/agents'
+import { useAuthStore } from '@/stores/auth'
+import { list, get, remove, exportCsv, getFormOptions, downloadDossier } from '@/api/agents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AgentEditModal from '@/components/agents/AgentEditModal.vue'
@@ -558,6 +568,7 @@ import AgentCreateModal from '@/components/agents/AgentCreateModal.vue'
 const router = useRouter()
 const route = useRoute()
 const ui = useUiStore()
+const auth = useAuthStore()
 
 // State
 const loading = ref(true)
@@ -636,6 +647,7 @@ const showAgentModal = ref(false)
 const agentModalLoading = ref(false)
 const selectedAgent = ref(null)
 const agentTab = ref('informations')
+const dossierDownloading = ref(false)
 
 const sm_documentsCount = computed(() => selectedAgent.value?.documents?.length || 0)
 const sm_requestsCount = computed(() => selectedAgent.value?.requests?.length || 0)
@@ -646,6 +658,9 @@ const sm_affectationsCount = computed(() => selectedAgent.value?.affectations?.l
 const sm_messagesCount = computed(() => selectedAgent.value?.messages?.length || 0)
 const sm_unreadMessagesCount = computed(() =>
     (selectedAgent.value?.messages || []).filter(m => !m.lu).length
+)
+const sm_canManageAgentDocuments = computed(() =>
+    Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
 )
 const sm_sortedRequests = computed(() =>
     [...(selectedAgent.value?.requests || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -708,6 +723,33 @@ async function goToAgent(id) {
 }
 
 function closeAgentModal() { showAgentModal.value = false }
+
+async function downloadSelectedAgentDossier() {
+    if (!selectedAgent.value || !sm_canManageAgentDocuments.value) return
+
+    dossierDownloading.value = true
+    try {
+        const response = await downloadDossier(selectedAgent.value.id)
+        const blob = new Blob([response.data], { type: 'application/zip' })
+        const url = window.URL.createObjectURL(blob)
+        const link = window.document.createElement('a')
+        const safeName = (selectedAgent.value.nom_complet || `agent-${selectedAgent.value.id}`)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/gi, '-')
+            .replace(/^-|-$/g, '')
+
+        link.href = url
+        link.download = `dossier-agent-${safeName || selectedAgent.value.id}.zip`
+        window.document.body.appendChild(link)
+        link.click()
+        window.URL.revokeObjectURL(url)
+        window.document.body.removeChild(link)
+    } catch (err) {
+        ui.addToast(err.response?.data?.message || 'Erreur lors du telechargement du dossier.', 'danger')
+    } finally {
+        dossierDownloading.value = false
+    }
+}
 
 function printAgentFiche() {
     const a = selectedAgent.value
@@ -1833,7 +1875,7 @@ onMounted(() => {
 
 /* Footer */
 .asm-footer {
-  display: flex; gap: .75rem; justify-content: flex-end;
+  display: flex; gap: .75rem; justify-content: flex-end; flex-wrap: wrap;
   padding: .85rem 1.5rem; border-top: 1px solid #f3f4f6;
 }
 .asm-btn-edit {
@@ -1848,6 +1890,13 @@ onMounted(() => {
   transition: all .2s;
 }
 .asm-btn-print:hover { background: #005885; }
+.asm-btn-download {
+  padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: none; background: #0f766e; color: #fff; cursor: pointer;
+  transition: all .2s;
+}
+.asm-btn-download:hover:not(:disabled) { background: #115e59; }
+.asm-btn-download:disabled { opacity: .7; cursor: not-allowed; }
 .asm-btn-close {
   padding: .45rem 1.2rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
   border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer;

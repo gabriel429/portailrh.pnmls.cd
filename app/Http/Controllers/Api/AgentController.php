@@ -49,9 +49,10 @@ class AgentController extends ApiController
             return true;
         }
 
-        $role = Str::lower(trim((string) ($user->role?->nom_role ?? '')));
+        $role = Str::lower(Str::ascii(trim((string) ($user->role?->nom_role ?? ''))));
 
-        return in_array($role, ['chef de section rh', 'chef section ressources humaines'], true)
+        return in_array($role, ['rh', 'ressources humaines', 'chef de section rh', 'chef section ressources humaines'], true)
+            || str_contains($role, 'ressource humaine')
             || str_contains($role, 'ressources humaines');
     }
 
