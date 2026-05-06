@@ -184,8 +184,12 @@
                   <!-- Contact -->
                   <div class="row">
                     <div class="col-md-4 mb-3">
-                      <label class="text-muted small">Telephone</label>
-                      <p class="mb-0">{{ agent.telephone || 'N/A' }}</p>
+                      <label class="text-muted small">Telephone professionnel</label>
+                      <p class="mb-0">{{ agent.telephone_professionnel || agent.telephone || 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <label class="text-muted small">Telephone prive</label>
+                      <p class="mb-0">{{ agent.telephone_prive || 'N/A' }}</p>
                     </div>
                     <div class="col-md-4 mb-3">
                       <label class="text-muted small">E-mail prive</label>
@@ -267,6 +271,10 @@
                     <div class="col-md-4 mb-3">
                       <label class="text-muted small">Domaine d'etudes</label>
                       <p class="mb-0">{{ agent.domaine_etudes || 'N/A' }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <label class="text-muted small">Role applicatif</label>
+                      <p class="mb-0">{{ agent.role?.nom_role || 'N/A' }}</p>
                     </div>
                   </div>
                 </div>

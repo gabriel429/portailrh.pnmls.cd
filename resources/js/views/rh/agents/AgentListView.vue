@@ -29,7 +29,7 @@
                   <i class="fas fa-file-csv"></i>
                   <span>Exporter CSV</span>
                 </button>
-                <button type="button" class="hero-btn create" @click="showCreateModal = true">
+                <button type="button" class="hero-btn create" @click="router.push({ name: 'rh.agents.create' })">
                   <i class="fas fa-user-plus"></i>
                   <span>Nouvel agent</span>
                 </button>
@@ -207,8 +207,11 @@
                       </td>
                       <td>
                         <div class="contact-info">
-                          <div v-if="agent.telephone">
-                            <i class="fas fa-phone"></i> {{ agent.telephone }}
+                          <div v-if="agent.telephone_professionnel || agent.telephone">
+                            <i class="fas fa-phone"></i> {{ agent.telephone_professionnel || agent.telephone }}
+                          </div>
+                          <div v-if="agent.telephone_prive" class="text-muted small">
+                            <i class="fas fa-mobile-alt"></i> {{ agent.telephone_prive }}
                           </div>
                           <div v-if="agent.email_prive" class="text-muted small">
                             <i class="fas fa-envelope"></i> {{ agent.email_prive }}
@@ -397,7 +400,8 @@
                   <div class="asm-info-item"><span class="asm-info-label">Sexe</span><span class="asm-info-value">{{ selectedAgent.sexe === 'M' ? 'Masculin' : selectedAgent.sexe === 'F' ? 'Feminin' : (selectedAgent.sexe || 'N/A') }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Situation familiale</span><span class="asm-info-value">{{ selectedAgent.situation_familiale || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Enfants</span><span class="asm-info-value">{{ selectedAgent.nombre_enfants ?? 'N/A' }}</span></div>
-                  <div class="asm-info-item"><span class="asm-info-label">Telephone</span><span class="asm-info-value">{{ selectedAgent.telephone || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Telephone professionnel</span><span class="asm-info-value">{{ selectedAgent.telephone_professionnel || selectedAgent.telephone || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Telephone prive</span><span class="asm-info-value">{{ selectedAgent.telephone_prive || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Email prive</span><span class="asm-info-value">{{ selectedAgent.email_prive || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Email pro</span><span class="asm-info-value">{{ selectedAgent.email_professionnel || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Adresse</span><span class="asm-info-value">{{ selectedAgent.adresse || 'N/A' }}</span></div>
@@ -412,10 +416,13 @@
                   <div class="asm-info-item"><span class="asm-info-label">Departement</span><span class="asm-info-value">{{ selectedAgent.departement ? selectedAgent.departement.nom : 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Anciennete</span><span class="asm-info-value">{{ selectedAgent.anciennete !== null && selectedAgent.anciennete !== undefined ? selectedAgent.anciennete + ' an' + (selectedAgent.anciennete > 1 ? 's' : '') : 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Matricule Etat</span><span class="asm-info-value">{{ selectedAgent.matricule_etat || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Provenance matricule</span><span class="asm-info-value">{{ selectedAgent.institution ? selectedAgent.institution.nom : 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Grade Etat</span><span class="asm-info-value">{{ selectedAgent.grade ? selectedAgent.grade.libelle : 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Niveau etudes</span><span class="asm-info-value">{{ selectedAgent.niveau_etudes || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Domaine etudes</span><span class="asm-info-value">{{ selectedAgent.domaine_etudes || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Annee engagement</span><span class="asm-info-value">{{ selectedAgent.annee_engagement_programme || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Role applicatif</span><span class="asm-info-value">{{ selectedAgent.role?.nom_role || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Derniere mise a jour</span><span class="asm-info-value">{{ sm_formatDateTime(selectedAgent.updated_at) }}</span></div>
                 </div>
 
                 <!-- Stats row -->
@@ -477,6 +484,11 @@
 
               <!-- TAB: Documents -->
               <div v-if="agentTab === 'documents'">
+                <div v-if="sm_canManageAgentDocuments" class="asm-tab-actions">
+                  <button class="asm-btn-upload" type="button" @click="openSelectedAgentDocumentUpload">
+                    <i class="fas fa-cloud-upload-alt me-1"></i> Ajouter un document
+                  </button>
+                </div>
                 <template v-if="sm_documentsCount > 0">
                   <div v-for="dt in sm_docTypes" :key="dt.type" class="mb-3">
                     <div class="asm-section-title" style="font-size:.8rem;">
@@ -485,7 +497,8 @@
                     </div>
                     <div v-if="sm_getDocsByType(dt.type).length > 0">
                       <div v-for="doc in sm_getDocsByType(dt.type)" :key="doc.id" class="asm-doc-item">
-                        <strong>{{ doc.description }}</strong>
+                        <strong>{{ doc.nom_document || sm_getDocumentName(doc) }}</strong>
+                        <small v-if="doc.description_detail" class="text-muted d-block">{{ doc.description_detail }}</small>
                         <small class="text-muted ms-2">{{ sm_formatDateTime(doc.created_at) }}</small>
                       </div>
                     </div>
@@ -524,6 +537,14 @@
                 <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-1"></span>
                 <i v-else class="fas fa-download me-1"></i> Télécharger le dossier
               </button>
+              <button
+                v-if="sm_canManageAgentDocuments"
+                class="asm-btn-upload"
+                :disabled="documentUploading"
+                @click="openSelectedAgentDocumentUpload"
+              >
+                <i class="fas fa-cloud-upload-alt me-1"></i> Ajouter document
+              </button>
               <button class="asm-btn-print" @click="printAgentFiche">
                 <i class="fas fa-print me-1"></i> Imprimer
               </button>
@@ -551,6 +572,60 @@
       @close="closeCreateModal"
       @created="onAgentCreated"
     />
+
+    <!-- Document Upload Modal -->
+    <teleport to="body">
+      <div v-if="showDocumentUploadModal" class="agent-doc-overlay" @click.self="closeSelectedAgentDocumentUpload">
+        <div class="agent-doc-dialog">
+          <div class="agent-doc-header">
+            <div>
+              <h5 class="mb-1"><i class="fas fa-cloud-upload-alt me-2"></i>Ajouter un document</h5>
+              <p class="mb-0 text-muted small">Dossier de {{ selectedAgent?.nom_complet }}</p>
+            </div>
+            <button class="btn-close" type="button" @click="closeSelectedAgentDocumentUpload"></button>
+          </div>
+          <form class="agent-doc-body" @submit.prevent="submitSelectedAgentDocument">
+            <div v-if="documentUploadErrors.general" class="alert alert-danger py-2">{{ documentUploadErrors.general }}</div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Fichier <span class="text-danger">*</span></label>
+              <input ref="documentFileInput" type="file" class="form-control" @change="handleDocumentFileChange">
+              <div v-if="selectedDocumentFile" class="form-text">{{ selectedDocumentFile.name }} - {{ formatFileSize(selectedDocumentFile.size) }}</div>
+              <div v-if="documentUploadErrors.fichier" class="text-danger small mt-1">{{ documentUploadErrors.fichier[0] }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Nom du document <span class="text-danger">*</span></label>
+              <input v-model="documentUploadForm.nom_document" type="text" class="form-control" placeholder="Ex. Contrat, diplome, carte d'identite">
+              <div v-if="documentUploadErrors.nom_document" class="text-danger small mt-1">{{ documentUploadErrors.nom_document[0] }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Categorie</label>
+              <select v-model="documentUploadForm.categories_document_id" class="form-select">
+                <option value="identite">Identite</option>
+                <option value="parcours">Parcours</option>
+                <option value="carriere">Carriere</option>
+                <option value="mission">Mission</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Description</label>
+              <textarea v-model="documentUploadForm.description" class="form-control" rows="3" maxlength="500"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-outline-secondary" @click="closeSelectedAgentDocumentUpload">Annuler</button>
+              <button type="submit" class="btn btn-primary" :disabled="documentUploading">
+                <span v-if="documentUploading" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="fas fa-save me-1"></i> Enregistrer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -560,6 +635,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { list, get, remove, exportCsv, getFormOptions, downloadDossier } from '@/api/agents'
+import { create as createDocument } from '@/api/documents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AgentEditModal from '@/components/agents/AgentEditModal.vue'
@@ -648,6 +724,20 @@ const agentModalLoading = ref(false)
 const selectedAgent = ref(null)
 const agentTab = ref('informations')
 const dossierDownloading = ref(false)
+const showDocumentUploadModal = ref(false)
+const documentUploading = ref(false)
+const documentFileInput = ref(null)
+const selectedDocumentFile = ref(null)
+const documentUploadErrors = ref({})
+const documentUploadForm = ref(defaultDocumentUploadForm())
+
+function defaultDocumentUploadForm() {
+    return {
+        nom_document: '',
+        categories_document_id: 'identite',
+        description: '',
+    }
+}
 
 const sm_documentsCount = computed(() => selectedAgent.value?.documents?.length || 0)
 const sm_requestsCount = computed(() => selectedAgent.value?.requests?.length || 0)
@@ -681,6 +771,11 @@ const sm_docTypes = [
 
 function sm_getDocsByType(type) {
     return (selectedAgent.value?.documents || []).filter(d => d.type === type)
+}
+
+function sm_getDocumentName(doc) {
+    const parts = (doc?.description || '').split(' | ')
+    return parts[0] || `Document ${doc?.id || ''}`.trim()
 }
 
 function sm_formatDate(dateStr) {
@@ -723,6 +818,60 @@ async function goToAgent(id) {
 }
 
 function closeAgentModal() { showAgentModal.value = false }
+
+function openSelectedAgentDocumentUpload() {
+    if (!selectedAgent.value || !sm_canManageAgentDocuments.value) return
+
+    documentUploadForm.value = defaultDocumentUploadForm()
+    documentUploadErrors.value = {}
+    selectedDocumentFile.value = null
+    if (documentFileInput.value) documentFileInput.value.value = ''
+    showDocumentUploadModal.value = true
+}
+
+function closeSelectedAgentDocumentUpload() {
+    showDocumentUploadModal.value = false
+}
+
+function handleDocumentFileChange(event) {
+    selectedDocumentFile.value = event.target.files?.[0] || null
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '0 KB'
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`
+    return `${(bytes / 1024).toFixed(1)} KB`
+}
+
+async function submitSelectedAgentDocument() {
+    if (!selectedAgent.value || !sm_canManageAgentDocuments.value) return
+
+    documentUploadErrors.value = {}
+    documentUploading.value = true
+
+    const payload = new FormData()
+    payload.append('agent_id', selectedAgent.value.id)
+    payload.append('nom_document', documentUploadForm.value.nom_document)
+    payload.append('categories_document_id', documentUploadForm.value.categories_document_id)
+    if (documentUploadForm.value.description) payload.append('description', documentUploadForm.value.description)
+    if (selectedDocumentFile.value) payload.append('fichier', selectedDocumentFile.value)
+
+    try {
+        await createDocument(payload)
+        ui.addToast('Document ajoute au dossier agent.', 'success')
+        showDocumentUploadModal.value = false
+        await goToAgent(selectedAgent.value.id)
+        agentTab.value = 'documents'
+    } catch (err) {
+        if (err.response?.status === 422) {
+            documentUploadErrors.value = err.response.data.errors || {}
+        } else {
+            documentUploadErrors.value = { general: err.response?.data?.message || 'Erreur lors de l ajout du document.' }
+        }
+    } finally {
+        documentUploading.value = false
+    }
+}
 
 async function downloadSelectedAgentDossier() {
     if (!selectedAgent.value || !sm_canManageAgentDocuments.value) return
@@ -836,7 +985,8 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
         <div class="info-item"><span class="label">Sexe</span><span class="value">${sexeLabel}</span></div>
         <div class="info-item"><span class="label">Situation familiale</span><span class="value">${a.situation_familiale || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Enfants</span><span class="value">${a.nombre_enfants ?? 'N/A'}</span></div>
-        <div class="info-item"><span class="label">Telephone</span><span class="value">${a.telephone || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Telephone professionnel</span><span class="value">${a.telephone_professionnel || a.telephone || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Telephone prive</span><span class="value">${a.telephone_prive || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Email prive</span><span class="value">${a.email_prive || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Email pro</span><span class="value">${a.email_professionnel || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Adresse</span><span class="value">${a.adresse || 'N/A'}</span></div>
@@ -853,10 +1003,12 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
         <div class="info-item"><span class="label">Departement</span><span class="value">${deptName}</span></div>
         <div class="info-item"><span class="label">Anciennete</span><span class="value">${anciennete}</span></div>
         <div class="info-item"><span class="label">Matricule Etat</span><span class="value">${a.matricule_etat || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Provenance matricule</span><span class="value">${a.institution ? a.institution.nom : 'N/A'}</span></div>
         <div class="info-item"><span class="label">Grade Etat</span><span class="value">${gradeName}</span></div>
         <div class="info-item"><span class="label">Niveau etudes</span><span class="value">${a.niveau_etudes || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Domaine etudes</span><span class="value">${a.domaine_etudes || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Annee engagement</span><span class="value">${a.annee_engagement_programme || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Role applicatif</span><span class="value">${a.role?.nom_role || 'N/A'}</span></div>
     </div>
     <div class="stats">
         <div class="stat"><span class="stat-val">${(a.documents || []).length}</span><span class="stat-lbl">Documents</span></div>
@@ -1860,6 +2012,11 @@ onMounted(() => {
   padding: .35rem .5rem; border-bottom: 1px solid #f3f4f6;
   font-size: .82rem;
 }
+.asm-tab-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: .9rem;
+}
 
 /* Message cards */
 .asm-msg-card {
@@ -1897,12 +2054,46 @@ onMounted(() => {
 }
 .asm-btn-download:hover:not(:disabled) { background: #115e59; }
 .asm-btn-download:disabled { opacity: .7; cursor: not-allowed; }
+.asm-btn-upload {
+  padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
+  border: none; background: #2563eb; color: #fff; cursor: pointer;
+  transition: all .2s;
+}
+.asm-btn-upload:hover:not(:disabled) { background: #1d4ed8; }
+.asm-btn-upload:disabled { opacity: .7; cursor: not-allowed; }
 .asm-btn-close {
   padding: .45rem 1.2rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
   border: 1.5px solid #e2e8f0; background: #fff; color: #64748b; cursor: pointer;
   transition: all .2s;
 }
 .asm-btn-close:hover { background: #f3f4f6; }
+.agent-doc-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, .55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 10020;
+}
+.agent-doc-dialog {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, .3);
+  overflow: hidden;
+}
+.agent-doc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+.agent-doc-body { padding: 1.25rem; }
 
 @media (max-width: 576px) {
   .asm-dialog { max-width: 100%; border-radius: 16px; }

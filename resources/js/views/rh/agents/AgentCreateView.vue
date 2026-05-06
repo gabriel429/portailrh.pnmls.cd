@@ -110,7 +110,7 @@
             </div>
             <div>
               <h5>Coordonnees</h5>
-              <small>E-mails, telephone et adresse</small>
+              <small>E-mails, telephones et adresse</small>
             </div>
           </div>
           <div class="row g-3">
@@ -124,12 +124,17 @@
               <input type="email" class="form-control" :class="{ 'is-invalid': errors.email_prive }" id="email_prive" v-model="form.email_prive" placeholder="nom@gmail.com">
               <div v-if="errors.email_prive" class="invalid-feedback">{{ errors.email_prive[0] }}</div>
             </div>
-            <div class="col-md-6">
-              <label for="telephone" class="form-label"><i class="fas fa-phone text-success me-1"></i> Telephone</label>
-              <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone }" id="telephone" v-model="form.telephone" placeholder="+243 ...">
-              <div v-if="errors.telephone" class="invalid-feedback">{{ errors.telephone[0] }}</div>
+            <div class="col-md-4">
+              <label for="telephone_professionnel" class="form-label"><i class="fas fa-phone text-success me-1"></i> Telephone professionnel</label>
+              <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone_professionnel }" id="telephone_professionnel" v-model="form.telephone_professionnel" placeholder="+243 ...">
+              <div v-if="errors.telephone_professionnel" class="invalid-feedback">{{ errors.telephone_professionnel[0] }}</div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label for="telephone_prive" class="form-label"><i class="fas fa-mobile-alt text-success me-1"></i> Telephone prive</label>
+              <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone_prive }" id="telephone_prive" v-model="form.telephone_prive" placeholder="+243 ...">
+              <div v-if="errors.telephone_prive" class="invalid-feedback">{{ errors.telephone_prive[0] }}</div>
+            </div>
+            <div class="col-md-4">
               <label for="adresse" class="form-label"><i class="fas fa-map-marker-alt text-danger me-1"></i> Adresse</label>
               <input type="text" class="form-control" :class="{ 'is-invalid': errors.adresse }" id="adresse" v-model="form.adresse" placeholder="Av. ..., Commune ...">
               <div v-if="errors.adresse" class="invalid-feedback">{{ errors.adresse[0] }}</div>
@@ -348,7 +353,8 @@ const form = reactive({
     nombre_enfants: null,
     email_professionnel: '',
     email_prive: '',
-    telephone: '',
+    telephone_professionnel: '',
+    telephone_prive: '',
     adresse: '',
     matricule_etat: '',
     institution_id: '',

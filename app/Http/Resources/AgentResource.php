@@ -22,6 +22,8 @@ class AgentResource extends JsonResource
             'email_prive' => $this->email_prive,
             'email_professionnel' => $this->email_professionnel,
             'telephone' => $this->telephone,
+            'telephone_professionnel' => $this->telephone_professionnel ?: $this->telephone,
+            'telephone_prive' => $this->telephone_prive,
             'photo' => $this->photo,
             'sexe' => $this->sexe,
             'date_naissance' => optional($this->date_naissance)->toDateString(),

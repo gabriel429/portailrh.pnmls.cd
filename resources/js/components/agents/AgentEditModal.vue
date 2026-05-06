@@ -147,7 +147,7 @@
                   </div>
                   <div>
                     <h6>Coordonnees</h6>
-                    <small>E-mails, telephone et adresse</small>
+                    <small>E-mails, telephones et adresse</small>
                   </div>
                 </div>
                 <div class="row g-3">
@@ -161,12 +161,17 @@
                     <input type="email" class="form-control" :class="{ 'is-invalid': errors.email_prive }" id="ed_email_prive" v-model="form.email_prive">
                     <div v-if="errors.email_prive" class="invalid-feedback">{{ errors.email_prive[0] }}</div>
                   </div>
-                  <div class="col-md-6">
-                    <label for="ed_telephone" class="form-label">Telephone</label>
-                    <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone }" id="ed_telephone" v-model="form.telephone">
-                    <div v-if="errors.telephone" class="invalid-feedback">{{ errors.telephone[0] }}</div>
+                  <div class="col-md-4">
+                    <label for="ed_telephone_professionnel" class="form-label">Telephone professionnel</label>
+                    <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone_professionnel }" id="ed_telephone_professionnel" v-model="form.telephone_professionnel">
+                    <div v-if="errors.telephone_professionnel" class="invalid-feedback">{{ errors.telephone_professionnel[0] }}</div>
                   </div>
-                  <div class="col-md-6">
+                  <div class="col-md-4">
+                    <label for="ed_telephone_prive" class="form-label">Telephone prive</label>
+                    <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone_prive }" id="ed_telephone_prive" v-model="form.telephone_prive">
+                    <div v-if="errors.telephone_prive" class="invalid-feedback">{{ errors.telephone_prive[0] }}</div>
+                  </div>
+                  <div class="col-md-4">
                     <label for="ed_adresse" class="form-label">Adresse</label>
                     <input type="text" class="form-control" :class="{ 'is-invalid': errors.adresse }" id="ed_adresse" v-model="form.adresse">
                     <div v-if="errors.adresse" class="invalid-feedback">{{ errors.adresse[0] }}</div>
@@ -425,7 +430,8 @@ const form = reactive({
   nombre_enfants: null,
   email_professionnel: '',
   email_prive: '',
-  telephone: '',
+  telephone_professionnel: '',
+  telephone_prive: '',
   adresse: '',
   matricule_etat: '',
   institution_id: '',
@@ -558,7 +564,8 @@ function populateForm(agentData) {
   form.nombre_enfants = agentData.nombre_enfants
   form.email_professionnel = agentData.email_professionnel || ''
   form.email_prive = agentData.email_prive || ''
-  form.telephone = agentData.telephone || ''
+  form.telephone_professionnel = agentData.telephone_professionnel || agentData.telephone || ''
+  form.telephone_prive = agentData.telephone_prive || ''
   form.adresse = agentData.adresse || ''
   form.matricule_etat = agentData.matricule_etat || ''
   form.institution_id = agentData.institution_id || agentData.institution?.id || ''
@@ -625,8 +632,8 @@ async function submitForm() {
   const formData = new FormData()
 
   for (const [key, value] of Object.entries(form)) {
-    if (value !== '' && value !== null && value !== undefined) {
-      formData.append(key, value)
+    if (value !== undefined) {
+      formData.append(key, value ?? '')
     }
   }
 

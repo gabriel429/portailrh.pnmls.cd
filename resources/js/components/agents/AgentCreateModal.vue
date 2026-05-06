@@ -105,9 +105,14 @@
                     <div v-if="errors.email_professionnel" class="invalid-feedback">{{ errors.email_professionnel[0] }}</div>
                   </div>
                   <div class="col-md-6">
-                    <label class="form-label fw-medium">Telephone</label>
-                    <input type="tel" class="form-control form-control-sm" :class="{ 'is-invalid': errors.telephone }" v-model="form.telephone">
-                    <div v-if="errors.telephone" class="invalid-feedback">{{ errors.telephone[0] }}</div>
+                    <label class="form-label fw-medium">Telephone professionnel</label>
+                    <input type="tel" class="form-control form-control-sm" :class="{ 'is-invalid': errors.telephone_professionnel }" v-model="form.telephone_professionnel">
+                    <div v-if="errors.telephone_professionnel" class="invalid-feedback">{{ errors.telephone_professionnel[0] }}</div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-medium">Telephone prive</label>
+                    <input type="tel" class="form-control form-control-sm" :class="{ 'is-invalid': errors.telephone_prive }" v-model="form.telephone_prive">
+                    <div v-if="errors.telephone_prive" class="invalid-feedback">{{ errors.telephone_prive[0] }}</div>
                   </div>
                 </div>
               </div>
@@ -229,7 +234,7 @@ const typeRattachement = ref('')
 const form = reactive({
   nom: '', prenom: '', postnom: '', sexe: '', annee_naissance: null,
   date_naissance: '', lieu_naissance: '', email_professionnel: '',
-  telephone: '', organe: '', departement_id: '', province_id: '',
+  telephone_professionnel: '', telephone_prive: '', organe: '', departement_id: '', province_id: '',
   fonction: '', niveau_etudes: '', annee_engagement_programme: null,
 })
 

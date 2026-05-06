@@ -62,6 +62,8 @@ class Agent extends Authenticatable
         'situation_familiale',
         'nombre_enfants',
         'telephone',
+        'telephone_professionnel',
+        'telephone_prive',
         'adresse',
         'organe',
         'poste_actuel',
@@ -295,4 +297,3 @@ class Agent extends Authenticatable
         return $this->permissions()->get();
     }
 }
-

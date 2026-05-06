@@ -175,6 +175,8 @@ class AgentController extends ApiController
                   ->orWhere('email_professionnel', 'like', $term)
                   ->orWhere('matricule_etat', 'like', $term)
                   ->orWhere('telephone', 'like', $term)
+                  ->when(Schema::hasColumn('agents', 'telephone_professionnel'), fn ($query) => $query->orWhere('telephone_professionnel', 'like', $term))
+                  ->when(Schema::hasColumn('agents', 'telephone_prive'), fn ($query) => $query->orWhere('telephone_prive', 'like', $term))
                   ->orWhere('fonction', 'like', $term)
                   ->orWhere('grade_etat', 'like', $term)
                   ->orWhere('niveau_etudes', 'like', $term)
@@ -329,6 +331,8 @@ class AgentController extends ApiController
             'situation_familiale' => 'nullable|string',
             'nombre_enfants' => 'nullable|integer|min:0',
             'telephone' => 'nullable|string',
+            'telephone_professionnel' => 'nullable|string',
+            'telephone_prive' => 'nullable|string',
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
             'fonction' => 'required|exists:fonctions,nom',
@@ -364,6 +368,7 @@ class AgentController extends ApiController
 
         $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
         $validated['nombre_enfants'] = $this->defaultNombreEnfants($validated['nombre_enfants'] ?? null);
+        $validated = $this->normalizeAgentPhoneFields($validated);
 
         $validated['poste_actuel'] = $validated['fonction'];
 
@@ -536,8 +541,11 @@ class AgentController extends ApiController
                 ['Date et lieu de naissance', trim($this->dateLabel($agent->date_naissance) . ' - ' . ($agent->lieu_naissance ?? ''))],
                 ['Situation familiale', $agent->situation_familiale],
                 ['Nombre d enfants', (string) ($agent->nombre_enfants ?? '')],
-                ['Telephone', $agent->telephone],
+                ['Telephone professionnel', $agent->telephone_professionnel ?: $agent->telephone],
+                ['Telephone prive', $agent->telephone_prive],
                 ['Email institutionnel', $agent->email_professionnel ?? $agent->email],
+                ['Email prive', $agent->email_prive],
+                ['Adresse', $agent->adresse],
             ]) . '</div></div>'
             . '<div class="section"><h2>Donnees administratives et affectation</h2><div class="grid">' . $rows([
                 ['Organe', $agent->organe],
@@ -547,7 +555,9 @@ class AgentController extends ApiController
                 ['Grade Etat', $agent->grade?->libelle ?? $agent->grade_etat],
                 ['Institution origine', $agent->institution?->nom],
                 ['Niveau d etudes', $agent->niveau_etudes],
+                ['Domaine d etudes', $agent->domaine_etudes],
                 ['Annee engagement', (string) ($agent->annee_engagement_programme ?? '')],
+                ['Date embauche', $this->dateLabel($agent->date_embauche)],
             ]) . '</div></div>'
             . '<div class="section"><h2>Parcours</h2><table><thead><tr><th>Fonction</th><th>Departement</th><th>Province</th><th>Debut</th><th>Fin</th></tr></thead><tbody>' . $affectationRows . '</tbody></table></div>'
             . '<div class="section"><h2>Documents disponibles</h2><table><thead><tr><th>Document</th><th>Categorie</th><th>Statut</th><th>Date</th></tr></thead><tbody>' . $documentsRows . '</tbody></table></div>'
@@ -624,6 +634,8 @@ class AgentController extends ApiController
             'situation_familiale' => 'nullable|string',
             'nombre_enfants' => 'nullable|integer|min:0',
             'telephone' => 'nullable|string',
+            'telephone_professionnel' => 'nullable|string',
+            'telephone_prive' => 'nullable|string',
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
             'fonction' => 'required|exists:fonctions,nom',
@@ -679,6 +691,7 @@ class AgentController extends ApiController
 
         $validated['situation_familiale'] = $this->defaultSituationFamiliale($validated['situation_familiale'] ?? null);
         $validated['nombre_enfants'] = $this->defaultNombreEnfants($validated['nombre_enfants'] ?? null);
+        $validated = $this->normalizeAgentPhoneFields($validated);
 
         // Remove domaine_etudes if column doesn't exist
         if (!Schema::hasColumn('agents', 'domaine_etudes')) {
@@ -801,7 +814,7 @@ class AgentController extends ApiController
             fputcsv($file, [
                 'ID Agent', 'Matricule Etat', 'Nom', 'Postnom', 'Prenom', 'Sexe',
                 'Annee naissance', 'Lieu naissance', 'Etat civil', 'Enfants',
-                'Telephone', 'Email prive', 'Email institutionnel',
+                'Telephone principal', 'Telephone professionnel', 'Telephone prive', 'Email prive', 'Email institutionnel',
                 'Organe', 'Fonction', 'Poste actuel', 'Departement', 'Province',
                 'Grade Etat', 'Institution origine', 'Niveau etudes', 'Domaine etudes',
                 'Annee engagement', 'Anciennete (ans)', 'Date embauche', 'Statut',
@@ -824,6 +837,8 @@ class AgentController extends ApiController
                     $agent->situation_familiale ?? '',
                     $agent->nombre_enfants ?? '',
                     $agent->telephone ?? '',
+                    ($agent->telephone_professionnel ?: $agent->telephone) ?? '',
+                    $agent->telephone_prive ?? '',
                     $agent->email_prive ?? '',
                     $agent->email_professionnel ?? '',
                     $agent->organe ?? '',
@@ -1015,7 +1030,8 @@ class AgentController extends ApiController
                 'lieu_naissance',
                 'situation_familiale',
                 'nombre_enfants',
-                'telephone',
+                'telephone_professionnel',
+                'telephone_prive',
                 'adresse',
                 'email_prive',
                 'email_professionnel',
@@ -1043,6 +1059,7 @@ class AgentController extends ApiController
                 'marie',
                 '3',
                 '0812345678',
+                '0998765432',
                 'Commune de la Gombe',
                 'jean@gmail.com',
                 'jean.mukendi@pnmls.cd',
@@ -1100,6 +1117,8 @@ class AgentController extends ApiController
             'situation_familiale' => $this->normalizeSituationFamiliale($this->importValue($row, $headerIndexes, 'situation_familiale')),
             'nombre_enfants' => $this->normalizeImportedInteger($this->importValue($row, $headerIndexes, 'nombre_enfants')),
             'telephone' => $this->importValue($row, $headerIndexes, 'telephone'),
+            'telephone_professionnel' => $this->importValue($row, $headerIndexes, 'telephone_professionnel'),
+            'telephone_prive' => $this->importValue($row, $headerIndexes, 'telephone_prive'),
             'adresse' => $this->importValue($row, $headerIndexes, 'adresse'),
             'email_prive' => $this->normalizeImportedEmail($this->importValue($row, $headerIndexes, 'email_prive')),
             'email_professionnel' => $this->normalizeImportedEmail($this->importValue($row, $headerIndexes, 'email_professionnel')),
@@ -1153,6 +1172,8 @@ class AgentController extends ApiController
             unset($validated['domaine_etudes']);
         }
 
+        $validated = $this->normalizeAgentPhoneFields($validated);
+
         return $validated;
     }
 
@@ -1172,6 +1193,8 @@ class AgentController extends ApiController
             'situation_familiale' => 'nullable|string',
             'nombre_enfants' => 'nullable|integer|min:0',
             'telephone' => 'nullable|string',
+            'telephone_professionnel' => 'nullable|string',
+            'telephone_prive' => 'nullable|string',
             'adresse' => 'nullable|string',
             'organe' => 'required|string|max:255',
             'fonction' => 'required|string|max:255',
@@ -1316,6 +1339,14 @@ class AgentController extends ApiController
             'nombre_enfants' => 'nombre_enfants',
             'enfants' => 'nombre_enfants',
             'telephone' => 'telephone',
+            'telephone_professionnel' => 'telephone_professionnel',
+            'telephone_pro' => 'telephone_professionnel',
+            'tel_professionnel' => 'telephone_professionnel',
+            'tel_pro' => 'telephone_professionnel',
+            'telephone_prive' => 'telephone_prive',
+            'telephone_personnel' => 'telephone_prive',
+            'tel_prive' => 'telephone_prive',
+            'tel_personnel' => 'telephone_prive',
             'adresse' => 'adresse',
             'email_prive' => 'email_prive',
             'email_personnel' => 'email_prive',
@@ -1406,6 +1437,40 @@ class AgentController extends ApiController
         }
 
         return (int) $value;
+    }
+
+    private function normalizeAgentPhoneFields(array $validated): array
+    {
+        $legacy = $this->nullableTrim($validated['telephone'] ?? null);
+        $professional = $this->nullableTrim($validated['telephone_professionnel'] ?? null) ?: $legacy;
+        $private = $this->nullableTrim($validated['telephone_prive'] ?? null);
+
+        $validated['telephone'] = $professional ?: $private;
+
+        if (Schema::hasColumn('agents', 'telephone_professionnel')) {
+            $validated['telephone_professionnel'] = $professional;
+        } else {
+            unset($validated['telephone_professionnel']);
+        }
+
+        if (Schema::hasColumn('agents', 'telephone_prive')) {
+            $validated['telephone_prive'] = $private;
+        } else {
+            unset($validated['telephone_prive']);
+        }
+
+        return $validated;
+    }
+
+    private function nullableTrim(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     private function defaultImportedNiveauEtudes(mixed $value): string
