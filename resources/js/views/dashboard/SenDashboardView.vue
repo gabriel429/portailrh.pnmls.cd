@@ -2816,4 +2816,91 @@ onMounted(async () => {
   .agent-email-actions { flex-direction: column-reverse; }
   .agent-email-secondary, .agent-email-primary { width: 100%; }
 }
+.drill-panel {
+  width: 620px;
+  max-width: 95vw;
+  background: #f8fafc;
+  animation: drillSlideIn .25s ease-out;
+}
+@keyframes drillSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.drill-header {
+  padding: 1.45rem 1.7rem;
+  gap: 1rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .12);
+}
+.drill-header-title { font-size: 1.05rem; line-height: 1.2; }
+.drill-header-sub { font-size: .76rem; opacity: .82; }
+.drill-back,
+.drill-close {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: rgba(255,255,255,.18);
+}
+.drill-body { padding: 1.25rem 1.45rem 1.6rem; }
+.drill-summary,
+.drill-prov-stats,
+.drill-dept-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+.drill-summary-item,
+.drill-prov-stat-card {
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0ea5e9;
+  text-align: left;
+  padding: .88rem 1rem;
+  min-height: 76px;
+}
+.drill-summary-val,
+.drill-prov-stat-val { font-size: 1.55rem; font-weight: 900; color: #1e293b; }
+.drill-summary-lbl,
+.drill-prov-stat-lbl { font-size: .66rem; font-weight: 800; }
+.drill-item-card,
+.drill-prov-info,
+.drill-prov-dept,
+.drill-prov-activite {
+  border-radius: 12px;
+  border-color: #e2e8f0;
+}
+.drill-item-clickable:hover,
+.drill-prov-agent-row:hover,
+.drill-prov-dept:hover {
+  background: #f0f9ff;
+  border-color: #bae6fd;
+  box-shadow: 0 6px 18px rgba(14,165,233,.08);
+}
+.drill-prov-agent-row {
+  border-radius: 12px;
+  padding: .78rem .9rem;
+  gap: .8rem;
+  border-color: #e2e8f0;
+}
+.drill-prov-agent-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+}
+.drill-prov-agent-name { font-size: .86rem; font-weight: 800; }
+.drill-prov-agent-fn { font-size: .72rem; }
+.drill-presence-badge { display: inline-flex; margin-top: .15rem; }
+.drill-empty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+@media (max-width: 640px) {
+  .drill-panel {
+    max-width: 100vw;
+    height: 92vh;
+    border-radius: 16px 16px 0 0;
+  }
+}
 </style>

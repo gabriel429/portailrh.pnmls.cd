@@ -34,7 +34,7 @@
 
         <!-- Droite : KPIs -->
         <div class="sena-hero-kpis">
-          <div class="sena-kpi-pill" @click="router.push('/taches')">
+          <div class="sena-kpi-pill" @click="openSenaDrill('taches')">
             <div class="sena-kpi-pill-icon"><i class="fas fa-tasks"></i></div>
             <div>
               <div class="sena-kpi-pill-val">{{ myTasksEnCours }}</div>
@@ -52,12 +52,13 @@
             <i class="fas fa-chevron-right sena-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="sena-kpi-pill">
+          <div class="sena-kpi-pill" @click="openSenaDrill('presence')">
             <div class="sena-kpi-pill-icon"><i class="fas fa-chart-line"></i></div>
             <div>
               <div class="sena-kpi-pill-val">{{ data?.attendance?.today_rate ?? 0 }}<span style="font-size:.7rem;">%</span></div>
               <div class="sena-kpi-pill-lbl">{{ data?.scope_label === 'sena' ? 'Présence périmètre' : 'Présence SEN' }}</div>
             </div>
+            <i class="fas fa-chevron-right sena-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sena-kpi-pill" @click="router.push('/signalements')">
@@ -227,6 +228,9 @@
                 <h3 class="sena-section-title">Présence du jour</h3>
                 <p class="sena-section-sub">{{ data?.scope_label === 'sena' ? 'Agents suivis' : 'Agents SEN' }} · {{ today }}</p>
               </div>
+              <button type="button" class="sena-section-btn ms-auto" @click="openSenaDrill('presence')">
+                Détail <i class="fas fa-arrow-right ms-1"></i>
+              </button>
             </div>
             <div class="sena-presence-stats">
               <div class="sena-presence-big">
@@ -271,6 +275,9 @@
                 <h3 class="sena-section-title">{{ data?.scope_label === 'sena' ? 'PTA — Avancement du périmètre' : 'PTA — Avancement SEN' }}</h3>
                 <p class="sena-section-sub">{{ currentYear }} · {{ data.pta?.total ?? 0 }} activité(s)</p>
               </div>
+              <button type="button" class="sena-section-btn ms-auto" @click="openSenaDrill('pta')">
+                Détail <i class="fas fa-arrow-right ms-1"></i>
+              </button>
             </div>
             <div class="sena-pta-progress-wrap">
               <div class="sena-pta-big-pct">{{ data.pta?.avg_completion ?? 0 }}<span class="sena-pta-pct-unit">%</span></div>
@@ -372,6 +379,175 @@
 
       </div><!-- /.sena-body -->
     </template>
+
+    <Teleport to="body">
+      <div v-if="senaDrillOpen" class="sena-drill-overlay" @click.self="closeSenaDrill">
+        <aside class="sena-drill-panel" role="dialog" aria-modal="true">
+          <div class="sena-drill-header">
+            <div class="sena-drill-header-left">
+              <div class="sena-drill-header-icon">
+                <i class="fas" :class="senaDrillIcon"></i>
+              </div>
+              <div>
+                <div class="sena-drill-title">{{ senaDrillTitle }}</div>
+                <div class="sena-drill-sub">{{ data?.scope_label === 'sena' ? 'Secrétariat de Direction' : 'SEN' }} · {{ today }}</div>
+              </div>
+            </div>
+            <button type="button" class="sena-drill-close" aria-label="Fermer" @click="closeSenaDrill">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="sena-drill-body">
+            <div class="sena-drill-tabs">
+              <button type="button" class="sena-drill-tab" :class="{ active: senaDrillSection === 'taches' }" @click="setSenaDrillSection('taches')">
+                <i class="fas fa-tasks"></i> Tâches
+              </button>
+              <button type="button" class="sena-drill-tab" :class="{ active: senaDrillSection === 'presence' }" @click="setSenaDrillSection('presence')">
+                <i class="fas fa-user-check"></i> Présence
+              </button>
+              <button type="button" class="sena-drill-tab" :class="{ active: senaDrillSection === 'pta' }" @click="setSenaDrillSection('pta')">
+                <i class="fas fa-chart-pie"></i> PTA
+              </button>
+            </div>
+
+            <template v-if="senaDrillSection === 'taches'">
+              <div class="sena-drill-stat-grid">
+                <div class="sena-drill-stat-card" style="border-color:#0077B5;">
+                  <div class="sena-drill-stat-val">{{ data.my_tasks?.length ?? 0 }}</div>
+                  <div class="sena-drill-stat-lbl">Mes tâches</div>
+                </div>
+                <div class="sena-drill-stat-card" style="border-color:#d97706;">
+                  <div class="sena-drill-stat-val">{{ myTasksEnCours }}</div>
+                  <div class="sena-drill-stat-lbl">En cours</div>
+                </div>
+                <div class="sena-drill-stat-card" style="border-color:#dc2626;">
+                  <div class="sena-drill-stat-val">{{ overdueTasksCount }}</div>
+                  <div class="sena-drill-stat-lbl">En retard</div>
+                </div>
+                <div class="sena-drill-stat-card" style="border-color:#7c3aed;">
+                  <div class="sena-drill-stat-val">{{ data.upcoming_deadlines?.length ?? 0 }}</div>
+                  <div class="sena-drill-stat-lbl">Échéances</div>
+                </div>
+              </div>
+              <div class="sena-drill-section-title">
+                <i class="fas fa-list-check"></i> Dernières tâches
+              </div>
+              <div v-if="data.my_tasks?.length" class="sena-drill-list">
+                <router-link v-for="t in data.my_tasks" :key="t.id" :to="`/taches/${t.id}`" class="sena-drill-row" @click="closeSenaDrill">
+                  <div class="sena-drill-row-icon" :class="isTaskOverdue(t) ? 'danger' : ''">
+                    <i class="fas" :class="isTaskOverdue(t) ? 'fa-exclamation-triangle' : 'fa-tasks'"></i>
+                  </div>
+                  <div class="sena-drill-row-info">
+                    <div class="sena-drill-row-title">{{ t.titre }}</div>
+                    <div class="sena-drill-row-sub">{{ taskStatutLabel(t.statut) }} · {{ t.date_echeance ? fmtDate(t.date_echeance) : 'Sans échéance' }}</div>
+                  </div>
+                  <div class="sena-drill-progress">
+                    <div class="sena-drill-progress-bar" :style="{ width: (t.pourcentage ?? 0) + '%', background: taskProgressColor(t.pourcentage) }"></div>
+                  </div>
+                </router-link>
+              </div>
+              <div v-else class="sena-drill-empty">
+                <i class="fas fa-check-circle"></i>
+                <span>Aucune tâche à afficher.</span>
+              </div>
+            </template>
+
+            <template v-else-if="senaDrillSection === 'presence'">
+              <div class="sena-drill-stat-grid">
+                <button type="button" class="sena-drill-stat-card sena-drill-clickable" :class="{ active: senaPresenceFilter === 'present' }" style="border-color:#059669;" @click="setSenaPresenceFilter('present')">
+                  <div class="sena-drill-stat-val">{{ data.attendance?.today_present ?? 0 }}</div>
+                  <div class="sena-drill-stat-lbl">Présents</div>
+                </button>
+                <button type="button" class="sena-drill-stat-card sena-drill-clickable" :class="{ active: senaPresenceFilter === 'absent' }" style="border-color:#d97706;" @click="setSenaPresenceFilter('absent')">
+                  <div class="sena-drill-stat-val">{{ senaAbsentCount }}</div>
+                  <div class="sena-drill-stat-lbl">Absents</div>
+                </button>
+                <button type="button" class="sena-drill-stat-card sena-drill-clickable" :class="{ active: senaPresenceFilter === 'all' }" style="border-color:#0077B5;" @click="setSenaPresenceFilter('all')">
+                  <div class="sena-drill-stat-val">{{ data.attendance?.today_rate ?? 0 }}%</div>
+                  <div class="sena-drill-stat-lbl">Taux jour</div>
+                </button>
+                <button type="button" class="sena-drill-stat-card sena-drill-clickable" :class="{ active: senaPresenceFilter === 'all' }" style="border-color:#7c3aed;" @click="setSenaPresenceFilter('all')">
+                  <div class="sena-drill-stat-val">{{ data.attendance?.monthly_rate ?? 0 }}%</div>
+                  <div class="sena-drill-stat-lbl">Moy. mois</div>
+                </button>
+              </div>
+              <div class="sena-drill-section-title">
+                <i class="fas fa-user-check"></i> {{ senaPresenceFilterTitle(filteredSenaAttendanceAgents.length) }}
+              </div>
+              <div v-if="filteredSenaAttendanceAgents.length" class="sena-drill-list">
+                <div v-for="a in filteredSenaAttendanceAgents" :key="a.id" class="sena-drill-agent-row">
+                  <div class="sena-drill-avatar">
+                    <img v-if="a.photo" :src="agentPhotoUrl(a.photo)" :alt="a.prenom" @error="e => e.target.style.display='none'">
+                    <span v-else>{{ senaAgentInitials(a) }}</span>
+                  </div>
+                  <div class="sena-drill-row-info">
+                    <div class="sena-drill-row-title">{{ a.prenom }} {{ a.nom }}</div>
+                    <div class="sena-drill-row-sub">{{ a.fonction || 'Fonction non renseignée' }}</div>
+                    <div class="sena-drill-presence-note" :class="isSenaPresent(a) ? 'present' : 'absent'">
+                      <i class="fas" :class="isSenaPresent(a) ? 'fa-check-circle' : 'fa-clock'"></i>
+                      {{ isSenaPresent(a) ? `Pointé ${a.heure_entree || ''}` : 'Non pointé aujourd’hui' }}
+                    </div>
+                  </div>
+                  <div class="sena-drill-agent-meta">
+                    <span>{{ a.taux_presence ?? 0 }}%</span>
+                    <small>{{ a.jours_presents ?? 0 }}j ce mois</small>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="sena-drill-empty">
+                <i class="fas fa-user-check"></i>
+                <span>Aucun agent dans ce filtre.</span>
+              </div>
+            </template>
+
+            <template v-else>
+              <div class="sena-drill-stat-grid">
+                <div class="sena-drill-stat-card" style="border-color:#7c3aed;">
+                  <div class="sena-drill-stat-val">{{ data.pta?.total ?? 0 }}</div>
+                  <div class="sena-drill-stat-lbl">Activités</div>
+                </div>
+                <div class="sena-drill-stat-card" style="border-color:#059669;">
+                  <div class="sena-drill-stat-val">{{ data.pta?.terminee ?? 0 }}</div>
+                  <div class="sena-drill-stat-lbl">Terminées</div>
+                </div>
+                <div class="sena-drill-stat-card" style="border-color:#d97706;">
+                  <div class="sena-drill-stat-val">{{ data.pta?.en_cours ?? 0 }}</div>
+                  <div class="sena-drill-stat-lbl">En cours</div>
+                </div>
+                <div class="sena-drill-stat-card" style="border-color:#0077B5;">
+                  <div class="sena-drill-stat-val">{{ data.pta?.avg_completion ?? 0 }}%</div>
+                  <div class="sena-drill-stat-lbl">Avancement</div>
+                </div>
+              </div>
+              <div class="sena-drill-section-title">
+                <i class="fas fa-clipboard-list"></i> Activités PTA {{ currentYear }}
+              </div>
+              <div v-if="data.pta_activities?.length" class="sena-drill-list">
+                <div v-for="act in data.pta_activities" :key="act.id" class="sena-drill-activity">
+                  <div class="sena-drill-activity-pct" :style="{ color: taskProgressColor(act.pourcentage) }">{{ act.pourcentage ?? 0 }}%</div>
+                  <div class="sena-drill-row-info">
+                    <div class="sena-drill-row-title">{{ act.titre }}</div>
+                    <div class="sena-drill-row-sub">
+                      <span v-if="act.categorie">{{ act.categorie }}</span>
+                      <span v-if="act.departement"> · {{ act.departement.nom }}</span>
+                      <span v-if="act.trimestre"> · {{ act.trimestre }}</span>
+                    </div>
+                    <div class="sena-drill-progress wide">
+                      <div class="sena-drill-progress-bar" :style="{ width: Math.min(act.pourcentage ?? 0, 100) + '%', background: taskProgressColor(act.pourcentage) }"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="sena-drill-empty">
+                <i class="fas fa-clipboard"></i>
+                <span>Aucune activité PTA à afficher.</span>
+              </div>
+            </template>
+          </div>
+        </aside>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -388,6 +564,22 @@ const loading = ref(true)
 const loadError = ref(null)
 const data    = ref({})
 const currentYear = new Date().getFullYear()
+const senaDrillOpen = ref(false)
+const senaDrillSection = ref('presence')
+const senaPresenceFilter = ref('all')
+
+const senaDrillTitle = computed(() => ({
+  taches: 'Suivi des tâches',
+  presence: 'Présence du périmètre',
+  pta: 'Plan de travail annuel',
+}[senaDrillSection.value] ?? 'Détail')
+)
+const senaDrillIcon = computed(() => ({
+  taches: 'fa-tasks',
+  presence: 'fa-user-check',
+  pta: 'fa-chart-pie',
+}[senaDrillSection.value] ?? 'fa-chart-line')
+)
 
 // ─── Identity helpers ──────────────────────────────────────
 const senaIsFemme = computed(() => {
@@ -432,6 +624,57 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 const myTasksEnCours = computed(() =>
   (data.value.my_tasks ?? []).filter(t => t.statut !== 'terminee').length
 )
+const overdueTasksCount = computed(() =>
+  (data.value.my_tasks ?? []).filter(isTaskOverdue).length
+)
+const senaAttendanceAgents = computed(() => data.value.attendance_agents ?? [])
+const senaAbsentCount = computed(() =>
+  Math.max((data.value.attendance?.total_actifs ?? 0) - (data.value.attendance?.today_present ?? 0), 0)
+)
+const filteredSenaAttendanceAgents = computed(() => {
+  if (senaPresenceFilter.value === 'present') {
+    return senaAttendanceAgents.value.filter(isSenaPresent)
+  }
+  if (senaPresenceFilter.value === 'absent') {
+    return senaAttendanceAgents.value.filter(a => !isSenaPresent(a))
+  }
+  return senaAttendanceAgents.value
+})
+
+function openSenaDrill(section = 'presence') {
+  setSenaDrillSection(section)
+  senaDrillOpen.value = true
+}
+function closeSenaDrill() {
+  senaDrillOpen.value = false
+  senaPresenceFilter.value = 'all'
+}
+function setSenaDrillSection(section = 'presence') {
+  senaDrillSection.value = section
+  if (section !== 'presence') senaPresenceFilter.value = 'all'
+}
+function setSenaPresenceFilter(filter = 'all') {
+  senaPresenceFilter.value = filter
+}
+function isSenaPresent(agent) {
+  return agent?.presence_status === 'present'
+}
+function senaPresenceFilterTitle(total = 0) {
+  const labels = {
+    all: 'Tous les agents',
+    present: 'Agents présents aujourd’hui',
+    absent: 'Agents non pointés aujourd’hui',
+  }
+  return `${labels[senaPresenceFilter.value] ?? labels.all} (${total})`
+}
+function senaAgentInitials(agent) {
+  return ((agent?.prenom?.[0] ?? '') + (agent?.nom?.[0] ?? '')).toUpperCase() || 'S'
+}
+function agentPhotoUrl(photo) {
+  if (!photo) return null
+  if (/^https?:\/\//i.test(photo)) return photo
+  return '/' + String(photo).replace(/^\/+/, '')
+}
 
 // ─── Task helpers ──────────────────────────────────────────
 function taskStatutLabel(s) {
@@ -751,12 +994,61 @@ onMounted(async () => {
 .sena-signalement-arrow { flex-shrink: 0; font-size: .65rem; color: #cbd5e1; }
 
 /* ══════════ RESPONSIVE ══════════ */
+.sena-drill-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(15,23,42,.55); backdrop-filter: blur(6px); display: flex; align-items: stretch; justify-content: flex-end; }
+.sena-drill-panel { width: 580px; max-width: 95vw; background: #f8fafc; display: flex; flex-direction: column; overflow: hidden; box-shadow: -12px 0 48px rgba(0,0,0,.18); animation: senaDrillSlide .25s ease-out; }
+@keyframes senaDrillSlide { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+.sena-drill-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.45rem 1.7rem; color: #fff; background: linear-gradient(135deg, #0f172a 0%, #0077B5 100%); }
+.sena-drill-header-left { display: flex; align-items: center; gap: .9rem; min-width: 0; }
+.sena-drill-header-icon { width: 44px; height: 44px; border-radius: 12px; background: rgba(255,255,255,.16); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.sena-drill-title { font-size: 1.05rem; font-weight: 800; line-height: 1.2; }
+.sena-drill-sub { font-size: .76rem; opacity: .78; margin-top: .2rem; text-transform: capitalize; }
+.sena-drill-close { width: 36px; height: 36px; border-radius: 10px; border: none; background: rgba(255,255,255,.18); color: #fff; cursor: pointer; }
+.sena-drill-close:hover { background: rgba(255,255,255,.3); }
+.sena-drill-body { flex: 1; overflow-y: auto; padding: 1.25rem 1.45rem 1.6rem; }
+.sena-drill-tabs { display: flex; gap: .45rem; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: .6rem; }
+.sena-drill-tab { flex: 1; border: 1px solid #e2e8f0; background: #fff; color: #64748b; border-radius: 10px; padding: .58rem .75rem; font-size: .78rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: .38rem; cursor: pointer; }
+.sena-drill-tab.active { background: #0077B5; border-color: #0077B5; color: #fff; box-shadow: 0 8px 18px rgba(0,119,181,.2); }
+.sena-drill-stat-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1rem; }
+.sena-drill-stat-card { border: 1px solid #e2e8f0; border-left: 4px solid #0077B5; background: #fff; border-radius: 12px; padding: .88rem 1rem; text-align: left; min-height: 76px; }
+button.sena-drill-stat-card { font: inherit; cursor: pointer; }
+.sena-drill-clickable { transition: transform .18s, box-shadow .18s, background .18s; }
+.sena-drill-clickable:hover, .sena-drill-clickable.active { transform: translateY(-1px); background: #f0f9ff; box-shadow: 0 10px 22px rgba(14,165,233,.15); }
+.sena-drill-stat-val { font-size: 1.55rem; font-weight: 900; color: #1e293b; line-height: 1; }
+.sena-drill-stat-lbl { font-size: .66rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-top: .28rem; }
+.sena-drill-section-title { font-size: .84rem; font-weight: 800; color: #475569; display: flex; align-items: center; gap: .5rem; margin: 1rem 0 .7rem; }
+.sena-drill-list { display: flex; flex-direction: column; gap: .5rem; }
+.sena-drill-row, .sena-drill-agent-row, .sena-drill-activity { display: flex; align-items: center; gap: .8rem; padding: .78rem .9rem; border-radius: 12px; background: #fff; border: 1px solid #e2e8f0; text-decoration: none; color: inherit; transition: background .15s, border-color .15s, box-shadow .15s; }
+.sena-drill-row:hover, .sena-drill-agent-row:hover, .sena-drill-activity:hover { background: #f0f9ff; border-color: #bae6fd; box-shadow: 0 6px 18px rgba(14,165,233,.08); }
+.sena-drill-row-icon, .sena-drill-avatar { width: 42px; height: 42px; border-radius: 50%; background: #e0f2fe; color: #0077B5; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 800; flex-shrink: 0; overflow: hidden; }
+.sena-drill-row-icon.danger { background: #fee2e2; color: #dc2626; }
+.sena-drill-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sena-drill-row-info { flex: 1; min-width: 0; }
+.sena-drill-row-title { font-size: .86rem; font-weight: 800; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sena-drill-row-sub { font-size: .72rem; color: #94a3b8; margin-top: .12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sena-drill-progress { width: 78px; height: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; flex-shrink: 0; }
+.sena-drill-progress.wide { width: 100%; margin-top: .45rem; }
+.sena-drill-progress-bar { height: 100%; border-radius: 999px; transition: width .4s; }
+.sena-drill-presence-note { margin-top: .22rem; font-size: .7rem; font-weight: 800; }
+.sena-drill-presence-note.present { color: #059669; }
+.sena-drill-presence-note.absent { color: #d97706; }
+.sena-drill-agent-meta { display: flex; flex-direction: column; align-items: flex-end; gap: .12rem; color: #475569; font-weight: 800; font-size: .76rem; }
+.sena-drill-agent-meta small { color: #94a3b8; font-weight: 700; }
+.sena-drill-activity { align-items: flex-start; }
+.sena-drill-activity-pct { width: 52px; flex-shrink: 0; text-align: right; font-size: 1.08rem; font-weight: 900; }
+.sena-drill-empty { min-height: 180px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .55rem; color: #94a3b8; font-size: .86rem; font-weight: 700; text-align: center; }
+.sena-drill-empty i { color: #059669; font-size: 1.55rem; }
+
 @media (max-width: 768px) {
   .sena-hero-inner  { flex-direction: column; align-items: flex-start; }
   .sena-hero-kpis   { width: 100%; overflow-x: auto; }
   .sena-section-split { grid-template-columns: 1fr; }
   .sena-task-right  { display: none; }
   .sena-request-steps { display: none; }
+  .sena-drill-panel { width: 100vw; max-width: 100vw; height: 92vh; border-radius: 16px 16px 0 0; }
+  .sena-drill-overlay { align-items: flex-end; }
+  .sena-drill-body { padding: 1rem; }
+  .sena-drill-agent-row, .sena-drill-activity { align-items: flex-start; }
+  .sena-drill-progress:not(.wide) { display: none; }
 }
 
 /* ══════════ DARK MODE ══════════ */

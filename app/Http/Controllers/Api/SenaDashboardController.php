@@ -103,6 +103,52 @@ class SenaDashboardController extends ApiController
             ? round($monthlyPointages->avg(fn ($p) => ($p->present / $totalActifs) * 100), 1)
             : 0;
 
+        $joursOuvrables = max(
+            Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                ->whereIn('agent_id', $senAgentIds)
+                ->select(DB::raw('COUNT(DISTINCT date_pointage) as jours'))
+                ->value('jours'),
+            1
+        );
+
+        $todayPointages = Pointage::byDate($now->toDateString())
+            ->whereIn('agent_id', $senAgentIds)
+            ->get(['agent_id', 'heure_entree', 'heure_sortie', 'observations'])
+            ->keyBy('agent_id');
+
+        $monthlyPresence = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereIn('agent_id', $senAgentIds)
+            ->whereNotNull('heure_entree')
+            ->select('agent_id', DB::raw('COUNT(DISTINCT date_pointage) as jours_presents'))
+            ->groupBy('agent_id')
+            ->pluck('jours_presents', 'agent_id');
+
+        $attendanceAgents = Agent::whereIn('id', $senAgentIds)
+            ->actifs()
+            ->orderBy('nom')
+            ->limit(80)
+            ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'sexe'])
+            ->map(function ($agent) use ($todayPointages, $monthlyPresence, $joursOuvrables) {
+                $pointage = $todayPointages->get($agent->id);
+                $joursPresents = (int) ($monthlyPresence[$agent->id] ?? 0);
+                $formatTime = fn ($value) => $value ? Carbon::parse($value)->format('H:i') : null;
+
+                return [
+                    'id'              => $agent->id,
+                    'nom'             => $agent->nom,
+                    'prenom'          => $agent->prenom,
+                    'photo'           => $agent->photo,
+                    'fonction'        => $agent->poste_actuel ?: $agent->fonction,
+                    'sexe'            => $agent->sexe,
+                    'presence_status' => $pointage?->heure_entree ? 'present' : 'absent',
+                    'heure_entree'    => $formatTime($pointage?->heure_entree),
+                    'heure_sortie'    => $formatTime($pointage?->heure_sortie),
+                    'observation'     => $pointage?->observations,
+                    'jours_presents'  => $joursPresents,
+                    'taux_presence'   => round(($joursPresents / $joursOuvrables) * 100, 1),
+                ];
+            });
+
         // ─── PTA global SEN (année en cours) ──────────────────
         $ptaSen = ActivitePlan::where('niveau_administratif', 'SEN')
             ->where('annee', $currentYear)
@@ -111,6 +157,13 @@ class SenaDashboardController extends ApiController
                      DB::raw('SUM(CASE WHEN statut="en_cours" THEN 1 ELSE 0 END) as en_cours'),
                      DB::raw('SUM(CASE WHEN statut="nouvelle" THEN 1 ELSE 0 END) as nouvelle'))
             ->first();
+
+        $ptaActivities = ActivitePlan::where('niveau_administratif', 'SEN')
+            ->where('annee', $currentYear)
+            ->with('departement:id,nom')
+            ->orderByDesc('updated_at')
+            ->limit(30)
+            ->get(['id', 'titre', 'categorie', 'departement_id', 'trimestre', 'statut', 'date_debut', 'date_fin', 'pourcentage']);
 
         // ─── Signalements en cours ─────────────────────────────
         $signalementsEnCours = Signalement::whereNotIn('statut', ['ferme', 'clos', 'archive'])
@@ -131,6 +184,7 @@ class SenaDashboardController extends ApiController
                 'today_rate'     => $todayRate,
                 'monthly_rate'   => $monthlyRate,
             ],
+            'attendance_agents'  => $attendanceAgents,
             'pta'                => [
                 'total'          => (int) ($ptaSen->total ?? 0),
                 'avg_completion' => round((float) ($ptaSen->avg_completion ?? 0), 1),
@@ -138,6 +192,7 @@ class SenaDashboardController extends ApiController
                 'en_cours'       => (int) ($ptaSen->en_cours ?? 0),
                 'nouvelle'       => (int) ($ptaSen->nouvelle ?? 0),
             ],
+            'pta_activities'     => $ptaActivities,
             'signalements'       => $signalementsEnCours,
         ]);
     }
