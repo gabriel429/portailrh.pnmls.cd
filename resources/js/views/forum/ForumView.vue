@@ -112,6 +112,30 @@
                     </button>
                   </div>
                   <p>{{ item.contenu }}</p>
+                  <div class="forum-comment-reactions" aria-label="Reactions au commentaire">
+                    <button
+                      type="button"
+                      class="forum-reaction-btn"
+                      :class="{ active: item.user_reaction === 'like' }"
+                      :disabled="item.reacting"
+                      title="J'aime"
+                      @click="reactToCommentAction(post, item, 'like')"
+                    >
+                      <i class="fas fa-thumbs-up"></i>
+                      <span>{{ item.likes_count || 0 }}</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="forum-reaction-btn dislike"
+                      :class="{ active: item.user_reaction === 'dislike' }"
+                      :disabled="item.reacting"
+                      title="J'aime pas"
+                      @click="reactToCommentAction(post, item, 'dislike')"
+                    >
+                      <i class="fas fa-thumbs-down"></i>
+                      <span>{{ item.dislikes_count || 0 }}</span>
+                    </button>
+                  </div>
                 </div>
               </article>
             </div>
@@ -165,7 +189,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { comment, create, list, remove, removeComment } from '@/api/forum'
+import { comment, create, list, reactToComment, remove, removeComment } from '@/api/forum'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const auth = useAuthStore()
@@ -236,7 +260,7 @@ async function submitComment(post) {
   post.commenting = true
   try {
     const { data } = await comment(post.id, { contenu })
-    post.commentaires = [...post.commentaires, data.data]
+    post.commentaires = [...post.commentaires, normalizeComment(data.data)]
     post.comments_count = (post.comments_count || 0) + 1
     post.commentForm = ''
     ui.addToast(data.message || 'Commentaire publie.', 'success')
@@ -245,6 +269,22 @@ async function submitComment(post) {
     ui.addToast(message, 'danger')
   } finally {
     post.commenting = false
+  }
+}
+
+async function reactToCommentAction(post, item, reaction) {
+  if (item.reacting) return
+
+  item.reacting = true
+  try {
+    const { data } = await reactToComment(item.id, { reaction })
+    const updated = normalizeComment(data.data)
+    Object.assign(item, updated, { reacting: false })
+  } catch (error) {
+    const message = error.response?.data?.message || 'Impossible d enregistrer votre reaction.'
+    ui.addToast(message, 'danger')
+  } finally {
+    item.reacting = false
   }
 }
 
@@ -277,10 +317,20 @@ async function deleteComment(post, item) {
 function normalizePost(post) {
   return {
     ...post,
-    commentaires: post.commentaires || [],
+    commentaires: (post.commentaires || []).map(normalizeComment),
     comments_count: post.comments_count || (post.commentaires || []).length,
     commentForm: '',
     commenting: false,
+  }
+}
+
+function normalizeComment(item) {
+  return {
+    ...item,
+    likes_count: Number(item?.likes_count || 0),
+    dislikes_count: Number(item?.dislikes_count || 0),
+    user_reaction: item?.user_reaction || null,
+    reacting: false,
   }
 }
 
@@ -745,6 +795,50 @@ onMounted(() => loadPosts())
   line-height: 1.5;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.forum-comment-reactions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+  margin-top: .6rem;
+}
+
+.forum-reaction-btn {
+  min-width: 58px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35rem;
+  border: 1px solid rgba(14, 165, 233, .18);
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.forum-reaction-btn.dislike {
+  border-color: rgba(239, 68, 68, .18);
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.forum-reaction-btn.active {
+  background: #2563eb;
+  color: #fff;
+  border-color: #2563eb;
+}
+
+.forum-reaction-btn.dislike.active {
+  background: #c2410c;
+  border-color: #c2410c;
+}
+
+.forum-reaction-btn:disabled {
+  opacity: .65;
+  cursor: wait;
 }
 
 .forum-comment-form {

@@ -20,6 +20,11 @@ class ForumCommentResource extends JsonResource
             'contenu' => $this->contenu,
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
+            'likes_count' => (int) ($this->likes_count ?? 0),
+            'dislikes_count' => (int) ($this->dislikes_count ?? 0),
+            'user_reaction' => $this->whenLoaded('reactions', function () {
+                return $this->reactions->first()?->reaction;
+            }),
             'can_delete' => (bool) ($user && (
                 $user->id === $this->user_id
                 || $user->id === $postOwnerId

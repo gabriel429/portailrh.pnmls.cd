@@ -12,6 +12,10 @@ export function comment(postId, data) {
   return client.post(`/forum/${postId}/comments`, data)
 }
 
+export function reactToComment(commentId, data) {
+  return client.post(`/forum/comments/${commentId}/reaction`, data)
+}
+
 export function remove(id) {
   return client.delete(`/forum/${id}`)
 }

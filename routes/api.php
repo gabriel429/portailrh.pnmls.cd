@@ -104,6 +104,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('forum', [ForumPostController::class, 'index']);
     Route::post('forum', [ForumPostController::class, 'store']);
     Route::post('forum/{forumPost}/comments', [ForumPostController::class, 'storeComment']);
+    Route::post('forum/comments/{forumComment}/reaction', [ForumPostController::class, 'reactToComment']);
     Route::delete('forum/{forumPost}', [ForumPostController::class, 'destroy']);
     Route::delete('forum/comments/{forumComment}', [ForumPostController::class, 'destroyComment']);
 

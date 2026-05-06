@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\ForumPostResource;
 use App\Http\Resources\ForumCommentResource;
 use App\Models\ForumComment;
+use App\Models\ForumCommentReaction;
 use App\Models\ForumPost;
 use App\Models\NotificationPortail;
 use App\Models\User;
@@ -22,6 +23,7 @@ class ForumPostController extends ApiController
 
         $search = trim((string) ($validated['search'] ?? ''));
         $perPage = (int) ($validated['per_page'] ?? 12);
+        $user = $request->user();
 
         $posts = ForumPost::query()
             ->active()
@@ -36,18 +38,8 @@ class ForumPostController extends ApiController
                 'agent.departement.province',
                 'agent.province',
                 'comments' => fn ($query) => $query
-                    ->with([
-                        'user.role',
-                        'user.agent.role',
-                        'user.agent.departement',
-                        'user.agent.departement.province',
-                        'user.agent.province',
-                        'agent.role',
-                        'agent.departement',
-                        'agent.departement.province',
-                        'agent.province',
-                        'forumPost',
-                    ])
+                    ->with($this->commentRelations($user))
+                    ->withCount($this->commentReactionCounts())
                     ->oldest(),
             ])
             ->withCount('comments')
@@ -129,23 +121,54 @@ class ForumPostController extends ApiController
             'contenu' => $validated['contenu'],
         ]);
 
-        $comment->load([
-            'user.role',
-            'user.agent.role',
-            'user.agent.departement',
-            'user.agent.departement.province',
-            'user.agent.province',
-            'agent.role',
-            'agent.departement',
-            'agent.departement.province',
-            'agent.province',
-            'forumPost',
-        ]);
+        $comment->load($this->commentRelations($user));
+        $comment->loadCount($this->commentReactionCounts());
         $this->notifyCommentParticipants($forumPost, $user);
 
         return $this->resource(ForumCommentResource::make($comment), [], [
             'message' => 'Commentaire publie.',
         ], 201);
+    }
+
+    public function reactToComment(Request $request, ForumComment $forumComment): JsonResponse
+    {
+        $validated = $request->validate([
+            'reaction' => 'required|in:' . ForumCommentReaction::LIKE . ',' . ForumCommentReaction::DISLIKE,
+        ]);
+
+        $forumComment->loadMissing('forumPost');
+
+        if ($forumComment->forumPost?->isExpired()) {
+            return response()->json([
+                'message' => 'Ce sujet est ferme, les reactions ne sont plus disponibles.',
+            ], 422);
+        }
+
+        $user = $request->user();
+        $reactionValue = $validated['reaction'];
+        $reaction = $forumComment->reactions()
+            ->where('user_id', $user->id)
+            ->first();
+
+        if ($reaction && $reaction->reaction === $reactionValue) {
+            $reaction->delete();
+            $message = 'Reaction retiree.';
+        } else {
+            $forumComment->reactions()->updateOrCreate(
+                ['user_id' => $user->id],
+                ['reaction' => $reactionValue]
+            );
+            $message = $reactionValue === ForumCommentReaction::LIKE
+                ? 'Vous aimez ce commentaire.'
+                : 'Vous n aimez pas ce commentaire.';
+        }
+
+        $forumComment->load($this->commentRelations($user));
+        $forumComment->loadCount($this->commentReactionCounts());
+
+        return $this->resource(ForumCommentResource::make($forumComment), [], [
+            'message' => $message,
+        ]);
     }
 
     public function destroyComment(Request $request, ForumComment $forumComment): JsonResponse
@@ -224,5 +247,30 @@ class ForumPostController extends ApiController
         ])->all();
 
         NotificationPortail::insert($records);
+    }
+
+    private function commentRelations(?User $user): array
+    {
+        return [
+            'user.role',
+            'user.agent.role',
+            'user.agent.departement',
+            'user.agent.departement.province',
+            'user.agent.province',
+            'agent.role',
+            'agent.departement',
+            'agent.departement.province',
+            'agent.province',
+            'forumPost',
+            'reactions' => fn ($query) => $query->where('user_id', $user?->id),
+        ];
+    }
+
+    private function commentReactionCounts(): array
+    {
+        return [
+            'reactions as likes_count' => fn ($query) => $query->where('reaction', ForumCommentReaction::LIKE),
+            'reactions as dislikes_count' => fn ($query) => $query->where('reaction', ForumCommentReaction::DISLIKE),
+        ];
     }
 }
