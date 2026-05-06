@@ -29,9 +29,11 @@ export const useAuthStore = defineStore('auth', {
         role: (state) => state.user?.role?.nom_role,
         isRH(state) {
             const role = normalizedRole(state)
-            return [
+            return role.includes('ressources humaines') || [
                 'section ressources humaines',
                 'chef section rh',
+                'chef de section rh',
+                'chef section ressources humaines',
                 'rh national',
                 'rh provincial',
             ].includes(role)

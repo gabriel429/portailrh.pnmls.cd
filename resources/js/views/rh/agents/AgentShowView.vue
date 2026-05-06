@@ -29,7 +29,7 @@
           <div class="d-flex gap-2 flex-wrap no-print">
             <button v-if="canManageAgentDocuments" class="btn btn-success btn-sm" :disabled="dossierDownloading" @click="downloadAgentDossier">
               <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-1"></span>
-              <i v-else class="fas fa-file-archive me-1"></i> Dossier complet
+              <i v-else class="fas fa-download me-1"></i> Télécharger le dossier
             </button>
             <button v-if="canManageAgentDocuments" class="btn btn-light btn-sm" @click="openDocumentUploadModal">
               <i class="fas fa-cloud-upload-alt me-1"></i> Ajouter document
@@ -67,6 +67,17 @@
           <span class="agent-overview-label">Dossier</span>
           <strong>{{ documentsCount }} document{{ documentsCount > 1 ? 's' : '' }}</strong>
           <small>{{ affectationsCount }} affectation{{ affectationsCount > 1 ? 's' : '' }}</small>
+          <button
+            v-if="canManageAgentDocuments"
+            class="agent-overview-action"
+            type="button"
+            :disabled="dossierDownloading"
+            @click="downloadAgentDossier"
+          >
+            <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-1"></span>
+            <i v-else class="fas fa-download me-1"></i>
+            Télécharger tout le dossier
+          </button>
         </div>
       </div>
 
@@ -685,7 +696,9 @@ const unreadMessagesCount = computed(() =>
 const isNational = computed(() =>
     agent.value?.organe && agent.value.organe.toLowerCase().includes('national')
 )
-const canManageAgentDocuments = computed(() => auth.isSuperAdmin || auth.isRH)
+const canManageAgentDocuments = computed(() =>
+    Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
+)
 
 // Sorted arrays
 const sortedRequests = computed(() =>
@@ -953,6 +966,21 @@ onMounted(() => {
 .agent-overview-card small {
     color: #64748b;
     margin-top: 4px;
+}
+.agent-overview-action {
+    width: 100%;
+    margin-top: 12px;
+    border: 0;
+    border-radius: 6px;
+    padding: 8px 10px;
+    background: #0f766e;
+    color: #fff;
+    font-weight: 700;
+    font-size: .82rem;
+}
+.agent-overview-action:disabled {
+    opacity: .7;
+    cursor: not-allowed;
 }
 .agent-doc-overlay {
     position: fixed;
