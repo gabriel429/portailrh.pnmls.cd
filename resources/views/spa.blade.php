@@ -23,6 +23,29 @@
     <meta name="description" content="Portail Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida">
 
     @vite('resources/js/app.js')
+    @php
+        $dashboardCssFiles = [];
+        $manifestPath = public_path('build/manifest.json');
+        $dashboardManifestEntries = [
+            'resources/js/views/dashboard/DashboardView.vue',
+            'resources/js/views/dashboard/RhDashboardView.vue',
+        ];
+
+        if (! app()->isLocal() && is_file($manifestPath)) {
+            $manifest = json_decode((string) file_get_contents($manifestPath), true);
+
+            if (is_array($manifest)) {
+                foreach ($dashboardManifestEntries as $entry) {
+                    foreach (($manifest[$entry]['css'] ?? []) as $cssFile) {
+                        $dashboardCssFiles[$cssFile] = $cssFile;
+                    }
+                }
+            }
+        }
+    @endphp
+    @foreach ($dashboardCssFiles as $dashboardCssFile)
+    <link rel="stylesheet" href="/build/{{ ltrim($dashboardCssFile, '/') }}">
+    @endforeach
     <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
 </head>
 <body>
