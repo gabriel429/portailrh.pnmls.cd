@@ -6,6 +6,7 @@ use App\Http\Resources\ForumPostResource;
 use App\Http\Resources\ForumCommentResource;
 use App\Models\ForumComment;
 use App\Models\ForumPost;
+use App\Models\NotificationPortail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -103,6 +104,7 @@ class ForumPostController extends ApiController
         ]);
 
         $comment->load(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'forumPost']);
+        $this->notifyCommentParticipants($forumPost, $user);
 
         return $this->resource(ForumCommentResource::make($comment), [], [
             'message' => 'Commentaire publie.',
@@ -150,5 +152,40 @@ class ForumPostController extends ApiController
             || $user->id === $comment->forumPost?->user_id
             || $user->isSuperAdmin()
             || $user->hasAdminAccess();
+    }
+
+    private function notifyCommentParticipants(ForumPost $post, User $sender): void
+    {
+        $recipientIds = $post->comments()
+            ->where('user_id', '!=', $sender->id)
+            ->pluck('user_id')
+            ->push($post->user_id)
+            ->filter(fn ($userId) => $userId && (int) $userId !== (int) $sender->id)
+            ->unique()
+            ->values();
+
+        if ($recipientIds->isEmpty()) {
+            return;
+        }
+
+        $senderName = $sender->agent?->nom_complet ?: $sender->name;
+        $subject = $post->titre ?: str($post->contenu)->limit(70)->toString();
+        $now = now();
+
+        $records = $recipientIds->map(fn ($userId) => [
+            'user_id' => $userId,
+            'type' => 'forum',
+            'titre' => 'Nouveau commentaire forum',
+            'message' => $senderName . ' a commente le sujet "' . $subject . '".',
+            'icone' => 'fa-comments',
+            'couleur' => '#0f766e',
+            'lien' => '/forum',
+            'emetteur_id' => $sender->id,
+            'lu' => false,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ])->all();
+
+        NotificationPortail::insert($records);
     }
 }
