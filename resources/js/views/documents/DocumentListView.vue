@@ -7,9 +7,6 @@
           <h2><i class="fas fa-folder-open me-2"></i>Gestion Electronique de Documents</h2>
           <p>Organisez, consultez et gerez vos documents en toute simplicite</p>
         </div>
-        <button class="doc-upload-btn" @click="openUploadModal">
-          <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
-        </button>
       </div>
       <div class="doc-hero-stats">
         <div>
@@ -146,10 +143,7 @@
       </template>
       <template v-else>
         <h5>Aucun document trouve</h5>
-        <p>Vous n'avez pas encore de documents dans votre dossier. Commencez par uploader votre premier document.</p>
-        <button class="doc-upload-action" @click="openUploadModal">
-          <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
-        </button>
+        <p>Votre dossier ne contient pas encore de document. La Section Ressources Humaines peut les ajouter depuis votre fiche agent.</p>
       </template>
     </div>
 
@@ -180,9 +174,6 @@
               </button>
               <button class="doc-action-btn doc-action-download" @click="handleDownload(doc)">
                 <i class="fas fa-download"></i> Telecharger
-              </button>
-              <button class="doc-action-btn doc-action-delete" @click="confirmDelete(doc)">
-                <i class="fas fa-trash-alt"></i> Supprimer
               </button>
             </div>
           </div>
@@ -320,9 +311,6 @@
           <div v-if="detailDoc && !detailLoading" class="ddm-footer">
             <button class="ddm-btn ddm-btn-primary" @click="downloadDetail">
               <i class="fas fa-download me-1"></i> Telecharger
-            </button>
-            <button class="ddm-btn ddm-btn-danger" @click="deleteFromDetail">
-              <i class="fas fa-trash-alt me-1"></i> Supprimer
             </button>
           </div>
         </div>

@@ -27,6 +27,13 @@
             </div>
           </div>
           <div class="d-flex gap-2 flex-wrap no-print">
+            <button v-if="canManageAgentDocuments" class="btn btn-success btn-sm" :disabled="dossierDownloading" @click="downloadAgentDossier">
+              <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-1"></span>
+              <i v-else class="fas fa-file-archive me-1"></i> Dossier complet
+            </button>
+            <button v-if="canManageAgentDocuments" class="btn btn-light btn-sm" @click="openDocumentUploadModal">
+              <i class="fas fa-cloud-upload-alt me-1"></i> Ajouter document
+            </button>
             <button class="btn btn-light btn-sm" @click="printAgent">
               <i class="fas fa-print me-1"></i> Imprimer
             </button>
@@ -37,6 +44,29 @@
               <i class="fas fa-arrow-left me-1"></i> Retour
             </router-link>
           </div>
+        </div>
+      </div>
+
+      <div class="agent-overview-grid no-print">
+        <div class="agent-overview-card">
+          <span class="agent-overview-label">Identite</span>
+          <strong>{{ agent.nom_complet }}</strong>
+          <small>{{ agent.matricule_etat || agent.id_agent }}</small>
+        </div>
+        <div class="agent-overview-card">
+          <span class="agent-overview-label">Affectation</span>
+          <strong>{{ agent.departement?.nom || agent.province?.nom || 'Non renseignee' }}</strong>
+          <small>{{ agent.organe || 'Organe non renseigne' }}</small>
+        </div>
+        <div class="agent-overview-card">
+          <span class="agent-overview-label">Fonction</span>
+          <strong>{{ agent.fonction || agent.poste_actuel || 'Non renseignee' }}</strong>
+          <small>{{ agent.grade?.libelle || agent.grade_etat || 'Grade non renseigne' }}</small>
+        </div>
+        <div class="agent-overview-card">
+          <span class="agent-overview-label">Dossier</span>
+          <strong>{{ documentsCount }} document{{ documentsCount > 1 ? 's' : '' }}</strong>
+          <small>{{ affectationsCount }} affectation{{ affectationsCount > 1 ? 's' : '' }}</small>
         </div>
       </div>
 
@@ -333,6 +363,14 @@
                 <div class="card-header bg-light border-bottom">
                   <div class="d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-folder me-2 text-primary"></i>Documents ({{ documentsCount }})</h5>
+                    <div v-if="canManageAgentDocuments" class="d-flex gap-2 no-print">
+                      <button class="btn btn-sm btn-primary" @click="openDocumentUploadModal">
+                        <i class="fas fa-cloud-upload-alt me-1"></i> Ajouter
+                      </button>
+                      <button class="btn btn-sm btn-outline-primary" :disabled="dossierDownloading" @click="downloadAgentDossier">
+                        <i class="fas fa-file-archive me-1"></i> Dossier ZIP
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div class="card-body">
@@ -350,8 +388,17 @@
                           class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2"
                         >
                           <div>
-                            <p class="mb-1"><strong>{{ doc.description }}</strong></p>
-                            <small class="text-muted">{{ formatDateTime(doc.created_at) }}</small>
+                            <p class="mb-1"><strong>{{ doc.nom_document || getDocumentName(doc) }}</strong></p>
+                            <small v-if="doc.description_detail" class="text-muted d-block">{{ doc.description_detail }}</small>
+                            <small class="text-muted">{{ formatDateTime(doc.created_at) }} - {{ doc.statut || 'valide' }}</small>
+                          </div>
+                          <div v-if="canManageAgentDocuments" class="d-flex gap-2 no-print">
+                            <button class="btn btn-sm btn-outline-primary" @click="downloadAgentDocument(doc)">
+                              <i class="fas fa-download"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" @click="deleteAgentDocument(doc)">
+                              <i class="fas fa-trash"></i>
+                            </button>
                           </div>
                         </div>
                       </template>
@@ -465,6 +512,13 @@
               <h5 class="mb-0"><i class="fas fa-cog me-2 text-primary"></i>Actions</h5>
             </div>
             <div class="card-body">
+              <button v-if="canManageAgentDocuments" class="btn btn-primary btn-sm w-100 mb-2" @click="openDocumentUploadModal">
+                <i class="fas fa-cloud-upload-alt me-2"></i> Ajouter un document
+              </button>
+              <button v-if="canManageAgentDocuments" class="btn btn-outline-primary btn-sm w-100 mb-2" :disabled="dossierDownloading" @click="downloadAgentDossier">
+                <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-2"></span>
+                <i v-else class="fas fa-file-archive me-2"></i> Télécharger le dossier complet
+              </button>
               <button class="btn btn-warning btn-sm w-100 mb-2" @click="openEditModal">
                 <i class="fas fa-edit me-2"></i> Modifier
               </button>
@@ -494,6 +548,60 @@
       @close="closeEditModal"
       @updated="onAgentUpdated"
     />
+
+    <!-- Document Upload Modal -->
+    <teleport to="body">
+      <div v-if="showDocumentUploadModal" class="agent-doc-overlay" @click.self="closeDocumentUploadModal">
+        <div class="agent-doc-dialog">
+          <div class="agent-doc-header">
+            <div>
+              <h5 class="mb-1"><i class="fas fa-cloud-upload-alt me-2"></i>Ajouter un document</h5>
+              <p class="mb-0 text-muted small">Dossier de {{ agent?.nom_complet }}</p>
+            </div>
+            <button class="btn-close" type="button" @click="closeDocumentUploadModal"></button>
+          </div>
+          <form class="agent-doc-body" @submit.prevent="submitAgentDocument">
+            <div v-if="documentUploadErrors.general" class="alert alert-danger py-2">{{ documentUploadErrors.general }}</div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Fichier <span class="text-danger">*</span></label>
+              <input ref="documentFileInput" type="file" class="form-control" @change="handleDocumentFileChange">
+              <div v-if="selectedDocumentFile" class="form-text">{{ selectedDocumentFile.name }} - {{ formatFileSize(selectedDocumentFile.size) }}</div>
+              <div v-if="documentUploadErrors.fichier" class="text-danger small mt-1">{{ documentUploadErrors.fichier[0] }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Nom du document <span class="text-danger">*</span></label>
+              <input v-model="documentUploadForm.nom_document" type="text" class="form-control" placeholder="Ex. Contrat, diplôme, carte d'identité">
+              <div v-if="documentUploadErrors.nom_document" class="text-danger small mt-1">{{ documentUploadErrors.nom_document[0] }}</div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Catégorie</label>
+              <select v-model="documentUploadForm.categories_document_id" class="form-select">
+                <option value="identite">Identité</option>
+                <option value="parcours">Parcours</option>
+                <option value="carriere">Carrière</option>
+                <option value="mission">Mission</option>
+              </select>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Description</label>
+              <textarea v-model="documentUploadForm.description" class="form-control" rows="3" maxlength="500"></textarea>
+            </div>
+
+            <div class="d-flex justify-content-end gap-2">
+              <button type="button" class="btn btn-outline-secondary" @click="closeDocumentUploadModal">Annuler</button>
+              <button type="submit" class="btn btn-primary" :disabled="documentUploading">
+                <span v-if="documentUploading" class="spinner-border spinner-border-sm me-1"></span>
+                <i v-else class="fas fa-save me-1"></i> Enregistrer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -501,7 +609,9 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { get, remove } from '@/api/agents'
+import { useAuthStore } from '@/stores/auth'
+import { get, remove, downloadDossier } from '@/api/agents'
+import { create as createDocument, download as downloadDocument, remove as removeDocument } from '@/api/documents'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AgentEditModal from '@/components/agents/AgentEditModal.vue'
@@ -509,6 +619,7 @@ import AgentEditModal from '@/components/agents/AgentEditModal.vue'
 const router = useRouter()
 const route = useRoute()
 const ui = useUiStore()
+const auth = useAuthStore()
 
 // State
 const loading = ref(true)
@@ -519,6 +630,21 @@ const deleting = ref(false)
 const printing = ref(false)
 const showEditModal = ref(false)
 const editAgentId = ref(null)
+const showDocumentUploadModal = ref(false)
+const documentUploading = ref(false)
+const dossierDownloading = ref(false)
+const documentFileInput = ref(null)
+const selectedDocumentFile = ref(null)
+const documentUploadErrors = ref({})
+const documentUploadForm = ref(defaultDocumentUploadForm())
+
+function defaultDocumentUploadForm() {
+    return {
+        nom_document: '',
+        categories_document_id: 'identite',
+        description: '',
+    }
+}
 
 function openEditModal() {
     if (agent.value) {
@@ -559,6 +685,7 @@ const unreadMessagesCount = computed(() =>
 const isNational = computed(() =>
     agent.value?.organe && agent.value.organe.toLowerCase().includes('national')
 )
+const canManageAgentDocuments = computed(() => auth.isSuperAdmin || auth.isRH)
 
 // Sorted arrays
 const sortedRequests = computed(() =>
@@ -605,6 +732,119 @@ function formatDateTime(dateStr) {
 
 function getDocsByType(type) {
     return (agent.value?.documents || []).filter(d => d.type === type)
+}
+
+function getDocumentName(doc) {
+    if (doc?.nom_document) return doc.nom_document
+    const parts = (doc?.description || '').split(' | ')
+    return parts[0] || `Document ${doc?.id || ''}`.trim()
+}
+
+function formatFileSize(bytes) {
+    if (!bytes) return '0 KB'
+    if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`
+    return `${(bytes / 1024).toFixed(1)} KB`
+}
+
+function openDocumentUploadModal() {
+    if (!canManageAgentDocuments.value) return
+    documentUploadForm.value = defaultDocumentUploadForm()
+    documentUploadErrors.value = {}
+    selectedDocumentFile.value = null
+    if (documentFileInput.value) documentFileInput.value.value = ''
+    showDocumentUploadModal.value = true
+}
+
+function closeDocumentUploadModal() {
+    showDocumentUploadModal.value = false
+}
+
+function handleDocumentFileChange(event) {
+    selectedDocumentFile.value = event.target.files?.[0] || null
+}
+
+async function submitAgentDocument() {
+    if (!agent.value) return
+
+    documentUploadErrors.value = {}
+    documentUploading.value = true
+
+    const payload = new FormData()
+    payload.append('agent_id', agent.value.id)
+    payload.append('nom_document', documentUploadForm.value.nom_document)
+    payload.append('categories_document_id', documentUploadForm.value.categories_document_id)
+    if (documentUploadForm.value.description) payload.append('description', documentUploadForm.value.description)
+    if (selectedDocumentFile.value) payload.append('fichier', selectedDocumentFile.value)
+
+    try {
+        await createDocument(payload)
+        ui.addToast('Document ajoute au dossier agent.', 'success')
+        showDocumentUploadModal.value = false
+        await fetchAgent()
+        activeTab.value = 'documents'
+    } catch (err) {
+        if (err.response?.status === 422) {
+            documentUploadErrors.value = err.response.data.errors || {}
+        } else {
+            documentUploadErrors.value = { general: err.response?.data?.message || 'Erreur lors de l ajout du document.' }
+        }
+    } finally {
+        documentUploading.value = false
+    }
+}
+
+async function downloadAgentDocument(doc) {
+    try {
+        const response = await downloadDocument(doc.id)
+        const blob = new Blob([response.data])
+        const url = window.URL.createObjectURL(blob)
+        const link = window.document.createElement('a')
+        link.href = url
+        link.download = doc.fichier ? doc.fichier.split('/').pop() : `document-${doc.id}`
+        window.document.body.appendChild(link)
+        link.click()
+        window.URL.revokeObjectURL(url)
+        window.document.body.removeChild(link)
+    } catch {
+        ui.addToast('Erreur lors du telechargement du document.', 'danger')
+    }
+}
+
+async function deleteAgentDocument(doc) {
+    if (!canManageAgentDocuments.value) return
+    if (!confirm(`Supprimer le document "${getDocumentName(doc)}" ?`)) return
+
+    try {
+        await removeDocument(doc.id)
+        ui.addToast('Document supprime du dossier agent.', 'success')
+        await fetchAgent()
+        activeTab.value = 'documents'
+    } catch (err) {
+        ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression du document.', 'danger')
+    }
+}
+
+async function downloadAgentDossier() {
+    if (!agent.value || !canManageAgentDocuments.value) return
+
+    dossierDownloading.value = true
+    try {
+        const response = await downloadDossier(agent.value.id)
+        const blob = new Blob([response.data], { type: 'application/zip' })
+        const url = window.URL.createObjectURL(blob)
+        const link = window.document.createElement('a')
+        const safeName = (agent.value.nom_complet || `agent-${agent.value.id}`).toLowerCase().replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '')
+        link.href = url
+        link.download = `dossier-agent-${safeName || agent.value.id}.zip`
+        window.document.body.appendChild(link)
+        link.click()
+        window.URL.revokeObjectURL(url)
+        window.document.body.removeChild(link)
+    } catch (err) {
+        ui.addToast(err.response?.data?.message || 'Erreur lors du telechargement du dossier.', 'danger')
+    } finally {
+        dossierDownloading.value = false
+    }
 }
 
 function printAgent() {
@@ -679,6 +919,70 @@ onMounted(() => {
     pointer-events: none;
 }
 .agent-header .badge { font-size: 0.85rem; }
+.agent-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+.agent-overview-card {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+    min-width: 0;
+}
+.agent-overview-label {
+    display: block;
+    font-size: .72rem;
+    color: #64748b;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.agent-overview-card strong,
+.agent-overview-card small {
+    display: block;
+    overflow-wrap: anywhere;
+}
+.agent-overview-card strong {
+    color: #0f172a;
+    font-size: .94rem;
+}
+.agent-overview-card small {
+    color: #64748b;
+    margin-top: 4px;
+}
+.agent-doc-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 2050;
+}
+.agent-doc-dialog {
+    width: min(560px, 100%);
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 24px 80px rgba(15, 23, 42, .3);
+    overflow: hidden;
+}
+.agent-doc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e5e7eb;
+    background: #f8fafc;
+}
+.agent-doc-body {
+    padding: 1.25rem;
+}
 .nav-tabs .nav-link { font-weight: 500; color: #666; }
 .nav-tabs .nav-link.active { color: #0077B5; border-bottom: 3px solid #0077B5; }
 .tab-badge { font-size: 0.7rem; vertical-align: middle; }
@@ -728,6 +1032,9 @@ onMounted(() => {
     }
     .agent-header .badge {
         font-size: 0.75rem;
+    }
+    .agent-overview-grid {
+        grid-template-columns: 1fr;
     }
     .nav-tabs .nav-link {
         font-size: 0.85rem;

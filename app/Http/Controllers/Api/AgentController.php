@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\AgentResource;
 use App\Models\Agent;
 use App\Models\Department;
+use App\Models\Document;
 use App\Models\Fonction;
 use App\Models\Grade;
 use App\Models\Institution;
@@ -26,9 +27,30 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgentController extends ApiController
 {
+    private array $documentManagerRoles = [
+        'Section ressources humaines',
+        'Chef Section RH',
+        'RH National',
+        'RH Provincial',
+    ];
+
     private function scopeService(): UserDataScope
     {
         return app(UserDataScope::class);
+    }
+
+    private function canManageAgentDocuments($user): bool
+    {
+        return (bool) $user && ($user->isSuperAdmin() || $user->hasRole($this->documentManagerRoles));
+    }
+
+    private function authorizeAgentDocumentManagement(Request $request, Agent $agent): void
+    {
+        if (!$this->canManageAgentDocuments($request->user())) {
+            abort(403, 'Seule la Section Ressources Humaines peut telecharger le dossier complet agent.');
+        }
+
+        $this->authorizeAgentAccess($request, $agent);
     }
 
     private function authorizeAgentAccess(Request $request, Agent $agent): void
@@ -331,6 +353,169 @@ class AgentController extends ApiController
         return $this->resource($resource, [], [
             'agent' => $resource->resolve(),
         ]);
+    }
+
+    public function downloadDossier(Request $request, Agent $agent)
+    {
+        $this->authorizeAgentDocumentManagement($request, $agent);
+
+        if (!class_exists(\ZipArchive::class)) {
+            abort(500, 'Le module ZIP PHP est indisponible sur le serveur.');
+        }
+
+        $agent->load([
+            'role', 'province', 'departement', 'grade', 'institution',
+            'documents',
+            'affectations.fonction', 'affectations.department', 'affectations.province',
+        ]);
+
+        $directory = storage_path('app/tmp');
+        if (!is_dir($directory)) {
+            mkdir($directory, 0775, true);
+        }
+
+        $zipPath = $directory . DIRECTORY_SEPARATOR . 'dossier-agent-' . $agent->id . '-' . Str::uuid() . '.zip';
+        $zip = new \ZipArchive();
+
+        if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            abort(500, 'Impossible de preparer le dossier agent.');
+        }
+
+        $zip->addFromString('fiche-agent.html', $this->buildAgentFicheHtml($agent));
+
+        $missingFiles = [];
+        foreach ($agent->documents as $index => $document) {
+            $filePath = public_path($document->fichier);
+            if (!is_file($filePath)) {
+                $missingFiles[] = $this->documentDisplayName($document) . ' (' . $document->fichier . ')';
+                continue;
+            }
+
+            $zip->addFile($filePath, 'documents/' . $this->documentArchiveName($document, $index + 1));
+        }
+
+        if ($missingFiles !== []) {
+            $zip->addFromString(
+                'documents-manquants.txt',
+                "Documents references mais introuvables sur le serveur:\n- " . implode("\n- ", $missingFiles)
+            );
+        }
+
+        $zip->close();
+
+        return response()
+            ->download($zipPath, $this->agentDossierFilename($agent), ['Content-Type' => 'application/zip'])
+            ->deleteFileAfterSend(true);
+    }
+
+    private function buildAgentFicheHtml(Agent $agent): string
+    {
+        $documentsRows = $agent->documents->map(function (Document $document) {
+            return '<tr>'
+                . '<td>' . e($this->documentDisplayName($document)) . '</td>'
+                . '<td>' . e($this->documentTypeLabel($document->type)) . '</td>'
+                . '<td>' . e($document->statut ?? 'Non renseigne') . '</td>'
+                . '<td>' . e($this->dateLabel($document->created_at)) . '</td>'
+                . '</tr>';
+        })->implode('');
+
+        if ($documentsRows === '') {
+            $documentsRows = '<tr><td colspan="4" class="muted">Aucun document associe.</td></tr>';
+        }
+
+        $affectationRows = $agent->affectations->sortByDesc('date_debut')->map(function ($affectation) {
+            return '<tr>'
+                . '<td>' . e($affectation->fonction?->nom ?? 'Non renseigne') . '</td>'
+                . '<td>' . e($affectation->department?->nom ?? '-') . '</td>'
+                . '<td>' . e($affectation->province?->nom_province ?? $affectation->province?->nom ?? '-') . '</td>'
+                . '<td>' . e($this->dateLabel($affectation->date_debut)) . '</td>'
+                . '<td>' . e($affectation->date_fin ? $this->dateLabel($affectation->date_fin) : 'En cours') . '</td>'
+                . '</tr>';
+        })->implode('');
+
+        if ($affectationRows === '') {
+            $affectationRows = '<tr><td colspan="5" class="muted">Aucune affectation renseignee.</td></tr>';
+        }
+
+        $rows = fn (array $items) => collect($items)->map(fn ($item) =>
+            '<div class="info"><span>' . e($item[0]) . '</span><strong>' . e($item[1] ?: 'Non renseigne') . '</strong></div>'
+        )->implode('');
+
+        return '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Fiche agent</title>'
+            . '<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px}h1,h2{margin:0}h1{font-size:26px;color:#075985}.sub{color:#64748b;margin-top:6px}.hero{border-bottom:4px solid #0ea5e9;padding-bottom:18px;margin-bottom:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.section{margin-top:24px}.section h2{font-size:16px;color:#0369a1;margin-bottom:10px}.info{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}.info span{display:block;color:#64748b;font-size:12px;margin-bottom:4px}.info strong{font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:9px;text-align:left;font-size:13px}th{background:#f1f5f9;color:#334155}.muted{color:#64748b}.footer{margin-top:28px;color:#64748b;font-size:12px}</style>'
+            . '</head><body>'
+            . '<div class="hero"><h1>' . e($agent->nom_complet) . '</h1><div class="sub">' . e($agent->id_agent) . ' - ' . e($agent->fonction ?? $agent->poste_actuel ?? 'Fonction non renseignee') . '</div></div>'
+            . '<div class="section"><h2>Informations essentielles</h2><div class="grid">' . $rows([
+                ['Matricule Etat', $agent->matricule_etat],
+                ['Statut', $agent->statut],
+                ['Sexe', $agent->sexe],
+                ['Date et lieu de naissance', trim($this->dateLabel($agent->date_naissance) . ' - ' . ($agent->lieu_naissance ?? ''))],
+                ['Situation familiale', $agent->situation_familiale],
+                ['Nombre d enfants', (string) ($agent->nombre_enfants ?? '')],
+                ['Telephone', $agent->telephone],
+                ['Email institutionnel', $agent->email_professionnel ?? $agent->email],
+            ]) . '</div></div>'
+            . '<div class="section"><h2>Donnees administratives et affectation</h2><div class="grid">' . $rows([
+                ['Organe', $agent->organe],
+                ['Departement', $agent->departement?->nom],
+                ['Province', $agent->province?->nom_province ?? $agent->province?->nom],
+                ['Fonction actuelle', $agent->fonction],
+                ['Grade Etat', $agent->grade?->libelle ?? $agent->grade_etat],
+                ['Institution origine', $agent->institution?->nom],
+                ['Niveau d etudes', $agent->niveau_etudes],
+                ['Annee engagement', (string) ($agent->annee_engagement_programme ?? '')],
+            ]) . '</div></div>'
+            . '<div class="section"><h2>Parcours</h2><table><thead><tr><th>Fonction</th><th>Departement</th><th>Province</th><th>Debut</th><th>Fin</th></tr></thead><tbody>' . $affectationRows . '</tbody></table></div>'
+            . '<div class="section"><h2>Documents disponibles</h2><table><thead><tr><th>Document</th><th>Categorie</th><th>Statut</th><th>Date</th></tr></thead><tbody>' . $documentsRows . '</tbody></table></div>'
+            . '<div class="footer">Dossier genere depuis E-PNMLS le ' . e(now()->format('d/m/Y H:i')) . '.</div>'
+            . '</body></html>';
+    }
+
+    private function documentDisplayName(Document $document): string
+    {
+        $parts = explode(' | ', (string) $document->description);
+
+        return trim($parts[0] ?? '') ?: 'Document ' . $document->id;
+    }
+
+    private function documentTypeLabel(?string $type): string
+    {
+        return [
+            'identite' => 'Identite',
+            'parcours' => 'Parcours',
+            'carriere' => 'Carriere',
+            'mission' => 'Mission',
+        ][$type] ?? ($type ?: 'Non renseigne');
+    }
+
+    private function documentArchiveName(Document $document, int $index): string
+    {
+        $extension = pathinfo((string) $document->fichier, PATHINFO_EXTENSION) ?: 'bin';
+        $name = Str::slug(Str::ascii($this->documentDisplayName($document))) ?: 'document';
+
+        return sprintf('%02d-%s-%d.%s', $index, $name, $document->id, $extension);
+    }
+
+    private function agentDossierFilename(Agent $agent): string
+    {
+        $name = Str::slug(Str::ascii($agent->nom_complet)) ?: 'agent';
+
+        return 'dossier-agent-' . $name . '-' . $agent->id . '.zip';
+    }
+
+    private function dateLabel($value): string
+    {
+        if (!$value) {
+            return 'Non renseigne';
+        }
+
+        if (is_object($value) && method_exists($value, 'format')) {
+            return $value->format('d/m/Y');
+        }
+
+        $timestamp = strtotime((string) $value);
+
+        return $timestamp ? date('d/m/Y', $timestamp) : (string) $value;
     }
 
     /**

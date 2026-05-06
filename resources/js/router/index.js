@@ -82,7 +82,7 @@ const routes = [
     {
         path: '/documents/create',
         name: 'documents.create',
-        component: () => import('@/views/documents/DocumentCreateView.vue'),
+        redirect: { name: 'documents.index' },
         meta: { auth: true },
     },
     {

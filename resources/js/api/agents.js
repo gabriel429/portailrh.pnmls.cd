@@ -59,6 +59,16 @@ export function exportCsv(params = {}) {
 }
 
 /**
+ * Download the full agent dossier as a ZIP archive.
+ * @param {number|string} id
+ */
+export function downloadDossier(id) {
+    return client.get(`/agents/${id}/dossier/download`, {
+        responseType: 'blob',
+    })
+}
+
+/**
  * Get form options for create/edit (organes, departments, provinces, grades, etc.)
  */
 export function getFormOptions() {

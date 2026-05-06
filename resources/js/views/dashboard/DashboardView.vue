@@ -77,18 +77,6 @@
             <div class="dash-action-desc">Congé, attestation...</div>
           </div>
         </button>
-        <button
-          class="dash-action-card"
-          @click="openUploadModal"
-        >
-          <div class="dash-action-icon" style="background:#d1fae5;color:#059669;">
-            <i class="fas fa-cloud-upload-alt"></i>
-          </div>
-          <div class="dash-action-info">
-            <div class="dash-action-name">Uploader document</div>
-            <div class="dash-action-desc">Ajouter un fichier</div>
-          </div>
-        </button>
         <router-link
           v-for="action in quickActions"
           :key="action.to"

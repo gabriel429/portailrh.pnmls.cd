@@ -45,6 +45,8 @@ class AgentResource extends JsonResource
             'departement_id' => $this->departement_id,
             'province_id' => $this->province_id,
             'section_id' => $this->section_id,
+            'created_at' => optional($this->created_at)->toIso8601String(),
+            'updated_at' => optional($this->updated_at)->toIso8601String(),
             'province' => $this->whenLoaded('province', fn () => [
                 'id' => $this->province->id,
                 'nom' => $this->province->nom_province ?? $this->province->nom,
@@ -68,9 +70,16 @@ class AgentResource extends JsonResource
             'documents' => $this->whenLoaded('documents', fn () => $this->documents->map(fn ($document) => [
                 'id' => $document->id,
                 'type' => $document->type,
+                'nom_document' => trim(explode(' | ', (string) $document->description)[0] ?? '') ?: 'Document ' . $document->id,
                 'description' => $document->description,
+                'description_detail' => str_contains((string) $document->description, ' | ')
+                    ? trim(implode(' | ', array_slice(explode(' | ', (string) $document->description), 1)))
+                    : '',
                 'statut' => $document->statut,
                 'fichier' => $document->fichier,
+                'date_expiration' => optional($document->date_expiration)->toDateString(),
+                'created_at' => optional($document->created_at)->toIso8601String(),
+                'download_url' => url('/api/documents/' . $document->id . '/download'),
             ])->values()),
             'requests' => $this->whenLoaded('requests', fn () => $this->requests->map(fn ($requestModel) => [
                 'id' => $requestModel->id,

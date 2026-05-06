@@ -3,13 +3,55 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\DocumentResource;
+use App\Models\Agent;
 use App\Models\Document;
 use App\Services\NotificationService;
+use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class DocumentController extends ApiController
 {
+    private array $documentManagerRoles = [
+        'Section ressources humaines',
+        'Chef Section RH',
+        'RH National',
+        'RH Provincial',
+    ];
+
+    private function canManageAgentDocuments($user): bool
+    {
+        return (bool) $user && ($user->isSuperAdmin() || $user->hasRole($this->documentManagerRoles));
+    }
+
+    private function canAccessDocument($user, Document $document, bool $allowOwn = true): bool
+    {
+        if ($allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $document->agent_id) {
+            return true;
+        }
+
+        if (!$this->canManageAgentDocuments($user)) {
+            return false;
+        }
+
+        $agent = $document->relationLoaded('agent') ? $document->agent : $document->agent()->first();
+
+        return app(UserDataScope::class)->canAccessAgent($user, $agent, false);
+    }
+
+    private function ensureCanManageAgentDocuments(Request $request, Agent $agent): void
+    {
+        $user = $request->user();
+
+        if (!$this->canManageAgentDocuments($user)) {
+            abort(403, 'Seule la Section Ressources Humaines peut ajouter ou gerer les documents agent.');
+        }
+
+        if (!app(UserDataScope::class)->canAccessAgent($user, $agent, false)) {
+            abort(403, 'Vous n\'avez pas acces au dossier de cet agent.');
+        }
+    }
+
     /**
      * List paginated documents for the authenticated user's agent.
      */
@@ -67,13 +109,15 @@ class DocumentController extends ApiController
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'agent_id'                => 'required|integer|exists:agents,id',
             'nom_document'           => 'required|string|max:255',
             'fichier'                => 'required|file|max:10240',
             'categories_document_id' => 'nullable|string|in:identite,parcours,carriere,mission',
             'description'            => 'nullable|string|max:500',
         ]);
 
-        $agent = $request->user()->agent;
+        $agent = Agent::findOrFail($validated['agent_id']);
+        $this->ensureCanManageAgentDocuments($request, $agent);
 
         if (!$agent) {
             return response()->json(['message' => 'Aucun agent associé à ce compte.'], 422);
@@ -118,14 +162,11 @@ class DocumentController extends ApiController
     public function show(Document $document)
     {
         $user = auth()->user();
-
-        // Agent can only see their own docs, unless admin
-        if ($document->agent_id !== $user->agent?->id && !$user->hasAdminAccess()) {
-            return response()->json(['message' => 'Non autorisé.'], 403);
-        }
-
         $document->load('agent');
 
+        if (!$this->canAccessDocument($user, $document)) {
+            return response()->json(['message' => 'Non autorisé.'], 403);
+        }
         // Add file metadata
         $filePath = public_path($document->fichier);
         $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
@@ -155,8 +196,9 @@ class DocumentController extends ApiController
     public function update(Request $request, Document $document)
     {
         $user = $request->user();
+        $document->load('agent');
 
-        if ($document->agent_id !== $user->agent?->id && !$user->hasAdminAccess()) {
+        if (!$this->canAccessDocument($user, $document, false)) {
             return response()->json(['message' => 'Non autorise.'], 403);
         }
 
@@ -214,7 +256,7 @@ class DocumentController extends ApiController
     {
         $user = auth()->user();
 
-        if ($document->agent_id !== $user->agent?->id && !$user->hasAdminAccess()) {
+        if (!$this->canAccessDocument($user, $document)) {
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
@@ -234,8 +276,7 @@ class DocumentController extends ApiController
     {
         $user = auth()->user();
 
-        // Agent can delete their own, or admin can delete any
-        if ($document->agent_id !== $user->agent?->id && !$user->hasAdminAccess()) {
+        if (!$this->canAccessDocument($user, $document, false)) {
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 

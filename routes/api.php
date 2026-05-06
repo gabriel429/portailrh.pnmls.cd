@@ -162,6 +162,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index']);
         Route::get('agents/export', [ApiAgentController::class, 'export']);
         Route::get('agents/form-options', [ApiAgentController::class, 'formOptions']);
+        Route::get('agents/{agent}/dossier/download', [ApiAgentController::class, 'downloadDossier']);
         Route::apiResource('agents', ApiAgentController::class);
 
         // Pointages (Attendance) - custom routes BEFORE apiResource
@@ -436,6 +437,7 @@ Route::prefix('v1')->as('v1.')->group(function () {
             Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index'])->name('rh.dashboard');
             Route::get('agents/export', [ApiAgentController::class, 'export'])->name('agents.export');
             Route::get('agents/form-options', [ApiAgentController::class, 'formOptions'])->name('agents.form-options');
+            Route::get('agents/{agent}/dossier/download', [ApiAgentController::class, 'downloadDossier'])->name('agents.dossier.download');
             Route::apiResource('agents', ApiAgentController::class)->names('agents');
 
             Route::get('pointages/daily', [\App\Http\Controllers\Api\PointageController::class, 'daily'])->name('pointages.daily');
