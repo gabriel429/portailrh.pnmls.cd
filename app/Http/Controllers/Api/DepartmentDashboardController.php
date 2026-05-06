@@ -249,6 +249,12 @@ class DepartmentDashboardController extends ApiController
             ->groupBy('agent_id')
             ->pluck('jours_presents', 'agent_id');
 
+        $todayPresentAgents = Pointage::byDate($now->toDateString())
+            ->whereIn('agent_id', $agentIds)
+            ->whereNotNull('heure_entree')
+            ->pluck('agent_id')
+            ->flip();
+
         $joursOuvrables = max(
             Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
                 ->select(DB::raw('COUNT(DISTINCT date_pointage) as jours'))
@@ -276,7 +282,7 @@ class DepartmentDashboardController extends ApiController
             ])
             ->orderBy('nom')
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'statut'])
-            ->map(function ($agent) use ($monthlyPresence, $joursOuvrables, $statuts, $congesActifs, $now) {
+            ->map(function ($agent) use ($monthlyPresence, $todayPresentAgents, $joursOuvrables, $statuts, $congesActifs, $now) {
                 $taches     = $agent->tachesAssignees;
                 $total      = $taches->count();
                 $done       = $taches->where('statut', 'terminee')->count();
@@ -301,6 +307,7 @@ class DepartmentDashboardController extends ApiController
                     'photo'           => $agent->photo,
                     'fonction'        => $agent->poste_actuel ?: $agent->fonction,
                     'statut'          => $statutActuel,
+                    'presence_status' => isset($todayPresentAgents[$agent->id]) ? 'present' : 'absent',
                     'taches_total'    => $total,
                     'taches_done'     => $done,
                     'taches_en_cours' => $inProgress,

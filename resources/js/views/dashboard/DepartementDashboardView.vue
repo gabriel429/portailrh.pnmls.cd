@@ -566,143 +566,207 @@
   <!-- ════════════════════ DRILL-DOWN PANEL ════════════════════ -->
   <Teleport to="body">
     <div v-if="drillOpen" class="drill-overlay" @click.self="closeDrill">
-      <div class="drill-panel">
-
-        <!-- Header -->
-        <div class="drill-header" :style="{ background: '#0077B5' }">
+      <aside class="drill-panel" role="dialog" aria-modal="true">
+        <div class="drill-header">
           <div class="drill-header-left">
             <div class="drill-header-icon">
               <i class="fas" :class="drillSection === 'effectifs' ? 'fa-users' : drillSection === 'presence' ? 'fa-user-check' : 'fa-umbrella-beach'"></i>
             </div>
             <div>
-              <div class="drill-header-title">
-                {{ drillSection === 'effectifs' ? 'Agents du département' : drillSection === 'presence' ? 'Présence — agents du département' : 'Congés — agents du département' }}
-              </div>
-              <div class="drill-header-sub">{{ data?.department?.nom }}</div>
+              <div class="drill-header-title">{{ drillCurrentTitle }}</div>
+              <div class="drill-header-sub">{{ data?.department?.nom || 'Département' }}</div>
             </div>
           </div>
-          <button class="drill-close-btn" @click="closeDrill"><i class="fas fa-times"></i></button>
-        </div>
-
-        <!-- Tabs -->
-        <div class="drill-tabs">
-          <button class="drill-tab" :class="{ active: drillSection === 'effectifs' }" @click="drillSection = 'effectifs'">
-            <i class="fas fa-users me-1"></i> Effectifs
-          </button>
-          <button class="drill-tab" :class="{ active: drillSection === 'presence' }" @click="drillSection = 'presence'">
-            <i class="fas fa-user-check me-1"></i> Présence
-          </button>
-          <button class="drill-tab" :class="{ active: drillSection === 'conges' }" @click="drillSection = 'conges'">
-            <i class="fas fa-umbrella-beach me-1"></i> Congés
+          <button class="drill-close-btn" type="button" aria-label="Fermer" @click="closeDrill">
+            <i class="fas fa-times"></i>
           </button>
         </div>
 
-        <!-- Body -->
         <div class="drill-body">
+          <div class="drill-section-tabs">
+            <button class="drill-section-tab" :class="{ active: drillSection === 'effectifs' }" @click="setDrillSection('effectifs')">
+              <i class="fas fa-users"></i> Effectifs
+            </button>
+            <button class="drill-section-tab" :class="{ active: drillSection === 'presence' }" @click="setDrillSection('presence')">
+              <i class="fas fa-user-check"></i> Présence
+            </button>
+            <button class="drill-section-tab" :class="{ active: drillSection === 'conges' }" @click="setDrillSection('conges')">
+              <i class="fas fa-umbrella-beach"></i> Congés
+            </button>
+          </div>
 
-          <!-- Loading -->
           <div v-if="drillLoading" class="drill-loading">
             <i class="fas fa-spinner fa-spin"></i> Chargement…
           </div>
 
           <template v-else-if="drillAgents">
-
-            <!-- Summary bar -->
-            <div class="drill-summary">
-              <div class="drill-summary-item">
-                <div class="drill-summary-val">{{ drillAgents.length }}</div>
-                <div class="drill-summary-lbl">Total agents</div>
+            <div class="drill-context">
+              <div>
+                <div class="drill-context-title">{{ drillCurrentSubtitle }}</div>
+                <div class="drill-context-sub">{{ drillAgents.length }} agent{{ drillAgents.length > 1 ? 's' : '' }} suivi{{ drillAgents.length > 1 ? 's' : '' }}</div>
               </div>
-              <div class="drill-summary-sep"></div>
-              <div class="drill-summary-item">
-                <div class="drill-summary-val" style="color:#059669">{{ drillAgents.filter(a => a.statut === 'actif' || a.statut === 'disponible').length }}</div>
-                <div class="drill-summary-lbl">Disponibles</div>
-              </div>
-              <div class="drill-summary-sep"></div>
-              <div class="drill-summary-item">
-                <div class="drill-summary-val" style="color:#0891b2">{{ drillAgents.filter(a => a.statut === 'en_conge').length }}</div>
-                <div class="drill-summary-lbl">En congé</div>
-              </div>
-              <div class="drill-summary-sep"></div>
-              <div class="drill-summary-item">
-                <div class="drill-summary-val" style="color:#d97706">{{ drillAgents.filter(a => a.statut === 'en_mission').length }}</div>
-                <div class="drill-summary-lbl">En mission</div>
-              </div>
+              <div class="drill-context-date">{{ today }}</div>
             </div>
 
-            <!-- Agent list — Effectifs tab -->
             <template v-if="drillSection === 'effectifs'">
-              <div class="drill-agent-list">
+              <div class="drill-stat-grid">
+                <div class="drill-stat-card" style="border-color:#0ea5e9;">
+                  <div class="drill-stat-val">{{ drillAgents.length }}</div>
+                  <div class="drill-stat-lbl">Agents</div>
+                </div>
+                <div class="drill-stat-card" style="border-color:#059669;">
+                  <div class="drill-stat-val">{{ drillActiveCount }}</div>
+                  <div class="drill-stat-lbl">Disponibles</div>
+                </div>
+                <div class="drill-stat-card" style="border-color:#0891b2;">
+                  <div class="drill-stat-val">{{ drillLeaveCount }}</div>
+                  <div class="drill-stat-lbl">En congé</div>
+                </div>
+                <div class="drill-stat-card" style="border-color:#d97706;">
+                  <div class="drill-stat-val">{{ drillMissionCount }}</div>
+                  <div class="drill-stat-lbl">En mission</div>
+                </div>
+              </div>
+
+              <div v-if="drillAgents.length" class="drill-section-title">
+                <i class="fas fa-user-friends"></i> Agents du département
+              </div>
+              <div v-if="drillAgents.length" class="drill-agent-list">
                 <div v-for="ag in drillAgents" :key="ag.id" class="drill-agent-row">
-                  <div class="drill-agent-avatar" :style="{ background: '#e0f2fe', color: '#0077B5' }">
+                  <div class="drill-agent-avatar">
                     <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
-                    <span v-else>{{ ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() }}</span>
+                    <span v-else>{{ agentInitials(ag) }}</span>
                   </div>
                   <div class="drill-agent-info">
                     <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                    <div class="drill-agent-fonction">{{ ag.fonction || '—' }}</div>
+                    <div class="drill-agent-fonction">
+                      {{ ag.fonction || 'Fonction non renseignée' }}
+                    </div>
                   </div>
                   <div class="drill-agent-meta">
                     <span class="drill-agent-statut" :class="`statut-${ag.statut}`">{{ statutLabel(ag.statut) }}</span>
-                    <div class="drill-agent-tasks">
-                      <i class="fas fa-tasks me-1" style="color:#d97706"></i>{{ ag.taches_en_cours }} en cours
-                      <span v-if="ag.taches_overdue > 0" style="color:#dc2626;margin-left:.4rem"><i class="fas fa-exclamation-circle"></i> {{ ag.taches_overdue }}</span>
-                    </div>
+                    <span class="drill-agent-pill">
+                      <i class="fas fa-tasks"></i> {{ ag.taches_en_cours }} en cours
+                    </span>
+                    <span v-if="ag.taches_overdue > 0" class="drill-agent-alert">
+                      <i class="fas fa-exclamation-circle"></i> {{ ag.taches_overdue }} retard
+                    </span>
                   </div>
                 </div>
               </div>
+              <div v-else class="drill-empty">
+                <i class="fas fa-users"></i>
+                <div>Aucun agent trouvé pour ce département.</div>
+              </div>
             </template>
 
-            <!-- Présence tab -->
             <template v-else-if="drillSection === 'presence'">
-              <div class="drill-agent-list">
-                <div v-for="ag in drillAgents" :key="ag.id" class="drill-agent-row">
-                  <div class="drill-agent-avatar" :style="{ background: '#dcfce7', color: '#059669' }">
-                    <span>{{ ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() }}</span>
+              <div class="drill-stat-grid">
+                <button type="button" class="drill-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" style="border-color:#059669;" @click="setDrillPresenceFilter('present')">
+                  <div class="drill-stat-val">{{ drillPresentCount }}</div>
+                  <div class="drill-stat-lbl">Présents</div>
+                </button>
+                <button type="button" class="drill-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" style="border-color:#d97706;" @click="setDrillPresenceFilter('absent')">
+                  <div class="drill-stat-val">{{ drillAbsentCount }}</div>
+                  <div class="drill-stat-lbl">Absents</div>
+                </button>
+                <button type="button" class="drill-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#0ea5e9;" @click="setDrillPresenceFilter('all')">
+                  <div class="drill-stat-val">{{ data?.attendance?.today_rate ?? 0 }}%</div>
+                  <div class="drill-stat-lbl">Taux jour</div>
+                </button>
+                <button type="button" class="drill-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#7c3aed;" @click="setDrillPresenceFilter('all')">
+                  <div class="drill-stat-val">{{ drillAveragePresence }}%</div>
+                  <div class="drill-stat-lbl">Moy. mois</div>
+                </button>
+              </div>
+
+              <div v-if="drillAgents.length" class="drill-section-title">
+                <i class="fas fa-user-check"></i> {{ presenceFilterTitle(filteredDrillPresenceAgents.length) }}
+              </div>
+              <div v-if="filteredDrillPresenceAgents.length" class="drill-agent-list">
+                <div v-for="ag in filteredDrillPresenceAgents" :key="ag.id" class="drill-agent-row">
+                  <div class="drill-agent-avatar presence">
+                    <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
+                    <span v-else>{{ agentInitials(ag) }}</span>
                   </div>
                   <div class="drill-agent-info">
                     <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                    <div class="drill-agent-fonction">{{ ag.fonction || '—' }}</div>
+                    <div class="drill-agent-fonction">
+                      {{ ag.fonction || 'Fonction non renseignée' }}
+                    </div>
+                    <div class="drill-presence-note">
+                      <span :class="isDrillPresent(ag) ? 'presence-present' : 'presence-absent'">
+                        <i class="fas" :class="isDrillPresent(ag) ? 'fa-check-circle' : 'fa-clock'"></i>
+                        {{ isDrillPresent(ag) ? 'Pointé aujourd’hui' : 'Non pointé aujourd’hui' }}
+                      </span>
+                    </div>
                   </div>
                   <div class="drill-agent-meta">
                     <div class="drill-presence-bar-wrap">
                       <div class="drill-presence-bar">
-                        <div class="drill-presence-bar-fill" :style="{ width: ag.taux_presence + '%', background: ag.taux_presence >= 80 ? '#059669' : ag.taux_presence >= 50 ? '#d97706' : '#dc2626' }"></div>
+                        <div class="drill-presence-bar-fill" :style="{ width: `${ag.taux_presence || 0}%`, background: progressColor(ag.taux_presence) }"></div>
                       </div>
-                      <span class="drill-presence-pct">{{ ag.taux_presence }}%</span>
+                      <span class="drill-presence-pct">{{ ag.taux_presence || 0 }}%</span>
                     </div>
-                    <div style="font-size:.72rem;color:#94a3b8">{{ ag.jours_presents }}j présents ce mois</div>
+                    <div class="drill-agent-submeta">{{ ag.jours_presents || 0 }}j présents ce mois</div>
                   </div>
                 </div>
               </div>
+              <div v-else class="drill-empty">
+                <i class="fas fa-user-check"></i>
+                <div>Aucun agent dans ce filtre de présence.</div>
+              </div>
             </template>
 
-            <!-- Congés tab -->
             <template v-else>
-              <div class="drill-agent-list">
-                <div v-for="ag in drillAgents.filter(a => a.statut === 'en_conge')" :key="ag.id" class="drill-agent-row">
-                  <div class="drill-agent-avatar" :style="{ background: '#cffafe', color: '#0891b2' }">
-                    <span>{{ ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() }}</span>
+              <div class="drill-stat-grid">
+                <div class="drill-stat-card" style="border-color:#0891b2;">
+                  <div class="drill-stat-val">{{ drillLeaveCount }}</div>
+                  <div class="drill-stat-lbl">En congé</div>
+                </div>
+                <div class="drill-stat-card" style="border-color:#059669;">
+                  <div class="drill-stat-val">{{ drillActiveCount }}</div>
+                  <div class="drill-stat-lbl">Disponibles</div>
+                </div>
+                <div class="drill-stat-card" style="border-color:#d97706;">
+                  <div class="drill-stat-val">{{ drillMissionCount }}</div>
+                  <div class="drill-stat-lbl">En mission</div>
+                </div>
+                <div class="drill-stat-card" style="border-color:#0ea5e9;">
+                  <div class="drill-stat-val">{{ drillAgents.length }}</div>
+                  <div class="drill-stat-lbl">Total</div>
+                </div>
+              </div>
+
+              <div v-if="drillLeaveAgents.length" class="drill-section-title">
+                <i class="fas fa-umbrella-beach"></i> Agents actuellement en congé
+              </div>
+              <div v-if="drillLeaveAgents.length" class="drill-agent-list">
+                <div v-for="ag in drillLeaveAgents" :key="ag.id" class="drill-agent-row">
+                  <div class="drill-agent-avatar leave">
+                    <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
+                    <span v-else>{{ agentInitials(ag) }}</span>
                   </div>
                   <div class="drill-agent-info">
                     <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                    <div class="drill-agent-fonction">{{ ag.fonction || '—' }}</div>
+                    <div class="drill-agent-fonction">
+                      {{ ag.fonction || 'Fonction non renseignée' }}
+                    </div>
                   </div>
                   <div class="drill-agent-meta">
                     <span class="drill-agent-statut statut-en_conge">En congé</span>
+                    <span class="drill-agent-submeta">{{ ag.jours_presents || 0 }}j présents ce mois</span>
                   </div>
                 </div>
-                <div v-if="!drillAgents.some(a => a.statut === 'en_conge')" class="drill-empty">
-                  <i class="fas fa-check-circle" style="color:#059669;font-size:1.5rem;margin-bottom:.5rem"></i>
-                  <div>Aucun agent en congé actuellement</div>
-                </div>
+              </div>
+              <div v-else class="drill-empty">
+                <i class="fas fa-check-circle"></i>
+                <div>Aucun agent en congé actuellement.</div>
               </div>
             </template>
-
           </template>
         </div>
-
-      </div>
+      </aside>
     </div>
   </Teleport>
 </template>
@@ -732,6 +796,7 @@ const drillOpen    = ref(false)
 const drillLoading = ref(false)
 const drillAgents  = ref(null)
 const drillSection = ref('effectifs') // 'effectifs' | 'presence' | 'conges'
+const drillPresenceFilter = ref('all') // 'all' | 'present' | 'absent'
 
 // ─── Identité ────────────────────────────────────────────────
 const deptIsFemme = computed(() => {
@@ -881,8 +946,72 @@ async function loadData() {
 onMounted(loadData)
 
 // ─── DRILL-DOWN METHODS ────────────────────────────────────────────────────
-async function openDrill(section = 'effectifs') {
+const drillTitles = {
+  effectifs: 'Agents du département',
+  presence: 'Présence du département',
+  conges: 'Congés du département',
+}
+const drillSubtitles = {
+  effectifs: 'Vue complète des agents et de leurs tâches',
+  presence: 'Pointage du jour et présence mensuelle',
+  conges: 'Agents absents pour congé actif',
+}
+
+const drillCurrentTitle = computed(() => drillTitles[drillSection.value] ?? 'Détail du département')
+const drillCurrentSubtitle = computed(() => drillSubtitles[drillSection.value] ?? 'Vue détaillée')
+
+const drillAgentList = computed(() => drillAgents.value ?? [])
+const drillActiveCount = computed(() =>
+  drillAgentList.value.filter(a => ['actif', 'disponible'].includes(a.statut)).length
+)
+const drillLeaveAgents = computed(() =>
+  drillAgentList.value.filter(a => a.statut === 'en_conge')
+)
+const drillLeaveCount = computed(() => drillLeaveAgents.value.length)
+const drillMissionCount = computed(() =>
+  drillAgentList.value.filter(a => a.statut === 'en_mission').length
+)
+const drillPresentCount = computed(() =>
+  drillAgentList.value.filter(isDrillPresent).length
+)
+const drillAbsentCount = computed(() =>
+  Math.max(drillAgentList.value.length - drillPresentCount.value, 0)
+)
+const drillAveragePresence = computed(() => {
+  if (!drillAgentList.value.length) return 0
+  const total = drillAgentList.value.reduce((sum, ag) => sum + Number(ag.taux_presence || 0), 0)
+  return Math.round(total / drillAgentList.value.length)
+})
+const filteredDrillPresenceAgents = computed(() => {
+  if (drillPresenceFilter.value === 'present') {
+    return drillAgentList.value.filter(isDrillPresent)
+  }
+  if (drillPresenceFilter.value === 'absent') {
+    return drillAgentList.value.filter(a => !isDrillPresent(a))
+  }
+  return drillAgentList.value
+})
+
+function setDrillSection(section = 'effectifs') {
   drillSection.value = section
+  if (section !== 'presence') drillPresenceFilter.value = 'all'
+}
+
+function setDrillPresenceFilter(filter = 'all') {
+  drillPresenceFilter.value = filter
+}
+
+function presenceFilterTitle(total = 0) {
+  const labels = {
+    all: 'Tous les agents',
+    present: 'Agents présents aujourd’hui',
+    absent: 'Agents non pointés aujourd’hui',
+  }
+  return `${labels[drillPresenceFilter.value] ?? labels.all} (${total})`
+}
+
+async function openDrill(section = 'effectifs') {
+  setDrillSection(section)
   drillOpen.value    = true
   if (drillAgents.value) return // already loaded
   drillLoading.value = true
@@ -900,6 +1029,7 @@ function closeDrill() {
   drillOpen.value   = false
   drillAgents.value = null
   drillSection.value = 'effectifs'
+  drillPresenceFilter.value = 'all'
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -916,6 +1046,11 @@ function isOverdue(t) {
 }
 function agentInitials(ag) {
   return ((ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '')).toUpperCase() || '?'
+}
+function isDrillPresent(ag) {
+  if (!ag) return false
+  if (ag.presence_status) return ag.presence_status === 'present'
+  return Number(ag.jours_presents || 0) > 0
 }
 function statutLabel(s) {
   return {
@@ -1471,49 +1606,277 @@ html.dark .dept-agenda-day, html.dark .dept-agenda-month { color: #e879f9 !impor
 }
 
 /* ─── DRILL-DOWN PANEL ─────────────────────────────────────────────── */
-.drill-overlay { position: fixed; inset: 0; z-index: 1100; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); display: flex; align-items: stretch; justify-content: flex-end; }
-.drill-panel { width: min(520px, 100vw); background: #f8fafc; display: flex; flex-direction: column; box-shadow: -8px 0 40px rgba(0,0,0,.2); animation: drillSlideIn .25s ease-out; }
-@keyframes drillSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-.drill-header { display: flex; align-items: center; justify-content: space-between; padding: 1.1rem 1.25rem; color: #fff; }
-.drill-header-left { display: flex; align-items: center; gap: .9rem; }
-.drill-header-icon { width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
-.drill-header-title { font-size: .98rem; font-weight: 700; line-height: 1.2; }
-.drill-header-sub { font-size: .75rem; opacity: .8; margin-top: .15rem; }
-.drill-close-btn { width: 34px; height: 34px; border-radius: 9px; border: none; background: rgba(255,255,255,.18); color: #fff; font-size: .9rem; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: background .2s; }
-.drill-close-btn:hover { background: rgba(255,255,255,.3); }
-.drill-tabs { display: flex; border-bottom: 2px solid #f1f5f9; background: #fff; }
-.drill-tab { flex: 1; padding: .65rem .5rem; border: none; background: none; font-size: .78rem; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s; }
-.drill-tab.active { color: #0077B5; border-bottom-color: #0077B5; }
-.drill-body { flex: 1; overflow-y: auto; padding: 1rem; }
-.drill-loading { display: flex; align-items: center; justify-content: center; padding: 2rem; gap: .5rem; color: #94a3b8; }
-.drill-summary { display: flex; align-items: center; gap: .5rem; background: #fff; border-radius: 12px; padding: .75rem 1rem; margin-bottom: 1rem; border: 1px solid #e2e8f0; }
-.drill-summary-item { flex: 1; text-align: center; }
-.drill-summary-val { font-size: 1.2rem; font-weight: 700; color: #1e293b; }
-.drill-summary-lbl { font-size: .68rem; color: #94a3b8; margin-top: .1rem; }
-.drill-summary-sep { width: 1px; height: 28px; background: #e2e8f0; }
+.drill-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(15, 23, 42, .55);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
+}
+.drill-panel {
+  width: 580px;
+  max-width: 95vw;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  box-shadow: -12px 0 48px rgba(0, 0, 0, .18);
+  overflow: hidden;
+  animation: drillSlideIn .25s ease-out;
+}
+@keyframes drillSlideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+.drill-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.45rem 1.7rem;
+  color: #fff;
+  background: linear-gradient(135deg, #0077B5 0%, #0d9488 100%);
+}
+.drill-header-left { display: flex; align-items: center; gap: .9rem; min-width: 0; }
+.drill-header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.drill-header-title { font-size: 1.05rem; font-weight: 800; line-height: 1.2; }
+.drill-header-sub { font-size: .78rem; opacity: .82; margin-top: .2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.drill-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+  font-size: .9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background .2s, transform .2s;
+}
+.drill-close-btn:hover { background: rgba(255, 255, 255, .3); transform: translateY(-1px); }
+.drill-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.25rem 1.45rem 1.6rem;
+}
+.drill-section-tabs {
+  display: flex;
+  gap: .45rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: .6rem;
+}
+.drill-section-tab {
+  flex: 1;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  border-radius: 10px;
+  padding: .58rem .75rem;
+  font-size: .78rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .38rem;
+  transition: all .2s;
+}
+.drill-section-tab:hover { border-color: #0ea5e9; color: #0284c7; }
+.drill-section-tab.active { background: #0ea5e9; color: #fff; border-color: #0ea5e9; box-shadow: 0 8px 18px rgba(14, 165, 233, .2); }
+.drill-loading {
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  gap: .55rem;
+  color: #64748b;
+  font-weight: 700;
+}
+.drill-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .9rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: .85rem 1rem;
+  margin-bottom: .9rem;
+}
+.drill-context-title { font-size: .86rem; font-weight: 800; color: #1e293b; }
+.drill-context-sub,
+.drill-context-date {
+  font-size: .72rem;
+  color: #94a3b8;
+  margin-top: .1rem;
+}
+.drill-context-date { flex-shrink: 0; text-align: right; text-transform: capitalize; }
+.drill-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+  margin-bottom: 1rem;
+}
+.drill-stat-card {
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #0ea5e9;
+  background: #fff;
+  border-radius: 12px;
+  padding: .88rem 1rem;
+  text-align: left;
+  min-height: 76px;
+}
+button.drill-stat-card { font: inherit; cursor: pointer; }
+.drill-stat-clickable { transition: transform .18s, box-shadow .18s, background .18s; }
+.drill-stat-clickable:hover,
+.drill-stat-clickable.active {
+  transform: translateY(-1px);
+  background: #f0f9ff;
+  box-shadow: 0 10px 22px rgba(14, 165, 233, .15);
+}
+.drill-stat-val { font-size: 1.55rem; font-weight: 900; color: #1e293b; line-height: 1; }
+.drill-stat-lbl { font-size: .66rem; color: #94a3b8; text-transform: uppercase; font-weight: 800; margin-top: .28rem; }
+.drill-section-title {
+  font-size: .84rem;
+  font-weight: 800;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 1rem 0 .7rem;
+}
 .drill-agent-list { display: flex; flex-direction: column; gap: .5rem; }
-.drill-agent-row { display: flex; align-items: center; gap: .75rem; padding: .65rem .8rem; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; transition: background .15s; }
-.drill-agent-row:hover { background: #f0f7ff; }
-.drill-agent-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; flex-shrink: 0; overflow: hidden; }
+.drill-agent-row {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .78rem .9rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  transition: background .15s, border-color .15s, box-shadow .15s;
+}
+.drill-agent-row:hover { background: #f0f9ff; border-color: #bae6fd; box-shadow: 0 6px 18px rgba(14, 165, 233, .08); }
+.drill-agent-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #e0f2fe;
+  color: #0077B5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .78rem;
+  font-weight: 800;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.drill-agent-avatar.presence { background: #dcfce7; color: #059669; }
+.drill-agent-avatar.leave { background: #cffafe; color: #0891b2; }
 .drill-agent-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .drill-agent-info { flex: 1; min-width: 0; }
-.drill-agent-name { font-size: .84rem; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.drill-agent-fonction { font-size: .72rem; color: #94a3b8; margin-top: .1rem; }
-.drill-agent-meta { display: flex; flex-direction: column; align-items: flex-end; gap: .2rem; flex-shrink: 0; }
-.drill-agent-statut { font-size: .68rem; font-weight: 600; padding: .2rem .5rem; border-radius: 6px; }
+.drill-agent-name { font-size: .86rem; font-weight: 800; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drill-agent-fonction { font-size: .72rem; color: #94a3b8; margin-top: .12rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.drill-agent-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .28rem;
+  flex-shrink: 0;
+  max-width: 160px;
+}
+.drill-agent-statut,
+.drill-agent-pill,
+.drill-agent-alert {
+  font-size: .68rem;
+  font-weight: 800;
+  padding: .22rem .55rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.drill-agent-pill { background: #f8fafc; color: #64748b; border: 1px solid #e2e8f0; }
+.drill-agent-alert { background: #fee2e2; color: #dc2626; }
 .statut-actif, .statut-disponible { background: #dcfce7; color: #16a34a; }
 .statut-en_conge { background: #cffafe; color: #0891b2; }
 .statut-en_mission { background: #fef3c7; color: #d97706; }
-.statut-suspendu { background: #fee2e2; color: #dc2626; }
+.statut-suspendu, .statut-inactif { background: #fee2e2; color: #dc2626; }
 .statut-en_formation { background: #ede9fe; color: #7c3aed; }
-.drill-agent-tasks { font-size: .72rem; color: #64748b; }
-.drill-presence-bar-wrap { display: flex; align-items: center; gap: .4rem; }
-.drill-presence-bar { width: 60px; height: 6px; border-radius: 4px; background: #e2e8f0; overflow: hidden; }
-.drill-presence-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
-.drill-presence-pct { font-size: .72rem; font-weight: 600; color: #475569; }
-.drill-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; color: #94a3b8; font-size: .84rem; }
-@media (max-width: 480px) {
-  .drill-panel { width: 100vw; border-radius: 16px 16px 0 0; }
+.drill-presence-note { margin-top: .22rem; font-size: .7rem; font-weight: 700; }
+.presence-present { color: #059669; }
+.presence-absent { color: #d97706; }
+.drill-presence-bar-wrap { display: flex; align-items: center; gap: .42rem; }
+.drill-presence-bar { width: 72px; height: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
+.drill-presence-bar-fill { height: 100%; border-radius: 999px; transition: width .4s; }
+.drill-presence-pct { font-size: .72rem; font-weight: 800; color: #475569; }
+.drill-agent-submeta { font-size: .7rem; color: #94a3b8; text-align: right; }
+.drill-empty {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: .86rem;
+  font-weight: 700;
+  gap: .55rem;
+}
+.drill-empty i { color: #059669; font-size: 1.55rem; }
+html.dark .drill-panel,
+html.dark .drill-context,
+html.dark .drill-stat-card,
+html.dark .drill-section-tab,
+html.dark .drill-agent-row { background: #1e293b !important; border-color: #334155 !important; }
+html.dark .drill-body { background: #0f172a !important; }
+html.dark .drill-section-tabs { border-color: #334155 !important; }
+html.dark .drill-context-title,
+html.dark .drill-stat-val,
+html.dark .drill-agent-name,
+html.dark .drill-section-title { color: #f1f5f9 !important; }
+html.dark .drill-context-sub,
+html.dark .drill-context-date,
+html.dark .drill-stat-lbl,
+html.dark .drill-agent-fonction,
+html.dark .drill-agent-submeta { color: #94a3b8 !important; }
+html.dark .drill-agent-pill,
+html.dark .drill-presence-bar { background: #334155 !important; border-color: #475569 !important; }
+html.dark .drill-agent-row:hover,
+html.dark .drill-stat-clickable:hover,
+html.dark .drill-stat-clickable.active { background: #1e3a5f !important; }
+@media (max-width: 620px) {
   .drill-overlay { align-items: flex-end; }
+  .drill-panel { width: 100vw; max-width: 100vw; height: 92vh; border-radius: 16px 16px 0 0; }
+  .drill-header { padding: 1.15rem 1.1rem; }
+  .drill-body { padding: 1rem; }
+  .drill-context { flex-direction: column; align-items: flex-start; }
+  .drill-context-date { text-align: left; }
+  .drill-agent-row { align-items: flex-start; }
+  .drill-agent-meta { align-items: flex-start; max-width: none; }
+}
+@media (max-width: 420px) {
+  .drill-section-tab { padding: .55rem .45rem; font-size: .72rem; }
+  .drill-stat-grid { gap: .55rem; }
+  .drill-stat-card { padding: .75rem .78rem; }
+  .drill-stat-val { font-size: 1.35rem; }
+  .drill-agent-row { flex-wrap: wrap; }
+  .drill-agent-meta { width: 100%; padding-left: 50px; }
 }
 </style>
