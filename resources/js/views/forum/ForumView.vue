@@ -61,9 +61,8 @@
           <div class="forum-post-head">
             <div>
               <h2>{{ post.auteur?.name || 'Agent PNMLS' }}</h2>
-              <p>
-                <span v-if="post.auteur?.poste">{{ post.auteur.poste }}</span>
-                <span v-if="post.auteur?.departement">{{ post.auteur.departement }}</span>
+              <p class="forum-author-meta">
+                <span v-for="part in authorMetaParts(post.auteur)" :key="part">{{ part }}</span>
                 <span>{{ timeAgo(post.created_at) }}</span>
               </p>
             </div>
@@ -99,7 +98,8 @@
                   <div class="forum-comment-head">
                     <div>
                       <strong>{{ item.auteur?.name || 'Agent PNMLS' }}</strong>
-                      <span>{{ timeAgo(item.created_at) }}</span>
+                      <span v-if="authorMetaText(item.auteur)" class="forum-comment-meta">{{ authorMetaText(item.auteur) }}</span>
+                      <span class="forum-comment-time">{{ timeAgo(item.created_at) }}</span>
                     </div>
                     <button
                       v-if="item.can_delete"
@@ -290,6 +290,19 @@ function postInitials(post) {
 
 function commentInitials(item) {
   return initialsFromName(item.auteur?.name || 'Agent PNMLS')
+}
+
+function authorMetaParts(author) {
+  if (!author) return []
+
+  return [
+    author.fonction || author.poste,
+    author.rattachement || author.departement || author.province,
+  ].filter(Boolean)
+}
+
+function authorMetaText(author) {
+  return authorMetaParts(author).join(' - ')
 }
 
 function initialsFromName(name) {
@@ -575,7 +588,8 @@ onMounted(() => loadPosts())
   font-weight: 900;
 }
 
-.forum-post-head p {
+.forum-post-head p,
+.forum-author-meta {
   display: flex;
   flex-wrap: wrap;
   gap: .45rem;
@@ -584,7 +598,7 @@ onMounted(() => loadPosts())
   font-size: .83rem;
 }
 
-.forum-post-head p span:not(:last-child)::after {
+.forum-author-meta span:not(:last-child)::after {
   content: "";
   display: inline-block;
   width: 4px;
@@ -705,9 +719,17 @@ onMounted(() => loadPosts())
   font-size: .88rem;
 }
 
-.forum-comment-head span {
+.forum-comment-meta,
+.forum-comment-time {
+  display: block;
   color: #64748b;
   font-size: .75rem;
+}
+
+.forum-comment-meta {
+  margin-top: .08rem;
+  color: #475569;
+  font-weight: 700;
 }
 
 .forum-comment-delete {

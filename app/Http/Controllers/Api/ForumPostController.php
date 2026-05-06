@@ -29,10 +29,25 @@ class ForumPostController extends ApiController
                 'user.role',
                 'user.agent.role',
                 'user.agent.departement',
+                'user.agent.departement.province',
+                'user.agent.province',
                 'agent.role',
                 'agent.departement',
+                'agent.departement.province',
+                'agent.province',
                 'comments' => fn ($query) => $query
-                    ->with(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'forumPost'])
+                    ->with([
+                        'user.role',
+                        'user.agent.role',
+                        'user.agent.departement',
+                        'user.agent.departement.province',
+                        'user.agent.province',
+                        'agent.role',
+                        'agent.departement',
+                        'agent.departement.province',
+                        'agent.province',
+                        'forumPost',
+                    ])
                     ->oldest(),
             ])
             ->withCount('comments')
@@ -75,7 +90,18 @@ class ForumPostController extends ApiController
             'contenu' => $validated['contenu'],
         ]);
 
-        $post->load(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'comments']);
+        $post->load([
+            'user.role',
+            'user.agent.role',
+            'user.agent.departement',
+            'user.agent.departement.province',
+            'user.agent.province',
+            'agent.role',
+            'agent.departement',
+            'agent.departement.province',
+            'agent.province',
+            'comments',
+        ]);
         $post->loadCount('comments');
 
         return $this->resource(ForumPostResource::make($post), [], [
@@ -103,7 +129,18 @@ class ForumPostController extends ApiController
             'contenu' => $validated['contenu'],
         ]);
 
-        $comment->load(['user.role', 'user.agent.role', 'user.agent.departement', 'agent.role', 'agent.departement', 'forumPost']);
+        $comment->load([
+            'user.role',
+            'user.agent.role',
+            'user.agent.departement',
+            'user.agent.departement.province',
+            'user.agent.province',
+            'agent.role',
+            'agent.departement',
+            'agent.departement.province',
+            'agent.province',
+            'forumPost',
+        ]);
         $this->notifyCommentParticipants($forumPost, $user);
 
         return $this->resource(ForumCommentResource::make($comment), [], [
