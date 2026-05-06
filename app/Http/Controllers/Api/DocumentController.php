@@ -9,15 +9,78 @@ use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class DocumentController extends ApiController
 {
+    private const DOCUMENT_CATEGORY_VALUES = [
+        'identite',
+        'parcours',
+        'carriere',
+        'gestion_rh',
+        'documents_legaux',
+        'autres',
+        'mission',
+    ];
+
+    private const DOCUMENT_CATEGORY_STATS = [
+        'identite',
+        'parcours',
+        'carriere',
+        'gestion_rh',
+        'documents_legaux',
+        'autres',
+    ];
+
+    private const LEGACY_DOCUMENT_CATEGORY_MAP = [
+        'mission' => 'autres',
+    ];
+
     private array $documentManagerRoles = [
         'Section ressources humaines',
         'Chef Section RH',
         'RH National',
         'RH Provincial',
     ];
+
+    private function normalizeDocumentCategory(?string $category): string
+    {
+        $category = trim((string) $category);
+
+        if ($category === '') {
+            return 'identite';
+        }
+
+        return self::LEGACY_DOCUMENT_CATEGORY_MAP[$category] ?? $category;
+    }
+
+    private function applyDocumentCategoryFilter($query, ?string $category): void
+    {
+        $category = $this->normalizeDocumentCategory($category);
+
+        if ($category === 'autres') {
+            $query->whereIn('type', ['autres', 'mission']);
+
+            return;
+        }
+
+        $query->where('type', $category);
+    }
+
+    private function documentStatsForAgent(Agent $agent): array
+    {
+        $stats = ['total' => $agent->documents()->count()];
+
+        foreach (self::DOCUMENT_CATEGORY_STATS as $category) {
+            $stats[$category] = $category === 'autres'
+                ? $agent->documents()->whereIn('type', ['autres', 'mission'])->count()
+                : $agent->documents()->where('type', $category)->count();
+        }
+
+        $stats['mission'] = $stats['autres'];
+
+        return $stats;
+    }
 
     private function canManageAgentDocuments($user): bool
     {
@@ -78,6 +141,9 @@ class DocumentController extends ApiController
                     'identite' => 0,
                     'parcours' => 0,
                     'carriere' => 0,
+                    'gestion_rh' => 0,
+                    'documents_legaux' => 0,
+                    'autres' => 0,
                     'mission' => 0,
                 ],
             ]);
@@ -87,7 +153,7 @@ class DocumentController extends ApiController
 
         // Optional category filter
         if ($request->filled('categorie')) {
-            $query->where('type', $request->input('categorie'));
+            $this->applyDocumentCategoryFilter($query, $request->input('categorie'));
         }
 
         // Optional search filter
@@ -102,13 +168,7 @@ class DocumentController extends ApiController
         $documents = $query->orderByDesc('created_at')->paginate(12);
 
         // Compute category stats (unfiltered, for the current agent)
-        $stats = [
-            'total'    => $agent->documents()->count(),
-            'identite' => $agent->documents()->where('type', 'identite')->count(),
-            'parcours' => $agent->documents()->where('type', 'parcours')->count(),
-            'carriere' => $agent->documents()->where('type', 'carriere')->count(),
-            'mission'  => $agent->documents()->where('type', 'mission')->count(),
-        ];
+        $stats = $this->documentStatsForAgent($agent);
 
         return $this->paginated($documents, DocumentResource::class, [], [
             'stats' => $stats,
@@ -124,7 +184,7 @@ class DocumentController extends ApiController
             'agent_id'                => 'required|integer|exists:agents,id',
             'nom_document'           => 'required|string|max:255',
             'fichier'                => 'required|file|max:10240',
-            'categories_document_id' => 'nullable|string|in:identite,parcours,carriere,mission',
+            'categories_document_id' => ['nullable', 'string', Rule::in(self::DOCUMENT_CATEGORY_VALUES)],
             'description'            => 'nullable|string|max:500',
         ]);
 
@@ -142,7 +202,7 @@ class DocumentController extends ApiController
 
         $document = Document::create([
             'agent_id'    => $agent->id,
-            'type'        => $validated['categories_document_id'] ?? 'identite',
+            'type'        => $this->normalizeDocumentCategory($validated['categories_document_id'] ?? 'identite'),
             'fichier'     => 'uploads/documents/' . $filename,
             'description' => ($validated['nom_document'] ?? '')
                            . (!empty($validated['description']) ? ' | ' . $validated['description'] : ''),
@@ -217,14 +277,16 @@ class DocumentController extends ApiController
         $validated = $request->validate([
             'nom_document' => 'required|string|max:255',
             'fichier' => 'nullable|file|max:10240',
-            'categories_document_id' => 'nullable|string|in:identite,parcours,carriere,mission',
+            'categories_document_id' => ['nullable', 'string', Rule::in(self::DOCUMENT_CATEGORY_VALUES)],
             'description' => 'nullable|string|max:500',
             'statut' => 'nullable|string|max:100',
             'date_expiration' => 'nullable|date',
         ]);
 
         $data = [
-            'type' => $validated['categories_document_id'] ?? $document->type,
+            'type' => array_key_exists('categories_document_id', $validated)
+                ? $this->normalizeDocumentCategory($validated['categories_document_id'])
+                : $document->type,
             'description' => ($validated['nom_document'] ?? '')
                 . (!empty($validated['description']) ? ' | ' . $validated['description'] : ''),
             'statut' => $validated['statut'] ?? $document->statut,

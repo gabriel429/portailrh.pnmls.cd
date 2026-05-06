@@ -28,7 +28,7 @@
               </div>
               <div>
                 <h4 class="fw-bold mb-1" style="color:#1a1a2e;">{{ docName }}</h4>
-                <span :class="['doc-badge', document.type]">
+                <span :class="['doc-badge', categoryClass]">
                   <i :class="categoryIcon"></i>
                   {{ categoryLabel }}
                 </span>
@@ -149,6 +149,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { get, download, remove } from '@/api/documents'
 import { useUiStore } from '@/stores/ui'
+import { getDocumentCategoryIcon, getDocumentCategoryLabel, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const route = useRoute()
@@ -174,24 +175,13 @@ const docDescription = computed(() => {
 })
 
 const categoryIcon = computed(() => {
-  const icons = {
-    identite: 'fas fa-id-card',
-    parcours: 'fas fa-graduation-cap',
-    carriere: 'fas fa-briefcase',
-    mission: 'fas fa-plane',
-  }
-  return icons[document.value?.type] || 'fas fa-file'
+  return getDocumentCategoryIcon(document.value?.type)
 })
 
 const categoryLabel = computed(() => {
-  const labels = {
-    identite: 'Identite',
-    parcours: 'Parcours',
-    carriere: 'Carriere',
-    mission: 'Mission',
-  }
-  return labels[document.value?.type] || document.value?.type || '-'
+  return getDocumentCategoryLabel(document.value?.type)
 })
+const categoryClass = computed(() => normalizeDocumentCategory(document.value?.type) || 'autres')
 
 const fileIconClass = computed(() => {
   const ext = fileMeta.value.extension
@@ -349,7 +339,10 @@ onMounted(() => {
 .doc-badge.identite { background: #e8f4fd; color: #0077B5; }
 .doc-badge.parcours { background: #fff3e0; color: #e67e22; }
 .doc-badge.carriere { background: #ede9fe; color: #7c3aed; }
-.doc-badge.mission { background: #e6f7ef; color: #28a745; }
+.doc-badge.gestion_rh { background: #e6f7ef; color: #28a745; }
+.doc-badge.documents_legaux { background: #e0f2fe; color: #0284c7; }
+.doc-badge.autres,
+.doc-badge.mission { background: #f1f5f9; color: #64748b; }
 
 .detail-card-body {
   padding: 1.5rem;

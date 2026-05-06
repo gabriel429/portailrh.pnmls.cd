@@ -603,11 +603,14 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Categorie</label>
               <select v-model="documentUploadForm.categories_document_id" class="form-select">
-                <option value="identite">Identite</option>
-                <option value="parcours">Parcours</option>
-                <option value="carriere">Carriere</option>
-                <option value="mission">Mission</option>
+                <option v-for="category in DOCUMENT_CATEGORY_OPTIONS" :key="category.value" :value="category.value">
+                  {{ category.fullLabel }}
+                </option>
               </select>
+              <div v-if="selectedDocumentCategory" class="form-text">
+                {{ selectedDocumentCategory.description }}
+              </div>
+              <div v-if="documentUploadErrors.categories_document_id" class="text-danger small mt-1">{{ documentUploadErrors.categories_document_id[0] }}</div>
             </div>
 
             <div class="mb-3">
@@ -636,6 +639,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { list, get, remove, exportCsv, getFormOptions, downloadDossier } from '@/api/agents'
 import { create as createDocument } from '@/api/documents'
+import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AgentEditModal from '@/components/agents/AgentEditModal.vue'
@@ -752,6 +756,9 @@ const sm_unreadMessagesCount = computed(() =>
 const sm_canManageAgentDocuments = computed(() =>
     Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
 )
+const selectedDocumentCategory = computed(() =>
+    DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)
+)
 const sm_sortedRequests = computed(() =>
     [...(selectedAgent.value?.requests || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 )
@@ -762,15 +769,15 @@ const sm_sortedMessages = computed(() =>
     [...(selectedAgent.value?.messages || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 )
 
-const sm_docTypes = [
-    { type: 'identite', label: 'Identite', icon: 'fa-id-card', color: 'text-danger' },
-    { type: 'parcours', label: 'Parcours', icon: 'fa-graduation-cap', color: 'text-info' },
-    { type: 'carriere', label: 'Carriere', icon: 'fa-briefcase', color: 'text-warning' },
-    { type: 'mission', label: 'Missions', icon: 'fa-plane', color: 'text-success' },
-]
+const sm_docTypes = DOCUMENT_CATEGORY_OPTIONS.map((category) => ({
+    type: category.value,
+    label: category.fullLabel,
+    icon: category.icon.replace('fas ', ''),
+    color: category.color,
+}))
 
 function sm_getDocsByType(type) {
-    return (selectedAgent.value?.documents || []).filter(d => d.type === type)
+    return (selectedAgent.value?.documents || []).filter(d => normalizeDocumentCategory(d.type) === type)
 }
 
 function sm_getDocumentName(doc) {

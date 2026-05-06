@@ -173,6 +173,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { create } from '@/api/documents'
 import { useUiStore } from '@/stores/ui'
+import { DOCUMENT_CATEGORY_OPTIONS } from '@/constants/documentCategories'
 
 const router = useRouter()
 const ui = useUiStore()
@@ -189,36 +190,13 @@ const form = ref({
   description: '',
 })
 
-const categories = [
-  {
-    value: 'identite',
-    label: 'Identite',
-    sub: "Carte d'identite, passeport...",
-    icon: 'fas fa-id-card',
-    style: 'background:#e8f4fd;color:#0077B5;',
-  },
-  {
-    value: 'parcours',
-    label: 'Parcours',
-    sub: 'Diplomes, certificats...',
-    icon: 'fas fa-graduation-cap',
-    style: 'background:#fff3e0;color:#e67e22;',
-  },
-  {
-    value: 'carriere',
-    label: 'Carriere',
-    sub: 'Experiences, references...',
-    icon: 'fas fa-briefcase',
-    style: 'background:#ede9fe;color:#7c3aed;',
-  },
-  {
-    value: 'mission',
-    label: 'Mission',
-    sub: 'Rapports, attestations...',
-    icon: 'fas fa-plane',
-    style: 'background:#e6f7ef;color:#28a745;',
-  },
-]
+const categories = DOCUMENT_CATEGORY_OPTIONS.map((category) => ({
+  value: category.value,
+  label: category.fullLabel,
+  sub: category.description,
+  icon: category.icon,
+  style: category.style,
+}))
 
 const fileThumbClass = computed(() => {
   if (!selectedFile.value) return 'other'

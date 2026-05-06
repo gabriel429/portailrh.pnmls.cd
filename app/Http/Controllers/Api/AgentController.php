@@ -576,10 +576,13 @@ class AgentController extends ApiController
     private function documentTypeLabel(?string $type): string
     {
         return [
-            'identite' => 'Identite',
-            'parcours' => 'Parcours',
-            'carriere' => 'Carriere',
-            'mission' => 'Mission',
+            'identite' => 'Identité',
+            'parcours' => 'Parcours académique et formation',
+            'carriere' => 'Carrière administrative',
+            'gestion_rh' => 'Gestion RH',
+            'documents_legaux' => 'Documents légaux',
+            'autres' => 'Autres',
+            'mission' => 'Autres',
         ][$type] ?? ($type ?: 'Non renseigne');
     }
 

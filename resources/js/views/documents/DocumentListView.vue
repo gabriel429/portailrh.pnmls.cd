@@ -13,21 +13,9 @@
           <div class="doc-hero-stat-val">{{ stats.total }}</div>
           <div class="doc-hero-stat-lbl">Total</div>
         </div>
-        <div>
-          <div class="doc-hero-stat-val">{{ stats.identite }}</div>
-          <div class="doc-hero-stat-lbl">Identite</div>
-        </div>
-        <div>
-          <div class="doc-hero-stat-val">{{ stats.parcours }}</div>
-          <div class="doc-hero-stat-lbl">Parcours</div>
-        </div>
-        <div>
-          <div class="doc-hero-stat-val">{{ stats.carriere }}</div>
-          <div class="doc-hero-stat-lbl">Carriere</div>
-        </div>
-        <div>
-          <div class="doc-hero-stat-val">{{ stats.mission }}</div>
-          <div class="doc-hero-stat-lbl">Mission</div>
+        <div v-for="category in categoryOptions" :key="category.value">
+          <div class="doc-hero-stat-val">{{ stats[category.value] || 0 }}</div>
+          <div class="doc-hero-stat-lbl">{{ category.label }}</div>
         </div>
       </div>
     </div>
@@ -46,47 +34,16 @@
         </div>
       </button>
       <button
+        v-for="category in categoryOptions"
+        :key="category.value"
         class="doc-cat-card"
-        :class="{ active: filters.categorie === 'identite' }"
-        @click="filters.categorie = 'identite'; fetchDocuments(1)"
+        :class="{ active: filters.categorie === category.value }"
+        @click="filters.categorie = category.value; fetchDocuments(1)"
       >
-        <div class="doc-cat-icon"><i class="fas fa-id-card"></i></div>
+        <div class="doc-cat-icon"><i :class="category.icon"></i></div>
         <div class="doc-cat-info">
-          <div class="doc-cat-name">Identite</div>
-          <div class="doc-cat-count">{{ stats.identite }} document{{ stats.identite > 1 ? 's' : '' }}</div>
-        </div>
-      </button>
-      <button
-        class="doc-cat-card"
-        :class="{ active: filters.categorie === 'parcours' }"
-        @click="filters.categorie = 'parcours'; fetchDocuments(1)"
-      >
-        <div class="doc-cat-icon"><i class="fas fa-graduation-cap"></i></div>
-        <div class="doc-cat-info">
-          <div class="doc-cat-name">Parcours</div>
-          <div class="doc-cat-count">{{ stats.parcours }} document{{ stats.parcours > 1 ? 's' : '' }}</div>
-        </div>
-      </button>
-      <button
-        class="doc-cat-card"
-        :class="{ active: filters.categorie === 'carriere' }"
-        @click="filters.categorie = 'carriere'; fetchDocuments(1)"
-      >
-        <div class="doc-cat-icon"><i class="fas fa-briefcase"></i></div>
-        <div class="doc-cat-info">
-          <div class="doc-cat-name">Carriere</div>
-          <div class="doc-cat-count">{{ stats.carriere }} document{{ stats.carriere > 1 ? 's' : '' }}</div>
-        </div>
-      </button>
-      <button
-        class="doc-cat-card"
-        :class="{ active: filters.categorie === 'mission' }"
-        @click="filters.categorie = 'mission'; fetchDocuments(1)"
-      >
-        <div class="doc-cat-icon"><i class="fas fa-plane"></i></div>
-        <div class="doc-cat-info">
-          <div class="doc-cat-name">Mission</div>
-          <div class="doc-cat-count">{{ stats.mission }} document{{ stats.mission > 1 ? 's' : '' }}</div>
+          <div class="doc-cat-name">{{ category.label }}</div>
+          <div class="doc-cat-count">{{ stats[category.value] || 0 }} document{{ (stats[category.value] || 0) > 1 ? 's' : '' }}</div>
         </div>
       </button>
     </div>
@@ -161,7 +118,7 @@
             </div>
           </div>
           <div class="doc-card-meta">
-            <span class="doc-meta-badge doc-meta-cat" :class="doc.type">
+            <span class="doc-meta-badge doc-meta-cat" :class="getCategoryClass(doc.type)">
               <i :class="getCategoryIcon(doc.type)" class="me-1"></i>{{ getCategoryLabel(doc.type) }}
             </span>
             <span class="doc-meta-badge">.{{ getFileExtension(doc).toUpperCase() }}</span>
@@ -243,7 +200,7 @@
               <div class="ddm-doc-title-wrap">
                 <div class="ddm-doc-title">{{ detailDocName(detailDoc) }}</div>
                 <div class="ddm-doc-badges">
-                  <span :class="['ddm-badge-cat', detailDoc.type]">
+                  <span :class="['ddm-badge-cat', getCategoryClass(detailDoc.type)]">
                     <i :class="getCategoryIcon(detailDoc.type)" class="me-1"></i>{{ getCategoryLabel(detailDoc.type) }}
                   </span>
                   <span class="ddm-badge-ext">.{{ getFileExtension(detailDoc).toUpperCase() }}</span>
@@ -380,6 +337,9 @@
                     <span class="dum-cat-label">{{ c.label }}</span>
                   </div>
                 </div>
+                <div v-if="selectedUploadCategory" class="form-text mt-2">
+                  {{ selectedUploadCategory.description }}
+                </div>
                 <div v-if="uploadErrors.categories_document_id" class="dum-error">{{ uploadErrors.categories_document_id[0] }}</div>
               </div>
 
@@ -412,6 +372,12 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { list, get, create, download, remove } from '@/api/documents'
 import { useUiStore } from '@/stores/ui'
+import {
+  DOCUMENT_CATEGORY_OPTIONS,
+  getDocumentCategoryIcon,
+  getDocumentCategoryLabel,
+  normalizeDocumentCategory,
+} from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const router = useRouter()
@@ -419,7 +385,7 @@ const ui = useUiStore()
 
 const loading = ref(false)
 const documents = ref([])
-const stats = ref({ total: 0, identite: 0, parcours: 0, carriere: 0, mission: 0 })
+const stats = ref({ total: 0, identite: 0, parcours: 0, carriere: 0, gestion_rh: 0, documents_legaux: 0, autres: 0 })
 const meta = ref({ current_page: 1, last_page: 1, per_page: 12, total: 0, from: 0, to: 0 })
 
 const filters = ref({
@@ -446,17 +412,15 @@ const uploadSelectedFile = ref(null)
 const uploadFilePreview = ref(null)
 const uploadFileInput = ref(null)
 
-const categoryOptions = [
-  { value: 'identite', label: 'Identite', icon: 'fas fa-id-card' },
-  { value: 'parcours', label: 'Parcours', icon: 'fas fa-graduation-cap' },
-  { value: 'carriere', label: 'Carriere', icon: 'fas fa-briefcase' },
-  { value: 'mission', label: 'Mission', icon: 'fas fa-plane' },
-]
+const categoryOptions = DOCUMENT_CATEGORY_OPTIONS
 
 function defaultUploadForm() {
   return { nom_document: '', categories_document_id: '', description: '' }
 }
 const uploadForm = ref(defaultUploadForm())
+const selectedUploadCategory = computed(() =>
+  DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === uploadForm.value.categories_document_id)
+)
 
 function openUploadModal() {
   uploadForm.value = defaultUploadForm()
@@ -591,23 +555,15 @@ function getFileIcon(doc) {
 }
 
 function getCategoryIcon(type) {
-  const icons = {
-    identite: 'fas fa-id-card',
-    parcours: 'fas fa-graduation-cap',
-    carriere: 'fas fa-briefcase',
-    mission: 'fas fa-plane',
-  }
-  return icons[type] || 'fas fa-file'
+  return getDocumentCategoryIcon(type)
 }
 
 function getCategoryLabel(type) {
-  const labels = {
-    identite: 'Identite',
-    parcours: 'Parcours',
-    carriere: 'Carriere',
-    mission: 'Mission',
-  }
-  return labels[type] || type
+  return getDocumentCategoryLabel(type)
+}
+
+function getCategoryClass(type) {
+  return normalizeDocumentCategory(type) || 'autres'
 }
 
 function formatDate(dateStr) {
@@ -766,6 +722,7 @@ onMounted(() => {
 }
 .doc-hero-stats {
   display: flex;
+  flex-wrap: wrap;
   gap: 1.5rem;
   margin-top: 1rem;
   position: relative;
@@ -878,9 +835,8 @@ onMounted(() => {
   font-size: .82rem;
   font-weight: 700;
   line-height: 1.2;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .doc-cat-count {
   font-size: .7rem;
@@ -1094,7 +1050,10 @@ onMounted(() => {
 .doc-meta-cat.identite { background: #e8f4fd; color: #0077B5; }
 .doc-meta-cat.parcours { background: #fff3e0; color: #e67e22; }
 .doc-meta-cat.carriere { background: #ede9fe; color: #7c3aed; }
-.doc-meta-cat.mission { background: #e6f7ef; color: #28a745; }
+.doc-meta-cat.gestion_rh { background: #e6f7ef; color: #28a745; }
+.doc-meta-cat.documents_legaux { background: #e0f2fe; color: #0284c7; }
+.doc-meta-cat.autres,
+.doc-meta-cat.mission { background: #f1f5f9; color: #64748b; }
 
 /* ── Card footer ── */
 .doc-card-footer {
@@ -1292,7 +1251,10 @@ onMounted(() => {
 .ddm-badge-cat.identite { background: #e8f4fd; color: #0077B5; }
 .ddm-badge-cat.parcours { background: #fff3e0; color: #e67e22; }
 .ddm-badge-cat.carriere { background: #ede9fe; color: #7c3aed; }
-.ddm-badge-cat.mission { background: #e6f7ef; color: #28a745; }
+.ddm-badge-cat.gestion_rh { background: #e6f7ef; color: #28a745; }
+.ddm-badge-cat.documents_legaux { background: #e0f2fe; color: #0284c7; }
+.ddm-badge-cat.autres,
+.ddm-badge-cat.mission { background: #f1f5f9; color: #64748b; }
 .ddm-badge-ext {
   display: inline-flex; padding: .2rem .5rem; border-radius: 6px;
   font-size: .68rem; font-weight: 600; background: #f3f4f6; color: #6b7280;
@@ -1561,7 +1523,7 @@ onMounted(() => {
 .dum-cat-card.active { border-color: #0077B5; background: #e8f4fd; }
 .dum-cat-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
 .dum-cat-card.active .dum-cat-icon { color: #0077B5; }
-.dum-cat-label { font-size: .68rem; font-weight: 600; color: #64748b; }
+.dum-cat-label { font-size: .68rem; font-weight: 600; color: #64748b; line-height: 1.15; text-align: center; }
 .dum-cat-card.active .dum-cat-label { color: #0077B5; }
 
 /* Footer */

@@ -618,11 +618,14 @@
             <div class="mb-3">
               <label class="form-label fw-bold">Catégorie</label>
               <select v-model="documentUploadForm.categories_document_id" class="form-select">
-                <option value="identite">Identité</option>
-                <option value="parcours">Parcours</option>
-                <option value="carriere">Carrière</option>
-                <option value="mission">Mission</option>
+                <option v-for="category in DOCUMENT_CATEGORY_OPTIONS" :key="category.value" :value="category.value">
+                  {{ category.fullLabel }}
+                </option>
               </select>
+              <div v-if="selectedDocumentCategory" class="form-text">
+                {{ selectedDocumentCategory.description }}
+              </div>
+              <div v-if="documentUploadErrors.categories_document_id" class="text-danger small mt-1">{{ documentUploadErrors.categories_document_id[0] }}</div>
             </div>
 
             <div class="mb-3">
@@ -651,6 +654,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { get, remove, downloadDossier } from '@/api/agents'
 import { create as createDocument, download as downloadDocument, remove as removeDocument } from '@/api/documents'
+import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import AgentEditModal from '@/components/agents/AgentEditModal.vue'
@@ -703,12 +707,12 @@ function onAgentUpdated() {
 }
 
 // Document types config
-const docTypes = [
-    { type: 'identite', label: 'Identite', icon: 'fa-id-card', color: 'text-danger' },
-    { type: 'parcours', label: 'Parcours', icon: 'fa-graduation-cap', color: 'text-info' },
-    { type: 'carriere', label: 'Carriere', icon: 'fa-briefcase', color: 'text-warning' },
-    { type: 'mission', label: 'Missions', icon: 'fa-plane', color: 'text-success' },
-]
+const docTypes = DOCUMENT_CATEGORY_OPTIONS.map((category) => ({
+    type: category.value,
+    label: category.fullLabel,
+    icon: category.icon.replace('fas ', ''),
+    color: category.color,
+}))
 
 // Computed stats
 const documentsCount = computed(() => agent.value?.documents?.length || 0)
@@ -726,6 +730,9 @@ const isNational = computed(() =>
 )
 const canManageAgentDocuments = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
+)
+const selectedDocumentCategory = computed(() =>
+    DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)
 )
 const senSignatureTitle = computed(() =>
     agent.value?.signature?.sen_title || 'Secrétaire Exécutif National (SEN)'
@@ -778,7 +785,7 @@ function formatDateTime(dateStr) {
 }
 
 function getDocsByType(type) {
-    return (agent.value?.documents || []).filter(d => d.type === type)
+    return (agent.value?.documents || []).filter(d => normalizeDocumentCategory(d.type) === type)
 }
 
 function getDocumentName(doc) {

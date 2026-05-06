@@ -259,6 +259,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { create as createDocument } from '@/api/documents'
+import { DOCUMENT_CATEGORY_OPTIONS } from '@/constants/documentCategories'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import RequestCreateModal from '@/components/RequestCreateModal.vue'
@@ -446,12 +447,7 @@ const uplSelectedFile = ref(null)
 const uplFilePreview = ref(null)
 const uplFileInput = ref(null)
 
-const uplCatOptions = [
-  { value: 'identite', label: 'Identite', icon: 'fas fa-id-card' },
-  { value: 'parcours', label: 'Parcours', icon: 'fas fa-graduation-cap' },
-  { value: 'carriere', label: 'Carriere', icon: 'fas fa-briefcase' },
-  { value: 'mission', label: 'Mission', icon: 'fas fa-plane' },
-]
+const uplCatOptions = DOCUMENT_CATEGORY_OPTIONS
 
 function defaultUplForm() { return { nom_document: '', categories_document_id: '', description: '' } }
 const uplForm = ref(defaultUplForm())
