@@ -53,15 +53,6 @@
     <template v-else>
       <div class="data-card">
         <div v-if="sections.length > 0" class="section-list">
-          <div class="section-list-head">
-            <span>Code</span>
-            <span>Section / Service</span>
-            <span>Departement</span>
-            <span>Type</span>
-            <span>Cellules</span>
-            <span>Actions</span>
-          </div>
-
           <article v-for="s in sections" :key="s.id" class="section-row">
             <div class="section-code">
               <span class="mobile-label">Code</span>
@@ -348,45 +339,60 @@ onMounted(() => {
 }
 .section-list {
   display: grid;
+  gap: .8rem;
+  padding: .9rem;
 }
-.section-list-head,
 .section-row {
   display: grid;
-  grid-template-columns: minmax(58px, .55fr) minmax(0, 1.65fr) minmax(0, 1.35fr) minmax(0, .8fr) minmax(54px, .45fr) minmax(64px, 72px);
-  align-items: center;
-  gap: .85rem;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.15fr) minmax(86px, auto);
+  grid-template-areas:
+    "name department actions"
+    "code type count";
+  align-items: start;
+  gap: .75rem 1rem;
   min-width: 0;
-}
-.section-list-head {
-  background: #f8fafc;
-  font-size: .78rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .5px;
-  color: #64748b;
-  padding: .85rem 1rem;
-}
-.section-row {
-  padding: .85rem 1rem;
-  border-top: 1px solid #f1f5f9;
+  padding: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .84);
   font-size: .88rem;
   color: #334155;
-  transition: background .15s;
+  transition: border-color .15s, background .15s, box-shadow .15s;
   max-width: 100%;
-  min-width: 0;
 }
 .section-row:hover {
-  background: #f8fafc;
+  background: #fff;
+  border-color: rgba(14, 165, 233, .36);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
 }
 .section-name,
 .section-department,
 .section-code,
 .section-type,
 .section-count,
-.section-actions,
-.section-list-head span {
+.section-actions {
+  display: grid;
+  gap: .25rem;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+.section-name {
+  grid-area: name;
+}
+.section-department {
+  grid-area: department;
+}
+.section-code {
+  grid-area: code;
+}
+.section-type {
+  grid-area: type;
+}
+.section-count {
+  grid-area: count;
+}
+.section-actions {
+  grid-area: actions;
 }
 .section-name strong {
   color: #0f172a;
@@ -394,7 +400,7 @@ onMounted(() => {
   line-height: 1.35;
 }
 .section-count {
-  text-align: center;
+  align-content: start;
 }
 .section-actions {
   display: flex;
@@ -403,7 +409,12 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 .mobile-label {
-  display: none;
+  display: block;
+  color: #94a3b8;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
 }
 
 /* ── Code Badge ── */
@@ -528,69 +539,23 @@ onMounted(() => {
   color: #cbd5e1;
 }
 
-@media (max-width: 1100px) {
-  .section-list-head,
-  .section-row {
-    grid-template-columns: minmax(58px, .6fr) minmax(0, 1.5fr) minmax(0, 1.2fr) minmax(0, .85fr) minmax(54px, .45fr);
-  }
-  .section-list-head span:last-child {
-    display: none;
-  }
-  .section-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-end;
-    padding-top: .15rem;
-  }
-}
-
 @media (max-width: 900px) {
   .section-list {
     gap: .75rem;
     padding: .75rem;
   }
-  .section-list-head {
-    display: none;
-  }
   .section-row {
     grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "name name"
+      "department department"
+      "code type"
+      "count actions";
     gap: .75rem 1rem;
-    align-items: start;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, .82);
-    padding: 1rem;
-  }
-  .section-row:hover {
-    background: #fff;
-  }
-  .section-code,
-  .section-name,
-  .section-department,
-  .section-type,
-  .section-count {
-    display: grid;
-    gap: .25rem;
-    min-width: 0;
-  }
-  .section-name {
-    grid-column: 1 / -1;
-    order: -1;
-  }
-  .section-count {
-    text-align: left;
   }
   .section-actions {
-    grid-column: 1 / -1;
-    justify-content: flex-start;
-    padding-top: .2rem;
-  }
-  .mobile-label {
-    display: block;
-    color: #94a3b8;
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: .04em;
-    text-transform: uppercase;
+    justify-content: flex-end;
+    align-self: end;
   }
 }
 
@@ -647,8 +612,18 @@ onMounted(() => {
   }
   .section-row {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "name"
+      "department"
+      "code"
+      "type"
+      "count"
+      "actions";
     gap: .65rem;
     padding: .9rem;
+  }
+  .section-actions {
+    justify-content: flex-start;
   }
   .action-btn {
     width: 28px;
