@@ -224,6 +224,14 @@ onMounted(() => {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  overflow-x: hidden;
+  contain: inline-size;
+}
+
+:global(.admin-content:has(.section-list-page)),
+:global(.main-content:has(.section-list-page)) {
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 /* ── Hero ── */
@@ -334,6 +342,8 @@ onMounted(() => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
   border: 1px solid #f1f5f9;
   overflow: hidden;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
 }
 .section-list {
@@ -342,9 +352,10 @@ onMounted(() => {
 .section-list-head,
 .section-row {
   display: grid;
-  grid-template-columns: minmax(86px, .7fr) minmax(190px, 1.6fr) minmax(180px, 1.45fr) minmax(128px, .95fr) minmax(76px, .55fr) 88px;
+  grid-template-columns: minmax(58px, .55fr) minmax(0, 1.65fr) minmax(0, 1.35fr) minmax(0, .8fr) minmax(54px, .45fr) minmax(64px, 72px);
   align-items: center;
   gap: .85rem;
+  min-width: 0;
 }
 .section-list-head {
   background: #f8fafc;
@@ -361,12 +372,19 @@ onMounted(() => {
   font-size: .88rem;
   color: #334155;
   transition: background .15s;
+  max-width: 100%;
+  min-width: 0;
 }
 .section-row:hover {
   background: #f8fafc;
 }
 .section-name,
-.section-department {
+.section-department,
+.section-code,
+.section-type,
+.section-count,
+.section-actions,
+.section-list-head span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
@@ -382,6 +400,7 @@ onMounted(() => {
   display: flex;
   justify-content: flex-end;
   gap: .4rem;
+  flex-wrap: wrap;
 }
 .mobile-label {
   display: none;
@@ -396,6 +415,11 @@ onMounted(() => {
   padding: 3px 10px;
   border-radius: 6px;
   font-family: monospace;
+  display: inline-flex;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.2;
 }
 
 /* ── Type Badges ── */
@@ -507,7 +531,7 @@ onMounted(() => {
 @media (max-width: 1100px) {
   .section-list-head,
   .section-row {
-    grid-template-columns: minmax(82px, .75fr) minmax(180px, 1.5fr) minmax(160px, 1.25fr) minmax(116px, .9fr) 76px;
+    grid-template-columns: minmax(58px, .6fr) minmax(0, 1.5fr) minmax(0, 1.2fr) minmax(0, .85fr) minmax(54px, .45fr);
   }
   .section-list-head span:last-child {
     display: none;
