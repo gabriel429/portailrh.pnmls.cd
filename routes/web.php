@@ -60,7 +60,11 @@ Route::get('/build/{file}', function (string $file) {
 
 // Named login route — required by Laravel auth middleware for redirect
 Route::get('/login', function () {
-    return view('spa');
+    return response()
+        ->view('spa')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
 })->name('login');
 
 // Logout (POST) — destroy session and redirect to login

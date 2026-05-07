@@ -1,6 +1,5 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import { registerSW } from 'virtual:pwa-register'
 import router from './router'
 import App from './App.vue'
 import { debugLog, reportError } from '@/utils/logger'
@@ -11,10 +10,10 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
-debugLog('PWA: Service Worker re-enabled after clean deployment')
+debugLog('PWA: Service Worker disabled to prevent stale builds')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-07-assistant-rh-v1'
+const BUILD_CACHE_VERSION = '2026-05-07-disable-sw-v2'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 
 async function clearBuildCachesOnVersionChange() {
@@ -74,63 +73,30 @@ async function clearBuildCachesOnVersionChange() {
     return false
 }
 
-async function clearLegacyRootServiceWorkers() {
+async function clearLegacyServiceWorkers() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
     try {
         const registrations = await navigator.serviceWorker.getRegistrations()
-        let removedLegacyRegistration = false
 
-        await Promise.all(registrations.map(async (registration) => {
-            const scopePath = new URL(registration.scope).pathname
-            const scriptPath = registration.active?.scriptURL
-                ? new URL(registration.active.scriptURL).pathname
-                : ''
+        await Promise.all(registrations.map((registration) => registration.unregister()))
 
-            if (scopePath === '/' || scriptPath === '/sw.js') {
-                removedLegacyRegistration = true
-                await registration.unregister()
-                return
-            }
-
-            await registration.update()
-        }))
-
-        if (removedLegacyRegistration && 'caches' in window) {
+        if ('caches' in window) {
             const cacheKeys = await caches.keys()
             await Promise.all(cacheKeys
-                .filter((key) => /workbox|precache|runtime/i.test(key))
+                .filter((key) => /workbox|precache|runtime|vite|pnmls|e-pnmls/i.test(key))
                 .map((key) => caches.delete(key)))
         }
     } catch (error) {
-        reportError('PWA: Legacy service worker cleanup failed:', error)
+        reportError('PWA: Service worker cleanup failed:', error)
     }
-}
-
-function registerCurrentServiceWorker() {
-    registerSW({
-        onNeedRefresh() {
-            debugLog('PWA: New version available; update will apply on next navigation')
-        },
-        onOfflineReady() {
-            debugLog('PWA: App ready for offline use')
-        },
-        onRegistered(registration) {
-            registration?.update()
-            debugLog('PWA: Service Worker registered successfully')
-        },
-        onRegisterError(error) {
-            reportError('PWA: Service Worker registration failed:', error)
-        },
-    })
 }
 
 async function prepareRuntimeCaches() {
     const reloadScheduled = await clearBuildCachesOnVersionChange()
     if (reloadScheduled) return
 
-    await clearLegacyRootServiceWorkers()
-    registerCurrentServiceWorker()
+    await clearLegacyServiceWorkers()
 }
 
 prepareRuntimeCaches()

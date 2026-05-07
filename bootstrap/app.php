@@ -17,7 +17,11 @@ $app = Application::configure(basePath: dirname(__DIR__))
             // SPA catch-all — MUST be registered AFTER all other routes
             \Illuminate\Support\Facades\Route::middleware('web')
                 ->get('/{any}', function () {
-                    return view('spa');
+                    return response()
+                        ->view('spa')
+                        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+                        ->header('Pragma', 'no-cache')
+                        ->header('Expires', '0');
                 })->where('any', '^(?!api/).*$');
         },
     )
