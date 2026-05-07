@@ -24,6 +24,7 @@ use App\Services\UserDataScope;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class ParametresController extends Controller
 {
@@ -1129,39 +1130,43 @@ class ParametresController extends Controller
             'agents' => $agents,
             'fonctions' => Schema::hasTable('fonctions') ? Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']) : [],
             'departments' => Schema::hasTable('departments') ? $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom', 'code']) : [],
-            'sections' => Schema::hasTable('sections') ? Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id']) : [],
+            'sections' => Schema::hasTable('sections') ? Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id', 'type']) : [],
             'cellules' => Schema::hasTable('cellules') ? Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']) : [],
             'provinces' => Schema::hasTable('provinces') ? $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get(['id', 'nom', 'code']) : [],
             'localites' => Schema::hasTable('localites') ? Localite::orderBy('nom')->get(['id', 'nom', 'code', 'province_id']) : [],
+            'organes' => Schema::hasTable('organes') ? Organe::where('actif', true)->orderBy('code')->get(['id', 'code', 'nom', 'sigle']) : [],
         ]);
     }
 
     public function apiAffectationsStore(Request $request)
     {
-        $validated = $request->validate([
-            'agent_id' => 'required|exists:agents,id',
-            'fonction_id' => 'required|exists:fonctions,id',
-            'niveau_administratif' => 'required|in:SEN,SEP,SEL',
-            'niveau' => 'required|in:direction,service_rattache,departement,section,cellule,province,local',
-            'department_id' => 'nullable|exists:departments,id',
-            'section_id' => 'nullable|exists:sections,id',
-            'cellule_id' => 'nullable|exists:cellules,id',
-            'province_id' => 'nullable|exists:provinces,id',
-            'localite_id' => 'nullable|exists:localites,id',
-            'date_debut' => 'nullable|date',
-            'date_fin' => 'nullable|date|after_or_equal:date_debut',
-            'actif' => 'boolean',
-            'remarque' => 'nullable|string',
-        ]);
+        $validated = $this->validateAffectationPayload($request);
 
         $agent = Agent::find($validated['agent_id']);
         if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
             abort(403, 'Acces refuse pour cet agent.');
         }
 
-        $affectation = Affectation::create($validated);
+        $affectation = DB::transaction(function () use ($validated) {
+            $validated = $this->normalizeAffectationPayload($validated);
+
+            if (($validated['actif'] ?? true) === true) {
+                Affectation::where('agent_id', $validated['agent_id'])
+                    ->where('actif', true)
+                    ->update([
+                        'actif' => false,
+                        'date_fin' => now()->toDateString(),
+                    ]);
+            }
+
+            $affectation = Affectation::create($validated);
+            $this->syncAgentFromActiveAffectation($affectation->agent);
+
+            return $affectation;
+        });
+
         $this->recordAudit('CREATE', 'affectations', $affectation->id, null, $affectation->toArray());
-        return response()->json($affectation->load(['agent', 'fonction']), 201);
+        return response()->json($affectation->load(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite']), 201);
     }
 
     public function apiAffectationsUpdate(Request $request, Affectation $affectation)
@@ -1171,6 +1176,44 @@ class ParametresController extends Controller
         }
 
         $before = $affectation->toArray();
+        $validated = $this->validateAffectationPayload($request);
+
+        $agent = Agent::find($validated['agent_id']);
+        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+            abort(403, 'Acces refuse pour cet agent.');
+        }
+
+        $affectation = DB::transaction(function () use ($affectation, $validated) {
+            $previousAgentId = $affectation->agent_id;
+            $validated = $this->normalizeAffectationPayload($validated);
+
+            if (($validated['actif'] ?? true) === true) {
+                Affectation::where('agent_id', $validated['agent_id'])
+                    ->where('id', '!=', $affectation->id)
+                    ->where('actif', true)
+                    ->update([
+                        'actif' => false,
+                        'date_fin' => now()->toDateString(),
+                    ]);
+            }
+
+            $affectation->update($validated);
+            $affectation->refresh();
+
+            $this->syncAgentFromActiveAffectation($affectation->agent);
+            if ((int) $previousAgentId !== (int) $affectation->agent_id) {
+                $this->syncAgentFromActiveAffectation(Agent::find($previousAgentId));
+            }
+
+            return $affectation;
+        });
+
+        $this->recordAudit('UPDATE', 'affectations', $affectation->id, $before, $affectation->fresh()->toArray());
+        return response()->json($affectation->load(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite']));
+    }
+
+    private function validateAffectationPayload(Request $request): array
+    {
         $validated = $request->validate([
             'agent_id' => 'required|exists:agents,id',
             'fonction_id' => 'required|exists:fonctions,id',
@@ -1187,14 +1230,129 @@ class ParametresController extends Controller
             'remarque' => 'nullable|string',
         ]);
 
-        $agent = Agent::find($validated['agent_id']);
-        if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
-            abort(403, 'Acces refuse pour cet agent.');
+        $validated['actif'] = (bool) ($validated['actif'] ?? true);
+        $normalized = $this->normalizeAffectationPayload($validated);
+        $fonction = Fonction::find($normalized['fonction_id']);
+
+        if ($fonction && !$this->fonctionMatchesAffectation($fonction, $normalized)) {
+            throw ValidationException::withMessages([
+                'fonction_id' => 'La fonction choisie ne correspond pas au niveau administratif ou au type de poste.',
+            ]);
         }
 
-        $affectation->update($validated);
-        $this->recordAudit('UPDATE', 'affectations', $affectation->id, $before, $affectation->fresh()->toArray());
-        return response()->json($affectation->load(['agent', 'fonction']));
+        foreach ($this->requiredStructureFields($normalized) as $field => $message) {
+            if (empty($normalized[$field])) {
+                throw ValidationException::withMessages([$field => $message]);
+            }
+        }
+
+        return $normalized;
+    }
+
+    private function normalizeAffectationPayload(array $payload): array
+    {
+        $payload['actif'] = (bool) ($payload['actif'] ?? true);
+
+        if (!empty($payload['cellule_id'])) {
+            $cellule = Cellule::with('section')->find($payload['cellule_id']);
+            $payload['section_id'] = $payload['section_id'] ?? $cellule?->section_id;
+            $payload['department_id'] = $payload['department_id'] ?? $cellule?->section?->department_id;
+        }
+
+        if (!empty($payload['section_id'])) {
+            $section = Section::find($payload['section_id']);
+            $payload['department_id'] = $payload['department_id'] ?? $section?->department_id;
+        }
+
+        if (!empty($payload['localite_id'])) {
+            $localite = Localite::find($payload['localite_id']);
+            $payload['province_id'] = $payload['province_id'] ?? $localite?->province_id;
+        }
+
+        if ($payload['niveau_administratif'] === 'SEN') {
+            $payload['province_id'] = null;
+            $payload['localite_id'] = null;
+        } else {
+            $payload['department_id'] = null;
+            $payload['section_id'] = null;
+            $payload['cellule_id'] = null;
+        }
+
+        if ($payload['niveau'] === 'direction') {
+            $payload['department_id'] = null;
+            $payload['section_id'] = null;
+            $payload['cellule_id'] = null;
+        }
+
+        return $payload;
+    }
+
+    private function requiredStructureFields(array $payload): array
+    {
+        return match ($payload['niveau']) {
+            'departement' => ['department_id' => 'Selectionnez le departement/service.'],
+            'section', 'service_rattache' => ['section_id' => 'Selectionnez la section ou le service rattache.'],
+            'cellule' => ['section_id' => 'Selectionnez la section.', 'cellule_id' => 'Selectionnez la cellule.'],
+            'province' => ['province_id' => 'Selectionnez la province.'],
+            'local' => ['province_id' => 'Selectionnez la province.', 'localite_id' => 'Selectionnez la localite.'],
+            default => [],
+        };
+    }
+
+    private function fonctionMatchesAffectation(Fonction $fonction, array $payload): bool
+    {
+        $sameAdminLevel = $fonction->niveau_administratif === 'TOUS'
+            || $fonction->niveau_administratif === $payload['niveau_administratif'];
+
+        if (!$sameAdminLevel) {
+            return false;
+        }
+
+        $typePoste = $this->normalizePosteType($fonction->type_poste);
+        $niveau = $this->normalizePosteType($payload['niveau']);
+
+        return $typePoste === 'appui' || $typePoste === $niveau;
+    }
+
+    private function normalizePosteType(?string $value): string
+    {
+        $value = strtolower(trim((string) $value));
+        $value = str_replace(['dÃ©partement', 'département'], 'departement', $value);
+        return $value;
+    }
+
+    private function syncAgentFromActiveAffectation(?Agent $agent): void
+    {
+        if (!$agent) {
+            return;
+        }
+
+        $active = Affectation::with(['fonction', 'department', 'section', 'cellule', 'province', 'localite'])
+            ->where('agent_id', $agent->id)
+            ->where('actif', true)
+            ->orderByDesc('date_debut')
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$active) {
+            return;
+        }
+
+        $defaultOrganes = [
+            'SEN' => 'SecrÃ©tariat ExÃ©cutif National',
+            'SEP' => 'SecrÃ©tariat ExÃ©cutif Provincial',
+            'SEL' => 'SecrÃ©tariat ExÃ©cutif Local',
+        ];
+        $organeName = Organe::where('code', $active->niveau_administratif)->value('nom')
+            ?? ($defaultOrganes[$active->niveau_administratif] ?? $agent->organe);
+
+        $agent->forceFill([
+            'organe' => $organeName,
+            'fonction' => $active->fonction?->nom,
+            'poste_actuel' => $active->fonction?->nom,
+            'departement_id' => $active->department_id,
+            'province_id' => $active->province_id,
+        ])->save();
     }
 
     public function apiAffectationsDestroy(Affectation $affectation)
@@ -1204,7 +1362,9 @@ class ParametresController extends Controller
         }
 
         $before = $affectation->toArray();
+        $agent = $affectation->agent;
         $affectation->delete();
+        $this->syncAgentFromActiveAffectation($agent);
         $this->recordAudit('DELETE', 'affectations', $affectation->id, $before);
         return response()->json(['message' => 'Affectation supprimee.']);
     }

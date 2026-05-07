@@ -88,7 +88,7 @@
             </div>
             <div class="col-md-3">
               <label for="niveau" class="form-label">Type de poste <span class="text-danger">*</span></label>
-              <select class="form-select" :class="{ 'is-invalid': errors.niveau }" id="niveau" v-model="form.niveau" required @change="form.fonction_id = ''">
+              <select class="form-select" :class="{ 'is-invalid': errors.niveau }" id="niveau" v-model="form.niveau" required @change="onTypePosteChange">
                 <option value="">-- Selectionner --</option>
                 <option value="direction">Direction</option>
                 <option value="service_rattache">Service rattache</option>
@@ -251,6 +251,14 @@ const options = reactive({
   localites: [],
 })
 
+function normalizePosteType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('dÃ©partement', 'departement')
+    .replaceAll('département', 'departement')
+}
+
 // Filtered fonctions based on niveau_administratif and type de poste (niveau)
 const filteredFonctions = computed(() => {
   return options.fonctions.filter(f => {
@@ -270,8 +278,9 @@ const filteredFonctions = computed(() => {
         'province': 'province',
         'local': 'local',
       }
-      const typePoste = niveauToType[form.niveau] || form.niveau
-      if (f.type_poste !== typePoste && f.type_poste !== 'appui') return false
+      const typePoste = normalizePosteType(niveauToType[form.niveau] || form.niveau)
+      const fonctionType = normalizePosteType(f.type_poste)
+      if (fonctionType !== typePoste && fonctionType !== 'appui') return false
     }
     return true
   })
@@ -279,8 +288,11 @@ const filteredFonctions = computed(() => {
 
 // Filtered dropdowns based on parent selection
 const filteredSections = computed(() => {
+  if (form.niveau === 'service_rattache') {
+    return options.sections.filter(s => s.type === 'service_rattache')
+  }
   if (!form.department_id) return []
-  return options.sections.filter(s => String(s.department_id) === String(form.department_id))
+  return options.sections.filter(s => String(s.department_id) === String(form.department_id) && s.type !== 'service_rattache')
 })
 
 const filteredCellules = computed(() => {
@@ -304,6 +316,15 @@ function onNiveauChange() {
     form.section_id = ''
     form.cellule_id = ''
   }
+}
+
+function onTypePosteChange() {
+  form.fonction_id = ''
+  form.department_id = ''
+  form.section_id = ''
+  form.cellule_id = ''
+  form.province_id = ''
+  form.localite_id = ''
 }
 
 function onDepartmentChange() {

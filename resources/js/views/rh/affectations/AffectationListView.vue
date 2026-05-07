@@ -201,7 +201,7 @@
             <!-- Type de poste -->
             <div class="afm-field">
               <label class="afm-label">Type de poste <span class="afm-req">*</span></label>
-              <select v-model="createForm.niveau" class="afm-input" :class="{ 'afm-err': createErrors.niveau }" @change="createForm.fonction_id = ''">
+              <select v-model="createForm.niveau" class="afm-input" :class="{ 'afm-err': createErrors.niveau }" @change="onTypePosteChange">
                 <option value="">-- Choisir --</option>
                 <option v-for="np in niveauPosteOptions" :key="np.value" :value="np.value">{{ np.label }}</option>
               </select>
@@ -476,6 +476,14 @@ function defaultCreateForm() {
 }
 const createForm = ref(defaultCreateForm())
 
+function normalizePosteType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replaceAll('dÃ©partement', 'departement')
+    .replaceAll('département', 'departement')
+}
+
 const typePosteMap = {
   direction: 'direction',
   service_rattache: 'service_rattache',
@@ -490,14 +498,18 @@ const filteredFonctions = computed(() => {
   if (!createForm.value.niveau_administratif) return options.fonctions
   return options.fonctions.filter(f => {
     const matchNiveau = f.niveau_administratif === createForm.value.niveau_administratif || f.niveau_administratif === 'TOUS'
-    const posteType = typePosteMap[createForm.value.niveau] || null
-    const matchType = !posteType || f.type_poste === posteType || f.type_poste === 'appui'
+    const posteType = normalizePosteType(typePosteMap[createForm.value.niveau] || null)
+    const fonctionType = normalizePosteType(f.type_poste)
+    const matchType = !posteType || fonctionType === posteType || fonctionType === 'appui'
     return matchNiveau && matchType
   })
 })
 const filteredSections = computed(() => {
+  if (createForm.value.niveau === 'service_rattache') {
+    return options.sections.filter(s => s.type === 'service_rattache')
+  }
   if (!createForm.value.department_id) return []
-  return options.sections.filter(s => s.department_id == createForm.value.department_id)
+  return options.sections.filter(s => s.department_id == createForm.value.department_id && s.type !== 'service_rattache')
 })
 const filteredCellules = computed(() => {
   if (!createForm.value.section_id) return []
@@ -543,6 +555,14 @@ function onNiveauAdminChange() {
     createForm.value.section_id = ''
     createForm.value.cellule_id = ''
   }
+}
+function onTypePosteChange() {
+  createForm.value.fonction_id = ''
+  createForm.value.department_id = ''
+  createForm.value.section_id = ''
+  createForm.value.cellule_id = ''
+  createForm.value.province_id = ''
+  createForm.value.localite_id = ''
 }
 function onDepartmentChange() {
   createForm.value.section_id = ''
