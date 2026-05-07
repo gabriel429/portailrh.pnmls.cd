@@ -200,6 +200,27 @@ class RoleService
         ]);
     }
 
+    public function isAssistantRh(?User $user): bool
+    {
+        if (!$user || $this->isSuperAdmin($user)) {
+            return false;
+        }
+
+        $role = $this->normalize($user->role?->nom_role);
+        $fonction = $this->normalize($user->agent?->fonction);
+        $poste = $this->normalize($user->agent?->poste_actuel);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste);
+
+        return in_array($role, [
+            'assistant rh',
+            'assistant ressources humaines',
+            'assistant ressource humaine',
+        ], true)
+            || str_contains($profile, 'assistant rh')
+            || str_contains($profile, 'assistant ressources humaines')
+            || str_contains($profile, 'assistant ressource humaine');
+    }
+
     private function isDepartmentPrincipalRole(User $user): bool
     {
         $role = $this->normalize($user->role?->nom_role);

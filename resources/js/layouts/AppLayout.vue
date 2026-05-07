@@ -154,14 +154,20 @@
                     </router-link>
                   </li>
                   <li>
-                    <router-link class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
+                    <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
                       <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Congés
                     </router-link>
+                    <span v-else class="dropdown-item is-disabled" title="Reserve a la Section RH">
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Conges
+                    </span>
                   </li>
                   <li>
-                    <router-link class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
+                    <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
                       <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiqués
                     </router-link>
+                    <span v-else class="dropdown-item is-disabled" title="Reserve a la Section RH">
+                      <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiques
+                    </span>
                   </li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.pointages.index' }">
@@ -169,9 +175,12 @@
                     </router-link>
                   </li>
                   <li>
-                    <router-link class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
+                    <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations
                     </router-link>
+                    <span v-else class="dropdown-item is-disabled" title="Reserve a la Section RH">
+                      <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations
+                    </span>
                   </li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'signalements.index' }">

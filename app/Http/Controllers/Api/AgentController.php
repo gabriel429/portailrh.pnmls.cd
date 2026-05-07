@@ -15,6 +15,7 @@ use App\Models\Province;
 use App\Models\Section;
 use App\Services\SpreadsheetImportReader;
 use App\Services\NotificationService;
+use App\Services\RoleService;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -54,6 +55,18 @@ class AgentController extends ApiController
         return in_array($role, ['rh', 'ressources humaines', 'chef de section rh', 'chef section ressources humaines'], true)
             || str_contains($role, 'ressource humaine')
             || str_contains($role, 'ressources humaines');
+    }
+
+    private function isAssistantRh($user): bool
+    {
+        return app(RoleService::class)->isAssistantRh($user);
+    }
+
+    private function abortIfAssistantRh($user, string $message): void
+    {
+        if ($this->isAssistantRh($user)) {
+            abort(403, $message);
+        }
     }
 
     private function authorizeAgentDocumentManagement(Request $request, Agent $agent): void
@@ -317,6 +330,8 @@ class AgentController extends ApiController
      */
     public function store(Request $request): JsonResponse
     {
+        $this->abortIfAssistantRh($request->user(), 'L assistant RH ne peut pas creer un nouvel agent.');
+
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat',
             'nom' => 'required|string',
@@ -741,6 +756,8 @@ class AgentController extends ApiController
      */
     public function destroy(Agent $agent): JsonResponse
     {
+        $this->abortIfAssistantRh(request()->user(), 'L assistant RH ne peut pas supprimer un agent.');
+
         $this->authorizeAgentAccess(request(), $agent);
 
         $agent->delete();

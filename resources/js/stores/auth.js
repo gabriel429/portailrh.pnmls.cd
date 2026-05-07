@@ -27,6 +27,20 @@ function normalizedOrgane(state) {
     return (state.user?.agent?.organe ?? '').toLowerCase()
 }
 
+function normalizedAgentProfile(state) {
+    return [
+        state.user?.agent?.fonction,
+        state.user?.agent?.poste_actuel,
+    ]
+        .filter(Boolean)
+        .join(' ')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+}
+
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,
@@ -48,6 +62,24 @@ export const useAuthStore = defineStore('auth', {
                 'rh national',
                 'rh provincial',
             ].includes(role)
+        },
+        isAssistantRH(state) {
+            if (state.user?.is_super_admin) return false
+
+            const role = normalizedRole(state)
+            const profile = `${role} ${normalizedAgentProfile(state)}`
+
+            return [
+                'assistant rh',
+                'assistant ressources humaines',
+                'assistant ressource humaine',
+            ].includes(role)
+                || profile.includes('assistant rh')
+                || profile.includes('assistant ressources humaines')
+                || profile.includes('assistant ressource humaine')
+        },
+        isFullRH() {
+            return this.isRH && !this.isAssistantRH
         },
         isAdminNT(state) {
             if (state.user?.is_super_admin) return true
@@ -143,6 +175,15 @@ export const useAuthStore = defineStore('auth', {
         canManageDocsTravail(state) {
             if (state.user?.is_super_admin) return true
             return this.isSEN || this.isRH
+        },
+        canCreateAgents() {
+            return this.isSuperAdmin || this.isSEN || this.isFullRH
+        },
+        canDeleteAgents() {
+            return this.isSuperAdmin || this.isSEN || this.isFullRH
+        },
+        canManageRhAdminModules() {
+            return this.isSuperAdmin || this.isSEN || this.isFullRH
         },
         hasAdminAccess(state) {
             if (state.user?.is_super_admin) return true

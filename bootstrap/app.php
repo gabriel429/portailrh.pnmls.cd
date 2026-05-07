@@ -35,6 +35,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'permission'  => \App\Http\Middleware\PermissionMiddleware::class,
             'admin.nt'    => \App\Http\Middleware\AdminNTMiddleware::class,
             'super.admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'not.assistant.rh' => \App\Http\Middleware\EnsureNotAssistantRh::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

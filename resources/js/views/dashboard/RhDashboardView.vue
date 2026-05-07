@@ -76,7 +76,15 @@
           </div>
         </div>
         <div class="rh-actions">
-          <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="rh-action">
+          <component
+            :is="a.disabled ? 'div' : 'router-link'"
+            v-for="a in quickActions"
+            :key="a.to"
+            :to="a.disabled ? undefined : a.to"
+            class="rh-action"
+            :class="{ disabled: a.disabled }"
+            :title="a.disabled ? a.disabledReason : undefined"
+          >
             <div class="rh-action-glow" :style="{ background: a.color }"></div>
             <div class="rh-action-icon" :style="{ background: a.bg, color: a.color }">
               <i class="fas" :class="a.icon"></i>
@@ -85,8 +93,8 @@
               <div class="rh-action-label">{{ a.label }}</div>
               <div class="rh-action-desc">{{ a.desc }}</div>
             </div>
-            <i class="fas fa-chevron-right rh-action-arrow"></i>
-          </router-link>
+            <i class="fas rh-action-arrow" :class="a.disabled ? 'fa-lock' : 'fa-chevron-right'"></i>
+          </component>
         </div>
       </div>
 
@@ -1228,7 +1236,7 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
 }))
 
-const quickActions = [
+const baseQuickActions = [
   { to: '/rh/agents', label: 'Gestion des agents', desc: 'Consulter et gérer les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/rh/agents/create', label: 'Nouvel agent', desc: 'Créer une fiche agent', icon: 'fa-user-plus', color: '#059669', bg: '#d1fae5' },
   { to: '/rh/holidays/planning', label: 'Gestion des congés', desc: 'Planning et statuts des agents', icon: 'fa-calendar-alt', color: '#10b981', bg: '#ecfdf5' },
@@ -1237,6 +1245,30 @@ const quickActions = [
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
   { to: '/rh/communiques/create', label: 'Communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
 ]
+
+const quickActions = computed(() => {
+  const disabledReason = 'Reserve a la Section RH'
+  const assistant = auth.isAssistantRH
+
+  return baseQuickActions.map((action) => {
+    if (action.to === '/rh/agents') {
+      return {
+        ...action,
+        desc: assistant ? 'Consulter et mettre a jour les dossiers' : action.desc,
+      }
+    }
+
+    if (['/rh/agents/create', '/rh/holidays/planning', '/rh/communiques/create'].includes(action.to)) {
+      return {
+        ...action,
+        disabled: action.to === '/rh/agents/create' ? !auth.canCreateAgents : assistant,
+        disabledReason,
+      }
+    }
+
+    return action
+  })
+})
 
 const maxMetric = computed(() => {
   const vals = [
@@ -1686,6 +1718,13 @@ onMounted(async () => {
 .rh-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .25s; }
 .rh-action:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
 .rh-action:hover .rh-action-glow { opacity: 1; }
+.rh-action.disabled {
+  opacity: .52;
+  filter: grayscale(.8);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.rh-action.disabled .rh-action-glow { opacity: 0; }
 .rh-action-icon {
   width: 42px; height: 42px; border-radius: 12px; display: flex;
   align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;

@@ -29,7 +29,14 @@
                   <i class="fas fa-file-csv"></i>
                   <span>Exporter CSV</span>
                 </button>
-                <button type="button" class="hero-btn create" @click="router.push({ name: 'rh.agents.create' })">
+                <button
+                  type="button"
+                  class="hero-btn create"
+                  :class="{ disabled: !canCreateAgents }"
+                  :disabled="!canCreateAgents"
+                  :title="canCreateAgents ? 'Creer un nouvel agent' : 'Reserve a la Section RH'"
+                  @click="openCreateAgent"
+                >
                   <i class="fas fa-user-plus"></i>
                   <span>Nouvel agent</span>
                 </button>
@@ -260,9 +267,12 @@
           <i class="fas fa-users fa-4x text-muted mb-3 d-block"></i>
           <h5 class="text-muted">Aucun agent</h5>
           <p class="text-muted">Il n'y a aucun agent enregistre.</p>
-          <router-link :to="{ name: 'rh.agents.create' }" class="btn btn-primary">
+          <router-link v-if="canCreateAgents" :to="{ name: 'rh.agents.create' }" class="btn btn-primary">
             <i class="fas fa-user-plus me-1"></i> Ajouter un agent
           </router-link>
+          <button v-else type="button" class="btn btn-secondary" disabled>
+            <i class="fas fa-lock me-1"></i> Ajouter un agent
+          </button>
         </div>
         </div>
       </template>
@@ -568,6 +578,7 @@
 
     <!-- Agent Create Modal -->
     <AgentCreateModal
+      v-if="canCreateAgents"
       :show="showCreateModal"
       @close="closeCreateModal"
       @created="onAgentCreated"
@@ -690,6 +701,9 @@ const agentToEdit = ref(null)
 
 // Create modal
 const showCreateModal = ref(false)
+
+const canCreateAgents = computed(() => auth.canCreateAgents)
+const canDeleteAgents = computed(() => auth.canDeleteAgents)
 
 const showExportProvince = computed(() => {
     const val = exportFilters.organe
@@ -1072,6 +1086,15 @@ function closeCreateModal() {
     showCreateModal.value = false
 }
 
+function openCreateAgent() {
+    if (!canCreateAgents.value) {
+        ui.addToast('L assistant RH ne peut pas creer un nouvel agent.', 'warning')
+        return
+    }
+
+    router.push({ name: 'rh.agents.create' })
+}
+
 function onAgentCreated() {
     closeCreateModal()
     fetchAgents() // Refresh the list
@@ -1130,12 +1153,17 @@ function clearSearch() {
 
 // Delete
 function confirmDelete(agent) {
+    if (!canDeleteAgents.value) {
+        ui.addToast('L assistant RH ne peut pas supprimer un agent.', 'warning')
+        return
+    }
+
     agentToDelete.value = agent
     showDeleteModal.value = true
 }
 
 async function doDelete() {
-    if (!agentToDelete.value) return
+    if (!agentToDelete.value || !canDeleteAgents.value) return
     deleting.value = true
     try {
         await remove(agentToDelete.value.id)
@@ -1285,6 +1313,24 @@ onMounted(() => {
   background: #f0f9ff;
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(255,255,255,0.3);
+}
+
+.hero-btn.disabled,
+.hero-btn:disabled {
+  background: rgba(226, 232, 240, .85);
+  color: #64748b;
+  cursor: not-allowed;
+  filter: grayscale(.75);
+  opacity: .75;
+  box-shadow: none;
+  transform: none;
+}
+
+.hero-btn.disabled:hover,
+.hero-btn:disabled:hover {
+  background: rgba(226, 232, 240, .85);
+  transform: none;
+  box-shadow: none;
 }
 
 /* Search Section */

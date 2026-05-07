@@ -549,8 +549,14 @@
               <button class="btn btn-warning btn-sm w-100 mb-2" @click="openEditModal">
                 <i class="fas fa-edit me-2"></i> Modifier
               </button>
-              <button class="btn btn-danger btn-sm w-100" @click="confirmDelete">
-                <i class="fas fa-trash me-2"></i> Supprimer
+              <button
+                class="btn btn-sm w-100"
+                :class="canDeleteAgent ? 'btn-danger' : 'btn-secondary'"
+                :disabled="!canDeleteAgent"
+                :title="canDeleteAgent ? 'Supprimer l agent' : 'Reserve a la Section RH'"
+                @click="confirmDelete"
+              >
+                <i :class="canDeleteAgent ? 'fas fa-trash me-2' : 'fas fa-lock me-2'"></i> Supprimer
               </button>
             </div>
           </div>
@@ -731,6 +737,7 @@ const isNational = computed(() =>
 const canManageAgentDocuments = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
 )
+const canDeleteAgent = computed(() => auth.canDeleteAgents)
 const selectedDocumentCategory = computed(() =>
     DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)
 )
@@ -926,11 +933,16 @@ async function fetchAgent() {
 
 // Delete
 function confirmDelete() {
+    if (!canDeleteAgent.value) {
+        ui.addToast('L assistant RH ne peut pas supprimer un agent.', 'warning')
+        return
+    }
+
     showDeleteModal.value = true
 }
 
 async function doDelete() {
-    if (!agent.value) return
+    if (!agent.value || !canDeleteAgent.value) return
     deleting.value = true
     try {
         await remove(agent.value.id)

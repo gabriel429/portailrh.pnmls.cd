@@ -10,6 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\Syncable;
+use App\Services\RoleService;
 
 class User extends Authenticatable
 {
@@ -127,6 +128,11 @@ class User extends Authenticatable
             'RH Provincial',
             'SEN',
         ]);
+    }
+
+    public function isAssistantRh(): bool
+    {
+        return app(RoleService::class)->isAssistantRh($this);
     }
 
     /**

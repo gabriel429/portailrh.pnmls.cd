@@ -261,7 +261,7 @@ const routes = [
         path: '/rh/agents/create',
         name: 'rh.agents.create',
         component: () => import('@/views/rh/agents/AgentCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], notAssistantRH: true },
     },
     {
         path: '/rh/agents/:id',
@@ -319,13 +319,13 @@ const routes = [
         path: '/rh/communiques',
         name: 'rh.communiques.index',
         component: () => import('@/views/rh/communiques/CommuniqueListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
     {
         path: '/rh/communiques/create',
         name: 'rh.communiques.create',
         component: () => import('@/views/rh/communiques/CommuniqueCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], notAssistantRH: true },
     },
 
     // RH Affectations
@@ -333,19 +333,19 @@ const routes = [
         path: '/rh/affectations',
         name: 'rh.affectations.index',
         component: () => import('@/views/rh/affectations/AffectationListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], notAssistantRH: true },
     },
     {
         path: '/rh/affectations/create',
         name: 'rh.affectations.create',
         component: () => import('@/views/rh/affectations/AffectationCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], notAssistantRH: true },
     },
     {
         path: '/rh/affectations/:id/edit',
         name: 'rh.affectations.edit',
         component: () => import('@/views/rh/affectations/AffectationEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], notAssistantRH: true },
     },
 
     // RH Gestion des Congés
@@ -357,25 +357,25 @@ const routes = [
         path: '/rh/holidays/planning',
         name: 'rh.holidays.planning',
         component: () => import('@/views/rh/holidays/HolidayPlanningView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
     {
         path: '/rh/holidays/planning/:id/edit',
         name: 'rh.holidays.planning-edit',
         component: () => import('@/views/rh/holidays/HolidayPlanningEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
     {
         path: '/rh/holidays/requests',
         name: 'rh.holidays.requests',
         component: () => import('@/views/rh/holidays/HolidayRequestsView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
     {
         path: '/rh/holidays/statuses',
         name: 'rh.holidays.statuses',
         component: () => import('@/views/rh/holidays/AgentStatusView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
 
     // ── Admin Routes ──
@@ -511,6 +511,10 @@ router.beforeEach(async (to) => {
 
     if (to.meta.docsTravail && !auth.canManageDocsTravail) {
         return { name: 'dashboard' }
+    }
+
+    if (to.meta.notAssistantRH && auth.isAssistantRH) {
+        return { name: 'rh.dashboard' }
     }
 
     if (to.meta.superAdmin && !auth.isSuperAdmin) {
