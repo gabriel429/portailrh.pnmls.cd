@@ -54,28 +54,24 @@
       <div class="data-card">
         <div v-if="sections.length > 0" class="section-list">
           <article v-for="s in sections" :key="s.id" class="section-row">
-            <div class="section-code">
-              <span class="mobile-label">Code</span>
+            <div class="section-summary">
               <span class="code-badge">{{ s.code }}</span>
+              <div class="section-title-block">
+                <strong>{{ s.nom }}</strong>
+                <span><i class="fas fa-building"></i>{{ s.department?.nom || '-' }}</span>
+              </div>
             </div>
-            <div class="section-name">
-              <span class="mobile-label">Section / Service</span>
-              <strong>{{ s.nom }}</strong>
-            </div>
-            <div class="section-department">
-              <span class="mobile-label">Departement</span>
-              <span>{{ s.department?.nom || '-' }}</span>
-            </div>
-            <div class="section-type">
-              <span class="mobile-label">Type</span>
+
+            <div class="section-meta">
               <span class="type-badge" :class="s.type === 'section' ? 'type-section' : 'type-service'">
                 {{ s.type === 'section' ? 'Section' : 'Service rattache' }}
               </span>
+              <span class="agent-count-badge">
+                <i class="fas fa-cubes"></i>
+                {{ s.cellules_count ?? 0 }} cellule{{ (s.cellules_count ?? 0) > 1 ? 's' : '' }}
+              </span>
             </div>
-            <div class="section-count">
-              <span class="mobile-label">Cellules</span>
-              <span class="agent-count-badge">{{ s.cellules_count ?? 0 }}</span>
-            </div>
+
             <div class="section-actions">
               <router-link
                 :to="'/admin/sections/' + s.id + '/edit'"
@@ -344,12 +340,9 @@ onMounted(() => {
 }
 .section-row {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.15fr) minmax(86px, auto);
-  grid-template-areas:
-    "name department actions"
-    "code type count";
-  align-items: start;
-  gap: .75rem 1rem;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 1rem;
   min-width: 0;
   padding: 1rem;
   border: 1px solid #e2e8f0;
@@ -365,56 +358,50 @@ onMounted(() => {
   border-color: rgba(14, 165, 233, .36);
   box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
 }
-.section-name,
-.section-department,
-.section-code,
-.section-type,
-.section-count,
+.section-summary,
+.section-title-block,
+.section-meta,
 .section-actions {
-  display: grid;
-  gap: .25rem;
   min-width: 0;
   overflow-wrap: anywhere;
 }
-.section-name {
-  grid-area: name;
+.section-summary {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
 }
-.section-department {
-  grid-area: department;
+.section-title-block {
+  display: grid;
+  gap: .25rem;
 }
-.section-code {
-  grid-area: code;
-}
-.section-type {
-  grid-area: type;
-}
-.section-count {
-  grid-area: count;
-}
-.section-actions {
-  grid-area: actions;
-}
-.section-name strong {
+.section-title-block strong {
   color: #0f172a;
   font-weight: 700;
   line-height: 1.35;
 }
-.section-count {
-  align-content: start;
+.section-title-block span {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  color: #64748b;
+  font-size: .82rem;
+  line-height: 1.35;
+}
+.section-title-block i {
+  color: #0ea5e9;
+}
+.section-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+  flex-wrap: wrap;
 }
 .section-actions {
   display: flex;
   justify-content: flex-end;
   gap: .4rem;
   flex-wrap: wrap;
-}
-.mobile-label {
-  display: block;
-  color: #94a3b8;
-  font-size: .68rem;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
 }
 
 /* ── Code Badge ── */
@@ -462,7 +449,10 @@ onMounted(() => {
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 6px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  white-space: nowrap;
 }
 
 /* ── Action Buttons ── */
@@ -545,13 +535,15 @@ onMounted(() => {
     padding: .75rem;
   }
   .section-row {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "name name"
-      "department department"
-      "code type"
-      "count actions";
+    grid-template-columns: 1fr auto;
     gap: .75rem 1rem;
+  }
+  .section-summary,
+  .section-meta {
+    grid-column: 1 / -1;
+  }
+  .section-meta {
+    justify-content: flex-start;
   }
   .section-actions {
     justify-content: flex-end;
@@ -612,15 +604,12 @@ onMounted(() => {
   }
   .section-row {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "name"
-      "department"
-      "code"
-      "type"
-      "count"
-      "actions";
     gap: .65rem;
     padding: .9rem;
+  }
+  .section-summary {
+    align-items: flex-start;
+    flex-direction: column;
   }
   .section-actions {
     justify-content: flex-start;

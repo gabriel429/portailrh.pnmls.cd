@@ -262,7 +262,13 @@ async function handleLogout() {
 </script>
 
 <style scoped>
-.admin-wrapper { display: flex; min-height: 100vh; }
+.admin-wrapper {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
 .admin-sidebar {
     width: 260px; background: #1e293b; color: #cbd5e1;
     display: flex; flex-direction: column; transition: width .2s;
@@ -291,15 +297,36 @@ async function handleLogout() {
 .sidebar-link.active { color: #fff; background: rgba(255,255,255,.1); border-left-color: #0077B5; }
 .sidebar-link i { width: 20px; text-align: center; font-size: .85rem; }
 .sidebar-footer { border-top: 1px solid rgba(255,255,255,.1); padding: .5rem 0; }
-.admin-main { flex: 1; margin-left: 260px; transition: margin-left .2s; min-height: 100vh; background: #f8fafc; }
-.admin-main.expanded { margin-left: 60px; }
+.admin-main {
+  flex: 0 0 calc(100% - 260px);
+  width: calc(100% - 260px);
+  max-width: calc(100% - 260px);
+  min-width: 0;
+  margin-left: 260px;
+  transition: margin-left .2s, width .2s, max-width .2s, flex-basis .2s;
+  min-height: 100vh;
+  background: #f8fafc;
+  overflow-x: hidden;
+}
+.admin-main.expanded {
+  flex-basis: calc(100% - 60px);
+  width: calc(100% - 60px);
+  max-width: calc(100% - 60px);
+  margin-left: 60px;
+}
 .admin-topbar {
     display: flex; align-items: center; justify-content: space-between;
     padding: .75rem 1.5rem; background: #fff;
     border-bottom: 1px solid #e5e7eb; position: sticky; top: 0; z-index: 1030;
 }
 .topbar-right { display: flex; align-items: center; gap: .75rem; }
-.admin-content { padding: 1.5rem; }
+.admin-content {
+  padding: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+}
 
 .admin-topbar-icon {
   width: 42px;
@@ -419,6 +446,9 @@ async function handleLogout() {
 
   .admin-main,
   .admin-main.expanded {
+    flex-basis: 100%;
+    width: 100%;
+    max-width: 100%;
     margin-left: 0;
   }
 
