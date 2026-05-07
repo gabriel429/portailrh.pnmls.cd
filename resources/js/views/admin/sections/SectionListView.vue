@@ -18,8 +18,8 @@
 
     <!-- Search -->
     <div class="search-box">
-      <div class="row g-3 align-items-center">
-        <div class="col-md-9">
+      <div class="search-row">
+        <div class="search-main">
           <div class="search-wrapper">
             <i class="fas fa-search search-icon"></i>
             <input
@@ -32,7 +32,7 @@
             >
           </div>
         </div>
-        <div class="col-md-3 text-end">
+        <div class="search-count">
           <span class="count-badge">{{ sections.length }} resultat{{ sections.length !== 1 ? 's' : '' }}</span>
         </div>
       </div>
@@ -52,7 +52,7 @@
     <!-- Table -->
     <template v-else>
       <div class="data-card">
-        <div class="table-responsive" v-if="sections.length > 0">
+        <div class="table-scroll" v-if="sections.length > 0">
           <table class="table data-table">
             <thead>
               <tr>
@@ -102,6 +102,30 @@
           </table>
         </div>
 
+        <div v-if="sections.length > 0" class="section-card-list">
+          <article v-for="s in sections" :key="'card-' + s.id" class="section-card">
+            <div class="section-card-head">
+              <span class="code-badge">{{ s.code }}</span>
+              <span class="type-badge" :class="s.type === 'section' ? 'type-section' : 'type-service'">
+                {{ s.type === 'section' ? 'Section' : 'Service rattache' }}
+              </span>
+            </div>
+            <h5>{{ s.nom }}</h5>
+            <div class="section-card-meta">
+              <span><i class="fas fa-building"></i>{{ s.department?.nom || '-' }}</span>
+              <span><i class="fas fa-cubes"></i>{{ s.cellules_count ?? 0 }} cellule{{ (s.cellules_count ?? 0) > 1 ? 's' : '' }}</span>
+            </div>
+            <div class="section-card-actions">
+              <router-link :to="'/admin/sections/' + s.id + '/edit'" class="action-btn" title="Modifier">
+                <i class="fas fa-pen"></i>
+              </router-link>
+              <button class="action-btn action-btn-danger" title="Supprimer" @click="destroy(s)">
+                <i class="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </article>
+        </div>
+
         <!-- Empty state -->
         <div v-else class="empty-state">
           <i class="fas fa-layer-group"></i>
@@ -118,12 +142,12 @@
             </button>
           </li>
           <li
-            v-for="p in lastPage"
+            v-for="p in paginationPages"
             :key="p"
             class="page-item"
-            :class="{ active: p === currentPage }"
+            :class="{ active: p === currentPage, disabled: p === '...' }"
           >
-            <button class="page-link" @click="goToPage(p)">{{ p }}</button>
+            <button class="page-link" @click="p !== '...' && goToPage(p)">{{ p }}</button>
           </li>
           <li class="page-item" :class="{ disabled: currentPage >= lastPage }">
             <button class="page-link" @click="goToPage(currentPage + 1)">
@@ -137,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import client from '@/api/client'
 
 const sections = ref([])
@@ -148,6 +172,28 @@ const currentPage = ref(1)
 const lastPage = ref(1)
 
 let debounceTimer = null
+
+const paginationPages = computed(() => {
+  const total = lastPage.value
+  const current = currentPage.value
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, index) => index + 1)
+  }
+
+  const pages = [1]
+  if (current > 3) pages.push('...')
+
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  for (let page = start; page <= end; page += 1) {
+    pages.push(page)
+  }
+
+  if (current < total - 2) pages.push('...')
+  pages.push(total)
+
+  return pages
+})
 
 async function fetchData() {
   loading.value = true
@@ -196,7 +242,10 @@ onMounted(() => {
 
 <style scoped>
 .section-list-page {
-  padding: 1.5rem 0;
+  padding: 1rem 0 2rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* ── Hero ── */
@@ -256,6 +305,18 @@ onMounted(() => {
   border: 1px solid #f1f5f9;
   margin-bottom: 1.25rem;
 }
+.search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+.search-main {
+  min-width: 0;
+}
+.search-count {
+  text-align: right;
+}
 .search-wrapper {
   position: relative;
 }
@@ -295,9 +356,18 @@ onMounted(() => {
   box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
   border: 1px solid #f1f5f9;
   overflow: hidden;
+  min-width: 0;
+}
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
 }
 .data-table {
   margin-bottom: 0;
+  min-width: 760px;
+  table-layout: fixed;
 }
 .data-table thead th {
   background: #f8fafc;
@@ -308,12 +378,39 @@ onMounted(() => {
   letter-spacing: .5px;
   color: #64748b;
   padding: .85rem 1rem;
+  white-space: nowrap;
 }
 .data-table tbody td {
   padding: .75rem 1rem;
   border-color: #f1f5f9;
   vertical-align: middle;
   font-size: .88rem;
+  overflow-wrap: anywhere;
+}
+.data-table th:nth-child(1),
+.data-table td:nth-child(1) {
+  width: 110px;
+}
+.data-table th:nth-child(2),
+.data-table td:nth-child(2) {
+  width: 30%;
+}
+.data-table th:nth-child(3),
+.data-table td:nth-child(3) {
+  width: 28%;
+}
+.data-table th:nth-child(4),
+.data-table td:nth-child(4) {
+  width: 160px;
+}
+.data-table th:nth-child(5),
+.data-table td:nth-child(5) {
+  width: 100px;
+  text-align: center;
+}
+.data-table th:nth-child(6),
+.data-table td:nth-child(6) {
+  width: 110px;
 }
 .data-table tbody tr {
   transition: background .15s;
@@ -339,7 +436,11 @@ onMounted(() => {
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 6px;
-  display: inline-block;
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  white-space: normal;
+  line-height: 1.2;
 }
 .type-section {
   background: #dbeafe;
@@ -408,6 +509,59 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.section-card-list {
+  display: none;
+}
+.section-card {
+  position: relative;
+  padding: 1rem;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+}
+.section-card:last-child {
+  border-bottom: 0;
+}
+.section-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .65rem;
+}
+.section-card h5 {
+  color: #0f172a;
+  font-size: .98rem;
+  line-height: 1.35;
+  margin: 0 4.5rem .75rem 0;
+  overflow-wrap: anywhere;
+}
+.section-card-meta {
+  display: grid;
+  gap: .45rem;
+  color: #64748b;
+  font-size: .82rem;
+  padding-right: 4.5rem;
+}
+.section-card-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.section-card-meta i {
+  color: #0ea5e9;
+  width: 16px;
+  text-align: center;
+}
+.section-card-actions {
+  position: absolute;
+  right: 1rem;
+  bottom: 1rem;
+  display: flex;
+  gap: .4rem;
+}
+
 /* ── Pagination ── */
 .modern-pagination .page-link {
   border-radius: 8px;
@@ -437,9 +591,16 @@ onMounted(() => {
 
 /* ── Mobile Responsive ── */
 @media (max-width: 767.98px) {
+  .section-list-page {
+    padding-top: .5rem;
+  }
   .page-hero {
     padding: 1.25rem 1rem;
     border-radius: 12px;
+    align-items: stretch;
+  }
+  .page-hero-content {
+    min-width: 0;
   }
   .page-hero h4 {
     font-size: 1.1rem;
@@ -454,8 +615,17 @@ onMounted(() => {
     border-radius: 10px;
   }
   .hero-btn {
-    padding: .4rem .9rem;
+    width: 100%;
+    justify-content: center;
+    padding: .55rem .9rem;
     font-size: .78rem;
+  }
+  .search-row {
+    grid-template-columns: 1fr;
+    gap: .75rem;
+  }
+  .search-count {
+    text-align: left;
   }
   .search-box {
     border-radius: 10px;
@@ -466,6 +636,12 @@ onMounted(() => {
   }
   .data-card {
     border-radius: 10px;
+  }
+  .table-scroll {
+    display: none;
+  }
+  .section-card-list {
+    display: block;
   }
   .data-table thead th {
     font-size: .72rem;
@@ -490,6 +666,25 @@ onMounted(() => {
   .modern-pagination .page-link {
     font-size: .78rem;
     min-width: 30px;
+    padding: .35rem .55rem;
+  }
+  .modern-pagination {
+    flex-wrap: wrap;
+    gap: .25rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .section-card h5 {
+    margin-right: 0;
+  }
+  .section-card-meta {
+    padding-right: 0;
+    margin-bottom: 2.5rem;
+  }
+  .section-card-actions {
+    left: 1rem;
+    right: auto;
   }
 }
 </style>
