@@ -52,74 +52,52 @@
     <!-- Table -->
     <template v-else>
       <div class="data-card">
-        <div class="table-scroll" v-if="sections.length > 0">
-          <table class="table data-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Nom</th>
-                <th>Departement</th>
-                <th>Type</th>
-                <th>Cellules</th>
-                <th style="width:110px">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="s in sections" :key="s.id">
-                <td>
-                  <span class="code-badge">{{ s.code }}</span>
-                </td>
-                <td class="fw-semibold">{{ s.nom }}</td>
-                <td>{{ s.department?.nom || '-' }}</td>
-                <td>
-                  <span class="type-badge" :class="s.type === 'section' ? 'type-section' : 'type-service'">
-                    {{ s.type === 'section' ? 'Section' : 'Service rattache' }}
-                  </span>
-                </td>
-                <td>
-                  <span class="agent-count-badge">{{ s.cellules_count ?? 0 }}</span>
-                </td>
-                <td>
-                  <div class="d-flex gap-1">
-                    <router-link
-                      :to="'/admin/sections/' + s.id + '/edit'"
-                      class="action-btn"
-                      title="Modifier"
-                    >
-                      <i class="fas fa-pen"></i>
-                    </router-link>
-                    <button
-                      class="action-btn action-btn-danger"
-                      title="Supprimer"
-                      @click="destroy(s)"
-                    >
-                      <i class="fas fa-trash-alt"></i>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div v-if="sections.length > 0" class="section-list">
+          <div class="section-list-head">
+            <span>Code</span>
+            <span>Section / Service</span>
+            <span>Departement</span>
+            <span>Type</span>
+            <span>Cellules</span>
+            <span>Actions</span>
+          </div>
 
-        <div v-if="sections.length > 0" class="section-card-list">
-          <article v-for="s in sections" :key="'card-' + s.id" class="section-card">
-            <div class="section-card-head">
+          <article v-for="s in sections" :key="s.id" class="section-row">
+            <div class="section-code">
+              <span class="mobile-label">Code</span>
               <span class="code-badge">{{ s.code }}</span>
+            </div>
+            <div class="section-name">
+              <span class="mobile-label">Section / Service</span>
+              <strong>{{ s.nom }}</strong>
+            </div>
+            <div class="section-department">
+              <span class="mobile-label">Departement</span>
+              <span>{{ s.department?.nom || '-' }}</span>
+            </div>
+            <div class="section-type">
+              <span class="mobile-label">Type</span>
               <span class="type-badge" :class="s.type === 'section' ? 'type-section' : 'type-service'">
                 {{ s.type === 'section' ? 'Section' : 'Service rattache' }}
               </span>
             </div>
-            <h5>{{ s.nom }}</h5>
-            <div class="section-card-meta">
-              <span><i class="fas fa-building"></i>{{ s.department?.nom || '-' }}</span>
-              <span><i class="fas fa-cubes"></i>{{ s.cellules_count ?? 0 }} cellule{{ (s.cellules_count ?? 0) > 1 ? 's' : '' }}</span>
+            <div class="section-count">
+              <span class="mobile-label">Cellules</span>
+              <span class="agent-count-badge">{{ s.cellules_count ?? 0 }}</span>
             </div>
-            <div class="section-card-actions">
-              <router-link :to="'/admin/sections/' + s.id + '/edit'" class="action-btn" title="Modifier">
+            <div class="section-actions">
+              <router-link
+                :to="'/admin/sections/' + s.id + '/edit'"
+                class="action-btn"
+                title="Modifier"
+              >
                 <i class="fas fa-pen"></i>
               </router-link>
-              <button class="action-btn action-btn-danger" title="Supprimer" @click="destroy(s)">
+              <button
+                class="action-btn action-btn-danger"
+                title="Supprimer"
+                @click="destroy(s)"
+              >
                 <i class="fas fa-trash-alt"></i>
               </button>
             </div>
@@ -349,7 +327,7 @@ onMounted(() => {
   border-radius: 8px;
 }
 
-/* ── Data Card & Table ── */
+/* Data Card & List */
 .data-card {
   background: #fff;
   border-radius: 14px;
@@ -358,65 +336,55 @@ onMounted(() => {
   overflow: hidden;
   min-width: 0;
 }
-.table-scroll {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+.section-list {
+  display: grid;
 }
-.data-table {
-  margin-bottom: 0;
-  min-width: 760px;
-  table-layout: fixed;
+.section-list-head,
+.section-row {
+  display: grid;
+  grid-template-columns: minmax(86px, .7fr) minmax(190px, 1.6fr) minmax(180px, 1.45fr) minmax(128px, .95fr) minmax(76px, .55fr) 88px;
+  align-items: center;
+  gap: .85rem;
 }
-.data-table thead th {
+.section-list-head {
   background: #f8fafc;
-  border: none;
   font-size: .78rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .5px;
   color: #64748b;
   padding: .85rem 1rem;
-  white-space: nowrap;
 }
-.data-table tbody td {
-  padding: .75rem 1rem;
-  border-color: #f1f5f9;
-  vertical-align: middle;
+.section-row {
+  padding: .85rem 1rem;
+  border-top: 1px solid #f1f5f9;
   font-size: .88rem;
-  overflow-wrap: anywhere;
-}
-.data-table th:nth-child(1),
-.data-table td:nth-child(1) {
-  width: 110px;
-}
-.data-table th:nth-child(2),
-.data-table td:nth-child(2) {
-  width: 30%;
-}
-.data-table th:nth-child(3),
-.data-table td:nth-child(3) {
-  width: 28%;
-}
-.data-table th:nth-child(4),
-.data-table td:nth-child(4) {
-  width: 160px;
-}
-.data-table th:nth-child(5),
-.data-table td:nth-child(5) {
-  width: 100px;
-  text-align: center;
-}
-.data-table th:nth-child(6),
-.data-table td:nth-child(6) {
-  width: 110px;
-}
-.data-table tbody tr {
+  color: #334155;
   transition: background .15s;
 }
-.data-table tbody tr:hover {
+.section-row:hover {
   background: #f8fafc;
+}
+.section-name,
+.section-department {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.section-name strong {
+  color: #0f172a;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.section-count {
+  text-align: center;
+}
+.section-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .4rem;
+}
+.mobile-label {
+  display: none;
 }
 
 /* ── Code Badge ── */
@@ -509,60 +477,7 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.section-card-list {
-  display: none;
-}
-.section-card {
-  position: relative;
-  padding: 1rem;
-  border-bottom: 1px solid #eef2f7;
-  background: #fff;
-}
-.section-card:last-child {
-  border-bottom: 0;
-}
-.section-card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: .75rem;
-  margin-bottom: .65rem;
-}
-.section-card h5 {
-  color: #0f172a;
-  font-size: .98rem;
-  line-height: 1.35;
-  margin: 0 4.5rem .75rem 0;
-  overflow-wrap: anywhere;
-}
-.section-card-meta {
-  display: grid;
-  gap: .45rem;
-  color: #64748b;
-  font-size: .82rem;
-  padding-right: 4.5rem;
-}
-.section-card-meta span {
-  display: inline-flex;
-  align-items: center;
-  gap: .45rem;
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.section-card-meta i {
-  color: #0ea5e9;
-  width: 16px;
-  text-align: center;
-}
-.section-card-actions {
-  position: absolute;
-  right: 1rem;
-  bottom: 1rem;
-  display: flex;
-  gap: .4rem;
-}
-
-/* ── Pagination ── */
+/* Pagination */
 .modern-pagination .page-link {
   border-radius: 8px;
   margin: 0 2px;
@@ -589,7 +504,73 @@ onMounted(() => {
   color: #cbd5e1;
 }
 
-/* ── Mobile Responsive ── */
+@media (max-width: 1100px) {
+  .section-list-head,
+  .section-row {
+    grid-template-columns: minmax(82px, .75fr) minmax(180px, 1.5fr) minmax(160px, 1.25fr) minmax(116px, .9fr) 76px;
+  }
+  .section-list-head span:last-child {
+    display: none;
+  }
+  .section-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: .15rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .section-list {
+    gap: .75rem;
+    padding: .75rem;
+  }
+  .section-list-head {
+    display: none;
+  }
+  .section-row {
+    grid-template-columns: 1fr 1fr;
+    gap: .75rem 1rem;
+    align-items: start;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .82);
+    padding: 1rem;
+  }
+  .section-row:hover {
+    background: #fff;
+  }
+  .section-code,
+  .section-name,
+  .section-department,
+  .section-type,
+  .section-count {
+    display: grid;
+    gap: .25rem;
+    min-width: 0;
+  }
+  .section-name {
+    grid-column: 1 / -1;
+    order: -1;
+  }
+  .section-count {
+    text-align: left;
+  }
+  .section-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    padding-top: .2rem;
+  }
+  .mobile-label {
+    display: block;
+    color: #94a3b8;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+}
+
+/* Mobile Responsive */
 @media (max-width: 767.98px) {
   .section-list-page {
     padding-top: .5rem;
@@ -637,19 +618,13 @@ onMounted(() => {
   .data-card {
     border-radius: 10px;
   }
-  .table-scroll {
-    display: none;
+  .section-list {
+    padding: .65rem;
   }
-  .section-card-list {
-    display: block;
-  }
-  .data-table thead th {
-    font-size: .72rem;
-    padding: .65rem .75rem;
-  }
-  .data-table tbody td {
-    font-size: .82rem;
-    padding: .6rem .75rem;
+  .section-row {
+    grid-template-columns: 1fr;
+    gap: .65rem;
+    padding: .9rem;
   }
   .action-btn {
     width: 28px;
@@ -674,17 +649,4 @@ onMounted(() => {
   }
 }
 
-@media (max-width: 420px) {
-  .section-card h5 {
-    margin-right: 0;
-  }
-  .section-card-meta {
-    padding-right: 0;
-    margin-bottom: 2.5rem;
-  }
-  .section-card-actions {
-    left: 1rem;
-    right: auto;
-  }
-}
 </style>
