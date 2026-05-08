@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\DocumentTravailController;
 use App\Http\Controllers\Api\ForumPostController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\UserExperienceController;
+use App\Http\Controllers\Api\JobDescriptionController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Api\SyncController;
@@ -106,6 +107,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Profile (SPA)
     Route::get('/profile/full', [ApiProfileController::class, 'show']);
+    Route::get('/profile/job-descriptions', [JobDescriptionController::class, 'mine']);
     Route::put('/profile', [ApiProfileController::class, 'update']);
     Route::put('/profile/password', [ApiProfileController::class, 'updatePassword']);
 
@@ -313,6 +315,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('fonctions', [ParametresController::class, 'apiFonctionsStore']);
         Route::put('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsUpdate']);
         Route::delete('fonctions/{fonction}', [ParametresController::class, 'apiFonctionsDestroy']);
+
+        // Job Descriptions
+        Route::get('job-descriptions/options', [JobDescriptionController::class, 'options']);
+        Route::apiResource('job-descriptions', JobDescriptionController::class)
+            ->parameters(['job-descriptions' => 'jobDescription']);
 
         // Sections
         Route::get('sections', [ParametresController::class, 'apiSectionsIndex']);

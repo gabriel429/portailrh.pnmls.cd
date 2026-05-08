@@ -427,6 +427,7 @@ const routes = [
             { path: 'fonctions', name: 'admin.fonctions.index', component: () => import('@/views/admin/fonctions/FonctionListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'fonctions/create', name: 'admin.fonctions.create', component: () => import('@/views/admin/fonctions/FonctionFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'fonctions/:id/edit', name: 'admin.fonctions.edit', component: () => import('@/views/admin/fonctions/FonctionFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
+            { path: 'job-descriptions', name: 'admin.job-descriptions.index', component: () => import('@/views/admin/job-descriptions/JobDescriptionListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'sections', name: 'admin.sections.index', component: () => import('@/views/admin/sections/SectionListView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'sections/create', name: 'admin.sections.create', component: () => import('@/views/admin/sections/SectionFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },
             { path: 'sections/:id/edit', name: 'admin.sections.edit', component: () => import('@/views/admin/sections/SectionFormView.vue'), meta: { auth: true, adminNT: true, layout: 'admin' } },

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\AgentResource;
+use App\Models\JobDescription;
 use App\Http\Resources\PointageResource;
 use App\Models\Pointage;
 use App\Services\NotificationService;
@@ -50,10 +51,14 @@ class ProfileController extends ApiController
         ];
 
         $resource = AgentResource::make($agent);
+        $jobDescriptions = JobDescription::forAgent($agent)
+            ->map(fn (JobDescription $jobDescription) => $jobDescription->toApiArray())
+            ->values();
 
         return $this->resource($resource, ['stats' => $stats], [
             'agent' => $resource->resolve(),
             'stats' => $stats,
+            'job_descriptions' => $jobDescriptions,
         ]);
     }
 

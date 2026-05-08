@@ -52,6 +52,9 @@
           </div>
 
           <div class="profile-actions">
+            <button class="btn btn-job-description" @click="openJobDescriptionModal">
+              <i class="fas fa-clipboard-list me-2"></i>Ma Job Description
+            </button>
             <button class="btn btn-edit-profile" @click="openEditModal">
               <i class="fas fa-pen me-2"></i>Modifier mon profil
             </button>
@@ -482,6 +485,71 @@
       </div>
     </div>
 
+    <!-- Job Description Modal -->
+    <teleport to="body">
+      <div v-if="showJobDescriptionModal" class="jd-modal-overlay" @click.self="closeJobDescriptionModal">
+        <div class="jd-modal-dialog">
+          <div class="jd-modal-header">
+            <div class="jd-modal-icon">
+              <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div>
+              <h4>Description de mon poste</h4>
+              <p>{{ posteActuel }}</p>
+            </div>
+            <button class="jd-modal-close" type="button" @click="closeJobDescriptionModal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div class="jd-modal-body">
+            <div v-if="jobDescriptions.length" class="jd-profile-list">
+              <article v-for="job in jobDescriptions" :key="job.id" class="jd-profile-item">
+                <div class="jd-profile-top">
+                  <div>
+                    <h5>{{ job.titre }}</h5>
+                    <span>{{ job.fonction?.nom || posteActuel }}</span>
+                  </div>
+                  <small>Mis à jour le {{ formatDate(job.updated_at) || '-' }}</small>
+                </div>
+
+                <div class="jd-profile-meta">
+                  <span><i class="fas fa-briefcase"></i>{{ job.service_section_departement || agent.departement?.nom || agent.organe || 'Structure non renseignée' }}</span>
+                  <span><i class="fas fa-toggle-on"></i>{{ job.actif ? 'Active' : 'Inactive' }}</span>
+                </div>
+
+                <section class="jd-profile-section">
+                  <h6>Mission principale</h6>
+                  <p>{{ job.mission_principale || 'Mission principale non renseignée.' }}</p>
+                </section>
+
+                <section class="jd-profile-section">
+                  <h6>Responsabilités principales</h6>
+                  <p>{{ job.responsabilites_principales || 'Responsabilités non renseignées.' }}</p>
+                </section>
+
+                <section class="jd-profile-section">
+                  <h6>Tâches spécifiques</h6>
+                  <p>{{ job.taches_specifiques || 'Tâches spécifiques non renseignées.' }}</p>
+                </section>
+
+                <section class="jd-profile-section">
+                  <h6>Compétences attendues</h6>
+                  <p>{{ job.competences_attendues || 'Compétences attendues non renseignées.' }}</p>
+                </section>
+              </article>
+            </div>
+
+            <div v-else class="jd-profile-empty">
+              <i class="fas fa-info-circle"></i>
+              <h5>Aucune Job Description disponible</h5>
+              <p>Votre fonction ne dispose pas encore d’une description de poste publiée.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
     <!-- Edit Profile Modal -->
     <teleport to="body">
       <div v-if="showEditModal" class="pem-overlay" @click.self="closeEditModal">
@@ -574,6 +642,7 @@ const loading = ref(true)
 const error = ref(null)
 const agent = ref(null)
 const stats = ref({ documents: 0, affectations: 0, pointages: 0, demandes: 0 })
+const showJobDescriptionModal = ref(false)
 
 const initials = computed(() => {
   if (!agent.value) return ''
@@ -603,6 +672,8 @@ const sortedAffectations = computed(() => {
     return db - da
   })
 })
+
+const jobDescriptions = computed(() => agent.value?.job_descriptions || [])
 
 function capitalize(str) {
   if (!str) return ''
@@ -656,13 +727,24 @@ async function fetchProfile() {
   error.value = null
   try {
     const { data } = await getProfile()
-    agent.value = data.agent
+    agent.value = {
+      ...data.agent,
+      job_descriptions: data.job_descriptions || data.agent?.job_descriptions || [],
+    }
     stats.value = data.stats
   } catch (err) {
     error.value = err.response?.data?.message || 'Impossible de charger le profil.'
   } finally {
     loading.value = false
   }
+}
+
+function openJobDescriptionModal() {
+  showJobDescriptionModal.value = true
+}
+
+function closeJobDescriptionModal() {
+  showJobDescriptionModal.value = false
 }
 
 /* ── Edit Modal ── */
@@ -716,7 +798,10 @@ async function handleEditSubmit() {
       formData.append('photo', editPhotoFile.value)
     }
     const { data } = await updateProfile(formData)
-    agent.value = data.agent
+    agent.value = {
+      ...data.agent,
+      job_descriptions: data.job_descriptions || agent.value?.job_descriptions || [],
+    }
     if (data.stats) stats.value = data.stats
     ui.addToast(data.message || 'Profil mis à jour avec succes !', 'success')
     showEditModal.value = false
@@ -817,7 +902,12 @@ onMounted(fetchProfile)
   margin-top: .5rem;
   letter-spacing: .5px;
 }
-.profile-actions { padding: 0 2rem 1.5rem; }
+.profile-actions {
+  padding: 0 2rem 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem;
+}
 .btn-edit-profile {
   background: linear-gradient(135deg, #0077B5, #005885);
   border: none; color: #fff; font-weight: 600;
@@ -829,6 +919,20 @@ onMounted(fetchProfile)
 .btn-edit-profile:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 14px rgba(0,119,181,.35);
+  color: #fff;
+}
+.btn-job-description {
+  background: linear-gradient(135deg, #0f766e, #0e7490);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  padding: .5rem 1.35rem;
+  border-radius: 10px;
+  transition: transform .15s, box-shadow .15s;
+}
+.btn-job-description:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(14, 116, 144, .3);
   color: #fff;
 }
 
@@ -1005,9 +1109,177 @@ onMounted(fetchProfile)
   .profile-avatar { width: 110px; height: 110px; }
   .profile-identity { padding: 1rem; }
   .profile-actions { padding: 0 1rem 1rem; }
+  .profile-actions .btn { width: 100%; }
 }
 
 /* ── Edit Profile Modal (pem-*) ── */
+/* Job Description Modal */
+.jd-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.jd-modal-dialog {
+  width: min(920px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .86);
+  border: 1px solid rgba(255, 255, 255, .55);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, .28);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.jd-modal-header {
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  padding: 1.15rem 1.35rem;
+  background: linear-gradient(135deg, rgba(15, 118, 110, .12), rgba(14, 116, 144, .12));
+  border-bottom: 1px solid rgba(226, 232, 240, .85);
+}
+.jd-modal-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(135deg, #0f766e, #0e7490);
+  box-shadow: 0 12px 30px rgba(14, 116, 144, .24);
+}
+.jd-modal-header h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.12rem;
+  font-weight: 850;
+}
+.jd-modal-header p {
+  margin: .12rem 0 0;
+  color: #64748b;
+  font-size: .86rem;
+}
+.jd-modal-close {
+  margin-left: auto;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .72);
+  color: #64748b;
+}
+.jd-modal-close:hover {
+  background: #fee2e2;
+  color: #dc2626;
+}
+.jd-modal-body {
+  max-height: calc(90vh - 84px);
+  overflow-y: auto;
+  padding: 1.2rem;
+}
+.jd-profile-list {
+  display: grid;
+  gap: 1rem;
+}
+.jd-profile-item {
+  border-radius: 16px;
+  border: 1px solid rgba(203, 213, 225, .8);
+  background: rgba(255, 255, 255, .72);
+  padding: 1rem;
+}
+.jd-profile-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
+  margin-bottom: .8rem;
+}
+.jd-profile-top h5 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.02rem;
+  font-weight: 850;
+}
+.jd-profile-top span,
+.jd-profile-top small,
+.jd-profile-meta span {
+  color: #64748b;
+  font-size: .82rem;
+}
+.jd-profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .55rem;
+  margin-bottom: .8rem;
+}
+.jd-profile-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: .38rem;
+  padding: .35rem .65rem;
+  border-radius: 999px;
+  background: rgba(236, 254, 255, .8);
+  color: #155e75;
+  font-weight: 700;
+}
+.jd-profile-section {
+  padding: .75rem 0;
+  border-top: 1px solid rgba(226, 232, 240, .85);
+}
+.jd-profile-section h6 {
+  margin: 0 0 .32rem;
+  color: #0f766e;
+  font-size: .78rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+.jd-profile-section p {
+  margin: 0;
+  color: #1e293b;
+  line-height: 1.55;
+  white-space: pre-line;
+}
+.jd-profile-empty {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: #64748b;
+}
+.jd-profile-empty i {
+  font-size: 2.25rem;
+  color: #0e7490;
+}
+.jd-profile-empty h5 {
+  margin: .8rem 0 .35rem;
+  color: #0f172a;
+  font-weight: 850;
+}
+
+@media (max-width: 640px) {
+  .jd-modal-dialog {
+    border-radius: 18px;
+  }
+  .jd-modal-header {
+    padding: 1rem;
+  }
+  .jd-modal-body {
+    padding: .9rem;
+  }
+  .jd-profile-top {
+    display: grid;
+  }
+}
+
 .pem-overlay {
   position: fixed; inset: 0; z-index: 9999;
   background: rgba(0,0,0,.5); backdrop-filter: blur(4px);

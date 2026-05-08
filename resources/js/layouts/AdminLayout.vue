@@ -128,6 +128,7 @@ const baseNavItems = [
   { route: 'admin.provinces.index', icon: 'fas fa-map-marked-alt', label: 'Provinces' },
   { route: 'admin.localites.index', icon: 'fas fa-map-pin', label: 'Localites' },
   { route: 'admin.fonctions.index', icon: 'fas fa-briefcase', label: 'Fonctions' },
+  { route: 'admin.job-descriptions.index', icon: 'fas fa-clipboard-list', label: 'Job Description' },
   { route: 'admin.grades.index', icon: 'fas fa-layer-group', label: 'Grades' },
   { route: 'admin.roles.index', icon: 'fas fa-user-shield', label: 'Rôles' },
   { route: 'admin.categories-documents.index', icon: 'fas fa-tags', label: 'Catégories de documents' },

@@ -32,4 +32,9 @@ class Fonction extends Model
     {
         return $this->hasMany(Affectation::class);
     }
+
+    public function jobDescriptions(): HasMany
+    {
+        return $this->hasMany(JobDescription::class);
+    }
 }
