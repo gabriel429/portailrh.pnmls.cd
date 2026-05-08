@@ -48,7 +48,23 @@ class PlanTravailController extends ApiController
         $user = auth()->user();
 
         return $user
-            && ($this->scopeService()->hasGlobalAdminAccess($user) || $this->isPlanificationRole())
+            && (
+                $this->scopeService()->hasGlobalAdminAccess($user)
+                || $this->isPlanificationRole()
+                || $this->isPlanificationDepartmentAgent($user->agent)
+            )
+            && $this->isPtaAdminContext();
+    }
+
+    private function canManagePtaAdminContext(): bool
+    {
+        $user = auth()->user();
+
+        return $user
+            && (
+                $this->scopeService()->hasGlobalAdminAccess($user)
+                || $this->isPlanificationRole()
+            )
             && $this->isPtaAdminContext();
     }
 
@@ -109,6 +125,33 @@ class PlanTravailController extends ApiController
         $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
 
         return mb_strtolower($ascii !== false ? $ascii : $value);
+    }
+
+    private function isPlanificationDepartment(?Department $department): bool
+    {
+        if (!$department) {
+            return false;
+        }
+
+        $name = $this->normalizeScopeText($department->nom);
+        $code = $this->normalizeScopeText($department->code);
+        $hasPlanification = str_contains($name, 'planification') || str_contains($code, 'plan') || str_contains($code, 'pse');
+        $hasEvaluation = str_contains($name, 'evaluation') || str_contains($name, 'suivi') || str_contains($code, 'pse');
+
+        return $hasPlanification && $hasEvaluation;
+    }
+
+    private function isPlanificationDepartmentAgent(?Agent $agent): bool
+    {
+        if (!$agent || !$agent->departement_id) {
+            return false;
+        }
+
+        $department = $agent->relationLoaded('departement')
+            ? $agent->departement
+            : Department::find($agent->departement_id);
+
+        return $this->isPlanificationDepartment($department);
     }
 
     private function isProvincialAgent(?Agent $agent): bool
@@ -339,8 +382,8 @@ class PlanTravailController extends ApiController
             return true;
         }
 
-        if ($this->canUsePtaAdminContext()) {
-            return true;
+        if ($this->isPtaAdminContext()) {
+            return $this->canManagePtaAdminContext();
         }
 
         $agent = $user->agent;
@@ -371,6 +414,10 @@ class PlanTravailController extends ApiController
     {
         if (!$this->canAccessActivity($activite)) {
             return false;
+        }
+
+        if ($this->isPtaAdminContext()) {
+            return $this->canManagePtaAdminContext();
         }
 
         $user = auth()->user();

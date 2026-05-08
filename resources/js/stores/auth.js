@@ -2,43 +2,53 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import client from '@/api/client'
 
+function normalizeText(value) {
+    return (value ?? '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+}
+
 function normalizedRole(state) {
     const role = state.user?.role?.nom_role
         ?? state.user?.nom_role
         ?? (typeof state.user?.role === 'string' ? state.user.role : '')
 
-    return role
-        .toString()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim()
+    return normalizeText(role)
 }
 
 function normalizedDepartmentCode(state) {
-    return (state.user?.agent?.departement?.code ?? '').toLowerCase()
+    return normalizeText(state.user?.agent?.departement?.code)
 }
 
 function normalizedDepartmentName(state) {
-    return (state.user?.agent?.departement?.nom ?? '').toLowerCase()
+    return normalizeText(state.user?.agent?.departement?.nom)
 }
 
 function normalizedOrgane(state) {
-    return (state.user?.agent?.organe ?? '').toLowerCase()
+    return normalizeText(state.user?.agent?.organe)
 }
 
 function normalizedAgentProfile(state) {
-    return [
+    const profile = [
         state.user?.agent?.fonction,
         state.user?.agent?.poste_actuel,
     ]
         .filter(Boolean)
         .join(' ')
-        .toString()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase()
-        .trim()
+
+    return normalizeText(profile)
+}
+
+function isPlanningEvaluationDepartment(state) {
+    const deptCode = normalizedDepartmentCode(state)
+    const deptName = normalizedDepartmentName(state)
+    const hasPlanification = deptName.includes('planification') || deptCode.includes('plan') || deptCode.includes('pse')
+    const hasEvaluation = deptName.includes('evaluation') || deptName.includes('suivi') || deptCode.includes('pse')
+
+    return hasPlanification && hasEvaluation
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -103,8 +113,11 @@ export const useAuthStore = defineStore('auth', {
             const role = normalizedRole(state)
             return ['chef section planification', 'cellule planification'].includes(role)
         },
+        isPlanificationDepartment(state) {
+            return isPlanningEvaluationDepartment(state)
+        },
         canAdminPta(state) {
-            return !!state.user?.is_super_admin || this.isPlanification
+            return !!state.user?.is_super_admin || this.isPlanification || this.isPlanificationDepartment
         },
         isSEP(state) {
             const role = normalizedRole(state)
