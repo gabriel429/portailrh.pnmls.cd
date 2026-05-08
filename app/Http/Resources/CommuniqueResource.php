@@ -22,6 +22,10 @@ class CommuniqueResource extends JsonResource
             'signataire' => $this->signataire,
             'date_expiration' => optional($this->date_expiration)?->toDateString(),
             'actif' => (bool) $this->actif,
+            'read_count' => (int) ($this->reads_count ?? 0),
+            'has_read' => $request->user()
+                ? $this->hasBeenReadBy((int) $request->user()->id)
+                : false,
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
             'auteur' => $this->whenLoaded('auteur', function () {
@@ -32,5 +36,14 @@ class CommuniqueResource extends JsonResource
                 ];
             }),
         ];
+    }
+
+    private function hasBeenReadBy(int $userId): bool
+    {
+        if ($this->relationLoaded('reads')) {
+            return $this->reads->contains('user_id', $userId);
+        }
+
+        return $this->reads()->where('user_id', $userId)->exists();
     }
 }

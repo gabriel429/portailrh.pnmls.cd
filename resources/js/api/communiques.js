@@ -19,3 +19,11 @@ export function update(id, data) {
 export function remove(id) {
     return client.delete(`/communiques/${id}`)
 }
+
+export function markRead(id) {
+    return client.post(`/communiques/${id}/read`)
+}
+
+export function readers(id) {
+    return client.get(`/communiques/${id}/reads`)
+}

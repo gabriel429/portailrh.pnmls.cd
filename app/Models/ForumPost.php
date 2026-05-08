@@ -36,6 +36,11 @@ class ForumPost extends Model
         return $this->hasMany(ForumComment::class);
     }
 
+    public function reads(): HasMany
+    {
+        return $this->hasMany(ForumPostRead::class);
+    }
+
     public function scopeActive($query)
     {
         return $query->where('created_at', '>=', now()->subDays(self::LIFETIME_DAYS));

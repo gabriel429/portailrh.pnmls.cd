@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\CommuniqueController;
 use App\Http\Controllers\Api\DocumentTravailController;
 use App\Http\Controllers\Api\ForumPostController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\UserExperienceController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Api\SyncController;
@@ -72,6 +73,14 @@ Route::get('/sync/status', [SyncController::class, 'status']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/user', [AuthController::class, 'user']);
+
+    // Experience utilisateur
+    Route::get('user-experience/bootstrap', [UserExperienceController::class, 'bootstrap']);
+    Route::post('user-experience/tour', [UserExperienceController::class, 'saveTour']);
+    Route::get('communiques/{communique}', [CommuniqueController::class, 'show']);
+    Route::post('communiques/{communique}/read', [CommuniqueController::class, 'markRead']);
+    Route::get('communiques/{communique}/reads', [CommuniqueController::class, 'readers']);
+    Route::post('forum/{forumPost}/read', [ForumPostController::class, 'markRead']);
 
     // Sync endpoints (desktop ↔ server)
     Route::post('/sync/pull', [SyncController::class, 'pull']);
@@ -191,7 +200,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Communiques
         Route::apiResource('communiques', CommuniqueController::class)
-            ->only(['index', 'show']);
+            ->only(['index']);
         Route::apiResource('communiques', CommuniqueController::class)
             ->except(['index', 'show'])
             ->middleware('not.assistant.rh');

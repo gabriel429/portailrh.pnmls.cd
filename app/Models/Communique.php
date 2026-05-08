@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use App\Traits\Syncable;
 
@@ -29,6 +30,11 @@ class Communique extends Model
     public function auteur(): BelongsTo
     {
         return $this->belongsTo(User::class, 'auteur_id');
+    }
+
+    public function reads(): HasMany
+    {
+        return $this->hasMany(CommuniqueRead::class);
     }
 
     public function scopeVisibles($query)

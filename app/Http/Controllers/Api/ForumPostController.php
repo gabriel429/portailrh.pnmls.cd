@@ -7,6 +7,7 @@ use App\Http\Resources\ForumCommentResource;
 use App\Models\ForumComment;
 use App\Models\ForumCommentReaction;
 use App\Models\ForumPost;
+use App\Models\ForumPostRead;
 use App\Models\NotificationPortail;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -128,6 +129,26 @@ class ForumPostController extends ApiController
         return $this->resource(ForumCommentResource::make($comment), [], [
             'message' => 'Commentaire publie.',
         ], 201);
+    }
+
+    public function markRead(Request $request, ForumPost $forumPost): JsonResponse
+    {
+        ForumPostRead::updateOrCreate(
+            [
+                'forum_post_id' => $forumPost->id,
+                'user_id' => $request->user()->id,
+            ],
+            [
+                'seen_at' => now(),
+            ]
+        );
+
+        return $this->success([
+            'seen' => true,
+            'forum_post_id' => $forumPost->id,
+        ], [], [
+            'message' => 'Forum marque comme vu.',
+        ]);
     }
 
     public function reactToComment(Request $request, ForumComment $forumComment): JsonResponse

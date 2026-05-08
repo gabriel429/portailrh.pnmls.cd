@@ -213,6 +213,15 @@
             <div class="nav-divider d-none d-lg-block"></div>
 
             <li class="nav-item d-lg-none">
+              <button class="mobile-theme-toggle" type="button" @click="openUserGuide">
+                <span class="mobile-theme-toggle-icon">
+                  <i class="fas fa-circle-question"></i>
+                </span>
+                <span>Guide utilisateur</span>
+              </button>
+            </li>
+
+            <li class="nav-item d-lg-none">
               <button class="mobile-theme-toggle" type="button" @click="ui.toggleDarkMode()">
                 <span class="mobile-theme-toggle-icon">
                   <i :class="ui.isDark ? 'fas fa-sun' : 'fas fa-moon'"></i>
@@ -220,6 +229,15 @@
                 <span>{{ ui.isDark ? 'Mode jour' : 'Mode nuit' }}</span>
               </button>
             </li>
+
+            <li class="nav-item d-none d-lg-flex align-items-center">
+              <button class="help-toggle-btn" type="button" title="Guide utilisateur" @click="openUserGuide">
+                <i class="fas fa-circle-question"></i>
+                <span>Aide</span>
+              </button>
+            </li>
+
+            <div class="nav-divider d-none d-lg-block"></div>
 
             <li class="nav-item d-none d-lg-flex align-items-center">
               <button class="dark-toggle-btn" @click="ui.toggleDarkMode()" :title="ui.isDark ? 'Passer en mode jour' : 'Passer en mode nuit'">
@@ -327,6 +345,7 @@
 
     <div class="container-fluid main-content" :class="{ 'guest-content': !auth.isAuthenticated }">
       <AppToast />
+      <UserExperienceHub v-if="auth.isAuthenticated" />
       <slot />
     </div>
 
@@ -344,6 +363,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { useUiStore } from '@/stores/ui'
 import { getSummary as getTaskSummary } from '@/api/taches'
 import AppToast from '@/components/common/AppToast.vue'
+import UserExperienceHub from '@/components/UserExperienceHub.vue'
 
 const ui = useUiStore()
 
@@ -362,6 +382,11 @@ function closeMobileNav() {
 
 function toggleMobileNav() {
   isMobileNavOpen.value = !isMobileNavOpen.value
+}
+
+function openUserGuide() {
+  closeMobileNav()
+  window.dispatchEvent(new CustomEvent('epnmls:open-user-guide'))
 }
 
 function handleViewportChange() {
@@ -534,5 +559,23 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 .main-content.guest-content {
   min-height: 100dvh;
   padding: 0 !important;
+}
+
+.help-toggle-btn {
+  border: 1px solid rgba(255, 255, 255, .32);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .14);
+  color: #fff;
+  min-height: 38px;
+  padding: .45rem .75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.help-toggle-btn:hover {
+  background: rgba(255, 255, 255, .24);
 }
 </style>

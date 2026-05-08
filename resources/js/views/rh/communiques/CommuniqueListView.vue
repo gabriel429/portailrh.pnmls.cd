@@ -35,6 +35,7 @@
                 <th>Date</th>
                 <th>Expiration</th>
                 <th>Statut</th>
+                <th>Lectures</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -61,6 +62,18 @@
                   <span :class="c.actif ? 'badge bg-success' : 'badge bg-secondary'">
                     {{ c.actif ? 'Actif' : 'Inactif' }}
                   </span>
+                </td>
+                <td>
+                  <button
+                    v-if="canViewReaders(c)"
+                    class="btn btn-sm btn-outline-secondary readers-pill"
+                    type="button"
+                    title="Voir qui a lu"
+                    @click="openReadersModal(c)"
+                  >
+                    <i class="fas fa-users me-1"></i>{{ c.read_count ?? 0 }}
+                  </button>
+                  <span v-else class="badge bg-light text-dark">{{ c.read_count ?? 0 }}</span>
                 </td>
                 <td>
                   <div class="d-flex gap-1">
@@ -233,16 +246,60 @@
       </div>
     </div>
   </teleport>
+
+  <teleport to="body">
+    <div v-if="showReadersModal" class="readers-overlay" @click.self="closeReadersModal">
+      <div class="readers-dialog">
+        <div class="readers-header">
+          <div class="readers-icon"><i class="fas fa-users"></i></div>
+          <div>
+            <h5>Agents ayant lu</h5>
+            <p>{{ readersTarget?.titre }}</p>
+          </div>
+          <button class="readers-close" type="button" @click="closeReadersModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <div v-if="readersLoading" class="readers-loading">
+          <div class="spinner-border text-primary"></div>
+          <span>Chargement des lectures...</span>
+        </div>
+
+        <div v-else-if="readersList.length" class="readers-list">
+          <article v-for="reader in readersList" :key="reader.id" class="reader-row">
+            <div class="reader-avatar">{{ readerInitials(reader.user?.name) }}</div>
+            <div class="reader-info">
+              <strong>{{ reader.user?.name || 'Agent' }}</strong>
+              <span>{{ reader.user?.role || 'Role non precise' }}</span>
+              <small>
+                {{ [reader.user?.departement, reader.user?.province].filter(Boolean).join(' - ') || reader.user?.email || 'Structure non precisee' }}
+              </small>
+            </div>
+            <time>{{ formatDateTime(reader.read_at) }}</time>
+          </article>
+        </div>
+
+        <div v-else class="readers-empty">
+          <i class="fas fa-envelope-open-text"></i>
+          <strong>Aucune lecture enregistree</strong>
+          <span>Les agents apparaitront ici apres avoir clique sur "J'ai lu".</span>
+        </div>
+      </div>
+    </div>
+  </teleport>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
-import { list, get, create, update, remove } from '@/api/communiques'
+import { useAuthStore } from '@/stores/auth'
+import { list, get, create, update, remove, readers } from '@/api/communiques'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
+const auth = useAuthStore()
 const loading = ref(true)
 const communiques = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
@@ -257,6 +314,10 @@ const formLoading = ref(false)
 const submitting = ref(false)
 const editTarget = ref(null)
 const formErrors = ref([])
+const showReadersModal = ref(false)
+const readersTarget = ref(null)
+const readersLoading = ref(false)
+const readersList = ref([])
 
 const defaultForm = () => ({
   titre: '',
@@ -385,6 +446,45 @@ function formatDateTime(dateStr) {
 function isExpired(dateStr) {
   if (!dateStr) return false
   return new Date(dateStr) < new Date()
+}
+
+function canViewReaders(c) {
+  return auth.isSEN || auth.isSuperAdmin || Number(c.auteur?.id) === Number(auth.user?.id)
+}
+
+async function openReadersModal(c) {
+  readersTarget.value = c
+  readersList.value = []
+  showReadersModal.value = true
+  readersLoading.value = true
+
+  try {
+    const { data } = await readers(c.id)
+    readersList.value = data.data || []
+  } catch (err) {
+    ui.addToast(err.response?.data?.message || 'Erreur lors du chargement des lectures.', 'danger')
+    showReadersModal.value = false
+  } finally {
+    readersLoading.value = false
+  }
+}
+
+function closeReadersModal() {
+  showReadersModal.value = false
+  readersTarget.value = null
+  readersList.value = []
+}
+
+function readerInitials(name) {
+  if (!name) return 'A'
+
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase()
 }
 
 function confirmDelete(c) {
@@ -525,6 +625,159 @@ onMounted(() => loadCommuniques())
 .ccm-btn-submit:hover { background: #005f8f; }
 .ccm-btn-submit:disabled { opacity: .6; cursor: not-allowed; }
 
+.readers-pill {
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+.readers-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(14px) saturate(145%);
+}
+
+.readers-dialog {
+  width: min(100%, 680px);
+  max-height: 88vh;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 22px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, .9), rgba(240, 249, 255, .7));
+  box-shadow: 0 28px 80px rgba(15, 23, 42, .28);
+  backdrop-filter: blur(22px) saturate(160%);
+  display: flex;
+  flex-direction: column;
+}
+
+.readers-header {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+}
+
+.readers-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #0077B5, #0f766e);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.readers-header h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 850;
+  color: #0f172a;
+}
+
+.readers-header p {
+  margin: .1rem 0 0;
+  color: #64748b;
+  font-size: .78rem;
+}
+
+.readers-close {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 12px;
+  color: #64748b;
+  background: rgba(255, 255, 255, .66);
+}
+
+.readers-close:hover {
+  color: #dc2626;
+  background: rgba(254, 226, 226, .9);
+}
+
+.readers-loading,
+.readers-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  padding: 3rem 1rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.readers-empty i {
+  font-size: 2rem;
+  color: #94a3b8;
+}
+
+.readers-empty strong {
+  color: #0f172a;
+}
+
+.readers-list {
+  overflow: auto;
+  padding: .75rem;
+}
+
+.reader-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: center;
+  padding: .75rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .58);
+  border: 1px solid rgba(148, 163, 184, .18);
+}
+
+.reader-row + .reader-row {
+  margin-top: .55rem;
+}
+
+.reader-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: #e0f2fe;
+  color: #0369a1;
+  display: grid;
+  place-items: center;
+  font-weight: 850;
+}
+
+.reader-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.reader-info strong {
+  color: #0f172a;
+  font-size: .9rem;
+}
+
+.reader-info span,
+.reader-info small,
+.reader-row time {
+  color: #64748b;
+  font-size: .75rem;
+}
+
+.reader-row time {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
 /* ═══ Mobile responsive ═══ */
 @media (max-width: 768px) {
   .rh-hero .row { text-align: center; }
@@ -546,6 +799,8 @@ onMounted(() => loadCommuniques())
   .ccm-header { padding: .85rem 1rem; }
   .ccm-body { padding: 1rem; }
   .ccm-footer { padding: .7rem 1rem; }
+  .reader-row { grid-template-columns: 40px minmax(0, 1fr); }
+  .reader-row time { grid-column: 2; }
 }
 
 @media (max-width: 576px) {

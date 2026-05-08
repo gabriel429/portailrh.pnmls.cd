@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\CommuniquePublished;
 use App\Http\Resources\CommuniqueResource;
 use App\Models\Communique;
+use App\Models\CommuniqueRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +17,7 @@ class CommuniqueController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $communiques = Communique::with('auteur')
+            ->withCount('reads')
             ->latest()
             ->paginate(15);
 
@@ -46,6 +48,7 @@ class CommuniqueController extends ApiController
         }
 
         $communique->load('auteur');
+        $communique->loadCount('reads');
         $resource = CommuniqueResource::make($communique);
 
         return $this->resource($resource, [], [
@@ -59,8 +62,68 @@ class CommuniqueController extends ApiController
     public function show(Communique $communique): JsonResponse
     {
         $communique->load('auteur');
+        $communique->loadCount('reads');
 
         return $this->resource(CommuniqueResource::make($communique));
+    }
+
+    public function markRead(Request $request, Communique $communique): JsonResponse
+    {
+        CommuniqueRead::updateOrCreate(
+            [
+                'communique_id' => $communique->id,
+                'user_id' => $request->user()->id,
+            ],
+            [
+                'read_at' => now(),
+            ]
+        );
+
+        return $this->success([
+            'read' => true,
+            'communique_id' => $communique->id,
+        ], [], [
+            'message' => 'Communique marque comme lu.',
+        ]);
+    }
+
+    public function readers(Request $request, Communique $communique): JsonResponse
+    {
+        $user = $request->user();
+
+        if (
+            (int) $communique->auteur_id !== (int) $user->id
+            && ! $user->isSuperAdmin()
+            && ! $user->hasRole(['SEN'])
+        ) {
+            abort(403, 'Vous ne pouvez pas consulter les lectures de ce communique.');
+        }
+
+        $reads = $communique->reads()
+            ->with(['user.role', 'user.agent.departement.province', 'user.agent.province'])
+            ->latest('read_at')
+            ->get()
+            ->map(function (CommuniqueRead $read) {
+                $agent = $read->user?->agent;
+
+                return [
+                    'id' => $read->id,
+                    'read_at' => optional($read->read_at)?->toIso8601String(),
+                    'user' => [
+                        'id' => $read->user?->id,
+                        'name' => $agent?->nom_complet ?: $read->user?->name,
+                        'email' => $read->user?->email,
+                        'role' => $read->user?->role?->nom_role,
+                        'departement' => $agent?->departement?->nom,
+                        'province' => $agent?->province?->nom ?: $agent?->departement?->province?->nom,
+                        'poste' => $agent?->poste_actuel,
+                    ],
+                ];
+            });
+
+        return $this->success($reads, [
+            'total' => $reads->count(),
+        ]);
     }
 
     /**
@@ -81,7 +144,7 @@ class CommuniqueController extends ApiController
 
         $communique->update($validated);
 
-        $resource = CommuniqueResource::make($communique->fresh()->load('auteur'));
+        $resource = CommuniqueResource::make($communique->fresh()->load('auteur')->loadCount('reads'));
 
         return $this->resource($resource, [], [
             'message' => 'Communique mis a jour avec succes.',
