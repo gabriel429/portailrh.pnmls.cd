@@ -15,9 +15,9 @@ return new class extends Migration
         }
 
         $defaultOrganes = [
-            'SEN' => 'SecrÃ©tariat ExÃ©cutif National',
-            'SEP' => 'SecrÃ©tariat ExÃ©cutif Provincial',
-            'SEL' => 'SecrÃ©tariat ExÃ©cutif Local',
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
         ];
 
         $organeNames = Schema::hasTable('organes')
