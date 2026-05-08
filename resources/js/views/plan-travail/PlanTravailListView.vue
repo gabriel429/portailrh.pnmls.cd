@@ -129,8 +129,8 @@
       </div>
     </section>
 
-    <!-- Status filter cards (always visible) -->
-    <div class="pt-filter-grid">
+    <!-- Status filter cards -->
+    <div v-if="!isAdminMode" class="pt-filter-grid">
       <button class="pt-filter-card pt-filter-all" :class="{ active: !filters.statut && !filters.trimestre }" @click="setFilter('', '')">
         <div class="pt-filter-icon"><i class="fas fa-th-large"></i></div>
         <div class="pt-filter-info">
@@ -161,8 +161,8 @@
       </button>
     </div>
 
-    <!-- Trimester filter (always visible) -->
-    <div class="pt-trim-bar">
+    <!-- Trimester filter -->
+    <div v-if="!isAdminMode" class="pt-trim-bar">
       <button
         v-for="t in trimestres" :key="t.value"
         class="pt-trim-btn"
