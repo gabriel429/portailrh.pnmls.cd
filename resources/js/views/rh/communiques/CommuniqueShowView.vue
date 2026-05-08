@@ -102,7 +102,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
-import { get, remove } from '@/api/communiques'
+import { get, markRead, remove } from '@/api/communiques'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
@@ -119,6 +119,7 @@ async function loadCommunique() {
   try {
     const { data } = await get(route.params.id)
     communique.value = data.data
+    await markCommuniqueRead()
   } catch {
     ui.addToast('Communique introuvable.', 'danger')
     router.push({ name: 'rh.communiques.index' })
@@ -169,6 +170,18 @@ async function handleDelete() {
   } finally {
     deleting.value = false
     showDeleteModal.value = false
+  }
+}
+
+async function markCommuniqueRead() {
+  if (!communique.value || communique.value.has_read) return
+
+  try {
+    await markRead(communique.value.id)
+    communique.value.has_read = true
+    communique.value.read_count = Number(communique.value.read_count || 0) + 1
+  } catch {
+    // Le suivi de lecture ne doit pas bloquer l'affichage du communique.
   }
 }
 

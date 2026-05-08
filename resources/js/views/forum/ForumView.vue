@@ -80,6 +80,16 @@
           <div class="forum-post-status">
             <span><i class="fas fa-hourglass-half"></i>{{ lifetimeLabel(post) }}</span>
             <span><i class="fas fa-message"></i>{{ post.comments_count || 0 }} {{ commentLabel(post.comments_count || 0) }}</span>
+            <button
+              v-if="canViewReaders(post)"
+              class="forum-status-button"
+              type="button"
+              title="Voir qui a vu"
+              @click="openReadersModal(post)"
+            >
+              <i class="fas fa-users"></i>{{ post.read_count || 0 }} vue(s)
+            </button>
+            <span v-else><i class="fas fa-users"></i>{{ post.read_count || 0 }} vue(s)</span>
           </div>
 
           <h3 v-if="post.titre">{{ post.titre }}</h3>
@@ -182,6 +192,46 @@
         <i class="fas fa-chevron-right"></i>
       </button>
     </nav>
+
+    <teleport to="body">
+      <div v-if="showReadersModal" class="forum-readers-overlay" @click.self="closeReadersModal">
+        <div class="forum-readers-dialog">
+          <div class="forum-readers-header">
+            <div class="forum-readers-icon"><i class="fas fa-users"></i></div>
+            <div>
+              <h5>Agents ayant vu</h5>
+              <p>{{ readersTarget?.titre || truncate(readersTarget?.contenu, 80) }}</p>
+            </div>
+            <button class="forum-readers-close" type="button" @click="closeReadersModal">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+
+          <div v-if="readersLoading" class="forum-readers-loading">
+            <div class="spinner-border text-primary"></div>
+            <span>Chargement des vues...</span>
+          </div>
+
+          <div v-else-if="readersList.length" class="forum-readers-list">
+            <article v-for="reader in readersList" :key="reader.id" class="forum-reader-row">
+              <div class="forum-reader-avatar">{{ initialsFromName(reader.user?.name || 'Agent PNMLS') }}</div>
+              <div class="forum-reader-info">
+                <strong>{{ reader.user?.name || 'Agent' }}</strong>
+                <span>{{ reader.user?.role || 'Role non precise' }}</span>
+                <small>{{ [reader.user?.departement, reader.user?.province].filter(Boolean).join(' - ') || reader.user?.email || 'Structure non precisee' }}</small>
+              </div>
+              <time>{{ formatDateTime(reader.seen_at) }}</time>
+            </article>
+          </div>
+
+          <div v-else class="forum-readers-empty">
+            <i class="fas fa-eye-slash"></i>
+            <strong>Aucune vue enregistrée</strong>
+            <span>Les agents apparaîtront ici après avoir ouvert le forum.</span>
+          </div>
+        </div>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -189,7 +239,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
-import { comment, create, list, reactToComment, remove, removeComment } from '@/api/forum'
+import { comment, create, list, markRead, reactToComment, readers, remove, removeComment } from '@/api/forum'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const auth = useAuthStore()
@@ -201,6 +251,10 @@ const posting = ref(false)
 const search = ref('')
 const form = ref({ titre: '', contenu: '' })
 const meta = ref({ current_page: 1, last_page: 1, total: 0 })
+const showReadersModal = ref(false)
+const readersTarget = ref(null)
+const readersLoading = ref(false)
+const readersList = ref([])
 
 const initials = computed(() => {
   const agent = auth.agent
@@ -228,11 +282,26 @@ async function loadPosts(page = 1) {
     })
     posts.value = (data.data || []).map(normalizePost)
     meta.value = data.meta || { current_page: 1, last_page: 1, total: 0 }
+    markVisiblePostsRead()
   } catch {
     ui.addToast('Impossible de charger le forum.', 'danger')
   } finally {
     loading.value = false
   }
+}
+
+async function markVisiblePostsRead() {
+  const unreadPosts = posts.value.filter(post => !post.has_seen)
+
+  await Promise.all(unreadPosts.map(async (post) => {
+    try {
+      await markRead(post.id)
+      post.has_seen = true
+      post.read_count = Number(post.read_count || 0) + 1
+    } catch {
+      // Le suivi de vue ne doit pas bloquer la lecture du forum.
+    }
+  }))
 }
 
 async function submitPost() {
@@ -319,6 +388,8 @@ function normalizePost(post) {
     ...post,
     commentaires: (post.commentaires || []).map(normalizeComment),
     comments_count: post.comments_count || (post.commentaires || []).length,
+    read_count: Number(post.read_count || 0),
+    has_seen: Boolean(post.has_seen),
     commentForm: '',
     commenting: false,
   }
@@ -362,6 +433,45 @@ function initialsFromName(name) {
 
 function commentLabel(count) {
   return count > 1 ? 'commentaires' : 'commentaire'
+}
+
+function canViewReaders(post) {
+  return auth.isSEN || auth.isSuperAdmin || Number(post.auteur?.user_id) === Number(auth.user?.id)
+}
+
+async function openReadersModal(post) {
+  readersTarget.value = post
+  readersList.value = []
+  showReadersModal.value = true
+  readersLoading.value = true
+
+  try {
+    const { data } = await readers(post.id)
+    readersList.value = data.data || []
+  } catch (error) {
+    ui.addToast(error.response?.data?.message || 'Impossible de charger les vues.', 'danger')
+    showReadersModal.value = false
+  } finally {
+    readersLoading.value = false
+  }
+}
+
+function closeReadersModal() {
+  showReadersModal.value = false
+  readersTarget.value = null
+  readersList.value = []
+}
+
+function truncate(value, len) {
+  const text = value || ''
+  return text.length > len ? text.substring(0, len) + '...' : text
+}
+
+function formatDateTime(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
+    ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
 function lifetimeLabel(post) {
@@ -703,6 +813,24 @@ onMounted(() => loadPosts())
   overflow-wrap: anywhere;
 }
 
+.forum-status-button {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  max-width: 100%;
+  padding: .35rem .6rem;
+  border: 0;
+  border-radius: 8px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.forum-status-button:hover {
+  background: #e0e7ff;
+}
+
 .forum-post h3 {
   margin: .8rem 0 .35rem;
   color: #0f766e;
@@ -912,6 +1040,154 @@ onMounted(() => loadPosts())
   color: #64748b;
 }
 
+.forum-readers-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(14px) saturate(145%);
+}
+
+.forum-readers-dialog {
+  width: min(100%, 680px);
+  max-height: 88vh;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .95);
+  box-shadow: 0 28px 80px rgba(15, 23, 42, .28);
+  display: flex;
+  flex-direction: column;
+}
+
+.forum-readers-header {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: 1rem 1.15rem;
+  border-bottom: 1px solid rgba(148, 163, 184, .22);
+}
+
+.forum-readers-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #0f766e;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.forum-readers-header h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 850;
+  color: #0f172a;
+}
+
+.forum-readers-header p {
+  margin: .1rem 0 0;
+  color: #64748b;
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+}
+
+.forum-readers-close {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 8px;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.forum-readers-close:hover {
+  color: #dc2626;
+  background: #fee2e2;
+}
+
+.forum-readers-loading,
+.forum-readers-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .7rem;
+  padding: 3rem 1rem;
+  color: #64748b;
+  text-align: center;
+}
+
+.forum-readers-empty i {
+  font-size: 2rem;
+  color: #94a3b8;
+}
+
+.forum-readers-empty strong {
+  color: #0f172a;
+}
+
+.forum-readers-list {
+  overflow: auto;
+  padding: .75rem;
+}
+
+.forum-reader-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: .75rem;
+  align-items: center;
+  padding: .75rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, .18);
+}
+
+.forum-reader-row + .forum-reader-row {
+  margin-top: .55rem;
+}
+
+.forum-reader-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  background: #e0f2fe;
+  color: #0369a1;
+  display: grid;
+  place-items: center;
+  font-weight: 850;
+}
+
+.forum-reader-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+}
+
+.forum-reader-info strong {
+  color: #0f172a;
+  font-size: .9rem;
+}
+
+.forum-reader-info span,
+.forum-reader-info small,
+.forum-reader-row time {
+  color: #64748b;
+  font-size: .75rem;
+}
+
+.forum-reader-row time {
+  white-space: nowrap;
+  font-weight: 700;
+}
+
 .forum-pagination {
   display: flex;
   justify-content: center;
@@ -1091,6 +1367,12 @@ onMounted(() => loadPosts())
     line-height: 1.25;
   }
 
+  .forum-status-button {
+    padding: .28rem .45rem;
+    font-size: .7rem;
+    line-height: 1.25;
+  }
+
   .forum-post h3 {
     margin: .65rem 0 .25rem;
     font-size: .96rem;
@@ -1200,6 +1482,14 @@ onMounted(() => loadPosts())
   .forum-comment-form {
     align-items: stretch;
     grid-template-columns: 1fr;
+  }
+
+  .forum-reader-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  .forum-reader-row time {
+    grid-column: 2;
   }
 
   .forum-composer-footer {

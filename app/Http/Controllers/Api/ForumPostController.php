@@ -44,6 +44,7 @@ class ForumPostController extends ApiController
                     ->oldest(),
             ])
             ->withCount('comments')
+            ->withCount('reads')
             ->when($search !== '', function ($query) use ($search) {
                 $query->where(function ($subQuery) use ($search) {
                     $subQuery
@@ -148,6 +149,45 @@ class ForumPostController extends ApiController
             'forum_post_id' => $forumPost->id,
         ], [], [
             'message' => 'Forum marqué comme vu.',
+        ]);
+    }
+
+    public function readers(Request $request, ForumPost $forumPost): JsonResponse
+    {
+        $user = $request->user();
+
+        if (
+            (int) $forumPost->user_id !== (int) $user->id
+            && ! $user->isSuperAdmin()
+            && ! $user->hasRole(['SEN'])
+        ) {
+            abort(403, 'Vous ne pouvez pas consulter les vues de ce sujet.');
+        }
+
+        $reads = $forumPost->reads()
+            ->with(['user.role', 'user.agent.departement.province', 'user.agent.province'])
+            ->latest('seen_at')
+            ->get()
+            ->map(function (ForumPostRead $read) {
+                $agent = $read->user?->agent;
+
+                return [
+                    'id' => $read->id,
+                    'seen_at' => optional($read->seen_at)?->toIso8601String(),
+                    'user' => [
+                        'id' => $read->user?->id,
+                        'name' => $agent?->nom_complet ?: $read->user?->name,
+                        'email' => $read->user?->email,
+                        'role' => $read->user?->role?->nom_role,
+                        'departement' => $agent?->departement?->nom,
+                        'province' => $agent?->province?->nom ?: $agent?->departement?->province?->nom,
+                        'poste' => $agent?->poste_actuel,
+                    ],
+                ];
+            });
+
+        return $this->success($reads, [
+            'total' => $reads->count(),
         ]);
     }
 

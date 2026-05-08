@@ -24,6 +24,10 @@ class ForumPostResource extends JsonResource
             'is_expired' => $this->isExpired(),
             'can_comment' => (bool) ($user && ! $this->isExpired()),
             'comments_count' => (int) ($this->comments_count ?? $this->whenLoaded('comments', fn () => $this->comments->count(), 0)),
+            'read_count' => (int) ($this->reads_count ?? 0),
+            'has_seen' => $user
+                ? $this->hasBeenSeenBy((int) $user->id)
+                : false,
             'commentaires' => $this->whenLoaded('comments', function () {
                 return ForumCommentResource::collection($this->comments)->resolve();
             }),
@@ -73,5 +77,14 @@ class ForumPostResource extends JsonResource
         $organe = Str::lower(Str::ascii((string) $agent->organe));
 
         return $organe === 'sen' || str_contains($organe, 'national');
+    }
+
+    private function hasBeenSeenBy(int $userId): bool
+    {
+        if ($this->relationLoaded('reads')) {
+            return $this->reads->contains('user_id', $userId);
+        }
+
+        return $this->reads()->where('user_id', $userId)->exists();
     }
 }

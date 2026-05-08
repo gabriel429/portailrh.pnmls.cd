@@ -82,6 +82,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('communiques/{communique}/read', [CommuniqueController::class, 'markRead']);
     Route::get('communiques/{communique}/reads', [CommuniqueController::class, 'readers']);
     Route::post('forum/{forumPost}/read', [ForumPostController::class, 'markRead']);
+    Route::get('forum/{forumPost}/reads', [ForumPostController::class, 'readers']);
 
     // Sync endpoints (desktop ↔ server)
     Route::post('/sync/pull', [SyncController::class, 'pull']);

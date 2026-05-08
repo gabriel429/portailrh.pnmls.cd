@@ -4,6 +4,14 @@ export function list(params = {}) {
   return client.get('/forum', { params })
 }
 
+export function markRead(id) {
+  return client.post(`/forum/${id}/read`)
+}
+
+export function readers(id) {
+  return client.get(`/forum/${id}/reads`)
+}
+
 export function create(data) {
   return client.post('/forum', data)
 }
