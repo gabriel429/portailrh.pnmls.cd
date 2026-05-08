@@ -71,7 +71,11 @@
       <div class="pta-admin-graphs">
         <div class="pta-admin-panel">
           <h4><i class="fas fa-building me-1"></i>Activites par departement ou service</h4>
-          <div v-if="dashboardData.by_department.length" class="pta-bars">
+          <div v-if="dashboardLoading" class="pta-panel-loading" aria-live="polite">
+            <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des departements...</span>
+            <div v-for="n in 4" :key="`dept-loading-${n}`" class="pta-panel-skeleton"></div>
+          </div>
+          <div v-else-if="dashboardData.by_department.length" class="pta-bars">
             <button v-for="item in dashboardData.by_department.slice(0, 8)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
               <div class="pta-bar-label">{{ item.label }}</div>
               <div class="pta-bar-track">
@@ -85,7 +89,11 @@
 
         <div class="pta-admin-panel">
           <h4><i class="fas fa-map-marker-alt me-1"></i>Activites par province</h4>
-          <div v-if="(dashboardData.by_province || []).length" class="pta-bars">
+          <div v-if="dashboardLoading" class="pta-panel-loading" aria-live="polite">
+            <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des provinces...</span>
+            <div v-for="n in 4" :key="`province-loading-${n}`" class="pta-panel-skeleton"></div>
+          </div>
+          <div v-else-if="(dashboardData.by_province || []).length" class="pta-bars">
             <button v-for="item in dashboardData.by_province.slice(0, 12)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
               <div class="pta-bar-label">{{ item.label }}</div>
               <div class="pta-bar-track">
@@ -1615,6 +1623,21 @@ onMounted(() => loadPlan())
 .pta-admin-panel { border: 1px solid #eef2f7; border-radius: 12px; padding: .85rem; background: #fff; min-width: 0; }
 .pta-admin-panel-wide { grid-column: 1 / -1; }
 .pta-admin-panel h4 { margin: 0 0 .75rem; color: #334155; font-size: .82rem; font-weight: 800; }
+.pta-panel-loading {
+  display: flex; flex-direction: column; gap: .55rem;
+  padding: .15rem 0 .25rem; color: #64748b; font-size: .76rem; font-weight: 700;
+}
+.pta-panel-loading span { display: inline-flex; align-items: center; }
+.pta-panel-skeleton {
+  position: relative; height: 13px; border-radius: 999px; overflow: hidden;
+  background: linear-gradient(90deg, #eef2f7 0%, #f8fafc 45%, #eef2f7 100%);
+}
+.pta-panel-skeleton::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.85), transparent);
+  transform: translateX(-100%); animation: ptaPanelLoading 1.15s ease-in-out infinite;
+}
+@keyframes ptaPanelLoading { to { transform: translateX(100%); } }
 .pta-bars { display: flex; flex-direction: column; gap: .55rem; }
 .pta-bar-row { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr 36px; gap: .55rem; align-items: center; }
 button.pta-bar-row { width: 100%; padding: .1rem 0; border: 0; background: transparent; text-align: left; cursor: pointer; border-radius: 8px; transition: background .18s ease; }
