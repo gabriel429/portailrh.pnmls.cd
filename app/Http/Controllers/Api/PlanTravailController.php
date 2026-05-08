@@ -56,7 +56,7 @@ class PlanTravailController extends ApiController
     {
         $user = auth()->user();
 
-        if (!$user || $this->scopeService()->hasGlobalAdminAccess($user)) {
+        if (!$user) {
             return null;
         }
 
@@ -64,7 +64,43 @@ class PlanTravailController extends ApiController
             return null;
         }
 
-        return $user->agent;
+        $agent = $user->agent;
+
+        if ($this->isPlanificationNormalPtaUser($agent)) {
+            return $agent;
+        }
+
+        if ($this->scopeService()->hasGlobalAdminAccess($user)) {
+            return null;
+        }
+
+        return $agent;
+    }
+
+    private function isPlanificationNormalPtaUser(?Agent $agent): bool
+    {
+        if ($this->canUsePtaAdminContext()) {
+            return false;
+        }
+
+        if ($this->isPlanificationRole()) {
+            return true;
+        }
+
+        if (!$agent) {
+            return false;
+        }
+
+        return str_contains($this->getNomFonctionAgent($agent), 'planification');
+    }
+
+    private function applyOwnDepartmentOnlyScope(Builder $query, Agent $agent): Builder
+    {
+        if (!$agent->departement_id) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('departement_id', (int) $agent->departement_id);
     }
 
     private function normalizeScopeText(?string $value): string
@@ -101,6 +137,10 @@ class PlanTravailController extends ApiController
     {
         if (!$agent) {
             return $query;
+        }
+
+        if ($this->isPlanificationNormalPtaUser($agent)) {
+            return $this->applyOwnDepartmentOnlyScope($query, $agent);
         }
 
         return $query->where(function (Builder $accessQuery) use ($agent) {
@@ -221,6 +261,11 @@ class PlanTravailController extends ApiController
 
         if (!$agent) {
             return true;
+        }
+
+        if ($this->isPlanificationNormalPtaUser($agent)) {
+            return $agent->departement_id
+                && (int) $activite->departement_id === (int) $agent->departement_id;
         }
 
         if ($activite->relationLoaded('agents')) {
