@@ -124,20 +124,6 @@
               <div v-if="errors.description" class="invalid-feedback d-block">{{ errors.description[0] }}</div>
             </div>
 
-            <!-- Motivation (renforcement_capacites) -->
-            <div v-if="form.type === 'renforcement_capacites'" class="mb-3">
-              <label class="rcm-label">
-                <i class="fas fa-lightbulb me-1 text-muted"></i>
-                Motivation (fonction/poste) <span class="text-danger">*</span>
-              </label>
-              <textarea
-                v-model="form.motivation" rows="4"
-                class="form-control form-control-sm" :class="{ 'is-invalid': errors.motivation }"
-                placeholder="Expliquez comment ce renforcement est lié à votre fonction..."
-              ></textarea>
-              <div v-if="errors.motivation" class="invalid-feedback d-block">{{ errors.motivation[0] }}</div>
-            </div>
-
             <!-- File upload -->
             <div class="mb-3">
               <label class="rcm-label">
@@ -234,7 +220,6 @@ const typeOptions = [
   { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
   { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
   { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'renforcement_capacites', label: 'Renforcement des capacités', icon: 'fas fa-graduation-cap' },
 ]
 
 const typeCongeOptions = [
@@ -470,7 +455,7 @@ watch(() => props.show, async (newVal) => {
 /* Type grid - compact */
 .type-grid-modal {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.5rem;
 }
 

@@ -30,7 +30,6 @@
               <option value="conge">Congé</option>
               <option value="absence">Absence</option>
               <option value="permission">Permission</option>
-              <option value="renforcement_capacites">Renforcement des capacités</option>
             </select>
           </div>
         </div>
@@ -424,7 +423,6 @@ const typeOptions = [
   { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
   { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
   { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'renforcement_capacites', label: 'Renforcement des Capacités', icon: 'fas fa-graduation-cap' },
 ]
 
 function defaultCreateForm() {

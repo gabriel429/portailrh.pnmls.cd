@@ -138,12 +138,6 @@
                     <span class="dd-icon dd-icon-purple"><i class="fas fa-chart-line"></i></span> Rapport annuel
                   </router-link>
                 </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                  <router-link class="dropdown-item" :to="{ name: 'requests.index', query: { type: 'renforcement_capacites' } }">
-                    <span class="dd-icon dd-icon-orange"><i class="fas fa-paper-plane"></i></span> Demandes RC
-                  </router-link>
-                </li>
               </ul>
             </li>
 

@@ -117,23 +117,6 @@
               <div v-if="errors.description" class="invalid-feedback d-block">{{ errors.description[0] }}</div>
             </div>
 
-            <!-- Motivation (only for renforcement_capacites) -->
-            <div v-if="form.type === 'renforcement_capacites'" class="mb-4">
-              <label class="form-label fw-semibold">
-                <i class="fas fa-lightbulb me-1 text-muted"></i> Motivation liée à votre fonction/poste <span class="text-danger">*</span>
-              </label>
-              <textarea
-                v-model="form.motivation" rows="5"
-                class="form-control" :class="{ 'is-invalid': errors.motivation }"
-                placeholder="Expliquez en quoi ce renforcement des capacités est lié à votre fonction actuelle et comment il contribuera à améliorer vos compétences dans votre poste... (minimum 50 caractères)"
-              ></textarea>
-              <div v-if="errors.motivation" class="invalid-feedback d-block">{{ errors.motivation[0] }}</div>
-              <div class="form-text">
-                <i class="fas fa-info-circle me-1"></i>
-                Détaillez comment ce renforcement des capacités est pertinent pour votre rôle actuel et vos responsabilités.
-              </div>
-            </div>
-
             <!-- Section: File upload -->
             <h6 class="section-title mt-4">
               <i class="fas fa-paperclip me-2"></i> Lettre de demande
@@ -230,7 +213,6 @@ const typeOptions = [
   { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
   { value: 'absence', label: 'Absence', icon: 'fas fa-user-slash' },
   { value: 'permission', label: 'Permission', icon: 'fas fa-door-open' },
-  { value: 'renforcement_capacites', label: 'Renforcement des Capacités', icon: 'fas fa-graduation-cap' },
 ]
 
 function initials(agent) {
@@ -358,7 +340,7 @@ onMounted(async () => {
 }
 
 /* Type grid */
-.type-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: .6rem; }
+.type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .6rem; }
 .type-card { display: flex; flex-direction: column; align-items: center; gap: .45rem; padding: 1rem .5rem; border-radius: 12px; border: 2px solid #e2e8f0; cursor: pointer; transition: all .2s; background: #fff; }
 .type-card:hover { border-color: #94a3b8; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.06); }
 .type-card.active { border-color: #0077B5; background: #f0f9ff; }

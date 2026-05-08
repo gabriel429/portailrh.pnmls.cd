@@ -14,6 +14,7 @@ use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Validation\Rule;
 
 class RequestController extends ApiController
 {
@@ -100,7 +101,7 @@ class RequestController extends ApiController
         $scope = $this->scopeService();
 
         $rules = [
-            'type' => 'required|string',
+            'type' => ['required', 'string', Rule::in(['conge', 'absence', 'permission'])],
             'description' => 'required|string',
             'motivation' => 'nullable|string',
             'date_debut' => 'required|date',
@@ -113,12 +114,9 @@ class RequestController extends ApiController
             $rules['agent_id'] = 'required|exists:agents,id';
         }
 
-        // Motivation required for renforcement_capacites
-        if ($request->input('type') === 'renforcement_capacites') {
-            $rules['motivation'] = 'required|string|min:50';
-        }
-
-        $validated = $request->validate($rules);
+        $validated = $request->validate($rules, [
+            'type.in' => 'Ce type de demande n\'est plus disponible.',
+        ]);
 
         // If not RH, force agent_id to current user's agent
         if (!$isRH) {

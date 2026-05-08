@@ -43,14 +43,6 @@
             </div>
           </div>
           <div class="kpi-divider"></div>
-          <div class="rc-kpi rc-kpi-clickable" @click="router.push('/requests?type=renforcement_capacites')">
-            <div class="rc-kpi-icon"><i class="fas fa-hourglass-half"></i></div>
-            <div>
-              <div class="rc-kpi-val">{{ data.demandes?.en_attente ?? 0 }}</div>
-              <div class="rc-kpi-lbl">Demandes</div>
-            </div>
-          </div>
-          <div class="kpi-divider"></div>
           <div class="rc-kpi">
             <div class="rc-kpi-icon"><i class="fas fa-users"></i></div>
             <div>
@@ -216,49 +208,6 @@
             </div>
           </div>
 
-          <!-- Demandes en attente -->
-          <div>
-            <div class="rc-section-head">
-              <div class="rc-section-icon" style="background:#fef3c7;color:#d97706;">
-                <i class="fas fa-clock"></i>
-              </div>
-              <div>
-                <h3 class="rc-section-title">Demandes en attente</h3>
-                <p class="rc-section-sub">{{ data.demandes?.en_attente ?? 0 }} à traiter</p>
-              </div>
-              <router-link to="/requests?type=renforcement_capacites" class="rc-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
-            </div>
-            <div v-if="!(data.recent_demandes?.length)" class="rc-empty">
-              <div class="rc-empty-icon" style="background:#fef9ee;"><i class="fas fa-check-circle" style="color:#16a34a;"></i></div>
-              <span>Aucune demande en attente</span>
-            </div>
-            <div v-else class="rc-demande-list">
-              <router-link v-for="d in data.recent_demandes" :key="d.id" :to="'/requests/' + d.id" class="rc-demande-row">
-                <div class="rc-demande-dot" style="background:#d97706;"></div>
-                <div class="rc-demande-info">
-                  <div class="rc-demande-agent">{{ d.agent?.prenom }} {{ d.agent?.nom }}</div>
-                  <div class="rc-demande-meta">
-                    <span class="rc-tag rc-tag-pending">En attente</span>
-                    <span><i class="fas fa-clock me-1"></i>{{ formatTime(d.created_at) }}</span>
-                  </div>
-                  <div v-if="d.description" class="rc-demande-desc">{{ truncate(d.description, 80) }}</div>
-                </div>
-                <i class="fas fa-chevron-right rc-row-arrow"></i>
-              </router-link>
-            </div>
-
-            <!-- Stats rapides demandes -->
-            <div class="rc-demande-stats">
-              <div class="rc-demande-stat rc-clickable" @click="router.push('/requests?type=renforcement_capacites&statut=approuvé')">
-                <span class="rc-demande-stat-val" style="color:#059669;">{{ data.demandes?.approuve ?? 0 }}</span>
-                <span class="rc-demande-stat-lbl">Approuvées</span>
-              </div>
-              <div class="rc-demande-stat rc-clickable" @click="router.push('/requests?type=renforcement_capacites&statut=rejeté')">
-                <span class="rc-demande-stat-val" style="color:#dc2626;">{{ data.demandes?.rejete ?? 0 }}</span>
-                <span class="rc-demande-stat-lbl">Rejetées</span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -446,7 +395,6 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 const quickActions = [
   { to: '/renforcements', label: 'Formations', desc: 'Gérer les formations RC', icon: 'fa-chalkboard-teacher', color: '#059669', bg: '#d1fae5' },
   { to: '/renforcements/create', label: 'Planifier', desc: 'Nouvelle formation', icon: 'fa-plus-circle', color: '#0ea5e9', bg: '#e0f2fe' },
-  { to: '/requests?type=renforcement_capacites', label: 'Demandes', desc: 'Traiter les demandes RC', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
   { to: '/plan-travail', label: 'Plan travail', desc: 'Activités PTA RC', icon: 'fa-tasks', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/taches', label: 'Mes tâches', desc: 'Suivi de mes tâches', icon: 'fa-clipboard-list', color: '#0891b2', bg: '#cffafe' },
   { to: '/messages', label: 'Messages', desc: 'Communication RH', icon: 'fa-envelope', color: '#be185d', bg: '#fce7f3' },
@@ -656,7 +604,7 @@ onMounted(async () => {
 }
 
 /* ═══ DUAL GRID ═══ */
-.rc-dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+.rc-dual-grid { display: grid; grid-template-columns: 1fr; gap: 1.5rem; }
 
 /* ═══ FORMATION LIST ═══ */
 .rc-formation-list { display: flex; flex-direction: column; gap: .4rem; }
