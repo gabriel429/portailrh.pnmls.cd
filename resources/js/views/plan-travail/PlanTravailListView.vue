@@ -135,8 +135,8 @@
       <button class="pt-filter-card pt-filter-all" :class="{ active: !filters.statut && !filters.trimestre }" @click="setFilter('', '')">
         <div class="pt-filter-icon"><i class="fas fa-th-large"></i></div>
         <div class="pt-filter-info">
-          <div class="pt-filter-name">Toutes</div>
-          <div class="pt-filter-count">{{ stats.total }} activite{{ stats.total > 1 ? 's' : '' }}</div>
+          <div class="pt-filter-name">Toutes les activites PTA</div>
+          <div class="pt-filter-count">{{ stats.total }} activite{{ stats.total > 1 ? 's' : '' }} au total</div>
         </div>
       </button>
       <button class="pt-filter-card pt-filter-planned" :class="{ active: filters.statut === 'planifiee' }" @click="setFilter('planifiee', '')">
