@@ -117,7 +117,7 @@ export const useAuthStore = defineStore('auth', {
             return isPlanningEvaluationDepartment(state)
         },
         canAdminPta(state) {
-            return !!state.user?.is_super_admin || this.isPlanification || this.isPlanificationDepartment
+            return !!state.user?.is_super_admin || this.isSEN || this.isPlanification || this.isPlanificationDepartment
         },
         isSEP(state) {
             const role = normalizedRole(state)

@@ -60,12 +60,15 @@ class PlanTravailController extends ApiController
     {
         $user = auth()->user();
 
-        return $user
-            && (
-                $this->scopeService()->hasGlobalAdminAccess($user)
-                || $this->isPlanificationRole()
-            )
-            && $this->isPtaAdminContext();
+        if (!$user || !$this->isPtaAdminContext()) {
+            return false;
+        }
+
+        if ($user->hasRole('SEN')) {
+            return false;
+        }
+
+        return $this->scopeService()->hasGlobalAdminAccess($user) || $this->isPlanificationRole();
     }
 
     private function getScopedAgent(): ?Agent
@@ -378,12 +381,12 @@ class PlanTravailController extends ApiController
             return false;
         }
 
-        if ($this->scopeService()->hasGlobalAdminAccess($user)) {
-            return true;
-        }
-
         if ($this->isPtaAdminContext()) {
             return $this->canManagePtaAdminContext();
+        }
+
+        if ($this->scopeService()->hasGlobalAdminAccess($user)) {
+            return true;
         }
 
         $agent = $user->agent;
