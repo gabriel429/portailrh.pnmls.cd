@@ -713,24 +713,44 @@ class PlanTravailController extends ApiController
             ->flatMap(fn (ActivitePlan $activity) => $activity->agents->map(fn (Agent $agent) => [
                 'id' => $agent->id,
                 'label' => trim($agent->prenom . ' ' . $agent->nom),
-                'statut' => $activity->statut,
-                'pourcentage' => $activity->pourcentage,
+                'activity' => $activity,
             ]))
             ->groupBy('id')
-            ->map(fn ($items) => [
-                'label' => $items->first()['label'] ?: 'Agent non renseigne',
-                'total' => $items->count(),
-                'terminee' => $items->where('statut', 'terminee')->count(),
-                'avg_pourcentage' => $items->count() ? round($items->avg('pourcentage')) : 0,
-            ])
+            ->map(function ($items) use ($today) {
+                $agentActivities = $items->pluck('activity');
+
+                return [
+                    'label' => $items->first()['label'] ?: 'Agent non renseigne',
+                    'total' => $agentActivities->count(),
+                    'planifiee' => $agentActivities->where('statut', 'planifiee')->count(),
+                    'en_cours' => $agentActivities->where('statut', 'en_cours')->count(),
+                    'terminee' => $agentActivities->where('statut', 'terminee')->count(),
+                    'annulee' => $agentActivities->where('statut', 'annulee')->count(),
+                    'en_retard' => $agentActivities
+                        ->filter(fn (ActivitePlan $activity) => $this->isPtaActivityOverdue($activity, $today))
+                        ->count(),
+                    'avg_pourcentage' => $agentActivities->count() ? round($agentActivities->avg('pourcentage')) : 0,
+                ];
+            })
             ->sortByDesc('total')
             ->take(12)
             ->values();
 
-        $byTrimestre = collect(['T1', 'T2', 'T3', 'T4'])->map(fn ($trimestre) => [
-            'label' => $trimestre,
-            'total' => (clone $base)->parTrimestre($trimestre)->count(),
-        ]);
+        $byTrimestre = collect(['T1', 'T2', 'T3', 'T4'])->map(function ($trimestre) use ($base, $today) {
+            $items = (clone $base)->parTrimestre($trimestre)->get();
+
+            return [
+                'label' => $trimestre,
+                'total' => $items->count(),
+                'planifiee' => $items->where('statut', 'planifiee')->count(),
+                'en_cours' => $items->where('statut', 'en_cours')->count(),
+                'terminee' => $items->where('statut', 'terminee')->count(),
+                'annulee' => $items->where('statut', 'annulee')->count(),
+                'en_retard' => $items
+                    ->filter(fn (ActivitePlan $activity) => $this->isPtaActivityOverdue($activity, $today))
+                    ->count(),
+            ];
+        });
 
         $payload = [
             'annee' => $annee,

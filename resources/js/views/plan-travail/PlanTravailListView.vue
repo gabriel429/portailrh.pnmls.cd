@@ -70,59 +70,59 @@
 
       <div class="pta-admin-graphs">
         <div class="pta-admin-panel">
-          <h4><i class="fas fa-building me-1"></i>Activites par departement ou service</h4>
+          <h4><i class="fas fa-building me-1"></i>Activites par departement ou service <span>{{ dashboardMetricLabel }}</span></h4>
           <div v-if="dashboardLoading" class="pta-panel-loading" aria-live="polite">
             <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des departements...</span>
             <div v-for="n in 4" :key="`dept-loading-${n}`" class="pta-panel-skeleton"></div>
           </div>
           <div v-else-if="dashboardData.by_department.length" class="pta-bars">
-            <button v-for="item in dashboardData.by_department.slice(0, 8)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
+            <button v-for="item in dashboardMetricRows(dashboardData.by_department).slice(0, 8)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
               <div class="pta-bar-label">{{ item.label }}</div>
               <div class="pta-bar-track">
-                <div class="pta-bar-fill" :style="{ width: barWidth(item.total, dashboardData.by_department) + '%' }"></div>
+                <div class="pta-bar-fill" :style="{ width: dashboardMetricBarWidth(item, dashboardData.by_department) + '%' }"></div>
               </div>
-              <div class="pta-bar-value">{{ item.total }}</div>
+              <div class="pta-bar-value">{{ dashboardMetricValue(item) }}</div>
             </button>
           </div>
           <div v-else class="pta-admin-empty">Aucune activite par departement.</div>
         </div>
 
         <div class="pta-admin-panel">
-          <h4><i class="fas fa-map-marker-alt me-1"></i>Activites par province</h4>
+          <h4><i class="fas fa-map-marker-alt me-1"></i>Activites par province <span>{{ dashboardMetricLabel }}</span></h4>
           <div v-if="dashboardLoading" class="pta-panel-loading" aria-live="polite">
             <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des provinces...</span>
             <div v-for="n in 4" :key="`province-loading-${n}`" class="pta-panel-skeleton"></div>
           </div>
           <div v-else-if="(dashboardData.by_province || []).length" class="pta-bars">
-            <button v-for="item in dashboardData.by_province.slice(0, 12)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
+            <button v-for="item in dashboardMetricRows(dashboardData.by_province).slice(0, 12)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
               <div class="pta-bar-label">{{ item.label }}</div>
               <div class="pta-bar-track">
-                <div class="pta-bar-fill pta-bar-fill-province" :style="{ width: barWidth(item.total, dashboardData.by_province) + '%' }"></div>
+                <div class="pta-bar-fill pta-bar-fill-province" :style="{ width: dashboardMetricBarWidth(item, dashboardData.by_province) + '%' }"></div>
               </div>
-              <div class="pta-bar-value">{{ item.total }}</div>
+              <div class="pta-bar-value">{{ dashboardMetricValue(item) }}</div>
             </button>
           </div>
           <div v-else class="pta-admin-empty">Aucune activite par province.</div>
         </div>
 
         <div class="pta-admin-panel">
-          <h4><i class="fas fa-users me-1"></i>Activites attribuees aux agents</h4>
+          <h4><i class="fas fa-users me-1"></i>Activites attribuees aux agents <span>{{ dashboardMetricLabel }}</span></h4>
           <div v-if="dashboardData.by_agent.length" class="pta-agent-list">
-            <div v-for="agent in dashboardData.by_agent" :key="agent.label" class="pta-agent-row">
+            <div v-for="agent in dashboardMetricRows(dashboardData.by_agent)" :key="agent.label" class="pta-agent-row">
               <span>{{ agent.label }}</span>
-              <strong>{{ agent.total }}</strong>
+              <strong>{{ dashboardMetricValue(agent) }}</strong>
             </div>
           </div>
           <div v-else class="pta-admin-empty">Aucune activite attribuee a un agent.</div>
         </div>
 
         <div class="pta-admin-panel pta-admin-panel-wide">
-          <h4><i class="fas fa-chart-column me-1"></i>Repartition par trimestre</h4>
+          <h4><i class="fas fa-chart-column me-1"></i>Repartition par trimestre <span>{{ dashboardMetricLabel }}</span></h4>
           <div class="pta-trim-chart">
             <div v-for="item in dashboardData.by_trimestre" :key="item.label" class="pta-trim-col">
-              <div class="pta-trim-bar" :style="{ height: barWidth(item.total, dashboardData.by_trimestre) + '%' }"></div>
+              <div class="pta-trim-bar" :style="{ height: dashboardMetricBarWidth(item, dashboardData.by_trimestre) + '%' }"></div>
               <span>{{ item.label }}</span>
-              <strong>{{ item.total }}</strong>
+              <strong>{{ dashboardMetricValue(item) }}</strong>
             </div>
           </div>
         </div>
@@ -843,6 +843,19 @@ const dashboardKpis = computed(() => {
   ]
 })
 
+const dashboardMetricKey = computed(() => filters.value.statut || 'total')
+const dashboardMetricLabel = computed(() => {
+  const map = {
+    total: 'Total creees',
+    en_cours: 'En cours',
+    terminee: 'Realisees',
+    en_retard: 'En retard',
+    annulee: 'Annulees',
+  }
+
+  return map[dashboardMetricKey.value] || 'Total creees'
+})
+
 const entityStats = computed(() => {
   if (!entityDetail.value) return []
 
@@ -1010,6 +1023,28 @@ function isActivityOverdue(activite) {
 function barWidth(value, items) {
   const max = Math.max(...(items || []).map((item) => Number(item.total || 0)), 1)
   return Math.max(6, Math.round((Number(value || 0) / max) * 100))
+}
+
+function dashboardMetricValue(item) {
+  return Number(item?.[dashboardMetricKey.value] || 0)
+}
+
+function dashboardMetricBarWidth(item, items) {
+  const value = dashboardMetricValue(item)
+  if (value <= 0) return 0
+
+  const max = Math.max(...(items || []).map((row) => dashboardMetricValue(row)), 1)
+
+  return Math.max(6, Math.round((value / max) * 100))
+}
+
+function dashboardMetricRows(items) {
+  return [...(items || [])].sort((a, b) => {
+    const metricDiff = dashboardMetricValue(b) - dashboardMetricValue(a)
+    if (metricDiff !== 0) return metricDiff
+
+    return Number(b.total || 0) - Number(a.total || 0)
+  })
 }
 
 function truncate(str, len) {
@@ -1622,7 +1657,11 @@ onMounted(() => loadPlan())
 .pta-admin-graphs { display: grid; grid-template-columns: 1.25fr .9fr; gap: .75rem; }
 .pta-admin-panel { border: 1px solid #eef2f7; border-radius: 12px; padding: .85rem; background: #fff; min-width: 0; }
 .pta-admin-panel-wide { grid-column: 1 / -1; }
-.pta-admin-panel h4 { margin: 0 0 .75rem; color: #334155; font-size: .82rem; font-weight: 800; }
+.pta-admin-panel h4 { margin: 0 0 .75rem; color: #334155; font-size: .82rem; font-weight: 800; display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+.pta-admin-panel h4 span {
+  color: #7c3aed; background: #ede9fe; border: 1px solid #ddd6fe; border-radius: 999px;
+  padding: .12rem .45rem; font-size: .66rem; font-weight: 800;
+}
 .pta-panel-loading {
   display: flex; flex-direction: column; gap: .55rem;
   padding: .15rem 0 .25rem; color: #64748b; font-size: .76rem; font-weight: 700;
