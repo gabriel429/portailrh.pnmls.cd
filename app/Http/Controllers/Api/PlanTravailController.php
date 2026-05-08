@@ -549,6 +549,7 @@ class PlanTravailController extends ApiController
         $annee = $request->input('annee', now()->year);
         $trimestre = $request->input('trimestre');
         $statut = $request->input('statut');
+        $retard = $request->boolean('retard');
 
         $departementId = $request->input('departement_id');
         $provinceId    = $request->input('province_id');
@@ -579,7 +580,11 @@ class PlanTravailController extends ApiController
             $query->parTrimestre($trimestre);
         }
 
-        if ($statut) {
+        if ($retard) {
+            $query->whereNotNull('date_fin')
+                ->whereDate('date_fin', '<', now()->toDateString())
+                ->whereNotIn('statut', ['terminee', 'annulee']);
+        } elseif ($statut) {
             $query->where('statut', $statut);
         }
 
@@ -589,6 +594,10 @@ class PlanTravailController extends ApiController
         $planifieeCount = $activites->where('statut', 'planifiee')->count();
         $enCoursCount = $activites->where('statut', 'en_cours')->count();
         $termineeCount = $activites->where('statut', 'terminee')->count();
+        $annuleeCount = $activites->where('statut', 'annulee')->count();
+        $enRetardCount = $activites
+            ->filter(fn (ActivitePlan $activity) => $this->isPtaActivityOverdue($activity, now()->startOfDay()))
+            ->count();
         $avgPourcentage = $totalCount > 0 ? round($activites->avg('pourcentage')) : 0;
 
         $resources = ActivitePlanResource::collection($activites)->resolve();
@@ -606,12 +615,15 @@ class PlanTravailController extends ApiController
                 'planifiee' => $planifieeCount,
                 'en_cours' => $enCoursCount,
                 'terminee' => $termineeCount,
+                'annulee' => $annuleeCount,
+                'en_retard' => $enRetardCount,
                 'avg_pourcentage' => $avgPourcentage,
             ],
             'filters' => [
                 'annee' => (int) $annee,
                 'trimestre' => $trimestre,
                 'statut' => $statut,
+                'retard' => $retard,
             ],
             'canEdit' => $this->canManage(),
             'isGlobalPta' => $isGlobalPta,
@@ -624,12 +636,15 @@ class PlanTravailController extends ApiController
                 'planifiee' => $planifieeCount,
                 'en_cours' => $enCoursCount,
                 'terminee' => $termineeCount,
+                'annulee' => $annuleeCount,
+                'en_retard' => $enRetardCount,
                 'avg_pourcentage' => $avgPourcentage,
             ],
             'filters' => [
                 'annee' => (int) $annee,
                 'trimestre' => $trimestre,
                 'statut' => $statut,
+                'retard' => $retard,
             ],
             'canEdit' => $this->canManage(),
             'isGlobalPta' => $isGlobalPta,
@@ -652,53 +667,45 @@ class PlanTravailController extends ApiController
         $total = $activities->count();
         $byStatus = $activities->groupBy('statut')->map->count();
         $overdue = $activities
-            ->filter(fn (ActivitePlan $activity) => $activity->date_fin && $activity->date_fin->lt($today) && $activity->statut !== 'terminee')
+            ->filter(fn (ActivitePlan $activity) => $this->isPtaActivityOverdue($activity, $today))
             ->count();
 
         $byDepartment = $activities
-            ->groupBy(fn (ActivitePlan $activity) => $activity->departement?->nom ?: 'Direction / Non renseigne')
-            ->map(fn ($items, $label) => [
-                'label' => $label,
-                'total' => $items->count(),
-                'terminee' => $items->where('statut', 'terminee')->count(),
-                'en_cours' => $items->where('statut', 'en_cours')->count(),
-                'avg_pourcentage' => $items->count() ? round($items->avg('pourcentage')) : 0,
-            ])
+            ->mapToGroups(function (ActivitePlan $activity) {
+                $group = $this->ptaDashboardDepartmentGroup($activity);
+
+                return [$group['key'] => array_merge($group, ['activity' => $activity])];
+            })
+            ->map(function ($rows) use ($today) {
+                $first = $rows->first();
+
+                return $this->formatPtaDashboardGroup(
+                    $rows->pluck('activity'),
+                    $first['label'],
+                    $first['type'],
+                    $first['id'],
+                    $today
+                );
+            })
             ->sortByDesc('total')
             ->values();
 
         $byProvince = $activities
             ->flatMap(function (ActivitePlan $activity) {
-                $provinces = $activity->provinces->isNotEmpty()
-                    ? $activity->provinces
-                    : collect($activity->province ? [$activity->province] : []);
-
-                if ($provinces->isEmpty()) {
-                    return $activity->niveau_administratif === 'SEP'
-                        ? [[
-                            'id' => 0,
-                            'label' => 'Province non renseignee',
-                            'statut' => $activity->statut,
-                            'pourcentage' => $activity->pourcentage,
-                        ]]
-                        : [];
-                }
-
-                return $provinces->map(fn (Province $province) => [
-                    'id' => $province->id,
-                    'label' => $province->nom,
-                    'statut' => $activity->statut,
-                    'pourcentage' => $activity->pourcentage,
-                ])->all();
+                return $this->ptaDashboardProvinceRows($activity);
             })
-            ->groupBy('id')
-            ->map(fn ($items) => [
-                'label' => $items->first()['label'] ?: 'Province non renseignee',
-                'total' => $items->count(),
-                'terminee' => $items->where('statut', 'terminee')->count(),
-                'en_cours' => $items->where('statut', 'en_cours')->count(),
-                'avg_pourcentage' => $items->count() ? round($items->avg('pourcentage')) : 0,
-            ])
+            ->groupBy('key')
+            ->map(function ($rows) use ($today) {
+                $first = $rows->first();
+
+                return $this->formatPtaDashboardGroup(
+                    $rows->pluck('activity'),
+                    $first['label'],
+                    'province',
+                    $first['id'],
+                    $today
+                );
+            })
             ->sortByDesc('total')
             ->values();
 
@@ -743,6 +750,109 @@ class PlanTravailController extends ApiController
         ];
 
         return $this->success($payload, [], $payload);
+    }
+
+    private function ptaDashboardDepartmentGroup(ActivitePlan $activity): array
+    {
+        if ($activity->departement) {
+            return [
+                'key' => 'department:' . $activity->departement->id,
+                'id' => $activity->departement->id,
+                'type' => $activity->departement->province_id ? 'department' : 'sen_service',
+                'label' => $activity->departement->nom,
+            ];
+        }
+
+        if (str_contains(strtolower((string) $activity->responsable_code), 'attache')) {
+            return [
+                'key' => 'sen_attaches',
+                'id' => null,
+                'type' => 'sen_attaches',
+                'label' => 'Attaches du SEN',
+            ];
+        }
+
+        return [
+            'key' => 'sen_unassigned',
+            'id' => null,
+            'type' => 'sen_service',
+            'label' => 'Direction / Non renseigne',
+        ];
+    }
+
+    private function ptaDashboardProvinceRows(ActivitePlan $activity): array
+    {
+        $provinces = $activity->provinces->isNotEmpty()
+            ? $activity->provinces
+            : collect($activity->province ? [$activity->province] : []);
+
+        if ($provinces->isEmpty()) {
+            return $activity->niveau_administratif === 'SEP'
+                ? [[
+                    'key' => 'province:0',
+                    'id' => 0,
+                    'label' => 'Province non renseignee',
+                    'activity' => $activity,
+                ]]
+                : [];
+        }
+
+        return $provinces->map(fn (Province $province) => [
+            'key' => 'province:' . $province->id,
+            'id' => $province->id,
+            'label' => $province->nom,
+            'activity' => $activity,
+        ])->all();
+    }
+
+    private function formatPtaDashboardGroup($activities, string $label, string $type, ?int $id, $today): array
+    {
+        $items = collect($activities)->values();
+        $total = $items->count();
+        $agents = $items
+            ->flatMap(fn (ActivitePlan $activity) => $activity->agents)
+            ->filter()
+            ->unique('id')
+            ->sortBy(fn (Agent $agent) => trim($agent->nom . ' ' . $agent->prenom))
+            ->values();
+
+        return [
+            'id' => $id,
+            'type' => $type,
+            'label' => $label ?: 'Non renseigne',
+            'total' => $total,
+            'planifiee' => $items->where('statut', 'planifiee')->count(),
+            'en_cours' => $items->where('statut', 'en_cours')->count(),
+            'terminee' => $items->where('statut', 'terminee')->count(),
+            'annulee' => $items->where('statut', 'annulee')->count(),
+            'en_retard' => $items->filter(fn (ActivitePlan $activity) => $this->isPtaActivityOverdue($activity, $today))->count(),
+            'avg_pourcentage' => $total ? round($items->avg('pourcentage')) : 0,
+            'agent_count' => $agents->count(),
+            'agents' => $agents->take(10)->map(fn (Agent $agent) => [
+                'id' => $agent->id,
+                'nom_complet' => trim($agent->prenom . ' ' . $agent->nom),
+                'fonction' => $agent->fonction,
+                'organe' => $agent->organe,
+            ])->values(),
+            'latest_updates' => $items
+                ->sortByDesc(fn (ActivitePlan $activity) => $activity->updated_at)
+                ->take(5)
+                ->map(fn (ActivitePlan $activity) => [
+                    'id' => $activity->id,
+                    'titre' => $activity->titre,
+                    'statut' => $activity->statut,
+                    'pourcentage' => $activity->pourcentage,
+                    'updated_at' => optional($activity->updated_at)?->toIso8601String(),
+                ])
+                ->values(),
+        ];
+    }
+
+    private function isPtaActivityOverdue(ActivitePlan $activity, $today): bool
+    {
+        return (bool) $activity->date_fin
+            && $activity->date_fin->lt($today)
+            && !in_array($activity->statut, ['terminee', 'annulee'], true);
     }
 
     /**

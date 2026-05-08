@@ -51,27 +51,18 @@
       </div>
 
       <div class="pta-admin-kpis">
-        <div class="pta-admin-kpi">
-          <span class="pta-admin-kpi-icon pta-kpi-total"><i class="fas fa-layer-group"></i></span>
-          <div><strong>{{ dashboardData.summary.total }}</strong><small>Total creees</small></div>
-        </div>
-        <div class="pta-admin-kpi">
-          <span class="pta-admin-kpi-icon pta-kpi-progress"><i class="fas fa-spinner"></i></span>
-          <div><strong>{{ dashboardData.summary.en_cours }}</strong><small>En cours</small></div>
-        </div>
-        <div class="pta-admin-kpi">
-          <span class="pta-admin-kpi-icon pta-kpi-done"><i class="fas fa-check"></i></span>
-          <div><strong>{{ dashboardData.summary.terminee }}</strong><small>Realisees</small></div>
-        </div>
-        <div class="pta-admin-kpi">
-          <span class="pta-admin-kpi-icon pta-kpi-late"><i class="fas fa-triangle-exclamation"></i></span>
-          <div><strong>{{ dashboardData.summary.en_retard }}</strong><small>En retard</small></div>
-        </div>
-        <div class="pta-admin-kpi">
-          <span class="pta-admin-kpi-icon pta-kpi-cancel"><i class="fas fa-ban"></i></span>
-          <div><strong>{{ dashboardData.summary.annulee }}</strong><small>Annulees</small></div>
-        </div>
-        <div class="pta-admin-kpi">
+        <button
+          v-for="kpi in dashboardKpis"
+          :key="kpi.key"
+          type="button"
+          class="pta-admin-kpi pta-admin-kpi-button"
+          :class="{ active: isDashboardKpiActive(kpi) }"
+          @click="applyDashboardKpi(kpi)"
+        >
+          <span class="pta-admin-kpi-icon" :class="kpi.iconClass"><i :class="kpi.icon"></i></span>
+          <div><strong>{{ kpi.value }}</strong><small>{{ kpi.label }}</small></div>
+        </button>
+        <div class="pta-admin-kpi pta-admin-kpi-static">
           <span class="pta-admin-kpi-icon pta-kpi-rate"><i class="fas fa-chart-line"></i></span>
           <div><strong>{{ dashboardData.summary.avg_pourcentage }}%</strong><small>Execution globale</small></div>
         </div>
@@ -81,13 +72,13 @@
         <div class="pta-admin-panel">
           <h4><i class="fas fa-building me-1"></i>Activites par departement ou service</h4>
           <div v-if="dashboardData.by_department.length" class="pta-bars">
-            <div v-for="item in dashboardData.by_department.slice(0, 8)" :key="item.label" class="pta-bar-row">
+            <button v-for="item in dashboardData.by_department.slice(0, 8)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
               <div class="pta-bar-label">{{ item.label }}</div>
               <div class="pta-bar-track">
                 <div class="pta-bar-fill" :style="{ width: barWidth(item.total, dashboardData.by_department) + '%' }"></div>
               </div>
               <div class="pta-bar-value">{{ item.total }}</div>
-            </div>
+            </button>
           </div>
           <div v-else class="pta-admin-empty">Aucune activite par departement.</div>
         </div>
@@ -95,13 +86,13 @@
         <div class="pta-admin-panel">
           <h4><i class="fas fa-map-marker-alt me-1"></i>Activites par province</h4>
           <div v-if="(dashboardData.by_province || []).length" class="pta-bars">
-            <div v-for="item in dashboardData.by_province.slice(0, 12)" :key="item.label" class="pta-bar-row">
+            <button v-for="item in dashboardData.by_province.slice(0, 12)" :key="`${item.type}-${item.id || item.label}`" type="button" class="pta-bar-row" @click="openEntityDetail(item)">
               <div class="pta-bar-label">{{ item.label }}</div>
               <div class="pta-bar-track">
                 <div class="pta-bar-fill pta-bar-fill-province" :style="{ width: barWidth(item.total, dashboardData.by_province) + '%' }"></div>
               </div>
               <div class="pta-bar-value">{{ item.total }}</div>
-            </div>
+            </button>
           </div>
           <div v-else class="pta-admin-empty">Aucune activite par province.</div>
         </div>
@@ -339,7 +330,7 @@
               <!-- Header -->
               <div class="ptd-header">
                 <div class="ptd-header-icon" :class="detailStatutBadge(detailActivite.statut).replace('pt-badge ', 'ptd-si-')">
-                  <i :class="detailActivite.statut === 'terminee' ? 'fas fa-check-circle' : detailActivite.statut === 'en_cours' ? 'fas fa-spinner' : 'fas fa-clock'"></i>
+                  <i :class="statutIconName(detailActivite.statut)"></i>
                 </div>
                 <div class="ptd-header-info">
                   <h3 class="ptd-title">{{ detailActivite.titre }}</h3>
@@ -498,6 +489,73 @@
                 </div>
               </div>
             </template>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Entity Detail Popup -->
+    <Teleport to="body">
+      <Transition name="ptd-fade">
+        <div v-if="entityDetailOpen && entityDetail" class="pta-entity-overlay" @click.self="closeEntityDetail">
+          <div class="pta-entity-dialog">
+            <button class="pta-entity-close" @click="closeEntityDetail"><i class="fas fa-times"></i></button>
+
+            <div class="pta-entity-header">
+              <div class="pta-entity-icon"><i :class="entityIcon(entityDetail)"></i></div>
+              <div>
+                <span class="pta-entity-chip">{{ entityTypeLabel(entityDetail) }}</span>
+                <h3>{{ entityDetail.label }}</h3>
+                <p>{{ entityDetail.total }} activite{{ entityDetail.total > 1 ? 's' : '' }} PTA suivie{{ entityDetail.total > 1 ? 's' : '' }}</p>
+              </div>
+            </div>
+
+            <div class="pta-entity-kpis">
+              <div v-for="item in entityStats" :key="item.label" class="pta-entity-kpi">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+              </div>
+            </div>
+
+            <div class="pta-entity-execution">
+              <div>
+                <span>Execution globale</span>
+                <strong>{{ entityDetail.avg_pourcentage }}%</strong>
+              </div>
+              <div class="pta-entity-progress">
+                <div :style="{ width: entityDetail.avg_pourcentage + '%' }"></div>
+              </div>
+            </div>
+
+            <div class="pta-entity-grid">
+              <section class="pta-entity-section">
+                <h4><i class="fas fa-users me-1"></i>Agents concernes</h4>
+                <div v-if="entityDetail.agents?.length" class="pta-entity-agents">
+                  <span v-for="agent in entityDetail.agents" :key="agent.id" class="pta-entity-agent">
+                    {{ agent.nom_complet }}
+                    <small v-if="agent.fonction">{{ agent.fonction }}</small>
+                  </span>
+                </div>
+                <p v-else class="pta-entity-muted">Aucun agent assigne.</p>
+              </section>
+
+              <section class="pta-entity-section">
+                <h4><i class="fas fa-clock me-1"></i>Dernieres mises a jour</h4>
+                <div v-if="entityDetail.latest_updates?.length" class="pta-entity-updates">
+                  <button
+                    v-for="activity in entityDetail.latest_updates"
+                    :key="activity.id"
+                    type="button"
+                    class="pta-entity-update"
+                    @click="openActivityFromEntity(activity.id)"
+                  >
+                    <span>{{ activity.titre }}</span>
+                    <small>{{ detailStatutLabel(activity.statut) }} - {{ activity.pourcentage }}% - {{ detailFormatDateTime(activity.updated_at) }}</small>
+                  </button>
+                </div>
+                <p v-else class="pta-entity-muted">Aucune mise a jour recente.</p>
+              </section>
+            </div>
           </div>
         </div>
       </Transition>
@@ -741,9 +799,12 @@ const initialLoadDone = ref(false)
 const accessDenied = ref(false)
 const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre departement.")
 const groupees = ref({})
-const stats = ref({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 })
+const emptyStats = () => ({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, annulee: 0, en_retard: 0, avg_pourcentage: 0 })
+const stats = ref(emptyStats())
 const dashboardLoading = ref(false)
 const dashboardData = ref(null)
+const entityDetailOpen = ref(false)
+const entityDetail = ref(null)
 const canEdit = ref(false)
 const isGlobalPta = ref(false)
 const filterDepts = ref([])
@@ -757,6 +818,30 @@ const trimestres = [
   { value: 'T3', label: 'T3' },
   { value: 'T4', label: 'T4' },
 ]
+
+const dashboardKpis = computed(() => {
+  const summary = dashboardData.value?.summary || {}
+
+  return [
+    { key: 'total', label: 'Total creees', value: summary.total || 0, statut: '', icon: 'fas fa-layer-group', iconClass: 'pta-kpi-total' },
+    { key: 'en_cours', label: 'En cours', value: summary.en_cours || 0, statut: 'en_cours', icon: 'fas fa-spinner', iconClass: 'pta-kpi-progress' },
+    { key: 'terminee', label: 'Realisees', value: summary.terminee || 0, statut: 'terminee', icon: 'fas fa-check', iconClass: 'pta-kpi-done' },
+    { key: 'en_retard', label: 'En retard', value: summary.en_retard || 0, statut: 'en_retard', icon: 'fas fa-triangle-exclamation', iconClass: 'pta-kpi-late' },
+    { key: 'annulee', label: 'Annulees', value: summary.annulee || 0, statut: 'annulee', icon: 'fas fa-ban', iconClass: 'pta-kpi-cancel' },
+  ]
+})
+
+const entityStats = computed(() => {
+  if (!entityDetail.value) return []
+
+  return [
+    { label: 'Total PTA', value: entityDetail.value.total || 0 },
+    { label: 'En cours', value: entityDetail.value.en_cours || 0 },
+    { label: 'Realisees', value: entityDetail.value.terminee || 0 },
+    { label: 'En retard', value: entityDetail.value.en_retard || 0 },
+    { label: 'Annulees', value: entityDetail.value.annulee || 0 },
+  ]
+})
 
 const years = computed(() => {
   const arr = []
@@ -783,7 +868,8 @@ async function loadPlan() {
     accessDenied.value = false
     const params = { annee: filters.value.annee, ...adminParams.value }
     if (filters.value.trimestre) params.trimestre = filters.value.trimestre
-    if (filters.value.statut) params.statut = filters.value.statut
+    if (filters.value.statut === 'en_retard') params.retard = 1
+    else if (filters.value.statut) params.statut = filters.value.statut
     if (filters.value.departement_id) params.departement_id = filters.value.departement_id
     if (filters.value.province_id) params.province_id = filters.value.province_id
     if (filters.value.niveau_administratif) params.niveau_administratif = filters.value.niveau_administratif
@@ -804,7 +890,7 @@ async function loadPlan() {
       accessDenied.value = true
       accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre departement.'
       groupees.value = {}
-      stats.value = { total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 }
+      stats.value = emptyStats()
       canEdit.value = false
       ui.addToast(accessDeniedMessage.value, 'warning')
     } else {
@@ -844,6 +930,20 @@ function setFilter(statut, trimestre) {
   loadPlan()
 }
 
+function applyDashboardKpi(kpi) {
+  filters.value.statut = kpi.statut
+  filters.value.trimestre = ''
+  filters.value.departement_id = ''
+  filters.value.province_id = ''
+  filters.value.niveau_administratif = ''
+  loadPlan()
+}
+
+function isDashboardKpiActive(kpi) {
+  const noEntityFilter = !filters.value.departement_id && !filters.value.province_id && !filters.value.niveau_administratif
+  return filters.value.statut === kpi.statut && !filters.value.trimestre && noEntityFilter
+}
+
 function resetPlanifFilters() {
   filters.value.departement_id = ''
   filters.value.province_id = ''
@@ -873,22 +973,22 @@ function triLabel(tri) {
 }
 
 function statutLabel(statut) {
-  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee' }
+  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee', annulee: 'Annulee', en_retard: 'En retard' }
   return map[statut] || statut
 }
 
 function statutBadgeClass(statut) {
-  const map = { terminee: 'pt-badge done', en_cours: 'pt-badge progress', planifiee: 'pt-badge planned' }
+  const map = { terminee: 'pt-badge done', en_cours: 'pt-badge progress', planifiee: 'pt-badge planned', annulee: 'pt-badge canceled' }
   return map[statut] || 'pt-badge planned'
 }
 
 function statutIconClass(statut) {
-  const map = { terminee: 'pt-si-done', en_cours: 'pt-si-progress', planifiee: 'pt-si-planned' }
+  const map = { terminee: 'pt-si-done', en_cours: 'pt-si-progress', planifiee: 'pt-si-planned', annulee: 'pt-si-canceled' }
   return map[statut] || 'pt-si-planned'
 }
 
 function statutIconName(statut) {
-  const map = { terminee: 'fas fa-check-circle', en_cours: 'fas fa-spinner', planifiee: 'fas fa-clock' }
+  const map = { terminee: 'fas fa-check-circle', en_cours: 'fas fa-spinner', planifiee: 'fas fa-clock', annulee: 'fas fa-ban' }
   return map[statut] || 'fas fa-clock'
 }
 
@@ -1159,6 +1259,43 @@ function formatCurrency(value) {
   return new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(amount)
 }
 
+function openEntityDetail(item) {
+  entityDetail.value = item
+  entityDetailOpen.value = true
+}
+
+function closeEntityDetail() {
+  entityDetailOpen.value = false
+  entityDetail.value = null
+}
+
+function entityTypeLabel(item) {
+  const map = {
+    province: 'Province',
+    department: 'Departement ou service',
+    sen_service: 'Service rattache au SEN',
+    sen_attaches: 'Service rattache au SEN',
+  }
+
+  return map[item?.type] || 'Entite PTA'
+}
+
+function entityIcon(item) {
+  const map = {
+    province: 'fas fa-map-marker-alt',
+    department: 'fas fa-building',
+    sen_service: 'fas fa-sitemap',
+    sen_attaches: 'fas fa-user-tie',
+  }
+
+  return map[item?.type] || 'fas fa-chart-pie'
+}
+
+function openActivityFromEntity(activityId) {
+  closeEntityDetail()
+  openDetailPopup(activityId)
+}
+
 /* ── Detail popup ── */
 const detailOpen = ref(false)
 const detailLoading = ref(false)
@@ -1215,12 +1352,12 @@ async function handleDetailUpdateStatut() {
 }
 
 function detailStatutBadge(statut) {
-  const map = { terminee: 'pt-badge done', en_cours: 'pt-badge progress', planifiee: 'pt-badge planned' }
+  const map = { terminee: 'pt-badge done', en_cours: 'pt-badge progress', planifiee: 'pt-badge planned', annulee: 'pt-badge canceled' }
   return map[statut] || 'pt-badge planned'
 }
 
 function detailStatutLabel(statut) {
-  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee' }
+  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee', annulee: 'Annulee', en_retard: 'En retard' }
   return map[statut] || statut
 }
 
@@ -1411,7 +1548,12 @@ onMounted(() => loadPlan())
 .pta-admin-kpi {
   display: flex; align-items: center; gap: .65rem;
   background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: .75rem;
+  width: 100%; text-align: left;
 }
+.pta-admin-kpi-button { cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease; }
+.pta-admin-kpi-button:hover { transform: translateY(-2px); border-color: #c4b5fd; box-shadow: 0 10px 24px rgba(15,23,42,.08); background: #fff; }
+.pta-admin-kpi-button.active { border-color: #7c3aed; background: #faf5ff; box-shadow: 0 10px 24px rgba(124,58,237,.14); }
+.pta-admin-kpi-static { cursor: default; }
 .pta-admin-kpi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .pta-kpi-total { background: #ede9fe; color: #7c3aed; }
 .pta-kpi-progress { background: #dbeafe; color: #2563eb; }
@@ -1427,6 +1569,9 @@ onMounted(() => loadPlan())
 .pta-admin-panel h4 { margin: 0 0 .75rem; color: #334155; font-size: .82rem; font-weight: 800; }
 .pta-bars { display: flex; flex-direction: column; gap: .55rem; }
 .pta-bar-row { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr 36px; gap: .55rem; align-items: center; }
+button.pta-bar-row { width: 100%; padding: .1rem 0; border: 0; background: transparent; text-align: left; cursor: pointer; border-radius: 8px; transition: background .18s ease; }
+button.pta-bar-row:hover { background: #f8fafc; }
+button.pta-bar-row:hover .pta-bar-label { color: #1d4ed8; }
 .pta-bar-label { color: #475569; font-size: .74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pta-bar-track { height: 9px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
 .pta-bar-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #14b8a6); border-radius: 999px; }
@@ -1442,6 +1587,66 @@ onMounted(() => loadPlan())
 .pta-trim-col span { color: #64748b; font-size: .72rem; font-weight: 700; }
 .pta-trim-col strong { color: #1e293b; font-size: .8rem; }
 .pta-admin-empty { color: #94a3b8; font-size: .78rem; padding: 1rem; text-align: center; background: #f8fafc; border-radius: 10px; }
+
+.pta-entity-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 1rem; background: rgba(15,23,42,.35); backdrop-filter: blur(14px);
+}
+.pta-entity-dialog {
+  position: relative; width: min(920px, 100%); max-height: 90vh; overflow: auto;
+  color: #0f172a; border: 1px solid rgba(255,255,255,.5); border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255,255,255,.88), rgba(248,250,252,.7));
+  box-shadow: 0 24px 70px rgba(15,23,42,.26); padding: 1.1rem;
+}
+.pta-entity-close {
+  position: absolute; top: .85rem; right: .85rem; width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(148,163,184,.32); border-radius: 10px;
+  color: #64748b; background: rgba(255,255,255,.7); cursor: pointer;
+}
+.pta-entity-close:hover { color: #ef4444; border-color: #fecaca; background: rgba(254,242,242,.9); }
+.pta-entity-header { display: flex; align-items: center; gap: .9rem; padding: .2rem 2.6rem 1rem 0; }
+.pta-entity-icon {
+  width: 52px; height: 52px; border-radius: 16px; display: flex; align-items: center; justify-content: center;
+  color: #fff; background: linear-gradient(135deg, #2563eb, #14b8a6); font-size: 1.1rem; flex-shrink: 0;
+}
+.pta-entity-chip {
+  display: inline-flex; color: #1d4ed8; background: rgba(219,234,254,.85);
+  border: 1px solid rgba(147,197,253,.55); border-radius: 999px;
+  padding: .16rem .55rem; font-size: .68rem; font-weight: 800; margin-bottom: .3rem;
+}
+.pta-entity-header h3 { margin: 0; color: #0f172a; font-size: 1.2rem; font-weight: 800; }
+.pta-entity-header p { margin: .15rem 0 0; color: #64748b; font-size: .8rem; }
+.pta-entity-kpis { display: grid; grid-template-columns: repeat(5, minmax(105px, 1fr)); gap: .65rem; margin-bottom: .75rem; }
+.pta-entity-kpi, .pta-entity-section, .pta-entity-execution {
+  border: 1px solid rgba(226,232,240,.72); background: rgba(255,255,255,.58);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.65); backdrop-filter: blur(10px);
+}
+.pta-entity-kpi { border-radius: 14px; padding: .7rem; }
+.pta-entity-kpi span { display: block; color: #64748b; font-size: .68rem; font-weight: 800; }
+.pta-entity-kpi strong { display: block; margin-top: .25rem; color: #0f172a; font-size: 1.15rem; line-height: 1; }
+.pta-entity-execution { border-radius: 16px; padding: .85rem; margin-bottom: .75rem; }
+.pta-entity-execution > div:first-child { display: flex; justify-content: space-between; align-items: center; margin-bottom: .55rem; }
+.pta-entity-execution span { color: #475569; font-size: .76rem; font-weight: 800; }
+.pta-entity-execution strong { color: #0f766e; font-size: 1rem; }
+.pta-entity-progress { height: 9px; border-radius: 999px; background: rgba(226,232,240,.9); overflow: hidden; }
+.pta-entity-progress div { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0f766e, #22c55e); }
+.pta-entity-grid { display: grid; grid-template-columns: .9fr 1.1fr; gap: .75rem; }
+.pta-entity-section { border-radius: 16px; padding: .85rem; min-width: 0; }
+.pta-entity-section h4 { margin: 0 0 .65rem; color: #334155; font-size: .82rem; font-weight: 800; }
+.pta-entity-agents { display: flex; flex-direction: column; gap: .45rem; max-height: 230px; overflow: auto; }
+.pta-entity-agent { display: block; color: #0f172a; background: rgba(248,250,252,.85); border-radius: 10px; padding: .5rem .6rem; font-size: .76rem; font-weight: 700; }
+.pta-entity-agent small { display: block; color: #64748b; font-size: .68rem; font-weight: 600; margin-top: .12rem; }
+.pta-entity-updates { display: flex; flex-direction: column; gap: .45rem; max-height: 230px; overflow: auto; }
+.pta-entity-update {
+  width: 100%; text-align: left; border: 1px solid rgba(226,232,240,.8); border-radius: 10px;
+  background: rgba(255,255,255,.7); padding: .55rem .65rem; cursor: pointer;
+}
+.pta-entity-update:hover { border-color: #93c5fd; background: rgba(239,246,255,.9); }
+.pta-entity-update span { display: block; color: #0f172a; font-size: .76rem; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pta-entity-update small { display: block; color: #64748b; font-size: .68rem; margin-top: .12rem; }
+.pta-entity-muted { margin: 0; color: #94a3b8; font-size: .78rem; }
 
 /* ── Section header ── */
 .pt-section-header {
@@ -1473,6 +1678,7 @@ onMounted(() => loadPlan())
 .pt-si-planned { background: #f1f5f9; color: #64748b; }
 .pt-si-progress { background: #dbeafe; color: #2563eb; }
 .pt-si-done { background: #dcfce7; color: #16a34a; }
+.pt-si-canceled { background: #f1f5f9; color: #475569; }
 
 .pt-card-info { flex: 1; min-width: 0; }
 .pt-card-title { font-weight: 700; font-size: .9rem; color: #1e293b; text-decoration: none; display: block; line-height: 1.3; margin-bottom: .25rem; }
@@ -1484,6 +1690,7 @@ onMounted(() => loadPlan())
 .pt-badge.planned { background: #f1f5f9; color: #475569; }
 .pt-badge.progress { background: #dbeafe; color: #1e40af; }
 .pt-badge.done { background: #dcfce7; color: #166534; }
+.pt-badge.canceled { background: #f1f5f9; color: #475569; }
 .pt-meta-badge { font-size: .68rem; font-weight: 600; padding: .2rem .55rem; border-radius: 6px; background: #f3f4f6; color: #6b7280; }
 
 .pt-card-meta { padding: .4rem 1.2rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
@@ -1530,6 +1737,10 @@ onMounted(() => loadPlan())
   .pt-filter-grid { grid-template-columns: repeat(2, 1fr); }
   .pt-grid { grid-template-columns: 1fr; }
   .pta-admin-graphs { grid-template-columns: 1fr; }
+  .pta-entity-dialog { border-radius: 16px; padding: .9rem; }
+  .pta-entity-header { padding-right: 2.3rem; align-items: flex-start; }
+  .pta-entity-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pta-entity-grid { grid-template-columns: 1fr; }
   .pta-bar-row { grid-template-columns: 1fr 1.4fr 32px; }
   .pt-section-header { flex-direction: column; align-items: flex-start; gap: .5rem; }
   .pt-card-footer { flex-direction: column; align-items: flex-start; gap: .5rem; }
@@ -1666,6 +1877,7 @@ onMounted(() => loadPlan())
 .ptd-si-done { background: linear-gradient(135deg, #10b981, #34d399); }
 .ptd-si-progress { background: linear-gradient(135deg, #7c3aed, #a78bfa); }
 .ptd-si-planned { background: linear-gradient(135deg, #64748b, #94a3b8); }
+.ptd-si-canceled { background: linear-gradient(135deg, #475569, #94a3b8); }
 .ptd-header-info { flex: 1; min-width: 0; }
 .ptd-title { font-size: 1.05rem; font-weight: 700; color: #1e293b; margin: 0; line-height: 1.3; }
 .ptd-sub { font-size: .75rem; color: #64748b; margin-top: .15rem; }
