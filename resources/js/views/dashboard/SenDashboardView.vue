@@ -1003,7 +1003,7 @@
                             </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                             <div class="drill-prov-agent-meta">
-                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> EntrÃ©e {{ a.heure_entree }}</span>
+                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> Entrée {{ a.heure_entree }}</span>
                               <span v-if="a.heure_sortie"><i class="fas fa-sign-out-alt"></i> Sortie {{ a.heure_sortie }}</span>
                               <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
                               <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
@@ -1042,7 +1042,7 @@
                             </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                             <div class="drill-prov-agent-meta">
-                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> EntrÃ©e {{ a.heure_entree }}</span>
+                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> Entrée {{ a.heure_entree }}</span>
                               <span v-if="a.heure_sortie"><i class="fas fa-sign-out-alt"></i> Sortie {{ a.heure_sortie }}</span>
                               <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
                               <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
@@ -1334,7 +1334,7 @@
               <div class="agent-email-head">
                 <div>
                   <div class="agent-email-title">Composer un email</div>
-                  <div class="agent-email-sub">Envoyer un message avec piece jointe et plusieurs destinataires.</div>
+                  <div class="agent-email-sub">Envoyer un message avec pièce jointe et plusieurs destinataires.</div>
                 </div>
                 <button type="button" class="agent-contact-close" @click="closeEmailComposer">
                   <i class="fas fa-times"></i>
@@ -1355,7 +1355,7 @@
                   <label class="agent-email-label">Ajouter un autre agent</label>
                   <div class="agent-email-inline">
                     <select v-model="emailAgentToAdd" class="agent-email-input agent-email-select">
-                      <option value="">-- Selectionner un agent --</option>
+                      <option value="">-- Sélectionner un agent --</option>
                       <option v-for="agent in selectableRecipientAgents" :key="agent.id" :value="String(agent.id)">
                         {{ agent.nom }} - {{ agent.email }}
                       </option>
@@ -1401,7 +1401,7 @@
                 </div>
 
                 <div class="agent-email-section">
-                  <label class="agent-email-label">Piece jointe</label>
+                  <label class="agent-email-label">Pièce jointe</label>
                   <div class="agent-email-upload">
                     <button type="button" class="agent-email-upload-btn" @click="emailAttachmentInput?.click()">
                       <i class="fas fa-paperclip"></i>
@@ -1690,9 +1690,9 @@ async function copyPhoneNumber(phone) {
 
   try {
     await navigator.clipboard.writeText(phone)
-    ui.addToast('Numero copie dans le presse-papiers.', 'success')
+    ui.addToast('Numéro copie dans le presse-papiers.', 'success')
   } catch (error) {
-    ui.addToast(`Numero: ${phone}`, 'info', 6000)
+    ui.addToast(`Numéro: ${phone}`, 'info', 6000)
   }
 }
 
@@ -1819,9 +1819,9 @@ const drilldownColor = computed(() => {
 
 function presenceStatusLabel(agent) {
   const labels = {
-    present: 'PrÃ©sent',
+    present: 'Présent',
     absent: 'Absent',
-    en_conge: 'En congÃ©',
+    en_conge: 'En congé',
     en_mission: 'En mission',
     en_formation: 'En formation',
     suspendu: 'Suspendu',

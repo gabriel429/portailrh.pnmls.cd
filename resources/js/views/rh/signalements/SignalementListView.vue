@@ -149,7 +149,7 @@
           <h5 class="text-muted">Aucun signalement</h5>
           <p class="text-muted">Aucun incident n'a encore ete signale.</p>
           <button class="btn btn-primary mt-2" @click="openCreateModal">
-            <i class="fas fa-plus me-2"></i>Creer un signalement
+            <i class="fas fa-plus me-2"></i>Créer un signalement
           </button>
         </div>
       </div>
@@ -158,7 +158,7 @@
       <ConfirmModal
         :show="showDeleteModal"
         title="Supprimer le signalement"
-        :message="`Etes-vous sur de vouloir supprimer ce signalement de type '${deleteTarget?.type ?? ''}' ?`"
+        :message="`Êtes-vous sûr de vouloir supprimer ce signalement de type '${deleteTarget?.type ?? ''}' ?`"
         :loading="deleting"
         @confirm="handleDelete"
         @cancel="showDeleteModal = false"
@@ -228,7 +228,7 @@
         <div class="scm-footer">
           <button type="submit" form="createSignalementForm" class="scm-btn-save" :disabled="createSubmitting">
             <span v-if="createSubmitting" class="spinner-border spinner-border-sm me-1"></span>
-            <i v-else class="fas fa-save me-1"></i> Creer le signalement
+            <i v-else class="fas fa-save me-1"></i> Créer le signalement
           </button>
           <button class="scm-btn-cancel" @click="closeCreateModal">Annuler</button>
         </div>
@@ -347,7 +347,7 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(deleteTarget.value.id)
-    ui.addToast('Signalement supprime avec succes.', 'success')
+    ui.addToast('Signalement supprimé avec succès.', 'success')
     showDeleteModal.value = false
     deleteTarget.value = null
     await loadSignalements(meta.value.current_page)
@@ -404,7 +404,7 @@ async function handleCreate() {
     createSubmitting.value = true
     try {
         await create({ ...createForm.value, agent_id: auth.agent?.id })
-        ui.addToast('Signalement cree avec succes.', 'success')
+        ui.addToast('Signalement créé avec succès.', 'success')
         closeCreateModal()
         await loadSignalements(meta.value.current_page)
     } catch (err) {

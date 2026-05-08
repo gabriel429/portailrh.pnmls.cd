@@ -52,7 +52,7 @@ class CommuniqueController extends ApiController
         $resource = CommuniqueResource::make($communique);
 
         return $this->resource($resource, [], [
-            'message' => 'Communique publie avec succes.',
+            'message' => 'Communiqué publié avec succès.',
         ], 201);
     }
 
@@ -83,7 +83,7 @@ class CommuniqueController extends ApiController
             'read' => true,
             'communique_id' => $communique->id,
         ], [], [
-            'message' => 'Communique marque comme lu.',
+            'message' => 'Communiqué marqué comme lu.',
         ]);
     }
 
@@ -147,7 +147,7 @@ class CommuniqueController extends ApiController
         $resource = CommuniqueResource::make($communique->fresh()->load('auteur')->loadCount('reads'));
 
         return $this->resource($resource, [], [
-            'message' => 'Communique mis a jour avec succes.',
+            'message' => 'Communiqué mis à jour avec succès.',
         ]);
     }
 
@@ -159,7 +159,7 @@ class CommuniqueController extends ApiController
         $communique->delete();
 
         return $this->success(null, [], [
-            'message' => 'Communique supprime.',
+            'message' => 'Communiqué supprimé.',
         ]);
     }
 }

@@ -7,7 +7,7 @@
         <div class="row g-2 align-items-center">
           <div class="col-lg-7">
             <h1 class="rh-title"><i class="fas fa-chart-bar me-2"></i>Rapport mensuel</h1>
-            <p class="rh-sub">Synthese d'assiduite, de presence et d'heures travaillees — <strong>{{ monthLabel }}</strong></p>
+            <p class="rh-sub">Synthèse d'assiduité, de présence et d'heures travaillées — <strong>{{ monthLabel }}</strong></p>
           </div>
           <div class="col-lg-5">
             <div class="hero-tools">
@@ -222,8 +222,8 @@
         <!-- ═══ Empty state ═══ -->
         <div v-else-if="!loading" class="pm-empty">
           <div class="pm-empty-icon"><i class="fas fa-chart-bar"></i></div>
-          <h5>Aucune donnee pour ce mois</h5>
-          <p>Aucun pointage enregistre{{ selectedOrgane ? ' pour cet organe' : '' }} sur la periode selectionnee.</p>
+          <h5>Aucune donnée pour ce mois</h5>
+          <p>Aucun pointage enregistré{{ selectedOrgane ? ' pour cet organe' : '' }} sur la période sélectionnée.</p>
           <button class="btn-rh main" @click="fetchMonthly"><i class="fas fa-sync me-1"></i> Reactualiser</button>
         </div>
 
@@ -236,7 +236,7 @@
             <div class="pm-summary-body">
               <div class="pm-summary-title">Periode</div>
               <div class="pm-summary-rows">
-                <div class="pm-summary-row"><span>Debut</span><strong>{{ formatDate(dateDebut) }}</strong></div>
+                <div class="pm-summary-row"><span>Début</span><strong>{{ formatDate(dateDébut) }}</strong></div>
                 <div class="pm-summary-row"><span>Fin</span><strong>{{ formatDate(dateFin) }}</strong></div>
                 <div class="pm-summary-row"><span>Duree</span><strong>{{ periodDays }} jours</strong></div>
               </div>
@@ -250,7 +250,7 @@
               <div class="pm-summary-title">Moyennes</div>
               <div class="pm-summary-rows">
                 <div class="pm-summary-row"><span>Heures / agent</span><strong>{{ globalStats.average_hours }}h</strong></div>
-                <div class="pm-summary-row"><span>Taux assiduite</span><strong :style="{ color: rateColor(globalStats.average_attendance) }">{{ globalStats.average_attendance }}%</strong></div>
+                <div class="pm-summary-row"><span>Taux assiduité</span><strong :style="{ color: rateColor(globalStats.average_attendance) }">{{ globalStats.average_attendance }}%</strong></div>
                 <div class="pm-summary-row"><span>Agents suivis</span><strong>{{ globalStats.total_agents }}</strong></div>
               </div>
             </div>
@@ -296,7 +296,7 @@ const selectedOrgane = ref('')
 const agentStats = ref([])
 const globalStats = ref(null)
 const statsByOrgane = ref(null)
-const dateDebut = ref('')
+const dateDébut = ref('')
 const dateFin = ref('')
 
 // Sub-filter state
@@ -331,8 +331,8 @@ const monthLabel = computed(() => {
 const totalHours = computed(() => agentStats.value.reduce((sum, s) => sum + s.total_hours, 0))
 
 const periodDays = computed(() => {
-  if (!dateDebut.value || !dateFin.value) return 0
-  const start = new Date(dateDebut.value)
+  if (!dateDébut.value || !dateFin.value) return 0
+  const start = new Date(dateDébut.value)
   const end = new Date(dateFin.value)
   return Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1
 })
@@ -368,10 +368,11 @@ const senGroups = computed(() => {
     if (!groups[s.group]) groups[s.group] = []
     groups[s.group].push(s)
   }
-  // Fixed order: Direction, Departements, Attaches
+  // Fixed order: Direction, Départements, Attachés
   const ordered = []
   if (groups['Direction']) ordered.push({ label: 'Direction', items: groups['Direction'] })
-  if (groups['Departements']) ordered.push({ label: 'Departements', items: groups['Departements'] })
+  if (groups['Départements']) ordered.push({ label: 'Départements', items: groups['Départements'] })
+  if (groups['Departements']) ordered.push({ label: 'Départements', items: groups['Departements'] })
   if (groups['Attaches']) ordered.push({ label: 'Attaches / Services rattaches', items: groups['Attaches'] })
   return ordered
 })
@@ -471,7 +472,7 @@ async function fetchMonthly() {
     agentStats.value = data.agent_stats || []
     globalStats.value = data.global_stats || null
     statsByOrgane.value = data.stats_by_organe || null
-    dateDebut.value = data.date_debut || ''
+    dateDébut.value = data.date_debut || ''
     dateFin.value = data.date_fin || ''
     senStructures.value = data.sen_structures || []
     allProvinces.value = data.provinces || []

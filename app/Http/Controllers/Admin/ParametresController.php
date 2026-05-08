@@ -322,7 +322,7 @@ class ParametresController extends Controller
         $before = $province->toArray();
         $province->delete();
         $this->recordAudit('DELETE', 'provinces', $province->id, $before);
-        return response()->json(['message' => 'Province supprimee.']);
+        return response()->json(['message' => 'Province supprimée.']);
     }
 
     // ─── GRADES ──────────────────────────────────────────────────
@@ -373,7 +373,7 @@ class ParametresController extends Controller
         $before = $grade->toArray();
         $grade->delete();
         $this->recordAudit('DELETE', 'grades', $grade->id, $before);
-        return response()->json(['message' => 'Grade supprime.']);
+        return response()->json(['message' => 'Grade supprimé.']);
     }
 
     // ─── ROLES ───────────────────────────────────────────────────
@@ -423,7 +423,7 @@ class ParametresController extends Controller
         $before = $role->toArray();
         $role->delete();
         $this->recordAudit('DELETE', 'roles', $role->id, $before);
-        return response()->json(['message' => 'Role supprime.']);
+        return response()->json(['message' => 'Rôle supprimé.']);
     }
 
     // ─── DEPARTMENTS ─────────────────────────────────────────────
@@ -480,7 +480,7 @@ class ParametresController extends Controller
         $before = $department->toArray();
         $department->delete();
         $this->recordAudit('DELETE', 'departments', $department->id, $before);
-        return response()->json(['message' => 'Departement supprime.']);
+        return response()->json(['message' => 'Département supprimé.']);
     }
 
     public function apiDepartmentsTogglePrisEnCharge(Department $department)
@@ -553,7 +553,7 @@ class ParametresController extends Controller
         $before = $fonction->toArray();
         $fonction->delete();
         $this->recordAudit('DELETE', 'fonctions', $fonction->id, $before);
-        return response()->json(['message' => 'Fonction supprimee.']);
+        return response()->json(['message' => 'Fonction supprimée.']);
     }
 
     // ─── SECTIONS ────────────────────────────────────────────────
@@ -609,7 +609,7 @@ class ParametresController extends Controller
         $before = $section->toArray();
         $section->delete();
         $this->recordAudit('DELETE', 'sections', $section->id, $before);
-        return response()->json(['message' => 'Section supprimee.']);
+        return response()->json(['message' => 'Section supprimée.']);
     }
 
     // ─── CELLULES ────────────────────────────────────────────────
@@ -663,7 +663,7 @@ class ParametresController extends Controller
         $before = $cellule->toArray();
         $cellule->delete();
         $this->recordAudit('DELETE', 'cellules', $cellule->id, $before);
-        return response()->json(['message' => 'Cellule supprimee.']);
+        return response()->json(['message' => 'Cellule supprimée.']);
     }
 
     // ─── LOCALITES ───────────────────────────────────────────────
@@ -719,7 +719,7 @@ class ParametresController extends Controller
         $before = $localite->toArray();
         $localite->delete();
         $this->recordAudit('DELETE', 'localites', $localite->id, $before);
-        return response()->json(['message' => 'Localite supprimee.']);
+        return response()->json(['message' => 'Localité supprimée.']);
     }
 
     // ─── ORGANES ─────────────────────────────────────────────────
@@ -772,7 +772,7 @@ class ParametresController extends Controller
         $before = $organe->toArray();
         $organe->delete();
         $this->recordAudit('DELETE', 'organes', $organe->id, $before);
-        return response()->json(['message' => 'Organe supprime.']);
+        return response()->json(['message' => 'Organe supprimé.']);
     }
 
     // ─── UTILISATEURS ────────────────────────────────────────────
@@ -849,7 +849,7 @@ class ParametresController extends Controller
     public function apiUtilisateursDestroy(Request $request, User $user)
     {
         if ($user->is_super_admin) {
-            return response()->json(['message' => 'Cet utilisateur ne peut pas etre supprime.'], 403);
+            return response()->json(['message' => 'Cet utilisateur ne peut pas être supprimé.'], 403);
         }
         if ($user->id === $request->user()->id) {
             return response()->json(['message' => 'Vous ne pouvez pas supprimer votre propre compte.'], 422);
@@ -857,7 +857,7 @@ class ParametresController extends Controller
         $before = $user->toArray();
         $user->delete();
         $this->recordAudit('DELETE', 'users', $user->id, $before);
-        return response()->json(['message' => 'Utilisateur supprime.']);
+        return response()->json(['message' => 'Utilisateur supprimé.']);
     }
 
     /**
@@ -896,7 +896,7 @@ class ParametresController extends Controller
     public function apiUtilisateurFreeze(User $user)
     {
         if ($user->is_super_admin) {
-            return response()->json(['message' => 'Action non autorisee.'], 403);
+            return response()->json(['message' => 'Action non autorisée.'], 403);
         }
 
         $user->update(['is_frozen' => true]);
@@ -906,7 +906,7 @@ class ParametresController extends Controller
 
         $this->recordAudit('UPDATE', 'users', $user->id, ['is_frozen' => false], ['is_frozen' => true]);
 
-        return response()->json(['message' => "Le compte de {$user->name} a ete gele."]);
+        return response()->json(['message' => "Le compte de {$user->name} a été gele."]);
     }
 
     /**
@@ -915,13 +915,13 @@ class ParametresController extends Controller
     public function apiUtilisateurUnfreeze(User $user)
     {
         if ($user->is_super_admin) {
-            return response()->json(['message' => 'Action non autorisee.'], 403);
+            return response()->json(['message' => 'Action non autorisée.'], 403);
         }
 
         $user->update(['is_frozen' => false]);
         $this->recordAudit('UPDATE', 'users', $user->id, ['is_frozen' => true], ['is_frozen' => false]);
 
-        return response()->json(['message' => "Le compte de {$user->name} a ete degele."]);
+        return response()->json(['message' => "Le compte de {$user->name} a été degele."]);
     }
 
     // ─── DOCUMENTS DE TRAVAIL ────────────────────────────────────
@@ -963,7 +963,7 @@ class ParametresController extends Controller
         NotificationService::notifierTousAvecEmail(
             'document_travail',
             'Nouveau document de travail disponible',
-            'Un nouveau document a ete publie : ' . $doc->titre . '.',
+            'Un nouveau document a été publié : ' . $doc->titre . '.',
             '/documents-travail',
             $request->user()->id
         );
@@ -990,8 +990,8 @@ class ParametresController extends Controller
 
         NotificationService::notifierTousAvecEmail(
             'document_travail',
-            'Document de travail mis a jour',
-            'Le document de travail "' . $documentTravail->titre . '" a ete mis a jour.',
+            'Document de travail mis à jour',
+            'Le document de travail "' . $documentTravail->titre . '" a été mis à jour.',
             '/documents-travail',
             $request->user()->id
         );
@@ -1004,7 +1004,7 @@ class ParametresController extends Controller
         $before = $documentTravail->toArray();
         $documentTravail->delete();
         $this->recordAudit('DELETE', 'documents_travail', $documentTravail->id, $before);
-        return response()->json(['message' => 'Document supprime.']);
+        return response()->json(['message' => 'Document supprimé.']);
     }
 
     // ─── CATEGORIES DOCUMENTS ────────────────────────────────────
@@ -1050,7 +1050,7 @@ class ParametresController extends Controller
         $before = $categorieDocument->toArray();
         $categorieDocument->delete();
         $this->recordAudit('DELETE', 'categories_documents', $categorieDocument->id, $before);
-        return response()->json(['message' => 'Categorie supprimee.']);
+        return response()->json(['message' => 'Catégorie supprimée.']);
     }
 
     // ─── LOGS ────────────────────────────────────────────────────
@@ -1144,7 +1144,7 @@ class ParametresController extends Controller
 
         $agent = Agent::find($validated['agent_id']);
         if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
-            abort(403, 'Acces refuse pour cet agent.');
+            abort(403, 'Accès refusé pour cet agent.');
         }
 
         $affectation = DB::transaction(function () use ($validated) {
@@ -1172,7 +1172,7 @@ class ParametresController extends Controller
     public function apiAffectationsUpdate(Request $request, Affectation $affectation)
     {
         if (!$this->scopeService()->canAccessAffectation($request->user(), $affectation)) {
-            abort(403, 'Acces refuse pour cette affectation.');
+            abort(403, 'Accès refusé pour cette affectation.');
         }
 
         $before = $affectation->toArray();
@@ -1180,7 +1180,7 @@ class ParametresController extends Controller
 
         $agent = Agent::find($validated['agent_id']);
         if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
-            abort(403, 'Acces refuse pour cet agent.');
+            abort(403, 'Accès refusé pour cet agent.');
         }
 
         $affectation = DB::transaction(function () use ($affectation, $validated) {
@@ -1290,11 +1290,11 @@ class ParametresController extends Controller
     private function requiredStructureFields(array $payload): array
     {
         return match ($payload['niveau']) {
-            'departement' => ['department_id' => 'Selectionnez le departement/service.'],
-            'section', 'service_rattache' => ['section_id' => 'Selectionnez la section ou le service rattache.'],
-            'cellule' => ['section_id' => 'Selectionnez la section.', 'cellule_id' => 'Selectionnez la cellule.'],
-            'province' => ['province_id' => 'Selectionnez la province.'],
-            'local' => ['province_id' => 'Selectionnez la province.', 'localite_id' => 'Selectionnez la localite.'],
+            'departement' => ['department_id' => 'Sélectionnez le departement/service.'],
+            'section', 'service_rattache' => ['section_id' => 'Sélectionnez la section ou le service rattache.'],
+            'cellule' => ['section_id' => 'Sélectionnez la section.', 'cellule_id' => 'Sélectionnez la cellule.'],
+            'province' => ['province_id' => 'Sélectionnez la province.'],
+            'local' => ['province_id' => 'Sélectionnez la province.', 'localite_id' => 'Sélectionnez la localite.'],
             default => [],
         };
     }
@@ -1317,7 +1317,7 @@ class ParametresController extends Controller
     private function normalizePosteType(?string $value): string
     {
         $value = strtolower(trim((string) $value));
-        $value = str_replace(['dÃ©partement', 'département'], 'departement', $value);
+        $value = str_replace(['département', 'département'], 'departement', $value);
         return $value;
     }
 
@@ -1339,9 +1339,9 @@ class ParametresController extends Controller
         }
 
         $defaultOrganes = [
-            'SEN' => 'SecrÃ©tariat ExÃ©cutif National',
-            'SEP' => 'SecrÃ©tariat ExÃ©cutif Provincial',
-            'SEL' => 'SecrÃ©tariat ExÃ©cutif Local',
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
         ];
         $organeName = Organe::where('code', $active->niveau_administratif)->value('nom')
             ?? ($defaultOrganes[$active->niveau_administratif] ?? $agent->organe);
@@ -1358,7 +1358,7 @@ class ParametresController extends Controller
     public function apiAffectationsDestroy(Affectation $affectation)
     {
         if (!$this->scopeService()->canAccessAffectation(request()->user(), $affectation)) {
-            abort(403, 'Acces refuse pour cette affectation.');
+            abort(403, 'Accès refusé pour cette affectation.');
         }
 
         $before = $affectation->toArray();
@@ -1366,6 +1366,6 @@ class ParametresController extends Controller
         $affectation->delete();
         $this->syncAgentFromActiveAffectation($agent);
         $this->recordAudit('DELETE', 'affectations', $affectation->id, $before);
-        return response()->json(['message' => 'Affectation supprimee.']);
+        return response()->json(['message' => 'Affectation supprimée.']);
     }
 }

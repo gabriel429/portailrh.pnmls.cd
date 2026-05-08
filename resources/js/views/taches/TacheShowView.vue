@@ -2,7 +2,7 @@
   <div class="rh-modern">
     <div class="rh-shell">
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement de la tache..." />
+        <LoadingSpinner message="Chargement de la tâche..." />
       </div>
 
       <template v-else-if="hasLoadedTache">
@@ -11,7 +11,7 @@
             <div class="col-lg-8">
               <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ tache.titre }}</h1>
               <p class="rh-sub">
-                Assignee a {{ tache.agent?.nom_complet }} par {{ tache.createur?.nom_complet }}
+                Assignée à {{ tache.agent?.nom_complet }} par {{ tache.createur?.nom_complet }}
               </p>
             </div>
             <div class="col-lg-4">
@@ -62,11 +62,11 @@
                   <dt class="col-sm-4 text-muted">Validation finale</dt>
                   <dd class="col-sm-8">{{ validationRoleLabel }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Creee par</dt>
+                  <dt class="col-sm-4 text-muted">Créée par</dt>
                   <dd class="col-sm-8">{{ tache.createur?.nom_complet }}</dd>
 
                   <template v-if="tache.date_tache">
-                    <dt class="col-sm-4 text-muted">Date de la tache</dt>
+                    <dt class="col-sm-4 text-muted">Date de la tâche</dt>
                     <dd class="col-sm-8">{{ formatDate(tache.date_tache) }}</dd>
                   </template>
 
@@ -77,7 +77,7 @@
                   <dd class="col-sm-8">{{ formatDateTime(tache.created_at) }}</dd>
 
                   <template v-if="tache.date_echeance">
-                    <dt class="col-sm-4 text-muted">Echeance</dt>
+                    <dt class="col-sm-4 text-muted">Échéance</dt>
                     <dd class="col-sm-8">
                       {{ formatDate(tache.date_echeance) }}
                       <span v-if="isOverdue" class="badge bg-danger ms-1">En retard</span>
@@ -166,7 +166,7 @@
             <div v-if="(isAssigne || canManage) && tache.validation_statut !== 'validee'" class="dash-panel mt-3">
               <header class="panel-head">
                 <div>
-                  <h3 class="panel-title"><i class="fas fa-exchange-alt me-2 text-warning"></i>Mettre a jour le statut</h3>
+                  <h3 class="panel-title"><i class="fas fa-exchange-alt me-2 text-warning"></i>Mettre à jour le statut</h3>
                 </div>
               </header>
               <div class="p-3">
@@ -195,7 +195,7 @@
                     <div class="col-12">
                       <div class="alert alert-info py-2 mb-0 small">
                         <i class="fas fa-info-circle me-1"></i>
-                        Le document est obligatoire si vous soumettez la tache a validation ou si vous modifiez le pourcentage de progression.
+                        Le document est obligatoire si vous soumettez la tâche à validation ou si vous modifiez le pourcentage de progression.
                       </div>
                       <div v-if="statusDocumentName" class="task-inline-file mt-2">
                         <span><i class="fas fa-file me-1"></i>{{ statusDocumentName }}</span>
@@ -207,7 +207,7 @@
                     <div class="col-12">
                       <button type="submit" class="btn btn-warning" :disabled="updatingStatut">
                         <span v-if="updatingStatut" class="spinner-border spinner-border-sm me-1"></span>
-                        <i v-else class="fas fa-sync-alt me-1"></i> Mettre a jour
+                        <i v-else class="fas fa-sync-alt me-1"></i> Mettre à jour
                       </button>
                     </div>
                   </div>
@@ -286,7 +286,7 @@
             <div class="dash-panel mt-3">
               <header class="panel-head">
                 <div>
-                  <h3 class="panel-title"><i class="fas fa-stream me-2 text-secondary"></i>Journal de la tache</h3>
+                  <h3 class="panel-title"><i class="fas fa-stream me-2 text-secondary"></i>Journal de la tâche</h3>
                   <p class="panel-sub">{{ histories.length }} action{{ histories.length > 1 ? 's' : '' }}</p>
                 </div>
               </header>
@@ -320,18 +320,18 @@
             <div class="dash-panel mt-3" v-if="isAssigne || canManage">
               <header class="panel-head">
                 <div>
-                  <h3 class="panel-title"><i class="fas fa-file-signature me-2 text-primary"></i>Rapports d execution</h3>
-                  <p class="panel-sub">Soumission et consultation des rapports lies a cette tache.</p>
+                  <h3 class="panel-title"><i class="fas fa-file-signature me-2 text-primary"></i>Rapports d’exécution</h3>
+                  <p class="panel-sub">Soumission et consultation des rapports liés à cette tâche.</p>
                 </div>
               </header>
               <div class="p-3">
                 <form v-if="isAssigne" class="row g-3" @submit.prevent="handleSubmitReport">
                   <div class="col-12">
                     <label class="form-label fw-bold">Rapport</label>
-                    <textarea v-model="reportForm.rapport" class="form-control" rows="3" required placeholder="Resume du travail effectue, blocages, resultats..."></textarea>
+                    <textarea v-model="reportForm.rapport" class="form-control" rows="3" required placeholder="Résumé du travail effectué, blocages, résultats..."></textarea>
                   </div>
                   <div class="col-12">
-                    <label class="form-label fw-bold">Piece jointe</label>
+                    <label class="form-label fw-bold">Pièce jointe</label>
                     <input ref="reportFileInput" type="file" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx" @change="handleReportFileChange">
                   </div>
                   <div class="col-12">
@@ -350,7 +350,7 @@
                     </div>
                     <div class="small mt-1" style="white-space: pre-wrap;">{{ report.rapport }}</div>
                     <a v-if="reportFileUrl(report)" :href="reportFileUrl(report)" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary mt-2">
-                      <i class="fas fa-paperclip me-1"></i> Ouvrir la piece jointe
+                      <i class="fas fa-paperclip me-1"></i> Ouvrir la pièce jointe
                     </a>
                   </div>
                 </div>
@@ -367,7 +367,7 @@
       <div v-if="showEditPanel" class="modal-backdrop-overlay" @click.self="showEditPanel = false">
         <div class="edit-tache-panel">
           <div class="edit-tache-head">
-            <h5><i class="fas fa-edit me-2"></i>Modifier la tache</h5>
+            <h5><i class="fas fa-edit me-2"></i>Modifier la tâche</h5>
             <button class="btn-close" @click="showEditPanel = false"></button>
           </div>
           <div class="edit-tache-body">
@@ -390,10 +390,10 @@
                 </select>
               </div>
               <div class="col-sm-6">
-                <label class="form-label fw-semibold">Source emetteur</label>
+                <label class="form-label fw-semibold">Source émettrice</label>
                 <select v-model="editForm.source_emetteur" class="form-select">
                   <option value="directeur">Directeur</option>
-                  <option value="assistant_departement">Assistant / Secretaire du departement</option>
+                  <option value="assistant_departement">Assistant / Secrétaire du département</option>
                   <option value="sen">SEN</option>
                   <option value="sep">SEP</option>
                   <option value="secom">SECOM</option>
@@ -405,11 +405,11 @@
             </div>
             <div class="row g-3 mb-3">
               <div class="col-sm-6">
-                <label class="form-label fw-semibold">Echeance</label>
+                <label class="form-label fw-semibold">Échéance</label>
                 <input v-model="editForm.date_echeance" type="date" class="form-control" />
               </div>
               <div class="col-sm-6">
-                <label class="form-label fw-semibold">Date de la tache</label>
+                <label class="form-label fw-semibold">Date de la tâche</label>
                 <input v-model="editForm.date_tache" type="date" class="form-control" />
               </div>
             </div>
@@ -425,7 +425,7 @@
 
       <div v-else-if="!hasLoadedTache" class="text-center py-5">
         <i class="fas fa-lock fa-3x text-muted mb-3 d-block"></i>
-        <p class="text-muted">Tache introuvable ou acces refuse.</p>
+        <p class="text-muted">Tâche introuvable ou accès refusé.</p>
         <button class="btn btn-outline-primary mt-2" @click="router.back()">
           <i class="fas fa-arrow-left me-1"></i> Retour
         </button>
@@ -509,7 +509,7 @@ function extractTachePayload(responseData) {
 
 function applyTacheResponse(responseData) {
   const payload = extractTachePayload(responseData)
-  if (!payload) throw new Error('Payload tache invalide')
+  if (!payload) throw new Error('Payload tâche invalide')
 
   tache.value = payload
   isCreateur.value = Boolean(responseData?.isCreateur ?? responseData?.meta?.isCreateur ?? isCreateur.value)
@@ -530,11 +530,11 @@ async function loadTache() {
     applyTacheResponse(data)
     await loadReports()
   } catch (err) {
-    console.error('Erreur chargement tache', err)
+    console.error('Erreur chargement tâche', err)
     tache.value = null
     isCreateur.value = false
     isAssigne.value = false
-    ui.addToast('Tache introuvable ou acces refuse.', 'danger')
+    ui.addToast('Tâche introuvable ou accès refusé.', 'danger')
   } finally {
     loading.value = false
   }
@@ -561,9 +561,9 @@ async function handleUpdateStatut() {
     applyTacheResponse(data)
     removeStatusDocument()
     await loadReports()
-    ui.addToast('Statut mis a jour avec succes.', 'success')
+    ui.addToast('Statut mis à jour avec succès.', 'success')
   } catch (err) {
-    ui.addToast(err.response?.data?.message || 'Erreur lors de la mise a jour.', 'danger')
+    ui.addToast(err.response?.data?.message || 'Erreur lors de la mise à jour.', 'danger')
   } finally {
     updatingStatut.value = false
   }
@@ -575,7 +575,7 @@ async function handleAddComment() {
     const { data } = await addCommentaire(route.params.id, commentForm.value)
     applyTacheResponse(data)
     commentForm.value = { contenu: '', type_commentaire: 'commentaire' }
-    ui.addToast('Commentaire ajoute.', 'success')
+    ui.addToast('Commentaire ajouté.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur.', 'danger')
   } finally {
@@ -589,7 +589,7 @@ async function handleValidateFinal() {
     const { data } = await validateTask(route.params.id, validationForm.value)
     applyTacheResponse(data)
     validationForm.value.commentaire = ''
-    ui.addToast('Tache validee avec succes.', 'success')
+    ui.addToast('Tâche validée avec succès.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la validation finale.', 'danger')
   } finally {
@@ -599,7 +599,7 @@ async function handleValidateFinal() {
 
 async function handleRejectFinal() {
   if (!validationForm.value.commentaire?.trim()) {
-    ui.addToast('Ajoutez un commentaire pour retourner la tache en correction.', 'warning')
+    ui.addToast('Ajoutez un commentaire pour retourner la tâche en correction.', 'warning')
     return
   }
 
@@ -608,7 +608,7 @@ async function handleRejectFinal() {
     const { data } = await rejectTask(route.params.id, validationForm.value)
     applyTacheResponse(data)
     validationForm.value.commentaire = ''
-    ui.addToast('Tache retournee pour correction.', 'success')
+    ui.addToast('Tâche retournée pour correction.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors du rejet.', 'danger')
   } finally {
@@ -650,7 +650,7 @@ async function handleSubmitReport() {
     reportFile.value = null
     if (reportFileInput.value) reportFileInput.value.value = ''
     await loadReports()
-    ui.addToast('Rapport soumis avec succes.', 'success')
+    ui.addToast('Rapport soumis avec succès.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la soumission du rapport.', 'danger')
   } finally {
@@ -696,7 +696,7 @@ function statutBadge(statut) {
 
 function statutLabel(statut) {
   const map = {
-    terminee: 'Terminee',
+    terminee: 'Terminée',
     en_cours: 'En cours',
     nouvelle: 'En attente',
     bloquee: 'Bloquee',
@@ -718,8 +718,8 @@ function validationLabel(statut) {
   const map = {
     non_requise: 'Sans validation',
     a_valider: 'A valider',
-    validee: 'Validee',
-    rejetee: 'Rejetee',
+    validee: 'Validée',
+    rejetee: 'Rejetéee',
   }
   return map[statut] || 'Non defini'
 }
@@ -779,7 +779,7 @@ async function handleEdit() {
     const { data } = await update(route.params.id, editForm.value)
     applyTacheResponse(data)
     showEditPanel.value = false
-    ui.addToast('Tache mise a jour.', 'success')
+    ui.addToast('Tâche mise à jour.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la modification.', 'danger')
   } finally {
@@ -788,11 +788,11 @@ async function handleEdit() {
 }
 
 async function handleDelete() {
-  if (!confirm('Supprimer cette tache definitivement ?')) return
+  if (!confirm('Supprimer cette tâche définitivement ?')) return
   deleting.value = true
   try {
     await destroy(route.params.id)
-    ui.addToast('Tache supprimee.', 'success')
+    ui.addToast('Tâche supprimée.', 'success')
     router.push({ name: 'taches.index' })
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')

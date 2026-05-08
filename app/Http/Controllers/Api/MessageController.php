@@ -136,7 +136,7 @@ class MessageController extends ApiController
         // Ensure the message belongs to this user
         $agent = $user->agent;
         if ($agent && $message->agent_id !== $agent->id) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         // Auto-mark as read

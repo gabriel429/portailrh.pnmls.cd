@@ -39,7 +39,7 @@
     <div v-else>
       <div v-if="categories.length === 0" class="empty-state">
         <i class="fas fa-tags"></i>
-        <p>Aucune categorie trouvee.</p>
+        <p>Aucune catégorie trouvee.</p>
       </div>
 
       <div v-else class="data-card">
@@ -123,7 +123,7 @@ async function fetchCategories() {
 }
 
 async function deleteCategorie(cat) {
-  if (!confirm('Etes-vous sur de vouloir supprimer cette categorie ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) return
   try {
     await client.delete(`/admin/categories-documents/${cat.id}`)
     categories.value = categories.value.filter(c => c.id !== cat.id)

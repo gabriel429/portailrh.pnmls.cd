@@ -11,30 +11,30 @@
             <div class="hero-tools">
               <template v-if="auth.isSENA">
                 <router-link v-if="!isSENScope" :to="{ name: 'taches.index', query: { scope: 'sen' } }" class="btn-rh alt">
-                  <i class="fas fa-users me-1"></i> Taches sous mon suivi
+                  <i class="fas fa-users me-1"></i> Tâches sous mon suivi
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                  <i class="fas fa-arrow-left me-1"></i> Mes taches
+                  <i class="fas fa-arrow-left me-1"></i> Mes tâches
                 </router-link>
               </template>
               <template v-else-if="auth.isSEP">
                 <router-link v-if="!isProvinceScope" :to="{ name: 'taches.index', query: { scope: 'province' } }" class="btn-rh alt">
-                  <i class="fas fa-map-marker-alt me-1"></i> Taches province
+                  <i class="fas fa-map-marker-alt me-1"></i> Tâches de la province
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                  <i class="fas fa-arrow-left me-1"></i> Mes taches
+                  <i class="fas fa-arrow-left me-1"></i> Mes tâches
                 </router-link>
               </template>
               <template v-else>
                 <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
-                  <i class="fas fa-clipboard-list me-1"></i> Taches assignees par moi
+                  <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
                 </router-link>
                 <router-link v-else :to="{ name: 'taches.index' }" class="btn-rh alt">
-                  <i class="fas fa-arrow-left me-1"></i> Retour a mes taches
+                  <i class="fas fa-arrow-left me-1"></i> Retour à mes tâches
                 </router-link>
               </template>
               <router-link :to="{ name: 'taches.create' }" class="btn-rh main">
-                <i class="fas fa-plus-circle me-1"></i> Nouvelle tache
+                <i class="fas fa-plus-circle me-1"></i> Nouvelle tâche
               </router-link>
             </div>
           </div>
@@ -42,7 +42,7 @@
       </section>
 
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement des taches..." />
+        <LoadingSpinner message="Chargement des tâches..." />
       </div>
 
       <template v-else>
@@ -92,7 +92,7 @@
                   <th>{{ showAssignedByMe || isDeptScope || isSENScope || isProvinceScope ? 'Assigne a' : 'De' }}</th>
                   <th>Priorite</th>
                   <th>Statut</th>
-                  <th>Echeance</th>
+                  <th>Échéance</th>
                   <th>Date</th>
                   <th></th>
                 </tr>
@@ -192,7 +192,7 @@ const statusTabs = computed(() => {
     { key: 'nouvelle', label: 'En attente', icon: 'fas fa-star', color: 'tab-nouvelle', count: items.filter((t) => t.statut === 'nouvelle').length },
     { key: 'en_cours', label: 'En cours', icon: 'fas fa-spinner', color: 'tab-en-cours', count: items.filter((t) => t.statut === 'en_cours').length },
     { key: 'bloquee', label: 'Bloquees', icon: 'fas fa-ban', color: 'tab-bloquee', count: items.filter((t) => t.statut === 'bloquee').length },
-    { key: 'terminee', label: 'Terminees', icon: 'fas fa-check-circle', color: 'tab-terminee', count: items.filter((t) => t.statut === 'terminee').length },
+    { key: 'terminee', label: 'Terminées', icon: 'fas fa-check-circle', color: 'tab-terminee', count: items.filter((t) => t.statut === 'terminee').length },
     { key: 'en_retard', label: 'En retard', icon: 'fas fa-exclamation-triangle', color: 'tab-en-retard', count: items.filter((t) => isOverdue(t)).length },
   ]
 })
@@ -208,46 +208,46 @@ const filteredTaches = computed(() => {
 })
 
 const pageTitle = computed(() => {
-  if (isDeptScope.value) return 'Taches du departement'
-  if (isSENScope.value) return auth.isSENA ? 'Taches sous mon suivi' : 'Taches du SEN'
-  if (isProvinceScope.value) return 'Taches de la province'
-  return showAssignedByMe.value ? 'Taches assignees par moi' : 'Mes taches'
+  if (isDeptScope.value) return 'Tâches du département'
+  if (isSENScope.value) return auth.isSENA ? 'Tâches sous mon suivi' : 'Tâches du SEN'
+  if (isProvinceScope.value) return 'Tâches de la province'
+  return showAssignedByMe.value ? 'Tâches assignées par moi' : 'Mes tâches'
 })
 
 const pageSubtitle = computed(() => {
-  if (isDeptScope.value) return 'Vue d ensemble des taches assignees aux agents du departement.'
+  if (isDeptScope.value) return 'Vue d’ensemble des tâches assignées aux agents du département.'
   if (isSENScope.value) return auth.isSENA
-    ? 'Taches des attaches du SEN, des directeurs de departement et des SEP suivis par le Secretariat de Direction.'
-    : 'Toutes les taches assignees aux agents du Secretariat Executif National.'
-  if (isProvinceScope.value) return 'Vue provinciale des taches assignees aux agents de votre province.'
+    ? 'Tâches des attachés du SEN, des directeurs de département et des SEP suivis par le Secrétariat de direction.'
+    : 'Toutes les tâches assignées aux agents du Secrétariat exécutif national.'
+  if (isProvinceScope.value) return 'Vue provinciale des tâches assignées aux agents de votre province.'
   return showAssignedByMe.value
-    ? 'Suivi des taches que vous attribuez aux agents de votre structure.'
-    : 'Espace des taches qui vous sont attribuees par votre direction, le SEN, le SEP ou le SEL.'
+    ? 'Suivi des tâches que vous attribuez aux agents de votre structure.'
+    : 'Espace des tâches qui vous sont attribuées par votre direction, le SEN, le SEP ou le SEL.'
 })
 
 const panelTitle = computed(() => {
-  if (isDeptScope.value) return 'Taches du departement'
-  if (isSENScope.value) return auth.isSENA ? 'Taches sous mon suivi' : 'Taches du SEN'
-  if (isProvinceScope.value) return 'Taches de la province'
-  return showAssignedByMe.value ? 'Taches que j ai assignees' : 'Taches qui me sont assignees'
+  if (isDeptScope.value) return 'Tâches du département'
+  if (isSENScope.value) return auth.isSENA ? 'Tâches sous mon suivi' : 'Tâches du SEN'
+  if (isProvinceScope.value) return 'Tâches de la province'
+  return showAssignedByMe.value ? 'Tâches que j’ai assignées' : 'Tâches qui me sont assignées'
 })
 
 const panelSubtitle = computed(() => {
-  if (isDeptScope.value) return 'Toutes les taches assignees aux agents du departement.'
+  if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
   if (isSENScope.value) return auth.isSENA
-    ? 'Vue d ensemble des taches autorisees dans votre perimetre SENA.'
-    : 'Vue d ensemble des taches assignees aux agents du SEN.'
-  if (isProvinceScope.value) return 'Toutes les taches assignees aux agents de la province.'
+    ? 'Vue d’ensemble des tâches autorisées dans votre périmètre SENA.'
+    : 'Vue d’ensemble des tâches assignées aux agents du SEN.'
+  if (isProvinceScope.value) return 'Toutes les tâches assignées aux agents de la province.'
   return showAssignedByMe.value
-    ? 'Liste des taches que vous avez affectees aux agents.'
-    : 'Taches attribuees par votre direction, le SEN, le SEP ou le SEL.'
+    ? 'Liste des tâches que vous avez affectées aux agents.'
+    : 'Tâches attribuées par votre direction, le SEN, le SEP ou le SEL.'
 })
 
 const emptyStateText = computed(() => {
-  if (isDeptScope.value) return 'Aucune tache pour ce filtre dans ce departement.'
-  if (isSENScope.value) return auth.isSENA ? 'Aucune tache dans votre perimetre SENA pour ce filtre.' : 'Aucune tache SEN pour ce filtre.'
-  if (isProvinceScope.value) return 'Aucune tache pour ce filtre dans cette province.'
-  return showAssignedByMe.value ? 'Aucune tache assignee par vous pour ce filtre.' : 'Aucune tache assignee pour ce filtre.'
+  if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
+  if (isSENScope.value) return auth.isSENA ? 'Aucune tâche dans votre périmètre SENA pour ce filtre.' : 'Aucune tâche SEN pour ce filtre.'
+  if (isProvinceScope.value) return 'Aucune tâche pour ce filtre dans cette province.'
+  return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
 })
 
 async function loadTaches() {
@@ -274,7 +274,7 @@ async function loadTaches() {
       auth.user?.role?.nom_role === 'SEL'
     )
   } catch {
-    ui.addToast('Erreur lors du chargement des taches.', 'danger')
+    ui.addToast('Erreur lors du chargement des tâches.', 'danger')
   } finally {
     loading.value = false
   }
@@ -312,7 +312,7 @@ function statutBadge(statut) {
 
 function statutLabel(statut) {
   const map = {
-    terminee: 'Terminee',
+    terminee: 'Terminée',
     en_cours: 'En cours',
     nouvelle: 'En attente',
     bloquee: 'Bloquee',

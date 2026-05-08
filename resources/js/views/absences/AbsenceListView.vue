@@ -5,7 +5,7 @@
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-calendar-times me-2"></i>Mes Absences</h1>
-            <p class="rh-sub">Liste des jours ou votre presence n'a pas ete enregistree.</p>
+            <p class="rh-sub">Liste des jours où votre présence n’a pas été enregistrée.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">

@@ -190,7 +190,7 @@ async function handleDelete(notif) {
     notifications.value = notifications.value.filter(n => n.id !== notif.id)
     if (!notif.lu) nonLuesCount.value = Math.max(0, nonLuesCount.value - 1)
     meta.value.total--
-    ui.addToast('Notification supprimee.', 'success')
+    ui.addToast('Notification supprimée.', 'success')
   } catch {
     ui.addToast('Erreur.', 'danger')
   }

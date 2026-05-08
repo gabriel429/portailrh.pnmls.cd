@@ -25,9 +25,9 @@
       <div class="card-body">
         <form @submit.prevent="submit">
           <div class="row g-3">
-            <!-- Categorie -->
+            <!-- Catégorie -->
             <div class="col-md-6">
-              <label for="categorie" class="form-label">Categorie <span class="text-danger">*</span></label>
+              <label for="categorie" class="form-label">Catégorie <span class="text-danger">*</span></label>
               <select
                 id="categorie"
                 v-model="form.categorie"
@@ -35,7 +35,7 @@
                 :class="{ 'is-invalid': errors.categorie }"
                 required
               >
-                <option value="">-- Selectionner une categorie --</option>
+                <option value="">-- Sélectionner une catégorie --</option>
                 <option value="A">A</option>
                 <option value="B">B</option>
                 <option value="C">C</option>
@@ -45,7 +45,7 @@
 
             <!-- Nom categorie -->
             <div class="col-md-6">
-              <label for="nom_categorie" class="form-label">Nom de la categorie <span class="text-danger">*</span></label>
+              <label for="nom_categorie" class="form-label">Nom de la catégorie <span class="text-danger">*</span></label>
               <input
                 id="nom_categorie"
                 v-model="form.nom_categorie"
@@ -95,7 +95,7 @@
             <router-link to="/admin/grades" class="btn btn-outline-secondary">Annuler</router-link>
             <button type="submit" class="btn btn-primary" :disabled="saving">
               <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
             </button>
           </div>
         </form>

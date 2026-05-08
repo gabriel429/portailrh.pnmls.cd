@@ -27,7 +27,7 @@
 defineProps({
     show: { type: Boolean, default: false },
     title: { type: String, default: 'Confirmation' },
-    message: { type: String, default: 'Etes-vous sur de vouloir continuer ?' },
+    message: { type: String, default: 'Êtes-vous sûr de vouloir continuer ?' },
     loading: { type: Boolean, default: false },
 })
 

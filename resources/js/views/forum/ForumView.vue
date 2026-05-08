@@ -27,7 +27,7 @@
           class="forum-textarea"
           rows="4"
           maxlength="3000"
-          placeholder="Ecrire un message au forum..."
+          placeholder="Écrire un message au forum..."
           required
         ></textarea>
         <div class="forum-composer-footer">
@@ -112,7 +112,7 @@
                     </button>
                   </div>
                   <p>{{ item.contenu }}</p>
-                  <div class="forum-comment-reactions" aria-label="Reactions au commentaire">
+                  <div class="forum-comment-reactions" aria-label="Réactions au commentaire">
                     <button
                       type="button"
                       class="forum-reaction-btn"
@@ -244,7 +244,7 @@ async function submitPost() {
     posts.value = [normalizePost(data.data), ...posts.value]
     meta.value.total = (meta.value.total || 0) + 1
     form.value = { titre: '', contenu: '' }
-    ui.addToast(data.message || 'Sujet publie.', 'success')
+    ui.addToast(data.message || 'Sujet publié.', 'success')
   } catch (error) {
     const message = error.response?.data?.message || 'Impossible de publier le sujet.'
     ui.addToast(message, 'danger')
@@ -263,7 +263,7 @@ async function submitComment(post) {
     post.commentaires = [...post.commentaires, normalizeComment(data.data)]
     post.comments_count = (post.comments_count || 0) + 1
     post.commentForm = ''
-    ui.addToast(data.message || 'Commentaire publie.', 'success')
+    ui.addToast(data.message || 'Commentaire publié.', 'success')
   } catch (error) {
     const message = error.response?.data?.message || 'Impossible de publier le commentaire.'
     ui.addToast(message, 'danger')
@@ -281,7 +281,7 @@ async function reactToCommentAction(post, item, reaction) {
     const updated = normalizeComment(data.data)
     Object.assign(item, updated, { reacting: false })
   } catch (error) {
-    const message = error.response?.data?.message || 'Impossible d enregistrer votre reaction.'
+      const message = error.response?.data?.message || 'Impossible d’enregistrer votre réaction.'
     ui.addToast(message, 'danger')
   } finally {
     item.reacting = false
@@ -295,7 +295,7 @@ async function deletePost(post) {
     const { data } = await remove(post.id)
     posts.value = posts.value.filter(item => item.id !== post.id)
     meta.value.total = Math.max(0, (meta.value.total || 0) - 1)
-    ui.addToast(data.message || 'Sujet supprime.', 'success')
+    ui.addToast(data.message || 'Sujet supprimé.', 'success')
   } catch {
     ui.addToast('Impossible de supprimer ce sujet.', 'danger')
   }
@@ -308,7 +308,7 @@ async function deleteComment(post, item) {
     const { data } = await removeComment(item.id)
     post.commentaires = post.commentaires.filter(commentaire => commentaire.id !== item.id)
     post.comments_count = Math.max(0, (post.comments_count || 0) - 1)
-    ui.addToast(data.message || 'Commentaire supprime.', 'success')
+    ui.addToast(data.message || 'Commentaire supprimé.', 'success')
   } catch {
     ui.addToast('Impossible de supprimer ce commentaire.', 'danger')
   }

@@ -7,7 +7,7 @@
           {{ isEdit ? 'Modifier la localite' : 'Nouvelle localite' }}
         </h4>
         <p class="text-muted mb-0">
-          {{ isEdit ? 'Modifiez les informations de cette localite.' : 'Remplissez le formulaire pour creer une nouvelle localite.' }}
+          {{ isEdit ? 'Modifiez les informations de cette localite.' : 'Remplissez le formulaire pour créer une nouvelle localite.' }}
         </p>
       </div>
       <router-link to="/admin/localites" class="btn btn-outline-secondary">
@@ -65,7 +65,7 @@
             <div class="mb-3">
               <label for="type" class="form-label fw-bold">Type <span class="text-danger">*</span></label>
               <select id="type" v-model="form.type" class="form-select" required>
-                <option value="">-- Selectionnez --</option>
+                <option value="">-- Sélectionnez --</option>
                 <option value="territoire">Territoire</option>
                 <option value="zone_de_sante">Zone de sante</option>
                 <option value="commune">Commune</option>
@@ -88,7 +88,7 @@
             <div class="mb-4">
               <label for="province_id" class="form-label fw-bold">Province <span class="text-danger">*</span></label>
               <select id="province_id" v-model="form.province_id" class="form-select" required>
-                <option value="">-- Selectionnez une province --</option>
+                <option value="">-- Sélectionnez une province --</option>
                 <option v-for="p in provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
               </select>
             </div>
@@ -97,7 +97,7 @@
               <button type="submit" class="btn btn-primary" :disabled="saving">
                 <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
                 <i v-else class="fas fa-save me-1"></i>
-                {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+                {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
               </button>
               <router-link to="/admin/localites" class="btn btn-outline-secondary">Annuler</router-link>
             </div>

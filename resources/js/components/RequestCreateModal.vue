@@ -3,7 +3,7 @@
     <div v-if="show" class="rcm-overlay" @click.self="close">
       <div class="rcm-dialog">
         <div class="rcm-header">
-          <h5 class="rcm-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle Demande</h5>
+          <h5 class="rcm-title"><i class="fas fa-plus-circle me-2"></i>Nouvelle demande</h5>
           <button class="rcm-close" @click="close"><i class="fas fa-times"></i></button>
         </div>
         <div class="rcm-body">

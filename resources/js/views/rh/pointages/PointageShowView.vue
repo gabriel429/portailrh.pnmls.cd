@@ -35,11 +35,11 @@
                 </div>
                 <div class="col-md-6">
                   <small class="text-muted">Entree</small>
-                  <p class="mb-0">{{ pointage.heure_entree ? formatTime(pointage.heure_entree) : 'Non enregistree' }}</p>
+                  <p class="mb-0">{{ pointage.heure_entree ? formatTime(pointage.heure_entree) : 'Non enregistrée' }}</p>
                 </div>
                 <div class="col-md-6">
                   <small class="text-muted">Sortie</small>
-                  <p class="mb-0">{{ pointage.heure_sortie ? formatTime(pointage.heure_sortie) : 'Non enregistree' }}</p>
+                  <p class="mb-0">{{ pointage.heure_sortie ? formatTime(pointage.heure_sortie) : 'Non enregistrée' }}</p>
                 </div>
                 <div class="col-md-6">
                   <small class="text-muted">Heures travaillees</small>
@@ -63,9 +63,9 @@
             </div>
 
             <div class="rh-list-card p-3 mb-3">
-              <h6 class="mb-2"><i class="fas fa-chart-bar me-2"></i>Resume</h6>
+              <h6 class="mb-2"><i class="fas fa-chart-bar me-2"></i>Résumé</h6>
               <p class="mb-1"><small class="text-muted">ID:</small> #{{ pointage.id }}</p>
-              <p class="mb-1"><small class="text-muted">Cree le:</small> {{ formatDateTime(pointage.created_at) }}</p>
+              <p class="mb-1"><small class="text-muted">Créé le :</small> {{ formatDateTime(pointage.created_at) }}</p>
               <p class="mb-0"><small class="text-muted">Maj:</small> {{ formatDateTime(pointage.updated_at) }}</p>
             </div>
 
@@ -93,7 +93,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer le pointage"
-      message="Etes-vous sur de vouloir supprimer ce pointage ? Cette action est irreversible."
+      message="Êtes-vous sûr de vouloir supprimer ce pointage ? Cette action est irréversible."
       :loading="deleting"
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
@@ -162,7 +162,7 @@ async function doDelete() {
     deleting.value = true
     try {
         await pointagesApi.remove(pointage.value.id)
-        ui.addToast('Pointage supprime avec succes.', 'success')
+        ui.addToast('Pointage supprimé avec succès.', 'success')
         showDeleteModal.value = false
         router.push({ name: 'rh.pointages.index' })
     } catch {

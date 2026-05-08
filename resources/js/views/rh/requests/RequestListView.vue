@@ -7,7 +7,7 @@
           <h2>
             <i class="fas fa-tasks me-2" v-if="isRH"></i>
             <i class="fas fa-paper-plane me-2" v-else></i>
-            {{ isRH ? 'Gestion des demandes' : 'Mes Demandes' }}
+            {{ isRH ? 'Gestion des demandes' : 'Mes demandes' }}
           </h2>
           <p v-if="isRH">Suivi, validation et historisation des demandes des agents.</p>
           <p v-else>Suivez l'état de vos demandes de congé, absence et permission.</p>
@@ -794,7 +794,7 @@ onMounted(() => {
 }
 .req-filter-warning.active .req-filter-icon { background: rgba(255, 255, 255, .2); color: #fff; }
 
-/* Success (Approuve) */
+/* Success (Approuvée) */
 .req-filter-success .req-filter-icon { background: #dcfce7; color: #059669; }
 .req-filter-success:hover { border-color: #059669; color: #166534; }
 .req-filter-success.active {
@@ -805,7 +805,7 @@ onMounted(() => {
 }
 .req-filter-success.active .req-filter-icon { background: rgba(255, 255, 255, .2); color: #fff; }
 
-/* Danger (Rejete) */
+/* Danger (Rejetée) */
 .req-filter-danger .req-filter-icon { background: #fee2e2; color: #dc2626; }
 .req-filter-danger:hover { border-color: #dc2626; color: #991b1b; }
 .req-filter-danger.active {
@@ -816,7 +816,7 @@ onMounted(() => {
 }
 .req-filter-danger.active .req-filter-icon { background: rgba(255, 255, 255, .2); color: #fff; }
 
-/* Secondary (Annule) */
+/* Secondary (Annulée) */
 .req-filter-secondary .req-filter-icon { background: #f1f5f9; color: #6b7280; }
 .req-filter-secondary:hover { border-color: #6b7280; color: #374151; }
 .req-filter-secondary.active {

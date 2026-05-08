@@ -4,7 +4,7 @@
       <router-link :to="{ name: 'admin.categories-documents.index' }" class="btn btn-outline-secondary me-3">
         <i class="fas fa-arrow-left"></i>
       </router-link>
-      <h4 class="mb-0">{{ isEdit ? 'Modifier la Categorie' : 'Nouvelle Categorie de Documents' }}</h4>
+      <h4 class="mb-0">{{ isEdit ? 'Modifier la Categorie' : 'Nouvelle Catégorie de Documents' }}</h4>
     </div>
 
     <div v-if="loadingData" class="text-center py-5">
@@ -53,7 +53,7 @@
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Creer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Créer' }}
             </button>
             <router-link :to="{ name: 'admin.categories-documents.index' }" class="btn btn-secondary">Annuler</router-link>
           </div>
@@ -95,7 +95,7 @@ async function fetchCategorie() {
       actif: !!cat.actif,
     }
   } catch (e) {
-    error.value = e.response?.data?.message || 'Erreur lors du chargement de la categorie.'
+    error.value = e.response?.data?.message || 'Erreur lors du chargement de la catégorie.'
   } finally {
     loadingData.value = false
   }

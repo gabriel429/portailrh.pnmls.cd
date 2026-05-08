@@ -33,7 +33,7 @@
           <div v-if="!isEdit" class="mb-3">
             <label for="agent_id" class="form-label">Agent <span class="text-danger">*</span></label>
             <select id="agent_id" v-model="form.agent_id" class="form-select" :class="{ 'is-invalid': validationErrors.agent_id }" required>
-              <option value="">-- Selectionner un agent --</option>
+              <option value="">-- Sélectionner un agent --</option>
               <option v-for="agent in agents" :key="agent.id" :value="agent.id">
                 {{ agent.nom }} {{ agent.postnom || '' }} {{ agent.prenom || '' }}
               </option>
@@ -48,9 +48,9 @@
 
           <!-- Role -->
           <div class="mb-3">
-            <label for="role_id" class="form-label">Role <span class="text-danger">*</span></label>
+            <label for="role_id" class="form-label">Rôle <span class="text-danger">*</span></label>
             <select id="role_id" v-model="form.role_id" class="form-select" :class="{ 'is-invalid': validationErrors.role_id }" required>
-              <option value="">-- Selectionner un role --</option>
+              <option value="">-- Sélectionner un rôle --</option>
               <option v-for="role in roles" :key="role.id" :value="role.id">
                 {{ role.nom_role }}
               </option>
@@ -79,7 +79,7 @@
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Creer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Créer' }}
             </button>
             <router-link :to="{ name: 'admin.utilisateurs.index' }" class="btn btn-secondary">Annuler</router-link>
           </div>

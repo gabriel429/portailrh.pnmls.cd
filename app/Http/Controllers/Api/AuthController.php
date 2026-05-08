@@ -91,7 +91,7 @@ class AuthController extends Controller
                 }
 
                 return response()->json([
-                    'message' => 'Votre compte a ete gele. Veuillez contacter la Section Nouvelle Technologie.',
+                    'message' => 'Votre compte a été gele. Veuillez contacter la Section Nouvelle Technologie.',
                 ], 403);
             }
 
@@ -255,7 +255,7 @@ class AuthController extends Controller
 
         if ($user->is_frozen) {
             return response()->json([
-                'message' => 'Votre compte a ete gele. Veuillez contacter la Section Nouvelle Technologie.',
+                'message' => 'Votre compte a été gele. Veuillez contacter la Section Nouvelle Technologie.',
             ], 403);
         }
 

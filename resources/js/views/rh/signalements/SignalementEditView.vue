@@ -128,7 +128,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await update(route.params.id, form.value)
-    ui.addToast('Signalement modifie avec succes.', 'success')
+    ui.addToast('Signalement modifié avec succès.', 'success')
     router.push({ name: 'signalements.show', params: { id: route.params.id } })
   } catch (err) {
     if (err.response?.status === 422) {

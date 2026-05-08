@@ -150,23 +150,23 @@
                 <template v-if="auth.isRH || auth.isSEN">
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
-                      <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion Agents
+                      <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion des agents
                     </router-link>
                   </li>
                   <li>
                     <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
-                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Congés
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des congés
                     </router-link>
-                    <span v-else class="dropdown-item is-disabled" title="Reserve a la Section RH">
-                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des Conges
+                    <span v-else class="dropdown-item is-disabled" title="Réservé à la Section RH">
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des congés
                     </span>
                   </li>
                   <li>
                     <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
                       <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiqués
                     </router-link>
-                    <span v-else class="dropdown-item is-disabled" title="Reserve a la Section RH">
-                      <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiques
+                    <span v-else class="dropdown-item is-disabled" title="Réservé à la Section RH">
+                      <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiqués
                     </span>
                   </li>
                   <li>
@@ -178,7 +178,7 @@
                     <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations
                     </router-link>
-                    <span v-else class="dropdown-item is-disabled" title="Reserve a la Section RH">
+                    <span v-else class="dropdown-item is-disabled" title="Réservé à la Section RH">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations
                     </span>
                   </li>
@@ -189,7 +189,7 @@
                   </li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.dashboard' }">
-                      <span class="dd-icon dd-icon-teal"><i class="fas fa-chart-line"></i></span> Tableau de Bord
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-chart-line"></i></span> Tableau de bord
                     </router-link>
                   </li>
                   <li><hr class="dropdown-divider"></li>
@@ -203,7 +203,7 @@
                   <li v-if="auth.isRH || auth.isSEN"><hr class="dropdown-divider"></li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'admin.dashboard' }">
-                      <span class="dd-icon dd-icon-slate"><i class="fas fa-sliders-h"></i></span> Parametres systeme
+                      <span class="dd-icon dd-icon-slate"><i class="fas fa-sliders-h"></i></span> Paramètres système
                     </router-link>
                   </li>
                 </template>
@@ -317,13 +317,13 @@
                 </li>
                 <li>
                   <router-link class="dropdown-item" :to="{ name: 'profile.show' }">
-                    <span class="dd-icon dd-icon-blue"><i class="fas fa-user"></i></span> Mon Profil
+                    <span class="dd-icon dd-icon-blue"><i class="fas fa-user"></i></span> Mon profil
                   </router-link>
                 </li>
                 <li><hr class="dropdown-divider"></li>
                 <li>
                   <a class="dropdown-item text-danger" href="#" @click.prevent="handleLogout">
-                    <span class="dd-icon dd-icon-red"><i class="fas fa-sign-out-alt"></i></span> Deconnexion
+                    <span class="dd-icon dd-icon-red"><i class="fas fa-sign-out-alt"></i></span> Déconnexion
                   </a>
                 </li>
               </ul>

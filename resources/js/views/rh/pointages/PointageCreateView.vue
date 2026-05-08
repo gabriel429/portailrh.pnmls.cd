@@ -5,7 +5,7 @@
         <div class="row g-2 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-clipboard-check me-2"></i>Saisie des pointages</h1>
-            <p class="rh-sub">Saisie groupee par departement/service. Selectionnez un departement pour afficher ses agents.</p>
+            <p class="rh-sub">Saisie groupée par département/service. Sélectionnez un département pour afficher ses agents.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -21,9 +21,9 @@
         <!-- Step 1: Select date and department -->
         <div class="row g-3 mb-4">
           <div class="col-md-5">
-            <label for="department_id" class="form-label fw-bold">Departement / Service</label>
+            <label for="department_id" class="form-label fw-bold">Département / Service</label>
             <select class="form-select" id="department_id" v-model="selectedDepartment">
-              <option value="">-- Selectionner un departement --</option>
+              <option value="">-- Sélectionner un département --</option>
               <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.nom }}</option>
             </select>
           </div>
@@ -129,14 +129,14 @@
         <!-- No agents found -->
         <div v-else-if="agentsLoaded && agents.length === 0" class="text-center py-5">
           <i class="fas fa-users-slash fa-3x text-muted mb-3 d-block"></i>
-          <h5 class="text-muted">Aucun agent actif dans ce departement</h5>
+          <h5 class="text-muted">Aucun agent actif dans ce département</h5>
         </div>
 
         <!-- Initial state -->
         <div v-else class="text-center py-5">
           <i class="fas fa-building fa-3x text-muted mb-3 d-block"></i>
-          <h5 class="text-muted">Selectionnez un departement</h5>
-          <p class="text-muted">Choisissez un departement et une date, puis cliquez sur "Charger" pour afficher les agents.</p>
+          <h5 class="text-muted">Sélectionnez un département</h5>
+          <p class="text-muted">Choisissez un département et une date, puis cliquez sur « Charger » pour afficher les agents.</p>
         </div>
       </div>
     </div>
@@ -202,11 +202,11 @@ function clearAll() {
 
 async function loadAgents() {
     if (selectedDepartment.value === '') {
-        ui.addToast('Veuillez selectionner un departement.', 'warning')
+        ui.addToast('Veuillez sélectionner un département.', 'warning')
         return
     }
     if (!datePointage.value) {
-        ui.addToast('Veuillez selectionner une date.', 'warning')
+        ui.addToast('Veuillez sélectionner une date.', 'warning')
         return
     }
 
@@ -252,7 +252,7 @@ async function submitPointages() {
         }))
 
     if (pointagesData.length === 0) {
-        ui.addToast('Aucun pointage a enregistrer. Veuillez saisir au moins une heure.', 'warning')
+        ui.addToast('Aucun pointage à enregistrer. Veuillez saisir au moins une heure.', 'warning')
         return
     }
 

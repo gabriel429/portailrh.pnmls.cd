@@ -132,7 +132,7 @@ class RequestController extends ApiController
 
             if (!$scope->canAccessAgent($user, $selectedAgent)) {
                 return response()->json([
-                    'message' => 'Acces refuse pour cet agent.',
+                    'message' => 'Accès refusé pour cet agent.',
                 ], 403);
             }
         }
@@ -157,7 +157,7 @@ class RequestController extends ApiController
             NotificationService::envoyer(
                 $user->id,
                 'demande',
-                'Demande enregistree',
+                'Demande enregistrée',
                 'Votre demande suit maintenant le circuit de validation ' . ($demande->workflow_level ?? 'standard') . '.',
                 '/requests/' . $demande->id,
                 $user->id
@@ -388,6 +388,6 @@ class RequestController extends ApiController
             return;
         }
 
-        abort(403, 'Vous n\'avez pas acces a cette demande.');
+        abort(403, 'Vous n\'avez pas accès a cette demande.');
     }
 }

@@ -2,14 +2,14 @@
   <div class="rh-modern">
     <div class="rh-shell">
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement de l'activite..." />
+        <LoadingSpinner message="Chargement de l’activité..." />
       </div>
 
       <template v-else>
         <section class="rh-hero">
           <div class="row g-3 align-items-center">
             <div class="col-lg-8">
-              <h1 class="rh-title"><i class="fas fa-edit me-2"></i>Modifier l'activite</h1>
+              <h1 class="rh-title"><i class="fas fa-edit me-2"></i>Modifier l’activité</h1>
               <p class="rh-sub">Plan de Travail Annuel {{ form.annee }}</p>
             </div>
             <div class="col-lg-4">
@@ -33,7 +33,7 @@
             <form @submit.prevent="handleSubmit">
               <!-- Titre -->
               <div class="mb-3">
-                <label for="titre" class="form-label fw-bold">Titre de l'activite <span class="text-danger">*</span></label>
+                <label for="titre" class="form-label fw-bold">Titre de l’activité <span class="text-danger">*</span></label>
                 <input v-model="form.titre" type="text" class="form-control" id="titre" required>
               </div>
 
@@ -86,7 +86,7 @@
 
                 <div v-if="isPlanificationSenAssignment" class="col-md-6">
                   <label for="assignment_target" class="form-label fw-bold">
-                    Departement ou Attaches du SEN <span class="text-danger">*</span>
+                    Département ou attachés du SEN <span class="text-danger">*</span>
                   </label>
                   <select v-model="form.assignment_target" class="form-select" id="assignment_target" required @change="onAssignmentTargetChange">
                     <option value="">-- Choisir d'abord la cible --</option>
@@ -99,7 +99,7 @@
 
                 <div v-if="isPlanificationSenAssignment && form.assignment_target" class="col-md-6">
                   <label for="assigned_agent_id" class="form-label fw-bold">
-                    Attribuer l'activite a <span v-if="assignableAgents.length" class="text-danger">*</span>
+                    Attribuer l’activité à <span v-if="assignableAgents.length" class="text-danger">*</span>
                   </label>
                   <select
                     :value="selectedAssignedAgentId"
@@ -117,7 +117,7 @@
                 </div>
 
                 <div v-else-if="form.niveau_administratif === 'SEN'" class="col-md-4">
-                  <label for="departement_id" class="form-label fw-bold">Departement</label>
+                  <label for="departement_id" class="form-label fw-bold">Département</label>
                   <select v-model="form.departement_id" class="form-select" id="departement_id">
                     <option value="">-- Direction / Tous --</option>
                     <option v-for="d in formData.departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
@@ -137,7 +137,7 @@
                   <select v-model="form.province_ids" class="form-select" id="province_ids" multiple size="6">
                     <option v-for="p in formData.provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
                   </select>
-                  <div class="form-text">Maintenez Ctrl pour selectionner plusieurs provinces.</div>
+                  <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs provinces.</div>
                 </div>
 
                 <div v-if="form.niveau_administratif === 'SEL'" class="col-md-4">
@@ -193,7 +193,7 @@
 
               <div class="row g-3 mt-1">
                 <div class="col-md-6">
-                  <label for="date_debut" class="form-label fw-bold">Date de debut</label>
+                  <label for="date_debut" class="form-label fw-bold">Date de début</label>
                   <input v-model="form.date_debut" type="date" class="form-control" id="date_debut">
                 </div>
 
@@ -216,7 +216,7 @@
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" :disabled="submitting">
                   <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                  <i v-else class="fas fa-save me-1"></i> Mettre a jour
+                  <i v-else class="fas fa-save me-1"></i> Mettre à jour
                 </button>
                 <router-link :to="{ name: 'plan-travail.show', params: { id: route.params.id } }" class="btn btn-outline-secondary">Annuler</router-link>
               </div>
@@ -334,7 +334,7 @@ async function loadActivite() {
       observations: a.observations || '',
     }
   } catch {
-    ui.addToast('Activite introuvable.', 'danger')
+    ui.addToast('Activité introuvable.', 'danger')
     router.push({ name: 'plan-travail.index' })
   } finally {
     loading.value = false
@@ -387,7 +387,7 @@ function onAssignmentTargetChange() {
 
   if (form.value.assignment_target === 'sen_attaches') {
     form.value.departement_id = ''
-    form.value.responsable_code = 'Attaches SEN'
+    form.value.responsable_code = 'Attachés SEN'
     return
   }
 
@@ -448,12 +448,12 @@ function validateAssignmentSelection() {
   if (!isPlanificationSenAssignment.value) return true
 
   if (!form.value.assignment_target) {
-    errors.value = ['Choisissez d abord un departement ou les attaches du SEN.']
+    errors.value = ['Choisissez d’abord un département ou les attachés du SEN.']
     return false
   }
 
   if (assignableAgents.value.length > 0 && !selectedAssignedAgentId.value) {
-    errors.value = ['Choisissez l agent a qui attribuer cette activite.']
+    errors.value = ['Choisissez l’agent à qui attribuer cette activité.']
     return false
   }
 
@@ -466,7 +466,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await update(route.params.id, buildPayload())
-    ui.addToast('Activite mise a jour.', 'success')
+    ui.addToast('Activité mise à jour.', 'success')
     router.push({ name: 'plan-travail.show', params: { id: route.params.id } })
   } catch (err) {
     if (err.response?.status === 422) {

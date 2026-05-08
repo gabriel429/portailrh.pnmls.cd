@@ -5,7 +5,7 @@
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title">
-              <i class="fas fa-plus-circle me-2"></i>Nouvelle activite
+              <i class="fas fa-plus-circle me-2"></i>Nouvelle activité
             </h1>
             <p class="rh-sub">Plan de Travail Annuel {{ formData.annee || new Date().getFullYear() }}</p>
           </div>
@@ -34,7 +34,7 @@
           <form @submit.prevent="handleSubmit">
             <!-- Titre -->
             <div class="mb-3">
-              <label for="titre" class="form-label fw-bold">Titre de l'activite <span class="text-danger">*</span></label>
+              <label for="titre" class="form-label fw-bold">Titre de l’activité <span class="text-danger">*</span></label>
               <input v-model="form.titre" type="text" class="form-control" id="titre" required>
             </div>
 
@@ -87,7 +87,7 @@
 
               <div v-if="isPlanificationSenAssignment" class="col-md-6">
                 <label for="assignment_target" class="form-label fw-bold">
-                  Departement ou Attaches du SEN <span class="text-danger">*</span>
+                  Département ou attachés du SEN <span class="text-danger">*</span>
                 </label>
                 <select v-model="form.assignment_target" class="form-select" id="assignment_target" required @change="onAssignmentTargetChange">
                   <option value="">-- Choisir d'abord la cible --</option>
@@ -100,7 +100,7 @@
 
               <div v-if="isPlanificationSenAssignment && form.assignment_target" class="col-md-6">
                 <label for="assigned_agent_id" class="form-label fw-bold">
-                  Attribuer l'activite a <span v-if="assignableAgents.length" class="text-danger">*</span>
+                  Attribuer l’activité à <span v-if="assignableAgents.length" class="text-danger">*</span>
                 </label>
                 <select
                   :value="selectedAssignedAgentId"
@@ -119,7 +119,7 @@
 
               <!-- Departement (SEN) -->
               <div v-else-if="form.niveau_administratif === 'SEN'" class="col-md-4">
-                <label for="departement_id" class="form-label fw-bold">Departement</label>
+                <label for="departement_id" class="form-label fw-bold">Département</label>
                 <select v-model="form.departement_id" class="form-select" id="departement_id">
                   <option value="">-- Direction / Tous --</option>
                   <option v-for="d in formData.departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
@@ -140,7 +140,7 @@
                 <select v-model="form.province_ids" class="form-select" id="province_ids" multiple size="6">
                   <option v-for="p in formData.provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
                 </select>
-                <div class="form-text">Maintenez Ctrl pour selectionner plusieurs provinces.</div>
+                <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs provinces.</div>
               </div>
 
               <!-- Localite (SEL) -->
@@ -200,9 +200,9 @@
             </div>
 
             <div class="row g-3 mt-1">
-              <!-- Date debut -->
+              <!-- Date de début -->
               <div class="col-md-6">
-                <label for="date_debut" class="form-label fw-bold">Date de debut</label>
+                <label for="date_debut" class="form-label fw-bold">Date de début</label>
                 <input v-model="form.date_debut" type="date" class="form-control" id="date_debut">
               </div>
 
@@ -228,7 +228,7 @@
             <div class="d-flex gap-2">
               <button type="submit" class="btn btn-primary" :disabled="submitting">
                 <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-                <i v-else class="fas fa-save me-1"></i> Creer l'activite
+                <i v-else class="fas fa-save me-1"></i> Créer l’activité
               </button>
               <router-link :to="{ name: 'plan-travail.index' }" class="btn btn-outline-secondary">Annuler</router-link>
             </div>
@@ -314,7 +314,7 @@ async function loadFormData() {
     form.value.annee = data.annee
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Acces refuse.', 'danger')
+      ui.addToast('Accès refusé.', 'danger')
       router.push({ name: 'plan-travail.index' })
     }
   } finally {
@@ -338,7 +338,7 @@ function onAssignmentTargetChange() {
 
   if (form.value.assignment_target === 'sen_attaches') {
     form.value.departement_id = ''
-    form.value.responsable_code = 'Attaches SEN'
+    form.value.responsable_code = 'Attachés SEN'
     return
   }
 
@@ -395,7 +395,7 @@ async function handleSubmit() {
   submitting.value = true
   try {
     await create(buildPayload())
-    ui.addToast('Activite creee avec succes.', 'success')
+    ui.addToast('Activité créée avec succès.', 'success')
     router.push({ name: 'plan-travail.index' })
   } catch (err) {
     if (err.response?.status === 422) {

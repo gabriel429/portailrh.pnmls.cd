@@ -173,7 +173,7 @@ async function submitForm() {
         }
 
         await pointagesApi.update(pointage.value.id, payload)
-        ui.addToast('Pointage modifie avec succes.', 'success')
+        ui.addToast('Pointage modifié avec succès.', 'success')
         router.push({ name: 'rh.pointages.show', params: { id: pointage.value.id } })
     } catch (err) {
         if (err.response?.status === 422 && err.response?.data?.errors) {

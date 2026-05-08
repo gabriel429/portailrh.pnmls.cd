@@ -1247,14 +1247,14 @@ const baseQuickActions = [
 ]
 
 const quickActions = computed(() => {
-  const disabledReason = 'Reserve a la Section RH'
+  const disabledReason = 'Réservé à la Section RH'
   const assistant = auth.isAssistantRH
 
   return baseQuickActions.map((action) => {
     if (action.to === '/rh/agents') {
       return {
         ...action,
-        desc: assistant ? 'Consulter et mettre a jour les dossiers' : action.desc,
+        desc: assistant ? 'Consulter et mettre à jour les dossiers' : action.desc,
       }
     }
 

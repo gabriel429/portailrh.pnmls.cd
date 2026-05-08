@@ -84,7 +84,7 @@
       <ConfirmModal
         :show="showDeleteModal"
         title="Supprimer le signalement"
-        message="Etes-vous sur de supprimer ce signalement ?"
+        message="Êtes-vous sûr de supprimer ce signalement ?"
         :loading="deleting"
         @confirm="handleDelete"
         @cancel="showDeleteModal = false"
@@ -157,7 +157,7 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(signalement.value.id)
-    ui.addToast('Signalement supprime avec succes.', 'success')
+    ui.addToast('Signalement supprimé avec succès.', 'success')
     router.push({ name: 'signalements.index' })
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')

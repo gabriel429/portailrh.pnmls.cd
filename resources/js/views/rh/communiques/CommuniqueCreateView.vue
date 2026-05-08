@@ -166,10 +166,10 @@ async function handleSubmit() {
   try {
     if (isEdit.value) {
       await update(route.query.edit, form.value)
-      ui.addToast('Communique mis a jour avec succes.', 'success')
+      ui.addToast('Communique mis à jour avec succes.', 'success')
     } else {
       await create(form.value)
-      ui.addToast('Communique publie avec succes.', 'success')
+      ui.addToast('Communiqué publié avec succès.', 'success')
     }
     router.push(backRoute.value)
   } catch (err) {

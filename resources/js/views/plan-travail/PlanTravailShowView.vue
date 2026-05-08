@@ -2,13 +2,13 @@
   <div class="rh-modern">
     <div class="rh-shell">
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement de l'activite..." />
+        <LoadingSpinner message="Chargement de l’activité..." />
       </div>
 
       <div v-else-if="accessDenied" class="dash-panel">
         <div class="p-4">
           <div class="pta-denied-icon mb-3"><i class="fas fa-lock"></i></div>
-          <h3 class="panel-title mb-2">Acces restreint</h3>
+          <h3 class="panel-title mb-2">Accès restreint</h3>
           <p class="text-muted mb-3">{{ accessDeniedMessage }}</p>
           <router-link :to="{ name: 'plan-travail.index' }" class="btn-rh alt">
             <i class="fas fa-arrow-left me-1"></i> Retour au PTA
@@ -47,7 +47,7 @@
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
-                  <h3 class="panel-title"><i class="fas fa-info-circle me-2 text-primary"></i>Details de l'activite</h3>
+                  <h3 class="panel-title"><i class="fas fa-info-circle me-2 text-primary"></i>Détails de l’activité</h3>
                 </div>
                 <div class="d-flex gap-2">
                   <span :class="statutBadge(activite.statut)">{{ statutLabel(activite.statut) }}</span>
@@ -56,13 +56,13 @@
               <div class="p-3">
                 <dl class="row mb-0">
                   <dt class="col-sm-4 text-muted">Objectif</dt>
-                  <dd class="col-sm-8">{{ activite.objectif || 'Non renseigne' }}</dd>
+                  <dd class="col-sm-8">{{ activite.objectif || 'Non renseigné' }}</dd>
 
                   <dt class="col-sm-4 text-muted">Rubrique</dt>
-                  <dd class="col-sm-8">{{ activite.categorie || 'Non renseignee' }}</dd>
+                  <dd class="col-sm-8">{{ activite.categorie || 'Non renseignée' }}</dd>
 
                   <dt class="col-sm-4 text-muted">Resultat attendu</dt>
-                  <dd class="col-sm-8">{{ activite.resultat_attendu || 'Non renseigne' }}</dd>
+                  <dd class="col-sm-8">{{ activite.resultat_attendu || 'Non renseigné' }}</dd>
 
                   <dt class="col-sm-4 text-muted">Attribution</dt>
                   <dd class="col-sm-8">
@@ -71,11 +71,11 @@
                         <i class="fas fa-user-check me-1"></i>{{ agent.nom_complet }}
                       </span>
                     </template>
-                    <span v-else>{{ activite.responsable_code || 'Non renseigne' }}</span>
+                    <span v-else>{{ activite.responsable_code || 'Non renseigné' }}</span>
                   </dd>
 
                   <dt class="col-sm-4 text-muted">Cout en CDF</dt>
-                  <dd class="col-sm-8">{{ activite.cout_cdf !== null && activite.cout_cdf !== undefined ? formatCurrency(activite.cout_cdf) + ' CDF' : 'Non renseigne' }}</dd>
+                  <dd class="col-sm-8">{{ activite.cout_cdf !== null && activite.cout_cdf !== undefined ? formatCurrency(activite.cout_cdf) + ' CDF' : 'Non renseigné' }}</dd>
 
                   <dt class="col-sm-4 text-muted">Niveau</dt>
                   <dd class="col-sm-8">
@@ -118,7 +118,7 @@
                     </dd>
                   </template>
 
-                  <dt class="col-sm-4 text-muted">Cree par</dt>
+                  <dt class="col-sm-4 text-muted">Créé par</dt>
                   <dd class="col-sm-8">{{ activite.createur?.nom_complet ?? 'N/A' }}</dd>
 
                   <dt class="col-sm-4 text-muted">Date de creation</dt>
@@ -150,7 +150,7 @@
 
                 <template v-if="activite.taches?.length">
                   <hr>
-                  <h6 class="fw-bold mb-2">Taches liees</h6>
+                  <h6 class="fw-bold mb-2">Tâches liées</h6>
                   <div class="d-flex flex-column gap-2">
                     <router-link
                       v-for="tache in activite.taches"
@@ -201,7 +201,7 @@
 
                   <button type="submit" class="btn btn-warning w-100" :disabled="updatingStatut">
                     <span v-if="updatingStatut" class="spinner-border spinner-border-sm me-1"></span>
-                    <i v-else class="fas fa-save me-1"></i> Mettre a jour
+                    <i v-else class="fas fa-save me-1"></i> Mettre à jour
                   </button>
                 </form>
               </div>
@@ -228,8 +228,8 @@
 
       <ConfirmModal
         :show="showDeleteModal"
-        title="Supprimer l'activite"
-        message="Supprimer cette activite du plan de travail ?"
+        title="Supprimer l’activité"
+        message="Supprimer cette activité du plan de travail ?"
         :loading="deleting"
         @confirm="handleDelete"
         @cancel="showDeleteModal = false"
@@ -253,7 +253,7 @@ const ui = useUiStore()
 const loading = ref(true)
 const activite = ref(null)
 const accessDenied = ref(false)
-const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre departement.")
+const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre département.")
 const canEdit = ref(false)
 const canUpdateStatut = ref(false)
 
@@ -290,10 +290,10 @@ async function loadActivite() {
   } catch (err) {
     if (err.response?.status === 403) {
       accessDenied.value = true
-      accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre departement.'
+      accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre département.'
       ui.addToast(accessDeniedMessage.value, 'warning')
     } else {
-      ui.addToast('Activite introuvable.', 'danger')
+      ui.addToast('Activité introuvable.', 'danger')
       router.push({ name: 'plan-travail.index' })
     }
   } finally {
@@ -306,7 +306,7 @@ async function handleUpdateStatut() {
   try {
     const { data } = await updateStatut(route.params.id, statutForm.value)
     activite.value = data.data
-    ui.addToast('Statut mis a jour.', 'success')
+    ui.addToast('Statut mis à jour.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur.', 'danger')
   } finally {
@@ -322,7 +322,7 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(activite.value.id)
-    ui.addToast('Activite supprimee.', 'success')
+    ui.addToast('Activité supprimée.', 'success')
     router.push({ name: 'plan-travail.index' })
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur.', 'danger')
@@ -365,7 +365,7 @@ function validationLabel(value) {
     coordination_nationale: 'Coordination nationale',
     coordination_provinciale: 'Coordination provinciale',
   }
-  return map[value] || 'Non renseigne'
+  return map[value] || 'Non renseigné'
 }
 
 function chronogrammeLabel(activity) {

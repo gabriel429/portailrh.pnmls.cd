@@ -60,7 +60,7 @@
             <router-link to="/admin/roles" class="btn btn-outline-secondary">Annuler</router-link>
             <button type="submit" class="btn btn-primary" :disabled="saving">
               <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
             </button>
           </div>
         </form>

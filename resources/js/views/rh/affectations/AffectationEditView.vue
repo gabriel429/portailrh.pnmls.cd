@@ -47,7 +47,7 @@
             <div class="col-md-12">
               <label for="agent_id" class="form-label">Agent <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.agent_id }" id="agent_id" v-model="form.agent_id" required>
-                <option value="">-- Selectionner un agent --</option>
+                <option value="">-- Sélectionner un agent --</option>
                 <option v-for="a in options.agents" :key="a.id" :value="a.id">
                   {{ a.prenom }} {{ a.nom }} {{ a.matricule ? '(' + a.matricule + ')' : '' }}
                 </option>
@@ -72,7 +72,7 @@
             <div class="col-md-6">
               <label for="fonction_id" class="form-label">Fonction <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.fonction_id }" id="fonction_id" v-model="form.fonction_id" required>
-                <option value="">-- Selectionner une fonction --</option>
+                <option value="">-- Sélectionner une fonction --</option>
                 <option v-for="f in filteredFonctions" :key="f.id" :value="f.id">
                   {{ f.nom }}
                 </option>
@@ -82,7 +82,7 @@
             <div class="col-md-3">
               <label for="niveau_administratif" class="form-label">Niveau Admin. <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.niveau_administratif }" id="niveau_administratif" v-model="form.niveau_administratif" required @change="onNiveauChange">
-                <option value="">-- Selectionner --</option>
+                <option value="">-- Sélectionner --</option>
                 <option value="SEN">SEN</option>
                 <option value="SEP">SEP</option>
                 <option value="SEL">SEL</option>
@@ -92,10 +92,10 @@
             <div class="col-md-3">
               <label for="niveau" class="form-label">Type de poste <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.niveau }" id="niveau" v-model="form.niveau" required @change="onTypePosteChange">
-                <option value="">-- Selectionner --</option>
+                <option value="">-- Sélectionner --</option>
                 <option value="direction">Direction</option>
-                <option value="service_rattache">Service rattache</option>
-                <option value="departement">Departement</option>
+                <option value="service_rattache">Service rattaché</option>
+                <option value="departement">Département</option>
                 <option value="section">Section</option>
                 <option value="cellule">Cellule</option>
                 <option value="province">Province</option>
@@ -114,12 +114,12 @@
             </div>
             <div>
               <h5>Structure</h5>
-              <small>Departement, section, cellule, province, localite (selon le niveau)</small>
+              <small>Département, section, cellule, province, localité (selon le niveau)</small>
             </div>
           </div>
           <div class="row g-3">
             <div class="col-md-6">
-              <label for="department_id" class="form-label">Departement</label>
+              <label for="department_id" class="form-label">Département</label>
               <select class="form-select" :class="{ 'is-invalid': errors.department_id }" id="department_id" v-model="form.department_id" @change="onDepartmentChange">
                 <option value="">-- Aucun --</option>
                 <option v-for="d in options.departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
@@ -174,7 +174,7 @@
           </div>
           <div class="row g-3">
             <div class="col-md-4">
-              <label for="date_debut" class="form-label">Date de debut</label>
+              <label for="date_debut" class="form-label">Date de début</label>
               <input type="date" class="form-control" :class="{ 'is-invalid': errors.date_debut }" id="date_debut" v-model="form.date_debut">
               <div v-if="errors.date_debut" class="invalid-feedback">{{ errors.date_debut[0] }}</div>
             </div>
@@ -260,7 +260,7 @@ function normalizePosteType(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
-    .replaceAll('dÃ©partement', 'departement')
+    .replaceAll('département', 'departement')
     .replaceAll('département', 'departement')
 }
 
@@ -412,7 +412,7 @@ async function submitForm() {
   try {
     const { data } = await client.put(`/affectations/${route.params.id}`, payload)
     affectation.value = data
-    ui.addToast('Affectation modifiee avec succes', 'success')
+    ui.addToast('Affectation modifiée avec succès.', 'success')
     router.push({ name: 'rh.affectations.index' })
   } catch (err) {
     if (err.response?.status === 422) {

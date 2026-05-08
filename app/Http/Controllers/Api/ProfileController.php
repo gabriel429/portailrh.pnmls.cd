@@ -91,8 +91,8 @@ class ProfileController extends ApiController
         NotificationService::notifierAgent(
             $agent,
             'message',
-            'Votre profil a ete mis a jour',
-            'Une modification a ete enregistree sur votre profil E-PNMLS.',
+            'Votre profil a été mis à jour',
+            'Une modification a été enregistrée sur votre profil E-PNMLS.',
             '/profile',
             $user->id
         );

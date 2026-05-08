@@ -89,7 +89,7 @@
                   <th class="border-0 text-muted small fw-semibold py-3 ps-4">Nom</th>
                   <th class="border-0 text-muted small fw-semibold py-3">Role</th>
                   <th class="border-0 text-muted small fw-semibold py-3">Province</th>
-                  <th class="border-0 text-muted small fw-semibold py-3">Derniere activite</th>
+                  <th class="border-0 text-muted small fw-semibold py-3">Dernière activité</th>
                   <th v-if="auth.isSuperAdmin" class="border-0 text-muted small fw-semibold py-3">Appareil</th>
                   <th class="border-0 text-muted small fw-semibold py-3 pe-4">IP</th>
                 </tr>
@@ -104,7 +104,7 @@
                   </td>
                   <td data-label="Role"><span class="role-pill">{{ u.role }}</span></td>
                   <td class="text-muted" data-label="Province">{{ u.province || '-' }}</td>
-                  <td data-label="Derniere activite">
+                  <td data-label="Dernière activité">
                     <span class="activity-indicator">
                       <span class="activity-dot"></span>
                       {{ formatTime(u.last_activity) }}
@@ -128,10 +128,10 @@
         </div>
       </div>
 
-      <!-- Acces rapide -->
+      <!-- Accès rapide -->
       <div class="section-header mb-3">
         <i class="fas fa-bolt me-2 text-warning"></i>
-        <span>Acces rapide</span>
+        <span>Accès rapide</span>
       </div>
       <div class="row g-3">
         <div v-for="link in quickLinks" :key="link.to" class="col-12 col-sm-6 col-md-4 col-lg-3">
@@ -168,7 +168,7 @@ const statCards = computed(() => [
   { label: 'Agents', value: stats.value.agents ?? 0, icon: 'fa-users', color: '#0077B5' },
   { label: 'Utilisateurs', value: stats.value.users ?? 0, icon: 'fa-user-shield', color: '#059669' },
   { label: 'Provinces', value: stats.value.provinces ?? 0, icon: 'fa-map', color: '#d97706' },
-  { label: 'Departements', value: stats.value.departments ?? 0, icon: 'fa-building', color: '#7c3aed' },
+  { label: 'Départements', value: stats.value.departments ?? 0, icon: 'fa-building', color: '#7c3aed' },
   { label: 'Sections', value: stats.value.sections ?? 0, icon: 'fa-layer-group', color: '#0ea5e9' },
   { label: 'Cellules', value: stats.value.cellules ?? 0, icon: 'fa-th', color: '#6366f1' },
   { label: 'Fonctions', value: stats.value.fonctions ?? 0, icon: 'fa-briefcase', color: '#f43f5e' },
@@ -185,7 +185,7 @@ const quickLinks = [
   { to: '/admin/agents/import', label: 'Import agents', icon: 'fa-file-import', color: '#2563eb' },
   { to: '/admin/organes', label: 'Organes', icon: 'fa-sitemap', color: '#8b5cf6' },
   { to: '/admin/provinces', label: 'Provinces', icon: 'fa-map', color: '#d97706' },
-  { to: '/admin/departments', label: 'Departements', icon: 'fa-building', color: '#7c3aed' },
+  { to: '/admin/departments', label: 'Départements', icon: 'fa-building', color: '#7c3aed' },
   { to: '/admin/fonctions', label: 'Fonctions', icon: 'fa-briefcase', color: '#f43f5e' },
   { to: '/admin/grades', label: 'Grades', icon: 'fa-medal', color: '#eab308' },
   { to: '/admin/roles', label: 'Roles', icon: 'fa-user-tag', color: '#14b8a6' },
@@ -193,7 +193,7 @@ const quickLinks = [
   { to: '/admin/cellules', label: 'Cellules', icon: 'fa-th', color: '#6366f1' },
   { to: '/admin/localites', label: 'Localites', icon: 'fa-map-pin', color: '#0d9488' },
   { to: '/admin/categories-documents', label: 'Categories Docs', icon: 'fa-tags', color: '#f59e0b' },
-  { to: '/admin/deployment', label: 'Deploiement', icon: 'fa-rocket', color: '#0077B5' },
+  { to: '/admin/deployment', label: 'Déploiement', icon: 'fa-rocket', color: '#0077B5' },
   { to: '/admin/logs', label: 'Logs systeme', icon: 'fa-file-alt', color: '#64748b' },
 ]
 

@@ -123,7 +123,7 @@ class DocumentController extends ApiController
         }
 
         if (!app(UserDataScope::class)->canAccessAgent($user, $agent, false)) {
-            abort(403, 'Vous n\'avez pas acces au dossier de cet agent.');
+            abort(403, 'Vous n\'avez pas accès au dossier de cet agent.');
         }
     }
 
@@ -215,7 +215,7 @@ class DocumentController extends ApiController
             $document->agent,
             'document_travail',
             'Nouveau document dans votre dossier',
-            'Un nouveau document a ete ajoute a votre dossier agent : ' . ($validated['nom_document'] ?? 'document') . '.',
+            'Un nouveau document a été ajoute a votre dossier agent : ' . ($validated['nom_document'] ?? 'document') . '.',
             '/documents/' . $document->id,
             $request->user()->id
         );
@@ -312,14 +312,14 @@ class DocumentController extends ApiController
         NotificationService::notifierAgent(
             $document->agent,
             'document_travail',
-            'Document de dossier mis a jour',
-            'Un document de votre dossier agent a ete modifie : ' . ($validated['nom_document'] ?? 'document') . '.',
+            'Document de dossier mis à jour',
+            'Un document de votre dossier agent a été modifié : ' . ($validated['nom_document'] ?? 'document') . '.',
             '/documents/' . $document->id,
             $user->id
         );
 
         return $this->resource(DocumentResource::make($document), [], [
-            'message' => 'Document mis a jour avec succes.',
+            'message' => 'Document mis à jour avec succes.',
         ]);
     }
 

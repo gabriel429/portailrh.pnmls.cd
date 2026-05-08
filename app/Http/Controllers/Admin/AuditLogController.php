@@ -79,7 +79,7 @@ class AuditLogController extends Controller
             } elseif ($auditLog->action === 'CREATE') {
                 $record = DB::table($tableName)->where('id', $auditLog->record_id)->first();
                 if (!$record) {
-                    return response()->json(['message' => 'Enregistrement deja supprime.'], 422);
+                    return response()->json(['message' => 'Enregistrement déjà supprimé.'], 422);
                 }
                 DB::table($tableName)->where('id', $auditLog->record_id)->delete();
 

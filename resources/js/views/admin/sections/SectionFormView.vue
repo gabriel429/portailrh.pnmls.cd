@@ -7,7 +7,7 @@
           {{ isEdit ? 'Modifier la section' : 'Nouvelle section' }}
         </h4>
         <p class="text-muted mb-0">
-          {{ isEdit ? 'Modifiez les informations de cette section.' : 'Remplissez le formulaire pour creer une nouvelle section.' }}
+          {{ isEdit ? 'Modifiez les informations de cette section.' : 'Remplissez le formulaire pour créer une nouvelle section.' }}
         </p>
       </div>
       <router-link to="/admin/sections" class="btn btn-outline-secondary">
@@ -76,16 +76,16 @@
             <div class="mb-3">
               <label for="type" class="form-label fw-bold">Type <span class="text-danger">*</span></label>
               <select id="type" v-model="form.type" class="form-select" required>
-                <option value="">-- Selectionnez --</option>
+                <option value="">-- Sélectionnez --</option>
                 <option value="section">Section</option>
-                <option value="service_rattache">Service rattache</option>
+                <option value="service_rattache">Service rattaché</option>
               </select>
             </div>
 
             <div class="mb-4">
-              <label for="department_id" class="form-label fw-bold">Departement</label>
+              <label for="department_id" class="form-label fw-bold">Département</label>
               <select id="department_id" v-model="form.department_id" class="form-select">
-                <option value="">-- Aucun departement --</option>
+                <option value="">-- Aucun département --</option>
                 <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
               </select>
             </div>
@@ -94,7 +94,7 @@
               <button type="submit" class="btn btn-primary" :disabled="saving">
                 <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
                 <i v-else class="fas fa-save me-1"></i>
-                {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+                {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
               </button>
               <router-link to="/admin/sections" class="btn btn-outline-secondary">Annuler</router-link>
             </div>
@@ -133,7 +133,7 @@ async function fetchDepartments() {
     const { data } = await client.get('/admin/departments')
     departments.value = data.data || data || []
   } catch (e) {
-    console.error('Erreur chargement departements:', e)
+    console.error('Erreur chargement départements:', e)
   }
 }
 

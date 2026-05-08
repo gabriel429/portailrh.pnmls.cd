@@ -572,7 +572,7 @@ class DeploymentController extends Controller
         $success = false;
 
         try {
-            $output_messages[] = "Debut du deploiement du module Communiques...";
+            $output_messages[] = "Début du deploiement du module Communiques...";
 
             if (!Schema::hasTable('communiques')) {
                 $output_messages[] = "Table non trouvee, creation en cours...";
@@ -590,7 +590,7 @@ class DeploymentController extends Controller
                         $table->timestamps();
                     });
 
-                    $output_messages[] = "Table communiques creee!";
+                    $output_messages[] = "Table communiqués créée !";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur lors de la creation de la table: " . $e->getMessage();
                     return $this->deployResponse($output_messages, $error_messages, false);
@@ -607,7 +607,7 @@ class DeploymentController extends Controller
                 $error_messages[] = "La table communiques n'existe pas";
             }
 
-            $output_messages[] = "Deploiement Communiques termine!";
+            $output_messages[] = "Déploiement Communiques terminé !";
 
         } catch (\Exception $e) {
             $error_messages[] = "ERREUR: " . $e->getMessage();
@@ -623,7 +623,7 @@ class DeploymentController extends Controller
         $success = false;
 
         try {
-            $output_messages[] = "Debut du deploiement du module Taches...";
+            $output_messages[] = "Début du deploiement du module Taches...";
 
             // Table taches
             if (!Schema::hasTable('taches')) {
@@ -644,7 +644,7 @@ class DeploymentController extends Controller
                         $table->index('agent_id');
                         $table->index('statut');
                     });
-                    $output_messages[] = "Table taches creee!";
+                    $output_messages[] = "Table tâches créée !";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur table taches: " . $e->getMessage();
                     return $this->deployResponse($output_messages, $error_messages, false);
@@ -668,7 +668,7 @@ class DeploymentController extends Controller
                         $table->timestamps();
                         $table->index('tache_id');
                     });
-                    $output_messages[] = "Table tache_commentaires creee!";
+                    $output_messages[] = "Table commentaires de tâches créée !";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur table tache_commentaires: " . $e->getMessage();
                     return $this->deployResponse($output_messages, $error_messages, false);
@@ -686,7 +686,7 @@ class DeploymentController extends Controller
                 $error_messages[] = "Les tables n'existent pas";
             }
 
-            $output_messages[] = "Deploiement Taches termine!";
+            $output_messages[] = "Déploiement Taches terminé !";
 
         } catch (\Exception $e) {
             $error_messages[] = "ERREUR: " . $e->getMessage();
@@ -702,7 +702,7 @@ class DeploymentController extends Controller
         $success = false;
 
         try {
-            $output_messages[] = "Debut du deploiement du module Plan de Travail...";
+            $output_messages[] = "Début du deploiement du module Plan de Travail...";
 
             if (!Schema::hasTable('activite_plans')) {
                 $output_messages[] = "Creation de la table activite_plans...";
@@ -731,7 +731,7 @@ class DeploymentController extends Controller
                         $table->index('departement_id');
                         $table->index('province_id');
                     });
-                    $output_messages[] = "Table activite_plans creee!";
+                    $output_messages[] = "Table activités PTA créée !";
                 } catch (\Exception $e) {
                     $error_messages[] = "Erreur table activite_plans: " . $e->getMessage();
                     return $this->deployResponse($output_messages, $error_messages, false);
@@ -748,7 +748,7 @@ class DeploymentController extends Controller
                 $error_messages[] = "La table activite_plans n'existe pas";
             }
 
-            $output_messages[] = "Deploiement Plan de Travail termine!";
+            $output_messages[] = "Déploiement Plan de Travail terminé !";
 
         } catch (\Exception $e) {
             $error_messages[] = "ERREUR: " . $e->getMessage();
@@ -767,7 +767,7 @@ class DeploymentController extends Controller
         $success = false;
 
         try {
-            $output_messages[] = "Debut du renommage des roles...";
+            $output_messages[] = "Début du renommage des roles...";
 
             // Rename Chef Section RH -> Section ressources humaines
             $updated1 = DB::table('roles')
@@ -820,7 +820,7 @@ class DeploymentController extends Controller
             $output_messages[] = "Roles actuels: " . implode(', ', $roles);
             $success = true;
 
-            $output_messages[] = "Renommage des roles termine!";
+            $output_messages[] = "Renommage des roles terminé !";
 
         } catch (\Exception $e) {
             $error_messages[] = "ERREUR: " . $e->getMessage();
@@ -845,7 +845,7 @@ class DeploymentController extends Controller
                 Schema::table('agents', function ($table) {
                     $table->string('domaine_etudes')->nullable()->after('niveau_etudes');
                 });
-                $output_messages[] = "Colonne 'domaine_etudes' ajoutee avec succes!";
+                $output_messages[] = "Colonne 'domaine_etudes' ajoutée avec succès !";
             }
 
             $success = true;

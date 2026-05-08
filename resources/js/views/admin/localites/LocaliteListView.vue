@@ -203,7 +203,7 @@ function goToPage(page) {
 }
 
 async function destroy(l) {
-  if (!confirm('Etes-vous sur de vouloir supprimer cette localite ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette localite ?')) return
   try {
     await client.delete('/admin/localites/' + l.id)
     await fetchData()

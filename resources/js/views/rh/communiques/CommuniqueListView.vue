@@ -5,13 +5,13 @@
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
-            <h1 class="rh-title"><i class="fas fa-bullhorn me-2"></i>Communiques Officiels</h1>
+            <h1 class="rh-title"><i class="fas fa-bullhorn me-2"></i>Communiqués officiels</h1>
             <p class="rh-sub">Gestion des annonces diffusees a tous les agents.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
               <button class="btn-rh main" @click="openCreateModal">
-                <i class="fas fa-plus-circle me-1"></i> Nouveau communique
+                <i class="fas fa-plus-circle me-1"></i> Nouveau communiqué
               </button>
             </div>
           </div>
@@ -20,7 +20,7 @@
 
       <!-- Loading -->
       <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement des communiques..." />
+        <LoadingSpinner message="Chargement des communiqués..." />
       </div>
 
       <!-- Table -->
@@ -56,7 +56,7 @@
                     <br v-if="isExpired(c.date_expiration)">
                     <small v-if="isExpired(c.date_expiration)" class="text-danger">Expire</small>
                   </template>
-                  <span v-else class="text-muted">Illimite</span>
+                  <span v-else class="text-muted">Illimité</span>
                 </td>
                 <td>
                   <span :class="c.actif ? 'badge bg-success' : 'badge bg-secondary'">
@@ -113,7 +113,7 @@
           <nav>
             <ul class="pagination pagination-sm mb-0">
               <li class="page-item" :class="{ disabled: meta.current_page === 1 }">
-                <button class="page-link" @click="loadCommuniques(meta.current_page - 1)">&laquo;</button>
+                <button class="page-link" @click="loadCommuniqués(meta.current_page - 1)">&laquo;</button>
               </li>
               <li
                 v-for="page in paginationPages"
@@ -121,10 +121,10 @@
                 class="page-item"
                 :class="{ active: page === meta.current_page }"
               >
-                <button class="page-link" @click="loadCommuniques(page)">{{ page }}</button>
+                <button class="page-link" @click="loadCommuniqués(page)">{{ page }}</button>
               </li>
               <li class="page-item" :class="{ disabled: meta.current_page === meta.last_page }">
-                <button class="page-link" @click="loadCommuniques(meta.current_page + 1)">&raquo;</button>
+                <button class="page-link" @click="loadCommuniqués(meta.current_page + 1)">&raquo;</button>
               </li>
             </ul>
           </nav>
@@ -135,17 +135,17 @@
       <div v-else class="dash-panel mt-3">
         <div class="text-center py-5 text-muted">
           <i class="fas fa-inbox fa-4x mb-3 d-block"></i>
-          <h5>Aucun communique publie.</h5>
+          <h5>Aucun communiqué publié.</h5>
           <button class="btn btn-primary mt-2" @click="openCreateModal">
-            <i class="fas fa-plus me-2"></i>Publier un communique
+            <i class="fas fa-plus me-2"></i>Publier un communiqué
           </button>
         </div>
       </div>
 
       <ConfirmModal
         :show="showDeleteModal"
-        title="Supprimer le communique"
-        :message="`Supprimer le communique '${deleteTarget?.titre ?? ''}' ?`"
+        title="Supprimer le communiqué"
+        :message="`Supprimer le communiqué '${deleteTarget?.titre ?? ''}' ?`"
         :loading="deleting"
         @confirm="handleDelete"
         @cancel="showDeleteModal = false"
@@ -163,8 +163,8 @@
             <i class="fas" :class="editTarget ? 'fa-edit' : 'fa-plus-circle'"></i>
           </div>
           <div>
-            <h5 class="ccm-title">{{ editTarget ? 'Modifier le communique' : 'Nouveau communique' }}</h5>
-            <span class="ccm-subtitle">{{ editTarget ? 'Mise a jour du communique' : 'Publier un nouveau communique officiel' }}</span>
+            <h5 class="ccm-title">{{ editTarget ? 'Modifier le communiqué' : 'Nouveau communiqué' }}</h5>
+            <span class="ccm-subtitle">{{ editTarget ? 'Mise à jour du communiqué' : 'Publier un nouveau communiqué officiel' }}</span>
           </div>
           <button class="ccm-close" @click="closeFormModal"><i class="fas fa-times"></i></button>
         </div>
@@ -190,14 +190,14 @@
             <div class="ccm-field">
               <label class="ccm-label">Titre <span class="ccm-req">*</span></label>
               <input v-model="form.titre" type="text" class="ccm-input" required
-                placeholder="Ex: Communique relatif aux conges annuels">
+                placeholder="Ex. : Communiqué relatif aux congés annuels">
             </div>
 
             <!-- Contenu -->
             <div class="ccm-field">
               <label class="ccm-label">Contenu <span class="ccm-req">*</span></label>
               <textarea v-model="form.contenu" class="ccm-textarea" rows="6" required
-                placeholder="Redigez le contenu du communique..."></textarea>
+                placeholder="Rédigez le contenu du communiqué..."></textarea>
             </div>
 
             <!-- Row: Urgence + Signataire -->
@@ -227,7 +227,7 @@
               <div class="ccm-field ccm-check-wrap">
                 <label class="ccm-check-label">
                   <input v-model="form.actif" type="checkbox" class="ccm-checkbox">
-                  <span>Publier immediatement (actif)</span>
+                  <span>Publier immédiatement (actif)</span>
                 </label>
               </div>
             </div>
@@ -239,7 +239,7 @@
             <button type="submit" class="ccm-btn-submit" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
               <i v-else class="fas me-1" :class="editTarget ? 'fa-save' : 'fa-paper-plane'"></i>
-              {{ editTarget ? 'Mettre a jour' : 'Publier' }}
+              {{ editTarget ? 'Mettre à jour' : 'Publier' }}
             </button>
           </div>
         </form>
@@ -271,9 +271,9 @@
             <div class="reader-avatar">{{ readerInitials(reader.user?.name) }}</div>
             <div class="reader-info">
               <strong>{{ reader.user?.name || 'Agent' }}</strong>
-              <span>{{ reader.user?.role || 'Role non precise' }}</span>
+              <span>{{ reader.user?.role || 'Rôle non précisé' }}</span>
               <small>
-                {{ [reader.user?.departement, reader.user?.province].filter(Boolean).join(' - ') || reader.user?.email || 'Structure non precisee' }}
+                {{ [reader.user?.departement, reader.user?.province].filter(Boolean).join(' - ') || reader.user?.email || 'Structure non précisée' }}
               </small>
             </div>
             <time>{{ formatDateTime(reader.read_at) }}</time>
@@ -282,8 +282,8 @@
 
         <div v-else class="readers-empty">
           <i class="fas fa-envelope-open-text"></i>
-          <strong>Aucune lecture enregistree</strong>
-          <span>Les agents apparaitront ici apres avoir clique sur "J'ai lu".</span>
+          <strong>Aucune lecture enregistrée</strong>
+          <span>Les agents apparaîtront ici après avoir cliqué sur "J'ai lu".</span>
         </div>
       </div>
     </div>
@@ -354,7 +354,7 @@ async function openEditModal(c) {
       actif: d.actif ?? true,
     }
   } catch {
-    ui.addToast('Erreur lors du chargement du communique.', 'danger')
+    ui.addToast('Erreur lors du chargement du communiqué.', 'danger')
     showFormModal.value = false
   } finally {
     formLoading.value = false
@@ -373,13 +373,13 @@ async function handleFormSubmit() {
   try {
     if (editTarget.value) {
       await update(editTarget.value.id, form.value)
-      ui.addToast('Communique mis a jour avec succes.', 'success')
+      ui.addToast('Communiqué mis à jour avec succès.', 'success')
     } else {
       await create(form.value)
-      ui.addToast('Communique publie avec succes.', 'success')
+      ui.addToast('Communiqué publié avec succès.', 'success')
     }
     closeFormModal()
-    await loadCommuniques(meta.value.current_page)
+    await loadCommuniqués(meta.value.current_page)
   } catch (err) {
     if (err.response?.status === 422 && err.response?.data?.errors) {
       formErrors.value = Object.values(err.response.data.errors).flat()
@@ -402,7 +402,7 @@ const paginationPages = computed(() => {
   return pages
 })
 
-async function loadCommuniques(page = 1) {
+async function loadCommuniqués(page = 1) {
   loading.value = true
   try {
     const { data } = await list({ page })
@@ -497,10 +497,10 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(deleteTarget.value.id)
-    ui.addToast('Communique supprime.', 'success')
+    ui.addToast('Communiqué supprimé.', 'success')
     showDeleteModal.value = false
     deleteTarget.value = null
-    await loadCommuniques(meta.value.current_page)
+    await loadCommuniqués(meta.value.current_page)
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
   } finally {
@@ -508,7 +508,7 @@ async function handleDelete() {
   }
 }
 
-onMounted(() => loadCommuniques())
+onMounted(() => loadCommuniqués())
 </script>
 
 <style scoped>

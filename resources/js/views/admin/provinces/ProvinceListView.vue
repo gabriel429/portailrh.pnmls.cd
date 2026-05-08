@@ -50,7 +50,7 @@
                 <th>Nom</th>
                 <th>Ville Secretariat</th>
                 <th class="text-center">Agents</th>
-                <th class="text-center">Departements</th>
+                <th class="text-center">Départements</th>
                 <th class="text-end pe-3">Actions</th>
               </tr>
             </thead>
@@ -141,9 +141,9 @@
           </div>
           <h5 class="fw-bold mb-2">Confirmer la suppression</h5>
           <p class="text-muted mb-3" style="font-size:.9rem;">
-            Etes-vous sur de vouloir supprimer la province
+            Êtes-vous sûr de vouloir supprimer la province
             <strong class="text-dark">{{ deleteTarget?.nom }}</strong> ?
-            Cette action est irreversible.
+            Cette action est irréversible.
           </p>
           <div class="d-flex gap-2 justify-content-center">
             <button class="btn-modal btn-modal-cancel" @click="showDeleteModal = false">

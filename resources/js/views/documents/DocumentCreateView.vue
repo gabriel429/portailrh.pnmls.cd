@@ -10,7 +10,7 @@
               <i class="fas fa-arrow-left"></i> Retour
             </router-link>
             <h2>
-              <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un Document
+              <i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document
             </h2>
             <p>Ajoutez un nouveau document a votre dossier personnel</p>
           </div>
@@ -41,9 +41,9 @@
                 <div v-if="errors.nom_document" class="invalid-feedback d-block">{{ errors.nom_document[0] }}</div>
               </div>
 
-              <!-- Categorie (visual cards) -->
+              <!-- Catégorie (visual cards) -->
               <div class="mb-4">
-                <label class="field-label">Categorie <span class="req">*</span></label>
+                <label class="field-label">Catégorie <span class="req">*</span></label>
                 <div class="cat-cards">
                   <div
                     v-for="cat in categories"
@@ -160,7 +160,7 @@
         <!-- Security Banner -->
         <div class="info-banner">
           <div class="info-banner-icon"><i class="fas fa-shield-alt"></i></div>
-          <p><strong>Securite :</strong> Vos documents sont accessibles uniquement par vous et l'administration RH autorisee.</p>
+          <p><strong>Sécurité :</strong> Vos documents sont accessibles uniquement par vous et l’administration RH autorisée.</p>
         </div>
 
       </div>
@@ -250,7 +250,7 @@ async function submitForm() {
     return
   }
   if (!selectedFile.value) {
-    errors.value.fichier = ['Veuillez selectionner un fichier.']
+    errors.value.fichier = ['Veuillez sélectionner un fichier.']
     return
   }
 
@@ -268,7 +268,7 @@ async function submitForm() {
 
   try {
     await create(formData)
-    ui.addToast('Document uploade avec succes.', 'success')
+    ui.addToast('Document uploadé avec succès.', 'success')
     router.push({ name: 'documents.index' })
   } catch (err) {
     if (err.response?.status === 422 && err.response.data.errors) {

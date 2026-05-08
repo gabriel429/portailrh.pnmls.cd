@@ -83,7 +83,7 @@
             <div class="col-md-4">
               <label for="situation_familiale" class="form-label">Situation familiale</label>
               <select class="form-select" id="situation_familiale" v-model="form.situation_familiale">
-                <option value="">-- Selectionner --</option>
+                <option value="">-- Sélectionner --</option>
                 <option value="celibataire">Celibataire</option>
                 <option value="marie">Marie(e)</option>
                 <option value="divorce">Divorce(e)</option>
@@ -125,12 +125,12 @@
               <div v-if="errors.email_prive" class="invalid-feedback">{{ errors.email_prive[0] }}</div>
             </div>
             <div class="col-md-4">
-              <label for="telephone_professionnel" class="form-label"><i class="fas fa-phone text-success me-1"></i> Telephone professionnel</label>
+              <label for="telephone_professionnel" class="form-label"><i class="fas fa-phone text-success me-1"></i> Téléphone professionnel</label>
               <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone_professionnel }" id="telephone_professionnel" v-model="form.telephone_professionnel" placeholder="+243 ...">
               <div v-if="errors.telephone_professionnel" class="invalid-feedback">{{ errors.telephone_professionnel[0] }}</div>
             </div>
             <div class="col-md-4">
-              <label for="telephone_prive" class="form-label"><i class="fas fa-mobile-alt text-success me-1"></i> Telephone prive</label>
+              <label for="telephone_prive" class="form-label"><i class="fas fa-mobile-alt text-success me-1"></i> Téléphone privé</label>
               <input type="tel" class="form-control" :class="{ 'is-invalid': errors.telephone_prive }" id="telephone_prive" v-model="form.telephone_prive" placeholder="+243 ...">
               <div v-if="errors.telephone_prive" class="invalid-feedback">{{ errors.telephone_prive[0] }}</div>
             </div>
@@ -163,7 +163,7 @@
             <div class="col-md-4">
               <label for="institution_id" class="form-label">Provenance matricule</label>
               <select class="form-select" :class="{ 'is-invalid': errors.institution_id }" id="institution_id" v-model="form.institution_id">
-                <option value="">-- Selectionner --</option>
+                <option value="">-- Sélectionner --</option>
                 <optgroup v-for="cat in options.institutionCategories" :key="cat.id" :label="cat.nom">
                   <option v-for="inst in cat.institutions" :key="inst.id" :value="inst.id">{{ inst.nom }}</option>
                 </optgroup>
@@ -173,7 +173,7 @@
             <div class="col-md-4">
               <label for="grade_id" class="form-label">Grade de l'Etat</label>
               <select class="form-select" :class="{ 'is-invalid': errors.grade_id }" id="grade_id" v-model="form.grade_id">
-                <option value="">-- Selectionner --</option>
+                <option value="">-- Sélectionner --</option>
                 <option v-for="g in options.grades" :key="g.id" :value="g.id">{{ g.libelle }} ({{ g.categorie }})</option>
               </select>
               <div v-if="errors.grade_id" class="invalid-feedback">{{ errors.grade_id[0] }}</div>
@@ -189,14 +189,14 @@
             </div>
             <div>
               <h5>Affectation & Fonction</h5>
-              <small>Organe, departement/service, section et fonction</small>
+              <small>Organe, département/service, section et fonction</small>
             </div>
           </div>
           <div class="row g-3">
             <div class="col-md-6">
               <label for="organe" class="form-label"><span class="step-badge">1</span> Organe <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.organe }" id="organe" v-model="form.organe" required @change="syncPanels">
-                <option value="">-- Selectionner un organe --</option>
+                <option value="">-- Sélectionner un organe --</option>
                 <option v-for="o in options.organeOptions" :key="o" :value="o">{{ o }}</option>
               </select>
               <div v-if="errors.organe" class="invalid-feedback">{{ errors.organe[0] }}</div>
@@ -209,13 +209,13 @@
                 <div class="flex-fill">
                   <input type="radio" class="btn-check" id="ratt_dept" value="departement" v-model="typeRattachement" @change="syncPanels">
                   <label class="btn btn-outline-primary w-100" for="ratt_dept" style="border-radius:8px">
-                    <i class="fas fa-building me-1"></i> Departement
+                    <i class="fas fa-building me-1"></i> Département
                   </label>
                 </div>
                 <div class="flex-fill">
                   <input type="radio" class="btn-check" id="ratt_service" value="service_rattache" v-model="typeRattachement" @change="syncPanels">
                   <label class="btn btn-outline-warning w-100" for="ratt_service" style="border-radius:8px">
-                    <i class="fas fa-link me-1"></i> Service rattache
+                    <i class="fas fa-link me-1"></i> Service rattaché
                   </label>
                 </div>
               </div>
@@ -223,9 +223,9 @@
 
             <!-- Departement (SEN + departement) -->
             <div v-if="currentNiveau === 'SEN' && typeRattachement === 'departement'" class="col-md-6">
-              <label for="departement_id" class="form-label"><span class="step-badge">3</span> Departement</label>
+              <label for="departement_id" class="form-label"><span class="step-badge">3</span> Département</label>
               <select class="form-select" :class="{ 'is-invalid': errors.departement_id }" id="departement_id" v-model="form.departement_id" @change="syncSection">
-                <option value="">-- Selectionner un departement --</option>
+                <option value="">-- Sélectionner un département --</option>
                 <option v-for="d in options.departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
               </select>
               <div v-if="errors.departement_id" class="invalid-feedback">{{ errors.departement_id[0] }}</div>
@@ -235,21 +235,21 @@
             <div v-if="currentNiveau === 'SEN' && typeRattachement === 'departement' && form.departement_id" class="col-md-6">
               <label for="section_id" class="form-label"><span class="step-badge">4</span> Section</label>
               <select class="form-select" id="section_id" v-model="form.section_id" @change="filterFonctions">
-                <option value="">-- Aucune (niveau departement) --</option>
+                <option value="">-- Aucune (niveau département) --</option>
                 <option
                   v-for="s in filteredSections"
                   :key="s.id"
                   :value="s.id"
                 >{{ s.nom }}</option>
               </select>
-              <small class="text-muted">Laissez vide pour Directeur, Chef, Assistant ou Secretaire du departement.</small>
+              <small class="text-muted">Laissez vide pour Directeur, Chef, Assistant ou Secrétaire du département.</small>
             </div>
 
             <!-- Province (SEP/SEL) -->
             <div v-if="currentNiveau === 'SEP' || currentNiveau === 'SEL'" class="col-md-6">
               <label for="province_id" class="form-label"><span class="step-badge">2</span> Province</label>
               <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="province_id" v-model="form.province_id">
-                <option value="">-- Selectionner une province --</option>
+                <option value="">-- Sélectionner une province --</option>
                 <option v-for="p in options.provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom || ('Province ' + p.id) }}</option>
               </select>
               <div v-if="errors.province_id" class="invalid-feedback">{{ errors.province_id[0] }}</div>
@@ -259,7 +259,7 @@
             <div class="col-md-6">
               <label for="fonction" class="form-label"><i class="fas fa-briefcase me-1" style="color:#8b5cf6;"></i> Fonction / Poste <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.fonction }" id="fonction" v-model="form.fonction" required>
-                <option value="">-- Selectionner une fonction --</option>
+                <option value="">-- Sélectionner une fonction --</option>
                 <option
                   v-for="f in visibleFonctions"
                   :key="f.id"
@@ -286,7 +286,7 @@
             <div class="col-md-6">
               <label for="niveau_etudes" class="form-label">Niveau d'etudes <span class="text-danger">*</span></label>
               <select class="form-select" :class="{ 'is-invalid': errors.niveau_etudes }" id="niveau_etudes" v-model="form.niveau_etudes" required>
-                <option value="">-- Selectionner --</option>
+                <option value="">-- Sélectionner --</option>
                 <option v-for="n in options.niveauxEtudes" :key="n" :value="n">{{ n }}</option>
               </select>
               <div v-if="errors.niveau_etudes" class="invalid-feedback">{{ errors.niveau_etudes[0] }}</div>
@@ -518,7 +518,7 @@ async function submitForm() {
 
     try {
         await create(formData)
-        ui.addToast('Agent cree avec succes', 'success')
+        ui.addToast('Agent créé avec succès.', 'success')
         router.push({ name: 'rh.agents.index' })
     } catch (err) {
         if (err.response?.status === 422) {

@@ -46,7 +46,7 @@
           <div v-if="!form.is_anonymous" class="col-md-6">
             <label for="agent_id" class="form-label">Agent</label>
             <select v-model="form.agent_id" class="form-select" id="agent_id" required>
-              <option value="">Selectionner un agent</option>
+              <option value="">Sélectionner un agent</option>
               <option v-for="ag in agents" :key="ag.id" :value="ag.id">
                 ({{ ag.id_agent }}) {{ ag.prenom }} {{ ag.nom }}
               </option>
@@ -61,7 +61,7 @@
           <div class="col-md-6">
             <label for="severite" class="form-label">Severite</label>
             <select v-model="form.severite" class="form-select" id="severite" required>
-              <option value="">Selectionner</option>
+              <option value="">Sélectionner</option>
               <option value="basse">Basse</option>
               <option value="moyenne">Moyenne</option>
               <option value="haute">Haute</option>
@@ -81,7 +81,7 @@
           <div class="col-12 d-flex gap-2 mt-3">
             <button type="submit" class="btn btn-primary" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-              <i v-else class="fas fa-save me-2"></i>Creer le signalement
+              <i v-else class="fas fa-save me-2"></i>Créer le signalement
             </button>
             <router-link :to="{ name: 'signalements.index' }" class="btn btn-outline-secondary">Annuler</router-link>
           </div>
@@ -130,7 +130,7 @@ async function handleSubmit() {
       delete payload.agent_id
     }
     await create(payload)
-    ui.addToast('Signalement cree avec succes.', 'success')
+    ui.addToast('Signalement créé avec succès.', 'success')
     router.push({ name: 'signalements.index' })
   } catch (err) {
     if (err.response?.status === 422) {

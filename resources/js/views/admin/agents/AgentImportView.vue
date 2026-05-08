@@ -13,7 +13,7 @@
         <button class="btn btn-light" type="button" :disabled="downloadingTemplate" @click="downloadTemplate">
           <span v-if="downloadingTemplate" class="spinner-border spinner-border-sm me-2"></span>
           <i v-else class="fas fa-download me-2"></i>
-          Telecharger le modele
+          Télécharger le modèle
         </button>
         <router-link :to="{ name: 'admin.dashboard' }" class="btn btn-outline-light">
           <i class="fas fa-arrow-left me-2"></i>
@@ -156,7 +156,7 @@
               <span>Doit correspondre a une valeur deja definie dans l'application.</span>
             </div>
             <div class="rule-item">
-              <strong>Province / departement / grade</strong>
+              <strong>Province / département / grade</strong>
               <span>Recherche par nom. Si la valeur n'existe pas, la ligne est rejetee.</span>
             </div>
             <div class="rule-item">
@@ -272,7 +272,7 @@ async function downloadTemplate() {
     link.remove()
     window.URL.revokeObjectURL(url)
   } catch (error) {
-    ui.addToast('Impossible de telecharger le modele.', 'danger')
+    ui.addToast('Impossible de télécharger le modèle.', 'danger')
   } finally {
     downloadingTemplate.value = false
   }

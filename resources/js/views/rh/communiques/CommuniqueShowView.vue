@@ -11,7 +11,7 @@
             <div class="col-lg-8">
               <h1 class="rh-title"><i class="fas fa-bullhorn me-2"></i>{{ communique.titre }}</h1>
               <p class="rh-sub">
-                Publie le {{ formatDateTime(communique.created_at) }}
+                Publié le {{ formatDateTime(communique.created_at) }}
                 <template v-if="communique.auteur"> par {{ communique.auteur.name }}</template>
               </p>
             </div>
@@ -89,7 +89,7 @@
       <ConfirmModal
         :show="showDeleteModal"
         title="Supprimer le communique"
-        message="Etes-vous sur de vouloir supprimer ce communique ?"
+        message="Êtes-vous sûr de vouloir supprimer ce communiqué ?"
         :loading="deleting"
         @confirm="handleDelete"
         @cancel="showDeleteModal = false"
@@ -162,7 +162,7 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(communique.value.id)
-    ui.addToast('Communique supprime.', 'success')
+    ui.addToast('Communiqué supprimé.', 'success')
     router.push({ name: 'rh.communiques.index' })
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')

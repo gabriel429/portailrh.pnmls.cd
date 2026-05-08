@@ -112,7 +112,7 @@ class PointageController extends ApiController
             $agent = $agents->get((int) $row['agent_id']);
             if (!$scope->canAccessAgent($user, $agent)) {
                 return response()->json([
-                    'message' => 'Acces refuse pour au moins un agent hors de votre perimetre.',
+                    'message' => 'Accès refusé pour au moins un agent hors de votre périmètre.',
                 ], 403);
             }
 
@@ -157,9 +157,9 @@ class PointageController extends ApiController
         }
 
         $parts = [];
-        if ($created > 0) $parts[] = "{$created} pointage(s) cree(s)";
-        if ($updated > 0) $parts[] = "{$updated} pointage(s) mis a jour";
-        $message = count($parts) > 0 ? implode(', ', $parts) . '.' : 'Aucun pointage enregistre.';
+        if ($created > 0) $parts[] = "{$created} pointage(s) créé(s)";
+        if ($updated > 0) $parts[] = "{$updated} pointage(s) mis à jour";
+        $message = count($parts) > 0 ? implode(', ', $parts) . '.' : 'Aucun pointage enregistré.';
 
         return $this->success([
             'created' => $created,
@@ -177,7 +177,7 @@ class PointageController extends ApiController
     public function show(Request $request, Pointage $pointage): JsonResponse
     {
         if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $pointage->load('agent');
@@ -197,7 +197,7 @@ class PointageController extends ApiController
     public function update(Request $request, Pointage $pointage): JsonResponse
     {
         if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -223,7 +223,7 @@ class PointageController extends ApiController
         return response()->json(array_merge($resolved, [
             'data' => $resolved,
             'pointage' => $resolved,
-            'message' => 'Pointage modifie avec succes.',
+            'message' => 'Pointage modifié avec succès.',
         ]));
     }
 
@@ -233,13 +233,13 @@ class PointageController extends ApiController
     public function destroy(Request $request, Pointage $pointage): JsonResponse
     {
         if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $pointage->delete();
 
         return $this->success(null, [], [
-            'message' => 'Pointage supprime avec succes.',
+            'message' => 'Pointage supprimé avec succès.',
         ]);
     }
 
@@ -249,13 +249,13 @@ class PointageController extends ApiController
     public function daily(Request $request): JsonResponse
     {
         $scope = $this->scopeService();
-        $dateDebut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
+        $dateDébut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
         $dateFin = $request->query('date_fin', now()->format('Y-m-d'));
         $agent_id = $request->query('agent_id');
         $organeFilter = $request->query('organe');
 
         $query = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+            ->whereBetween('date_pointage', [$dateDébut, $dateFin]);
 
         $scope->applyPointageScope($query, $request->user());
 
@@ -301,7 +301,7 @@ class PointageController extends ApiController
             'agents' => $agents,
         ], [
             'filters' => [
-                'date_debut' => $dateDebut,
+                'date_debut' => $dateDébut,
                 'date_fin' => $dateFin,
                 'agent_id' => $agent_id,
             ],
@@ -309,7 +309,7 @@ class PointageController extends ApiController
             'days' => $days,
             'agents' => $agents,
             'filters' => [
-                'date_debut' => $dateDebut,
+                'date_debut' => $dateDébut,
                 'date_fin' => $dateFin,
                 'agent_id' => $agent_id,
             ],
@@ -327,13 +327,13 @@ class PointageController extends ApiController
         $month = $request->query('month', now()->format('Y-m'));
         [$year, $monthNum] = explode('-', $month);
 
-        $dateDebut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
-        $dateFin = $dateDebut->copy()->endOfMonth();
+        $dateDébut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
+        $dateFin = $dateDébut->copy()->endOfMonth();
 
         $organeFilter = $request->query('organe');
 
         $query = Pointage::with(['agent.departement', 'agent.province'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+            ->whereBetween('date_pointage', [$dateDébut, $dateFin]);
 
         $scope->applyPointageScope($query, $request->user());
 
@@ -353,7 +353,7 @@ class PointageController extends ApiController
 
         // Calculate working days for the month
         $workingDays = 0;
-        $current = $dateDebut->copy();
+        $current = $dateDébut->copy();
         while ($current <= $dateFin) {
             if ($current->isWeekday()) {
                 $workingDays++;
@@ -365,8 +365,8 @@ class PointageController extends ApiController
         $pointagesByAgent = $pointages->groupBy('agent_id');
 
         // Calculate monthly statistics per agent
-        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDebut, $dateFin, $workingDays) {
-            $totalDays = $dateDebut->diffInDays($dateFin) + 1;
+        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDébut, $dateFin, $workingDays) {
+            $totalDays = $dateDébut->diffInDays($dateFin) + 1;
             $presentDays = 0;
             $absentDays = 0;
             $totalHours = 0;
@@ -414,7 +414,7 @@ class PointageController extends ApiController
         ];
 
         $allPointagesQuery = Pointage::with(['agent.departement', 'agent.province'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin])
+            ->whereBetween('date_pointage', [$dateDébut, $dateFin])
             ;
         $scope->applyPointageScope($allPointagesQuery, $request->user());
         $allPointages = $allPointagesQuery->get();
@@ -461,7 +461,7 @@ class PointageController extends ApiController
             if (in_array($dept->code, ['DIR'])) {
                 $group = 'Direction';
             } elseif (str_starts_with($dept->code, 'D')) {
-                $group = 'Departements';
+                $group = 'Départements';
             } else {
                 $group = 'Attaches';
             }
@@ -485,14 +485,14 @@ class PointageController extends ApiController
         ], [
             'stats_by_organe' => $statsByOrgane,
             'month' => $month,
-            'date_debut' => $dateDebut->format('Y-m-d'),
+            'date_debut' => $dateDébut->format('Y-m-d'),
             'date_fin' => $dateFin->format('Y-m-d'),
         ], [
             'agent_stats' => $agentStats,
             'global_stats' => $globalStats,
             'stats_by_organe' => $statsByOrgane,
             'month' => $month,
-            'date_debut' => $dateDebut->format('Y-m-d'),
+            'date_debut' => $dateDébut->format('Y-m-d'),
             'date_fin' => $dateFin->format('Y-m-d'),
             'sen_structures' => $senStructures,
             'provinces' => $allProvinces,
@@ -570,12 +570,12 @@ class PointageController extends ApiController
     public function exportDaily(Request $request)
     {
         $scope = $this->scopeService();
-        $dateDebut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
+        $dateDébut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
         $dateFin = $request->query('date_fin', now()->format('Y-m-d'));
         $agent_id = $request->query('agent_id');
 
         $query = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+            ->whereBetween('date_pointage', [$dateDébut, $dateFin]);
 
         $scope->applyPointageScope($query, $request->user());
 
@@ -628,11 +628,11 @@ class PointageController extends ApiController
         $month = $request->query('month', now()->format('Y-m'));
         [$year, $monthNum] = explode('-', $month);
 
-        $dateDebut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
-        $dateFin = $dateDebut->copy()->endOfMonth();
+        $dateDébut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
+        $dateFin = $dateDébut->copy()->endOfMonth();
 
         $query = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDebut, $dateFin]);
+            ->whereBetween('date_pointage', [$dateDébut, $dateFin]);
 
         $scope->applyPointageScope($query, $request->user());
 
@@ -650,13 +650,13 @@ class PointageController extends ApiController
 
         $pointagesByAgent = $pointages->groupBy('agent_id');
 
-        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDebut, $dateFin) {
+        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDébut, $dateFin) {
             $workingDays = 0;
             $presentDays = 0;
             $absentDays = 0;
             $totalHours = 0;
 
-            $current = $dateDebut->copy();
+            $current = $dateDébut->copy();
             while ($current <= $dateFin) {
                 if ($current->isWeekday()) {
                     $workingDays++;
@@ -695,10 +695,10 @@ class PointageController extends ApiController
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function () use ($agentStats, $dateDebut, $dateFin) {
+        $callback = function () use ($agentStats, $dateDébut, $dateFin) {
             $rows = [];
             $rows[] = ['RAPPORT MENSUEL DE POINTAGES'];
-            $rows[] = ['Periode: ' . $dateDebut->format('d/m/Y') . ' - ' . $dateFin->format('d/m/Y')];
+            $rows[] = ['Periode: ' . $dateDébut->format('d/m/Y') . ' - ' . $dateFin->format('d/m/Y')];
             $rows[] = [];
             $rows[] = ['Agent', 'Matricule', 'Jours Travail', 'Jours Enregistres', 'Presents', 'Absents', 'Heures Travaillees', 'Taux Assiduite (%)'];
 

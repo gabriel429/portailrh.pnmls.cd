@@ -95,7 +95,7 @@
                   <span class="file-name">{{ fileName(demande.lettre_demande) }}</span>
                 </div>
                 <a :href="storageUrl(demande.lettre_demande)" target="_blank" class="btn-rh outline">
-                  <i class="fas fa-download me-1"></i> Telecharger
+                  <i class="fas fa-download me-1"></i> Télécharger
                 </a>
               </div>
             </div>
@@ -144,7 +144,7 @@
                 class="btn-rh danger-outline"
                 @click="showRejectForm = true"
               >
-                <i class="fas fa-times-circle me-1"></i> Rejeter
+                <i class="fas fa-times-circle me-1"></i> Rejetéer
               </button>
               <template v-if="showRejectForm">
                 <button
@@ -203,7 +203,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer la demande"
-      message="Etes-vous sur de vouloir supprimer cette demande ?"
+      message="Êtes-vous sûr de vouloir supprimer cette demande ?"
       :loading="deleting"
       @confirm="handleDelete"
       @cancel="showDeleteModal = false"
@@ -275,9 +275,9 @@ function formatType(type) {
 function statusLabel(statut) {
   const labels = {
     en_attente: 'En attente',
-    'approuvé': 'Approuve',
-    'rejeté': 'Rejete',
-    'annulé': 'Annule',
+    'approuvé': 'Approuvée',
+    'rejeté': 'Rejetée',
+    'annulé': 'Annulée',
   }
   return labels[statut] || statut
 }
@@ -320,7 +320,7 @@ async function handleDelete() {
   deleting.value = true
   try {
     await remove(demande.value.id)
-    ui.addToast('Demande supprimee avec succes.', 'success')
+    ui.addToast('Demande supprimée avec succès.', 'success')
     showDeleteModal.value = false
     router.push({ name: 'requests.index' })
   } catch (err) {
@@ -376,7 +376,7 @@ onMounted(async () => {
   } catch (err) {
     console.error('Erreur ouverture demande:', err)
     if (err.response?.status === 403) {
-      ui.addToast('Vous n\'avez pas acces a cette demande.', 'danger')
+      ui.addToast('Vous n’avez pas accès à cette demande.', 'danger')
       router.push({ name: 'requests.index' })
     } else {
       console.error('Erreur chargement demande:', err)

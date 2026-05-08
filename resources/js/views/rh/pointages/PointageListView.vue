@@ -5,7 +5,7 @@
         <div class="row g-2 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-clock me-2"></i>Gestion des pointages</h1>
-            <p class="rh-sub">Suivi des presences, absences et heures travaillees.</p>
+            <p class="rh-sub">Suivi des présences, absences et heures travaillées.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -34,7 +34,7 @@
       <div class="rh-list-card p-3 mb-3">
         <form @submit.prevent="applyFilters" class="row g-3 align-items-end">
           <div class="col-md-2">
-            <label for="filter-date-debut" class="form-label">Date debut</label>
+            <label for="filter-date-debut" class="form-label">Date de début</label>
             <input type="date" id="filter-date-debut" v-model="filters.date_debut" class="form-control">
           </div>
           <div class="col-md-2">
@@ -42,7 +42,7 @@
             <input type="date" id="filter-date-fin" v-model="filters.date_fin" class="form-control">
           </div>
           <div class="col-md-3">
-            <label for="filter-department" class="form-label">Departement</label>
+            <label for="filter-department" class="form-label">Département</label>
             <select id="filter-department" v-model="filters.department_id" class="form-select">
               <option value="">Tous</option>
               <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.nom }}</option>
@@ -141,7 +141,7 @@
           <h5 class="text-muted">Aucun pointage</h5>
           <p class="text-muted">Il n'y a aucun pointage enregistre.</p>
           <button class="btn btn-primary mt-2" @click="openCreateModal">
-            <i class="fas fa-plus me-2"></i>Creer un pointage
+            <i class="fas fa-plus me-2"></i>Créer un pointage
           </button>
         </div>
       </div>
@@ -151,7 +151,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer le pointage"
-      :message="`Etes-vous sur de vouloir supprimer le pointage de ${deleteTarget?.agent?.prenom} ${deleteTarget?.agent?.nom} du ${formatDate(deleteTarget?.date_pointage)} ?`"
+      :message="`Êtes-vous sûr de vouloir supprimer le pointage de ${deleteTarget?.agent?.prenom} ${deleteTarget?.agent?.nom} du ${formatDate(deleteTarget?.date_pointage)} ?`"
       :loading="deleting"
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
@@ -165,7 +165,7 @@
         <div class="pcm-header">
           <div>
             <h4 class="pcm-title"><i class="fas fa-clipboard-check me-2"></i>Saisie des pointages</h4>
-            <p class="pcm-sub">Saisie groupee par departement. Selectionnez un departement puis chargez les agents.</p>
+            <p class="pcm-sub">Saisie groupée par département. Sélectionnez un département puis chargez les agents.</p>
           </div>
           <button class="pcm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
         </div>
@@ -175,9 +175,9 @@
           <div class="pcm-step1">
             <div class="pcm-form-row">
               <div class="pcm-field pcm-grow">
-                <label class="pcm-label">Departement / Service <span class="text-danger">*</span></label>
+                <label class="pcm-label">Département / Service <span class="text-danger">*</span></label>
                 <select v-model="cm_department" class="pcm-select">
-                  <option value="">-- Selectionner --</option>
+                  <option value="">-- Sélectionner --</option>
                   <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
                 </select>
               </div>
@@ -255,13 +255,13 @@
           <!-- No agents -->
           <div v-else-if="cm_agentsLoaded && cm_agents.length === 0" class="pcm-empty">
             <i class="fas fa-users-slash fa-2x mb-2"></i>
-            <p>Aucun agent actif dans ce departement</p>
+            <p>Aucun agent actif dans ce département</p>
           </div>
 
           <!-- Initial state -->
           <div v-else-if="!cm_loadingAgents" class="pcm-empty">
             <i class="fas fa-building fa-2x mb-2"></i>
-            <p>Selectionnez un departement et une date puis cliquez "Charger"</p>
+            <p>Sélectionnez un département et une date, puis cliquez sur « Charger ».</p>
           </div>
         </div>
 
@@ -400,7 +400,7 @@ async function doDelete() {
     deleting.value = true
     try {
         await pointagesApi.remove(deleteTarget.value.id)
-        ui.addToast('Pointage supprime avec succes.', 'success')
+        ui.addToast('Pointage supprimé avec succès.', 'success')
         showDeleteModal.value = false
         deleteTarget.value = null
         fetchPointages(meta.value.current_page)
@@ -461,8 +461,8 @@ function cm_clearAll() {
 }
 
 async function cm_loadAgents() {
-    if (cm_department.value === '') { ui.addToast('Selectionnez un departement.', 'warning'); return }
-    if (!cm_date.value) { ui.addToast('Selectionnez une date.', 'warning'); return }
+    if (cm_department.value === '') { ui.addToast('Sélectionnez un département.', 'warning'); return }
+    if (!cm_date.value) { ui.addToast('Sélectionnez une date.', 'warning'); return }
     cm_loadingAgents.value = true
     cm_agentsLoaded.value = false
     cm_errors.value = []

@@ -37,7 +37,7 @@
 
         <div class="row g-3 mb-3">
           <div class="col-md-4">
-            <label for="categorie" class="form-label fw-bold">Rubrique / categorie</label>
+            <label for="categorie" class="form-label fw-bold">Rubrique / catégorie</label>
             <input v-model="form.categorie" list="pta-categories-modal" type="text" class="form-control" id="categorie" placeholder="Ex. Leadership">
             <datalist id="pta-categories-modal">
               <option v-for="item in formData.categories" :key="item" :value="item"></option>
@@ -84,7 +84,7 @@
 
           <div v-if="isPlanificationSenAssignment" class="col-md-6">
             <label for="assignment_target_modal" class="form-label fw-bold">
-              Departement ou Attaches du SEN <span class="text-danger">*</span>
+              Département ou attachés du SEN <span class="text-danger">*</span>
             </label>
             <select v-model="form.assignment_target" class="form-select" id="assignment_target_modal" required @change="onAssignmentTargetChange">
               <option value="">-- Choisir d'abord la cible --</option>
@@ -97,7 +97,7 @@
 
           <div v-if="isPlanificationSenAssignment && form.assignment_target" class="col-md-6">
             <label for="assigned_agent_id_modal" class="form-label fw-bold">
-              Attribuer l'activite a <span v-if="assignableAgents.length" class="text-danger">*</span>
+              Attribuer l’activité à <span v-if="assignableAgents.length" class="text-danger">*</span>
             </label>
             <select
               :value="selectedAssignedAgentId"
@@ -135,7 +135,7 @@
             <select v-model="form.province_ids" class="form-select" id="province_ids" multiple size="6">
               <option v-for="p in formData.provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
             </select>
-            <div class="form-text">Maintenez Ctrl pour selectionner plusieurs provinces.</div>
+            <div class="form-text">Maintenez Ctrl pour sélectionner plusieurs provinces.</div>
           </div>
 
           <div v-if="form.niveau_administratif === 'SEL'" class="col-md-4">
@@ -458,12 +458,12 @@ function validateAssignmentSelection() {
   if (!isPlanificationSenAssignment.value) return true
 
   if (!form.value.assignment_target) {
-    errors.value = ['Choisissez d abord un departement ou les attaches du SEN.']
+    errors.value = ['Choisissez d’abord un département ou les attachés du SEN.']
     return false
   }
 
   if (assignableAgents.value.length > 0 && !selectedAssignedAgentId.value) {
-    errors.value = ['Choisissez l agent a qui attribuer cette activite.']
+    errors.value = ['Choisissez l’agent à qui attribuer cette activité.']
     return false
   }
 

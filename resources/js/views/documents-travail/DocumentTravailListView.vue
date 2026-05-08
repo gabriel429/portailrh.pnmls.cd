@@ -3,7 +3,7 @@
     <!-- Hero -->
     <div class="dt-hero">
       <h2><i class="fas fa-file-invoice me-2"></i>Documents de travail</h2>
-      <p>Documents officiels mis a disposition par l'administration</p>
+      <p>Documents officiels mis à disposition par l'administration.</p>
       <div class="dt-hero-stats">
         <div>
           <div class="dt-hero-stat-val">{{ totalDocs }}</div>
@@ -48,7 +48,7 @@
         <span class="dt-section-badge">{{ meta.total }} document{{ meta.total > 1 ? 's' : '' }}</span>
       </div>
       <button class="dt-back-btn" @click="setCategorie('')">
-        <i class="fas fa-arrow-left"></i> Toutes les categories
+        <i class="fas fa-arrow-left"></i> Toutes les catégories
       </button>
     </div>
 
@@ -78,7 +78,7 @@
           <div class="dt-card-footer">
             <span class="dt-card-date"><i class="fas fa-clock me-1"></i>{{ formatDate(doc.created_at) }}</span>
             <a :href="`/api/documents-travail/${doc.id}/download`" class="dt-card-dl">
-              <i class="fas fa-download"></i> Telecharger
+              <i class="fas fa-download"></i> Télécharger
             </a>
           </div>
         </div>
@@ -111,14 +111,14 @@
         <div class="dt-empty-icon"><i class="fas fa-folder-open"></i></div>
         <template v-if="categorie">
           <h5>Aucun document dans &laquo; {{ categorie }} &raquo;</h5>
-          <p>Il n'y a pas encore de documents dans cette categorie.</p>
+          <p>Il n'y a pas encore de documents dans cette catégorie.</p>
           <button class="dt-back-btn mt-3" style="display:inline-flex;" @click="setCategorie('')">
             <i class="fas fa-arrow-left"></i> Voir toutes les categories
           </button>
         </template>
         <template v-else>
           <h5>Aucun document pour le moment</h5>
-          <p>Les documents de travail seront publies ici par l'administration.</p>
+          <p>Les documents de travail seront publiés ici par l'administration.</p>
         </template>
       </div>
     </template>

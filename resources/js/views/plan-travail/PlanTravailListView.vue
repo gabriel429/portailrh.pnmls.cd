@@ -8,7 +8,7 @@
             <i :class="isAdminMode ? 'fas fa-chart-pie me-2' : 'fas fa-calendar-alt me-2'"></i>
             {{ isAdminMode ? 'Administration PTA' : 'Plan de Travail Annuel' }} {{ filters.annee }}
           </h2>
-          <p>{{ isAdminMode ? 'Coordination, mise a jour et suivi global des activites PTA.' : 'Activites planifiees, en cours et terminees de votre unite organisationnelle.' }}</p>
+          <p>{{ isAdminMode ? 'Coordination, mise à jour et suivi global des activités PTA.' : 'Activités planifiées, en cours et terminées de votre unité organisationnelle.' }}</p>
           <div class="pt-hero-stats">
             <div>
               <div class="pt-hero-stat-val">{{ stats.total }}</div>
@@ -22,7 +22,7 @@
         </div>
         <div class="pt-hero-actions">
           <button v-if="canEdit" class="pt-hero-btn" @click="openCreateModal">
-            <i class="fas fa-plus-circle me-1"></i> Nouvelle activite
+            <i class="fas fa-plus-circle me-1"></i> Nouvelle activité
           </button>
           <div class="pt-hero-filters">
             <select v-model="filters.annee" class="pt-filter-select" @change="loadPlan">
@@ -36,7 +36,7 @@
     <div v-if="accessDenied && !loading" class="pt-alert pt-alert-danger">
       <div class="pt-alert-icon"><i class="fas fa-lock"></i></div>
       <div>
-        <h5>Acces restreint</h5>
+        <h5>Accès restreint</h5>
         <p>{{ accessDeniedMessage }}</p>
       </div>
     </div>
@@ -45,7 +45,7 @@
       <div class="pta-admin-head">
         <div>
           <h3>Dashboard de suivi PTA</h3>
-          <p>Vue globale par statut, departement, province, agent et trimestre.</p>
+          <p>Vue globale par statut, département, province, agent et trimestre.</p>
         </div>
         <span v-if="dashboardLoading" class="pta-admin-loading"><i class="fas fa-spinner fa-spin"></i> Actualisation</span>
       </div>
@@ -70,9 +70,9 @@
 
       <div class="pta-admin-graphs">
         <div class="pta-admin-panel">
-          <h4><i class="fas fa-building me-1"></i>Activites par departement ou service <span>{{ dashboardMetricLabel }}</span></h4>
+          <h4><i class="fas fa-building me-1"></i>Activités par département ou service <span>{{ dashboardMetricLabel }}</span></h4>
           <div v-if="dashboardLoading" class="pta-panel-loading" aria-live="polite">
-            <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des departements...</span>
+            <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des départements...</span>
             <div v-for="n in 4" :key="`dept-loading-${n}`" class="pta-panel-skeleton"></div>
           </div>
           <div v-else-if="dashboardData.by_department.length" class="pta-bars">
@@ -84,11 +84,11 @@
               <div class="pta-bar-value">{{ dashboardMetricValue(item) }}</div>
             </button>
           </div>
-          <div v-else class="pta-admin-empty">Aucune activite par departement.</div>
+          <div v-else class="pta-admin-empty">Aucune activité par département.</div>
         </div>
 
         <div class="pta-admin-panel">
-          <h4><i class="fas fa-map-marker-alt me-1"></i>Activites par province <span>{{ dashboardMetricLabel }}</span></h4>
+          <h4><i class="fas fa-map-marker-alt me-1"></i>Activités par province <span>{{ dashboardMetricLabel }}</span></h4>
           <div v-if="dashboardLoading" class="pta-panel-loading" aria-live="polite">
             <span><i class="fas fa-spinner fa-spin me-1"></i>Chargement des provinces...</span>
             <div v-for="n in 4" :key="`province-loading-${n}`" class="pta-panel-skeleton"></div>
@@ -102,18 +102,18 @@
               <div class="pta-bar-value">{{ dashboardMetricValue(item) }}</div>
             </button>
           </div>
-          <div v-else class="pta-admin-empty">Aucune activite par province.</div>
+          <div v-else class="pta-admin-empty">Aucune activité par province.</div>
         </div>
 
         <div class="pta-admin-panel">
-          <h4><i class="fas fa-users me-1"></i>Activites attribuees aux agents <span>{{ dashboardMetricLabel }}</span></h4>
+          <h4><i class="fas fa-users me-1"></i>Activités attribuées aux agents <span>{{ dashboardMetricLabel }}</span></h4>
           <div v-if="dashboardData.by_agent.length" class="pta-agent-list">
             <div v-for="agent in dashboardMetricRows(dashboardData.by_agent)" :key="agent.label" class="pta-agent-row">
               <span>{{ agent.label }}</span>
               <strong>{{ dashboardMetricValue(agent) }}</strong>
             </div>
           </div>
-          <div v-else class="pta-admin-empty">Aucune activite attribuee a un agent.</div>
+          <div v-else class="pta-admin-empty">Aucune activité attribuée à un agent.</div>
         </div>
 
         <div class="pta-admin-panel pta-admin-panel-wide">
@@ -134,29 +134,29 @@
       <button class="pt-filter-card pt-filter-all" :class="{ active: !filters.statut && !filters.trimestre }" @click="setFilter('', '')">
         <div class="pt-filter-icon"><i class="fas fa-th-large"></i></div>
         <div class="pt-filter-info">
-          <div class="pt-filter-name">Toutes les activites PTA</div>
-          <div class="pt-filter-count">{{ stats.total }} activite{{ stats.total > 1 ? 's' : '' }} au total</div>
+          <div class="pt-filter-name">Toutes les activités PTA</div>
+          <div class="pt-filter-count">{{ stats.total }} activité{{ stats.total > 1 ? 's' : '' }} au total</div>
         </div>
       </button>
       <button class="pt-filter-card pt-filter-planned" :class="{ active: filters.statut === 'planifiee' }" @click="setFilter('planifiee', '')">
         <div class="pt-filter-icon"><i class="fas fa-clock"></i></div>
         <div class="pt-filter-info">
-          <div class="pt-filter-name">Planifiees</div>
-          <div class="pt-filter-count">{{ stats.planifiee }} activite{{ stats.planifiee > 1 ? 's' : '' }}</div>
+          <div class="pt-filter-name">Planifiées</div>
+          <div class="pt-filter-count">{{ stats.planifiee }} activité{{ stats.planifiee > 1 ? 's' : '' }}</div>
         </div>
       </button>
       <button class="pt-filter-card pt-filter-progress" :class="{ active: filters.statut === 'en_cours' }" @click="setFilter('en_cours', '')">
         <div class="pt-filter-icon"><i class="fas fa-spinner"></i></div>
         <div class="pt-filter-info">
           <div class="pt-filter-name">En cours</div>
-          <div class="pt-filter-count">{{ stats.en_cours }} activite{{ stats.en_cours > 1 ? 's' : '' }}</div>
+          <div class="pt-filter-count">{{ stats.en_cours }} activité{{ stats.en_cours > 1 ? 's' : '' }}</div>
         </div>
       </button>
       <button class="pt-filter-card pt-filter-done" :class="{ active: filters.statut === 'terminee' }" @click="setFilter('terminee', '')">
         <div class="pt-filter-icon"><i class="fas fa-check-circle"></i></div>
         <div class="pt-filter-info">
-          <div class="pt-filter-name">Terminees</div>
-          <div class="pt-filter-count">{{ stats.terminee }} activite{{ stats.terminee > 1 ? 's' : '' }}</div>
+          <div class="pt-filter-name">Terminées</div>
+          <div class="pt-filter-count">{{ stats.terminee }} activité{{ stats.terminee > 1 ? 's' : '' }}</div>
         </div>
       </button>
     </div>
@@ -176,7 +176,7 @@
     <!-- Planification global filters (dept / province / niveau) -->
     <div v-if="isGlobalPta && (filterDepts.length || filterProvinces.length)" class="pt-planif-filters">
       <select v-model="filters.departement_id" class="pt-filter-select" @change="loadPlan">
-        <option value="">Tous les departements</option>
+        <option value="">Tous les départements</option>
         <option v-for="d in filterDepts" :key="d.id" :value="d.id">{{ d.nom }}</option>
       </select>
       <select v-model="filters.province_id" class="pt-filter-select" @change="loadPlan">
@@ -213,7 +213,7 @@
           <span v-if="filters.statut">{{ statutLabel(filters.statut) }}</span>
           <span v-if="filters.statut && filters.trimestre"> &middot; </span>
           <span v-if="filters.trimestre">{{ triLabel(filters.trimestre) }}</span>
-          <span class="pt-section-badge">{{ filtering ? 'Chargement...' : `${flatActivites.length} activite${flatActivites.length > 1 ? 's' : ''}` }}</span>
+    <span class="pt-section-badge">{{ filtering ? 'Chargement...' : `${flatActivites.length} activité${flatActivites.length > 1 ? 's' : ''}` }}</span>
         </div>
         <button class="pt-back-btn" @click="setFilter('', '')">
           <i class="fas fa-arrow-left"></i> Tout afficher
@@ -310,17 +310,17 @@
       <div v-else class="pt-empty">
         <div class="pt-empty-icon"><i class="fas fa-calendar-alt"></i></div>
         <template v-if="filters.statut || filters.trimestre">
-          <h5>Aucune activite trouvee</h5>
-          <p>Il n'y a pas d'activites correspondant a ces filtres.</p>
+          <h5>Aucune activité trouvée</h5>
+          <p>Il n'y a pas d'activités correspondant à ces filtres.</p>
           <button class="pt-back-btn mt-3" style="display:inline-flex;" @click="setFilter('', '')">
             <i class="fas fa-arrow-left"></i> Tout afficher
           </button>
         </template>
         <template v-else>
-          <h5>Aucune activite pour l'annee {{ filters.annee }}</h5>
-          <p>Le plan de travail n'a pas encore d'activites enregistrees.</p>
+          <h5>Aucune activité pour l'année {{ filters.annee }}</h5>
+          <p>Le plan de travail n'a pas encore d'activités enregistrées.</p>
           <button v-if="canEdit" class="pt-hero-btn mt-3" style="display:inline-flex;" @click="openCreateModal">
-            <i class="fas fa-plus-circle me-1"></i> Creer la premiere activite
+            <i class="fas fa-plus-circle me-1"></i> Créer la première activité
           </button>
         </template>
       </div>
@@ -371,23 +371,23 @@
                 <div class="ptd-info-grid">
                   <div class="ptd-info-item">
                     <i class="fas fa-bullseye"></i>
-                    <div><span class="ptd-info-lbl">Objectif</span><span class="ptd-info-val">{{ detailActivite.objectif || 'Non renseigne' }}</span></div>
+                    <div><span class="ptd-info-lbl">Objectif</span><span class="ptd-info-val">{{ detailActivite.objectif || 'Non renseigné' }}</span></div>
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-tag"></i>
-                    <div><span class="ptd-info-lbl">Rubrique</span><span class="ptd-info-val">{{ detailActivite.categorie || 'Non renseignee' }}</span></div>
+                    <div><span class="ptd-info-lbl">Rubrique</span><span class="ptd-info-val">{{ detailActivite.categorie || 'Non renseignée' }}</span></div>
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-trophy"></i>
-                    <div><span class="ptd-info-lbl">Resultat attendu</span><span class="ptd-info-val">{{ detailActivite.resultat_attendu || 'Non renseigne' }}</span></div>
+                    <div><span class="ptd-info-lbl">Résultat attendu</span><span class="ptd-info-val">{{ detailActivite.resultat_attendu || 'Non renseigné' }}</span></div>
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-user-tie"></i>
-                    <div><span class="ptd-info-lbl">Attribution</span><span class="ptd-info-val">{{ assignedAgentsLabel(detailActivite) || detailActivite.responsable_code || 'Non renseigne' }}</span></div>
+                    <div><span class="ptd-info-lbl">Attribution</span><span class="ptd-info-val">{{ assignedAgentsLabel(detailActivite) || detailActivite.responsable_code || 'Non renseigné' }}</span></div>
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-coins"></i>
-                    <div><span class="ptd-info-lbl">Cout en CDF</span><span class="ptd-info-val">{{ detailActivite.cout_cdf != null ? formatCurrency(detailActivite.cout_cdf) + ' CDF' : 'Non renseigne' }}</span></div>
+                    <div><span class="ptd-info-lbl">Coût en CDF</span><span class="ptd-info-val">{{ detailActivite.cout_cdf != null ? formatCurrency(detailActivite.cout_cdf) + ' CDF' : 'Non renseigné' }}</span></div>
                   </div>
                   <div class="ptd-info-item">
                     <i class="fas fa-building"></i>
@@ -439,7 +439,7 @@
 
                 <!-- Taches -->
                 <div v-if="detailActivite.taches?.length" class="ptd-section">
-                  <h6><i class="fas fa-tasks me-1"></i> Taches liees ({{ detailActivite.taches.length }})</h6>
+                  <h6><i class="fas fa-tasks me-1"></i> Tâches liées ({{ detailActivite.taches.length }})</h6>
                   <div class="ptd-taches">
                     <div v-for="t in detailActivite.taches" :key="t.id" class="ptd-tache">
                       <span class="ptd-tache-name">{{ t.titre }}</span>
@@ -454,9 +454,9 @@
                   <span><i class="fas fa-clock me-1"></i> {{ detailFormatDateTime(detailActivite.created_at) }}</span>
                 </div>
 
-                <!-- Agents assignes -->
+                <!-- Agents assignés -->
                 <div v-if="detailActivite.assigned_agents?.length" class="ptd-section">
-                  <h6><i class="fas fa-users me-1"></i> Agents assignes ({{ detailActivite.assigned_agents.length }})</h6>
+                  <h6><i class="fas fa-users me-1"></i> Agents assignés ({{ detailActivite.assigned_agents.length }})</h6>
                   <div class="ptd-agents-list">
                     <span v-for="a in detailActivite.assigned_agents" :key="a.id" class="ptd-agent-pill">
                       <i class="fas fa-user-circle me-1"></i>{{ a.nom_complet }}
@@ -471,9 +471,9 @@
                   <form @submit.prevent="handleDetailUpdateStatut" class="ptd-update-form">
                     <div class="ptd-update-row">
                       <select v-model="detailStatutForm.statut" class="ptm-input">
-                        <option value="planifiee">Planifiee</option>
+                        <option value="planifiee">Planifiée</option>
                         <option value="en_cours">En cours</option>
-                        <option value="terminee">Terminee</option>
+                        <option value="terminee">Terminée</option>
                       </select>
                       <div class="ptd-range-wrap">
                         <input v-model.number="detailStatutForm.pourcentage" type="range" min="0" max="100" step="5">
@@ -483,7 +483,7 @@
                     <textarea v-model="detailStatutForm.observations" class="ptm-input ptm-textarea" rows="2" placeholder="Observations..."></textarea>
                     <button type="submit" class="ptd-update-btn" :disabled="detailUpdating">
                       <i :class="detailUpdating ? 'fas fa-spinner fa-spin' : 'fas fa-save'" class="me-1"></i>
-                      {{ detailUpdating ? 'Enregistrement...' : 'Mettre a jour' }}
+                      {{ detailUpdating ? 'Enregistrement...' : 'Mettre à jour' }}
                     </button>
                   </form>
                 </div>
@@ -516,7 +516,7 @@
               <div>
                 <span class="pta-entity-chip">{{ entityTypeLabel(entityDetail) }}</span>
                 <h3>{{ entityDetail.label }}</h3>
-                <p>{{ entityDetail.total }} activite{{ entityDetail.total > 1 ? 's' : '' }} PTA suivie{{ entityDetail.total > 1 ? 's' : '' }}</p>
+                <p>{{ entityDetail.total }} activité{{ entityDetail.total > 1 ? 's' : '' }} PTA suivie{{ entityDetail.total > 1 ? 's' : '' }}</p>
               </div>
             </div>
 
@@ -546,11 +546,11 @@
                     <small v-if="agent.fonction">{{ agent.fonction }}</small>
                   </span>
                 </div>
-                <p v-else class="pta-entity-muted">Aucun agent assigne.</p>
+                <p v-else class="pta-entity-muted">Aucun agent assigné.</p>
               </section>
 
               <section class="pta-entity-section">
-                <h4><i class="fas fa-clock me-1"></i>Dernieres mises a jour</h4>
+                <h4><i class="fas fa-clock me-1"></i>Dernières mises a jour</h4>
                 <div v-if="entityDetail.latest_updates?.length" class="pta-entity-updates">
                   <button
                     v-for="activity in entityDetail.latest_updates"
@@ -563,7 +563,7 @@
                     <small>{{ detailStatutLabel(activity.statut) }} - {{ activity.pourcentage }}% - {{ detailFormatDateTime(activity.updated_at) }}</small>
                   </button>
                 </div>
-                <p v-else class="pta-entity-muted">Aucune mise a jour recente.</p>
+                <p v-else class="pta-entity-muted">Aucune mise à jour récente.</p>
               </section>
             </div>
           </div>
@@ -578,8 +578,8 @@
           <div class="ptm-header">
             <div class="ptm-header-icon"><i class="fas fa-plus-circle"></i></div>
             <div>
-              <h4 class="ptm-title">Nouvelle activite</h4>
-              <p class="ptm-subtitle">Ajouter une activite au plan de travail</p>
+              <h4 class="ptm-title">Nouvelle activité</h4>
+              <p class="ptm-subtitle">Ajouter une activité au plan de travail.</p>
             </div>
             <button class="ptm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
           </div>
@@ -588,7 +588,7 @@
             <!-- Titre -->
             <div class="ptm-field">
               <label class="ptm-label">Titre <span class="ptm-req">*</span></label>
-              <input v-model="createForm.titre" type="text" class="ptm-input" :class="{ 'ptm-err': createErrors.titre }" placeholder="Titre de l'activite" maxlength="255">
+              <input v-model="createForm.titre" type="text" class="ptm-input" :class="{ 'ptm-err': createErrors.titre }" placeholder="Titre de l'activité" maxlength="255">
               <span v-if="createErrors.titre" class="ptm-err-msg">{{ createErrors.titre[0] }}</span>
             </div>
 
@@ -601,19 +601,19 @@
                   </datalist>
                 </div>
                 <div class="ptm-field ptm-half">
-                  <label class="ptm-label">Cout en CDF</label>
+                  <label class="ptm-label">Coût en CDF</label>
                   <input v-model.number="createForm.cout_cdf" type="number" class="ptm-input" min="0" step="0.01" placeholder="0">
                 </div>
               </div>
 
             <div class="ptm-field">
               <label class="ptm-label">Objectif strategique</label>
-              <textarea v-model="createForm.objectif" class="ptm-input ptm-textarea" rows="2" placeholder="Objectif strategique de l'activite"></textarea>
+              <textarea v-model="createForm.objectif" class="ptm-input ptm-textarea" rows="2" placeholder="Objectif stratégique de l'activité"></textarea>
             </div>
 
             <div class="ptm-field">
-              <label class="ptm-label">Resultat attendu</label>
-              <textarea v-model="createForm.resultat_attendu" class="ptm-input ptm-textarea" rows="2" placeholder="Resultat attendu"></textarea>
+              <label class="ptm-label">Résultat attendu</label>
+              <textarea v-model="createForm.resultat_attendu" class="ptm-input ptm-textarea" rows="2" placeholder="Résultat attendu"></textarea>
             </div>
 
             <!-- Niveau administratif -->
@@ -628,18 +628,18 @@
             </div>
 
             <div v-if="isCreatePlanificationSenAssignment" class="ptm-field">
-              <label class="ptm-label">Departement ou Attaches du SEN <span class="ptm-req">*</span></label>
+              <label class="ptm-label">Département ou attachés du SEN <span class="ptm-req">*</span></label>
               <select v-model="createForm.assignment_target" class="ptm-input" required @change="onCreateAssignmentTargetChange">
                 <option value="">-- Choisir d'abord la cible --</option>
                 <option v-for="target in createAssignmentTargets" :key="target.value" :value="target.value">
                   {{ target.label }} ({{ target.agent_count }} agent{{ target.agent_count > 1 ? 's' : '' }})
                 </option>
               </select>
-              <div class="ptm-field-hint">Les agents proposes dependent uniquement de ce choix.</div>
+              <div class="ptm-field-hint">Les agents proposés dépendent uniquement de ce choix.</div>
             </div>
 
             <div v-if="isCreatePlanificationSenAssignment && createForm.assignment_target" class="ptm-field">
-              <label class="ptm-label">Attribuer l'activite a <span v-if="createAssignableAgents.length" class="ptm-req">*</span></label>
+              <label class="ptm-label">Attribuer l'activité à <span v-if="createAssignableAgents.length" class="ptm-req">*</span></label>
               <select
                 :value="createSelectedAssignedAgentId"
                 class="ptm-input"
@@ -656,7 +656,7 @@
 
             <!-- Departement (SEN) -->
             <div v-else-if="createForm.niveau_administratif === 'SEN'" class="ptm-field">
-              <label class="ptm-label">Departement</label>
+              <label class="ptm-label">Département</label>
               <select v-model="createForm.departement_id" class="ptm-input">
                 <option value="">-- Choisir --</option>
                 <option v-for="d in createDepartments" :key="d.id" :value="d.id">{{ d.nom }}</option>
@@ -741,7 +741,7 @@
             <!-- Dates -->
             <div class="ptm-row">
               <div class="ptm-field ptm-half">
-                <label class="ptm-label">Date debut</label>
+                <label class="ptm-label">Date de début</label>
                 <input v-model="createForm.date_debut" type="date" class="ptm-input">
               </div>
               <div class="ptm-field ptm-half">
@@ -753,7 +753,7 @@
             <!-- Description -->
             <div class="ptm-field">
               <label class="ptm-label">Description</label>
-              <textarea v-model="createForm.description" class="ptm-input ptm-textarea" rows="3" placeholder="Description de l'activite..."></textarea>
+              <textarea v-model="createForm.description" class="ptm-input ptm-textarea" rows="3" placeholder="Description de l'activité..."></textarea>
             </div>
 
             <!-- Observations -->
@@ -768,7 +768,7 @@
               <button type="submit" class="ptm-btn-submit" :disabled="createSubmitting">
                 <i v-if="createSubmitting" class="fas fa-spinner fa-spin me-1"></i>
                 <i v-else class="fas fa-plus-circle me-1"></i>
-                {{ createSubmitting ? 'Creation...' : 'Creer l\'activite' }}
+                {{ createSubmitting ? 'Création...' : 'Créer l’activité' }}
               </button>
             </div>
           </form>
@@ -807,7 +807,7 @@ const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
 const accessDenied = ref(false)
-const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre departement.")
+const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre département.")
 const groupees = ref({})
 const emptyStats = () => ({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, annulee: 0, en_retard: 0, avg_pourcentage: 0 })
 const stats = ref(emptyStats())
@@ -835,25 +835,25 @@ const dashboardKpis = computed(() => {
   const summary = dashboardData.value?.summary || {}
 
   return [
-    { key: 'total', label: 'Total creees', value: summary.total || 0, statut: '', icon: 'fas fa-layer-group', iconClass: 'pta-kpi-total' },
+    { key: 'total', label: 'Total créées', value: summary.total || 0, statut: '', icon: 'fas fa-layer-group', iconClass: 'pta-kpi-total' },
     { key: 'en_cours', label: 'En cours', value: summary.en_cours || 0, statut: 'en_cours', icon: 'fas fa-spinner', iconClass: 'pta-kpi-progress' },
-    { key: 'terminee', label: 'Realisees', value: summary.terminee || 0, statut: 'terminee', icon: 'fas fa-check', iconClass: 'pta-kpi-done' },
+    { key: 'terminee', label: 'Réalisées', value: summary.terminee || 0, statut: 'terminee', icon: 'fas fa-check', iconClass: 'pta-kpi-done' },
     { key: 'en_retard', label: 'En retard', value: summary.en_retard || 0, statut: 'en_retard', icon: 'fas fa-triangle-exclamation', iconClass: 'pta-kpi-late' },
-    { key: 'annulee', label: 'Annulees', value: summary.annulee || 0, statut: 'annulee', icon: 'fas fa-ban', iconClass: 'pta-kpi-cancel' },
+    { key: 'annulee', label: 'Annulées', value: summary.annulee || 0, statut: 'annulee', icon: 'fas fa-ban', iconClass: 'pta-kpi-cancel' },
   ]
 })
 
 const dashboardMetricKey = computed(() => filters.value.statut || 'total')
 const dashboardMetricLabel = computed(() => {
   const map = {
-    total: 'Total creees',
+    total: 'Total créées',
     en_cours: 'En cours',
-    terminee: 'Realisees',
+    terminee: 'Réalisées',
     en_retard: 'En retard',
-    annulee: 'Annulees',
+    annulee: 'Annulées',
   }
 
-  return map[dashboardMetricKey.value] || 'Total creees'
+  return map[dashboardMetricKey.value] || 'Total créées'
 })
 
 const entityStats = computed(() => {
@@ -862,9 +862,9 @@ const entityStats = computed(() => {
   return [
     { label: 'Total PTA', value: entityDetail.value.total || 0 },
     { label: 'En cours', value: entityDetail.value.en_cours || 0 },
-    { label: 'Realisees', value: entityDetail.value.terminee || 0 },
+    { label: 'Réalisées', value: entityDetail.value.terminee || 0 },
     { label: 'En retard', value: entityDetail.value.en_retard || 0 },
-    { label: 'Annulees', value: entityDetail.value.annulee || 0 },
+    { label: 'Annulées', value: entityDetail.value.annulee || 0 },
   ]
 })
 
@@ -917,7 +917,7 @@ async function loadPlan() {
     if (requestId !== loadPlanRequestId) return
     if (err.response?.status === 403) {
       accessDenied.value = true
-      accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre departement.'
+      accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre département.'
       groupees.value = {}
       stats.value = emptyStats()
       canEdit.value = false
@@ -947,7 +947,7 @@ async function loadDashboard() {
   } catch (err) {
     dashboardData.value = null
     if (err.response?.status === 403) {
-      ui.addToast('Acces refuse a l administration PTA.', 'warning')
+      ui.addToast('Accès refusé à l’administration PTA.', 'warning')
       router.push({ name: 'plan-travail.index' })
     }
   } finally {
@@ -1058,13 +1058,13 @@ function triLabel(tri) {
     T2: '2e Trimestre (Avr-Jun)',
     T3: '3e Trimestre (Jul-Sep)',
     T4: '4e Trimestre (Oct-Dec)',
-    Annuel: 'Activites annuelles',
+    Annuel: 'Activités annuelles',
   }
   return map[tri] || tri
 }
 
 function statutLabel(statut) {
-  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee', annulee: 'Annulee', en_retard: 'En retard' }
+  const map = { terminee: 'Terminée', en_cours: 'En cours', planifiee: 'Planifiée', annulee: 'Annulée', en_retard: 'En retard' }
   return map[statut] || statut
 }
 
@@ -1128,9 +1128,9 @@ const niveauOptions = [
   { value: 'SEL', label: 'SEL (Local)' },
 ]
 const statutOptions = [
-  { value: 'planifiee', label: 'Planifiee' },
+  { value: 'planifiee', label: 'Planifiée' },
   { value: 'en_cours', label: 'En cours' },
-  { value: 'terminee', label: 'Terminee' },
+  { value: 'terminee', label: 'Terminée' },
 ]
 const trimestreOptions = [
   { value: '', label: 'Annuel' },
@@ -1213,7 +1213,7 @@ async function openCreateModal() {
     createIsPlanificationRole.value = Boolean(data.is_planification_role)
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast(err.response?.data?.message || 'Vous ne pouvez creer des activites PTA que pour votre departement.', 'warning')
+      ui.addToast(err.response?.data?.message || 'Vous ne pouvez créer des activités PTA que pour votre département.', 'warning')
       showCreateModal.value = false
     }
   }
@@ -1239,7 +1239,7 @@ function onCreateAssignmentTargetChange() {
 
   if (createForm.value.assignment_target === 'sen_attaches') {
     createForm.value.departement_id = ''
-    createForm.value.responsable_code = 'Attaches SEN'
+    createForm.value.responsable_code = 'Attachés SEN'
     return
   }
 
@@ -1281,16 +1281,16 @@ async function handleCreateSubmit() {
     if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
     if (!payload.assigned_agent_ids?.length) delete payload.assigned_agent_ids
     await create(payload, adminParams.value)
-    ui.addToast('Activite creee avec succes !', 'success')
+    ui.addToast('Activité créée avec succès.', 'success')
     showCreateModal.value = false
     loadPlan()
   } catch (err) {
     if (err.response?.status === 422) {
       createErrors.value = err.response.data.errors || {}
     } else if (err.response?.status === 403) {
-      ui.addToast(err.response?.data?.message || 'Vous ne pouvez creer des activites PTA que pour votre departement.', 'warning')
+      ui.addToast(err.response?.data?.message || 'Vous ne pouvez créer des activités PTA que pour votre département.', 'warning')
     } else {
-      ui.addToast('Erreur lors de la creation.', 'danger')
+      ui.addToast('Erreur lors de la création.', 'danger')
     }
   } finally {
     createSubmitting.value = false
@@ -1314,10 +1314,10 @@ function handlePlanTravailUpdated() {
 
 async function handleDeleteFromCard(id, evt) {
   evt.stopPropagation()
-  if (!confirm('Supprimer cette activite PTA ? Cette action est irreversible.')) return
+  if (!confirm('Supprimer cette activité PTA ? Cette action est irréversible.')) return
   try {
     await remove(id, adminParams.value)
-    ui.addToast('Activite supprimee.', 'success')
+    ui.addToast('Activité supprimée.', 'success')
     loadPlan()
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
@@ -1363,12 +1363,12 @@ function closeEntityDetail() {
 function entityTypeLabel(item) {
   const map = {
     province: 'Province',
-    department: 'Departement ou service',
-    sen_service: 'Service rattache au SEN',
-    sen_attaches: 'Service rattache au SEN',
+    department: 'Département ou service',
+    sen_service: 'Service rattaché au SEN',
+    sen_attaches: 'Service rattaché au SEN',
   }
 
-  return map[item?.type] || 'Entite PTA'
+  return map[item?.type] || 'Entité PTA'
 }
 
 function entityIcon(item) {
@@ -1433,7 +1433,7 @@ async function handleDetailUpdateStatut() {
       pourcentage: data.data.pourcentage,
       observations: data.data.observations || '',
     }
-    ui.addToast('Statut mis a jour.', 'success')
+    ui.addToast('Statut mis à jour.', 'success')
     loadPlan()
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur.', 'danger')
@@ -1448,13 +1448,13 @@ function detailStatutBadge(statut) {
 }
 
 function detailStatutLabel(statut) {
-  const map = { terminee: 'Terminee', en_cours: 'En cours', planifiee: 'Planifiee', annulee: 'Annulee', en_retard: 'En retard' }
+  const map = { terminee: 'Terminée', en_cours: 'En cours', planifiee: 'Planifiée', annulee: 'Annulée', en_retard: 'En retard' }
   return map[statut] || statut
 }
 
 function detailValidationLabel(value) {
   const map = { direction: 'Direction', coordination_nationale: 'Coordination nationale', coordination_provinciale: 'Coordination provinciale' }
-  return map[value] || 'Non renseigne'
+  return map[value] || 'Non renseigné'
 }
 
 function detailProvinceSummary(activite) {

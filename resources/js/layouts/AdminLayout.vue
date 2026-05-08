@@ -122,15 +122,15 @@ const baseNavItems = [
   { route: 'admin.dashboard', icon: 'fas fa-tachometer-alt', label: 'Dashboard' },
   { route: 'plan-travail.index', icon: 'fas fa-calendar-check', label: 'PTA' },
   { route: 'admin.organes.index', icon: 'fas fa-sitemap', label: 'Organes' },
-  { route: 'admin.departments.index', icon: 'fas fa-building', label: 'Departements' },
+  { route: 'admin.departments.index', icon: 'fas fa-building', label: 'Départements' },
   { route: 'admin.sections.index', icon: 'fas fa-project-diagram', label: 'Sections' },
   { route: 'admin.cellules.index', icon: 'fas fa-cube', label: 'Cellules' },
   { route: 'admin.provinces.index', icon: 'fas fa-map-marked-alt', label: 'Provinces' },
   { route: 'admin.localites.index', icon: 'fas fa-map-pin', label: 'Localites' },
   { route: 'admin.fonctions.index', icon: 'fas fa-briefcase', label: 'Fonctions' },
   { route: 'admin.grades.index', icon: 'fas fa-layer-group', label: 'Grades' },
-  { route: 'admin.roles.index', icon: 'fas fa-user-shield', label: 'Roles' },
-  { route: 'admin.categories-documents.index', icon: 'fas fa-tags', label: 'Categories Documents' },
+  { route: 'admin.roles.index', icon: 'fas fa-user-shield', label: 'Rôles' },
+  { route: 'admin.categories-documents.index', icon: 'fas fa-tags', label: 'Catégories de documents' },
   { route: 'admin.utilisateurs.index', icon: 'fas fa-users-cog', label: 'Utilisateurs' },
   { route: 'admin.logs', icon: 'fas fa-scroll', label: 'Journaux' },
 ]
@@ -138,7 +138,7 @@ const baseNavItems = [
 const navItems = computed(() => {
     const items = [...baseNavItems]
     if (auth.isSuperAdmin) {
-        items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Deploiement' })
+        items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Déploiement' })
         items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })
     }
     return items

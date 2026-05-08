@@ -139,9 +139,9 @@
               <div v-if="errors.email_officiel" class="invalid-feedback">{{ errors.email_officiel[0] }}</div>
             </div>
 
-            <!-- Telephone officiel -->
+            <!-- Téléphone officiel -->
             <div class="col-md-6">
-              <label for="telephone_officiel" class="form-label">Telephone Officiel</label>
+              <label for="telephone_officiel" class="form-label">Téléphone officiel</label>
               <input
                 id="telephone_officiel"
                 v-model="form.telephone_officiel"
@@ -159,7 +159,7 @@
             <router-link to="/admin/provinces" class="btn btn-outline-secondary">Annuler</router-link>
             <button type="submit" class="btn btn-primary" :disabled="saving">
               <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
             </button>
           </div>
         </form>

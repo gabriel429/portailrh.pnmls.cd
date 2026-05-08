@@ -207,19 +207,19 @@ class HolidayController extends Controller
 
         // Vérifier les conflits de dates
         $agent = Agent::find($validated['agent_id']);
-        $dateDebut = Carbon::parse($validated['date_debut']);
+        $dateDébut = Carbon::parse($validated['date_debut']);
         $dateFin = Carbon::parse($validated['date_fin']);
 
-        if (Holiday::hasConflict($validated['agent_id'], $dateDebut, $dateFin)) {
+        if (Holiday::hasConflict($validated['agent_id'], $dateDébut, $dateFin)) {
             return response()->json([
                 'message' => 'Conflit de dates : l\'agent a déjà un congé approuvé sur cette période'
             ], 422);
         }
 
         // Résoudre automatiquement le planning si non fourni (pour type annuel)
-        $nombreJours = $dateDebut->diffInDays($dateFin) + 1;
+        $nombreJours = $dateDébut->diffInDays($dateFin) + 1;
         if (empty($validated['holiday_planning_id'])) {
-            $planning = $this->resolvePlanning($agent, $dateDebut->year);
+            $planning = $this->resolvePlanning($agent, $dateDébut->year);
             if ($planning) {
                 $validated['holiday_planning_id'] = $planning->id;
             }
@@ -253,7 +253,7 @@ class HolidayController extends Controller
         $validated['statut_demande'] = 'en_attente';
 
         // Calculer le nombre de jours
-        $validated['nombre_jours'] = $dateDebut->diffInDays($dateFin) + 1;
+        $validated['nombre_jours'] = $dateDébut->diffInDays($dateFin) + 1;
         $validated['date_retour_prevu'] = $dateFin->copy()->addDay();
 
         $holiday = Holiday::create($validated);
@@ -268,7 +268,7 @@ class HolidayController extends Controller
 
             AgentStatus::setNewStatus($validated['agent_id'], [
                 'statut' => 'en_conge',
-                'date_debut' => $dateDebut,
+                'date_debut' => $dateDébut,
                 'date_fin' => $dateFin,
                 'motif' => 'Congé ' . $validated['type_conge'],
                 'created_by' => auth()->user()->agent->id,
@@ -312,23 +312,23 @@ class HolidayController extends Controller
 
         try {
         foreach ($request->entries as $entry) {
-            $dateDebut = Carbon::parse($entry['date_debut']);
+            $dateDébut = Carbon::parse($entry['date_debut']);
             $dateFin = Carbon::parse($entry['date_fin']);
 
             // Vérifier conflit
             $entryAgent = Agent::find($entry['agent_id']);
             $entryNom = trim(($entryAgent->nom ?? '') . ' ' . ($entryAgent->postnom ?? ''));
 
-            if (Holiday::hasConflict($entry['agent_id'], $dateDebut, $dateFin)) {
+            if (Holiday::hasConflict($entry['agent_id'], $dateDébut, $dateFin)) {
                 $errors[] = "Conflit de dates pour {$entryNom} : congé existant sur cette période";
                 continue;
             }
 
             // Résoudre le planning pour cet agent
-            $entryNbJours = $dateDebut->diffInDays($dateFin) + 1;
+            $entryNbJours = $dateDébut->diffInDays($dateFin) + 1;
             $entryPlanningId = $request->holiday_planning_id ?? null;
             if (!$entryPlanningId && $entryAgent) {
-                $entryPlanning = $this->resolvePlanning($entryAgent, $dateDebut->year);
+                $entryPlanning = $this->resolvePlanning($entryAgent, $dateDébut->year);
                 if ($entryPlanning) {
                     $entryPlanningId = $entryPlanning->id;
                 }
@@ -347,7 +347,7 @@ class HolidayController extends Controller
 
             $holiday = Holiday::create([
                 'agent_id' => $entry['agent_id'],
-                'date_debut' => $dateDebut,
+                'date_debut' => $dateDébut,
                 'date_fin' => $dateFin,
                 'nombre_jours' => $entryNbJours,
                 'date_retour_prevu' => $dateFin->copy()->addDay(),
@@ -594,10 +594,10 @@ class HolidayController extends Controller
 
         // Vérifier les conflits si les dates changent
         if (isset($validated['date_debut']) || isset($validated['date_fin'])) {
-            $dateDebut = Carbon::parse($validated['date_debut'] ?? $holiday->date_debut);
+            $dateDébut = Carbon::parse($validated['date_debut'] ?? $holiday->date_debut);
             $dateFin = Carbon::parse($validated['date_fin'] ?? $holiday->date_fin);
 
-            if (Holiday::hasConflict($holiday->agent_id, $dateDebut, $dateFin, $holiday->id)) {
+            if (Holiday::hasConflict($holiday->agent_id, $dateDébut, $dateFin, $holiday->id)) {
                 return response()->json([
                     'message' => 'Conflit de dates : l\'agent a déjà un congé approuvé sur cette période'
                 ], 422);
@@ -726,19 +726,19 @@ class HolidayController extends Controller
             'lettre_demande'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png|max:5120',
         ]);
 
-        $dateDebut = Carbon::parse($validated['date_debut']);
+        $dateDébut = Carbon::parse($validated['date_debut']);
         $dateFin   = Carbon::parse($validated['date_fin']);
 
         // Conflit de dates
-        if (Holiday::hasConflict($agent->id, $dateDebut, $dateFin)) {
+        if (Holiday::hasConflict($agent->id, $dateDébut, $dateFin)) {
             return response()->json([
                 'message' => 'Conflit de dates : vous avez déjà un congé sur cette période.'
             ], 422);
         }
 
         // Auto-résolution du planning
-        $nombreJours = $dateDebut->diffInDays($dateFin) + 1;
-        $planning = $this->resolvePlanning($agent, $dateDebut->year);
+        $nombreJours = $dateDébut->diffInDays($dateFin) + 1;
+        $planning = $this->resolvePlanning($agent, $dateDébut->year);
         if ($planning) {
             $validated['holiday_planning_id'] = $planning->id;
         }

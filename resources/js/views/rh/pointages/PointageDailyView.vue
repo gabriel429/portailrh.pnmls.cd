@@ -5,7 +5,7 @@
         <div class="row g-2 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-calendar-alt me-2"></i>Pointages par jour</h1>
-            <p class="rh-sub">Analyse quotidienne des presences sur une periode donnee.</p>
+            <p class="rh-sub">Analyse quotidienne des présences sur une période donnée.</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -35,7 +35,7 @@
       <div class="rh-filters mb-3">
         <form @submit.prevent="fetchDaily" class="row g-3">
           <div class="col-md-2">
-            <label for="date_debut" class="form-label">Date debut</label>
+            <label for="date_debut" class="form-label">Date de début</label>
             <input type="date" name="date_debut" id="date_debut" class="form-control" v-model="filters.date_debut">
           </div>
           <div class="col-md-2">
@@ -120,7 +120,7 @@
         <div v-else class="rh-list-card p-5 text-center">
           <i class="fas fa-calendar-alt fa-4x text-muted mb-3 d-block"></i>
           <h5 class="text-muted">Aucun pointage</h5>
-          <p class="text-muted">Aucune donnee pour la periode selectionnee.</p>
+          <p class="text-muted">Aucune donnée pour la période sélectionnée.</p>
         </div>
       </template>
     </div>

@@ -195,7 +195,7 @@ function niveauLabel(n) {
 }
 
 async function destroy(f) {
-  if (!confirm('Etes-vous sur de vouloir supprimer cette fonction ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette fonction ?')) return
   try {
     await client.delete('/admin/fonctions/' + f.id)
     await fetchData()

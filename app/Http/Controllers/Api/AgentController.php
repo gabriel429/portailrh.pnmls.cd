@@ -72,7 +72,7 @@ class AgentController extends ApiController
     private function authorizeAgentDocumentManagement(Request $request, Agent $agent): void
     {
         if (!$this->canManageAgentDocuments($request->user())) {
-            abort(403, 'Seule la Section Ressources Humaines peut telecharger le dossier complet agent.');
+            abort(403, 'Seule la Section Ressources Humaines peut télécharger le dossier complet agent.');
         }
 
         $this->authorizeAgentAccess($request, $agent);
@@ -81,7 +81,7 @@ class AgentController extends ApiController
     private function authorizeAgentAccess(Request $request, Agent $agent): void
     {
         if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
-            abort(403, 'Vous n\'avez pas acces a cet agent.');
+            abort(403, 'Vous n\'avez pas accès a cet agent.');
         }
     }
 
@@ -330,7 +330,7 @@ class AgentController extends ApiController
      */
     public function store(Request $request): JsonResponse
     {
-        $this->abortIfAssistantRh($request->user(), 'L assistant RH ne peut pas creer un nouvel agent.');
+        $this->abortIfAssistantRh($request->user(), 'L assistant RH ne peut pas créer un nouvel agent.');
 
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat',
@@ -418,7 +418,7 @@ class AgentController extends ApiController
         $resource = AgentResource::make($agent);
 
         return $this->resource($resource, [], [
-            'message' => 'Agent cree avec succes',
+            'message' => 'Agent créé avec succès.',
             'agent' => $resource->resolve(),
         ], 201);
     }
@@ -511,7 +511,7 @@ class AgentController extends ApiController
             return '<tr>'
                 . '<td>' . e($this->documentDisplayName($document)) . '</td>'
                 . '<td>' . e($this->documentTypeLabel($document->type)) . '</td>'
-                . '<td>' . e($document->statut ?? 'Non renseigne') . '</td>'
+                . '<td>' . e($document->statut ?? 'Non renseigné') . '</td>'
                 . '<td>' . e($this->dateLabel($document->created_at)) . '</td>'
                 . '</tr>';
         })->implode('');
@@ -522,7 +522,7 @@ class AgentController extends ApiController
 
         $affectationRows = $agent->affectations->sortByDesc('date_debut')->map(function ($affectation) {
             return '<tr>'
-                . '<td>' . e($affectation->fonction?->nom ?? 'Non renseigne') . '</td>'
+                . '<td>' . e($affectation->fonction?->nom ?? 'Non renseigné') . '</td>'
                 . '<td>' . e($affectation->department?->nom ?? '-') . '</td>'
                 . '<td>' . e($affectation->province?->nom_province ?? $affectation->province?->nom ?? '-') . '</td>'
                 . '<td>' . e($this->dateLabel($affectation->date_debut)) . '</td>'
@@ -531,11 +531,11 @@ class AgentController extends ApiController
         })->implode('');
 
         if ($affectationRows === '') {
-            $affectationRows = '<tr><td colspan="5" class="muted">Aucune affectation renseignee.</td></tr>';
+            $affectationRows = '<tr><td colspan="5" class="muted">Aucune affectation renseignée.</td></tr>';
         }
 
         $rows = fn (array $items) => collect($items)->map(fn ($item) =>
-            '<div class="info"><span>' . e($item[0]) . '</span><strong>' . e($item[1] ?: 'Non renseigne') . '</strong></div>'
+            '<div class="info"><span>' . e($item[0]) . '</span><strong>' . e($item[1] ?: 'Non renseigné') . '</strong></div>'
         )->implode('');
 
         $senSignatureName = $this->resolveNationalExecutiveSecretaryName() ?: 'Nom du SEN non renseigne';
@@ -548,7 +548,7 @@ class AgentController extends ApiController
             . '<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px}h1,h2{margin:0}h1{font-size:26px;color:#075985}.letterhead{display:flex;align-items:center;gap:14px;border-bottom:1px solid #dbeafe;padding-bottom:14px;margin-bottom:18px}.letterhead img{width:74px;height:74px;object-fit:contain}.letterhead small{display:block;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-size:11px;font-weight:700}.letterhead strong{display:block;color:#075985;font-size:18px;margin-top:4px}.brand-fallback{width:74px;height:74px;border-radius:12px;background:#075985;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}.sub{color:#64748b;margin-top:6px}.hero{border-bottom:4px solid #0ea5e9;padding-bottom:18px;margin-bottom:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.section{margin-top:24px}.section h2{font-size:16px;color:#0369a1;margin-bottom:10px}.info{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}.info span{display:block;color:#64748b;font-size:12px;margin-bottom:4px}.info strong{font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:9px;text-align:left;font-size:13px}th{background:#f1f5f9;color:#334155}.muted{color:#64748b}.signature{display:flex;justify-content:flex-end;margin-top:46px;break-inside:avoid}.signature-box{width:300px;text-align:center}.signature-title{font-size:13px;color:#334155;font-weight:700}.signature-line{border-top:1px solid #111827;margin:52px 0 10px}.signature-name{font-size:15px;color:#111827;font-weight:800;text-transform:uppercase}.signature-note{font-size:12px;color:#64748b;margin-top:4px}.footer{margin-top:28px;color:#64748b;font-size:12px}</style>'
             . '</head><body>'
             . '<div class="letterhead">' . $logoHtml . '<div><small>Programme National Multisectoriel de Lutte contre le Sida</small><strong>Fiche complete de l agent</strong></div></div>'
-            . '<div class="hero"><h1>' . e($agent->nom_complet) . '</h1><div class="sub">' . e($agent->id_agent) . ' - ' . e($agent->fonction ?? $agent->poste_actuel ?? 'Fonction non renseignee') . '</div></div>'
+            . '<div class="hero"><h1>' . e($agent->nom_complet) . '</h1><div class="sub">' . e($agent->id_agent) . ' - ' . e($agent->fonction ?? $agent->poste_actuel ?? 'Fonction non renseignée') . '</div></div>'
             . '<div class="section"><h2>Informations essentielles</h2><div class="grid">' . $rows([
                 ['Matricule Etat', $agent->matricule_etat],
                 ['Statut', $agent->statut],
@@ -556,15 +556,15 @@ class AgentController extends ApiController
                 ['Date et lieu de naissance', trim($this->dateLabel($agent->date_naissance) . ' - ' . ($agent->lieu_naissance ?? ''))],
                 ['Situation familiale', $agent->situation_familiale],
                 ['Nombre d enfants', (string) ($agent->nombre_enfants ?? '')],
-                ['Telephone professionnel', $agent->telephone_professionnel ?: $agent->telephone],
-                ['Telephone prive', $agent->telephone_prive],
+                ['Téléphone professionnel', $agent->telephone_professionnel ?: $agent->telephone],
+                ['Téléphone privé', $agent->telephone_prive],
                 ['Email institutionnel', $agent->email_professionnel ?? $agent->email],
                 ['Email prive', $agent->email_prive],
                 ['Adresse', $agent->adresse],
             ]) . '</div></div>'
             . '<div class="section"><h2>Donnees administratives et affectation</h2><div class="grid">' . $rows([
                 ['Organe', $agent->organe],
-                ['Departement', $agent->departement?->nom],
+                ['Département', $agent->departement?->nom],
                 ['Province', $agent->province?->nom_province ?? $agent->province?->nom],
                 ['Fonction actuelle', $agent->fonction],
                 ['Grade Etat', $agent->grade?->libelle ?? $agent->grade_etat],
@@ -574,7 +574,7 @@ class AgentController extends ApiController
                 ['Annee engagement', (string) ($agent->annee_engagement_programme ?? '')],
                 ['Date embauche', $this->dateLabel($agent->date_embauche)],
             ]) . '</div></div>'
-            . '<div class="section"><h2>Parcours</h2><table><thead><tr><th>Fonction</th><th>Departement</th><th>Province</th><th>Debut</th><th>Fin</th></tr></thead><tbody>' . $affectationRows . '</tbody></table></div>'
+            . '<div class="section"><h2>Parcours</h2><table><thead><tr><th>Fonction</th><th>Département</th><th>Province</th><th>Début</th><th>Fin</th></tr></thead><tbody>' . $affectationRows . '</tbody></table></div>'
             . '<div class="section"><h2>Documents disponibles</h2><table><thead><tr><th>Document</th><th>Categorie</th><th>Statut</th><th>Date</th></tr></thead><tbody>' . $documentsRows . '</tbody></table></div>'
             . '<div class="signature"><div class="signature-box"><div class="signature-title">Le Secrétaire Exécutif National (SEN)</div><div class="signature-line"></div><div class="signature-name">' . e($senSignatureName) . '</div><div class="signature-note">Signature et cachet</div></div></div>'
             . '<div class="footer">Dossier genere depuis E-PNMLS le ' . e(now()->format('d/m/Y H:i')) . '.</div>'
@@ -598,7 +598,7 @@ class AgentController extends ApiController
             'documents_legaux' => 'Documents légaux',
             'autres' => 'Autres',
             'mission' => 'Autres',
-        ][$type] ?? ($type ?: 'Non renseigne');
+        ][$type] ?? ($type ?: 'Non renseigné');
     }
 
     private function documentArchiveName(Document $document, int $index): string
@@ -619,7 +619,7 @@ class AgentController extends ApiController
     private function dateLabel($value): string
     {
         if (!$value) {
-            return 'Non renseigne';
+            return 'Non renseigné';
         }
 
         if (is_object($value) && method_exists($value, 'format')) {
@@ -737,7 +737,7 @@ class AgentController extends ApiController
         NotificationService::notifierAgent(
             $agent,
             'message',
-            'Votre fiche agent a ete mise a jour',
+            'Votre fiche agent a été mise à jour',
             'Des informations de votre dossier agent ont ete modifiees dans E-PNMLS.',
             '/profile',
             $request->user()->id
@@ -746,7 +746,7 @@ class AgentController extends ApiController
         $resource = AgentResource::make($agent);
 
         return $this->resource($resource, [], [
-            'message' => 'Agent modifie avec succes',
+            'message' => 'Agent modifié avec succès',
             'agent' => $resource->resolve(),
         ]);
     }
@@ -763,7 +763,7 @@ class AgentController extends ApiController
         $agent->delete();
 
         return $this->success(null, [], [
-            'message' => 'Agent supprime avec succes',
+            'message' => 'Agent supprimé avec succès',
         ]);
     }
 
@@ -834,8 +834,8 @@ class AgentController extends ApiController
             fputcsv($file, [
                 'ID Agent', 'Matricule Etat', 'Nom', 'Postnom', 'Prenom', 'Sexe',
                 'Annee naissance', 'Lieu naissance', 'Etat civil', 'Enfants',
-                'Telephone principal', 'Telephone professionnel', 'Telephone prive', 'Email prive', 'Email institutionnel',
-                'Organe', 'Fonction', 'Poste actuel', 'Departement', 'Province',
+                'Téléphone principal', 'Téléphone professionnel', 'Téléphone privé', 'Email prive', 'Email institutionnel',
+                'Organe', 'Fonction', 'Poste actuel', 'Département', 'Province',
                 'Grade Etat', 'Institution origine', 'Niveau etudes', 'Domaine etudes',
                 'Annee engagement', 'Anciennete (ans)', 'Date embauche', 'Statut',
             ], ';');
@@ -1133,7 +1133,7 @@ class AgentController extends ApiController
             'sexe' => $this->normalizeImportedSexe($this->importValue($row, $headerIndexes, 'sexe')),
             'annee_naissance' => $this->normalizeImportedBirthYear($this->importValue($row, $headerIndexes, 'annee_naissance')),
             'date_naissance' => $this->normalizeImportedDate($this->importValue($row, $headerIndexes, 'date_naissance')),
-            'lieu_naissance' => $lieuNaissanceValue ?? $provinceValue ?? 'Non renseigne',
+            'lieu_naissance' => $lieuNaissanceValue ?? $provinceValue ?? 'Non renseigné',
             'situation_familiale' => $this->normalizeSituationFamiliale($this->importValue($row, $headerIndexes, 'situation_familiale')),
             'nombre_enfants' => $this->normalizeImportedInteger($this->importValue($row, $headerIndexes, 'nombre_enfants')),
             'telephone' => $this->importValue($row, $headerIndexes, 'telephone'),

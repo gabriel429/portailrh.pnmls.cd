@@ -34,7 +34,7 @@
                 <i class="fas fa-lock"></i>
               </div>
               <p class="text-muted">
-                Pour des raisons de securite, veuillez entrer votre mot de passe actuel
+                Pour des raisons de sécurité, veuillez entrer votre mot de passe actuel
                 avant de definir un nouveau mot de passe.
               </p>
             </div>
@@ -135,7 +135,7 @@
         <!-- Security tips -->
         <div class="card border-0 shadow-sm mt-4">
           <div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="fas fa-shield-alt me-2 text-primary"></i>Conseils de securite</h6>
+            <h6 class="fw-bold mb-3"><i class="fas fa-shield-alt me-2 text-primary"></i>Conseils de sécurité</h6>
             <ul class="list-unstyled mb-0 small text-muted">
               <li class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i>Utilisez au moins 8 caracteres</li>
               <li class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i>Melangez lettres majuscules, minuscules et chiffres</li>
@@ -225,7 +225,7 @@ async function submitForm() {
       password: form.password,
       password_confirmation: form.password_confirmation,
     })
-    successMsg.value = data.message || 'Mot de passe modifie avec succes.'
+    successMsg.value = data.message || 'Mot de passe modifié avec succès.'
 
     // Reset form
     form.current_password = ''

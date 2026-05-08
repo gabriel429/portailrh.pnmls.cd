@@ -7,7 +7,7 @@
           <i class="fas fa-folder-open"></i>
         </div>
         <div>
-          <h4 class="text-white mb-0 fw-bold">Documents de Travail</h4>
+          <h4 class="text-white mb-0 fw-bold">Documents de travail</h4>
           <small class="text-white-50">Gestion des documents de travail</small>
         </div>
       </div>
@@ -16,7 +16,7 @@
           {{ pagination.total }} document{{ pagination.total > 1 ? 's' : '' }}
         </span>
         <router-link :to="{ name: 'admin.documents-travail.create' }" class="hero-btn">
-          <i class="fas fa-plus"></i> Nouveau Document
+          <i class="fas fa-plus"></i> Nouveau document
         </router-link>
       </div>
     </div>
@@ -53,7 +53,7 @@
     <div v-else>
       <div v-if="documents.length === 0" class="empty-state">
         <i class="fas fa-folder-open"></i>
-        <p>Aucun document trouve.</p>
+        <p>Aucun document trouvé.</p>
       </div>
 
       <div v-else class="data-card">
@@ -216,7 +216,7 @@ function goToPage(page) {
 }
 
 async function deleteDocument(doc) {
-  if (!confirm('Etes-vous sur de vouloir supprimer ce document ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return
   try {
     await client.delete(`/admin/documents-travail/${doc.id}`)
     fetchDocuments(pagination.value.currentPage)

@@ -73,7 +73,7 @@
     <ConfirmModal
       :show="showClearModal"
       title="Vider les logs"
-      message="Etes-vous sur de vouloir vider le fichier de log ? Cette action est irreversible."
+      message="Êtes-vous sûr de vouloir vider le fichier de log ? Cette action est irréversible."
       :loading="clearing"
       @confirm="doClear"
       @cancel="showClearModal = false"

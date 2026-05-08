@@ -98,7 +98,7 @@ class ForumPostController extends ApiController
         $post->loadCount('comments');
 
         return $this->resource(ForumPostResource::make($post), [], [
-            'message' => 'Message publie avec succes.',
+            'message' => 'Message publié avec succès.',
         ], 201);
     }
 
@@ -127,7 +127,7 @@ class ForumPostController extends ApiController
         $this->notifyCommentParticipants($forumPost, $user);
 
         return $this->resource(ForumCommentResource::make($comment), [], [
-            'message' => 'Commentaire publie.',
+            'message' => 'Commentaire publié.',
         ], 201);
     }
 
@@ -147,7 +147,7 @@ class ForumPostController extends ApiController
             'seen' => true,
             'forum_post_id' => $forumPost->id,
         ], [], [
-            'message' => 'Forum marque comme vu.',
+            'message' => 'Forum marqué comme vu.',
         ]);
     }
 
@@ -203,7 +203,7 @@ class ForumPostController extends ApiController
         $forumComment->delete();
 
         return $this->success(null, [], [
-            'message' => 'Commentaire supprime.',
+            'message' => 'Commentaire supprimé.',
         ]);
     }
 
@@ -216,7 +216,7 @@ class ForumPostController extends ApiController
         $forumPost->delete();
 
         return $this->success(null, [], [
-            'message' => 'Message supprime.',
+            'message' => 'Message supprimé.',
         ]);
     }
 

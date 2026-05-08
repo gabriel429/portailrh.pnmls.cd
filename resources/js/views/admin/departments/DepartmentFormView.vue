@@ -3,10 +3,10 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
       <div>
         <h4 class="mb-1">
-          <i class="fas fa-building me-2"></i>{{ isEdit ? 'Modifier le departement' : 'Nouveau departement' }}
+          <i class="fas fa-building me-2"></i>{{ isEdit ? 'Modifier le département' : 'Nouveau département' }}
         </h4>
         <p class="text-muted mb-0">
-          {{ isEdit ? 'Modifier les informations du departement' : 'Ajouter un nouveau departement au systeme' }}
+          {{ isEdit ? 'Modifier les informations du département' : 'Ajouter un nouveau département au système' }}
         </p>
       </div>
       <router-link to="/admin/departments" class="btn btn-outline-secondary">
@@ -49,7 +49,7 @@
                 type="text"
                 class="form-control"
                 :class="{ 'is-invalid': errors.nom }"
-                placeholder="Nom du departement"
+                placeholder="Nom du département"
                 required
               />
               <div v-if="errors.nom" class="invalid-feedback">{{ errors.nom[0] }}</div>
@@ -64,7 +64,7 @@
                 class="form-control"
                 :class="{ 'is-invalid': errors.description }"
                 rows="3"
-                placeholder="Description du departement (optionnel)"
+                placeholder="Description du département (optionnel)"
               ></textarea>
               <div v-if="errors.description" class="invalid-feedback">{{ errors.description[0] }}</div>
             </div>
@@ -75,7 +75,7 @@
             <router-link to="/admin/departments" class="btn btn-outline-secondary">Annuler</router-link>
             <button type="submit" class="btn btn-primary" :disabled="saving">
               <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
             </button>
           </div>
         </form>
@@ -114,8 +114,8 @@ async function loadDepartment() {
       description: d.description || '',
     }
   } catch (e) {
-    console.error('Erreur chargement departement:', e)
-    alert('Erreur lors du chargement du departement.')
+    console.error('Erreur chargement département:', e)
+    alert('Erreur lors du chargement du département.')
   } finally {
     loadingData.value = false
   }
@@ -135,8 +135,8 @@ async function submit() {
     if (e.response?.status === 422) {
       errors.value = e.response.data.errors || {}
     } else {
-      console.error('Erreur sauvegarde departement:', e)
-      alert('Erreur lors de la sauvegarde du departement.')
+      console.error('Erreur sauvegarde département:', e)
+      alert('Erreur lors de la sauvegarde du département.')
     }
   } finally {
     saving.value = false

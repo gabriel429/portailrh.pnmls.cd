@@ -63,13 +63,13 @@
         </div>
         <div class="agent-overview-card">
           <span class="agent-overview-label">Affectation</span>
-          <strong>{{ agent.departement?.nom || agent.province?.nom || 'Non renseignee' }}</strong>
-          <small>{{ agent.organe || 'Organe non renseigne' }}</small>
+          <strong>{{ agent.departement?.nom || agent.province?.nom || 'Non renseignée' }}</strong>
+          <small>{{ agent.organe || 'Organe non renseigné' }}</small>
         </div>
         <div class="agent-overview-card">
           <span class="agent-overview-label">Fonction</span>
-          <strong>{{ agent.fonction || agent.poste_actuel || 'Non renseignee' }}</strong>
-          <small>{{ agent.grade?.libelle || agent.grade_etat || 'Grade non renseigne' }}</small>
+          <strong>{{ agent.fonction || agent.poste_actuel || 'Non renseignée' }}</strong>
+          <small>{{ agent.grade?.libelle || agent.grade_etat || 'Grade non renseigné' }}</small>
         </div>
         <div class="agent-overview-card">
           <span class="agent-overview-label">Dossier</span>
@@ -184,11 +184,11 @@
                   <!-- Contact -->
                   <div class="row">
                     <div class="col-md-4 mb-3">
-                      <label class="text-muted small">Telephone professionnel</label>
+                      <label class="text-muted small">Téléphone professionnel</label>
                       <p class="mb-0">{{ agent.telephone_professionnel || agent.telephone || 'N/A' }}</p>
                     </div>
                     <div class="col-md-4 mb-3">
-                      <label class="text-muted small">Telephone prive</label>
+                      <label class="text-muted small">Téléphone privé</label>
                       <p class="mb-0">{{ agent.telephone_prive || 'N/A' }}</p>
                     </div>
                     <div class="col-md-4 mb-3">
@@ -230,7 +230,7 @@
                       <p class="mb-0">{{ agent.province ? (agent.province.nom_province || agent.province.nom) : (isNational ? 'National' : 'N/A') }}</p>
                     </div>
                     <div class="col-md-4 mb-3">
-                      <label class="text-muted small">Departement</label>
+                      <label class="text-muted small">Département</label>
                       <p class="mb-0">{{ agent.departement ? agent.departement.nom : 'N/A' }}</p>
                     </div>
                     <div class="col-md-4 mb-3">
@@ -295,7 +295,7 @@
                           <tr>
                             <th>Type</th>
                             <th>Description</th>
-                            <th>Date debut</th>
+                            <th>Date de début</th>
                             <th>Date fin</th>
                             <th>Statut</th>
                             <th>Remarques</th>
@@ -378,7 +378,7 @@
                   <div v-else class="text-center py-5">
                     <i class="fas fa-route fa-3x text-muted mb-3 d-block" style="opacity:.5;"></i>
                     <h6 class="text-muted">Aucune affectation</h6>
-                    <p class="text-muted small">Le parcours de cet agent n'a pas encore ete renseigne</p>
+                    <p class="text-muted small">Le parcours de cet agent n’a pas encore été renseigné.</p>
                   </div>
                 </div>
               </div>
@@ -473,7 +473,7 @@
                   <div v-else class="text-center py-5">
                     <i class="fas fa-envelope fa-3x text-muted mb-3 d-block" style="opacity:.5;"></i>
                     <h6 class="text-muted">Aucun message</h6>
-                    <p class="text-muted small">Aucun message n'a ete envoye a cet agent</p>
+                    <p class="text-muted small">Aucun message n'a été envoye a cet agent</p>
                   </div>
                 </div>
               </div>
@@ -483,10 +483,10 @@
 
         <!-- Sidebar -->
         <div class="col-lg-4 no-print">
-          <!-- Resume rapide -->
+          <!-- Résumé rapide -->
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-light border-bottom">
-              <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>Resume</h5>
+              <h5 class="mb-0"><i class="fas fa-chart-bar me-2 text-primary"></i>Résumé</h5>
             </div>
             <div class="card-body">
               <div class="mb-3">
@@ -498,7 +498,7 @@
                 <p class="mb-0">{{ formatDate(agent.created_at) }}</p>
               </div>
               <div class="mb-3">
-                <small class="text-muted">Derniere modification</small>
+                <small class="text-muted">Dernière modification</small>
                 <p class="mb-0">{{ formatDateTime(agent.updated_at) }}</p>
               </div>
             </div>
@@ -553,7 +553,7 @@
                 class="btn btn-sm w-100"
                 :class="canDeleteAgent ? 'btn-danger' : 'btn-secondary'"
                 :disabled="!canDeleteAgent"
-                :title="canDeleteAgent ? 'Supprimer l agent' : 'Reserve a la Section RH'"
+                :title="canDeleteAgent ? 'Supprimer l agent' : 'Réservé à la Section RH'"
                 @click="confirmDelete"
               >
                 <i :class="canDeleteAgent ? 'fas fa-trash me-2' : 'fas fa-lock me-2'"></i> Supprimer
@@ -580,7 +580,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer l'agent"
-      :message="'Etes-vous sur de vouloir supprimer ' + (agent ? agent.prenom + ' ' + agent.nom : '') + ' ? Cette action est irreversible.'"
+      :message="'Êtes-vous sûr de vouloir supprimer ' + (agent ? agent.prenom + ' ' + agent.nom : '') + ' ? Cette action est irréversible.'"
       :loading="deleting"
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
@@ -877,7 +877,7 @@ async function deleteAgentDocument(doc) {
 
     try {
         await removeDocument(doc.id)
-        ui.addToast('Document supprime du dossier agent.', 'success')
+        ui.addToast('Document supprimé du dossier agent.', 'success')
         await fetchAgent()
         activeTab.value = 'documents'
     } catch (err) {
@@ -934,7 +934,7 @@ async function fetchAgent() {
 // Delete
 function confirmDelete() {
     if (!canDeleteAgent.value) {
-        ui.addToast('L assistant RH ne peut pas supprimer un agent.', 'warning')
+        ui.addToast('L’assistant RH ne peut pas supprimer un agent.', 'warning')
         return
     }
 
@@ -946,7 +946,7 @@ async function doDelete() {
     deleting.value = true
     try {
         await remove(agent.value.id)
-        ui.addToast('Agent supprime avec succes', 'success')
+        ui.addToast('Agent supprimé avec succès.', 'success')
         router.push({ name: 'rh.agents.index' })
     } catch (err) {
         console.error('Error deleting agent:', err)

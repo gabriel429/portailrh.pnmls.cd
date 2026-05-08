@@ -64,7 +64,7 @@
 
             <div class="section-meta">
               <span class="type-badge" :class="s.type === 'section' ? 'type-section' : 'type-service'">
-                {{ s.type === 'section' ? 'Section' : 'Service rattache' }}
+                {{ s.type === 'section' ? 'Section' : 'Service rattaché' }}
               </span>
               <span class="agent-count-badge">
                 <i class="fas fa-cubes"></i>
@@ -190,7 +190,7 @@ function goToPage(page) {
 }
 
 async function destroy(s) {
-  if (!confirm('Etes-vous sur de vouloir supprimer cette section ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cette section ?')) return
   try {
     await client.delete('/admin/sections/' + s.id)
     await fetchData()

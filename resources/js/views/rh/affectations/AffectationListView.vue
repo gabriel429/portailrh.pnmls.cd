@@ -62,7 +62,7 @@
                   <th>Agent</th>
                   <th>Fonction</th>
                   <th>Niveau Admin.</th>
-                  <th>Departement</th>
+                  <th>Département</th>
                   <th>Section</th>
                   <th>Province</th>
                   <th>Actif</th>
@@ -140,9 +140,9 @@
         <div class="card-body text-center py-5">
           <i class="fas fa-project-diagram fa-3x text-muted mb-3 d-block"></i>
           <h5 class="text-muted">Aucune affectation</h5>
-          <p class="text-muted">Il n'y a aucune affectation enregistree.</p>
+          <p class="text-muted">Il n’y a aucune affectation enregistrée.</p>
           <button class="btn btn-primary" @click="openCreateModal">
-            <i class="fas fa-plus me-1"></i> Creer une affectation
+            <i class="fas fa-plus me-1"></i> Créer une affectation
           </button>
         </div>
       </div>
@@ -221,7 +221,7 @@
             <!-- SEN: Department → Section → Cellule -->
             <template v-if="createForm.niveau_administratif === 'SEN'">
               <div class="afm-field">
-                <label class="afm-label">Departement</label>
+                <label class="afm-label">Département</label>
                 <select v-model="createForm.department_id" class="afm-input" @change="onDepartmentChange">
                   <option value="">-- Choisir --</option>
                   <option v-for="d in options.departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
@@ -264,7 +264,7 @@
             <!-- Dates -->
             <div class="afm-row">
               <div class="afm-field afm-half">
-                <label class="afm-label">Date debut</label>
+                <label class="afm-label">Date de début</label>
                 <input v-model="createForm.date_debut" type="date" class="afm-input">
               </div>
               <div class="afm-field afm-half">
@@ -299,7 +299,7 @@
               <button type="submit" class="afm-btn-submit" :disabled="createSubmitting">
                 <i v-if="createSubmitting" class="fas fa-spinner fa-spin me-1"></i>
                 <i v-else class="fas fa-plus me-1"></i>
-                {{ createSubmitting ? 'Creation...' : 'Creer l\'affectation' }}
+                {{ createSubmitting ? 'Creation...' : 'Créer l\'affectation' }}
               </button>
             </div>
           </form>
@@ -341,7 +341,7 @@ const deleteMessage = computed(() => {
   if (!affToDelete.value) return ''
   const agent = affToDelete.value.agent
   const name = agent ? `${agent.prenom} ${agent.nom}` : 'cet agent'
-  return `Etes-vous sur de vouloir supprimer l'affectation de ${name} ? Cette action est irreversible.`
+  return `Êtes-vous sûr de vouloir supprimer l’affectation de ${name} ? Cette action est irréversible.`
 })
 
 // Pagination pages
@@ -421,7 +421,7 @@ async function doDelete() {
   deleting.value = true
   try {
     await client.delete(`/affectations/${affToDelete.value.id}`)
-    ui.addToast('Affectation supprimee avec succes', 'success')
+    ui.addToast('Affectation supprimée avec succès', 'success')
     showDeleteModal.value = false
     affToDelete.value = null
     await fetchAffectations()
@@ -449,8 +449,8 @@ const niveauAdminOptions = [
 ]
 const niveauPosteOptions = [
   { value: 'direction', label: 'Direction' },
-  { value: 'service_rattache', label: 'Service rattache' },
-  { value: 'departement', label: 'Departement' },
+  { value: 'service_rattache', label: 'Service rattaché' },
+  { value: 'departement', label: 'Département' },
   { value: 'section', label: 'Section' },
   { value: 'cellule', label: 'Cellule' },
   { value: 'province', label: 'Province' },
@@ -480,7 +480,7 @@ function normalizePosteType(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
-    .replaceAll('dÃ©partement', 'departement')
+    .replaceAll('département', 'departement')
     .replaceAll('département', 'departement')
 }
 
@@ -584,7 +584,7 @@ async function handleCreateSubmit() {
       if (v !== '' && v !== null) payload[k] = v
     }
     await client.post('/affectations', payload)
-    ui.addToast('Affectation creee avec succes !', 'success')
+    ui.addToast('Affectation créée avec succès !', 'success')
     showCreateModal.value = false
     fetchAffectations()
   } catch (err) {

@@ -46,7 +46,7 @@
         <i class="fas fa-sitemap"></i>
         <p>Aucun organe trouve.</p>
         <router-link :to="{ name: 'admin.organes.create' }" class="btn btn-sm mt-2" style="background: #8b5cf6; color: #fff; border-radius: 8px;">
-          <i class="fas fa-plus me-1"></i> Creer un organe
+          <i class="fas fa-plus me-1"></i> Créer un organe
         </router-link>
       </div>
 
@@ -128,7 +128,7 @@ async function fetchOrganes() {
 }
 
 async function deleteOrgane(organe) {
-  if (!confirm('Etes-vous sur de vouloir supprimer cet organe ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cet organe ?')) return
   try {
     await client.delete(`/admin/organes/${organe.id}`)
     organes.value = organes.value.filter(o => o.id !== organe.id)

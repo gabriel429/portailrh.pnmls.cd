@@ -78,7 +78,7 @@
 
               <div class="row mt-3">
                 <div class="col-md-6 mb-3">
-                  <label for="telephone" class="form-label fw-bold">Telephone</label>
+                  <label for="telephone" class="form-label fw-bold">Téléphone</label>
                   <input
                     type="text"
                     class="form-control"
@@ -154,7 +154,7 @@
                   <input type="text" class="form-control" :value="agent.role?.nom_role || 'N/A'" disabled>
                 </div>
                 <div class="col-md-6 mb-3">
-                  <label class="form-label fw-bold">Departement</label>
+                  <label class="form-label fw-bold">Département</label>
                   <input type="text" class="form-control" :value="agent.departement?.nom || 'N/A'" disabled>
                 </div>
                 <div class="col-md-6 mb-3">
@@ -278,7 +278,7 @@ async function submitForm() {
 
     const { data } = await updateProfile(formData)
     agent.value = data.agent
-    successMsg.value = data.message || 'Profil mis a jour avec succes.'
+    successMsg.value = data.message || 'Profil mis à jour avec succes.'
 
     // Scroll to top to show success message
     window.scrollTo({ top: 0, behavior: 'smooth' })

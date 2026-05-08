@@ -193,7 +193,7 @@ class TacheController extends ApiController
         $workflow = $this->workflowService();
 
         if (!$roles->hasTacheManagerRole($user)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $agent       = $user->agent;
@@ -238,7 +238,7 @@ class TacheController extends ApiController
                 ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
         } elseif ($isSEP) {
             if (!$agent || !$agent->province_id) {
-                return response()->json(['message' => 'Vous devez etre affecte a une province pour creer des taches.'], 422);
+                return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
             }
 
             $agentsDisponibles = Agent::actifs()
@@ -253,7 +253,7 @@ class TacheController extends ApiController
             $activitesPta = $this->resolveProvinceActivitesPta($agent->province_id);
         } elseif ($isSEL) {
             if (!$agent || !$agent->province_id) {
-                return response()->json(['message' => 'Vous devez etre affecte a une province pour creer des taches locales.'], 422);
+                return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches locales.'], 422);
             }
 
             $agentsDisponibles = Agent::actifs()
@@ -275,7 +275,7 @@ class TacheController extends ApiController
                 ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
         } else {
             if (!$agent || !$agent->departement_id) {
-                return response()->json(['message' => 'Vous devez etre affecte a un departement pour creer des taches.'], 422);
+                return response()->json(['message' => 'Vous devez être affecté à un département pour créer des tâches.'], 422);
             }
 
             $agentsDisponibles = Agent::actifs()
@@ -307,7 +307,7 @@ class TacheController extends ApiController
             'default_source_emetteur' => $this->defaultSourceEmetteurForUser($user, $roles, $workflow),
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
-                ['value' => 'assistant_departement', 'label' => 'Assistant / Secretaire du departement'],
+                ['value' => 'assistant_departement', 'label' => 'Assistant / Secrétaire du département'],
                 ['value' => 'sen',       'label' => 'SEN'],
                 ['value' => 'sep',       'label' => 'SEP'],
                 ['value' => 'secom',     'label' => 'SECOM'],
@@ -359,7 +359,7 @@ class TacheController extends ApiController
         $workflow = $this->workflowService();
 
         if (!$roles->hasTacheManagerRole($user)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -390,28 +390,28 @@ class TacheController extends ApiController
             }
         } elseif ($isSENA) {
             if (!$roles->canManageSenaScopedAgent($user, $targetAgent)) {
-                return response()->json(['message' => 'Vous ne pouvez gerer que les attaches du SEN, les directeurs de departement et les SEP.'], 403);
+                return response()->json(['message' => 'Vous ne pouvez gérer que les attachés du SEN, les directeurs de département et les SEP.'], 403);
             }
         } elseif ($isSEP) {
             if (!$agent || !$agent->province_id) {
-                return response()->json(['message' => 'Vous devez etre affecte a une province pour creer des taches.'], 422);
+                return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
             }
             if ((int) $targetAgent->province_id !== (int) $agent->province_id) {
-                return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre province.'], 403);
+                return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents de votre province.'], 403);
             }
         } elseif ($isSEL) {
             if (!$agent || !$agent->province_id) {
-                return response()->json(['message' => 'Vous devez etre affecte a une structure locale pour creer des taches.'], 422);
+                return response()->json(['message' => 'Vous devez être affecté à une structure locale pour créer des tâches.'], 422);
             }
             if ((int) $targetAgent->province_id !== (int) $agent->province_id || $targetAgent->organe !== 'Secrétariat Exécutif Local') {
-                return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents locaux de votre ressort.'], 403);
+                return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents locaux de votre ressort.'], 403);
             }
         } else {
             if (!$agent) {
                 return response()->json(['message' => 'Vous devez être affecté à un agent pour créer des tâches.'], 422);
             }
             if ($targetAgent->departement_id !== $agent->departement_id) {
-                return response()->json(['message' => 'Vous ne pouvez assigner des taches qu\'aux agents de votre departement.'], 403);
+                return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents de votre département.'], 403);
             }
         }
 
@@ -431,9 +431,9 @@ class TacheController extends ApiController
                 && !in_array((int) $validated['activite_plan_id'], $allowedActiviteIds, true)
             ) {
                 return response()->json([
-                    'message' => 'L activite PTA selectionnee n est pas disponible pour votre province.',
+                    'message' => 'L’activité PTA sélectionnée n’est pas disponible pour votre province.',
                     'errors' => [
-                        'activite_plan_id' => ['L activite PTA selectionnee n est pas disponible pour votre province.'],
+                        'activite_plan_id' => ['L’activité PTA sélectionnée n’est pas disponible pour votre province.'],
                     ],
                 ], 422);
             }
@@ -454,7 +454,7 @@ class TacheController extends ApiController
             $tache,
             $agent,
             'creation',
-            'Creation de la tache',
+            'Création de la tâche',
             null,
             $tache->statut,
             null,
@@ -476,7 +476,7 @@ class TacheController extends ApiController
         $resource = TacheResource::make($tache->load(['createur', 'agent', 'activitePlan', 'documents.agent']));
 
         return $this->resource($resource, [], [
-            'message' => 'Tache creee avec succes.',
+            'message' => 'Tâche créée avec succès.',
         ], 201);
     }
 
@@ -533,7 +533,7 @@ class TacheController extends ApiController
         }
 
         if (!$agent && !$isSENOrSENA) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $isCreateur   = $agent && $tache->createur_id === $agent->id;
@@ -581,7 +581,7 @@ class TacheController extends ApiController
         }
 
         if (!$isCreateur && !$isAssigne && !$isDeptManager && !$isProvinceManager && !$isLocalManager) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
@@ -665,7 +665,7 @@ class TacheController extends ApiController
         $taskAgent = $tache->agent ?: ($tache->agent_id ? Agent::find($tache->agent_id) : null);
 
         if (!$isAssigne && !$this->canManageTache($user, $tache, $taskAgent)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         if (!$agent) {
@@ -684,8 +684,8 @@ class TacheController extends ApiController
 
         if ($validated['statut'] === 'terminee' && !$hasDocument) {
             return response()->json([
-                'message' => 'Le document final est obligatoire pour terminer la tache.',
-                'errors' => ['document' => ['Le document final est obligatoire pour terminer la tache.']],
+            'message' => 'Le document final est obligatoire pour terminer la tâche.',
+                'errors' => ['document' => ['Le document final est obligatoire pour terminer la tâche.']],
             ], 422);
         }
 
@@ -778,15 +778,15 @@ class TacheController extends ApiController
                 NotificationService::envoyerMultipleAvecEmail(
                     $validatorIds,
                     'tache',
-                    'Tache soumise pour validation',
-                    $this->agentDisplayName($agent) . ' a soumis la tache "' . $tache->titre . '" pour validation finale.',
+                    'Tâche soumise pour validation',
+                    $this->agentDisplayName($agent) . ' a soumis la tâche "' . $tache->titre . '" pour validation finale.',
                     '/taches/' . $tache->id,
                     $user->id
                 );
             }
         } else {
             $message = sprintf(
-                '%s a mis a jour la tache "%s" : statut %s, progression %d%%.',
+                '%s a mis à jour la tâche "%s" : statut %s, progression %d%%.',
                 $this->agentDisplayName($agent),
                 $tache->titre,
                 $this->tacheStatutLabel($validated['statut']),
@@ -796,7 +796,7 @@ class TacheController extends ApiController
             $this->notifyTacheParticipants(
                 $tache,
                 $user->id,
-                'Tache mise a jour',
+                'Tâche mise à jour',
                 $message
             );
         }
@@ -804,7 +804,7 @@ class TacheController extends ApiController
         $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
-            'message' => 'Statut mis a jour avec succes.',
+            'message' => 'Statut mis à jour avec succès.',
         ]);
     }
 
@@ -820,7 +820,7 @@ class TacheController extends ApiController
         $taskAgent = $tache->agent ?: ($tache->agent_id ? Agent::find($tache->agent_id) : null);
 
         if (!$this->canManageTache($user, $tache, $taskAgent)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -841,7 +841,7 @@ class TacheController extends ApiController
                 $tache,
                 $agent,
                 'modification',
-                'Modification de la tache',
+                'Modification de la tâche',
                 $tache->statut,
                 $tache->statut,
                 $tache->validation_statut,
@@ -851,7 +851,7 @@ class TacheController extends ApiController
             );
 
             $message = sprintf(
-                '%s a modifie %s de la tache "%s".',
+                '%s a modifié %s de la tâche "%s".',
                 $this->agentDisplayName($agent),
                 $this->formatTacheChangedFields($changedFields),
                 $tache->titre
@@ -860,7 +860,7 @@ class TacheController extends ApiController
             $this->notifyTacheParticipants(
                 $tache,
                 $user->id,
-                'Tache modifiee',
+                'Tâche modifiée',
                 $message
             );
         }
@@ -901,7 +901,7 @@ class TacheController extends ApiController
         }
 
         if (!(($isSEN || $isSENStaff) && $isSENTask) && !$this->canManageTache($user, $tache, $taskAgent)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         if ($tache->statut === 'terminee' && !($isSEN || $isSENStaff) && !$this->canManageTache($user, $tache, $taskAgent)) {
@@ -922,7 +922,7 @@ class TacheController extends ApiController
         $agent = $user->agent;
 
         if (!$this->canAccessTacheConsultation($user, $tache)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -951,7 +951,7 @@ class TacheController extends ApiController
         );
 
         $message = sprintf(
-            '%s a ajoute un commentaire sur la tache "%s" : %s',
+            '%s a ajouté un commentaire sur la tâche "%s" : %s',
             $this->agentDisplayName($agent),
             $tache->titre,
             Str::limit($validated['contenu'], 140)
@@ -960,14 +960,14 @@ class TacheController extends ApiController
         $this->notifyTacheParticipants(
             $tache,
             $user->id,
-            'Nouveau commentaire sur une tache',
+            'Nouveau commentaire sur une tâche',
             $message
         );
 
         $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
-            'message' => 'Commentaire ajoute.',
+            'message' => 'Commentaire ajouté.',
         ]);
     }
 
@@ -978,7 +978,7 @@ class TacheController extends ApiController
         $workflow = $this->workflowService();
 
         if (!$agent || !$workflow->canFinalValidate($user, $tache)) {
-            return response()->json(['message' => 'Acces refuse pour cette validation finale.'], 403);
+            return response()->json(['message' => 'Accès refusé pour cette validation finale.'], 403);
         }
 
         $validated = $request->validate([
@@ -990,7 +990,7 @@ class TacheController extends ApiController
         TacheCommentaire::create([
             'tache_id' => $tache->id,
             'agent_id' => $agent->id,
-            'contenu' => $validated['commentaire'] ?: 'Tache validee.',
+            'contenu' => $validated['commentaire'] ?: 'Tâche validée.',
             'type_commentaire' => 'validation',
             'ancien_statut' => $tache->statut,
             'nouveau_statut' => $tache->statut,
@@ -999,14 +999,14 @@ class TacheController extends ApiController
         $this->notifyTacheParticipants(
             $tache,
             $user->id,
-            'Tache validee',
-            $this->agentDisplayName($agent) . ' a valide la tache "' . $tache->titre . '".'
+            'Tâche validée',
+            $this->agentDisplayName($agent) . ' a validé la tâche "' . $tache->titre . '".'
         );
 
         return $this->resource(
             TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
             [],
-            ['message' => 'Tache validee avec succes.']
+            ['message' => 'Tâche validée avec succès.']
         );
     }
 
@@ -1017,7 +1017,7 @@ class TacheController extends ApiController
         $workflow = $this->workflowService();
 
         if (!$agent || !$workflow->canFinalValidate($user, $tache)) {
-            return response()->json(['message' => 'Acces refuse pour ce rejet.'], 403);
+            return response()->json(['message' => 'Accès refusé pour ce rejet.'], 403);
         }
 
         $validated = $request->validate([
@@ -1038,14 +1038,14 @@ class TacheController extends ApiController
         $this->notifyTacheParticipants(
             $tache,
             $user->id,
-            'Tache retournee pour correction',
-            $this->agentDisplayName($agent) . ' a retourne la tache "' . $tache->titre . '" pour correction.'
+            'Tâche retournée pour correction',
+            $this->agentDisplayName($agent) . ' a retourné la tâche "' . $tache->titre . '" pour correction.'
         );
 
         return $this->resource(
             TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
             [],
-            ['message' => 'Tache retournee pour correction.']
+            ['message' => 'Tâche retournée pour correction.']
         );
     }
 
@@ -1055,11 +1055,11 @@ class TacheController extends ApiController
         $agent = $user->agent;
 
         if (!$this->canAccessTacheConsultation($user, $tache)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         if ($document->tache_id !== $tache->id) {
-            return response()->json(['message' => 'Document introuvable pour cette tache.'], 404);
+            return response()->json(['message' => 'Document introuvable pour cette tâche.'], 404);
         }
 
         $filePath = public_path($document->fichier);
@@ -1159,7 +1159,7 @@ class TacheController extends ApiController
             'en_cours' => 'en cours',
             'terminee' => 'terminee',
             'bloquee' => 'bloquee',
-        ][$statut] ?? 'mis a jour';
+        ][$statut] ?? 'mis à jour';
     }
 
     protected function formatTacheChangedFields(array $fields): string
@@ -1230,7 +1230,7 @@ class TacheController extends ApiController
         $agent = $user->agent;
 
         if (!$agent || $tache->agent_id !== $agent->id) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -1254,7 +1254,7 @@ class TacheController extends ApiController
             $tache,
             $agent,
             'rapport',
-            'Rapport d execution soumis',
+            'Rapport d’exécution soumis',
             $tache->statut,
             $tache->statut,
             $tache->validation_statut,
@@ -1265,11 +1265,11 @@ class TacheController extends ApiController
         $this->notifyTacheParticipants(
             $tache,
             $user->id,
-            'Rapport de tache soumis',
-            $this->agentDisplayName($agent) . ' a soumis un rapport pour la tache "' . $tache->titre . '".'
+            'Rapport de tâche soumis',
+            $this->agentDisplayName($agent) . ' a soumis un rapport pour la tâche "' . $tache->titre . '".'
         );
 
-        return $this->success($report, [], ['message' => 'Rapport soumis avec succes.'], 201);
+        return $this->success($report, [], ['message' => 'Rapport soumis avec succès.'], 201);
     }
 
     /**
@@ -1280,7 +1280,7 @@ class TacheController extends ApiController
         $user = $request->user();
 
         if (!$this->canAccessTacheConsultation($user, $tache) && !$user->hasAdminAccess()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $reports = TaskReport::where('tache_id', $tache->id)
@@ -1301,7 +1301,7 @@ class TacheController extends ApiController
         $workflow = $this->workflowService();
 
         if (!$roles->hasTacheManagerRole($user) && !$user->hasAdminAccess()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $agentId = $request->input('agent_id');

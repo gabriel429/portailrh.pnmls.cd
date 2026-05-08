@@ -44,7 +44,7 @@ class NotificationController extends ApiController
         $notif = NotificationPortail::findOrFail($notification);
 
         if ($notif->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $notif->update([
@@ -66,13 +66,13 @@ class NotificationController extends ApiController
         $notif = NotificationPortail::findOrFail($notification);
 
         if ($notif->user_id !== $request->user()->id) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $notif->delete();
 
         return $this->success(null, [], [
-            'message' => 'Notification supprimee.',
+            'message' => 'Notification supprimée.',
         ]);
     }
 

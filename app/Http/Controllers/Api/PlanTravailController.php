@@ -345,7 +345,7 @@ class PlanTravailController extends ApiController
             }
 
             if (($validated['niveau_administratif'] ?? null) !== 'SEP') {
-                abort(403, 'Acces refuse pour ce niveau administratif.');
+                abort(403, 'Accès refusé pour ce niveau administratif.');
             }
 
             $validated['departement_id'] = null;
@@ -363,7 +363,7 @@ class PlanTravailController extends ApiController
         $familyIds = $this->getActiveDepartmentFamily((int) $agent->departement_id);
 
         if (!empty($validated['departement_id']) && !in_array((int) $validated['departement_id'], $familyIds)) {
-            abort(403, 'Acces refuse pour ce departement.');
+            abort(403, 'Accès refusé pour ce departement.');
         }
 
         $validated['departement_id'] = (int) $agent->departement_id;
@@ -554,7 +554,7 @@ class PlanTravailController extends ApiController
         if ($assignmentTarget === 'sen_attaches') {
             $validated['niveau_administratif'] = 'SEN';
             $validated['departement_id'] = null;
-            $validated['responsable_code'] = $validated['responsable_code'] ?? 'Attaches SEN';
+            $validated['responsable_code'] = $validated['responsable_code'] ?? 'Attachés SEN';
             $allowedAgentIds = $this->ptaSenAttacheAgents()->pluck('id')->map(fn ($id) => (int) $id)->all();
         } elseif (str_starts_with((string) $assignmentTarget, 'department:')) {
             $departmentId = (int) substr((string) $assignmentTarget, strlen('department:'));
@@ -574,7 +574,7 @@ class PlanTravailController extends ApiController
                 ->all();
         } else {
             throw ValidationException::withMessages([
-                'assignment_target' => ['Choisissez d abord un departement ou les attaches du SEN.'],
+                'assignment_target' => ['Choisissez d’abord un département ou les attachés du SEN.'],
             ]);
         }
 
@@ -706,7 +706,7 @@ class PlanTravailController extends ApiController
     public function dashboard(Request $request): JsonResponse
     {
         if (!$this->canUsePtaAdminContext()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $annee = (int) $request->input('annee', now()->year);
@@ -838,7 +838,7 @@ class PlanTravailController extends ApiController
                 'key' => 'sen_attaches',
                 'id' => null,
                 'type' => 'sen_attaches',
-                'label' => 'Attaches du SEN',
+                'label' => 'Attachés du SEN',
             ];
         }
 
@@ -846,7 +846,7 @@ class PlanTravailController extends ApiController
             'key' => 'sen_unassigned',
             'id' => null,
             'type' => 'sen_service',
-            'label' => 'Direction / Non renseigne',
+            'label' => 'Direction / Non renseigné',
         ];
     }
 
@@ -861,7 +861,7 @@ class PlanTravailController extends ApiController
                 ? [[
                     'key' => 'province:0',
                     'id' => 0,
-                    'label' => 'Province non renseignee',
+                    'label' => 'Province non renseignée',
                     'activity' => $activity,
                 ]]
                 : [];
@@ -889,7 +889,7 @@ class PlanTravailController extends ApiController
         return [
             'id' => $id,
             'type' => $type,
-            'label' => $label ?: 'Non renseigne',
+            'label' => $label ?: 'Non renseigné',
             'total' => $total,
             'planifiee' => $items->where('statut', 'planifiee')->count(),
             'en_cours' => $items->where('statut', 'en_cours')->count(),
@@ -931,7 +931,7 @@ class PlanTravailController extends ApiController
     public function create(Request $request): JsonResponse
     {
         if (!$this->canManage()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $agent = $this->getScopedAgent();
@@ -973,7 +973,7 @@ class PlanTravailController extends ApiController
                     'value' => 'sen_attaches',
                     'type' => 'sen_attaches',
                     'department_id' => null,
-                    'label' => 'Attaches du SEN',
+                    'label' => 'Attachés du SEN',
                     'agent_count' => $agentsSen->count(),
                 ],
             ])->merge($departments->map(fn ($department) => [
@@ -1013,7 +1013,7 @@ class PlanTravailController extends ApiController
     public function store(Request $request): JsonResponse
     {
         if (!$this->canManage()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $agent = $this->getScopedAgent();
@@ -1071,8 +1071,8 @@ class PlanTravailController extends ApiController
 
         NotificationService::notifierTous(
             'plan_travail',
-            'Nouvelle activite PTA : ' . $activite->titre,
-            'Une nouvelle activite a ete ajoutee au Plan de Travail Annuel (' . $activite->annee . ' ' . ($activite->trimestre ?? '') . ').',
+            'Nouvelle activité PTA : ' . $activite->titre,
+            'Une nouvelle activité a été ajoutée au Plan de Travail Annuel (' . $activite->annee . ' ' . ($activite->trimestre ?? '') . ').',
             '/plan-travail/' . $activite->id,
             auth()->id()
         );
@@ -1080,7 +1080,7 @@ class PlanTravailController extends ApiController
         $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'provinces', 'localite', 'agents'));
 
         return $this->resource($resource, [], [
-            'message' => 'Activite creee avec succes.',
+            'message' => 'Activité créée avec succès.',
         ], 201);
     }
 
@@ -1090,7 +1090,7 @@ class PlanTravailController extends ApiController
     public function show(ActivitePlan $activitePlan): JsonResponse
     {
         if (!$this->canAccessActivity($activitePlan)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $activitePlan->load(['createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent', 'agents']);
@@ -1110,11 +1110,11 @@ class PlanTravailController extends ApiController
     public function update(Request $request, ActivitePlan $activitePlan): JsonResponse
     {
         if (!$this->canManage()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         if (!$this->canAccessActivity($activitePlan)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $agent = $this->getScopedAgent();
@@ -1170,8 +1170,8 @@ class PlanTravailController extends ApiController
 
         NotificationService::notifierTous(
             'plan_travail',
-            'PTA mis a jour : ' . $activitePlan->titre,
-            'L\'activite "' . $activitePlan->titre . '" a ete mise a jour (' . $activitePlan->statut . ', ' . $activitePlan->pourcentage . '%).',
+            'PTA mis à jour : ' . $activitePlan->titre,
+            'L’activité "' . $activitePlan->titre . '" a été mise à jour (' . $activitePlan->statut . ', ' . $activitePlan->pourcentage . '%).',
             '/plan-travail/' . $activitePlan->id,
             auth()->id()
         );
@@ -1179,7 +1179,7 @@ class PlanTravailController extends ApiController
         $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'agents'));
 
         return $this->resource($resource, [], [
-            'message' => 'Activite mise a jour.',
+            'message' => 'Activité mise à jour.',
         ]);
     }
 
@@ -1189,17 +1189,17 @@ class PlanTravailController extends ApiController
     public function destroy(ActivitePlan $activitePlan): JsonResponse
     {
         if (!$this->canManage()) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         if (!$this->canAccessActivity($activitePlan)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $activitePlan->delete();
 
         return $this->success(null, [], [
-            'message' => 'Activite supprimee.',
+            'message' => 'Activité supprimée.',
         ]);
     }
 
@@ -1209,7 +1209,7 @@ class PlanTravailController extends ApiController
     public function updateStatut(Request $request, ActivitePlan $activitePlan): JsonResponse
     {
         if (!$this->canUpdateStatut($activitePlan)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -1225,7 +1225,7 @@ class PlanTravailController extends ApiController
         $resource = ActivitePlanResource::make($activitePlan->fresh()->load('createur', 'departement', 'province', 'provinces', 'localite', 'taches.agent', 'agents'));
 
         return $this->resource($resource, [], [
-            'message' => 'Statut mis a jour.',
+            'message' => 'Statut mis à jour.',
         ]);
     }
 
@@ -1233,7 +1233,7 @@ class PlanTravailController extends ApiController
     {
         $user = auth()->user();
         if (!$user || !$this->scopeService()->hasGlobalAdminAccess($user)) {
-            return response()->json(['message' => 'Acces refuse.'], 403);
+            return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
         $validated = $request->validate([
@@ -1319,7 +1319,7 @@ class PlanTravailController extends ApiController
             'updated' => $updated,
             'total' => $created + $updated,
         ], [], [
-            'message' => sprintf('Import PTA termine : %d creee(s), %d mise(s) a jour.', $created, $updated),
+            'message' => sprintf('Import PTA terminé : %d créée(s), %d mise(s) à jour.', $created, $updated),
             'created' => $created,
             'updated' => $updated,
             'total' => $created + $updated,

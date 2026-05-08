@@ -7,7 +7,7 @@
           <i class="fas fa-rocket"></i>
         </div>
         <div>
-          <h4 class="text-white mb-0 fw-bold">Deploiement</h4>
+          <h4 class="text-white mb-0 fw-bold">Déploiement</h4>
           <small class="text-white-50">Actions de deploiement et maintenance</small>
         </div>
       </div>
@@ -57,13 +57,13 @@
       </div>
     </div>
 
-    <!-- Section: Deploiement -->
+    <!-- Section: Déploiement -->
     <div class="section-block">
       <div class="section-header">
         <div class="section-icon section-icon-deploy">
           <i class="fas fa-code-branch"></i>
         </div>
-        <h6 class="section-title">Deploiement</h6>
+        <h6 class="section-title">Déploiement</h6>
       </div>
       <div class="row g-3">
         <!-- Git Pull -->
@@ -146,7 +146,7 @@
         <div class="section-icon section-icon-modules">
           <i class="fas fa-cubes"></i>
         </div>
-        <h6 class="section-title">Deploiement des Modules</h6>
+        <h6 class="section-title">Déploiement des Modules</h6>
       </div>
       <div class="row g-3">
         <div v-for="action in deployActions" :key="action.key" class="col-md-6 col-lg-4">
@@ -183,20 +183,20 @@ const loadingBuildStatus = ref(false)
 let buildStatusTimer = null
 
 const deployActions = [
-  { key: 'deploy-organes', label: 'Deployer Organes', desc: 'Creer la table organes et seeder SEN/SEP/SEL', icon: 'fa-sitemap', color: '#8b5cf6' },
+  { key: 'deploy-organes', label: 'Deployer Organes', desc: 'Créer la table organes et seeder SEN/SEP/SEL', icon: 'fa-sitemap', color: '#8b5cf6' },
   { key: 'deploy-users', label: 'Deployer Users', desc: 'Ajouter agent_id et role_id a la table users', icon: 'fa-user-shield', color: '#059669' },
-  { key: 'deploy-departments', label: 'Deployer Departements', desc: 'Seeder les departements (DAF, DPP, DSE...)', icon: 'fa-building', color: '#7c3aed' },
-  { key: 'deploy-grades', label: 'Deployer Grades', desc: 'Creer la table grades et seeder les categories', icon: 'fa-medal', color: '#eab308' },
-  { key: 'deploy-affectations', label: 'Deployer Affectations', desc: 'Creer les tables sections, cellules, localites, affectations', icon: 'fa-project-diagram', color: '#0ea5e9' },
-  { key: 'deploy-institutions', label: 'Deployer Institutions', desc: 'Creer les tables institutions et categories', icon: 'fa-landmark', color: '#d97706' },
-  { key: 'deploy-messages', label: 'Deployer Messages', desc: 'Creer la table messages', icon: 'fa-envelope', color: '#6366f1' },
-  { key: 'deploy-communiques', label: 'Deployer Communiques', desc: 'Creer la table communiques', icon: 'fa-bullhorn', color: '#f43f5e' },
-  { key: 'deploy-taches', label: 'Deployer Taches', desc: 'Creer les tables taches et commentaires', icon: 'fa-tasks', color: '#14b8a6' },
-  { key: 'deploy-plan-travail', label: 'Deployer Plan Travail', desc: 'Creer la table activite_plans', icon: 'fa-calendar-alt', color: '#0077B5' },
+  { key: 'deploy-departments', label: 'Déployer les départements', desc: 'Initialiser les départements (DAF, DPP, DSE...)', icon: 'fa-building', color: '#7c3aed' },
+  { key: 'deploy-grades', label: 'Deployer Grades', desc: 'Créer la table grades et seeder les categories', icon: 'fa-medal', color: '#eab308' },
+  { key: 'deploy-affectations', label: 'Deployer Affectations', desc: 'Créer les tables sections, cellules, localites, affectations', icon: 'fa-project-diagram', color: '#0ea5e9' },
+  { key: 'deploy-institutions', label: 'Deployer Institutions', desc: 'Créer les tables institutions et categories', icon: 'fa-landmark', color: '#d97706' },
+  { key: 'deploy-messages', label: 'Deployer Messages', desc: 'Créer la table messages', icon: 'fa-envelope', color: '#6366f1' },
+  { key: 'deploy-communiques', label: 'Deployer Communiques', desc: 'Créer la table communiques', icon: 'fa-bullhorn', color: '#f43f5e' },
+  { key: 'deploy-taches', label: 'Déployer les tâches', desc: 'Créer les tables taches et commentaires', icon: 'fa-tasks', color: '#14b8a6' },
+  { key: 'deploy-plan-travail', label: 'Déployer le plan de travail', desc: 'Créer la table activite_plans', icon: 'fa-calendar-alt', color: '#0077B5' },
   { key: 'deploy-rename-roles', label: 'Renommer Roles', desc: 'Renommer les roles systeme', icon: 'fa-edit', color: '#64748b' },
   { key: 'deploy-domaine-etudes', label: 'Deployer Domaine Etudes', desc: 'Ajouter la colonne domaine_etudes aux agents', icon: 'fa-graduation-cap', color: '#0d9488' },
-  { key: 'seed-superadmin', label: 'Seed SuperAdmin', desc: 'Creer ou mettre a jour le compte SuperAdmin', icon: 'fa-shield-alt', color: '#7c3aed' },
-  { key: 'deploy-holidays', label: 'Deployer Conges & Statuts', desc: 'Creer les tables holiday_plannings, agent_statuses et holidays', icon: 'fa-umbrella-beach', color: '#0ea5e9' },
+  { key: 'seed-superadmin', label: 'Seed SuperAdmin', desc: 'Créer ou mettre à jour le compte SuperAdmin', icon: 'fa-shield-alt', color: '#7c3aed' },
+  { key: 'deploy-holidays', label: 'Deployer Conges & Statuts', desc: 'Créer les tables holiday_plannings, agent_statuses et holidays', icon: 'fa-umbrella-beach', color: '#0ea5e9' },
 ]
 
 function getIconBg(color) {

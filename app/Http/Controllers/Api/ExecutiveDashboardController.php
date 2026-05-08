@@ -60,7 +60,7 @@ class ExecutiveDashboardController extends ApiController
 
         $roleName = $this->normalizedRoleName($user);
         if (in_array($roleName, [
-            'cellule administrative et financiÃ¨re',
+            'cellule administrative et financière',
             'cellule administrative et financiere',
             'caf',
             'chef caf',
@@ -150,7 +150,7 @@ class ExecutiveDashboardController extends ApiController
         $user = $request->user();
 
         if (!$user->hasRole('SEN')) {
-            return response()->json(['message' => 'Acces reserve au SEN.'], 403);
+            return response()->json(['message' => 'Accès réservé au SEN.'], 403);
         }
 
         $now = Carbon::now();
@@ -1297,7 +1297,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         if ($userProvinceId && $userProvinceId !== $id) {
-            return $this->error('Acces refuse pour cette province.', 403);
+            return $this->error('Accès refusé pour cette province.', 403);
         }
 
         $province = Province::find($id);
@@ -1491,7 +1491,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
 
         if ($userProvinceId && (int) $department->province_id !== $userProvinceId) {
-            return $this->error('Acces refuse pour ce departement.', 403);
+            return $this->error('Accès refusé pour ce departement.', 403);
         }
 
         $now = Carbon::now();

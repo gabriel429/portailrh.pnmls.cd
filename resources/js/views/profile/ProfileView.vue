@@ -85,7 +85,7 @@
                 <i class="fas fa-phone"></i>
               </div>
               <div>
-                <div class="info-item-label">Telephone</div>
+                <div class="info-item-label">Téléphone</div>
                 <div class="info-item-value">{{ agent.telephone || 'N/A' }}</div>
               </div>
             </div>
@@ -243,7 +243,7 @@
                     <i class="fas fa-sitemap"></i>
                   </div>
                   <div>
-                    <div class="info-item-label">Departement</div>
+                    <div class="info-item-label">Département</div>
                     <div class="info-item-value">{{ agent.departement?.nom || 'N/A' }}</div>
                   </div>
                 </div>
@@ -490,7 +490,7 @@
             <div class="pem-header-icon"><i class="fas fa-pen"></i></div>
             <div>
               <h4 class="pem-title">Modifier mon profil</h4>
-              <p class="pem-subtitle">Mettre a jour vos informations personnelles</p>
+              <p class="pem-subtitle">Mettre à jour vos informations personnelles</p>
             </div>
             <button class="pem-close" @click="closeEditModal"><i class="fas fa-times"></i></button>
           </div>
@@ -520,9 +520,9 @@
               </div>
             </div>
 
-            <!-- Telephone -->
+            <!-- Téléphone -->
             <div class="pem-field">
-              <label class="pem-label"><i class="fas fa-phone me-1"></i> Telephone</label>
+              <label class="pem-label"><i class="fas fa-phone me-1"></i> Téléphone</label>
               <input v-model="editForm.telephone" type="text" class="pem-input" :class="{ 'pem-err': editErrors.telephone }" placeholder="+243 ...">
               <span v-if="editErrors.telephone" class="pem-err-msg">{{ editErrors.telephone[0] }}</span>
             </div>
@@ -718,13 +718,13 @@ async function handleEditSubmit() {
     const { data } = await updateProfile(formData)
     agent.value = data.agent
     if (data.stats) stats.value = data.stats
-    ui.addToast(data.message || 'Profil mis a jour avec succes !', 'success')
+    ui.addToast(data.message || 'Profil mis à jour avec succes !', 'success')
     showEditModal.value = false
   } catch (err) {
     if (err.response?.status === 422) {
       editErrors.value = err.response.data.errors || {}
     } else {
-      ui.addToast('Erreur lors de la mise a jour.', 'danger')
+      ui.addToast('Erreur lors de la mise à jour.', 'danger')
     }
   } finally {
     editSubmitting.value = false

@@ -35,7 +35,7 @@
           <div class="d-flex align-items-center gap-2">
             <span class="category-badge" :class="categorieBadgeClass(categorie)">{{ categorie }}</span>
             <h6 class="mb-0 fw-semibold" style="font-size:.9rem">
-              Categorie {{ categorie }}
+              Catégorie {{ categorie }}
             </h6>
           </div>
           <span class="count-badge">{{ grades.length }} grade{{ grades.length > 1 ? 's' : '' }}</span>
@@ -140,7 +140,7 @@ async function fetchGrades() {
 }
 
 async function deleteGrade(grade) {
-  if (!confirm(`Etes-vous sur de vouloir supprimer le grade "${grade.libelle}" ?`)) return
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer le grade "${grade.libelle}" ?`)) return
   try {
     await client.delete(`/admin/grades/${grade.id}`)
     fetchGrades()

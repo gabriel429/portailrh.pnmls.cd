@@ -7,7 +7,7 @@
           {{ isEdit ? 'Modifier la fonction' : 'Nouvelle fonction' }}
         </h4>
         <p class="text-muted mb-0">
-          {{ isEdit ? 'Modifiez les informations de cette fonction.' : 'Remplissez le formulaire pour creer une nouvelle fonction.' }}
+          {{ isEdit ? 'Modifiez les informations de cette fonction.' : 'Remplissez le formulaire pour créer une nouvelle fonction.' }}
         </p>
       </div>
       <router-link to="/admin/fonctions" class="btn btn-outline-secondary">
@@ -53,7 +53,7 @@
             <div class="mb-3">
               <label for="niveau_administratif" class="form-label fw-bold">Niveau administratif <span class="text-danger">*</span></label>
               <select id="niveau_administratif" v-model="form.niveau_administratif" class="form-select" required>
-                <option value="">-- Selectionnez --</option>
+                <option value="">-- Sélectionnez --</option>
                 <option value="SEN">SEN - Secretariat Executif National</option>
                 <option value="SEP">SEP - Secretariat Executif Provincial</option>
                 <option value="SEL">SEL - Secretariat Executif Local</option>
@@ -64,11 +64,11 @@
             <div class="mb-3">
               <label for="type_poste" class="form-label fw-bold">Type de poste</label>
               <select id="type_poste" v-model="form.type_poste" class="form-select">
-                <option value="">-- Selectionnez --</option>
+                <option value="">-- Sélectionnez --</option>
                 <optgroup label="SEN - Secretariat Executif National">
                   <option value="direction">Direction (SEN)</option>
-                  <option value="service_rattache">Service rattache (SEN)</option>
-                  <option value="département">Departement (SEN)</option>
+                  <option value="service_rattache">Service rattaché (SEN)</option>
+                  <option value="département">Département (SEN)</option>
                   <option value="section">Section (SEN)</option>
                   <option value="cellule">Cellule (SEN)</option>
                 </optgroup>
@@ -112,7 +112,7 @@
               <button type="submit" class="btn btn-primary" :disabled="saving">
                 <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
                 <i v-else class="fas fa-save me-1"></i>
-                {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+                {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
               </button>
               <router-link to="/admin/fonctions" class="btn btn-outline-secondary">Annuler</router-link>
             </div>

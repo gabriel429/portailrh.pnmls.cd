@@ -58,7 +58,7 @@
         <i class="fas fa-user-shield"></i>
         <p>Aucun utilisateur trouve.</p>
         <router-link :to="{ name: 'admin.utilisateurs.create' }" class="btn btn-sm mt-2" style="background: #059669; color: #fff; border-radius: 8px;">
-          <i class="fas fa-plus me-1"></i> Creer un utilisateur
+          <i class="fas fa-plus me-1"></i> Créer un utilisateur
         </router-link>
       </div>
 
@@ -70,7 +70,7 @@
                 <th>Nom</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th v-if="auth.isSuperAdmin">Derniere connexion</th>
+                <th v-if="auth.isSuperAdmin">Dernière connexion</th>
                 <th v-if="auth.isSuperAdmin">IP</th>
                 <th v-if="auth.isSuperAdmin">Statut</th>
                 <th class="text-end">Actions</th>
@@ -264,7 +264,7 @@ function goToPage(page) {
 }
 
 async function deleteUtilisateur(user) {
-  if (!confirm('Etes-vous sur de vouloir supprimer cet utilisateur ?')) return
+  if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return
   try {
     await client.delete(`/admin/utilisateurs/${user.id}`)
     fetchUtilisateurs(pagination.value.currentPage)
@@ -275,7 +275,7 @@ async function deleteUtilisateur(user) {
 
 async function toggleFreeze(user) {
   const action = user.is_frozen ? 'degeler' : 'geler'
-  if (!confirm(`Etes-vous sur de vouloir ${action} le compte de ${user.name} ?`)) return
+  if (!confirm(`Êtes-vous sûr de vouloir ${action} le compte de ${user.name} ?`)) return
   try {
     const endpoint = user.is_frozen
       ? `/superadmin/utilisateurs/${user.id}/unfreeze`

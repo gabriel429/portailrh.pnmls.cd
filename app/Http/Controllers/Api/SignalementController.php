@@ -69,7 +69,7 @@ class SignalementController extends ApiController
             $agent = Agent::find($validated['agent_id']);
             if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
                 return response()->json([
-                    'message' => 'Acces refuse pour cet agent.',
+                    'message' => 'Accès refusé pour cet agent.',
                 ], 403);
             }
         }
@@ -82,7 +82,7 @@ class SignalementController extends ApiController
         $resource = SignalementResource::make($signalement);
 
         return $this->resource($resource, [], [
-            'message' => 'Signalement cree avec succes.',
+            'message' => 'Signalement créé avec succès.',
         ], 201);
     }
 
@@ -92,7 +92,7 @@ class SignalementController extends ApiController
     public function show(Signalement $signalement): JsonResponse
     {
         if (!$this->scopeService()->canAccessSignalement(request()->user(), $signalement)) {
-            abort(403, 'Vous n\'avez pas acces a ce signalement.');
+            abort(403, 'Vous n\'avez pas accès a ce signalement.');
         }
 
         $signalement->load('agent');
@@ -107,7 +107,7 @@ class SignalementController extends ApiController
     {
         if (!$this->scopeService()->canAccessSignalement($request->user(), $signalement)) {
             return response()->json([
-                'message' => 'Vous n\'avez pas acces a ce signalement.',
+                'message' => 'Vous n\'avez pas accès a ce signalement.',
             ], 403);
         }
 
@@ -124,7 +124,7 @@ class SignalementController extends ApiController
         $resource = SignalementResource::make($signalement->fresh()->load('agent'));
 
         return $this->resource($resource, [], [
-            'message' => 'Signalement modifie avec succes.',
+            'message' => 'Signalement modifié avec succès.',
         ]);
     }
 
@@ -134,13 +134,13 @@ class SignalementController extends ApiController
     public function destroy(Signalement $signalement): JsonResponse
     {
         if (!$this->scopeService()->canAccessSignalement(request()->user(), $signalement)) {
-            abort(403, 'Vous n\'avez pas acces a ce signalement.');
+            abort(403, 'Vous n\'avez pas accès a ce signalement.');
         }
 
         $signalement->delete();
 
         return $this->success(null, [], [
-            'message' => 'Signalement supprime avec succes.',
+            'message' => 'Signalement supprimé avec succès.',
         ]);
     }
 

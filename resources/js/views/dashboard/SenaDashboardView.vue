@@ -134,8 +134,8 @@
               <h3 class="sena-section-title">Agenda — Échéances à venir</h3>
               <p class="sena-section-sub">
                 {{ data?.scope_label === 'sena'
-                  ? 'Taches de votre perimetre avec echeance dans les 7 prochains jours'
-                  : 'Taches SEN avec echeance dans les 7 prochains jours' }}
+                  ? 'Tâches de votre périmètre avec échéance dans les 7 prochains jours'
+                  : 'Tâches SEN avec échéance dans les 7 prochains jours' }}
               </p>
             </div>
           </div>

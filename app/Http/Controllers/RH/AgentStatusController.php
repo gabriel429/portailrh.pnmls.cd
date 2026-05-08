@@ -123,7 +123,7 @@ class AgentStatusController extends Controller
     public function show(AgentStatus $agentStatus)
     {
         if (!$this->scopeService()->canAccessAgent(request()->user(), $agentStatus->agent, false)) {
-            abort(403, 'Acces refuse a ce statut.');
+            abort(403, 'Accès refusé a ce statut.');
         }
 
         $agentStatus->load([
@@ -233,7 +233,7 @@ class AgentStatusController extends Controller
     {
         if (!$this->scopeService()->canAccessAgent($request->user(), $agent, true)) {
             return response()->json([
-                'message' => 'Acces refuse a cet historique'
+                'message' => 'Accès refusé a cet historique'
             ], 403);
         }
 

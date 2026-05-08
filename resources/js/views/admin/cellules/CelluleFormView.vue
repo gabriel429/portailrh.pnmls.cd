@@ -7,7 +7,7 @@
           {{ isEdit ? 'Modifier la cellule' : 'Nouvelle cellule' }}
         </h4>
         <p class="text-muted mb-0">
-          {{ isEdit ? 'Modifiez les informations de cette cellule.' : 'Remplissez le formulaire pour creer une nouvelle cellule.' }}
+          {{ isEdit ? 'Modifiez les informations de cette cellule.' : 'Remplissez le formulaire pour créer une nouvelle cellule.' }}
         </p>
       </div>
       <router-link to="/admin/cellules" class="btn btn-outline-secondary">
@@ -76,7 +76,7 @@
             <div class="mb-4">
               <label for="section_id" class="form-label fw-bold">Section <span class="text-danger">*</span></label>
               <select id="section_id" v-model="form.section_id" class="form-select" required>
-                <option value="">-- Selectionnez une section --</option>
+                <option value="">-- Sélectionnez une section --</option>
                 <option v-for="s in sections" :key="s.id" :value="s.id">{{ s.nom }}</option>
               </select>
             </div>
@@ -85,7 +85,7 @@
               <button type="submit" class="btn btn-primary" :disabled="saving">
                 <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>
                 <i v-else class="fas fa-save me-1"></i>
-                {{ isEdit ? 'Mettre a jour' : 'Enregistrer' }}
+                {{ isEdit ? 'Mettre à jour' : 'Enregistrer' }}
               </button>
               <router-link to="/admin/cellules" class="btn btn-outline-secondary">Annuler</router-link>
             </div>

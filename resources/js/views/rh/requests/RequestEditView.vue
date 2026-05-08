@@ -16,7 +16,7 @@
               <router-link :to="{ name: 'requests.show', params: { id: demande.id } }" class="back-link">
                 <i class="fas fa-arrow-left me-1"></i> Retour aux details
               </router-link>
-              <h1 class="rh-title mt-2"><i class="fas fa-edit me-2"></i>Modifier la Demande #{{ demande.id }}</h1>
+              <h1 class="rh-title mt-2"><i class="fas fa-edit me-2"></i>Modifier la demande #{{ demande.id }}</h1>
               <p class="rh-sub">Modifier le statut et ajouter des remarques sur cette demande.</p>
             </div>
           </div>
@@ -26,7 +26,7 @@
         <div v-if="!isRH" class="dash-panel mt-3">
           <div class="p-4 text-center">
             <i class="fas fa-lock fa-3x text-danger mb-3 d-block"></i>
-            <h5>Acces refuse</h5>
+            <h5>Accès refusé</h5>
             <p class="text-muted">Seuls les agents RH peuvent modifier le statut d'une demande.</p>
             <router-link :to="{ name: 'requests.index' }" class="btn-rh main">
               <i class="fas fa-arrow-left me-1"></i> Retour
@@ -154,9 +154,9 @@ const form = ref({
 
 const statutOptions = [
   { value: 'en_attente', label: 'En attente', icon: 'fas fa-hourglass-half', color: 'c-warning' },
-  { value: 'approuvé', label: 'Approuve', icon: 'fas fa-check-circle', color: 'c-success' },
-  { value: 'rejeté', label: 'Rejete', icon: 'fas fa-times-circle', color: 'c-danger' },
-  { value: 'annulé', label: 'Annule', icon: 'fas fa-ban', color: 'c-secondary' },
+  { value: 'approuvé', label: 'Approuvée', icon: 'fas fa-check-circle', color: 'c-success' },
+  { value: 'rejeté', label: 'Rejetée', icon: 'fas fa-times-circle', color: 'c-danger' },
+  { value: 'annulé', label: 'Annulée', icon: 'fas fa-ban', color: 'c-secondary' },
 ]
 
 function formatDate(dateStr) {
@@ -179,13 +179,13 @@ async function handleSubmit() {
       statut: form.value.statut,
       remarques: form.value.remarques,
     })
-    ui.addToast('Demande modifiee avec succes.', 'success')
+    ui.addToast('Demande modifiée avec succès.', 'success')
     router.push({ name: 'requests.show', params: { id: demande.value.id } })
   } catch (err) {
     if (err.response?.status === 422) {
       errors.value = err.response.data.errors || {}
     } else if (err.response?.status === 403) {
-      ui.addToast(err.response.data.message || 'Action non autorisee.', 'danger')
+      ui.addToast(err.response.data.message || 'Action non autorisée.', 'danger')
     } else {
       ui.addToast('Erreur lors de la modification.', 'danger')
     }
@@ -204,7 +204,7 @@ onMounted(async () => {
     form.value.remarques = demande.value.remarques || ''
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Vous n\'avez pas acces a cette demande.', 'danger')
+      ui.addToast('Vous n’avez pas accès à cette demande.', 'danger')
       router.push({ name: 'requests.index' })
     } else {
       ui.addToast('Erreur lors du chargement de la demande.', 'danger')

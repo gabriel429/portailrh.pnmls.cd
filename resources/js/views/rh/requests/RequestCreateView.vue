@@ -8,7 +8,7 @@
             <router-link :to="{ name: 'requests.index' }" class="back-link">
               <i class="fas fa-arrow-left me-1"></i> Retour aux demandes
             </router-link>
-            <h1 class="rh-title mt-2"><i class="fas fa-plus-circle me-2"></i>Nouvelle Demande</h1>
+            <h1 class="rh-title mt-2"><i class="fas fa-plus-circle me-2"></i>Nouvelle demande</h1>
             <p class="rh-sub">Remplissez le formulaire ci-dessous pour soumettre votre demande.</p>
           </div>
         </div>
@@ -77,13 +77,13 @@
 
             <!-- Section: Details -->
             <h6 class="section-title mt-4">
-              <i class="fas fa-info-circle me-2"></i> Details de la demande
+              <i class="fas fa-info-circle me-2"></i> Détails de la demande
             </h6>
 
             <div class="row g-3 mb-3">
               <div class="col-md-6">
                 <label class="form-label fw-semibold">
-                  <i class="fas fa-calendar-alt me-1 text-muted"></i> Date de debut <span class="text-danger">*</span>
+                  <i class="fas fa-calendar-alt me-1 text-muted"></i> Date de début <span class="text-danger">*</span>
                 </label>
                 <input
                   type="date" v-model="form.date_debut"
@@ -112,7 +112,7 @@
               <textarea
                 v-model="form.description" rows="4"
                 class="form-control" :class="{ 'is-invalid': errors.description }"
-                placeholder="Decrivez le motif de votre demande..."
+                placeholder="Décrivez le motif de votre demande..."
               ></textarea>
               <div v-if="errors.description" class="invalid-feedback d-block">{{ errors.description[0] }}</div>
             </div>
@@ -160,7 +160,7 @@
             <!-- Submit -->
             <hr class="my-4">
             <div class="submit-bar">
-              <small class="text-muted"><i class="fas fa-lock me-1"></i> Votre demande sera envoyee pour approbation</small>
+              <small class="text-muted"><i class="fas fa-lock me-1"></i> Votre demande sera envoyée pour approbation.</small>
               <div class="d-flex gap-2">
                 <router-link :to="{ name: 'requests.index' }" class="btn-rh outline">Annuler</router-link>
                 <button type="submit" class="btn-rh main" :disabled="submitting">

@@ -59,7 +59,7 @@
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
-              {{ isEdit ? 'Mettre a jour' : 'Creer' }}
+              {{ isEdit ? 'Mettre à jour' : 'Créer' }}
             </button>
             <router-link :to="{ name: 'admin.organes.index' }" class="btn btn-secondary">Annuler</router-link>
           </div>

@@ -34,7 +34,7 @@
                   class="hero-btn create"
                   :class="{ disabled: !canCreateAgents }"
                   :disabled="!canCreateAgents"
-                  :title="canCreateAgents ? 'Creer un nouvel agent' : 'Reserve a la Section RH'"
+                  :title="canCreateAgents ? 'Créer un nouvel agent' : 'Réservé à la Section RH'"
                   @click="openCreateAgent"
                 >
                   <i class="fas fa-user-plus"></i>
@@ -305,9 +305,9 @@
                 </select>
               </div>
               <div v-if="showExportDept" class="mb-3">
-                <label class="form-label fw-bold">Departement</label>
+                <label class="form-label fw-bold">Département</label>
                 <select v-model="exportFilters.departement_id" class="form-select">
-                  <option value="">Tous les departements</option>
+                  <option value="">Tous les départements</option>
                   <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
                 </select>
               </div>
@@ -320,7 +320,7 @@
               <button type="button" class="btn btn-secondary" @click="showExportModal = false">Annuler</button>
               <button type="button" class="btn btn-success" :disabled="exporting" @click="doExport">
                 <span v-if="exporting" class="spinner-border spinner-border-sm me-1"></span>
-                <i v-else class="fas fa-download me-1"></i> Telecharger CSV
+                <i v-else class="fas fa-download me-1"></i> Télécharger CSV
               </button>
             </div>
           </div>
@@ -332,7 +332,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer l'agent"
-      :message="'Etes-vous sur de vouloir supprimer ' + (agentToDelete ? agentToDelete.prenom + ' ' + agentToDelete.nom : '') + ' ? Cette action est irreversible.'"
+      :message="'Êtes-vous sûr de vouloir supprimer ' + (agentToDelete ? agentToDelete.prenom + ' ' + agentToDelete.nom : '') + ' ? Cette action est irréversible.'"
       :loading="deleting"
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
@@ -410,8 +410,8 @@
                   <div class="asm-info-item"><span class="asm-info-label">Sexe</span><span class="asm-info-value">{{ selectedAgent.sexe === 'M' ? 'Masculin' : selectedAgent.sexe === 'F' ? 'Feminin' : (selectedAgent.sexe || 'N/A') }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Situation familiale</span><span class="asm-info-value">{{ selectedAgent.situation_familiale || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Enfants</span><span class="asm-info-value">{{ selectedAgent.nombre_enfants ?? 'N/A' }}</span></div>
-                  <div class="asm-info-item"><span class="asm-info-label">Telephone professionnel</span><span class="asm-info-value">{{ selectedAgent.telephone_professionnel || selectedAgent.telephone || 'N/A' }}</span></div>
-                  <div class="asm-info-item"><span class="asm-info-label">Telephone prive</span><span class="asm-info-value">{{ selectedAgent.telephone_prive || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Téléphone professionnel</span><span class="asm-info-value">{{ selectedAgent.telephone_professionnel || selectedAgent.telephone || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Téléphone privé</span><span class="asm-info-value">{{ selectedAgent.telephone_prive || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Email prive</span><span class="asm-info-value">{{ selectedAgent.email_prive || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Email pro</span><span class="asm-info-value">{{ selectedAgent.email_professionnel || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Adresse</span><span class="asm-info-value">{{ selectedAgent.adresse || 'N/A' }}</span></div>
@@ -423,7 +423,7 @@
                   <div class="asm-info-item"><span class="asm-info-label">Fonction</span><span class="asm-info-value fw-bold">{{ selectedAgent.fonction || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Date embauche</span><span class="asm-info-value">{{ sm_formatDate(selectedAgent.date_embauche) }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Province</span><span class="asm-info-value">{{ selectedAgent.province ? (selectedAgent.province.nom_province || selectedAgent.province.nom) : 'N/A' }}</span></div>
-                  <div class="asm-info-item"><span class="asm-info-label">Departement</span><span class="asm-info-value">{{ selectedAgent.departement ? selectedAgent.departement.nom : 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Département</span><span class="asm-info-value">{{ selectedAgent.departement ? selectedAgent.departement.nom : 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Anciennete</span><span class="asm-info-value">{{ selectedAgent.anciennete !== null && selectedAgent.anciennete !== undefined ? selectedAgent.anciennete + ' an' + (selectedAgent.anciennete > 1 ? 's' : '') : 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Matricule Etat</span><span class="asm-info-value">{{ selectedAgent.matricule_etat || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Provenance matricule</span><span class="asm-info-value">{{ selectedAgent.institution ? selectedAgent.institution.nom : 'N/A' }}</span></div>
@@ -431,8 +431,8 @@
                   <div class="asm-info-item"><span class="asm-info-label">Niveau etudes</span><span class="asm-info-value">{{ selectedAgent.niveau_etudes || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Domaine etudes</span><span class="asm-info-value">{{ selectedAgent.domaine_etudes || 'N/A' }}</span></div>
                   <div class="asm-info-item"><span class="asm-info-label">Annee engagement</span><span class="asm-info-value">{{ selectedAgent.annee_engagement_programme || 'N/A' }}</span></div>
-                  <div class="asm-info-item"><span class="asm-info-label">Role applicatif</span><span class="asm-info-value">{{ selectedAgent.role?.nom_role || 'N/A' }}</span></div>
-                  <div class="asm-info-item"><span class="asm-info-label">Derniere mise a jour</span><span class="asm-info-value">{{ sm_formatDateTime(selectedAgent.updated_at) }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Rôle applicatif</span><span class="asm-info-value">{{ selectedAgent.role?.nom_role || 'N/A' }}</span></div>
+                  <div class="asm-info-item"><span class="asm-info-label">Dernière mise à jour</span><span class="asm-info-value">{{ sm_formatDateTime(selectedAgent.updated_at) }}</span></div>
                 </div>
 
                 <!-- Stats row -->
@@ -1006,8 +1006,8 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
         <div class="info-item"><span class="label">Sexe</span><span class="value">${sexeLabel}</span></div>
         <div class="info-item"><span class="label">Situation familiale</span><span class="value">${a.situation_familiale || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Enfants</span><span class="value">${a.nombre_enfants ?? 'N/A'}</span></div>
-        <div class="info-item"><span class="label">Telephone professionnel</span><span class="value">${a.telephone_professionnel || a.telephone || 'N/A'}</span></div>
-        <div class="info-item"><span class="label">Telephone prive</span><span class="value">${a.telephone_prive || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Téléphone professionnel</span><span class="value">${a.telephone_professionnel || a.telephone || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Téléphone privé</span><span class="value">${a.telephone_prive || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Email prive</span><span class="value">${a.email_prive || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Email pro</span><span class="value">${a.email_professionnel || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Adresse</span><span class="value">${a.adresse || 'N/A'}</span></div>
@@ -1021,7 +1021,7 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
         <div class="info-item"><span class="label">Fonction</span><span class="value" style="font-weight:700;">${a.fonction || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Date embauche</span><span class="value">${sm_formatDate(a.date_embauche)}</span></div>
         <div class="info-item"><span class="label">Province</span><span class="value">${provinceName}</span></div>
-        <div class="info-item"><span class="label">Departement</span><span class="value">${deptName}</span></div>
+        <div class="info-item"><span class="label">Département</span><span class="value">${deptName}</span></div>
         <div class="info-item"><span class="label">Anciennete</span><span class="value">${anciennete}</span></div>
         <div class="info-item"><span class="label">Matricule Etat</span><span class="value">${a.matricule_etat || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Provenance matricule</span><span class="value">${a.institution ? a.institution.nom : 'N/A'}</span></div>
@@ -1029,7 +1029,7 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
         <div class="info-item"><span class="label">Niveau etudes</span><span class="value">${a.niveau_etudes || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Domaine etudes</span><span class="value">${a.domaine_etudes || 'N/A'}</span></div>
         <div class="info-item"><span class="label">Annee engagement</span><span class="value">${a.annee_engagement_programme || 'N/A'}</span></div>
-        <div class="info-item"><span class="label">Role applicatif</span><span class="value">${a.role?.nom_role || 'N/A'}</span></div>
+        <div class="info-item"><span class="label">Rôle applicatif</span><span class="value">${a.role?.nom_role || 'N/A'}</span></div>
     </div>
     <div class="stats">
         <div class="stat"><span class="stat-val">${(a.documents || []).length}</span><span class="stat-lbl">Documents</span></div>
@@ -1041,7 +1041,7 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
 
 ${affRows ? `<div class="section">
     <h2>Parcours / Affectations</h2>
-    <table><thead><tr><th>Fonction</th><th>Niveau</th><th>Departement</th><th>Province</th><th>Debut</th><th>Fin</th></tr></thead>
+    <table><thead><tr><th>Fonction</th><th>Niveau</th><th>Département</th><th>Province</th><th>Début</th><th>Fin</th></tr></thead>
     <tbody>${affRows}</tbody></table>
 </div>` : ''}
 
@@ -1088,7 +1088,7 @@ function closeCreateModal() {
 
 function openCreateAgent() {
     if (!canCreateAgents.value) {
-        ui.addToast('L assistant RH ne peut pas creer un nouvel agent.', 'warning')
+        ui.addToast('L’assistant RH ne peut pas créer un nouvel agent.', 'warning')
         return
     }
 
@@ -1167,7 +1167,7 @@ async function doDelete() {
     deleting.value = true
     try {
         await remove(agentToDelete.value.id)
-        ui.addToast('Agent supprime avec succes', 'success')
+        ui.addToast('Agent supprimé avec succès.', 'success')
         showDeleteModal.value = false
         agentToDelete.value = null
         await fetchAgents()

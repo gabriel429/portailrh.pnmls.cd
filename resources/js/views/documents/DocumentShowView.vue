@@ -17,7 +17,7 @@
             <router-link :to="{ name: 'documents.index' }" class="btn btn-back-circle me-3">
               <i class="fas fa-arrow-left"></i>
             </router-link>
-            <h3 class="mb-0 fw-bold" style="color:#1a1a2e;">Details du document</h3>
+            <h3 class="mb-0 fw-bold" style="color:#1a1a2e;">Détails du document</h3>
           </div>
 
           <!-- Main Card -->
@@ -107,7 +107,7 @@
             <!-- Actions -->
             <div class="detail-card-footer">
               <button class="btn btn-download" @click="handleDownload">
-                <i class="fas fa-download me-2"></i>Telecharger
+                <i class="fas fa-download me-2"></i>Télécharger
               </button>
               <router-link :to="{ name: 'documents.index' }" class="btn btn-back-list">
                 <i class="fas fa-list me-2"></i>Retour a la liste
@@ -123,7 +123,7 @@
         <div v-else class="text-center py-5">
           <i class="fas fa-file-excel fa-4x mb-3" style="color:#dc3545;"></i>
           <h5 class="fw-bold">Document introuvable</h5>
-          <p class="text-muted">Le document demande n'existe pas ou vous n'y avez pas acces.</p>
+          <p class="text-muted">Le document demande n'existe pas ou vous n'y avez pas accès.</p>
           <router-link :to="{ name: 'documents.index' }" class="btn btn-primary-custom">
             <i class="fas fa-arrow-left me-2"></i>Retour aux documents
           </router-link>
@@ -136,7 +136,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer le document"
-      message="Etes-vous sur de vouloir supprimer ce document ? Cette action est irreversible."
+      message="Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible."
       :loading="deleteLoading"
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
@@ -229,7 +229,7 @@ async function fetchDocument() {
     fileMeta.value = data.file_meta || { size: 0, extension: '', exists: false }
   } catch (err) {
     if (err.response?.status === 403) {
-      ui.addToast('Vous n\'avez pas acces a ce document.', 'danger')
+      ui.addToast('Vous n’avez pas accès à ce document.', 'danger')
     } else {
       ui.addToast('Erreur lors du chargement du document.', 'danger')
     }
@@ -253,7 +253,7 @@ async function handleDownload() {
     window.URL.revokeObjectURL(url)
     window.document.body.removeChild(a)
   } catch (err) {
-    ui.addToast('Erreur lors du telechargement.', 'danger')
+    ui.addToast('Erreur lors du téléchargement.', 'danger')
   }
 }
 
@@ -261,7 +261,7 @@ async function doDelete() {
   deleteLoading.value = true
   try {
     await remove(document.value.id)
-    ui.addToast('Document supprime avec succes.', 'success')
+    ui.addToast('Document supprimé avec succès.', 'success')
     showDeleteModal.value = false
     router.push({ name: 'documents.index' })
   } catch (err) {

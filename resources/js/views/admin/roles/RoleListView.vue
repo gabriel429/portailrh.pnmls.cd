@@ -215,7 +215,7 @@ function goToPage(page) {
 }
 
 async function deleteRole(role) {
-  if (!confirm(`Etes-vous sur de vouloir supprimer le role "${role.nom_role}" ?`)) return
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer le rôle "${role.nom_role}" ?`)) return
   try {
     await client.delete(`/admin/roles/${role.id}`)
     fetchRoles()

@@ -4,8 +4,8 @@
     <div class="doc-hero">
       <div class="doc-hero-content">
         <div>
-          <h2><i class="fas fa-folder-open me-2"></i>Gestion Electronique de Documents</h2>
-          <p>Organisez, consultez et gerez vos documents en toute simplicite</p>
+          <h2><i class="fas fa-folder-open me-2"></i>Gestion électronique des documents</h2>
+          <p>Organisez, consultez et gérez vos documents en toute simplicité.</p>
         </div>
       </div>
       <div class="doc-hero-stats">
@@ -76,7 +76,7 @@
         <span class="doc-section-badge">{{ meta.total }} document{{ meta.total > 1 ? 's' : '' }}</span>
       </div>
       <button class="doc-back-btn" @click="resetFilters">
-        <i class="fas fa-arrow-left"></i> Toutes les categories
+        <i class="fas fa-arrow-left"></i> Toutes les catégories
       </button>
     </div>
 
@@ -93,13 +93,13 @@
       <div class="doc-empty-icon"><i class="fas fa-folder-open"></i></div>
       <template v-if="filters.categorie">
         <h5>Aucun document dans &laquo; {{ getCategoryLabel(filters.categorie) }} &raquo;</h5>
-        <p>Il n'y a pas encore de documents dans cette categorie.</p>
+        <p>Il n'y a pas encore de documents dans cette catégorie.</p>
         <button class="doc-back-btn mt-3" style="display:inline-flex;" @click="resetFilters">
           <i class="fas fa-arrow-left"></i> Voir toutes les categories
         </button>
       </template>
       <template v-else>
-        <h5>Aucun document trouve</h5>
+        <h5>Aucun document trouvé</h5>
         <p>Votre dossier ne contient pas encore de document. La Section Ressources Humaines peut les ajouter depuis votre fiche agent.</p>
       </template>
     </div>
@@ -130,7 +130,7 @@
                 <i class="fas fa-eye"></i> Voir
               </button>
               <button class="doc-action-btn doc-action-download" @click="handleDownload(doc)">
-                <i class="fas fa-download"></i> Telecharger
+                <i class="fas fa-download"></i> Télécharger
               </button>
             </div>
           </div>
@@ -168,7 +168,7 @@
     <ConfirmModal
       :show="showDeleteModal"
       title="Supprimer le document"
-      message="Etes-vous sur de vouloir supprimer ce document ? Cette action est irreversible."
+      message="Êtes-vous sûr de vouloir supprimer ce document ? Cette action est irréversible."
       :loading="deleteLoading"
       @confirm="doDelete"
       @cancel="showDeleteModal = false"
@@ -180,7 +180,7 @@
         <div class="ddm-dialog">
           <!-- Header -->
           <div class="ddm-header">
-            <h5 class="ddm-title"><i class="fas fa-file-alt me-2"></i>Details du document</h5>
+            <h5 class="ddm-title"><i class="fas fa-file-alt me-2"></i>Détails du document</h5>
             <button class="ddm-close" @click="showDetailModal = false"><i class="fas fa-times"></i></button>
           </div>
 
@@ -267,7 +267,7 @@
           <!-- Footer -->
           <div v-if="detailDoc && !detailLoading" class="ddm-footer">
             <button class="ddm-btn ddm-btn-primary" @click="downloadDetail">
-              <i class="fas fa-download me-1"></i> Telecharger
+              <i class="fas fa-download me-1"></i> Télécharger
             </button>
           </div>
         </div>
@@ -280,7 +280,7 @@
         <div class="dum-dialog">
           <!-- Header -->
           <div class="dum-header">
-            <h5 class="dum-title"><i class="fas fa-cloud-upload-alt me-2"></i>Uploader un Document</h5>
+            <h5 class="dum-title"><i class="fas fa-cloud-upload-alt me-2"></i>Uploader un document</h5>
             <button class="dum-close" @click="closeUploadModal"><i class="fas fa-times"></i></button>
           </div>
 
@@ -319,11 +319,11 @@
               <!-- Nom document -->
               <div class="mb-3">
                 <label class="dum-label"><i class="fas fa-tag me-1 text-muted"></i> Nom du document <span class="text-danger">*</span></label>
-                <input type="text" v-model="uploadForm.nom_document" class="dum-input" :class="{ 'is-invalid': uploadErrors.nom_document }" placeholder="Ex: Carte d'identite, Diplome, Contrat...">
+                <input type="text" v-model="uploadForm.nom_document" class="dum-input" :class="{ 'is-invalid': uploadErrors.nom_document }" placeholder="Ex: Carte d'identité, diplôme, contrat...">
                 <div v-if="uploadErrors.nom_document" class="dum-error">{{ uploadErrors.nom_document[0] }}</div>
               </div>
 
-              <!-- Categorie -->
+              <!-- Catégorie -->
               <div class="mb-3">
                 <label class="dum-label"><i class="fas fa-folder me-1 text-muted"></i> Categorie</label>
                 <div class="dum-cat-grid">
@@ -468,7 +468,7 @@ async function handleUploadSubmit() {
   if (uploadSelectedFile.value) formData.append('fichier', uploadSelectedFile.value)
   try {
     await create(formData)
-    ui.addToast('Document uploade avec succes.', 'success')
+    ui.addToast('Document uploadé avec succès.', 'success')
     showUploadModal.value = false
     await fetchDocuments(1)
   } catch (err) {
@@ -587,7 +587,7 @@ async function handleDownload(doc) {
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
   } catch (err) {
-    ui.addToast('Erreur lors du telechargement.', 'danger')
+    ui.addToast('Erreur lors du téléchargement.', 'danger')
   }
 }
 
@@ -601,7 +601,7 @@ async function doDelete() {
   deleteLoading.value = true
   try {
     await remove(docToDelete.value.id)
-    ui.addToast('Document supprime avec succes.', 'success')
+    ui.addToast('Document supprimé avec succès.', 'success')
     showDeleteModal.value = false
     docToDelete.value = null
     fetchDocuments(meta.value.current_page)
@@ -666,7 +666,7 @@ async function downloadDetail() {
     window.URL.revokeObjectURL(url)
     window.document.body.removeChild(a)
   } catch (err) {
-    ui.addToast('Erreur lors du telechargement.', 'danger')
+    ui.addToast('Erreur lors du téléchargement.', 'danger')
   }
 }
 

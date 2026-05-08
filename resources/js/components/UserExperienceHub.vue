@@ -11,8 +11,8 @@
         </div>
         <h2>Bienvenue sur E-PNMLS</h2>
         <p>
-          Une courte visite peut vous aider a retrouver rapidement le tableau de bord,
-          les modules, les notifications et les actions utiles selon votre role.
+          Une courte visite peut vous aider à retrouver rapidement le tableau de bord,
+          les modules, les notifications et les actions utiles selon votre rôle.
         </p>
         <div class="ux-actions">
           <button class="ux-btn ux-btn-primary" type="button" @click="startTour">
@@ -39,7 +39,7 @@
         <div class="ux-step-icon">
           <i :class="['fas', currentTourStep.icon]"></i>
         </div>
-        <p class="ux-step-count">Etape {{ tourStep + 1 }} sur {{ tourSteps.length }}</p>
+        <p class="ux-step-count">Étape {{ tourStep + 1 }} sur {{ tourSteps.length }}</p>
         <h2>{{ currentTourStep.title }}</h2>
         <p>{{ currentTourStep.text }}</p>
         <div v-if="currentTourStep.modules" class="ux-module-list">
@@ -64,7 +64,7 @@
       <section v-else-if="activeModal === 'communique' && currentCommunique" class="ux-card ux-info-card">
         <div class="ux-kicker">
           <span class="ux-kicker-icon ux-orange"><i class="fas fa-bullhorn"></i></span>
-          Communique officiel
+          Communiqué officiel
         </div>
         <h2>{{ currentCommunique.titre }}</h2>
         <div class="ux-meta-grid">
@@ -74,12 +74,12 @@
         <div class="ux-message">{{ currentCommunique.contenu }}</div>
         <a v-if="currentCommunique.piece_jointe_url" class="ux-attachment" :href="currentCommunique.piece_jointe_url" target="_blank" rel="noopener">
           <i class="fas fa-paperclip"></i>
-          Piece jointe
+          Pièce jointe
         </a>
         <div class="ux-actions">
           <button class="ux-btn ux-btn-ghost" type="button" @click="openCommunique">
             <i class="fas fa-eye"></i>
-            Voir le detail
+            Voir le détail
           </button>
           <button class="ux-btn ux-btn-primary" type="button" :disabled="saving" @click="acknowledgeCommunique">
             <span v-if="saving" class="spinner-border spinner-border-sm"></span>
@@ -92,7 +92,7 @@
       <section v-else-if="activeModal === 'forum' && currentForum" class="ux-card ux-info-card">
         <div class="ux-kicker">
           <span class="ux-kicker-icon ux-green"><i class="fas fa-comments"></i></span>
-          Forum lance
+          Forum lancé
         </div>
         <h2>{{ currentForum.titre || 'Discussion institutionnelle' }}</h2>
         <div class="ux-meta-grid">
@@ -139,7 +139,7 @@ const saving = ref(false)
 const loadedUserId = ref(null)
 
 const roleModules = computed(() => {
-  const modules = ['Demandes', 'Documents', 'Mes taches', 'PTA', 'Forum']
+  const modules = ['Demandes', 'Documents', 'Mes tâches', 'PTA', 'Forum']
 
   if (auth.canAdminPta) {
     modules.push('Adm PTA')
@@ -156,28 +156,28 @@ const tourSteps = computed(() => [
   {
     icon: 'fa-gauge-high',
     title: 'Tableau de bord',
-    text: 'Retrouvez les indicateurs, les alertes et les activites importantes des votre arrivee.',
+    text: 'Retrouvez les indicateurs, les alertes et les activités importantes dès votre arrivée.',
   },
   {
     icon: 'fa-bars-staggered',
     title: 'Menu de navigation',
-    text: 'Le menu donne un acces rapide aux espaces de travail, aux documents et aux outils de suivi.',
+    text: 'Le menu donne un accès rapide aux espaces de travail, aux documents et aux outils de suivi.',
   },
   {
     icon: 'fa-layer-group',
     title: 'Modules accessibles',
-    text: 'Les modules visibles sont adaptes a votre role et a votre rattachement dans la structure.',
+    text: 'Les modules visibles sont adaptés à votre rôle et à votre rattachement dans la structure.',
     modules: roleModules.value,
   },
   {
     icon: 'fa-bell',
     title: 'Notifications',
-    text: 'Les notifications signalent les communiques, les taches, les validations et les messages importants.',
+    text: 'Les notifications signalent les communiqués, les tâches, les validations et les messages importants.',
   },
   {
     icon: 'fa-list-check',
-    title: 'Taches et activites',
-    text: 'Les taches attribuees, les activites PTA et les demandes restent accessibles depuis leurs modules dedies.',
+    title: 'Tâches et activités',
+    text: 'Les tâches attribuées, les activités PTA et les demandes restent accessibles depuis leurs modules dédiés.',
   },
   {
     icon: 'fa-circle-question',
