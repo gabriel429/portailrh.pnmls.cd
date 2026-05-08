@@ -186,6 +186,12 @@ const routes = [
         meta: { auth: true },
     },
     {
+        path: '/adm-pta',
+        name: 'adm-pta.index',
+        component: () => import('@/views/plan-travail/PlanTravailListView.vue'),
+        meta: { auth: true, ptaAdmin: true },
+    },
+    {
         path: '/plan-travail/create',
         name: 'plan-travail.create',
         component: () => import('@/views/plan-travail/PlanTravailCreateView.vue'),
@@ -510,6 +516,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.docsTravail && !auth.canManageDocsTravail) {
+        return { name: 'dashboard' }
+    }
+
+    if (to.meta.ptaAdmin && !auth.canAdminPta) {
         return { name: 'dashboard' }
     }
 

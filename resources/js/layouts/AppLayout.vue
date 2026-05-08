@@ -79,6 +79,12 @@
                 <span class="nav-link-label">PTA</span>
               </router-link>
             </li>
+            <li v-if="auth.canAdminPta" class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'adm-pta.index' }" title="Administration PTA">
+                <i class="fas fa-chart-pie nav-icon"></i>
+                <span class="nav-link-label">Adm PTA</span>
+              </router-link>
+            </li>
             <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'documents-travail.index' }" title="Documents de travail">
                 <i class="fas fa-file-invoice nav-icon"></i>

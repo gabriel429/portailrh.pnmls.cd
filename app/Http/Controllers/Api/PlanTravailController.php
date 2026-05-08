@@ -29,7 +29,6 @@ class PlanTravailController extends ApiController
 
     /**
      * Returns true if the authenticated user has a Section Planification role.
-     * These roles have global read/write access to the full PTA.
      */
     private function isPlanificationRole(): bool
     {
@@ -37,6 +36,20 @@ class PlanTravailController extends ApiController
         if (!$user) return false;
         $role = $user->role?->nom_role ?? '';
         return in_array($role, ['Chef Section Planification', 'Cellule Planification']);
+    }
+
+    private function isPtaAdminContext(): bool
+    {
+        return request()->boolean('admin_pta');
+    }
+
+    private function canUsePtaAdminContext(): bool
+    {
+        $user = auth()->user();
+
+        return $user
+            && ($this->scopeService()->hasGlobalAdminAccess($user) || $this->isPlanificationRole())
+            && $this->isPtaAdminContext();
     }
 
     private function getScopedAgent(): ?Agent
@@ -47,8 +60,7 @@ class PlanTravailController extends ApiController
             return null;
         }
 
-        // Planification roles have unrestricted access to all PTA activities.
-        if ($this->isPlanificationRole()) {
+        if ($this->canUsePtaAdminContext()) {
             return null;
         }
 
@@ -274,26 +286,21 @@ class PlanTravailController extends ApiController
     private function canManage(): bool
     {
         $user = auth()->user();
+        if (!$user) {
+            return false;
+        }
+
         if ($this->scopeService()->hasGlobalAdminAccess($user)) {
             return true;
         }
 
-        // Chef Section Planification and Cellule Planification manage the entire PTA.
-        if ($this->isPlanificationRole()) {
+        if ($this->canUsePtaAdminContext()) {
             return true;
         }
 
         $agent = $user->agent;
         if (!$agent) {
             return false;
-        }
-
-        if ($activite->relationLoaded('agents')) {
-            if ($activite->agents->contains('id', $agent->id)) {
-                return true;
-            }
-        } elseif ($activite->agents()->where('agents.id', $agent->id)->exists()) {
-            return true;
         }
 
         $nomFonction = $this->getNomFonctionAgent($agent);
@@ -443,7 +450,7 @@ class PlanTravailController extends ApiController
         $assignmentTarget = $validated['assignment_target'] ?? null;
         unset($validated['assignment_target']);
 
-        if (!$this->isPlanificationRole() || ($assignedAgentIds === [] && !$assignmentTarget)) {
+        if (!$this->canUsePtaAdminContext() || ($assignedAgentIds === [] && !$assignmentTarget)) {
             return $validated;
         }
 
@@ -563,6 +570,7 @@ class PlanTravailController extends ApiController
             ],
             'canEdit' => $this->canManage(),
             'isGlobalPta' => $isGlobalPta,
+            'isPtaAdmin' => $this->canUsePtaAdminContext(),
             'filterOptions' => $filterOptions,
         ], [
             'groupees' => $activitesGroupees,
@@ -580,8 +588,80 @@ class PlanTravailController extends ApiController
             ],
             'canEdit' => $this->canManage(),
             'isGlobalPta' => $isGlobalPta,
+            'isPtaAdmin' => $this->canUsePtaAdminContext(),
             'filterOptions' => $filterOptions,
         ]);
+    }
+
+    public function dashboard(Request $request): JsonResponse
+    {
+        if (!$this->canUsePtaAdminContext()) {
+            return response()->json(['message' => 'Acces refuse.'], 403);
+        }
+
+        $annee = (int) $request->input('annee', now()->year);
+        $base = ActivitePlan::with('departement', 'agents')->parAnnee($annee);
+        $activities = $base->get();
+        $today = now()->startOfDay();
+
+        $total = $activities->count();
+        $byStatus = $activities->groupBy('statut')->map->count();
+        $overdue = $activities
+            ->filter(fn (ActivitePlan $activity) => $activity->date_fin && $activity->date_fin->lt($today) && $activity->statut !== 'terminee')
+            ->count();
+
+        $byDepartment = $activities
+            ->groupBy(fn (ActivitePlan $activity) => $activity->departement?->nom ?: 'Direction / Non renseigne')
+            ->map(fn ($items, $label) => [
+                'label' => $label,
+                'total' => $items->count(),
+                'terminee' => $items->where('statut', 'terminee')->count(),
+                'en_cours' => $items->where('statut', 'en_cours')->count(),
+                'avg_pourcentage' => $items->count() ? round($items->avg('pourcentage')) : 0,
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $byAgent = $activities
+            ->flatMap(fn (ActivitePlan $activity) => $activity->agents->map(fn (Agent $agent) => [
+                'id' => $agent->id,
+                'label' => trim($agent->prenom . ' ' . $agent->nom),
+                'statut' => $activity->statut,
+                'pourcentage' => $activity->pourcentage,
+            ]))
+            ->groupBy('id')
+            ->map(fn ($items) => [
+                'label' => $items->first()['label'] ?: 'Agent non renseigne',
+                'total' => $items->count(),
+                'terminee' => $items->where('statut', 'terminee')->count(),
+                'avg_pourcentage' => $items->count() ? round($items->avg('pourcentage')) : 0,
+            ])
+            ->sortByDesc('total')
+            ->take(12)
+            ->values();
+
+        $byTrimestre = collect(['T1', 'T2', 'T3', 'T4'])->map(fn ($trimestre) => [
+            'label' => $trimestre,
+            'total' => (clone $base)->parTrimestre($trimestre)->count(),
+        ]);
+
+        $payload = [
+            'annee' => $annee,
+            'summary' => [
+                'total' => $total,
+                'planifiee' => (int) ($byStatus['planifiee'] ?? 0),
+                'en_cours' => (int) ($byStatus['en_cours'] ?? 0),
+                'terminee' => (int) ($byStatus['terminee'] ?? 0),
+                'annulee' => (int) ($byStatus['annulee'] ?? 0),
+                'en_retard' => $overdue,
+                'avg_pourcentage' => $total ? round($activities->avg('pourcentage')) : 0,
+            ],
+            'by_department' => $byDepartment,
+            'by_agent' => $byAgent,
+            'by_trimestre' => $byTrimestre,
+        ];
+
+        return $this->success($payload, [], $payload);
     }
 
     /**
@@ -622,7 +702,7 @@ class PlanTravailController extends ApiController
                 ])
             : [];
 
-        $isPlanification = $this->isPlanificationRole();
+        $isPlanification = $this->canUsePtaAdminContext();
         $departmentIds = $departments->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
         $departmentAgents = $isPlanification ? $this->ptaDepartmentAgents($departmentIds) : [];
         $agentsSen = $isPlanification ? $this->ptaSenAttacheAgents() : collect();

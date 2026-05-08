@@ -4,8 +4,11 @@
     <div class="pt-hero">
       <div class="pt-hero-body">
         <div class="pt-hero-text">
-          <h2><i class="fas fa-calendar-alt me-2"></i>Plan de Travail Annuel {{ filters.annee }}</h2>
-          <p>Activites planifiees, en cours et terminees de votre unite organisationnelle.</p>
+          <h2>
+            <i :class="isAdminMode ? 'fas fa-chart-pie me-2' : 'fas fa-calendar-alt me-2'"></i>
+            {{ isAdminMode ? 'Administration PTA' : 'Plan de Travail Annuel' }} {{ filters.annee }}
+          </h2>
+          <p>{{ isAdminMode ? 'Coordination, mise a jour et suivi global des activites PTA.' : 'Activites planifiees, en cours et terminees de votre unite organisationnelle.' }}</p>
           <div class="pt-hero-stats">
             <div>
               <div class="pt-hero-stat-val">{{ stats.total }}</div>
@@ -37,6 +40,81 @@
         <p>{{ accessDeniedMessage }}</p>
       </div>
     </div>
+
+    <section v-if="isAdminMode && dashboardData" class="pta-admin-dashboard">
+      <div class="pta-admin-head">
+        <div>
+          <h3>Dashboard de suivi PTA</h3>
+          <p>Vue globale par statut, departement, agent et trimestre.</p>
+        </div>
+        <span v-if="dashboardLoading" class="pta-admin-loading"><i class="fas fa-spinner fa-spin"></i> Actualisation</span>
+      </div>
+
+      <div class="pta-admin-kpis">
+        <div class="pta-admin-kpi">
+          <span class="pta-admin-kpi-icon pta-kpi-total"><i class="fas fa-layer-group"></i></span>
+          <div><strong>{{ dashboardData.summary.total }}</strong><small>Total creees</small></div>
+        </div>
+        <div class="pta-admin-kpi">
+          <span class="pta-admin-kpi-icon pta-kpi-progress"><i class="fas fa-spinner"></i></span>
+          <div><strong>{{ dashboardData.summary.en_cours }}</strong><small>En cours</small></div>
+        </div>
+        <div class="pta-admin-kpi">
+          <span class="pta-admin-kpi-icon pta-kpi-done"><i class="fas fa-check"></i></span>
+          <div><strong>{{ dashboardData.summary.terminee }}</strong><small>Realisees</small></div>
+        </div>
+        <div class="pta-admin-kpi">
+          <span class="pta-admin-kpi-icon pta-kpi-late"><i class="fas fa-triangle-exclamation"></i></span>
+          <div><strong>{{ dashboardData.summary.en_retard }}</strong><small>En retard</small></div>
+        </div>
+        <div class="pta-admin-kpi">
+          <span class="pta-admin-kpi-icon pta-kpi-cancel"><i class="fas fa-ban"></i></span>
+          <div><strong>{{ dashboardData.summary.annulee }}</strong><small>Annulees</small></div>
+        </div>
+        <div class="pta-admin-kpi">
+          <span class="pta-admin-kpi-icon pta-kpi-rate"><i class="fas fa-chart-line"></i></span>
+          <div><strong>{{ dashboardData.summary.avg_pourcentage }}%</strong><small>Execution globale</small></div>
+        </div>
+      </div>
+
+      <div class="pta-admin-graphs">
+        <div class="pta-admin-panel">
+          <h4><i class="fas fa-building me-1"></i>Activites par departement ou service</h4>
+          <div v-if="dashboardData.by_department.length" class="pta-bars">
+            <div v-for="item in dashboardData.by_department.slice(0, 8)" :key="item.label" class="pta-bar-row">
+              <div class="pta-bar-label">{{ item.label }}</div>
+              <div class="pta-bar-track">
+                <div class="pta-bar-fill" :style="{ width: barWidth(item.total, dashboardData.by_department) + '%' }"></div>
+              </div>
+              <div class="pta-bar-value">{{ item.total }}</div>
+            </div>
+          </div>
+          <div v-else class="pta-admin-empty">Aucune activite par departement.</div>
+        </div>
+
+        <div class="pta-admin-panel">
+          <h4><i class="fas fa-users me-1"></i>Activites attribuees aux agents</h4>
+          <div v-if="dashboardData.by_agent.length" class="pta-agent-list">
+            <div v-for="agent in dashboardData.by_agent" :key="agent.label" class="pta-agent-row">
+              <span>{{ agent.label }}</span>
+              <strong>{{ agent.total }}</strong>
+            </div>
+          </div>
+          <div v-else class="pta-admin-empty">Aucune activite attribuee a un agent.</div>
+        </div>
+
+        <div class="pta-admin-panel pta-admin-panel-wide">
+          <h4><i class="fas fa-chart-column me-1"></i>Repartition par trimestre</h4>
+          <div class="pta-trim-chart">
+            <div v-for="item in dashboardData.by_trimestre" :key="item.label" class="pta-trim-col">
+              <div class="pta-trim-bar" :style="{ height: barWidth(item.total, dashboardData.by_trimestre) + '%' }"></div>
+              <span>{{ item.label }}</span>
+              <strong>{{ item.total }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Status filter cards (always visible) -->
     <div class="pt-filter-grid">
@@ -620,6 +698,7 @@
     <PlanTravailEditModal
       :show="showEditModal"
       :plan-travail-id="editingPlanTravailId"
+      :admin-mode="isAdminMode"
       @close="closeEditModal"
       @updated="handlePlanTravailUpdated"
     />
@@ -627,18 +706,21 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
-import { list, create, get, getCreateData, updateStatut, remove } from '@/api/planTravail'
+import { list, create, get, getCreateData, updateStatut, remove, dashboard as getPtaDashboard } from '@/api/planTravail'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
 
 const ui = useUiStore()
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
 const isPlanification = computed(() => auth.isPlanification || auth.isSEN || auth.isAdminNT || auth.isSuperAdmin)
+const isAdminMode = computed(() => route.name === 'adm-pta.index')
+const adminParams = computed(() => isAdminMode.value ? { admin_pta: 1 } : {})
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
@@ -646,6 +728,8 @@ const accessDenied = ref(false)
 const accessDeniedMessage = ref("Vous ne pouvez consulter que le PTA de votre departement.")
 const groupees = ref({})
 const stats = ref({ total: 0, planifiee: 0, en_cours: 0, terminee: 0, avg_pourcentage: 0 })
+const dashboardLoading = ref(false)
+const dashboardData = ref(null)
 const canEdit = ref(false)
 const isGlobalPta = ref(false)
 const filterDepts = ref([])
@@ -683,7 +767,7 @@ async function loadPlan() {
   filtering.value = true
   try {
     accessDenied.value = false
-    const params = { annee: filters.value.annee }
+    const params = { annee: filters.value.annee, ...adminParams.value }
     if (filters.value.trimestre) params.trimestre = filters.value.trimestre
     if (filters.value.statut) params.statut = filters.value.statut
     if (filters.value.departement_id) params.departement_id = filters.value.departement_id
@@ -697,6 +781,9 @@ async function loadPlan() {
     if (data.filterOptions) {
       filterDepts.value = data.filterOptions.departments || []
       filterProvinces.value = data.filterOptions.provinces || []
+    }
+    if (isAdminMode.value) {
+      loadDashboard()
     }
   } catch (err) {
     if (err.response?.status === 403) {
@@ -716,6 +803,27 @@ async function loadPlan() {
   }
 }
 
+async function loadDashboard() {
+  if (!isAdminMode.value) {
+    dashboardData.value = null
+    return
+  }
+
+  dashboardLoading.value = true
+  try {
+    const { data } = await getPtaDashboard({ annee: filters.value.annee, ...adminParams.value })
+    dashboardData.value = data
+  } catch (err) {
+    dashboardData.value = null
+    if (err.response?.status === 403) {
+      ui.addToast('Acces refuse a l administration PTA.', 'warning')
+      router.push({ name: 'plan-travail.index' })
+    }
+  } finally {
+    dashboardLoading.value = false
+  }
+}
+
 function setFilter(statut, trimestre) {
   filters.value.statut = statut
   filters.value.trimestre = trimestre
@@ -727,6 +835,11 @@ function resetPlanifFilters() {
   filters.value.province_id = ''
   filters.value.niveau_administratif = ''
   loadPlan()
+}
+
+function barWidth(value, items) {
+  const max = Math.max(...(items || []).map((item) => Number(item.total || 0)), 1)
+  return Math.max(6, Math.round((Number(value || 0) / max) * 100))
 }
 
 function truncate(str, len) {
@@ -882,7 +995,7 @@ async function openCreateModal() {
   createErrors.value = {}
   showCreateModal.value = true
   try {
-    const { data } = await getCreateData()
+    const { data } = await getCreateData(adminParams.value)
     createDepartments.value = data.departments || []
     createProvinces.value = data.provinces || []
     createLocalites.value = data.localites || []
@@ -962,7 +1075,7 @@ async function handleCreateSubmit() {
     if (!payload.assignment_target) delete payload.assignment_target
     if (payload.cout_cdf === '' || payload.cout_cdf === null) delete payload.cout_cdf
     if (!payload.assigned_agent_ids?.length) delete payload.assigned_agent_ids
-    await create(payload)
+    await create(payload, adminParams.value)
     ui.addToast('Activite creee avec succes !', 'success')
     showCreateModal.value = false
     loadPlan()
@@ -998,7 +1111,7 @@ async function handleDeleteFromCard(id, evt) {
   evt.stopPropagation()
   if (!confirm('Supprimer cette activite PTA ? Cette action est irreversible.')) return
   try {
-    await remove(id)
+    await remove(id, adminParams.value)
     ui.addToast('Activite supprimee.', 'success')
     loadPlan()
   } catch (err) {
@@ -1046,7 +1159,7 @@ async function openDetailPopup(id) {
   detailLoading.value = true
   detailActivite.value = null
   try {
-    const { data } = await get(id)
+    const { data } = await get(id, adminParams.value)
     detailActivite.value = data.data
     detailCanEdit.value = data.canEdit
     detailCanUpdateStatut.value = data.canUpdateStatut
@@ -1071,7 +1184,7 @@ function closeDetailPopup() {
 async function handleDetailUpdateStatut() {
   detailUpdating.value = true
   try {
-    const { data } = await updateStatut(detailActivite.value.id, detailStatutForm.value)
+    const { data } = await updateStatut(detailActivite.value.id, detailStatutForm.value, adminParams.value)
     detailActivite.value = data.data
     detailStatutForm.value = {
       statut: data.data.statut,
@@ -1119,6 +1232,10 @@ function detailIsOverdue() {
   if (!detailActivite.value?.date_fin || detailActivite.value.statut === 'terminee') return false
   return new Date(detailActivite.value.date_fin) < new Date()
 }
+
+watch(() => route.name, () => {
+  resetPlanifFilters()
+})
 
 onMounted(() => loadPlan())
 </script>
@@ -1264,6 +1381,53 @@ onMounted(() => loadPlan())
 .pt-progress-track { height: 8px; border-radius: 6px; background: #f1f5f9; overflow: hidden; }
 .pt-progress-fill { height: 100%; border-radius: 6px; background: linear-gradient(90deg, #7c3aed, #a78bfa); transition: width .4s; }
 
+.pta-admin-dashboard {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+.pta-admin-head { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; margin-bottom: .85rem; }
+.pta-admin-head h3 { margin: 0; color: #1e293b; font-size: 1rem; font-weight: 800; }
+.pta-admin-head p { margin: .15rem 0 0; color: #64748b; font-size: .78rem; }
+.pta-admin-loading { color: #7c3aed; font-size: .75rem; font-weight: 700; white-space: nowrap; }
+.pta-admin-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .65rem; margin-bottom: 1rem; }
+.pta-admin-kpi {
+  display: flex; align-items: center; gap: .65rem;
+  background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px; padding: .75rem;
+}
+.pta-admin-kpi-icon { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.pta-kpi-total { background: #ede9fe; color: #7c3aed; }
+.pta-kpi-progress { background: #dbeafe; color: #2563eb; }
+.pta-kpi-done { background: #dcfce7; color: #16a34a; }
+.pta-kpi-late { background: #fee2e2; color: #dc2626; }
+.pta-kpi-cancel { background: #f1f5f9; color: #475569; }
+.pta-kpi-rate { background: #ccfbf1; color: #0f766e; }
+.pta-admin-kpi strong { display: block; color: #111827; font-size: 1.25rem; line-height: 1; }
+.pta-admin-kpi small { display: block; color: #64748b; font-size: .68rem; margin-top: .18rem; }
+.pta-admin-graphs { display: grid; grid-template-columns: 1.25fr .9fr; gap: .75rem; }
+.pta-admin-panel { border: 1px solid #eef2f7; border-radius: 12px; padding: .85rem; background: #fff; min-width: 0; }
+.pta-admin-panel-wide { grid-column: 1 / -1; }
+.pta-admin-panel h4 { margin: 0 0 .75rem; color: #334155; font-size: .82rem; font-weight: 800; }
+.pta-bars { display: flex; flex-direction: column; gap: .55rem; }
+.pta-bar-row { display: grid; grid-template-columns: minmax(120px, 1fr) 2fr 36px; gap: .55rem; align-items: center; }
+.pta-bar-label { color: #475569; font-size: .74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pta-bar-track { height: 9px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
+.pta-bar-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #14b8a6); border-radius: 999px; }
+.pta-bar-value { color: #1e293b; font-size: .76rem; font-weight: 800; text-align: right; }
+.pta-agent-list { display: flex; flex-direction: column; gap: .4rem; max-height: 260px; overflow: auto; }
+.pta-agent-row { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem .55rem; background: #f8fafc; border-radius: 8px; }
+.pta-agent-row span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #475569; font-size: .76rem; }
+.pta-agent-row strong { color: #7c3aed; font-size: .78rem; }
+.pta-trim-chart { display: grid; grid-template-columns: repeat(4, minmax(56px, 1fr)); gap: .75rem; height: 180px; align-items: end; padding-top: .75rem; }
+.pta-trim-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: .3rem; }
+.pta-trim-bar { width: 42px; min-height: 8px; border-radius: 8px 8px 2px 2px; background: linear-gradient(180deg, #7c3aed, #a78bfa); }
+.pta-trim-col span { color: #64748b; font-size: .72rem; font-weight: 700; }
+.pta-trim-col strong { color: #1e293b; font-size: .8rem; }
+.pta-admin-empty { color: #94a3b8; font-size: .78rem; padding: 1rem; text-align: center; background: #f8fafc; border-radius: 10px; }
+
 /* ── Section header ── */
 .pt-section-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -1350,6 +1514,8 @@ onMounted(() => loadPlan())
   .pt-hero-btn { justify-content: center; }
   .pt-filter-grid { grid-template-columns: repeat(2, 1fr); }
   .pt-grid { grid-template-columns: 1fr; }
+  .pta-admin-graphs { grid-template-columns: 1fr; }
+  .pta-bar-row { grid-template-columns: 1fr 1.4fr 32px; }
   .pt-section-header { flex-direction: column; align-items: flex-start; gap: .5rem; }
   .pt-card-footer { flex-direction: column; align-items: flex-start; gap: .5rem; }
   .pt-card-actions { width: 100%; }

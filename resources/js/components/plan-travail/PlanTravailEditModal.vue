@@ -229,12 +229,17 @@ const props = defineProps({
   planTravailId: {
     type: [String, Number],
     default: null
+  },
+  adminMode: {
+    type: Boolean,
+    default: false
   }
 })
 
 const emit = defineEmits(['close', 'updated'])
 
 const ui = useUiStore()
+const requestParams = computed(() => props.adminMode ? { admin_pta: 1 } : {})
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -304,8 +309,8 @@ async function loadPlanTravail() {
   loading.value = true
   try {
     const [activiteResp, createResp] = await Promise.all([
-      get(props.planTravailId),
-      getCreateData(),
+      get(props.planTravailId, requestParams.value),
+      getCreateData(requestParams.value),
     ])
     const a = activiteResp.data.data
     planTravail.value = a
@@ -472,7 +477,7 @@ async function handleSubmit() {
   if (!validateAssignmentSelection()) return
   submitting.value = true
   try {
-    await update(planTravail.value.id, buildPayload())
+    await update(planTravail.value.id, buildPayload(), requestParams.value)
     ui.addToast('Activité mise à jour.', 'success')
     emit('updated', planTravail.value)
     emit('close')

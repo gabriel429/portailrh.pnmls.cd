@@ -103,6 +103,9 @@ export const useAuthStore = defineStore('auth', {
             const role = normalizedRole(state)
             return ['chef section planification', 'cellule planification'].includes(role)
         },
+        canAdminPta(state) {
+            return !!state.user?.is_super_admin || this.isPlanification
+        },
         isSEP(state) {
             const role = normalizedRole(state)
             if (role === 'sep') return true

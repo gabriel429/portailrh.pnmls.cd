@@ -137,6 +137,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('taches/{tache}/reports', [TacheController::class, 'viewReports']);
 
     // Plan de Travail
+    Route::get('plan-travail/dashboard', [PlanTravailController::class, 'dashboard']);
     Route::get('plan-travail/create', [PlanTravailController::class, 'create']);
     Route::apiResource('plan-travail', PlanTravailController::class)->parameters(['plan-travail' => 'activitePlan']);
     Route::put('plan-travail/{activitePlan}/statut', [PlanTravailController::class, 'updateStatut']);
@@ -440,6 +441,7 @@ Route::prefix('v1')->as('v1.')->group(function () {
         Route::post('taches/{tache}/validate', [TacheController::class, 'validateTask'])->name('taches.validate');
         Route::post('taches/{tache}/reject', [TacheController::class, 'rejectTask'])->name('taches.reject');
 
+        Route::get('plan-travail/dashboard', [PlanTravailController::class, 'dashboard'])->name('plan-travail.dashboard');
         Route::get('plan-travail/create', [PlanTravailController::class, 'create'])->name('plan-travail.create');
         Route::apiResource('plan-travail', PlanTravailController::class)
             ->parameters(['plan-travail' => 'activitePlan'])
