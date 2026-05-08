@@ -198,17 +198,19 @@
     </div>
 
     <!-- Section header when filtered -->
-    <div v-if="filters.statut || filters.trimestre" class="pt-section-header">
-      <div class="pt-section-title">
-        <i class="fas fa-filter" style="color:#7c3aed;"></i>
-        <span v-if="filters.statut">{{ statutLabel(filters.statut) }}</span>
-        <span v-if="filters.statut && filters.trimestre"> &middot; </span>
-        <span v-if="filters.trimestre">{{ triLabel(filters.trimestre) }}</span>
-        <span class="pt-section-badge">{{ flatActivites.length }} activite{{ flatActivites.length > 1 ? 's' : '' }}</span>
+    <div ref="activityResultsRef" class="pt-results-anchor">
+      <div v-if="filters.statut || filters.trimestre" class="pt-section-header">
+        <div class="pt-section-title">
+          <i class="fas fa-filter" style="color:#7c3aed;"></i>
+          <span v-if="filters.statut">{{ statutLabel(filters.statut) }}</span>
+          <span v-if="filters.statut && filters.trimestre"> &middot; </span>
+          <span v-if="filters.trimestre">{{ triLabel(filters.trimestre) }}</span>
+          <span class="pt-section-badge">{{ filtering ? 'Chargement...' : `${flatActivites.length} activite${flatActivites.length > 1 ? 's' : ''}` }}</span>
+        </div>
+        <button class="pt-back-btn" @click="setFilter('', '')">
+          <i class="fas fa-arrow-left"></i> Tout afficher
+        </button>
       </div>
-      <button class="pt-back-btn" @click="setFilter('', '')">
-        <i class="fas fa-arrow-left"></i> Tout afficher
-      </button>
     </div>
 
     <!-- Loading spinner (initial load only) -->
@@ -778,7 +780,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -805,11 +807,13 @@ const dashboardLoading = ref(false)
 const dashboardData = ref(null)
 const entityDetailOpen = ref(false)
 const entityDetail = ref(null)
+const activityResultsRef = ref(null)
 const canEdit = ref(false)
 const isGlobalPta = ref(false)
 const filterDepts = ref([])
 const filterProvinces = ref([])
 const filters = ref({ annee: new Date().getFullYear(), trimestre: '', statut: '', departement_id: '', province_id: '', niveau_administratif: '' })
+let loadPlanRequestId = 0
 
 const trimestres = [
   { value: '', label: 'Tous' },
@@ -851,15 +855,17 @@ const years = computed(() => {
 
 const flatActivites = computed(() => {
   const all = []
-  for (const tri of Object.keys(groupees.value)) {
-    for (const a of groupees.value[tri]) {
-      all.push({ ...a, trimestre: tri })
+  for (const tri of Object.keys(groupees.value || {})) {
+    for (const a of groupees.value[tri] || []) {
+      if (!matchesCurrentListFilters(a, tri)) continue
+      all.push({ ...a, display_trimestre: tri })
     }
   }
   return all
 })
 
 async function loadPlan() {
+  const requestId = ++loadPlanRequestId
   if (!initialLoadDone.value) {
     loading.value = true
   }
@@ -874,8 +880,9 @@ async function loadPlan() {
     if (filters.value.province_id) params.province_id = filters.value.province_id
     if (filters.value.niveau_administratif) params.niveau_administratif = filters.value.niveau_administratif
     const { data } = await list(params)
-    groupees.value = data.groupees
-    stats.value = data.stats
+    if (requestId !== loadPlanRequestId) return
+    groupees.value = data.groupees || {}
+    stats.value = data.stats || emptyStats()
     canEdit.value = data.canEdit
     isGlobalPta.value = data.isGlobalPta ?? false
     if (data.filterOptions) {
@@ -886,6 +893,7 @@ async function loadPlan() {
       loadDashboard()
     }
   } catch (err) {
+    if (requestId !== loadPlanRequestId) return
     if (err.response?.status === 403) {
       accessDenied.value = true
       accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre departement.'
@@ -897,9 +905,11 @@ async function loadPlan() {
       ui.addToast('Erreur lors du chargement du plan de travail.', 'danger')
     }
   } finally {
-    loading.value = false
-    filtering.value = false
-    initialLoadDone.value = true
+    if (requestId === loadPlanRequestId) {
+      loading.value = false
+      filtering.value = false
+      initialLoadDone.value = true
+    }
   }
 }
 
@@ -937,6 +947,7 @@ function applyDashboardKpi(kpi) {
   filters.value.province_id = ''
   filters.value.niveau_administratif = ''
   loadPlan()
+  scrollToActivityResults()
 }
 
 function isDashboardKpiActive(kpi) {
@@ -949,6 +960,43 @@ function resetPlanifFilters() {
   filters.value.province_id = ''
   filters.value.niveau_administratif = ''
   loadPlan()
+}
+
+function scrollToActivityResults() {
+  nextTick(() => {
+    activityResultsRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
+function matchesCurrentListFilters(activite, groupedTrimestre = '') {
+  if (!activite) return false
+
+  if (filters.value.statut === 'en_retard') {
+    if (!isActivityOverdue(activite)) return false
+  } else if (filters.value.statut && activite.statut !== filters.value.statut) {
+    return false
+  }
+
+  if (filters.value.trimestre) {
+    const active = new Set(activeTrimestres(activite))
+    if (groupedTrimestre) active.add(groupedTrimestre)
+    if (!active.has(filters.value.trimestre)) return false
+  }
+
+  return true
+}
+
+function isActivityOverdue(activite) {
+  if (!activite?.date_fin || ['terminee', 'annulee'].includes(activite.statut)) return false
+
+  const [year, month, day] = String(activite.date_fin).split('-').map(Number)
+  if (!year || !month || !day) return false
+
+  const endDate = new Date(year, month - 1, day)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  return endDate < today
 }
 
 function barWidth(value, items) {
@@ -1649,6 +1697,7 @@ button.pta-bar-row:hover .pta-bar-label { color: #1d4ed8; }
 .pta-entity-muted { margin: 0; color: #94a3b8; font-size: .78rem; }
 
 /* ── Section header ── */
+.pt-results-anchor { scroll-margin-top: 1rem; }
 .pt-section-header {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: 1rem; padding-bottom: .6rem; border-bottom: 2px solid #f3f4f6;
