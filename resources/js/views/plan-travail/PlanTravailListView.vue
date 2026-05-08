@@ -1600,6 +1600,11 @@ onMounted(() => loadPlan())
 .pt-filter-info { flex: 1; min-width: 0; text-align: left; }
 .pt-filter-name { font-size: .82rem; font-weight: 700; line-height: 1.2; }
 .pt-filter-count { font-size: .7rem; opacity: .6; }
+.pt-filter-card.active .pt-filter-name,
+.pt-filter-card.active .pt-filter-count,
+.pt-filter-card.active .pt-filter-icon {
+  color: #fff;
+}
 .pt-filter-card.active .pt-filter-count { opacity: .8; }
 
 /* ── Trimester pills ── */
