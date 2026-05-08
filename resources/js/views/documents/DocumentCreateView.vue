@@ -421,12 +421,13 @@ async function submitForm() {
   gap: 0.75rem;
 }
 .cat-card:hover {
-  border-color: #0077B5;
-  background: #e8f4fd;
+  border-color: #0077B5 !important;
+  background: #e8f4fd !important;
 }
 .cat-card.selected {
-  border-color: #0077B5;
-  background: #e8f4fd;
+  border-color: #0077B5 !important;
+  background: #e8f4fd !important;
+  box-shadow: 0 10px 24px rgba(0, 119, 181, .14) !important;
 }
 .cat-card-icon {
   width: 40px;

@@ -789,10 +789,10 @@ onMounted(() => {
   box-shadow: 0 6px 20px rgba(0, 119, 181, .1);
 }
 .doc-cat-card.active {
-  background: linear-gradient(135deg, #0077B5, #005a87);
-  border-color: #0077B5;
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(0, 119, 181, .25);
+  background: linear-gradient(135deg, #0077B5, #005a87) !important;
+  border-color: rgba(0, 119, 181, .85) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(0, 119, 181, .24), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
 }
 .doc-cat-all:hover {
   border-color: #28a745;
@@ -800,10 +800,10 @@ onMounted(() => {
   transform: translateY(-2px);
 }
 .doc-cat-all.active {
-  background: linear-gradient(135deg, #28a745, #1e7e34);
-  border-color: #28a745;
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(40, 167, 69, .25);
+  background: linear-gradient(135deg, #28a745, #1e7e34) !important;
+  border-color: rgba(40, 167, 69, .85) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(40, 167, 69, .24), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
 }
 .doc-cat-icon {
   width: 40px;
@@ -819,8 +819,8 @@ onMounted(() => {
 }
 .doc-cat-card.active .doc-cat-icon,
 .doc-cat-all.active .doc-cat-icon {
-  background: rgba(255, 255, 255, .2);
-  color: #fff;
+  background: rgba(255, 255, 255, .2) !important;
+  color: #fff !important;
 }
 .doc-cat-all .doc-cat-icon {
   background: #e6f7ef;
@@ -1520,11 +1520,11 @@ onMounted(() => {
   cursor: pointer; transition: all .2s; background: #fff;
 }
 .dum-cat-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
-.dum-cat-card.active { border-color: #0077B5; background: #e8f4fd; }
+.dum-cat-card.active { border-color: #0077B5 !important; background: #e8f4fd !important; }
 .dum-cat-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
-.dum-cat-card.active .dum-cat-icon { color: #0077B5; }
+.dum-cat-card.active .dum-cat-icon { color: #0077B5 !important; }
 .dum-cat-label { font-size: .68rem; font-weight: 600; color: #64748b; line-height: 1.15; text-align: center; }
-.dum-cat-card.active .dum-cat-label { color: #0077B5; }
+.dum-cat-card.active .dum-cat-label { color: #0077B5 !important; }
 
 /* Footer */
 .dum-footer {

@@ -730,7 +730,7 @@ onMounted(() => {
   cursor: pointer; transition: all .2s;
 }
 .afm-opt-card:hover { border-color: #0077B5; color: #0077B5; }
-.afm-opt-card.active { background: linear-gradient(135deg, #0077B5, #005a8c); border-color: #0077B5; color: #fff; }
+.afm-opt-card.active { background: linear-gradient(135deg, #0077B5, #005a8c) !important; border-color: rgba(0,119,181,.85) !important; color: #fff !important; box-shadow: 0 10px 24px rgba(0,119,181,.18) !important; }
 
 .afm-footer {
   display: flex; gap: .75rem; justify-content: flex-end;

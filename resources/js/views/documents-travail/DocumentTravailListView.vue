@@ -223,14 +223,14 @@ onMounted(() => loadDocuments())
   text-decoration: none; color: #374151; transition: all .25s; cursor: pointer;
 }
 .dt-cat-card:hover { border-color: #ea580c; color: #ea580c; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(234,88,12,.1); }
-.dt-cat-card.active { background: linear-gradient(135deg, #ea580c, #c2410c); border-color: #ea580c; color: #fff; box-shadow: 0 4px 16px rgba(234,88,12,.25); }
+.dt-cat-card.active { background: linear-gradient(135deg, #ea580c, #c2410c) !important; border-color: rgba(234,88,12,.85) !important; color: #fff !important; box-shadow: 0 12px 28px rgba(234,88,12,.24), inset 0 1px 0 rgba(255,255,255,.24) !important; }
 .dt-cat-all:hover { border-color: #0077B5; color: #0077B5; transform: translateY(-2px); }
-.dt-cat-all.active { background: linear-gradient(135deg, #0077B5, #005a87); border-color: #0077B5; color: #fff; box-shadow: 0 4px 16px rgba(0,119,181,.25); }
+.dt-cat-all.active { background: linear-gradient(135deg, #0077B5, #005a87) !important; border-color: rgba(0,119,181,.85) !important; color: #fff !important; box-shadow: 0 12px 28px rgba(0,119,181,.24), inset 0 1px 0 rgba(255,255,255,.24) !important; }
 .dt-cat-icon {
   width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center;
   justify-content: center; font-size: 1rem; flex-shrink: 0; background: #fff7ed; color: #ea580c;
 }
-.dt-cat-card.active .dt-cat-icon, .dt-cat-all.active .dt-cat-icon { background: rgba(255,255,255,.2); color: #fff; }
+.dt-cat-card.active .dt-cat-icon, .dt-cat-all.active .dt-cat-icon { background: rgba(255,255,255,.2) !important; color: #fff !important; }
 .dt-cat-all .dt-cat-icon { background: #e0f2fe; color: #0077B5; }
 .dt-cat-info { flex: 1; min-width: 0; text-align: left; }
 .dt-cat-name { font-size: .82rem; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

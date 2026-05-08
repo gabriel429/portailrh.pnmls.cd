@@ -717,11 +717,11 @@ a.dash-activity-card { cursor: pointer; }
 .dum-cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; }
 .dum-cat-card { display: flex; flex-direction: column; align-items: center; gap: .3rem; padding: .7rem .3rem; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; transition: all .2s; background: #fff; }
 .dum-cat-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
-.dum-cat-card.active { border-color: #0077B5; background: #e8f4fd; }
+.dum-cat-card.active { border-color: #0077B5 !important; background: #e8f4fd !important; }
 .dum-cat-icon { font-size: 1.1rem; color: #94a3b8; transition: color .2s; }
-.dum-cat-card.active .dum-cat-icon { color: #0077B5; }
+.dum-cat-card.active .dum-cat-icon { color: #0077B5 !important; }
 .dum-cat-label { font-size: .68rem; font-weight: 600; color: #64748b; }
-.dum-cat-card.active .dum-cat-label { color: #0077B5; }
+.dum-cat-card.active .dum-cat-label { color: #0077B5 !important; }
 .dum-footer { display: flex; align-items: center; justify-content: flex-end; gap: .6rem; padding-top: 1rem; margin-top: .5rem; border-top: 1px solid #f1f5f9; }
 .dum-btn { display: inline-flex; align-items: center; gap: .3rem; padding: .5rem 1.1rem; border-radius: 10px; font-size: .82rem; font-weight: 600; border: none; cursor: pointer; transition: all .2s; }
 .dum-btn-cancel { background: #fff; color: #64748b; border: 1px solid #e2e8f0; }
