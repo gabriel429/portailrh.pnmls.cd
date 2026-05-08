@@ -1575,23 +1575,43 @@ onMounted(() => loadPlan())
 
 .pt-filter-all .pt-filter-icon { background: #ede9fe; color: #7c3aed; }
 .pt-filter-all:hover { border-color: #7c3aed; color: #7c3aed; }
-.pt-filter-all.active { background: linear-gradient(135deg, #7c3aed, #6d28d9); border-color: #7c3aed; color: #fff; box-shadow: 0 4px 16px rgba(124,58,237,.25); }
-.pt-filter-all.active .pt-filter-icon { background: rgba(255,255,255,.2); color: #fff; }
+.pt-filter-all.active {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9) !important;
+  border-color: rgba(124, 58, 237, .85) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(124, 58, 237, .24), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
+}
+.pt-filter-all.active .pt-filter-icon { background: rgba(255,255,255,.2) !important; color: #fff !important; }
 
 .pt-filter-planned .pt-filter-icon { background: #f1f5f9; color: #64748b; }
 .pt-filter-planned:hover { border-color: #64748b; }
-.pt-filter-planned.active { background: linear-gradient(135deg, #64748b, #475569); border-color: #64748b; color: #fff; box-shadow: 0 4px 16px rgba(100,116,139,.25); }
-.pt-filter-planned.active .pt-filter-icon { background: rgba(255,255,255,.2); color: #fff; }
+.pt-filter-planned.active {
+  background: linear-gradient(135deg, #64748b, #475569) !important;
+  border-color: rgba(100, 116, 139, .85) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(100, 116, 139, .24), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
+}
+.pt-filter-planned.active .pt-filter-icon { background: rgba(255,255,255,.2) !important; color: #fff !important; }
 
 .pt-filter-progress .pt-filter-icon { background: #dbeafe; color: #2563eb; }
 .pt-filter-progress:hover { border-color: #2563eb; color: #1e40af; }
-.pt-filter-progress.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); border-color: #2563eb; color: #fff; box-shadow: 0 4px 16px rgba(37,99,235,.25); }
-.pt-filter-progress.active .pt-filter-icon { background: rgba(255,255,255,.2); color: #fff; }
+.pt-filter-progress.active {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  border-color: rgba(37, 99, 235, .85) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, .24), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
+}
+.pt-filter-progress.active .pt-filter-icon { background: rgba(255,255,255,.2) !important; color: #fff !important; }
 
 .pt-filter-done .pt-filter-icon { background: #dcfce7; color: #16a34a; }
 .pt-filter-done:hover { border-color: #16a34a; color: #166534; }
-.pt-filter-done.active { background: linear-gradient(135deg, #16a34a, #15803d); border-color: #16a34a; color: #fff; box-shadow: 0 4px 16px rgba(22,163,74,.25); }
-.pt-filter-done.active .pt-filter-icon { background: rgba(255,255,255,.2); color: #fff; }
+.pt-filter-done.active {
+  background: linear-gradient(135deg, #16a34a, #15803d) !important;
+  border-color: rgba(22, 163, 74, .85) !important;
+  color: #fff !important;
+  box-shadow: 0 12px 28px rgba(22, 163, 74, .24), inset 0 1px 0 rgba(255, 255, 255, .24) !important;
+}
+.pt-filter-done.active .pt-filter-icon { background: rgba(255,255,255,.2) !important; color: #fff !important; }
 
 .pt-filter-icon {
   width: 40px; height: 40px; border-radius: 10px; display: flex;
@@ -1603,7 +1623,7 @@ onMounted(() => loadPlan())
 .pt-filter-card.active .pt-filter-name,
 .pt-filter-card.active .pt-filter-count,
 .pt-filter-card.active .pt-filter-icon {
-  color: #fff;
+  color: #fff !important;
 }
 .pt-filter-card.active .pt-filter-count { opacity: .8; }
 
