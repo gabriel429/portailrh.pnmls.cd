@@ -645,7 +645,7 @@ class PlanTravailController extends ApiController
         }
 
         $annee = (int) $request->input('annee', now()->year);
-        $base = ActivitePlan::with('departement', 'agents')->parAnnee($annee);
+        $base = ActivitePlan::with('departement', 'agents', 'province', 'provinces')->parAnnee($annee);
         $activities = $base->get();
         $today = now()->startOfDay();
 
@@ -659,6 +659,41 @@ class PlanTravailController extends ApiController
             ->groupBy(fn (ActivitePlan $activity) => $activity->departement?->nom ?: 'Direction / Non renseigne')
             ->map(fn ($items, $label) => [
                 'label' => $label,
+                'total' => $items->count(),
+                'terminee' => $items->where('statut', 'terminee')->count(),
+                'en_cours' => $items->where('statut', 'en_cours')->count(),
+                'avg_pourcentage' => $items->count() ? round($items->avg('pourcentage')) : 0,
+            ])
+            ->sortByDesc('total')
+            ->values();
+
+        $byProvince = $activities
+            ->flatMap(function (ActivitePlan $activity) {
+                $provinces = $activity->provinces->isNotEmpty()
+                    ? $activity->provinces
+                    : collect($activity->province ? [$activity->province] : []);
+
+                if ($provinces->isEmpty()) {
+                    return $activity->niveau_administratif === 'SEP'
+                        ? [[
+                            'id' => 0,
+                            'label' => 'Province non renseignee',
+                            'statut' => $activity->statut,
+                            'pourcentage' => $activity->pourcentage,
+                        ]]
+                        : [];
+                }
+
+                return $provinces->map(fn (Province $province) => [
+                    'id' => $province->id,
+                    'label' => $province->nom,
+                    'statut' => $activity->statut,
+                    'pourcentage' => $activity->pourcentage,
+                ])->all();
+            })
+            ->groupBy('id')
+            ->map(fn ($items) => [
+                'label' => $items->first()['label'] ?: 'Province non renseignee',
                 'total' => $items->count(),
                 'terminee' => $items->where('statut', 'terminee')->count(),
                 'en_cours' => $items->where('statut', 'en_cours')->count(),
@@ -702,6 +737,7 @@ class PlanTravailController extends ApiController
                 'avg_pourcentage' => $total ? round($activities->avg('pourcentage')) : 0,
             ],
             'by_department' => $byDepartment,
+            'by_province' => $byProvince,
             'by_agent' => $byAgent,
             'by_trimestre' => $byTrimestre,
         ];

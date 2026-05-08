@@ -45,7 +45,7 @@
       <div class="pta-admin-head">
         <div>
           <h3>Dashboard de suivi PTA</h3>
-          <p>Vue globale par statut, departement, agent et trimestre.</p>
+          <p>Vue globale par statut, departement, province, agent et trimestre.</p>
         </div>
         <span v-if="dashboardLoading" class="pta-admin-loading"><i class="fas fa-spinner fa-spin"></i> Actualisation</span>
       </div>
@@ -90,6 +90,20 @@
             </div>
           </div>
           <div v-else class="pta-admin-empty">Aucune activite par departement.</div>
+        </div>
+
+        <div class="pta-admin-panel">
+          <h4><i class="fas fa-map-marker-alt me-1"></i>Activites par province</h4>
+          <div v-if="(dashboardData.by_province || []).length" class="pta-bars">
+            <div v-for="item in dashboardData.by_province.slice(0, 12)" :key="item.label" class="pta-bar-row">
+              <div class="pta-bar-label">{{ item.label }}</div>
+              <div class="pta-bar-track">
+                <div class="pta-bar-fill pta-bar-fill-province" :style="{ width: barWidth(item.total, dashboardData.by_province) + '%' }"></div>
+              </div>
+              <div class="pta-bar-value">{{ item.total }}</div>
+            </div>
+          </div>
+          <div v-else class="pta-admin-empty">Aucune activite par province.</div>
         </div>
 
         <div class="pta-admin-panel">
@@ -1416,6 +1430,7 @@ onMounted(() => loadPlan())
 .pta-bar-label { color: #475569; font-size: .74rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pta-bar-track { height: 9px; background: #f1f5f9; border-radius: 999px; overflow: hidden; }
 .pta-bar-fill { height: 100%; background: linear-gradient(90deg, #0f766e, #14b8a6); border-radius: 999px; }
+.pta-bar-fill-province { background: linear-gradient(90deg, #2563eb, #38bdf8); }
 .pta-bar-value { color: #1e293b; font-size: .76rem; font-weight: 800; text-align: right; }
 .pta-agent-list { display: flex; flex-direction: column; gap: .4rem; max-height: 260px; overflow: auto; }
 .pta-agent-row { display: flex; justify-content: space-between; gap: .75rem; padding: .45rem .55rem; background: #f8fafc; border-radius: 8px; }
