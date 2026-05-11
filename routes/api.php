@@ -379,8 +379,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('fonctions-by-organe/{code}', [ParametresController::class, 'getAllFonctionsByOrgane']);
     });
 
-    // Documents de Travail CRUD (SEN + RH)
-    Route::middleware('role:SEN,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
+    // Documents de Travail CRUD (Super Admin only)
+    Route::middleware('super.admin')->prefix('admin')->group(function () {
         Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
         Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
         Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);

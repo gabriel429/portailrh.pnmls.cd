@@ -179,7 +179,7 @@ const statCards = computed(() => [
   { label: 'Permissions', value: stats.value.permissions ?? 0, icon: 'fa-key', color: '#64748b' },
 ])
 
-const quickLinks = [
+const baseQuickLinks = [
   { to: '/plan-travail', label: 'PTA', icon: 'fa-calendar-check', color: '#0077B5' },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'fa-user-shield', color: '#059669' },
   { to: '/admin/agents/import', label: 'Import agents', icon: 'fa-file-import', color: '#2563eb' },
@@ -197,6 +197,10 @@ const quickLinks = [
   { to: '/admin/deployment', label: 'Déploiement', icon: 'fa-rocket', color: '#0077B5' },
   { to: '/admin/logs', label: 'Logs systeme', icon: 'fa-file-alt', color: '#64748b' },
 ]
+
+const quickLinks = computed(() => baseQuickLinks.filter((link) => {
+  return link.to !== '/admin/documents-travail' || auth.canManageDocsTravail
+}))
 
 function getInitials(name) {
   if (!name) return '?'

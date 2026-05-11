@@ -77,11 +77,14 @@
             <div class="dash-action-desc">Congé, attestation...</div>
           </div>
         </button>
-        <router-link
+        <component
+          :is="quickActionComponent(action)"
           v-for="action in quickActions"
-          :key="action.to"
-          :to="action.to"
+          :key="action.to || action.action"
+          :to="quickActionTo(action)"
+          :type="action.action ? 'button' : undefined"
           class="dash-action-card"
+          @click="handleQuickAction(action)"
         >
           <div class="dash-action-icon" :style="{ background: action.bg, color: action.color }">
             <i class="fas" :class="action.icon"></i>
@@ -90,7 +93,7 @@
             <div class="dash-action-name">{{ action.label }}</div>
             <div class="dash-action-desc">{{ action.desc }}</div>
           </div>
-        </router-link>
+        </component>
       </div>
 
       <!-- Stat Cards -->
@@ -164,9 +167,12 @@
             </div>
           </div>
           <div class="dash-info-footer">
-            <router-link to="/documents-travail" class="dash-info-link">
-              <i class="fas fa-file-invoice me-1"></i> Documents de travail
+            <router-link v-if="auth.canManageDocsTravail" to="/admin/documents-travail" class="dash-info-link">
+              <i class="fas fa-file-invoice me-1"></i> Gestion des documents
             </router-link>
+            <button v-else type="button" class="dash-info-link dash-info-button" @click="openDocumentsTravailModal">
+              <i class="fas fa-file-invoice me-1"></i> Documents de travail
+            </button>
           </div>
         </div>
         <div class="dash-info-card">
@@ -374,12 +380,31 @@ const today = computed(() => {
   })
 })
 
-const quickActions = [
+const quickActions = computed(() => [
   { to: '/mon-planning-conges', label: 'Planning congés', desc: 'Congés de ma structure', icon: 'fa-calendar-alt', color: '#0d9488', bg: '#ccfbf1' },
-  { to: '/documents-travail', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
+  auth.canManageDocsTravail
+    ? { to: '/admin/documents-travail', label: 'Gestion des documents', desc: 'Ajouter et publier', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' }
+    : { action: 'documents-travail-popup', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
   { to: '/plan-travail', label: 'PTA', desc: 'Plan de travail annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/profile', label: 'Mon profil', desc: 'Voir mes infos', icon: 'fa-user-circle', color: '#7c3aed', bg: '#ede9fe' },
-]
+])
+
+function quickActionComponent(action) {
+  return action.action ? 'button' : 'router-link'
+}
+
+function quickActionTo(action) {
+  return action.action ? undefined : action.to
+}
+
+function openDocumentsTravailModal() {
+  window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
+}
+
+function handleQuickAction(action) {
+  if (action.action !== 'documents-travail-popup') return
+  openDocumentsTravailModal()
+}
 
 const maxStat = computed(() => {
   const vals = [
@@ -561,6 +586,7 @@ watch(profilePhotoCandidates, () => {
   display: flex; align-items: center; gap: .7rem; padding: .9rem 1rem;
   background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
   text-decoration: none; color: #374151; transition: all .25s; cursor: pointer;
+  width: 100%; text-align: left; font: inherit;
 }
 .dash-action-card:hover { border-color: #0077B5; color: #0077B5; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,119,181,.1); }
 .dash-action-icon {
@@ -652,6 +678,7 @@ a.dash-activity-card { cursor: pointer; }
   font-size: .78rem; font-weight: 600; color: #0077B5; text-decoration: none; transition: all .2s;
 }
 .dash-info-link:hover { color: #005a87; }
+.dash-info-button { border: 0; background: transparent; padding: 0; cursor: pointer; }
 
 /* Responsive */
 @media (max-width: 768px) {

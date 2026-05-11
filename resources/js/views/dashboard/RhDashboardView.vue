@@ -77,13 +77,15 @@
         </div>
         <div class="rh-actions">
           <component
-            :is="a.disabled ? 'div' : 'router-link'"
+            :is="quickActionComponent(a)"
             v-for="a in quickActions"
-            :key="a.to"
-            :to="a.disabled ? undefined : a.to"
+            :key="a.to || a.action"
+            :to="quickActionTo(a)"
+            :type="a.action && !a.disabled ? 'button' : undefined"
             class="rh-action"
             :class="{ disabled: a.disabled }"
             :title="a.disabled ? a.disabledReason : undefined"
+            @click="handleQuickAction(a)"
           >
             <div class="rh-action-glow" :style="{ background: a.color }"></div>
             <div class="rh-action-icon" :style="{ background: a.bg, color: a.color }">
@@ -1243,7 +1245,7 @@ const baseQuickActions = [
   { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des présences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
-  { to: '/admin/documents-travail', label: 'Gestion des documents', desc: 'Ajouter et publier les documents', icon: 'fa-folder-open', color: '#f97316', bg: '#ffedd5' },
+  { action: 'documents-travail-popup', label: 'Documents de travail', desc: 'Consulter les documents publies', icon: 'fa-folder-open', color: '#f97316', bg: '#ffedd5' },
   { to: '/rh/communiques/create', label: 'Communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
 ]
 
@@ -1270,6 +1272,21 @@ const quickActions = computed(() => {
     return action
   })
 })
+
+function quickActionComponent(action) {
+  if (action.disabled) return 'div'
+  return action.action ? 'button' : 'router-link'
+}
+
+function quickActionTo(action) {
+  if (action.disabled || action.action) return undefined
+  return action.to
+}
+
+function handleQuickAction(action) {
+  if (action.disabled || action.action !== 'documents-travail-popup') return
+  window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
+}
 
 const maxMetric = computed(() => {
   const vals = [
@@ -1715,6 +1732,7 @@ onMounted(async () => {
   position: relative; display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
   text-decoration: none; color: #374151; transition: all .25s; overflow: hidden;
+  width: 100%; text-align: left; font: inherit; cursor: pointer;
 }
 .rh-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .25s; }
 .rh-action:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }

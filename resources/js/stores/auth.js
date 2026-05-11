@@ -189,8 +189,7 @@ export const useAuthStore = defineStore('auth', {
             return deptCode === 'caf' || deptName.includes('cellule administrative et financ')
         },
         canManageDocsTravail(state) {
-            if (state.user?.is_super_admin) return true
-            return this.isSEN || this.isRH
+            return !!state.user?.is_super_admin
         },
         canCreateAgents() {
             return this.isSuperAdmin || this.isSEN || this.isFullRH

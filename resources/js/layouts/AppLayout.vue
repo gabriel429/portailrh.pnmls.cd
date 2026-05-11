@@ -86,10 +86,14 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link class="nav-link" active-class="active" :to="{ name: 'documents-travail.index' }" title="Documents de travail">
+              <router-link v-if="auth.canManageDocsTravail" class="nav-link" active-class="active" :to="{ name: 'admin.documents-travail.index' }" title="Gestion des documents">
                 <i class="fas fa-file-invoice nav-icon"></i>
                 <span class="nav-link-label">Docs RH</span>
               </router-link>
+              <button v-else class="nav-link nav-link-button" type="button" title="Documents de travail" @click="openDocumentsTravailModal">
+                <i class="fas fa-file-invoice nav-icon"></i>
+                <span class="nav-link-label">Docs RH</span>
+              </button>
             </li>
             <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'mon-planning-conges' }" title="Congés">
@@ -178,6 +182,11 @@
                     <router-link class="dropdown-item" :to="{ name: 'admin.documents-travail.index' }">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-folder-open"></i></span> Gestion des documents
                     </router-link>
+                  </li>
+                  <li v-else>
+                    <button class="dropdown-item" type="button" @click="openDocumentsTravailModal">
+                      <span class="dd-icon dd-icon-orange"><i class="fas fa-folder-open"></i></span> Documents de travail
+                    </button>
                   </li>
                   <li>
                     <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
@@ -351,6 +360,7 @@
     <div class="container-fluid main-content" :class="{ 'guest-content': !auth.isAuthenticated }">
       <AppToast />
       <UserExperienceHub v-if="auth.isAuthenticated" />
+      <DocumentsTravailModal v-if="auth.isAuthenticated" />
       <slot />
     </div>
 
@@ -369,6 +379,7 @@ import { useUiStore } from '@/stores/ui'
 import { getSummary as getTaskSummary } from '@/api/taches'
 import AppToast from '@/components/common/AppToast.vue'
 import UserExperienceHub from '@/components/UserExperienceHub.vue'
+import DocumentsTravailModal from '@/components/DocumentsTravailModal.vue'
 
 const ui = useUiStore()
 
@@ -394,6 +405,28 @@ function openUserGuide() {
   window.dispatchEvent(new CustomEvent('epnmls:open-user-guide'))
 }
 
+function openDocumentsTravailModal() {
+  closeMobileNav()
+  document.querySelectorAll('.navbar-main .dropdown-menu.show').forEach((menu) => {
+    menu.classList.remove('show')
+    menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.classList.remove('show')
+    menu.closest('.dropdown')?.querySelector('.dropdown-toggle')?.setAttribute('aria-expanded', 'false')
+  })
+  window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
+}
+
+function handleDocumentsTravailRouteRequest() {
+  if (!auth.isAuthenticated || route.query.open !== 'documents-travail') return
+
+  window.setTimeout(() => {
+    openDocumentsTravailModal()
+  }, 0)
+
+  const query = { ...route.query }
+  delete query.open
+  router.replace({ name: route.name, params: route.params, query, hash: route.hash }).catch(() => {})
+}
+
 function handleViewportChange() {
   if (window.innerWidth >= 992) {
     closeMobileNav()
@@ -406,6 +439,8 @@ watch(() => route.fullPath, () => {
   if (auth.isAuthenticated) {
     loadTaskSummary()
   }
+
+  handleDocumentsTravailRouteRequest()
 
   document.querySelectorAll('.navbar-main .dropdown-menu.show').forEach((menu) => {
     menu.classList.remove('show')
@@ -503,6 +538,7 @@ onMounted(() => {
 
   window.addEventListener('resize', handleViewportChange)
   document.body.classList.toggle('mobile-nav-open', isMobileNavOpen.value)
+  handleDocumentsTravailRouteRequest()
 })
 
 onUnmounted(() => {
@@ -582,5 +618,16 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 
 .help-toggle-btn:hover {
   background: rgba(255, 255, 255, .24);
+}
+
+.nav-link-button {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav-link-button:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, .72);
+  outline-offset: 3px;
 }
 </style>
