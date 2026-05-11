@@ -21,17 +21,19 @@
       </div>
 
       <nav class="sidebar-nav">
-        <router-link
+        <component
           v-for="item in navItems"
-          :key="item.route"
-          :to="{ name: item.route }"
+          :is="item.action ? 'button' : 'router-link'"
+          :key="item.route || item.action"
+          :to="item.route ? { name: item.route } : undefined"
+          :type="item.action ? 'button' : undefined"
           class="sidebar-link"
-          active-class="active"
-          @click="closeMobileSidebar"
+          :active-class="item.action ? undefined : 'active'"
+          @click="handleNavItem(item)"
         >
           <i :class="item.icon"></i>
           <span v-if="showSidebarText">{{ item.label }}</span>
-        </router-link>
+        </component>
       </nav>
 
       <div class="sidebar-footer">
@@ -95,6 +97,7 @@
       <!-- Page content -->
       <div class="admin-content">
         <AppToast />
+        <DocumentsTravailModal />
         <slot />
       </div>
     </div>
@@ -108,6 +111,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { useNotificationStore } from '@/stores/notification'
 import AppToast from '@/components/common/AppToast.vue'
+import DocumentsTravailModal from '@/components/DocumentsTravailModal.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -139,7 +143,7 @@ const baseNavItems = [
 const navItems = computed(() => {
     const items = [...baseNavItems]
     if (auth.canManageDocsTravail) {
-        items.push({ route: 'admin.documents-travail.index', icon: 'fas fa-folder-open', label: 'Gestion des documents' })
+        items.push({ action: 'documents-travail-popup', icon: 'fas fa-folder-open', label: 'Gestion des documents' })
     }
     if (auth.isSuperAdmin) {
         items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Déploiement' })
@@ -241,6 +245,13 @@ function handleProfilePhotoError() {
     ui.toggleSidebar()
   }
 
+  function handleNavItem(item) {
+    closeMobileSidebar()
+    if (item.action === 'documents-travail-popup') {
+      window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
+    }
+  }
+
 async function handleLogout() {
     notifStore.stopPolling()
     await auth.logout()
@@ -296,6 +307,8 @@ async function handleLogout() {
     display: flex; align-items: center; gap: .6rem;
     padding: .55rem 1rem; color: #94a3b8; text-decoration: none;
     font-size: .84rem; transition: all .15s; border-left: 3px solid transparent;
+    width: 100%; border-top: 0; border-right: 0; border-bottom: 0;
+    background: transparent; text-align: left; cursor: pointer;
 }
 .sidebar-link:hover { color: #e2e8f0; background: rgba(255,255,255,.05); }
 .sidebar-link.active { color: #fff; background: rgba(255,255,255,.1); border-left-color: #0077B5; }

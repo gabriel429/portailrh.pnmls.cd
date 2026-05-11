@@ -86,11 +86,7 @@
               </router-link>
             </li>
             <li class="nav-item">
-              <router-link v-if="auth.canManageDocsTravail" class="nav-link" active-class="active" :to="{ name: 'admin.documents-travail.index' }" title="Gestion des documents">
-                <i class="fas fa-file-invoice nav-icon"></i>
-                <span class="nav-link-label">Docs RH</span>
-              </router-link>
-              <button v-else class="nav-link nav-link-button" type="button" title="Documents de travail" @click="openDocumentsTravailModal">
+              <button class="nav-link nav-link-button" type="button" title="Documents de travail" @click="openDocumentsTravailModal">
                 <i class="fas fa-file-invoice nav-icon"></i>
                 <span class="nav-link-label">Docs RH</span>
               </button>
@@ -179,9 +175,9 @@
                     </router-link>
                   </li>
                   <li v-if="auth.canManageDocsTravail">
-                    <router-link class="dropdown-item" :to="{ name: 'admin.documents-travail.index' }">
+                    <button class="dropdown-item" type="button" @click="openDocumentsTravailModal">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-folder-open"></i></span> Gestion des documents
-                    </router-link>
+                    </button>
                   </li>
                   <li v-else>
                     <button class="dropdown-item" type="button" @click="openDocumentsTravailModal">

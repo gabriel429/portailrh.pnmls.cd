@@ -513,10 +513,6 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.docsTravailPopup) {
-        if (auth.canManageDocsTravail) {
-            return { name: 'admin.documents-travail.index' }
-        }
-
         return { name: 'dashboard', query: { open: 'documents-travail' } }
     }
 

@@ -134,14 +134,20 @@
         <span>Accès rapide</span>
       </div>
       <div class="row g-3">
-        <div v-for="link in quickLinks" :key="link.to" class="col-12 col-sm-6 col-md-4 col-lg-3">
-          <router-link :to="link.to" class="quick-link-card">
+        <div v-for="link in quickLinks" :key="link.to || link.action" class="col-12 col-sm-6 col-md-4 col-lg-3">
+          <component
+            :is="link.action ? 'button' : 'router-link'"
+            :to="link.to"
+            :type="link.action ? 'button' : undefined"
+            class="quick-link-card"
+            @click="handleQuickLink(link)"
+          >
             <div class="quick-link-icon" :style="{ background: link.color + '12', color: link.color }">
               <i :class="['fas', link.icon]"></i>
             </div>
             <div class="quick-link-label">{{ link.label }}</div>
             <i class="fas fa-chevron-right quick-link-arrow"></i>
-          </router-link>
+          </component>
         </div>
       </div>
     </template>
@@ -183,7 +189,7 @@ const baseQuickLinks = [
   { to: '/plan-travail', label: 'PTA', icon: 'fa-calendar-check', color: '#0077B5' },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'fa-user-shield', color: '#059669' },
   { to: '/admin/agents/import', label: 'Import agents', icon: 'fa-file-import', color: '#2563eb' },
-  { to: '/admin/documents-travail', label: 'Gestion des documents', icon: 'fa-folder-open', color: '#f97316' },
+  { action: 'documents-travail-popup', label: 'Gestion des documents', icon: 'fa-folder-open', color: '#f97316' },
   { to: '/admin/organes', label: 'Organes', icon: 'fa-sitemap', color: '#8b5cf6' },
   { to: '/admin/provinces', label: 'Provinces', icon: 'fa-map', color: '#d97706' },
   { to: '/admin/departments', label: 'Départements', icon: 'fa-building', color: '#7c3aed' },
@@ -199,8 +205,14 @@ const baseQuickLinks = [
 ]
 
 const quickLinks = computed(() => baseQuickLinks.filter((link) => {
-  return link.to !== '/admin/documents-travail' || auth.canManageDocsTravail
+  return link.action !== 'documents-travail-popup' || auth.canManageDocsTravail
 }))
+
+function handleQuickLink(link) {
+  if (link.action === 'documents-travail-popup') {
+    window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
+  }
+}
 
 function getInitials(name) {
   if (!name) return '?'
@@ -525,6 +537,10 @@ onMounted(async () => {
   box-shadow: 0 2px 8px rgba(0,0,0,.04);
   transition: all .25s ease;
   height: 100%;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
 }
 .quick-link-card:hover {
   transform: translateY(-2px);

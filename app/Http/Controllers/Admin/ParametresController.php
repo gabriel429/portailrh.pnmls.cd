@@ -933,7 +933,29 @@ class ParametresController extends Controller
         if ($request->search) {
             $q->where('titre', 'like', "%{$request->search}%");
         }
-        return response()->json($q->paginate($request->per_page ?? 20));
+        if ($request->categorie) {
+            $q->where('categorie', $request->categorie);
+        }
+
+        $documents = $q->paginate($request->per_page ?? 20);
+        $response = $documents->toArray();
+
+        $response['meta'] = [
+            'current_page' => $documents->currentPage(),
+            'last_page' => $documents->lastPage(),
+            'per_page' => $documents->perPage(),
+            'total' => $documents->total(),
+            'from' => $documents->firstItem(),
+            'to' => $documents->lastItem(),
+        ];
+        $response['categories'] = CategorieDocument::actives()->orderBy('nom')->get();
+        $response['categoryCounts'] = DocumentTravail::selectRaw('categorie, COUNT(*) as total')
+            ->groupBy('categorie')
+            ->pluck('total', 'categorie');
+        $response['totalDocs'] = DocumentTravail::count();
+        $response['categorie'] = $request->categorie;
+
+        return response()->json($response);
     }
 
     public function apiDocsTravailShow(DocumentTravail $documentTravail)
