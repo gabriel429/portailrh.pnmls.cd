@@ -19,12 +19,13 @@
     RewriteRule ^ %1 [L,R=301]
 
     # Serve current Vite build files directly from public/build.
-    RewriteCond %{DOCUMENT_ROOT}/public/build/$1 -f
+    RewriteCond %{REQUEST_URI} ^/build/(.+)$
+    RewriteCond %{DOCUMENT_ROOT}/public/build/%1 -f
     RewriteRule ^build/(.+)$ public/build/$1 [L]
 
     # Serve stale build asset URLs through the MIME-safe asset resolver.
-    RewriteCond %{REQUEST_URI} ^/build/assets/
-    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_URI} ^/build/assets/(.+)$
+    RewriteCond %{DOCUMENT_ROOT}/public/build/assets/%1 !-f
     RewriteRule ^build/assets/(.+)$ public/asset.php?f=$1 [L,QSA]
 
     # Serve /build/* from public/build/ when file not found at root
