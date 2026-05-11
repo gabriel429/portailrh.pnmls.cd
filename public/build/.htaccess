@@ -39,20 +39,24 @@ RewriteRule ^assets/(.+\.(js|css))$ serve-asset.php?file=$1 [L,QSA]
 # This rule triggers when a CSS/JS file is requested but returns wrong MIME type
 
 # For CSS files in assets/ folder - redirect to PHP if needed
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} ^/build/assets/.+\.css$
 RewriteCond %{HTTP_ACCEPT} "text/css"
 RewriteRule ^assets/(.+\.css)$ serve-asset.php?file=$1 [L,QSA]
 
 # For JS files in assets/ folder - redirect to PHP if needed
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} ^/build/assets/.+\.js$
 RewriteCond %{HTTP_ACCEPT} "application/javascript,*/*"
 RewriteRule ^assets/(.+\.js)$ serve-asset.php?file=$1 [L,QSA]
 
 # For JSON files (manifest)
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} ^/build/assets/.+\.json$
 RewriteRule ^assets/(.+\.json)$ serve-asset.php?file=$1 [L,QSA]
 
 # For font files
+RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} ^/build/assets/.+\.(woff2|woff|ttf)$
 RewriteRule ^assets/(.+\.(woff2|woff|ttf))$ serve-asset.php?file=$1 [L,QSA]
 
