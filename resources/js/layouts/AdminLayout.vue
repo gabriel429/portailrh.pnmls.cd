@@ -138,6 +138,9 @@ const baseNavItems = [
 
 const navItems = computed(() => {
     const items = [...baseNavItems]
+    if (auth.canManageDocsTravail) {
+        items.push({ route: 'admin.documents-travail.index', icon: 'fas fa-folder-open', label: 'Documents RH' })
+    }
     if (auth.isSuperAdmin) {
         items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Déploiement' })
         items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })

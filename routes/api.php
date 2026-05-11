@@ -358,10 +358,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursUpdate']);
         Route::delete('utilisateurs/{user}', [ParametresController::class, 'apiUtilisateursDestroy']);
 
-        // Documents de Travail (read-only via admin)
-        Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
-        Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
-
         // PTA import backend-only
         Route::post('pta/import-parsed', [PlanTravailController::class, 'importParsed']);
 
@@ -385,6 +381,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Documents de Travail CRUD (SEN + RH)
     Route::middleware('role:SEN,Section ressources humaines,Chef Section RH,RH National,RH Provincial')->prefix('admin')->group(function () {
+        Route::get('documents-travail', [ParametresController::class, 'apiDocsTravailIndex']);
+        Route::get('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailShow']);
         Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
         Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
         Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);

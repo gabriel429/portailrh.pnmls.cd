@@ -23,6 +23,7 @@ use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -949,12 +950,15 @@ class ParametresController extends Controller
             'fichier' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
             'actif' => 'boolean',
         ]);
-        $path = $request->file('fichier')->store('documents-travail', 'public');
+        $file = $request->file('fichier');
+        $path = $file->store('documents_travail', 'public');
         $doc = DocumentTravail::create([
             'titre' => $validated['titre'],
             'description' => $validated['description'] ?? null,
             'categorie' => $validated['categorie'] ?? null,
             'fichier' => $path,
+            'type_fichier' => strtolower($file->getClientOriginalExtension()),
+            'taille' => $file->getSize(),
             'actif' => $validated['actif'] ?? true,
             'uploaded_by' => $request->user()->id,
         ]);
@@ -983,7 +987,14 @@ class ParametresController extends Controller
         ]);
         $data = collect($validated)->except('fichier')->toArray();
         if ($request->hasFile('fichier')) {
-            $data['fichier'] = $request->file('fichier')->store('documents-travail', 'public');
+            if ($documentTravail->fichier && Storage::disk('public')->exists($documentTravail->fichier)) {
+                Storage::disk('public')->delete($documentTravail->fichier);
+            }
+
+            $file = $request->file('fichier');
+            $data['fichier'] = $file->store('documents_travail', 'public');
+            $data['type_fichier'] = strtolower($file->getClientOriginalExtension());
+            $data['taille'] = $file->getSize();
         }
         $documentTravail->update($data);
         $this->recordAudit('UPDATE', 'documents_travail', $documentTravail->id, $before, $documentTravail->fresh()->toArray());
@@ -1002,6 +1013,9 @@ class ParametresController extends Controller
     public function apiDocsTravailDestroy(DocumentTravail $documentTravail)
     {
         $before = $documentTravail->toArray();
+        if ($documentTravail->fichier && Storage::disk('public')->exists($documentTravail->fichier)) {
+            Storage::disk('public')->delete($documentTravail->fichier);
+        }
         $documentTravail->delete();
         $this->recordAudit('DELETE', 'documents_travail', $documentTravail->id, $before);
         return response()->json(['message' => 'Document supprimé.']);
