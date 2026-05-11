@@ -18,6 +18,10 @@
     RewriteCond %{REQUEST_URI} (.+)/$
     RewriteRule ^ %1 [L,R=301]
 
+    # Serve current Vite build files directly from public/build.
+    RewriteCond %{DOCUMENT_ROOT}/public/build/$1 -f
+    RewriteRule ^build/(.+)$ public/build/$1 [L]
+
     # Serve stale build asset URLs through the MIME-safe asset resolver.
     RewriteCond %{REQUEST_URI} ^/build/assets/
     RewriteCond %{REQUEST_FILENAME} !-f
