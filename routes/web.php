@@ -75,7 +75,11 @@ Route::post('/logout', function (\Illuminate\Http\Request $request) {
     return redirect('/login');
 })->middleware('auth')->name('logout');
 
-// Document de travail download (file stream, not a page)
+// Document de travail streams (files, not pages)
+Route::get('/documents-travail/{documentTravail}/view', [DocumentTravailController::class, 'view'])
+    ->middleware('auth')
+    ->name('documents-travail.view');
+
 Route::get('/documents-travail/{documentTravail}/download', [DocumentTravailController::class, 'download'])
     ->middleware('auth')
     ->name('documents-travail.download');

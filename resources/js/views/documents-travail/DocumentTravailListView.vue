@@ -77,9 +77,14 @@
           </div>
           <div class="dt-card-footer">
             <span class="dt-card-date"><i class="fas fa-clock me-1"></i>{{ formatDate(doc.created_at) }}</span>
-            <a :href="`/api/documents-travail/${doc.id}/download`" class="dt-card-dl">
-              <i class="fas fa-download"></i> Télécharger
-            </a>
+            <div class="dt-card-actions">
+              <a :href="`/documents-travail/${doc.id}/view`" class="dt-card-btn dt-card-view" target="_blank" rel="noopener">
+                <i class="fas fa-eye"></i> Voir
+              </a>
+              <a :href="`/documents-travail/${doc.id}/download`" class="dt-card-btn dt-card-dl">
+                <i class="fas fa-download"></i> Télécharger
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -276,13 +281,18 @@ onMounted(() => loadDocuments())
 .dt-card-footer {
   border-top: 1px solid #f3f4f6; padding: .7rem 1.2rem;
   display: flex; align-items: center; justify-content: space-between; margin-top: auto;
+  gap: .75rem;
 }
 .dt-card-date { font-size: .72rem; color: #9ca3af; }
-.dt-card-dl {
+.dt-card-actions { display: inline-flex; align-items: center; gap: .4rem; flex-wrap: wrap; justify-content: flex-end; }
+.dt-card-btn {
   display: inline-flex; align-items: center; gap: .3rem; padding: .35rem .8rem;
-  border-radius: 8px; font-size: .78rem; font-weight: 600; background: #fff7ed;
-  color: #ea580c; text-decoration: none; border: 1px solid #fed7aa; transition: all .2s;
+  border-radius: 8px; font-size: .78rem; font-weight: 600; text-decoration: none;
+  border: 1px solid transparent; transition: all .2s; white-space: nowrap;
 }
+.dt-card-view { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
+.dt-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
+.dt-card-dl { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
 .dt-card-dl:hover { background: #ea580c; color: #fff; border-color: #ea580c; }
 
 .dt-empty { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
@@ -297,5 +307,7 @@ onMounted(() => loadDocuments())
 @media (max-width: 576px) {
   .dt-cat-grid { grid-template-columns: repeat(2, 1fr); }
   .dt-grid { grid-template-columns: 1fr; }
+  .dt-card-footer { align-items: flex-start; flex-direction: column; }
+  .dt-card-actions { width: 100%; justify-content: flex-start; }
 }
 </style>
