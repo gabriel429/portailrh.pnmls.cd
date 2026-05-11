@@ -1245,7 +1245,7 @@ const baseQuickActions = [
   { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des présences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
-  { action: 'documents-travail-popup', label: 'Documents de travail', desc: 'Consulter les documents publies', icon: 'fa-folder-open', color: '#f97316', bg: '#ffedd5' },
+  { to: '/documents-travail', label: 'Documents de travail', desc: 'Consulter les documents publies', icon: 'fa-folder-open', color: '#f97316', bg: '#ffedd5' },
   { to: '/rh/communiques/create', label: 'Communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
 ]
 
@@ -1284,8 +1284,7 @@ function quickActionTo(action) {
 }
 
 function handleQuickAction(action) {
-  if (action.disabled || action.action !== 'documents-travail-popup') return
-  window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
+  if (action.disabled || !action.action) return
 }
 
 const maxMetric = computed(() => {

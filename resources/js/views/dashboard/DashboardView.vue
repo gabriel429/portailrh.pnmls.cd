@@ -167,9 +167,9 @@
             </div>
           </div>
           <div class="dash-info-footer">
-            <button type="button" class="dash-info-link dash-info-button" @click="openDocumentsTravailModal">
-              <i class="fas fa-file-invoice me-1"></i> {{ auth.canManageDocsTravail ? 'Gestion des documents' : 'Documents de travail' }}
-            </button>
+            <router-link to="/documents-travail" class="dash-info-link">
+              <i class="fas fa-file-invoice me-1"></i> Documents de travail
+            </router-link>
           </div>
         </div>
         <div class="dash-info-card">
@@ -379,9 +379,7 @@ const today = computed(() => {
 
 const quickActions = computed(() => [
   { to: '/mon-planning-conges', label: 'Planning congés', desc: 'Congés de ma structure', icon: 'fa-calendar-alt', color: '#0d9488', bg: '#ccfbf1' },
-  auth.canManageDocsTravail
-    ? { action: 'documents-travail-popup', label: 'Gestion des documents', desc: 'Ajouter et publier', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' }
-    : { action: 'documents-travail-popup', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
+  { to: '/documents-travail', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
   { to: '/plan-travail', label: 'PTA', desc: 'Plan de travail annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/profile', label: 'Mon profil', desc: 'Voir mes infos', icon: 'fa-user-circle', color: '#7c3aed', bg: '#ede9fe' },
 ])
@@ -394,13 +392,8 @@ function quickActionTo(action) {
   return action.action ? undefined : action.to
 }
 
-function openDocumentsTravailModal() {
-  window.dispatchEvent(new CustomEvent('epnmls:open-documents-travail'))
-}
-
 function handleQuickAction(action) {
-  if (action.action !== 'documents-travail-popup') return
-  openDocumentsTravailModal()
+  if (!action.action) return
 }
 
 const maxStat = computed(() => {

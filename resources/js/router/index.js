@@ -215,7 +215,7 @@ const routes = [
         path: '/documents-travail',
         name: 'documents-travail.index',
         component: () => import('@/views/documents-travail/DocumentTravailListView.vue'),
-        meta: { auth: true, docsTravailPopup: true },
+        meta: { auth: true },
     },
 
     // Absences
@@ -512,12 +512,8 @@ router.beforeEach(async (to) => {
         }
     }
 
-    if (to.meta.docsTravailPopup) {
-        return { name: 'dashboard', query: { open: 'documents-travail' } }
-    }
-
     if (to.meta.docsTravail && !auth.canManageDocsTravail) {
-        return { name: 'dashboard', query: { open: 'documents-travail' } }
+        return { name: 'documents-travail.index' }
     }
 
     if (to.meta.adminNT && !auth.isAdminNT) {
