@@ -11,6 +11,7 @@ use App\Models\Affectation;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\Grade;
 use App\Traits\Syncable;
+use App\Support\RoleNames;
 
 class Agent extends Authenticatable
 {
@@ -253,10 +254,7 @@ class Agent extends Authenticatable
             return false;
         }
 
-        $userRole = strtolower(trim((string) $this->role->nom_role));
-        $normalizedRoles = array_map(static fn($role) => strtolower(trim((string) $role)), $roles);
-
-        return in_array($userRole, $normalizedRoles, true);
+        return RoleNames::matches($this->role->nom_role, $roles);
     }
 
     /**

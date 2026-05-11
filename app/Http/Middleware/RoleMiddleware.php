@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\RoleNames;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,17 +28,7 @@ class RoleMiddleware
         }
 
         // Check if user has any of the required roles
-        $hasRole = false;
-        foreach ($roles as $role) {
-            if (
-                $user->role
-                && $user->role->nom_role
-                && strtolower(trim((string) $user->role->nom_role)) === strtolower(trim((string) $role))
-            ) {
-                $hasRole = true;
-                break;
-            }
-        }
+        $hasRole = RoleNames::matches($user->role?->nom_role, $roles);
 
         if (!$hasRole) {
             if ($request->expectsJson()) {

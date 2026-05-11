@@ -12,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Traits\Syncable;
 use App\Services\RoleService;
+use App\Support\RoleNames;
 
 class User extends Authenticatable
 {
@@ -116,10 +117,7 @@ class User extends Authenticatable
             return false;
         }
 
-        $userRole = strtolower(trim((string) $this->role->nom_role));
-        $normalizedRoles = array_map(static fn($role) => strtolower(trim((string) $role)), $roles);
-
-        return in_array($userRole, $normalizedRoles, true);
+        return RoleNames::matches($this->role->nom_role, $roles);
     }
 
     /**
