@@ -84,6 +84,15 @@
               <a :href="`/documents-travail/${doc.id}/download`" class="dt-card-btn dt-card-dl">
                 <i class="fas fa-download"></i> Télécharger
               </a>
+              <button
+                v-if="canManageDocs"
+                type="button"
+                class="dt-card-btn dt-card-delete"
+                :disabled="deletingId === doc.id"
+                @click="deleteDocument(doc)"
+              >
+                <i class="fas fa-trash"></i> Supprimer
+              </button>
             </div>
           </div>
         </div>
@@ -133,19 +142,23 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
+const auth = useAuthStore()
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
+const deletingId = ref(null)
 const documents = ref([])
 const categories = ref([])
 const categoryCounts = ref({})
 const totalDocs = ref(0)
 const categorie = ref('')
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
+const canManageDocs = computed(() => auth.canManageDocsTravail)
 
 const paginationPages = computed(() => {
   const pages = []
@@ -183,6 +196,22 @@ async function loadDocuments(page = 1) {
 function setCategorie(cat) {
   categorie.value = cat
   loadDocuments(1)
+}
+
+async function deleteDocument(doc) {
+  if (!canManageDocs.value || deletingId.value) return
+  if (!confirm(`Supprimer le document "${doc.titre}" ?`)) return
+
+  deletingId.value = doc.id
+  try {
+    await client.delete(`/admin/documents-travail/${doc.id}`)
+    ui.addToast('Document supprimé.', 'success')
+    await loadDocuments(meta.value.current_page)
+  } catch (error) {
+    ui.addToast(error.response?.data?.message || 'Erreur lors de la suppression du document.', 'danger')
+  } finally {
+    deletingId.value = null
+  }
 }
 
 function iconClass(ext) {
@@ -294,6 +323,9 @@ onMounted(() => loadDocuments())
 .dt-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
 .dt-card-dl { background: #fff7ed; color: #ea580c; border-color: #fed7aa; }
 .dt-card-dl:hover { background: #ea580c; color: #fff; border-color: #ea580c; }
+.dt-card-delete { background: #fef2f2; color: #dc2626; border-color: #fecaca; cursor: pointer; }
+.dt-card-delete:hover:not(:disabled) { background: #dc2626; color: #fff; border-color: #dc2626; }
+.dt-card-delete:disabled { opacity: .65; cursor: not-allowed; }
 
 .dt-empty { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
 
