@@ -15,6 +15,7 @@ cp -a public/build/. build/
 echo "Creating image symlink..."
 rm -rf images
 ln -sf public/images images
+php artisan storage:link || true
 
 # 3. Clear Laravel caches.
 echo "Clearing caches..."
