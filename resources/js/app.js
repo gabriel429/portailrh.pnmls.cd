@@ -13,7 +13,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker disabled to prevent stale builds')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-07-disable-sw-v2'
+const BUILD_CACHE_VERSION = '2026-05-11-rh-docs-access-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 
 async function clearBuildCachesOnVersionChange() {
