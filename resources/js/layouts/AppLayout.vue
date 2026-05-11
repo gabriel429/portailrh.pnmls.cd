@@ -174,6 +174,11 @@
                       <span class="dd-icon dd-icon-purple"><i class="fas fa-clock"></i></span> Pointages
                     </router-link>
                   </li>
+                  <li v-if="auth.canManageDocsTravail">
+                    <router-link class="dropdown-item" :to="{ name: 'admin.documents-travail.index' }">
+                      <span class="dd-icon dd-icon-orange"><i class="fas fa-folder-open"></i></span> Gestion des documents
+                    </router-link>
+                  </li>
                   <li>
                     <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations

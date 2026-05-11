@@ -1243,6 +1243,7 @@ const baseQuickActions = [
   { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des présences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#d97706', bg: '#fef3c7' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
+  { to: '/admin/documents-travail', label: 'Gestion des documents', desc: 'Ajouter et publier les documents', icon: 'fa-folder-open', color: '#f97316', bg: '#ffedd5' },
   { to: '/rh/communiques/create', label: 'Communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
 ]
 
