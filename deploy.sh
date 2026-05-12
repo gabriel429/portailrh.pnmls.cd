@@ -29,9 +29,11 @@ php artisan view:clear
 echo "Running migrations..."
 php artisan migrate --force
 
-# 5. Set permissions.
+# 5. Set permissions without marking tracked assets as executable.
 echo "Setting permissions..."
-chmod -R 755 public/build build
-chmod -R 755 storage bootstrap/cache
+find public/build build -type d -exec chmod 755 {} \;
+find public/build build -type f -exec chmod 644 {} \;
+find storage bootstrap/cache -type d -exec chmod 755 {} \;
+find storage bootstrap/cache -type f -exec chmod 644 {} \;
 
 echo "Deployment complete!"
