@@ -173,6 +173,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Documents de Travail
     Route::get('documents-travail', [DocumentTravailController::class, 'index']);
     Route::get('documents-travail/{doc}/download', [DocumentTravailController::class, 'download']);
+    Route::middleware('docs.travail.manage')->group(function () {
+        Route::get('documents-travail/manage', [ParametresController::class, 'apiDocsTravailIndex']);
+        Route::post('documents-travail', [ParametresController::class, 'apiDocsTravailStore']);
+        Route::put('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailUpdate']);
+        Route::delete('documents-travail/{documentTravail}', [ParametresController::class, 'apiDocsTravailDestroy']);
+    });
 
     // Messages
     Route::post('messages', [MessageController::class, 'store']);

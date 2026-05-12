@@ -189,7 +189,29 @@ export const useAuthStore = defineStore('auth', {
             return deptCode === 'caf' || deptName.includes('cellule administrative et financ')
         },
         canManageDocsTravail(state) {
-            return !!state.user?.is_super_admin
+            if (state.user?.is_super_admin) return true
+
+            const role = normalizedRole(state)
+            const organe = normalizedOrgane(state)
+            const profile = normalizedAgentProfile(state)
+            if (role.includes('provincial') || role.includes('province') || organe.includes('provincial')) return false
+            if (
+                role.includes('assistant')
+                || profile.includes('assistant rh')
+                || profile.includes('assistant ressources humaines')
+                || profile.includes('assistant ressource humaine')
+            ) return false
+
+            return [
+                'section ressources humaines',
+                'section ressource humaine',
+                'chef section rh',
+                'chef de section rh',
+                'chef section ressources humaines',
+                'rh national',
+                'ressources humaines',
+                'rh',
+            ].includes(role)
         },
         canCreateAgents() {
             return this.isSuperAdmin || this.isSEN || this.isFullRH

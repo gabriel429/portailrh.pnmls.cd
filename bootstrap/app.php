@@ -39,6 +39,7 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'permission'  => \App\Http\Middleware\PermissionMiddleware::class,
             'admin.nt'    => \App\Http\Middleware\AdminNTMiddleware::class,
             'super.admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
+            'docs.travail.manage' => \App\Http\Middleware\ManageDocumentsTravailMiddleware::class,
             'not.assistant.rh' => \App\Http\Middleware\EnsureNotAssistantRh::class,
         ]);
     })
