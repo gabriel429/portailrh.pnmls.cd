@@ -155,7 +155,7 @@
         <div class="dt-modal-head">
           <div>
             <h3>{{ editingDoc ? 'Modifier le document' : 'Ajouter un document' }}</h3>
-            <p>{{ editingDoc ? 'Mettez a jour les informations du document.' : 'Publiez un document de travail depuis la page RH.' }}</p>
+            <p>{{ editingDoc ? 'Mettez a jour les informations du document.' : 'Publiez un document de travail depuis cet espace RH.' }}</p>
           </div>
           <button type="button" class="dt-modal-close" aria-label="Fermer" @click="closeFormModal">
             <i class="fas fa-times"></i>
