@@ -7,7 +7,7 @@ $remotePath = "/home/u605154961/domains/e-pnmls.cd/public_html"
 Write-Host "Déploiement en cours..." -ForegroundColor Yellow
 
 # Utiliser sshpass pour le déploiement automatisé
-$command = "cd $remotePath && git pull origin main && php artisan optimize:clear 2>&1"
+$command = "cd $remotePath && git pull origin main && bash deploy.sh 2>&1"
 
 # Créer un fichier temporaire avec la commande
 $tempScript = Join-Path $env:TEMP "deploy_cmd.ps1"
@@ -17,7 +17,7 @@ $tempScript = Join-Path $env:TEMP "deploy_cmd.ps1"
 `$password = "$password"
 `$remotePath = "$remotePath"
 
-`$command = "cd `$remotePath && git pull origin main && php artisan optimize:clear"
+`$command = "cd `$remotePath && git pull origin main && bash deploy.sh"
 
 # Utiliser sshpass
 sshpass -p "`$password" ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -p `$port `$server "`$command"
@@ -34,11 +34,11 @@ try {
     # Alternative avec plink (PuTTY)
     $plinkPath = "C:\Program Files\PuTTY\plink.exe"
     if (Test-Path $plinkPath) {
-        $cmd = "cd $remotePath && git pull origin main && php artisan optimize:clear"
+        $cmd = "cd $remotePath && git pull origin main && bash deploy.sh"
         & $plinkPath -ssh -P $port -pw $password $server $cmd
     } else {
         Write-Host "Ni sshpass ni plink ne sont disponibles." -ForegroundColor Red
         Write-Host "Veuillez exécuter manuellement sur le serveur :" -ForegroundColor Yellow
-        Write-Host "cd $remotePath && git pull origin main && php artisan optimize:clear" -ForegroundColor Cyan
+        Write-Host "cd $remotePath && git pull origin main && bash deploy.sh" -ForegroundColor Cyan
     }
 }
