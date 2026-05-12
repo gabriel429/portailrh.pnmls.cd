@@ -533,15 +533,23 @@ onMounted(() => loadDocuments())
 .dt-empty { text-align: center; padding: 3rem 1rem; color: #9ca3af; }
 
 .dt-modal-overlay {
-  position: fixed; inset: 0; z-index: 1080; display: flex; align-items: center; justify-content: center;
-  background: rgba(15, 23, 42, .46); padding: 1rem; overflow-y: auto;
+  position: fixed; inset: 0; z-index: 10040; display: flex; align-items: flex-start; justify-content: center;
+  background: rgba(15, 23, 42, .46);
+  padding: calc(5rem + env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+  overflow-y: auto;
 }
 .dt-modal {
-  box-sizing: border-box; width: min(620px, 100%); max-height: calc(100dvh - 2rem); overflow: auto;
+  box-sizing: border-box; width: min(620px, 100%);
+  max-height: calc(100dvh - 6rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: auto; overscroll-behavior: contain;
   background: #fff; border-radius: 16px; box-shadow: 0 24px 70px rgba(15,23,42,.28);
   padding: 1.2rem; display: flex; flex-direction: column; gap: .85rem;
 }
-.dt-modal-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.dt-modal-head {
+  position: sticky; top: -1.2rem; z-index: 2;
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+  background: #fff; padding-top: .15rem; padding-bottom: .25rem;
+}
 .dt-modal-head h3 { margin: 0; color: #1e293b; font-size: 1.05rem; font-weight: 800; }
 .dt-modal-head p { margin: .2rem 0 0; color: #64748b; font-size: .8rem; }
 .dt-modal-close {
@@ -581,16 +589,15 @@ onMounted(() => loadDocuments())
 
 @media (max-width: 576px) {
   .dt-modal-overlay {
-    align-items: flex-start;
-    padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
+    padding: calc(4.4rem + env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
   }
   .dt-modal {
-    max-height: calc(100dvh - 1.5rem);
+    max-height: calc(100dvh - 5.15rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     border-radius: 14px;
     padding: .95rem;
     gap: .7rem;
   }
-  .dt-modal-head { gap: .75rem; }
+  .dt-modal-head { top: -.95rem; gap: .75rem; }
   .dt-modal-close { width: 34px; height: 34px; flex: 0 0 34px; }
   .dt-field textarea { min-height: 84px; }
   .dt-hero-main { flex-direction: column; }
@@ -604,12 +611,11 @@ onMounted(() => loadDocuments())
 
 @media (max-height: 700px) {
   .dt-modal-overlay {
-    align-items: flex-start;
-    padding-top: .75rem;
-    padding-bottom: .75rem;
+    padding-top: calc(4.4rem + env(safe-area-inset-top));
+    padding-bottom: max(.75rem, env(safe-area-inset-bottom));
   }
   .dt-modal {
-    max-height: calc(100dvh - 1.5rem);
+    max-height: calc(100dvh - 5.15rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
 </style>
