@@ -23,15 +23,44 @@ function patchHtaccess(buildDir) {
     ].join('\n');
 
     const content = readFileSync(file, 'utf8');
+    let patched = content;
 
-    if (content.includes('stale browser/PWA references')) {
-        return;
+    if (!patched.includes('stale browser/PWA references')) {
+        patched = patched.replace('RewriteEngine On', `RewriteEngine On\n\n${fallbackRule}`);
     }
 
-    writeFileSync(
-        file,
-        content.replace('RewriteEngine On', `RewriteEngine On\n\n${fallbackRule}`),
-    );
+    const fallbackRewriteRules = [
+        'RewriteRule ^assets/(.+\\.css)$ serve-asset.php?file=$1 [L,QSA]',
+        'RewriteRule ^assets/(.+\\.js)$ serve-asset.php?file=$1 [L,QSA]',
+        'RewriteRule ^assets/(.+\\.json)$ serve-asset.php?file=$1 [L,QSA]',
+        'RewriteRule ^assets/(.+\\.(woff2|woff|ttf))$ serve-asset.php?file=$1 [L,QSA]',
+    ];
+
+    for (const rule of fallbackRewriteRules) {
+        const ruleIndex = patched.indexOf(rule);
+        if (ruleIndex === -1) {
+            continue;
+        }
+
+        const blockStart = Math.max(
+            patched.lastIndexOf('\n# For ', ruleIndex),
+            patched.lastIndexOf('\n\n', ruleIndex),
+        );
+        const block = patched.slice(blockStart, ruleIndex);
+
+        if (block.includes('RewriteCond %{REQUEST_FILENAME} !-f')) {
+            continue;
+        }
+
+        const uriCondIndex = patched.indexOf('RewriteCond %{REQUEST_URI}', blockStart);
+        if (uriCondIndex !== -1 && uriCondIndex < ruleIndex) {
+            patched = `${patched.slice(0, uriCondIndex)}RewriteCond %{REQUEST_FILENAME} !-f\n${patched.slice(uriCondIndex)}`;
+        }
+    }
+
+    if (patched !== content) {
+        writeFileSync(file, patched);
+    }
 }
 
 function patchServeAsset(buildDir) {

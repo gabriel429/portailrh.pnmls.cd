@@ -534,10 +534,10 @@ onMounted(() => loadDocuments())
 
 .dt-modal-overlay {
   position: fixed; inset: 0; z-index: 1080; display: flex; align-items: center; justify-content: center;
-  background: rgba(15, 23, 42, .46); padding: 1rem;
+  background: rgba(15, 23, 42, .46); padding: 1rem; overflow-y: auto;
 }
 .dt-modal {
-  width: min(620px, 100%); max-height: calc(100dvh - 2rem); overflow: auto;
+  box-sizing: border-box; width: min(620px, 100%); max-height: calc(100dvh - 2rem); overflow: auto;
   background: #fff; border-radius: 16px; box-shadow: 0 24px 70px rgba(15,23,42,.28);
   padding: 1.2rem; display: flex; flex-direction: column; gap: .85rem;
 }
@@ -580,6 +580,19 @@ onMounted(() => loadDocuments())
 }
 
 @media (max-width: 576px) {
+  .dt-modal-overlay {
+    align-items: flex-start;
+    padding: max(.75rem, env(safe-area-inset-top)) .75rem max(.75rem, env(safe-area-inset-bottom));
+  }
+  .dt-modal {
+    max-height: calc(100dvh - 1.5rem);
+    border-radius: 14px;
+    padding: .95rem;
+    gap: .7rem;
+  }
+  .dt-modal-head { gap: .75rem; }
+  .dt-modal-close { width: 34px; height: 34px; flex: 0 0 34px; }
+  .dt-field textarea { min-height: 84px; }
   .dt-hero-main { flex-direction: column; }
   .dt-add-btn { width: 100%; }
   .dt-cat-grid { grid-template-columns: repeat(2, 1fr); }
@@ -587,5 +600,16 @@ onMounted(() => loadDocuments())
   .dt-card-footer { align-items: flex-start; flex-direction: column; }
   .dt-card-actions { width: 100%; justify-content: flex-start; }
   .dt-modal-actions { flex-direction: column-reverse; }
+}
+
+@media (max-height: 700px) {
+  .dt-modal-overlay {
+    align-items: flex-start;
+    padding-top: .75rem;
+    padding-bottom: .75rem;
+  }
+  .dt-modal {
+    max-height: calc(100dvh - 1.5rem);
+  }
 }
 </style>
