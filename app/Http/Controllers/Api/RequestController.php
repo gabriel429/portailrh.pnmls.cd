@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\DemandeWorkflowService;
 use App\Services\NotificationService;
 use App\Services\UserDataScope;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -61,6 +62,8 @@ class RequestController extends ApiController
             $scope->applyRequestScope($countQuery, $user);
         }
 
+        $this->expireOutdatedPendingRequests(clone $countQuery);
+
         // Calculer les compteurs par statut (sans filtre statut/type)
         $statusCounts = $countQuery->selectRaw('statut, COUNT(*) as cnt')
             ->groupBy('statut')
@@ -71,6 +74,7 @@ class RequestController extends ApiController
             'approuvé'   => (int) ($statusCounts['approuvé'] ?? 0),
             'rejeté'     => (int) ($statusCounts['rejeté'] ?? 0),
             'annulé'     => (int) ($statusCounts['annulé'] ?? 0),
+            'expiré'     => (int) ($statusCounts['expiré'] ?? 0),
         ];
 
         // Filter by statut
@@ -250,7 +254,7 @@ class RequestController extends ApiController
         }
 
         $validated = $httpRequest->validate([
-            'statut' => 'required|in:en_attente,approuvé,rejeté,annulé',
+            'statut' => 'required|in:en_attente,approuvé,rejeté,annulé,expiré',
             'remarques' => 'nullable|string',
         ]);
 
@@ -389,5 +393,30 @@ class RequestController extends ApiController
         }
 
         abort(403, 'Vous n\'avez pas accès a cette demande.');
+    }
+
+    private function expireOutdatedPendingRequests($query): void
+    {
+        $today = Carbon::today()->toDateString();
+
+        $query
+            ->where('statut', 'en_attente')
+            ->where(function ($dateQuery) use ($today) {
+                $dateQuery
+                    ->where(function ($withEndDate) use ($today) {
+                        $withEndDate
+                            ->whereNotNull('date_fin')
+                            ->whereDate('date_fin', '<', $today);
+                    })
+                    ->orWhere(function ($withoutEndDate) use ($today) {
+                        $withoutEndDate
+                            ->whereNull('date_fin')
+                            ->whereDate('date_debut', '<', $today);
+                    });
+            })
+            ->update([
+                'statut' => 'expiré',
+                'current_step' => null,
+            ]);
     }
 }

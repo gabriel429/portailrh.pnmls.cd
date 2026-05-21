@@ -71,6 +71,7 @@ class DepartmentDashboardController extends ApiController
             ->count();
 
         // ─── Demandes ──────────────────────────────────────────
+        $this->expireOutdatedPendingRequests($agentIds);
         $this->repairPendingRequestWorkflows($agentIds);
 
         $requestsPendingQuery = RequestModel::whereIn('agent_id', $agentIds)
@@ -400,6 +401,31 @@ class DepartmentDashboardController extends ApiController
             ->with('agent')
             ->get()
             ->each(fn(RequestModel $request) => app(DemandeWorkflowService::class)->initializeWorkflow($request));
+    }
+
+    private function expireOutdatedPendingRequests($agentIds): void
+    {
+        $today = Carbon::today()->toDateString();
+
+        RequestModel::whereIn('agent_id', $agentIds)
+            ->where('statut', 'en_attente')
+            ->where(function ($dateQuery) use ($today) {
+                $dateQuery
+                    ->where(function ($withEndDate) use ($today) {
+                        $withEndDate
+                            ->whereNotNull('date_fin')
+                            ->whereDate('date_fin', '<', $today);
+                    })
+                    ->orWhere(function ($withoutEndDate) use ($today) {
+                        $withoutEndDate
+                            ->whereNull('date_fin')
+                            ->whereDate('date_debut', '<', $today);
+                    });
+            })
+            ->update([
+                'statut' => 'expiré',
+                'current_step' => null,
+            ]);
     }
 
     private function normalizeScopeText(?string $value): string

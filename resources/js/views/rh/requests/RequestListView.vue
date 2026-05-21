@@ -93,6 +93,17 @@
           <div class="req-filter-count">{{ counts['annulé'] }} demande{{ counts['annulé'] !== 1 ? 's' : '' }}</div>
         </div>
       </button>
+      <button
+        class="req-filter-card req-filter-expired"
+        :class="{ active: filters.statut === 'expiré' }"
+        @click="setStatut('expiré')"
+      >
+        <div class="req-filter-icon"><i class="fas fa-clock-rotate-left"></i></div>
+        <div class="req-filter-info">
+          <div class="req-filter-name">Expirée</div>
+          <div class="req-filter-count">{{ counts['expiré'] }} demande{{ counts['expiré'] !== 1 ? 's' : '' }}</div>
+        </div>
+      </button>
     </div>
 
     <!-- Section header when filtered -->
@@ -376,7 +387,7 @@ const filtering = ref(false)
 const initialLoadDone = ref(false)
 const requests = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
-const counts = ref({ 'en_attente': 0, 'approuvé': 0, 'rejeté': 0, 'annulé': 0 })
+const counts = ref({ 'en_attente': 0, 'approuvé': 0, 'rejeté': 0, 'annulé': 0, 'expiré': 0 })
 const filters = ref({ statut: '', type: '' })
 
 const showDeleteModal = ref(false)
@@ -508,6 +519,7 @@ function statusLabel(statut) {
     'approuvé': 'Approuvée',
     'rejeté': 'Rejetée',
     'annulé': 'Annulée',
+    'expiré': 'Expirée',
   }
   return labels[statut] || statut
 }
@@ -518,6 +530,7 @@ function statusIcon(statut) {
     'approuvé': 'fas fa-check-circle',
     'rejeté': 'fas fa-times-circle',
     'annulé': 'fas fa-ban',
+    'expiré': 'fas fa-clock-rotate-left',
   }
   return icons[statut] || 'fas fa-circle'
 }
@@ -528,6 +541,7 @@ function statusBadgeClass(statut) {
     'approuvé': 'req-badge success',
     'rejeté': 'req-badge danger',
     'annulé': 'req-badge secondary',
+    'expiré': 'req-badge expired',
   }
   return classes[statut] || 'req-badge secondary'
 }
@@ -538,6 +552,7 @@ function statusIconClass(statut) {
     'approuvé': 'req-si-success',
     'rejeté': 'req-si-danger',
     'annulé': 'req-si-secondary',
+    'expiré': 'req-si-expired',
   }
   return classes[statut] || 'req-si-secondary'
 }
@@ -548,6 +563,7 @@ function statusColor(statut) {
     'approuvé': '#059669',
     'rejeté': '#dc2626',
     'annulé': '#6b7280',
+    'expiré': '#7c3aed',
   }
   return colors[statut] || '#6b7280'
 }
@@ -826,6 +842,15 @@ onMounted(() => {
   box-shadow: 0 4px 16px rgba(107, 114, 128, .25);
 }
 .req-filter-secondary.active .req-filter-icon { background: rgba(255, 255, 255, .2); color: #fff; }
+.req-filter-expired .req-filter-icon { background: #ede9fe; color: #7c3aed; }
+.req-filter-expired:hover { border-color: #7c3aed; color: #5b21b6; }
+.req-filter-expired.active {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  border-color: #7c3aed;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, .25);
+}
+.req-filter-expired.active .req-filter-icon { background: rgba(255, 255, 255, .2); color: #fff; }
 
 .req-filter-icon {
   width: 40px;
@@ -941,6 +966,7 @@ onMounted(() => {
 .req-si-success { background: #dcfce7; color: #059669; }
 .req-si-danger { background: #fee2e2; color: #dc2626; }
 .req-si-secondary { background: #f1f5f9; color: #6b7280; }
+.req-si-expired { background: #ede9fe; color: #7c3aed; }
 
 .req-card-info {
   flex: 1;
@@ -1003,6 +1029,7 @@ onMounted(() => {
 .req-badge.success { background: #dcfce7; color: #166534; }
 .req-badge.danger { background: #fee2e2; color: #991b1b; }
 .req-badge.secondary { background: #f1f5f9; color: #475569; }
+.req-badge.expired { background: #ede9fe; color: #5b21b6; }
 
 /* ── Dates row ── */
 .req-card-dates {

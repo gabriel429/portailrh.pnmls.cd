@@ -278,6 +278,7 @@ function statusLabel(statut) {
     'approuvé': 'Approuvée',
     'rejeté': 'Rejetée',
     'annulé': 'Annulée',
+    'expiré': 'Expirée',
   }
   return labels[statut] || statut
 }
@@ -288,6 +289,7 @@ function statusIcon(statut) {
     'approuvé': 'fas fa-check-circle',
     'rejeté': 'fas fa-times-circle',
     'annulé': 'fas fa-ban',
+    'expiré': 'fas fa-clock-rotate-left',
   }
   return icons[statut] || 'fas fa-circle'
 }
@@ -299,6 +301,7 @@ function statusHeroBadge(statut) {
     'approuvé': 'success',
     'rejeté': 'danger',
     'annulé': 'secondary',
+    'expiré': 'expired',
   }
   return `${base} ${colors[statut] || 'secondary'}`
 }
@@ -398,6 +401,7 @@ onMounted(async () => {
 .hero-status-badge.success { background: rgba(34,197,94,.2); color: #86efac; }
 .hero-status-badge.danger { background: rgba(239,68,68,.2); color: #fca5a5; }
 .hero-status-badge.secondary { background: rgba(148,163,184,.2); color: #cbd5e1; }
+.hero-status-badge.expired { background: rgba(124,58,237,.22); color: #ddd6fe; }
 
 /* Info row */
 .info-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }

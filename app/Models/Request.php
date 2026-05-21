@@ -95,7 +95,23 @@ class Request extends Model
     // Scopes
     public function scopeEnAttente($query)
     {
-        return $query->where('statut', 'en_attente');
+        $today = now()->toDateString();
+
+        return $query
+            ->where('statut', 'en_attente')
+            ->where(function ($dateQuery) use ($today) {
+                $dateQuery
+                    ->where(function ($withEndDate) use ($today) {
+                        $withEndDate
+                            ->whereNotNull('date_fin')
+                            ->whereDate('date_fin', '>=', $today);
+                    })
+                    ->orWhere(function ($withoutEndDate) use ($today) {
+                        $withoutEndDate
+                            ->whereNull('date_fin')
+                            ->whereDate('date_debut', '>=', $today);
+                    });
+            });
     }
 
     public function scopeApprouve($query)
