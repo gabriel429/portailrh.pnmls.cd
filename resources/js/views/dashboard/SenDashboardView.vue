@@ -1315,6 +1315,14 @@
                   <i class="fas fa-envelope"></i>
                   <span>{{ selectedAgentContact.email }}</span>
                 </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.email_professionnel && selectedAgentContact.email_professionnel !== selectedAgentContact.email">
+                  <i class="fas fa-briefcase"></i>
+                  <span>{{ selectedAgentContact.email_professionnel }}</span>
+                </div>
+                <div class="agent-contact-item" v-if="selectedAgentContact.email_prive && selectedAgentContact.email_prive !== selectedAgentContact.email">
+                  <i class="fas fa-at"></i>
+                  <span>{{ selectedAgentContact.email_prive }}</span>
+                </div>
                 <div class="agent-contact-item" v-if="selectedAgentContact.telephone">
                   <i class="fas fa-phone"></i>
                   <span>{{ selectedAgentContact.telephone }}</span>
@@ -1334,7 +1342,7 @@
                   <button v-if="selectedAgentContact.telephone" type="button" class="agent-contact-action-btn" @click="copyPhoneNumber(selectedAgentContact.telephone)">
                     <i class="fas fa-phone"></i> Appeler
                   </button>
-                  <button type="button" class="agent-contact-action-btn" @click="openAgentEmailComposer(selectedAgentContact)">
+                  <button type="button" class="agent-contact-action-btn" :disabled="!agentContactEmail(selectedAgentContact)" @click="openAgentEmailComposer(selectedAgentContact)">
                     <i class="fas fa-envelope"></i> Envoyer email
                   </button>
                 </div>
@@ -1579,12 +1587,13 @@ const visibleRecipientAgents = computed(() => {
   const byId = new Map()
 
   pools.forEach((agent) => {
-    if (!agent?.id || !agent?.email) return
+    const email = agentContactEmail(agent)
+    if (!agent?.id || !email) return
     if (!byId.has(agent.id)) {
       byId.set(agent.id, {
         id: Number(agent.id),
         nom: agent.nom || 'Agent',
-        email: agent.email,
+        email,
       })
     }
   })
@@ -1613,6 +1622,10 @@ function openAgentContactPopup(agent) {
   agentContactOpen.value = !!agent
 }
 
+function agentContactEmail(agent) {
+  return agent?.email_professionnel || agent?.email_prive || agent?.email || ''
+}
+
 function closeAgentContactPopup() {
   closeEmailComposer()
   agentContactOpen.value = false
@@ -1621,6 +1634,10 @@ function closeAgentContactPopup() {
 
 function openAgentEmailComposer(agent = selectedAgentContact.value) {
   const target = agent || selectedAgentContact.value
+  if (!agentContactEmail(target)) {
+    ui.addToast('Aucune adresse email disponible pour cet agent.', 'warning')
+    return
+  }
   emailErrors.value = {}
   emailAgentToAdd.value = ''
   emailManualRecipient.value = ''

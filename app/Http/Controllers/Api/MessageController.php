@@ -40,11 +40,11 @@ class MessageController extends ApiController
 
         $agentRecipients = Agent::query()
             ->whereIn('id', $recipientIds)
-            ->get(['id', 'nom', 'prenom', 'email', 'email_professionnel']);
+            ->get(['id', 'nom', 'prenom', 'email', 'email_professionnel', 'email_prive']);
 
         $recipientPayloads = $agentRecipients
             ->map(function (Agent $agent) {
-                $email = $agent->email_professionnel ?: $agent->email;
+                $email = $agent->email_professionnel ?: $agent->email_prive ?: $agent->email;
 
                 return [
                     'agent_id' => $agent->id,

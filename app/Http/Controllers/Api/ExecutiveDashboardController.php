@@ -109,7 +109,7 @@ class ExecutiveDashboardController extends ApiController
             }])
             ->orderInstitutionally()
             ->limit($limit)
-            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat']);
+            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'email_prive', 'telephone', 'telephone_prive', 'telephone_professionnel', 'matricule_etat', 'grade_etat']);
 
         $pointages = Pointage::byDate($date->toDateString())
             ->whereIn('agent_id', $agents->pluck('id'))
@@ -132,8 +132,12 @@ class ExecutiveDashboardController extends ApiController
                 'organe' => $a->organe,
                 'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
                 'sexe' => $a->sexe,
-                'email' => $a->email_professionnel ?: $a->email ?: null,
-                'telephone' => $a->telephone,
+                'email' => $a->email_professionnel ?: $a->email_prive ?: $a->email ?: null,
+                'email_professionnel' => $a->email_professionnel,
+                'email_prive' => $a->email_prive,
+                'telephone' => $a->telephone_professionnel ?: $a->telephone_prive ?: $a->telephone,
+                'telephone_professionnel' => $a->telephone_professionnel,
+                'telephone_prive' => $a->telephone_prive,
                 'matricule' => $a->matricule_etat,
                 'grade' => $a->grade_etat,
                 'is_online' => $online !== null,
