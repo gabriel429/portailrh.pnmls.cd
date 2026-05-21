@@ -75,6 +75,18 @@
     </div>
 
     <template v-else>
+      <div v-if="data.online_agents?.length" class="caf-online-strip">
+        <div class="caf-online-title">
+          <span class="caf-online-dot"></span>
+          Agents en ligne
+        </div>
+        <div class="caf-online-list">
+          <span v-for="agent in data.online_agents.slice(0, 8)" :key="agent.id" class="caf-online-chip">
+            {{ agent.prenom }} {{ agent.nom }}
+          </span>
+        </div>
+      </div>
+
       <!-- ═══ PROVINCE INFO ═══ -->
       <div class="caf-section" v-if="data.province">
         <div class="caf-province-card">
@@ -706,6 +718,7 @@ function pct(val) { return Math.min(((val ?? 0) / maxMetric.value) * 100, 100) }
 const metrics = computed(() => [
   { label: 'Agents total',         value: data.value.agents?.total ?? 0,           icon: 'fa-users',              color: '#0d9488', bg: '#d1fae5', pct: pct(data.value.agents?.total),           alert: false,                                    route: '/rh/agents',   drillSection: 'effectifs' },
   { label: 'Agents actifs',        value: data.value.agents?.actifs ?? 0,          icon: 'fa-user-check',         color: '#059669', bg: '#d1fae5', pct: pct(data.value.agents?.actifs),          alert: false,                                    route: '/rh/agents',   drillSection: 'effectifs' },
+  { label: 'En ligne',             value: data.value.agents?.online ?? 0,          icon: 'fa-circle',             color: '#16a34a', bg: '#dcfce7', pct: pct(data.value.agents?.online),          alert: false,                                    route: '/rh/agents',   drillSection: 'effectifs' },
   { label: 'Demandes en attente',  value: data.value.requests?.en_attente ?? 0,    icon: 'fa-hourglass-half',     color: '#d97706', bg: '#fef3c7', pct: pct(data.value.requests?.en_attente),    alert: (data.value.requests?.en_attente ?? 0) > 5, route: '/requests',  drillSection: null },
   { label: 'Signalements ouverts', value: data.value.signalements?.ouvert ?? 0,    icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(data.value.signalements?.ouvert),    alert: (data.value.signalements?.ouvert ?? 0) > 0, route: '/signalements', drillSection: null },
   { label: 'Tâches en cours',      value: data.value.taches?.en_cours ?? 0,        icon: 'fa-spinner',            color: '#7c3aed', bg: '#ede9fe', pct: pct(data.value.taches?.en_cours),        alert: false,                                    route: '/taches',      drillSection: null },
@@ -787,6 +800,15 @@ onMounted(loadData)
 
 /* ─── SECTIONS ─── */
 .caf-section { max-width: 1200px; margin: 0 auto; padding: 1rem 1.25rem; }
+.caf-online-strip {
+  max-width: 1200px; margin: 0 auto .7rem; padding: .85rem 1rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
+}
+.caf-online-title { display: flex; align-items: center; gap: .5rem; font-weight: 800; color: #166534; font-size: .9rem; }
+.caf-online-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, .14); }
+.caf-online-list { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+.caf-online-chip { padding: .28rem .55rem; border-radius: 999px; background: #fff; color: #14532d; font-size: .75rem; font-weight: 700; border: 1px solid #dcfce7; }
 .caf-section-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
 .caf-section-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
 .caf-section-title { font-size: .95rem; font-weight: 700; color: #1e293b; margin: 0; }

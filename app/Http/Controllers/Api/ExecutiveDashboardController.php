@@ -26,6 +26,7 @@ use App\Models\Localite;
 use App\Models\Institution;
 use App\Models\Formation;
 use App\Models\FormationBeneficiaire;
+use App\Services\AgentPresenceService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -115,12 +116,15 @@ class ExecutiveDashboardController extends ApiController
             ->get()
             ->keyBy('agent_id');
 
-        return $agents->map(function ($a) use ($pointages) {
+        $onlineMap = app(AgentPresenceService::class)->onlineMap($agents->pluck('id')->all());
+
+        return $agents->map(function ($a) use ($onlineMap, $pointages) {
             $currentStatus = $a->agentStatuses->first();
             $absenceStatuses = ['en_conge', 'en_mission', 'suspendu', 'en_formation'];
             $isAbsenceStatus = in_array(optional($currentStatus)->statut, $absenceStatuses, true);
             $pointage = $pointages->get($a->id);
             $isPresent = (bool) optional($pointage)->heure_entree;
+            $online = $onlineMap[$a->id] ?? null;
 
             return [
                 'id' => $a->id,
@@ -132,6 +136,9 @@ class ExecutiveDashboardController extends ApiController
                 'telephone' => $a->telephone,
                 'matricule' => $a->matricule_etat,
                 'grade' => $a->grade_etat,
+                'is_online' => $online !== null,
+                'online_label' => $online['label'] ?? null,
+                'online_since' => $online['last_activity'] ?? null,
                 'presence_status' => $isPresent ? 'present' : ($isAbsenceStatus ? $currentStatus->statut : 'absent'),
                 'presence_label' => $isPresent ? 'Présent' : ($isAbsenceStatus ? $currentStatus->statut_label : 'Absent'),
                 'heure_entree' => optional($pointage?->heure_entree)->format('H:i'),
@@ -169,6 +176,8 @@ class ExecutiveDashboardController extends ApiController
         $agentsActifs = Agent::actifs()->count();
         $agentsSuspendus = Agent::suspendu()->count();
         $agentsAnciens = Agent::anciens()->count();
+        $presence = app(AgentPresenceService::class);
+        $onlineAgentMap = $presence->onlineMap(Agent::actifs()->pluck('id')->all());
 
         $agentsByOrgane = [];
         foreach ($organes as $code => $nom) {
@@ -611,6 +620,7 @@ class ExecutiveDashboardController extends ApiController
                 'actifs' => $agentsActifs,
                 'suspendus' => $agentsSuspendus,
                 'anciens' => $agentsAnciens,
+                'online' => count($onlineAgentMap),
                 'sans_affectation' => $agentsSansAffectation,
                 'by_organe' => $agentsByOrgane,
                 'by_grade' => $gradesDistribution,
@@ -731,6 +741,8 @@ class ExecutiveDashboardController extends ApiController
                 ],
                 'details' => $agentStatusDetails,
             ],
+            'online_agents' => array_values($onlineAgentMap),
+            'recent_online_agents' => $presence->recent($onlineAgentMap),
         ];
 
         return $this->success($payload, [], $payload);
@@ -769,6 +781,8 @@ class ExecutiveDashboardController extends ApiController
         $actifsAgents   = (clone $agentsQ)->actifs()->count();
         $suspendusAgents= (clone $agentsQ)->suspendu()->count();
         $anciensAgents  = (clone $agentsQ)->anciens()->count();
+        $presence = app(AgentPresenceService::class);
+        $onlineAgentMap = $presence->onlineMap((clone $agentsQ)->actifs()->pluck('id')->all());
 
         // Par organe dans la province
         $organeMap = [
@@ -995,6 +1009,7 @@ class ExecutiveDashboardController extends ApiController
                 'actifs'          => $actifsAgents,
                 'suspendus'       => $suspendusAgents,
                 'anciens'         => $anciensAgents,
+                'online'          => count($onlineAgentMap),
                 'by_organe'       => $byOrgane,
                 'by_sexe'         => $bySexe,
                 'sans_affectation'=> $agentsSansAffectation,
@@ -1054,6 +1069,8 @@ class ExecutiveDashboardController extends ApiController
                 'sans_affectation' => $agentsSansAffectation,
                 'mobilite_30_jours'=> $mobilite,
             ],
+            'online_agents' => array_values($onlineAgentMap),
+            'recent_online_agents' => $presence->recent($onlineAgentMap),
         ];
 
         return $this->success($payload, [], $payload);
@@ -1369,6 +1386,8 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             $agentListQuery->where('organe', $organeFilter);
         }
         $topAgents = $this->presenceAgents($agentListQuery, $now, 150);
+        $onlineCount = $topAgents->where('is_online', true)->count();
+        $onlineCount = $topAgents->where('is_online', true)->count();
 
         // Activités PTA de cette province
         $activites = ActivitePlan::parAnnee($currentYear)
@@ -1398,7 +1417,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
                 'email' => $province->email_officiel,
                 'telephone' => $province->telephone_officiel,
             ],
-            'effectifs' => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'effectifs' => array_merge(compact('total', 'actifs', 'suspendus', 'anciens'), ['online' => $onlineCount]),
             'by_organe' => $byOrgane,
             'presence' => [
                 'today_present' => $todayPresent,
@@ -1449,10 +1468,11 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $deptActifs) * 100, 1) : 0;
 
         $topAgents = $this->presenceAgents($agents, $now, 150);
+        $onlineCount = $topAgents->where('is_online', true)->count();
 
         return $this->success([
             'department' => ['id' => 0, 'nom' => 'SEN (rattachement direct)', 'code' => 'SEN-DIRECT'],
-            'effectifs'  => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'effectifs'  => array_merge(compact('total', 'actifs', 'suspendus', 'anciens'), ['online' => $onlineCount]),
             'presence'   => [
                 'today_present' => $todayPresent,
                 'today_rate'    => round(($todayPresent / $deptActifs) * 100, 1),
@@ -1559,7 +1579,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
                 'nom' => $department->nom,
                 'code' => $department->code,
             ],
-            'effectifs' => compact('total', 'actifs', 'suspendus', 'anciens'),
+            'effectifs' => array_merge(compact('total', 'actifs', 'suspendus', 'anciens'), ['online' => $onlineCount]),
             'presence' => [
                 'today_present' => $todayPresent,
                 'today_rate' => round(($todayPresent / $deptActifs) * 100, 1),
@@ -1740,6 +1760,8 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $actifsAgents  = (clone $agentsQ)->actifs()->count();
         $suspendusAgents = (clone $agentsQ)->suspendu()->count();
         $anciensAgents = (clone $agentsQ)->anciens()->count();
+        $presence = app(AgentPresenceService::class);
+        $onlineAgentMap = $presence->onlineMap((clone $agentsQ)->actifs()->pluck('id')->all());
 
         $organeMap = [
             'sen' => 'Secrétariat Exécutif National',
@@ -1944,6 +1966,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
                 'actifs'           => $actifsAgents,
                 'suspendus'        => $suspendusAgents,
                 'anciens'          => $anciensAgents,
+                'online'           => count($onlineAgentMap),
                 'by_organe'        => $byOrgane,
                 'by_sexe'          => $bySexe,
                 'sans_affectation' => $agentsSansAffectation,
@@ -2002,6 +2025,8 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
                 'sans_affectation' => $agentsSansAffectation,
                 'mobilite_30_jours'=> $mobilite,
             ],
+            'online_agents' => array_values($onlineAgentMap),
+            'recent_online_agents' => $presence->recent($onlineAgentMap),
         ];
 
         return $this->success($payload, [], $payload);

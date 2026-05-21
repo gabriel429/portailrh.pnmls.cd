@@ -69,6 +69,18 @@
     </div>
 
     <template v-else>
+      <div v-if="data.online_agents?.length" class="sen-online-strip">
+        <div class="sen-online-title">
+          <span class="sen-online-dot"></span>
+          Agents en ligne
+        </div>
+        <div class="sen-online-list">
+          <span v-for="agent in data.online_agents.slice(0, 8)" :key="agent.id" class="sen-online-chip">
+            {{ agent.prenom }} {{ agent.nom }}
+          </span>
+        </div>
+      </div>
+
       <!-- ═══ QUICK ACTIONS ═══ -->
       <div class="sen-section">
         <div class="sen-section-head">
@@ -1893,6 +1905,7 @@ const maxMetric = computed(() => {
 const metrics = computed(() => [
   { label: 'Agents total', value: data.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(data.value.agents?.total), alert: false, route: '/rh/agents' },
   { label: 'Agents actifs', value: data.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(data.value.agents?.actifs), alert: false, route: '/rh/agents' },
+  { label: 'En ligne', value: data.value.agents?.online ?? 0, icon: 'fa-circle', color: '#16a34a', bg: '#dcfce7', pct: pct(data.value.agents?.online), alert: false, route: '/rh/agents' },
   { label: 'Demandes en attente', value: data.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#d97706', bg: '#fef3c7', pct: pct(data.value.requests?.en_attente), alert: (data.value.requests?.en_attente ?? 0) > 5, route: '/requests' },
   { label: 'Demandes approuvées', value: data.value.requests?.approuve ?? 0, icon: 'fa-check-double', color: '#16a34a', bg: '#dcfce7', pct: pct(data.value.requests?.approuve), alert: false, route: '/requests' },
   { label: 'Signalements ouverts', value: data.value.signalements?.ouvert ?? 0, icon: 'fa-exclamation-circle', color: '#dc2626', bg: '#fee2e2', pct: pct(data.value.signalements?.ouvert), alert: (data.value.signalements?.ouvert ?? 0) > 0, route: '/signalements' },
@@ -2036,6 +2049,15 @@ onMounted(async () => {
 
 /* ═══════════ SECTIONS ═══════════ */
 .sen-section { margin-bottom: 1.8rem; }
+.sen-online-strip {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin-bottom: 1.2rem; padding: .85rem 1rem;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
+}
+.sen-online-title { display: flex; align-items: center; gap: .5rem; font-weight: 800; color: #166534; font-size: .9rem; }
+.sen-online-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, .14); }
+.sen-online-list { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+.sen-online-chip { padding: .28rem .55rem; border-radius: 999px; background: #fff; color: #14532d; font-size: .75rem; font-weight: 700; border: 1px solid #dcfce7; }
 .sen-section-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
 .sen-section-icon {
   width: 40px; height: 40px; border-radius: 12px; display: flex;

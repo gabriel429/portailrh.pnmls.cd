@@ -64,6 +64,18 @@
     </div>
 
     <template v-else>
+      <div v-if="d.online_agents?.length" class="rh-online-strip">
+        <div class="rh-online-title">
+          <span class="rh-online-dot"></span>
+          Agents en ligne
+        </div>
+        <div class="rh-online-list">
+          <span v-for="agent in d.online_agents.slice(0, 8)" :key="agent.id" class="rh-online-chip">
+            {{ agent.prenom }} {{ agent.nom }}
+          </span>
+        </div>
+      </div>
+
       <!-- ACTIONS RAPIDES -->
       <div class="rh-section">
         <div class="rh-section-head">
@@ -1312,6 +1324,7 @@ const metrics = computed(() => {
   return [
   { label: 'Agents total', value: d.value.agents?.total ?? 0, icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe', pct: pct(d.value.agents?.total), alert: false, to: '/rh/agents', drill: () => drillFn('effectifs') },
   { label: 'Agents actifs', value: d.value.agents?.actifs ?? 0, icon: 'fa-user-check', color: '#059669', bg: '#d1fae5', pct: pct(d.value.agents?.actifs), alert: false, to: '/rh/agents', drill: () => drillFn('effectifs') },
+  { label: 'En ligne', value: d.value.agents?.online ?? 0, icon: 'fa-circle', color: '#16a34a', bg: '#dcfce7', pct: pct(d.value.agents?.online), alert: false, to: '/rh/agents', drill: () => drillFn('effectifs') },
   { label: 'Suspendus', value: d.value.agents?.suspendus ?? 0, icon: 'fa-user-slash', color: '#d97706', bg: '#fef3c7', pct: pct(d.value.agents?.suspendus), alert: (d.value.agents?.suspendus ?? 0) > 0, to: '/rh/agents', drill: () => drillFn('effectifs') },
   { label: 'Nouveaux ce mois', value: d.value.agents?.new_this_month ?? 0, icon: 'fa-user-plus', color: '#8b5cf6', bg: '#ede9fe', pct: pct(d.value.agents?.new_this_month), alert: false, to: '/rh/agents' },
   { label: 'Demandes en attente', value: d.value.requests?.en_attente ?? 0, icon: 'fa-hourglass-half', color: '#ea580c', bg: '#fff7ed', pct: pct(d.value.requests?.en_attente), alert: (d.value.requests?.en_attente ?? 0) > 5, to: '/requests' },
@@ -1717,6 +1730,15 @@ onMounted(async () => {
 
 /* SECTIONS */
 .rh-section { margin-bottom: 1.8rem; }
+.rh-online-strip {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  margin-bottom: 1.2rem; padding: .85rem 1rem;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
+}
+.rh-online-title { display: flex; align-items: center; gap: .5rem; font-weight: 800; color: #166534; font-size: .9rem; }
+.rh-online-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, .14); }
+.rh-online-list { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
+.rh-online-chip { padding: .28rem .55rem; border-radius: 999px; background: #fff; color: #14532d; font-size: .75rem; font-weight: 700; border: 1px solid #dcfce7; }
 .rh-section-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
 .rh-section-icon {
   width: 40px; height: 40px; border-radius: 12px; display: flex;

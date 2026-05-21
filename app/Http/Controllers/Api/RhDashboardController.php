@@ -16,6 +16,7 @@ use App\Models\ActivitePlan;
 use App\Models\Tache;
 use App\Models\Grade;
 use App\Models\Province;
+use App\Services\AgentPresenceService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,8 @@ class RhDashboardController extends ApiController
         $agentsActifs = $this->agentQuery($request)->actifs()->count();
         $agentsSuspendus = $this->agentQuery($request)->suspendu()->count();
         $agentsAnciens = $this->agentQuery($request)->anciens()->count();
+        $presence = app(AgentPresenceService::class);
+        $onlineAgentMap = $presence->onlineMap($this->agentQuery($request)->actifs()->pluck('id')->all());
 
         $agentsBySexe = $this->agentQuery($request)->actifs()
             ->select('sexe', DB::raw('COUNT(*) as total'))
@@ -194,20 +197,27 @@ class RhDashboardController extends ApiController
                 ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
                 ->orderBy('date_debut', 'desc')
                 ->get()
-                ->map(fn($s) => [
-                    'id' => $s->id,
-                    'agent_id' => $s->agent_id,
-                    'nom' => $s->agent?->nom,
-                    'prenom' => $s->agent?->prenom,
-                    'id_agent' => $s->agent?->id_agent,
-                    'matricule_etat' => $s->agent?->matricule_etat,
-                    'organe' => $s->agent?->organe,
-                    'poste' => $s->agent?->poste_actuel,
-                    'sexe' => $s->agent?->sexe,
-                    'date_debut' => $s->date_debut,
-                    'date_fin' => $s->date_fin,
-                    'motif' => $s->motif,
-                ]);
+                ->map(function ($s) use ($onlineAgentMap) {
+                    $online = $onlineAgentMap[$s->agent_id] ?? null;
+
+                    return [
+                        'id' => $s->id,
+                        'agent_id' => $s->agent_id,
+                        'nom' => $s->agent?->nom,
+                        'prenom' => $s->agent?->prenom,
+                        'id_agent' => $s->agent?->id_agent,
+                        'matricule_etat' => $s->agent?->matricule_etat,
+                        'organe' => $s->agent?->organe,
+                        'poste' => $s->agent?->poste_actuel,
+                        'sexe' => $s->agent?->sexe,
+                        'is_online' => $online !== null,
+                        'online_label' => $online['label'] ?? null,
+                        'online_since' => $online['last_activity'] ?? null,
+                        'date_debut' => $s->date_debut,
+                        'date_fin' => $s->date_fin,
+                        'motif' => $s->motif,
+                    ];
+                });
             $agentStatusDetails[$statut] = $agents;
         }
 
@@ -395,6 +405,7 @@ class RhDashboardController extends ApiController
                 'actifs' => $agentsActifs,
                 'suspendus' => $agentsSuspendus,
                 'anciens' => $agentsAnciens,
+                'online' => count($onlineAgentMap),
                 'new_this_month' => $newAgentsMonth,
                 'sans_affectation' => $agentsSansAffectation,
                 'by_sexe' => $agentsBySexe,
@@ -448,6 +459,8 @@ class RhDashboardController extends ApiController
                 ],
                 'details' => $agentStatusDetails,
             ],
+            'online_agents' => array_values($onlineAgentMap),
+            'recent_online_agents' => $presence->recent($onlineAgentMap),
             // ──────────────────────────────────────────
             // ✨ NOUVELLES DONNÉES - VISION RH COMPLÈTE ✨
             // ──────────────────────────────────────────
