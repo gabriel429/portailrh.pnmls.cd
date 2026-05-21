@@ -164,49 +164,6 @@
         </div>
       </div>
 
-      <!-- ═══ DÉPARTEMENTS ═══ -->
-      <div class="caf-section">
-        <div class="caf-section-head">
-          <div class="caf-section-icon" style="background:#dbeafe;color:#2563eb;">
-            <i class="fas fa-building"></i>
-          </div>
-          <div>
-            <h3 class="caf-section-title">Départements</h3>
-            <p class="caf-section-sub">{{ (data.departments || []).length }} département(s) — {{ data.agents?.actifs ?? 0 }} agents actifs</p>
-          </div>
-        </div>
-        <div class="caf-dept-grid">
-          <div v-for="dept in (data.departments || [])" :key="dept.id"
-            class="caf-dept-card caf-clickable" @click="openDeptDrilldown(dept.id)">
-            <div class="caf-dept-header">
-              <div class="caf-dept-badge"><i class="fas fa-building"></i></div>
-              <div class="caf-dept-info">
-                <div class="caf-dept-name">{{ dept.nom }}</div>
-                <div class="caf-dept-code">{{ dept.code }}</div>
-              </div>
-              <i class="fas fa-chevron-right caf-drill-arrow"></i>
-            </div>
-            <div class="caf-dept-stats">
-              <div class="caf-dept-stat">
-                <div class="caf-dept-stat-val">{{ dept.total ?? 0 }}</div>
-                <div class="caf-dept-stat-lbl">Total</div>
-              </div>
-              <div class="caf-dept-stat">
-                <div class="caf-dept-stat-val" style="color:#059669;">{{ dept.actifs ?? 0 }}</div>
-                <div class="caf-dept-stat-lbl">Actifs</div>
-              </div>
-            </div>
-            <div class="caf-dept-bar-wrap">
-              <div class="caf-dept-bar-bg">
-                <div class="caf-dept-bar-fill"
-                  :style="{ width: deptPct(dept.actifs) + '%' }"></div>
-              </div>
-              <span class="caf-dept-bar-pct">{{ deptPct(dept.actifs) }}%</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ═══ PRÉSENCE PAR ORGANE ═══ -->
       <div class="caf-section">
         <div class="caf-section-head">

@@ -170,58 +170,6 @@
         </div>
       </div>
 
-      <!-- ═══ DÉPARTEMENTS DE LA PROVINCE ═══ -->
-      <div class="sep-section">
-        <div class="sep-section-head">
-          <div class="sep-section-icon" style="background:#dbeafe;color:#2563eb;">
-            <i class="fas fa-building"></i>
-          </div>
-          <div>
-            <h3 class="sep-section-title">Départements de la province</h3>
-            <p class="sep-section-sub">{{ (data.departments || []).length }} département(s) — {{ data.agents?.actifs ?? 0 }} agents actifs</p>
-          </div>
-        </div>
-        <div class="sep-dept-grid">
-          <div
-            v-for="dept in (data.departments || [])" :key="dept.id"
-            class="sep-dept-card sep-clickable"
-            @click="openDeptDrilldown(dept.id)"
-          >
-            <div class="sep-dept-header">
-              <div class="sep-dept-badge">
-                <i class="fas fa-building"></i>
-              </div>
-              <div class="sep-dept-info">
-                <div class="sep-dept-name">{{ dept.nom }}</div>
-                <div class="sep-dept-code">{{ dept.code }}</div>
-              </div>
-              <i class="fas fa-chevron-right sep-drill-arrow"></i>
-            </div>
-            <div class="sep-dept-stats">
-              <div class="sep-dept-stat">
-                <div class="sep-dept-stat-val">{{ dept.total ?? 0 }}</div>
-                <div class="sep-dept-stat-lbl">Total</div>
-              </div>
-              <div class="sep-dept-stat">
-                <div class="sep-dept-stat-val" style="color:#059669;">{{ dept.actifs ?? 0 }}</div>
-                <div class="sep-dept-stat-lbl">Actifs</div>
-              </div>
-            </div>
-            <div class="sep-dept-bar-wrap">
-              <div class="sep-dept-bar-bg">
-                <div class="sep-dept-bar-fill"
-                  :style="{ width: deptPct(dept.actifs) + '%' }"></div>
-              </div>
-              <div class="sep-dept-bar-label">{{ dept.actifs ?? 0 }} actifs / {{ data.agents?.actifs ?? 0 }}</div>
-            </div>
-          </div>
-          <div v-if="!(data.departments || []).length" class="sep-dept-empty">
-            <i class="fas fa-building"></i>
-            <span>Aucun département configuré</span>
-          </div>
-        </div>
-      </div>
-
       <!-- ═══ PRÉSENCE PAR ORGANE ═══ -->
       <div class="sep-section">
         <div class="sep-section-head">
