@@ -45,7 +45,7 @@
         </header>
 
         <div class="ab-list">
-          <div v-for="agent in group.agents" :key="agent.id" class="ab-row">
+          <button v-for="agent in group.agents" :key="agent.id" type="button" class="ab-row" @click="openAgent(agent)">
             <div class="ab-avatar">
               <img
                 v-if="agent.photo && !agent._photoError"
@@ -60,27 +60,103 @@
               <span v-if="agent.structure">{{ agent.structure }}</span>
             </div>
             <div class="ab-contact">
-              <a v-if="agent.telephone_professionnel" :href="`tel:${agent.telephone_professionnel}`">
+              <a v-if="agent.telephone_professionnel" :href="`tel:${agent.telephone_professionnel}`" @click.stop>
                 <i class="fas fa-phone"></i><b>Pro</b>{{ agent.telephone_professionnel }}
               </a>
               <span v-else><i class="fas fa-phone-slash"></i><b>Pro</b>N/A</span>
-              <a v-if="agent.telephone_prive" :href="`tel:${agent.telephone_prive}`">
+              <a v-if="agent.telephone_prive" :href="`tel:${agent.telephone_prive}`" @click.stop>
                 <i class="fas fa-mobile-alt"></i><b>Privé</b>{{ agent.telephone_prive }}
               </a>
               <span v-else><i class="fas fa-mobile-alt"></i><b>Privé</b>N/A</span>
-              <a v-if="agent.email_professionnel" :href="`mailto:${agent.email_professionnel}`">
+              <a v-if="agent.email_professionnel" :href="`mailto:${agent.email_professionnel}`" @click.stop>
                 <i class="fas fa-envelope"></i><b>Pro</b>{{ agent.email_professionnel }}
               </a>
               <span v-else><i class="fas fa-envelope"></i><b>Pro</b>N/A</span>
-              <a v-if="agent.email_prive" :href="`mailto:${agent.email_prive}`">
+              <a v-if="agent.email_prive" :href="`mailto:${agent.email_prive}`" @click.stop>
                 <i class="fas fa-at"></i><b>Privé</b>{{ agent.email_prive }}
               </a>
               <span v-else><i class="fas fa-at"></i><b>Privé</b>N/A</span>
             </div>
-          </div>
+          </button>
         </div>
       </article>
     </section>
+
+    <teleport to="body">
+      <div v-if="selectedAgent" class="ab-modal-overlay" @click.self="closeAgent">
+        <section class="ab-modal" role="dialog" aria-modal="true" aria-label="Fiche contact agent">
+          <button type="button" class="ab-modal-close" title="Fermer" @click="closeAgent">
+            <i class="fas fa-times"></i>
+          </button>
+
+          <div class="ab-modal-hero">
+            <div class="ab-modal-avatar">
+              <img
+                v-if="selectedAgent.photo && !selectedAgent._modalPhotoError"
+                :src="photoUrl(selectedAgent.photo)"
+                :alt="selectedAgent.nom_complet"
+                @error="selectedAgent._modalPhotoError = true"
+              >
+              <span v-else>{{ initials(selectedAgent) }}</span>
+            </div>
+            <div>
+              <p class="ab-modal-kicker">Contact PNMLS</p>
+              <h2>{{ selectedAgent.nom_complet }}</h2>
+              <span>{{ selectedAgent.poste }}</span>
+            </div>
+          </div>
+
+          <div class="ab-modal-meta">
+            <span v-if="selectedAgent.structure"><i class="fas fa-building"></i>{{ selectedAgent.structure }}</span>
+            <span><i class="fas fa-id-badge"></i>{{ selectedAgent.poste || 'Poste non renseigné' }}</span>
+          </div>
+
+          <div class="ab-modal-grid">
+            <article class="ab-modal-info">
+              <i class="fas fa-phone"></i>
+              <div>
+                <small>Téléphone pro</small>
+                <a v-if="selectedAgent.telephone_professionnel" :href="`tel:${selectedAgent.telephone_professionnel}`">{{ selectedAgent.telephone_professionnel }}</a>
+                <strong v-else>N/A</strong>
+              </div>
+            </article>
+            <article class="ab-modal-info">
+              <i class="fas fa-mobile-alt"></i>
+              <div>
+                <small>Téléphone privé</small>
+                <a v-if="selectedAgent.telephone_prive" :href="`tel:${selectedAgent.telephone_prive}`">{{ selectedAgent.telephone_prive }}</a>
+                <strong v-else>N/A</strong>
+              </div>
+            </article>
+            <article class="ab-modal-info">
+              <i class="fas fa-envelope"></i>
+              <div>
+                <small>Email pro</small>
+                <a v-if="selectedAgent.email_professionnel" :href="`mailto:${selectedAgent.email_professionnel}`">{{ selectedAgent.email_professionnel }}</a>
+                <strong v-else>N/A</strong>
+              </div>
+            </article>
+            <article class="ab-modal-info">
+              <i class="fas fa-at"></i>
+              <div>
+                <small>Email privé</small>
+                <a v-if="selectedAgent.email_prive" :href="`mailto:${selectedAgent.email_prive}`">{{ selectedAgent.email_prive }}</a>
+                <strong v-else>N/A</strong>
+              </div>
+            </article>
+          </div>
+
+          <div class="ab-modal-actions">
+            <a v-if="selectedAgent.telephone_professionnel || selectedAgent.telephone_prive" :href="`tel:${selectedAgent.telephone_professionnel || selectedAgent.telephone_prive}`">
+              <i class="fas fa-phone"></i>Appeler
+            </a>
+            <a v-if="selectedAgent.email_professionnel || selectedAgent.email_prive" :href="`mailto:${selectedAgent.email_professionnel || selectedAgent.email_prive}`">
+              <i class="fas fa-paper-plane"></i>Écrire
+            </a>
+          </div>
+        </section>
+      </div>
+    </teleport>
   </div>
 </template>
 
@@ -92,6 +168,7 @@ const loading = ref(true)
 const error = ref('')
 const search = ref('')
 const payload = ref({ groups: [], total: 0 })
+const selectedAgent = ref(null)
 let searchTimer = null
 
 const groups = computed(() => payload.value.groups || [])
@@ -125,6 +202,14 @@ function photoUrl(photo) {
     return `/uploads/profiles/${normalized}`
   }
   return `/${normalized}`
+}
+
+function openAgent(agent) {
+  selectedAgent.value = agent
+}
+
+function closeAgent() {
+  selectedAgent.value = null
 }
 
 watch(search, () => {
@@ -196,8 +281,11 @@ onMounted(load)
   display: grid; grid-template-columns: 42px minmax(0, 1fr) minmax(280px, auto);
   align-items: center; gap: .75rem; padding: .8rem 1rem; border-bottom: 1px solid rgba(241, 245, 249, .78);
   background: linear-gradient(90deg, rgba(255,255,255,.28), rgba(255,255,255,.08));
+  width: 100%; border-left: 0; border-right: 0; border-top: 0; text-align: left; cursor: pointer;
+  font: inherit; color: inherit;
 }
-.ab-row:hover { background: rgba(240, 249, 255, .52); }
+.ab-row:hover { background: rgba(240, 249, 255, .52); transform: translateY(-1px); }
+.ab-row:focus-visible { outline: 3px solid rgba(14,165,233,.26); outline-offset: -3px; }
 .ab-row:last-child { border-bottom: 0; }
 .ab-avatar {
   width: 42px; height: 42px; border-radius: 50%; background: #dbeafe; color: #1d4ed8;
@@ -214,10 +302,74 @@ onMounted(load)
 }
 .ab-contact b { color: #64748b; font-size: .68rem; text-transform: uppercase; }
 .ab-contact a:hover { color: #0ea5e9; }
+.ab-modal-overlay {
+  position: fixed; inset: 0; z-index: 10000; display: flex; align-items: center; justify-content: center;
+  padding: 1rem; background: rgba(15, 23, 42, .42); backdrop-filter: blur(18px) saturate(155%);
+  -webkit-backdrop-filter: blur(18px) saturate(155%);
+}
+.ab-modal {
+  width: min(620px, 100%); max-height: 90vh; overflow: auto; position: relative;
+  border: 1px solid rgba(255,255,255,.58); border-radius: 8px; padding: 1.15rem;
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.76), rgba(255,255,255,.46)),
+    radial-gradient(circle at 12% 0%, rgba(14,165,233,.18), transparent 38%);
+  box-shadow: 0 34px 90px rgba(15, 23, 42, .28), inset 0 1px 0 rgba(255,255,255,.80);
+  backdrop-filter: blur(26px) saturate(170%); -webkit-backdrop-filter: blur(26px) saturate(170%);
+}
+.ab-modal-close {
+  position: absolute; top: .75rem; right: .75rem; width: 38px; height: 38px; border: 1px solid rgba(255,255,255,.62);
+  border-radius: 8px; background: rgba(255,255,255,.56); color: #64748b; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.78); backdrop-filter: blur(12px) saturate(145%);
+}
+.ab-modal-close:hover { color: #dc2626; background: rgba(254,226,226,.72); }
+.ab-modal-hero {
+  display: grid; grid-template-columns: 86px minmax(0, 1fr); gap: 1rem; align-items: center; padding-right: 2.4rem;
+}
+.ab-modal-avatar {
+  width: 86px; height: 86px; border-radius: 50%; overflow: hidden; background: #dbeafe; color: #1d4ed8;
+  display: grid; place-items: center; font-size: 1.25rem; font-weight: 900; border: 4px solid rgba(255,255,255,.76);
+  box-shadow: 0 18px 36px rgba(15,35,58,.18), inset 0 1px 0 rgba(255,255,255,.72);
+}
+.ab-modal-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.ab-modal-kicker { margin: 0 0 .2rem; color: #0ea5e9; font-size: .72rem; font-weight: 900; text-transform: uppercase; }
+.ab-modal h2 { margin: 0; color: #0f172a; font-size: 1.35rem; font-weight: 900; overflow-wrap: anywhere; }
+.ab-modal-hero span { display: block; margin-top: .25rem; color: #0f766e; font-size: .9rem; font-weight: 800; overflow-wrap: anywhere; }
+.ab-modal-meta { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+.ab-modal-meta span {
+  display: inline-flex; align-items: center; gap: .4rem; padding: .42rem .65rem; border-radius: 8px;
+  color: #334155; background: rgba(255,255,255,.54); border: 1px solid rgba(255,255,255,.62);
+  font-size: .78rem; font-weight: 800; box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+}
+.ab-modal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .7rem; }
+.ab-modal-info {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: .65rem; align-items: flex-start;
+  padding: .8rem; border-radius: 8px; background: rgba(255,255,255,.56); border: 1px solid rgba(255,255,255,.64);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72); backdrop-filter: blur(12px) saturate(145%);
+  -webkit-backdrop-filter: blur(12px) saturate(145%);
+}
+.ab-modal-info > i {
+  width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center;
+  color: #0369a1; background: rgba(224,242,254,.78);
+}
+.ab-modal-info small { display: block; color: #64748b; font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.ab-modal-info a, .ab-modal-info strong { color: #0f172a; font-size: .9rem; font-weight: 850; text-decoration: none; overflow-wrap: anywhere; }
+.ab-modal-info a:hover { color: #0ea5e9; }
+.ab-modal-actions { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: 1rem; }
+.ab-modal-actions a {
+  display: inline-flex; align-items: center; justify-content: center; gap: .45rem; min-height: 42px; padding: 0 .95rem;
+  border-radius: 8px; color: #fff; text-decoration: none; font-weight: 900;
+  background: linear-gradient(135deg, rgba(0,119,181,.96), rgba(15,118,110,.92));
+  box-shadow: 0 12px 26px rgba(0,119,181,.22), inset 0 1px 0 rgba(255,255,255,.28);
+}
 @media (max-width: 720px) {
   .ab-head { align-items: flex-start; flex-direction: column; }
   .ab-toolbar { align-items: stretch; }
   .ab-row { grid-template-columns: 38px minmax(0, 1fr); align-items: flex-start; }
   .ab-contact { grid-column: 2; }
+  .ab-modal { padding: 1rem; }
+  .ab-modal-hero { grid-template-columns: 72px minmax(0, 1fr); }
+  .ab-modal-avatar { width: 72px; height: 72px; }
+  .ab-modal-grid { grid-template-columns: 1fr; }
+  .ab-modal-actions a { width: 100%; }
 }
 </style>
