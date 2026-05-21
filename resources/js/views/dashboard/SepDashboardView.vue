@@ -690,7 +690,7 @@
                     <div class="sep-agent-avatar">{{ (ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '') }}</div>
                     <div>
                       <div class="sep-dept-cell-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                      <div class="sep-dept-cell-code">{{ ag.dept_code }}</div>
+                      <div class="sep-dept-cell-code">{{ agentPosteLabel(ag) || ag.dept_code }}</div>
                     </div>
                   </div>
                 </td>
