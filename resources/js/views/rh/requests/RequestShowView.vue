@@ -38,7 +38,7 @@
               <div>
                 <div class="info-label">Agent</div>
                 <div class="info-value">{{ demande.agent?.prenom }} {{ demande.agent?.nom }}</div>
-                <div class="info-sub">{{ demande.agent?.id_agent }} · {{ demande.agent?.poste_actuel }}</div>
+                <div class="info-sub">{{ demande.agent?.matricule_etat || 'N/A' }} · {{ demande.agent?.poste_actuel }}</div>
               </div>
             </div>
             <div class="dash-panel info-card">

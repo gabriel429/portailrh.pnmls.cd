@@ -548,7 +548,7 @@ class AgentController extends ApiController
             . '<style>body{font-family:Arial,sans-serif;color:#1f2937;margin:32px}h1,h2{margin:0}h1{font-size:26px;color:#075985}.letterhead{display:flex;align-items:center;gap:14px;border-bottom:1px solid #dbeafe;padding-bottom:14px;margin-bottom:18px}.letterhead img{width:74px;height:74px;object-fit:contain}.letterhead small{display:block;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-size:11px;font-weight:700}.letterhead strong{display:block;color:#075985;font-size:18px;margin-top:4px}.brand-fallback{width:74px;height:74px;border-radius:12px;background:#075985;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}.sub{color:#64748b;margin-top:6px}.hero{border-bottom:4px solid #0ea5e9;padding-bottom:18px;margin-bottom:24px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.section{margin-top:24px}.section h2{font-size:16px;color:#0369a1;margin-bottom:10px}.info{border:1px solid #e5e7eb;border-radius:8px;padding:10px 12px}.info span{display:block;color:#64748b;font-size:12px;margin-bottom:4px}.info strong{font-size:14px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #e5e7eb;padding:9px;text-align:left;font-size:13px}th{background:#f1f5f9;color:#334155}.muted{color:#64748b}.signature{display:flex;justify-content:flex-end;margin-top:46px;break-inside:avoid}.signature-box{width:300px;text-align:center}.signature-title{font-size:13px;color:#334155;font-weight:700}.signature-line{border-top:1px solid #111827;margin:52px 0 10px}.signature-name{font-size:15px;color:#111827;font-weight:800;text-transform:uppercase}.signature-note{font-size:12px;color:#64748b;margin-top:4px}.footer{margin-top:28px;color:#64748b;font-size:12px}</style>'
             . '</head><body>'
             . '<div class="letterhead">' . $logoHtml . '<div><small>Programme National Multisectoriel de Lutte contre le Sida</small><strong>Fiche complete de l agent</strong></div></div>'
-            . '<div class="hero"><h1>' . e($agent->nom_complet) . '</h1><div class="sub">' . e($agent->id_agent) . ' - ' . e($agent->fonction ?? $agent->poste_actuel ?? 'Fonction non renseignée') . '</div></div>'
+            . '<div class="hero"><h1>' . e($agent->nom_complet) . '</h1><div class="sub">' . e($agent->matricule_etat ?? 'N/A') . ' - ' . e($agent->fonction ?? $agent->poste_actuel ?? 'Fonction non renseignée') . '</div></div>'
             . '<div class="section"><h2>Informations essentielles</h2><div class="grid">' . $rows([
                 ['Matricule Etat', $agent->matricule_etat],
                 ['Statut', $agent->statut],
@@ -832,7 +832,7 @@ class AgentController extends ApiController
             fwrite($file, "\xEF\xBB\xBF");
 
             fputcsv($file, [
-                'ID Agent', 'Matricule Etat', 'Nom', 'Postnom', 'Prenom', 'Sexe',
+                'Matricule Etat', 'Nom', 'Postnom', 'Prenom', 'Sexe',
                 'Annee naissance', 'Lieu naissance', 'Etat civil', 'Enfants',
                 'Téléphone principal', 'Téléphone professionnel', 'Téléphone privé', 'Email prive', 'Email institutionnel',
                 'Organe', 'Fonction', 'Poste actuel', 'Département', 'Province',
@@ -846,8 +846,7 @@ class AgentController extends ApiController
                     : '';
 
                 fputcsv($file, [
-                    $agent->id_agent,
-                    $agent->matricule_etat ?? '',
+                    $agent->matricule_etat ?? 'N/A',
                     $agent->nom,
                     $agent->postnom ?? '',
                     $agent->prenom,

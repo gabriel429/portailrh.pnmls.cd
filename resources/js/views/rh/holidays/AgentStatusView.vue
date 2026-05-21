@@ -85,7 +85,7 @@
                   </div>
                 </td>
                 <td>
-                  <span class="ast-badge-id">{{ agent.id_agent || '-' }}</span>
+                  <span class="ast-badge-id">{{ agent.matricule_etat || 'N/A' }}</span>
                 </td>
                 <td>
                   <span v-if="agent.organe" class="ast-badge-organe">
@@ -183,7 +183,7 @@ onMounted(async () => {
         agent_id: s.agent_id,
         nom: s.agent?.nom,
         prenom: s.agent?.prenom,
-        id_agent: s.agent?.id_agent,
+        matricule_etat: s.agent?.matricule_etat,
         organe: s.agent?.organe,
         poste: s.agent?.poste_actuel,
         sexe: s.agent?.sexe,

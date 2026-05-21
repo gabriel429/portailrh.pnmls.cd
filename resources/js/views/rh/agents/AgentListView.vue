@@ -361,7 +361,7 @@
                 <div>
                   <h4 class="asm-name">{{ selectedAgent.prenom }} {{ selectedAgent.nom }}</h4>
                   <div class="asm-badges">
-                    <span class="asm-badge asm-badge-id">{{ selectedAgent.id_agent }}</span>
+                    <span class="asm-badge asm-badge-id">{{ selectedAgent.matricule_etat || 'N/A' }}</span>
                     <span v-if="selectedAgent.organe" class="asm-badge asm-badge-organe">{{ selectedAgent.organe }}</span>
                     <span v-if="selectedAgent.statut === 'actif'" class="asm-badge asm-badge-ok">Actif</span>
                     <span v-else-if="selectedAgent.statut === 'suspendu'" class="asm-badge asm-badge-warn">Suspendu</span>
@@ -988,7 +988,7 @@ td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
         <h1>${a.prenom} ${a.postnom || ''} ${a.nom}</h1>
         <div>${a.fonction || ''}</div>
         <div class="badges" style="margin-top:4px;">
-            <span class="badge-id">${a.id_agent}</span>
+            <span class="badge-id">${a.matricule_etat || 'N/A'}</span>
             ${a.organe ? `<span class="badge-organe">${a.organe}</span>` : ''}
             <span class="${a.statut === 'actif' ? 'badge-actif' : 'badge-suspendu'}">${capitalize(a.statut || '')}</span>
         </div>

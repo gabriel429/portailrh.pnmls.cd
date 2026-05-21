@@ -191,7 +191,7 @@ class RhDashboardController extends ApiController
         foreach ($statusTypes as $statut) {
             $agents = $this->scopeByAgent(AgentStatus::actuel(), $provinceId)
                 ->byStatut($statut)
-                ->with(['agent:id,nom,prenom,id_agent,organe,sexe,poste_actuel'])
+                ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
                 ->orderBy('date_debut', 'desc')
                 ->get()
                 ->map(fn($s) => [
@@ -200,6 +200,7 @@ class RhDashboardController extends ApiController
                     'nom' => $s->agent?->nom,
                     'prenom' => $s->agent?->prenom,
                     'id_agent' => $s->agent?->id_agent,
+                    'matricule_etat' => $s->agent?->matricule_etat,
                     'organe' => $s->agent?->organe,
                     'poste' => $s->agent?->poste_actuel,
                     'sexe' => $s->agent?->sexe,

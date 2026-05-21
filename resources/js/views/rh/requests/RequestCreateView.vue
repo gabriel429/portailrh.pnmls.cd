@@ -29,7 +29,7 @@
                 <div class="agent-avatar">{{ initials(currentAgent) }}</div>
                 <div class="flex-grow-1">
                   <div class="fw-semibold">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
-                  <div class="text-muted small">Matricule: {{ currentAgent.id_agent }}</div>
+                  <div class="text-muted small">Matricule: {{ currentAgent.matricule_etat || 'N/A' }}</div>
                 </div>
                 <div class="agent-status">
                   <i class="fas fa-check-circle text-success me-1"></i>
@@ -47,7 +47,7 @@
               <select v-model="form.agent_id" class="form-select" :class="{ 'is-invalid': errors.agent_id }">
                 <option value="">-- Choisir un agent pour cette demande --</option>
                 <option v-for="a in agents" :key="a.id" :value="a.id">
-                  {{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})
+                  {{ a.prenom }} {{ a.nom }} ({{ a.matricule_etat || 'N/A' }})
                 </option>
               </select>
               <div v-if="errors.agent_id" class="invalid-feedback d-block">{{ errors.agent_id[0] }}</div>

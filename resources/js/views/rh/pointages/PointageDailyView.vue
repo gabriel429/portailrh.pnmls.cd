@@ -47,7 +47,7 @@
             <select name="agent_id" id="agent_id" class="form-select" v-model="filters.agent_id">
               <option value="">Tous les agents</option>
               <option v-for="agent in agentsList" :key="agent.id" :value="agent.id">
-                {{ agent.prenom }} {{ agent.nom }} ({{ agent.id_agent }})
+                {{ agent.prenom }} {{ agent.nom }} ({{ agent.matricule_etat || 'N/A' }})
               </option>
             </select>
           </div>
@@ -98,7 +98,7 @@
                 <tbody>
                   <tr v-for="pointage in day.pointages" :key="pointage.id">
                     <td><strong>{{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</strong></td>
-                    <td>{{ pointage.agent?.id_agent }}</td>
+                    <td>{{ pointage.agent?.matricule_etat || 'N/A' }}</td>
                     <td>{{ pointage.heure_entree ? formatTime(pointage.heure_entree) : '-' }}</td>
                     <td>{{ pointage.heure_sortie ? formatTime(pointage.heure_sortie) : '-' }}</td>
                     <td>{{ pointage.heures_travaillees ? pointage.heures_travaillees + 'h' : '-' }}</td>

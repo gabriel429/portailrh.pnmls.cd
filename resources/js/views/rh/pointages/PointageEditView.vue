@@ -38,7 +38,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label">Matricule</label>
-              <input type="text" class="form-control" :value="pointage.agent?.id_agent" disabled>
+              <input type="text" class="form-control" :value="pointage.agent?.matricule_etat || 'N/A'" disabled>
             </div>
             <div class="col-md-6">
               <label class="form-label">Date pointage</label>

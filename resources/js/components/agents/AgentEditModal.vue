@@ -81,8 +81,8 @@
                 </div>
                 <div class="row g-3">
                   <div class="col-md-6">
-                    <label class="form-label fw-medium">ID Agent</label>
-                    <p class="form-control-plaintext fw-bold text-primary">{{ agent.id_agent }}</p>
+                    <label class="form-label fw-medium">Matricule Etat</label>
+                    <p class="form-control-plaintext fw-bold text-primary">{{ agent.matricule_etat || 'N/A' }}</p>
                   </div>
                   <div class="col-md-4">
                     <label for="ed_nom" class="form-label">Nom <span class="text-danger">*</span></label>

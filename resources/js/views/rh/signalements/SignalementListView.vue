@@ -75,7 +75,7 @@
                   </template>
                   <template v-else>
                     <strong>{{ s.agent?.prenom }} {{ s.agent?.nom }}</strong><br>
-                    <small class="text-muted">{{ s.agent?.id_agent }}</small>
+                    <small class="text-muted">{{ s.agent?.matricule_etat || 'N/A' }}</small>
                   </template>
                 </td>
                 <td>{{ capitalize(s.type) }}</td>
@@ -193,7 +193,7 @@
                 <div class="scm-agent-info">
                   <i class="fas fa-user-circle me-1"></i>
                   {{ auth.agent?.prenom }} {{ auth.agent?.nom }}
-                  <small class="text-muted ms-1">({{ auth.agent?.id_agent }})</small>
+                  <small class="text-muted ms-1">({{ auth.agent?.matricule_etat || 'N/A' }})</small>
                 </div>
               </div>
               <div class="scm-field">

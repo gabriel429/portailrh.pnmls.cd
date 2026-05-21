@@ -17,7 +17,7 @@
               <select v-model="form.agent_id" class="form-select form-select-sm" :class="{ 'is-invalid': errors.agent_id }">
                 <option value="">-- Choisir un agent --</option>
                 <option v-for="a in agents" :key="a.id" :value="a.id">
-                  {{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})
+                  {{ a.prenom }} {{ a.nom }} ({{ a.matricule_etat || 'N/A' }})
                 </option>
               </select>
               <div v-if="errors.agent_id" class="invalid-feedback d-block">{{ errors.agent_id[0] }}</div>
@@ -28,7 +28,7 @@
               <div class="agent-avatar">{{ initials(currentAgent) }}</div>
               <div class="flex-grow-1">
                 <div class="fw-semibold small">{{ currentAgent.prenom }} {{ currentAgent.nom }}</div>
-                <div class="text-muted" style="font-size:.72rem;">{{ currentAgent.id_agent }}</div>
+                <div class="text-muted" style="font-size:.72rem;">{{ currentAgent.matricule_etat || 'N/A' }}</div>
               </div>
             </div>
 
@@ -77,7 +77,7 @@
                       :class="{ 'is-invalid': errors.interim_assure_par }">
                 <option value="">-- Aucun intérimaire --</option>
                 <option v-for="a in agentsInterimaires" :key="a.id" :value="a.id">
-                  {{ a.prenom }} {{ a.nom }} ({{ a.id_agent }})
+                  {{ a.prenom }} {{ a.nom }} ({{ a.matricule_etat || 'N/A' }})
                 </option>
               </select>
               <div v-if="errors.interim_assure_par" class="invalid-feedback d-block">{{ errors.interim_assure_par[0] }}</div>

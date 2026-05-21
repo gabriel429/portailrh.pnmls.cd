@@ -90,7 +90,7 @@
               <tbody>
                 <tr v-for="pointage in pointages" :key="pointage.id">
                   <td><strong>{{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</strong></td>
-                  <td>{{ pointage.agent?.id_agent }}</td>
+                  <td>{{ pointage.agent?.matricule_etat || 'N/A' }}</td>
                   <td>{{ formatDate(pointage.date_pointage) }}</td>
                   <td>
                     <span v-if="pointage.heure_entree" class="status-chip st-ok">{{ formatTime(pointage.heure_entree) }}</span>

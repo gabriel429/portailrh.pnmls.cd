@@ -177,8 +177,8 @@
                   <div class="as-agent-info">
                     <div class="as-agent-name">{{ agent.prenom }} {{ agent.nom }}</div>
                     <div class="as-agent-meta">
-                      <span v-if="agent.id_agent" class="as-agent-tag">
-                        <i class="fas fa-id-badge me-1"></i>{{ agent.id_agent }}
+                      <span class="as-agent-tag">
+                        <i class="fas fa-id-badge me-1"></i>{{ agent.matricule_etat || 'N/A' }}
                       </span>
                       <span v-if="agent.organe" class="as-agent-tag">
                         <i class="fas fa-building me-1"></i>{{ agent.organe }}

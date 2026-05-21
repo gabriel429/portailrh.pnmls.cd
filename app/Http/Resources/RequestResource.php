@@ -27,6 +27,7 @@ class RequestResource extends JsonResource
             'agent' => $this->whenLoaded('agent', fn () => [
                 'id' => $this->agent->id,
                 'id_agent' => $this->agent->id_agent,
+                'matricule_etat' => $this->agent->matricule_etat,
                 'nom' => $this->agent->nom,
                 'prenom' => $this->agent->prenom,
                 'nom_complet' => $this->agent->nom_complet,

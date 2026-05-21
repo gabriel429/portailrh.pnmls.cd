@@ -158,6 +158,7 @@ class SignalementController extends ApiController
                 'nom' => $a->nom,
                 'prenom' => $a->prenom,
                 'id_agent' => $a->id_agent,
+                'matricule_etat' => $a->matricule_etat,
             ]);
 
         return $this->success($agents);

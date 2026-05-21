@@ -48,7 +48,7 @@
             <select v-model="form.agent_id" class="form-select" id="agent_id" required>
               <option value="">Sélectionner un agent</option>
               <option v-for="ag in agents" :key="ag.id" :value="ag.id">
-                ({{ ag.id_agent }}) {{ ag.prenom }} {{ ag.nom }}
+                ({{ ag.matricule_etat || 'N/A' }}) {{ ag.prenom }} {{ ag.nom }}
               </option>
             </select>
           </div>

@@ -41,7 +41,7 @@
               <div class="info-card">
                 <div class="info-label"><i class="fas fa-user me-1"></i> Agent</div>
                 <div class="info-value">{{ demande.agent?.prenom }} {{ demande.agent?.nom }}</div>
-                <div class="info-sub">{{ demande.agent?.id_agent }}</div>
+                <div class="info-sub">{{ demande.agent?.matricule_etat || 'N/A' }}</div>
               </div>
               <div class="info-card">
                 <div class="info-label"><i class="fas fa-tag me-1"></i> Type</div>

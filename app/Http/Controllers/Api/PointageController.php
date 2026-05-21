@@ -293,7 +293,7 @@ class PointageController extends ApiController
         $agentsQuery = Agent::actifs()->orderBy('nom');
         $scope->applyAgentScope($agentsQuery, $request->user());
 
-        $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom'])
+        $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'matricule_etat'])
             ->map(fn($a) => array_merge($a->toArray(), ['id_agent' => $a->id_agent]));
 
         return $this->success([
@@ -604,7 +604,7 @@ class PointageController extends ApiController
                     $rows[] = [
                         $pointage->date_pointage->format('d/m/Y'),
                         $pointage->agent->prenom . ' ' . $pointage->agent->nom,
-                        $pointage->agent->id_agent ?? $pointage->agent->id,
+                        $pointage->agent->matricule_etat ?? 'N/A',
                         $pointage->heure_entree ?? '-',
                         $pointage->heure_sortie ?? '-',
                         $pointage->heures_travaillees ?? 0,
@@ -705,7 +705,7 @@ class PointageController extends ApiController
             foreach ($agentStats as $stat) {
                 $rows[] = [
                     $stat['agent']->prenom . ' ' . $stat['agent']->nom,
-                    $stat['agent']->id_agent ?? $stat['agent']->id,
+                    $stat['agent']->matricule_etat ?? 'N/A',
                     $stat['working_days'],
                     $stat['recorded'],
                     $stat['present'],

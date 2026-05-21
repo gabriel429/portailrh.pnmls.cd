@@ -548,7 +548,7 @@ class ExecutiveDashboardController extends ApiController
         foreach ($statusTypes as $statut) {
             $agents = AgentStatus::actuel()
                 ->byStatut($statut)
-                ->with(['agent:id,nom,prenom,id_agent,organe,sexe,poste_actuel'])
+                ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
                 ->orderBy('date_debut', 'desc')
                 ->limit(10)
                 ->get()
@@ -558,6 +558,7 @@ class ExecutiveDashboardController extends ApiController
                     'nom' => $s->agent?->nom,
                     'prenom' => $s->agent?->prenom,
                     'id_agent' => $s->agent?->id_agent,
+                    'matricule_etat' => $s->agent?->matricule_etat,
                     'organe' => $s->agent?->organe,
                     'poste' => $s->agent?->poste_actuel,
                     'sexe' => $s->agent?->sexe,

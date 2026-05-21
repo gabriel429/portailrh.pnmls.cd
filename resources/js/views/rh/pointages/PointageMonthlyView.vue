@@ -183,7 +183,7 @@
                       </div>
                     </div>
                   </td>
-                  <td><code class="pm-matricule">{{ stat.agent?.id_agent }}</code></td>
+                  <td><code class="pm-matricule">{{ stat.agent?.matricule_etat || 'N/A' }}</code></td>
                   <td>
                     <span class="pm-organe-tag" :style="{ '--tag-color': organeColor(stat.agent?.organe) }">
                       {{ organeShort(stat.agent?.organe) }}
