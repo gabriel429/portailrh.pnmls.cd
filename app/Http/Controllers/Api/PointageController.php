@@ -7,6 +7,9 @@ use App\Models\Pointage;
 use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Province;
+use App\Models\Holiday;
+use App\Models\AgentStatus;
+use App\Models\Request as RequestModel;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -121,6 +124,16 @@ class PointageController extends ApiController
                 continue;
             }
 
+            $justifiedAbsence = $this->justifiedAbsenceFor((int) $row['agent_id'], $date);
+            if ($justifiedAbsence !== null) {
+                return response()->json([
+                    'message' => "Pointage bloqué : {$agent->prenom} {$agent->nom} est en absence justifiée ({$justifiedAbsence['label']}).",
+                    'errors' => [
+                        'pointages' => ["{$agent->prenom} {$agent->nom} est en absence justifiée ({$justifiedAbsence['label']}) pour cette date."],
+                    ],
+                ], 422);
+            }
+
             $existing = Pointage::where('agent_id', $row['agent_id'])
                 ->where('date_pointage', $date)
                 ->first();
@@ -206,6 +219,16 @@ class PointageController extends ApiController
             'heures_travaillees' => 'nullable|numeric',
             'observations' => 'nullable|string',
         ]);
+
+        if ((!empty($validated['heure_entree']) || !empty($validated['heure_sortie']))
+            && ($justifiedAbsence = $this->justifiedAbsenceFor((int) $pointage->agent_id, $pointage->date_pointage))) {
+            return response()->json([
+                'message' => "Pointage bloqué : cet agent est en absence justifiée ({$justifiedAbsence['label']}).",
+                'errors' => [
+                    'heure_entree' => ["Impossible d'enregistrer une heure pendant une absence justifiée."],
+                ],
+            ], 422);
+        }
 
         // Auto-calculate hours if both times are provided
         if (!empty($validated['heure_entree']) && !empty($validated['heure_sortie'])) {
@@ -524,13 +547,18 @@ class PointageController extends ApiController
                 $pointages = Pointage::where('date_pointage', $date)
                     ->whereIn('agent_id', $agents->pluck('id'))
                     ->get()->keyBy('agent_id');
-                $agents->each(function ($agent) use ($pointages) {
+                $absenceMap = $this->justifiedAbsencesForAgents($agents->pluck('id')->all(), $date);
+                $agents->each(function ($agent) use ($pointages, $absenceMap) {
                     $p = $pointages->get($agent->id);
                     $agent->pointage_existant = $p ? [
                         'heure_entree' => $p->heure_entree ? \Carbon\Carbon::parse($p->heure_entree)->format('H:i') : null,
                         'heure_sortie' => $p->heure_sortie ? \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') : null,
                         'observations' => $p->observations,
                     ] : null;
+                    $absence = $absenceMap[$agent->id] ?? null;
+                    $agent->absence_justifiee = $absence !== null;
+                    $agent->absence_justifiee_label = $absence['label'] ?? null;
+                    $agent->absence_justifiee_type = $absence['type'] ?? null;
                 });
             }
             return $this->success($agents, [], ['agents' => $agents]);
@@ -551,13 +579,18 @@ class PointageController extends ApiController
                 ->get()
                 ->keyBy('agent_id');
 
-            $agents->each(function ($agent) use ($pointages) {
+            $absenceMap = $this->justifiedAbsencesForAgents($agents->pluck('id')->all(), $date);
+            $agents->each(function ($agent) use ($pointages, $absenceMap) {
                 $p = $pointages->get($agent->id);
                 $agent->pointage_existant = $p ? [
                     'heure_entree' => $p->heure_entree ? Carbon::parse($p->heure_entree)->format('H:i') : null,
                     'heure_sortie' => $p->heure_sortie ? Carbon::parse($p->heure_sortie)->format('H:i') : null,
                     'observations' => $p->observations,
                 ] : null;
+                $absence = $absenceMap[$agent->id] ?? null;
+                $agent->absence_justifiee = $absence !== null;
+                $agent->absence_justifiee_label = $absence['label'] ?? null;
+                $agent->absence_justifiee_type = $absence['type'] ?? null;
             });
         }
 
@@ -873,5 +906,72 @@ class PointageController extends ApiController
             $index = intval($index / 26);
         }
         return $letter;
+    }
+
+    private function justifiedAbsenceFor(int $agentId, string|\DateTimeInterface $date): ?array
+    {
+        return $this->justifiedAbsencesForAgents([$agentId], $date)[$agentId] ?? null;
+    }
+
+    private function justifiedAbsencesForAgents(array $agentIds, string|\DateTimeInterface $date): array
+    {
+        $agentIds = array_values(array_unique(array_filter(array_map('intval', $agentIds))));
+        if ($agentIds === []) {
+            return [];
+        }
+
+        $day = Carbon::parse($date)->toDateString();
+        $absences = [];
+
+        Holiday::query()
+            ->whereIn('agent_id', $agentIds)
+            ->where('statut_demande', 'approuve')
+            ->whereDate('date_debut', '<=', $day)
+            ->whereDate('date_fin', '>=', $day)
+            ->get(['agent_id', 'type_conge'])
+            ->each(function (Holiday $holiday) use (&$absences) {
+                $absences[$holiday->agent_id] = [
+                    'type' => 'holiday',
+                    'label' => $holiday->getTypeCongeLabel() ?: 'Congé approuvé',
+                ];
+            });
+
+        AgentStatus::query()
+            ->whereIn('agent_id', $agentIds)
+            ->where('statut', 'en_conge')
+            ->whereDate('date_debut', '<=', $day)
+            ->where(function ($query) use ($day) {
+                $query->whereNull('date_fin')->orWhereDate('date_fin', '>=', $day);
+            })
+            ->get(['agent_id', 'statut'])
+            ->each(function (AgentStatus $status) use (&$absences) {
+                $absences[$status->agent_id] ??= [
+                    'type' => 'agent_status',
+                    'label' => 'Congé actif',
+                ];
+            });
+
+        RequestModel::query()
+            ->whereIn('agent_id', $agentIds)
+            ->whereIn('type', ['absence', 'conge', 'permission'])
+            ->where('statut', 'approuvé')
+            ->whereDate('date_debut', '<=', $day)
+            ->where(function ($query) use ($day) {
+                $query->whereNull('date_fin')->orWhereDate('date_fin', '>=', $day);
+            })
+            ->get(['agent_id', 'type'])
+            ->each(function (RequestModel $request) use (&$absences) {
+                $label = match ($request->type) {
+                    'conge' => 'Demande de congé approuvée',
+                    'permission' => 'Permission approuvée',
+                    default => 'Demande d’absence approuvée',
+                };
+                $absences[$request->agent_id] ??= [
+                    'type' => 'request',
+                    'label' => $label,
+                ];
+            });
+
+        return $absences;
     }
 }

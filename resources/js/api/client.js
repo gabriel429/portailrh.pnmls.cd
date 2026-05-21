@@ -253,7 +253,15 @@ client.createPointage = async (pointageData) => {
         }
     }
 
-    return await client.post('/pointages', pointageData)
+    return await client.post('/pointages', {
+        date_pointage: pointageData.date_pointage,
+        pointages: [{
+            agent_id: pointageData.agent_id,
+            heure_entree: pointageData.heure_arrivee || pointageData.heure_entree || null,
+            heure_sortie: pointageData.heure_depart || pointageData.heure_sortie || null,
+            observations: pointageData.commentaire || pointageData.observations || null,
+        }],
+    })
 }
 
 /**

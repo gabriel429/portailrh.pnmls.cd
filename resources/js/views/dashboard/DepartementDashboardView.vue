@@ -93,6 +93,15 @@
     </div>
 
     <template v-else>
+      <Transition name="dept-online-toast">
+        <div v-if="onlineToast" class="dept-online-toast">
+          <span class="dept-online-dot pulse"></span>
+          <div>
+            <strong>{{ onlineToast.prenom }} {{ onlineToast.nom }}</strong>
+            <span>L’agent est actuellement connecté.</span>
+          </div>
+        </div>
+      </Transition>
 
       <!-- ════════ ACTIONS RAPIDES ════════ -->
       <div class="dept-section">
@@ -157,7 +166,7 @@
       </div>
 
       <!-- ════════ MES TÂCHES ════════ -->
-      <div v-if="!auth.isDirecteur" class="dept-section">
+      <div class="dept-section">
         <div class="dept-section-head">
           <div class="dept-section-icon" style="background:#ede9fe;color:#7c3aed;">
             <i class="fas fa-user-check"></i>
@@ -393,8 +402,12 @@
               <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
                 class="dept-agent-photo" @error="$event.target.style.display='none'">
               <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
+              <span v-if="ag.is_online" class="dept-online-dot avatar-dot" :title="ag.online_label || 'En ligne'"></span>
             </div>
-            <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+            <div class="dept-agent-name">
+              {{ ag.prenom }} {{ ag.nom }}
+              <span v-if="ag.is_online" class="dept-inline-online">en ligne</span>
+            </div>
             <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
             <i class="fas fa-chevron-right" style="color:#cbd5e1;font-size:.8rem;margin-left:auto;"></i>
           </router-link>
@@ -530,9 +543,13 @@
                       <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
                         class="dept-agent-photo" @error="$event.target.style.display='none'">
                       <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
+                      <span v-if="ag.is_online" class="dept-online-dot avatar-dot" :title="ag.online_label || 'En ligne'"></span>
                     </div>
                     <div>
-                      <div class="dept-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                      <div class="dept-agent-name">
+                        {{ ag.prenom }} {{ ag.nom }}
+                        <span v-if="ag.is_online" class="dept-inline-online">en ligne</span>
+                      </div>
                       <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
                     </div>
                   </div>
@@ -636,9 +653,13 @@
                   <div class="drill-agent-avatar">
                     <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
                     <span v-else>{{ agentInitials(ag) }}</span>
+                    <span v-if="ag.is_online" class="dept-online-dot avatar-dot" :title="ag.online_label || 'En ligne'"></span>
                   </div>
                   <div class="drill-agent-info">
-                    <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                    <div class="drill-agent-name">
+                      {{ ag.prenom }} {{ ag.nom }}
+                      <span v-if="ag.is_online" class="dept-inline-online">en ligne</span>
+                    </div>
                     <div class="drill-agent-fonction">
                       {{ ag.fonction || 'Fonction non renseignée' }}
                     </div>
@@ -688,9 +709,13 @@
                   <div class="drill-agent-avatar presence">
                     <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
                     <span v-else>{{ agentInitials(ag) }}</span>
+                    <span v-if="ag.is_online" class="dept-online-dot avatar-dot" :title="ag.online_label || 'En ligne'"></span>
                   </div>
                   <div class="drill-agent-info">
-                    <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                    <div class="drill-agent-name">
+                      {{ ag.prenom }} {{ ag.nom }}
+                      <span v-if="ag.is_online" class="dept-inline-online">en ligne</span>
+                    </div>
                     <div class="drill-agent-fonction">
                       {{ ag.fonction || 'Fonction non renseignée' }}
                     </div>
@@ -746,9 +771,13 @@
                   <div class="drill-agent-avatar leave">
                     <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
                     <span v-else>{{ agentInitials(ag) }}</span>
+                    <span v-if="ag.is_online" class="dept-online-dot avatar-dot" :title="ag.online_label || 'En ligne'"></span>
                   </div>
                   <div class="drill-agent-info">
-                    <div class="drill-agent-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                    <div class="drill-agent-name">
+                      {{ ag.prenom }} {{ ag.nom }}
+                      <span v-if="ag.is_online" class="dept-inline-online">en ligne</span>
+                    </div>
                     <div class="drill-agent-fonction">
                       {{ ag.fonction || 'Fonction non renseignée' }}
                     </div>
@@ -772,7 +801,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
@@ -790,6 +819,10 @@ const loadError     = ref(null)
 const loadErrorCode = ref(null)
 const data       = ref({})
 const photoIndex = ref(0)
+const onlineToast = ref(null)
+const seenOnlineAgents = ref(new Set())
+let onlineToastTimer = null
+let refreshTimer = null
 
 // ─── DRILL-DOWN STATE ───────────────────────────────────────────────────────
 const drillOpen    = ref(false)
@@ -895,6 +928,10 @@ const metrics = computed(() => {
       value: data.value?.agents?.actifs ?? 0,             to: '/agents',          alert: false,
       drillSection: 'effectifs',
       pct: Math.min(((data.value?.agents?.actifs ?? 0) / agentTotal) * 100, 100) },
+    { label: "En ligne",             icon: 'fa-circle',             color: '#16a34a', bg: '#dcfce7',
+      value: data.value?.agents?.online ?? 0,              to: '/agents',          alert: false,
+      drillSection: 'effectifs',
+      pct: Math.min(((data.value?.agents?.online ?? 0) / agentTotal) * 100, 100) },
     { label: "Présence aujourd'hui", icon: 'fa-user-check',         color: '#059669', bg: '#d1fae5',
       value: (data.value?.attendance?.today_rate ?? 0) + '%', to: '/pointages',
       drillSection: 'presence',
@@ -935,7 +972,9 @@ async function loadData() {
   loadErrorCode.value  = null
   try {
     const res  = await client.get('/dashboard/department')
-    data.value = res.data?.data ?? res.data ?? {}
+    const payload = res.data?.data ?? res.data ?? {}
+    data.value = payload
+    handleRecentOnlineAgents(payload.recent_online_agents || [])
   } catch (err) {
     loadError.value     = err?.response?.data?.message ?? 'Impossible de charger le tableau de bord.'
     loadErrorCode.value  = err?.response?.data?.code ?? null
@@ -943,7 +982,29 @@ async function loadData() {
     loading.value = false
   }
 }
-onMounted(loadData)
+onMounted(() => {
+  loadData()
+  refreshTimer = window.setInterval(loadData, 60000)
+})
+
+onUnmounted(() => {
+  if (refreshTimer) window.clearInterval(refreshTimer)
+  if (onlineToastTimer) window.clearTimeout(onlineToastTimer)
+})
+
+function handleRecentOnlineAgents(agents = []) {
+  if (!Array.isArray(agents) || agents.length === 0) return
+
+  const fresh = agents.find(agent => !seenOnlineAgents.value.has(agent.id))
+  agents.forEach(agent => seenOnlineAgents.value.add(agent.id))
+  if (!fresh) return
+
+  onlineToast.value = fresh
+  if (onlineToastTimer) window.clearTimeout(onlineToastTimer)
+  onlineToastTimer = window.setTimeout(() => {
+    onlineToast.value = null
+  }, 5000)
+}
 
 // ─── DRILL-DOWN METHODS ────────────────────────────────────────────────────
 const drillTitles = {
@@ -1369,6 +1430,85 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
 .dept-agent-initials { font-size: .75rem; font-weight: 700; color: #0077B5; }
 .dept-agent-name     { font-weight: 600; font-size: .85rem; }
 .dept-agent-fonction { font-size: .72rem; color: #6b7280; }
+.dept-agent-avatar,
+.drill-agent-avatar {
+  position: relative;
+}
+.dept-online-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 0 2px #fff;
+  flex-shrink: 0;
+}
+.dept-online-dot.avatar-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(22, 163, 74, .25);
+}
+.dept-inline-online {
+  display: inline-flex;
+  align-items: center;
+  margin-left: .35rem;
+  padding: .1rem .4rem;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: .64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  vertical-align: middle;
+}
+.dept-online-toast {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10020;
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  max-width: min(360px, calc(100vw - 2rem));
+  padding: .85rem 1rem;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid #bbf7d0;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, .16);
+  color: #14532d;
+}
+.dept-online-toast strong,
+.dept-online-toast span {
+  display: block;
+  line-height: 1.25;
+}
+.dept-online-toast strong { font-size: .86rem; }
+.dept-online-toast span { font-size: .78rem; color: #166534; }
+.dept-online-dot.pulse {
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 rgba(22, 163, 74, .45);
+  animation: deptOnlinePulse 1.4s ease-out infinite;
+}
+.dept-online-toast-enter-active,
+.dept-online-toast-leave-active {
+  transition: opacity .18s ease, transform .18s ease;
+}
+.dept-online-toast-enter-from,
+.dept-online-toast-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+@keyframes deptOnlinePulse {
+  0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, .42); }
+  70% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
 
 .dept-badge-neutral { background: #f1f5f9; color: #334155; padding: .2rem .6rem; border-radius: 6px; font-weight: 700; font-size: .8rem; }
 .dept-badge-ok      { background: #d1fae5; color: #065f46; padding: .2rem .6rem; border-radius: 6px; font-size: .8rem; }
@@ -1574,28 +1714,50 @@ html.dark .dept-agenda-day, html.dark .dept-agenda-month { color: #e879f9 !impor
   .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 768px) {
+  .dept-dashboard { padding-left: .85rem; padding-right: .85rem; }
+  .dept-section { margin-bottom: 1.25rem; }
   .dept-hero { border-radius: 16px; margin-bottom: 1.2rem; }
   .dept-hero-inner { flex-direction: column; align-items: flex-start; padding: 1.25rem 1rem; gap: 1rem; }
-  .dept-hero-left { gap: .85rem; }
+  .dept-hero-left { gap: .85rem; width: 100%; min-width: 0; }
+  .dept-hero-info { min-width: 0; }
   h1.dept-hero-name { font-size: 1.2rem; }
   .dept-hero-kpis { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: .4rem; }
-  .dept-kpi-pill { min-width: 0; }
+  .dept-kpi-pill { min-width: 0; padding: .65rem .7rem; border-radius: 12px; }
+  .dept-kpi-pill-lbl { overflow-wrap: anywhere; }
   .kpi-divider { display: none; }
-  .dept-section-head { flex-wrap: wrap; gap: .5rem; }
+  .dept-section-head { flex-wrap: wrap; gap: .5rem; align-items: flex-start; }
+  .dept-section-head > div:not(.dept-section-icon) { min-width: 0; flex: 1; }
   .dept-section-link, .dept-section-link-btn { margin-left: 0; width: 100%; text-align: right; }
   .dept-actions { grid-template-columns: repeat(2, 1fr); }
+  .dept-action { padding: .85rem; align-items: flex-start; }
+  .dept-action-label,
+  .dept-task-title,
+  .dept-agent-name { white-space: normal; overflow-wrap: anywhere; }
   .dept-action-desc { display: none; }
   .dept-metrics { grid-template-columns: repeat(2, 1fr); }
+  .dept-metric { padding: 1rem; }
   .dept-task-cards { grid-template-columns: repeat(2, 1fr); }
+  .dept-task-row { align-items: flex-start; }
   .dept-requests-grid { grid-template-columns: 1fr; }
+  .dept-table-wrap { margin-inline: -.85rem; padding-inline: .85rem; }
+  .dept-table { min-width: 560px; }
   .dept-table th:nth-child(2), .dept-table td:nth-child(2) { display: none; }
   .dept-table th:nth-child(5), .dept-table td:nth-child(5) { display: none; }
+  .dept-online-toast {
+    top: auto;
+    right: .75rem;
+    left: .75rem;
+    bottom: .9rem;
+    max-width: none;
+  }
 }
 @media (max-width: 480px) {
   .dept-hero-avatar { width: 52px; height: 52px; }
   .dept-hero-avatar-initials { font-size: 1.1rem; }
   h1.dept-hero-name { font-size: 1.05rem; }
   .dept-hero-role-pill { font-size: .7rem; padding: .2rem .55rem; }
+  .dept-hero-kpis { grid-template-columns: 1fr; }
+  .dept-kpi-pill { min-height: 54px; }
   .dept-kpi-pill-val { font-size: 1.1rem; }
   .dept-kpi-pill-icon { width: 30px; height: 30px; font-size: .85rem; }
   .dept-metrics { grid-template-columns: 1fr; }
@@ -1603,6 +1765,10 @@ html.dark .dept-agenda-day, html.dark .dept-agenda-month { color: #e879f9 !impor
   .dept-error-banner { margin-bottom: .75rem; }
   .dept-actions { grid-template-columns: 1fr; }
   .dept-action-desc { display: block; }
+  .dept-task-row,
+  .dept-request-footer,
+  .drill-agent-row { gap: .55rem; }
+  .drill-agent-meta { max-width: 110px; }
 }
 
 /* ─── DRILL-DOWN PANEL ─────────────────────────────────────────────── */

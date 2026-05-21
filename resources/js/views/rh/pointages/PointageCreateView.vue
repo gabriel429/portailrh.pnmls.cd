@@ -81,9 +81,13 @@
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="(agent, index) in agents" :key="agent.id" :class="{ 'row-recorded': agent.pointage_existant }">
+                <tr
+                  v-for="(agent, index) in agents"
+                  :key="agent.id"
+                  :class="{ 'row-recorded': agent.pointage_existant, 'row-justified-absence': agent.absence_justifiee }"
+                >
                   <td>
-                    <input type="checkbox" class="form-check-input" v-model="agent.selected">
+                    <input type="checkbox" class="form-check-input" v-model="agent.selected" :disabled="agent.absence_justifiee">
                   </td>
                   <td>
                     <div class="agent-name">
@@ -91,20 +95,23 @@
                       <span v-if="agent.pointage_existant" class="badge bg-success ms-1" title="Pointage deja enregistre">
                         <i class="fas fa-check"></i>
                       </span>
+                      <span v-if="agent.absence_justifiee" class="badge bg-secondary ms-1" title="Absence justifiée">
+                        <i class="fas fa-ban me-1"></i>{{ agent.absence_justifiee_label || 'Absence justifiée' }}
+                      </span>
                     </div>
                     <div class="agent-poste">{{ agent.poste_actuel || '' }}</div>
                   </td>
                   <td>
-                    <input type="time" class="form-control" v-model="agent.heure_entree">
+                    <input type="time" class="form-control" v-model="agent.heure_entree" :disabled="agent.absence_justifiee">
                   </td>
                   <td>
-                    <input type="time" class="form-control" v-model="agent.heure_sortie">
+                    <input type="time" class="form-control" v-model="agent.heure_sortie" :disabled="agent.absence_justifiee">
                   </td>
                   <td>
                     <span class="text-muted">{{ calculateHours(agent) }}</span>
                   </td>
                   <td>
-                    <input type="text" class="form-control" v-model="agent.observations" placeholder="Observation...">
+                    <input type="text" class="form-control" v-model="agent.observations" placeholder="Observation..." :disabled="agent.absence_justifiee">
                   </td>
                 </tr>
               </tbody>
@@ -182,11 +189,12 @@ function calculateHours(agent) {
 }
 
 function toggleSelectAll() {
-    agents.value.forEach(a => { a.selected = selectAll.value })
+    agents.value.forEach(a => { a.selected = a.absence_justifiee ? false : selectAll.value })
 }
 
 function fillAll() {
     agents.value.forEach(agent => {
+        if (agent.absence_justifiee) return
         if (!agent.heure_entree) agent.heure_entree = '08:00'
         if (!agent.heure_sortie) agent.heure_sortie = '16:00'
     })
@@ -194,6 +202,7 @@ function fillAll() {
 
 function clearAll() {
     agents.value.forEach(agent => {
+        if (agent.absence_justifiee) return
         agent.heure_entree = ''
         agent.heure_sortie = ''
         agent.observations = ''
@@ -224,10 +233,10 @@ async function loadAgents() {
 
       agents.value = agentsData.map(agent => ({
             ...agent,
-            selected: true,
-            heure_entree: agent.pointage_existant?.heure_entree || '',
-            heure_sortie: agent.pointage_existant?.heure_sortie || '',
-            observations: agent.pointage_existant?.observations || '',
+            selected: !agent.absence_justifiee,
+            heure_entree: agent.absence_justifiee ? '' : (agent.pointage_existant?.heure_entree || ''),
+            heure_sortie: agent.absence_justifiee ? '' : (agent.pointage_existant?.heure_sortie || ''),
+            observations: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : (agent.pointage_existant?.observations || ''),
         }))
 
         agentsLoaded.value = true
@@ -243,7 +252,7 @@ async function submitPointages() {
 
     // Build pointages array from agents that have times entered
     const pointagesData = agents.value
-        .filter(a => a.heure_entree || a.heure_sortie)
+        .filter(a => !a.absence_justifiee && (a.heure_entree || a.heure_sortie))
         .map(a => ({
             agent_id: a.id,
             heure_entree: a.heure_entree || null,
@@ -297,6 +306,13 @@ onMounted(() => {
 .agent-name { font-weight: 600; white-space: nowrap; }
 .agent-poste { font-size: 0.85em; color: #6c757d; }
 .row-recorded { background-color: #f0fdf4; }
+.row-justified-absence {
+    background-color: #f3f4f6 !important;
+    color: #6b7280;
+}
+.row-justified-absence input {
+    cursor: not-allowed;
+}
 
 /* Mobile responsive */
 @media (max-width: 767.98px) {

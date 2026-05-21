@@ -153,11 +153,14 @@
               </thead>
               <tbody>
                 <tr v-for="agent in agents" :key="agent.id"
-                    :class="{ 'table-success': pointageData[agent.id]?.present }">
+                    :class="{ 'table-success': pointageData[agent.id]?.present, 'table-secondary justified-absence-row': agent.absence_justifiee }">
                   <td>
                     <div class="agent-info">
                       <div class="agent-name">{{ agent.nom }} {{ agent.prenom }}</div>
                       <small class="agent-poste text-muted">{{ agent.poste_display || 'Non défini' }}</small>
+                      <div v-if="agent.absence_justifiee" class="small text-secondary fw-semibold">
+                        <i class="fas fa-ban me-1"></i>{{ agent.absence_justifiee_label || 'Absence justifiée' }}
+                      </div>
                     </div>
                   </td>
                   <td>
@@ -168,6 +171,7 @@
                         :id="`present_${agent.id}`"
                         :checked="pointageData[agent.id]?.present"
                         @change="togglePresence(agent.id)"
+                        :disabled="agent.absence_justifiee"
                       >
                     </div>
                   </td>
@@ -176,7 +180,7 @@
                       type="time"
                       class="form-control form-control-sm"
                       v-model="pointageData[agent.id].heure_arrivee"
-                      :disabled="!pointageData[agent.id]?.present"
+                      :disabled="agent.absence_justifiee || !pointageData[agent.id]?.present"
                     >
                   </td>
                   <td>
@@ -184,7 +188,7 @@
                       type="time"
                       class="form-control form-control-sm"
                       v-model="pointageData[agent.id].heure_depart"
-                      :disabled="!pointageData[agent.id]?.present"
+                      :disabled="agent.absence_justifiee || !pointageData[agent.id]?.present"
                     >
                   </td>
                   <td>
@@ -193,7 +197,7 @@
                       class="form-control form-control-sm"
                       placeholder="Commentaire..."
                       v-model="pointageData[agent.id].commentaire"
-                      :disabled="!pointageData[agent.id]?.present"
+                      :disabled="agent.absence_justifiee || !pointageData[agent.id]?.present"
                     >
                   </td>
                   <td>
@@ -203,7 +207,7 @@
                         class="form-check-input"
                         :id="`retard_${agent.id}`"
                         v-model="pointageData[agent.id].retard_justifie"
-                        :disabled="!pointageData[agent.id]?.present"
+                        :disabled="agent.absence_justifiee || !pointageData[agent.id]?.present"
                       >
                     </div>
                   </td>
@@ -296,7 +300,7 @@ const pointageData = ref({})
 
 // Computed
 const selectedAgents = computed(() =>
-  agents.value.filter(agent => pointageData.value[agent.id]?.present)
+  agents.value.filter(agent => !agent.absence_justifiee && pointageData.value[agent.id]?.present)
 )
 
 const hasUnsavedChanges = computed(() => selectedAgents.value.length > 0)
@@ -339,7 +343,17 @@ async function loadAgents() {
   loadingAgents.value = true
 
   try {
-    const result = await client.getAgentsByDepartment(selectedDepartment.value)
+    let result = []
+
+    if (isOffline.value) {
+      result = await client.getAgentsByDepartment(selectedDepartment.value)
+    } else {
+      const response = await client.get('/pointages/agents-by-department', {
+          params: { department_id: selectedDepartment.value, date: datePointage.value }
+        })
+      result = response.data?.data || response.data?.agents || []
+    }
+
     agents.value = result || []
     agentsLoaded.value = true
 
@@ -350,7 +364,7 @@ async function loadAgents() {
         present: false,
         heure_arrivee: '',
         heure_depart: '',
-        commentaire: '',
+        commentaire: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : '',
         retard_justifie: false
       }
     })
@@ -370,6 +384,8 @@ async function loadAgents() {
 
 // Actions pointage
 function togglePresence(agentId) {
+  const rowAgent = agents.value.find(a => a.id === agentId)
+  if (rowAgent?.absence_justifiee) return
   const agent = pointageData.value[agentId]
   agent.present = !agent.present
 
@@ -386,6 +402,16 @@ function togglePresence(agentId) {
 
 function markAllPresent() {
   agents.value.forEach(agent => {
+    if (agent.absence_justifiee) {
+      pointageData.value[agent.id] = {
+        present: false,
+        heure_arrivee: '',
+        heure_depart: '',
+        commentaire: agent.absence_justifiee_label || 'Absence justifiée',
+        retard_justifie: false
+      }
+      return
+    }
     pointageData.value[agent.id] = {
       present: true,
       heure_arrivee: '08:00',
@@ -403,7 +429,7 @@ function resetForm() {
       present: false,
       heure_arrivee: '',
       heure_depart: '',
-      commentaire: '',
+      commentaire: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : '',
       retard_justifie: false
     }
   })
@@ -545,6 +571,12 @@ onMounted(async () => {
 .pointage-table th, .pointage-table td { vertical-align: middle; }
 .pointage-table input[type="time"] { min-width: 120px; }
 .pointage-table input[type="text"] { min-width: 120px; }
+.justified-absence-row {
+  opacity: .78;
+}
+.justified-absence-row input {
+  cursor: not-allowed;
+}
 .agent-name { font-weight: 600; white-space: nowrap; }
 .agent-poste { font-size: 0.85em; color: #6c757d; }
 .table-success { background-color: #f0fdf4; }

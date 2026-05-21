@@ -11,6 +11,7 @@ use App\Models\Department;
 use App\Models\AgentStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class DepartmentDashboardController extends ApiController
@@ -55,6 +56,10 @@ class DepartmentDashboardController extends ApiController
         $agentsActifs = Agent::where('departement_id', $deptId)->actifs()->count();
         $agentsTotal  = Agent::where('departement_id', $deptId)->count();
         $agentIds     = Agent::where('departement_id', $deptId)->pluck('id');
+        $onlineAgentMap = $this->onlineAgentActivity($agentIds->all());
+        $recentOnlineAgentMap = collect($onlineAgentMap)
+            ->filter(fn($agent) => ($agent['connected_seconds'] ?? 999999) <= 120)
+            ->all();
 
         // ─── Tâches ────────────────────────────────────────────
         $tachesNouvelle = Tache::whereIn('agent_id', $agentIds)
@@ -115,7 +120,7 @@ class DepartmentDashboardController extends ApiController
                 'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
             ])
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction'])
-            ->map(function ($agent) use ($now) {
+            ->map(function ($agent) use ($onlineAgentMap, $now) {
                 $taches    = $agent->tachesAssignees;
                 $total     = $taches->count();
                 $done      = $taches->where('statut', 'terminee')->count();
@@ -131,6 +136,8 @@ class DepartmentDashboardController extends ApiController
                     'prenom'        => $agent->prenom,
                     'photo'         => $agent->photo,
                     'fonction'      => $agent->fonction,
+                    'is_online'     => isset($onlineAgentMap[$agent->id]),
+                    'online_label'   => $onlineAgentMap[$agent->id]['label'] ?? null,
                     'taches_total'  => $total,
                     'taches_done'   => $done,
                     'taches_en_cours' => $inProgress,
@@ -184,6 +191,8 @@ class DepartmentDashboardController extends ApiController
                 'prenom'   => $a->prenom,
                 'fonction' => $a->fonction,
                 'photo'    => $a->photo,
+                'is_online' => isset($onlineAgentMap[$a->id]),
+                'online_label' => $onlineAgentMap[$a->id]['label'] ?? null,
             ]);
 
         return $this->success([
@@ -196,6 +205,7 @@ class DepartmentDashboardController extends ApiController
             'agents' => [
                 'total'  => $agentsTotal,
                 'actifs' => $agentsActifs,
+                'online' => count($onlineAgentMap),
             ],
             'taches' => [
                 'nouvelle'  => $tachesNouvelle,
@@ -221,6 +231,8 @@ class DepartmentDashboardController extends ApiController
             'my_tasks'           => $myTasks,
             'upcoming_deadlines' => $upcomingDeadlines,
             'agent_list'         => $agentList,
+            'online_agents'      => array_values($onlineAgentMap),
+            'recent_online_agents' => array_values($recentOnlineAgentMap),
         ]);
     }
 
@@ -275,6 +287,7 @@ class DepartmentDashboardController extends ApiController
             ->where('date_fin', '>=', $now->toDateString())
             ->pluck('agent_id')
             ->flip();
+        $onlineAgentMap = $this->onlineAgentActivity($agentIds->all());
 
         $agents = Agent::where('departement_id', $deptId)
             ->with([
@@ -282,7 +295,7 @@ class DepartmentDashboardController extends ApiController
             ])
             ->orderBy('nom')
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'statut'])
-            ->map(function ($agent) use ($monthlyPresence, $todayPresentAgents, $joursOuvrables, $statuts, $congesActifs, $now) {
+            ->map(function ($agent) use ($monthlyPresence, $todayPresentAgents, $joursOuvrables, $statuts, $congesActifs, $onlineAgentMap, $now) {
                 $taches     = $agent->tachesAssignees;
                 $total      = $taches->count();
                 $done       = $taches->where('statut', 'terminee')->count();
@@ -307,6 +320,9 @@ class DepartmentDashboardController extends ApiController
                     'photo'           => $agent->photo,
                     'fonction'        => $agent->poste_actuel ?: $agent->fonction,
                     'statut'          => $statutActuel,
+                    'is_online'       => isset($onlineAgentMap[$agent->id]),
+                    'online_label'     => $onlineAgentMap[$agent->id]['label'] ?? null,
+                    'online_since'     => $onlineAgentMap[$agent->id]['last_activity'] ?? null,
                     'presence_status' => isset($todayPresentAgents[$agent->id]) ? 'present' : 'absent',
                     'taches_total'    => $total,
                     'taches_done'     => $done,
@@ -321,6 +337,55 @@ class DepartmentDashboardController extends ApiController
         return $this->success([
             'agents'          => $agents,
             'jours_ouvrables' => $joursOuvrables,
+            'online_count'    => count($onlineAgentMap),
         ]);
+    }
+
+    private function onlineAgentActivity(array $agentIds): array
+    {
+        $agentIds = array_values(array_unique(array_filter(array_map('intval', $agentIds))));
+        if ($agentIds === [] || !Schema::hasTable('sessions')) {
+            return [];
+        }
+
+        try {
+            $threshold = now()->subMinutes(5)->timestamp;
+            $rows = DB::table('sessions')
+                ->join('users', 'sessions.user_id', '=', 'users.id')
+                ->join('agents', 'users.agent_id', '=', 'agents.id')
+                ->whereIn('agents.id', $agentIds)
+                ->where('sessions.last_activity', '>=', $threshold)
+                ->where('users.is_super_admin', false)
+                ->select([
+                    'agents.id',
+                    'agents.nom',
+                    'agents.prenom',
+                    'agents.photo',
+                    'agents.fonction',
+                    'agents.poste_actuel',
+                    DB::raw('MAX(sessions.last_activity) as last_activity'),
+                ])
+                ->groupBy('agents.id', 'agents.nom', 'agents.prenom', 'agents.photo', 'agents.fonction', 'agents.poste_actuel')
+                ->orderByDesc('last_activity')
+                ->get();
+        } catch (\Throwable) {
+            return [];
+        }
+
+        return $rows->mapWithKeys(function ($row) {
+            $lastActivity = Carbon::createFromTimestamp((int) $row->last_activity);
+            $seconds = max(0, now()->diffInSeconds($lastActivity));
+
+            return [(int) $row->id => [
+                'id' => (int) $row->id,
+                'nom' => $row->nom,
+                'prenom' => $row->prenom,
+                'photo' => $row->photo,
+                'fonction' => $row->poste_actuel ?: $row->fonction,
+                'last_activity' => $lastActivity->toIso8601String(),
+                'connected_seconds' => $seconds,
+                'label' => $seconds < 60 ? 'En ligne maintenant' : 'Actif il y a ' . max(1, (int) floor($seconds / 60)) . ' min',
+            ]];
+        })->all();
     }
 }
