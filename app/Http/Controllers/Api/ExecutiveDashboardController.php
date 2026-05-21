@@ -1555,6 +1555,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             $agentListQuery->where('organe', $organeFilter);
         }
         $topAgents = $this->presenceAgents($agentListQuery, $now, 150);
+        $onlineCount = $topAgents->where('is_online', true)->count();
 
         // PTA du département
         $currentYear = $now->year;

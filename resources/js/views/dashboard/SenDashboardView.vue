@@ -712,6 +712,11 @@
                     <p>Chargement des données…</p>
                   </div>
 
+                  <div v-else-if="drilldownError" class="drill-empty">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>{{ drilldownError }}</p>
+                  </div>
+
                   <!-- ── LEVEL 1 : ORGANE → ITEMS (provinces / départements) ── -->
                   <template v-else-if="drilldownLevel === 'organe' && drilldownOrgane">
                     <!-- Summary bar -->
@@ -1541,6 +1546,7 @@ const drilldownDepartment = ref(null) // { department, effectifs, presence, agen
 const drilldownLevel = ref('organe') // 'organe' | 'province' | 'department'
 const drilldownSection = ref('effectifs') // 'effectifs' | 'presence' | 'pta'
 const drillPresenceFilter = ref('all') // 'all' | 'present' | 'absent'
+const drilldownError = ref(null)
 let drillRequestSeq = 0
 const agentContactOpen = ref(false)
 const selectedAgentContact = ref(null)
@@ -1753,6 +1759,7 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   drilldownLevel.value = 'organe'
   drilldownSection.value = section
   drillPresenceFilter.value = 'all'
+  drilldownError.value = null
   drilldownProvince.value = null
   drilldownDepartment.value = null
   try {
@@ -1762,6 +1769,7 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   } catch (e) {
     if (requestSeq !== drillRequestSeq) return
     drilldownOrgane.value = null
+    drilldownError.value = e.response?.data?.message || 'Impossible de charger ces données.'
   } finally {
     if (requestSeq === drillRequestSeq) drilldownLoading.value = false
   }
@@ -1772,6 +1780,7 @@ async function openProvinceDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
   drillPresenceFilter.value = 'all'
+  drilldownError.value = null
   drilldownDepartment.value = null
   try {
     const params = drilldownOrgane.value?.organe ? { organe: drilldownOrgane.value.organe } : {}
@@ -1781,6 +1790,7 @@ async function openProvinceDrilldown(id) {
   } catch (e) {
     if (requestSeq !== drillRequestSeq) return
     drilldownProvince.value = null
+    drilldownError.value = e.response?.data?.message || 'Impossible de charger cette province.'
   } finally {
     if (requestSeq === drillRequestSeq) drilldownLoading.value = false
   }
@@ -1792,6 +1802,7 @@ async function openDepartmentDrilldown(id) {
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   drillPresenceFilter.value = 'all'
+  drilldownError.value = null
   drilldownDepartment.value = null
   try {
     const params = drilldownOrgane.value?.organe ? { organe: drilldownOrgane.value.organe } : {}
@@ -1801,6 +1812,7 @@ async function openDepartmentDrilldown(id) {
   } catch (e) {
     if (requestSeq !== drillRequestSeq) return
     drilldownDepartment.value = null
+    drilldownError.value = e.response?.data?.message || 'Impossible de charger ce département.'
   } finally {
     if (requestSeq === drillRequestSeq) drilldownLoading.value = false
   }
@@ -1815,6 +1827,7 @@ function closeDrilldown() {
   drilldownLevel.value = 'organe'
   drilldownSection.value = 'effectifs'
   drillPresenceFilter.value = 'all'
+  drilldownError.value = null
   closeAgentContactPopup()
 }
 
@@ -1824,6 +1837,7 @@ function backToOrgane() {
   drilldownProvince.value = null
   drilldownDepartment.value = null
   drillPresenceFilter.value = 'all'
+  drilldownError.value = null
 }
 
 function backToPrevious() {
@@ -1835,6 +1849,7 @@ function backToPrevious() {
     drilldownLevel.value = 'organe'
   }
   drillPresenceFilter.value = 'all'
+  drilldownError.value = null
 }
 
 const drilldownColor = computed(() => {
