@@ -376,44 +376,6 @@
         </div>
       </div>
 
-      <!-- ════════ AGENTS DU DÉPARTEMENT ════════ -->
-      <div v-if="!auth.isDirecteur" class="dept-section">
-        <div class="dept-section-head">
-          <div class="dept-section-icon" style="background:#e0f2fe;color:#0077B5;">
-            <i class="fas fa-id-card-alt"></i>
-          </div>
-          <div>
-            <h3 class="dept-section-title">Agents du département</h3>
-            <p class="dept-section-sub">{{ data.agent_list?.length ?? 0 }} agents actifs — {{ data.department?.nom }}</p>
-          </div>
-          <router-link to="/agents" class="dept-section-link">Fiche agents <i class="fas fa-arrow-right"></i></router-link>
-        </div>
-        <div v-if="!data.agent_list?.length" class="dept-empty">
-          <div class="dept-empty-icon-wrap" style="background:#e0f2fe;"><i class="fas fa-users" style="color:#0077B5;"></i></div>
-          <span>Aucun agent actif dans le département</span>
-        </div>
-        <div v-else class="dept-agents-compact">
-          <router-link
-            v-for="ag in data.agent_list" :key="ag.id"
-            :to="'/agents/' + ag.id"
-            class="dept-agent-compact-row"
-          >
-            <div class="dept-agent-avatar">
-              <img v-if="ag.photo" :src="'/' + ag.photo" :alt="ag.prenom"
-                class="dept-agent-photo" @error="$event.target.style.display='none'">
-              <span v-else class="dept-agent-initials">{{ agentInitials(ag) }}</span>
-              <span v-if="ag.is_online" class="dept-online-dot avatar-dot" :title="ag.online_label || 'En ligne'"></span>
-            </div>
-            <div class="dept-agent-name">
-              {{ ag.prenom }} {{ ag.nom }}
-              <span v-if="ag.is_online" class="dept-inline-online">en ligne</span>
-            </div>
-            <div class="dept-agent-fonction">{{ ag.fonction ?? '—' }}</div>
-            <i class="fas fa-chevron-right" style="color:#cbd5e1;font-size:.8rem;margin-left:auto;"></i>
-          </router-link>
-        </div>
-      </div>
-
       <!-- ════════ PRÉSENCE & CONGÉS ════════ -->
       <div class="dept-section">
         <div class="dept-duo-row">
@@ -602,7 +564,7 @@
         <div class="drill-body">
           <div class="drill-section-tabs">
             <button class="drill-section-tab" :class="{ active: drillSection === 'effectifs' }" @click="setDrillSection('effectifs')">
-              <i class="fas fa-users"></i> Effectifs
+              <i class="fas fa-chart-bar"></i> Performance
             </button>
             <button class="drill-section-tab" :class="{ active: drillSection === 'presence' }" @click="setDrillSection('presence')">
               <i class="fas fa-user-check"></i> Présence
@@ -646,7 +608,7 @@
               </div>
 
               <div v-if="drillAgents.length" class="drill-section-title">
-                <i class="fas fa-user-friends"></i> Agents du département
+                <i class="fas fa-chart-bar"></i> Performance de l'équipe
               </div>
               <div v-if="drillAgents.length" class="drill-agent-list">
                 <div v-for="ag in drillAgents" :key="ag.id" class="drill-agent-row">
@@ -1009,12 +971,12 @@ function handleRecentOnlineAgents(agents = []) {
 
 // ─── DRILL-DOWN METHODS ────────────────────────────────────────────────────
 const drillTitles = {
-  effectifs: 'Agents du département',
+  effectifs: "Performance de l'équipe",
   presence: 'Présence du département',
   conges: 'Congés du département',
 }
 const drillSubtitles = {
-  effectifs: 'Vue complète des agents et de leurs tâches',
+  effectifs: 'Réalisation des tâches par agent',
   presence: 'Pointage du jour et présence mensuelle',
   conges: 'Agents absents pour congé actif',
 }
