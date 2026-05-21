@@ -125,7 +125,7 @@ class SenaDashboardController extends ApiController
 
         $attendanceAgents = Agent::whereIn('id', $senAgentIds)
             ->actifs()
-            ->orderBy('nom')
+            ->orderInstitutionally()
             ->limit(80)
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'sexe'])
             ->map(function ($agent) use ($todayPointages, $monthlyPresence, $joursOuvrables) {

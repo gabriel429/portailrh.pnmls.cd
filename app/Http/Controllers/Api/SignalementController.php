@@ -149,7 +149,7 @@ class SignalementController extends ApiController
      */
     public function agents(): JsonResponse
     {
-        $query = Agent::actifs()->orderBy('nom');
+        $query = Agent::actifs()->orderInstitutionally();
         $this->scopeService()->applyAgentScope($query, request()->user());
 
         $agents = $query->get(['id', 'nom', 'prenom'])

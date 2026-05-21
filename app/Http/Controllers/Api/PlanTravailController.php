@@ -517,8 +517,7 @@ class PlanTravailController extends ApiController
                     ->where('organe', 'like', '%National%')
                     ->orWhere('organe', 'like', '%SEN%');
             })
-            ->orderBy('nom')
-            ->orderBy('prenom')
+            ->orderInstitutionally()
             ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'departement_id'])
             ->map(fn (Agent $agent) => $this->formatAssignableAgent($agent))
             ->values();
@@ -532,8 +531,7 @@ class PlanTravailController extends ApiController
 
         return Agent::actifs()
             ->whereIn('departement_id', $departmentIds)
-            ->orderBy('nom')
-            ->orderBy('prenom')
+            ->orderInstitutionally()
             ->get(['id', 'nom', 'prenom', 'organe', 'fonction', 'departement_id'])
             ->groupBy('departement_id')
             ->map(fn ($agents) => $agents->map(fn (Agent $agent) => $this->formatAssignableAgent($agent))->values()->all())
@@ -953,7 +951,7 @@ class PlanTravailController extends ApiController
                       ->orWhere('organe', 'like', '%Secrétariat Exécutif National%');
                 })
                 ->actifs()
-                ->orderBy('nom')
+                ->orderInstitutionally()
                 ->get(['id', 'nom', 'prenom', 'organe', 'fonction'])
                 ->map(fn ($a) => [
                     'id'         => $a->id,

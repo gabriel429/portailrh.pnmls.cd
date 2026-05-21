@@ -120,7 +120,7 @@ class HolidayController extends Controller
         $scope = app(UserDataScope::class);
         $user = $request->user();
 
-        $agentsQuery = Agent::where('statut', 'actif')->orderBy('nom');
+        $agentsQuery = Agent::where('statut', 'actif')->orderInstitutionally();
 
         if ($scope->isProvincialUser($user)) {
             // RH Provincial : tous les agents de sa province

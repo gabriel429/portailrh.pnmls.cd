@@ -107,7 +107,7 @@ class ExecutiveDashboardController extends ApiController
             ->with(['agentStatuses' => function ($q) {
                 $q->where('actuel', true)->orderByDesc('created_at');
             }])
-            ->orderBy('nom')
+            ->orderInstitutionally()
             ->limit($limit)
             ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'telephone', 'matricule_etat', 'grade_etat']);
 

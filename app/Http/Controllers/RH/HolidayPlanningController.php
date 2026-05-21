@@ -109,7 +109,7 @@ class HolidayPlanningController extends Controller
         // Liste des agents pour le formulaire d'ajout de congé (scoped)
         $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id')
             ->where('statut', 'actif')
-            ->orderBy('nom');
+            ->orderInstitutionally();
         if ($provinceId) {
             $agentsQuery->where('province_id', $provinceId);
         }

@@ -54,7 +54,7 @@
      target="_blank"
      rel="noopener noreferrer"
      class="webmail-fab text-decoration-none">
-    <i class="fas fa-at me-2"></i> Webmail professionnel
+    <i class="fas fa-at me-2"></i> Webmail
   </a>
 </template>
 

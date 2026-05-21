@@ -396,7 +396,7 @@ class AgentStatusController extends Controller
 
         $agents = $query->with('departement')
             ->actifs()
-            ->orderBy('nom')
+            ->orderInstitutionally()
             ->get();
 
         return response()->json($agents);

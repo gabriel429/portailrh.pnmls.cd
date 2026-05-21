@@ -313,7 +313,7 @@ class PointageController extends ApiController
         }
 
         // Agents list for filter dropdown
-        $agentsQuery = Agent::actifs()->orderBy('nom');
+        $agentsQuery = Agent::actifs()->orderInstitutionally();
         $scope->applyAgentScope($agentsQuery, $request->user());
 
         $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'matricule_etat'])
@@ -415,9 +415,20 @@ class PointageController extends ApiController
             ];
         });
 
-        // Sort by agent name
+        // Sort by institutional hierarchy, then agent name.
         $agentStats = $agentStats->sortBy(function ($stat) {
-            return $stat['agent']->nom . ' ' . $stat['agent']->prenom;
+            $agent = $stat['agent'];
+            $structureRank = str_contains(strtolower((string) $agent->organe), 'national') ? 1
+                : (str_contains(strtolower((string) $agent->organe), 'provincial') ? 2
+                : (str_contains(strtolower((string) $agent->organe), 'local') ? 3 : 4));
+            $roleText = strtolower(trim(($agent->poste_actuel ?? '') . ' ' . ($agent->fonction ?? '')));
+            $roleRank = str_contains($roleText, 'secr') && str_contains($roleText, 'ex') && str_contains($roleText, 'cutif') ? 1
+                : (str_contains($roleText, 'directeur') ? 2
+                : (str_contains($roleText, 'chef') && str_contains($roleText, 'section') ? 3
+                : (str_contains($roleText, 'chef') && str_contains($roleText, 'cellule') ? 4
+                : (str_contains($roleText, 'assistant') || str_contains($roleText, 'secr') ? 5 : 6))));
+
+            return sprintf('%02d-%02d-%s-%s', $structureRank, $roleRank, $agent->nom, $agent->prenom);
         })->values();
 
         // Global stats
@@ -540,7 +551,7 @@ class PointageController extends ApiController
             $agentsQuery = Agent::actifs()
                 ->where('organe', 'Secrétariat Exécutif National')
                 ->whereNull('departement_id')
-                ->orderBy('nom');
+                ->orderInstitutionally();
             $scope->applyAgentScope($agentsQuery, $request->user());
             $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
             if ($date) {
@@ -566,7 +577,7 @@ class PointageController extends ApiController
 
         $agentsQuery = Agent::actifs()
             ->where('departement_id', $departmentId)
-            ->orderBy('nom');
+            ->orderInstitutionally();
 
         $scope->applyAgentScope($agentsQuery, $request->user());
 

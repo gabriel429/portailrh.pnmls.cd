@@ -182,7 +182,7 @@ class DepartmentDashboardController extends ApiController
         // ─── Liste agents du département ──────────────────────
         $agentList = Agent::where('departement_id', $deptId)
             ->actifs()
-            ->orderBy('nom')
+            ->orderInstitutionally()
             ->get(['id', 'nom', 'prenom', 'fonction', 'photo'])
             ->map(fn($a) => [
                 'id'       => $a->id,
@@ -292,7 +292,7 @@ class DepartmentDashboardController extends ApiController
             ->with([
                 'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
             ])
-            ->orderBy('nom')
+            ->orderInstitutionally()
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'statut'])
             ->map(function ($agent) use ($monthlyPresence, $todayPresentAgents, $joursOuvrables, $statuts, $congesActifs, $onlineAgentMap, $now) {
                 $taches     = $agent->tachesAssignees;

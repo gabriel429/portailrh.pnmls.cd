@@ -235,6 +235,36 @@ class Agent extends Authenticatable
         return $query->where('statut', 'ancien');
     }
 
+    public function scopeOrderInstitutionally($query)
+    {
+        $roleExpression = "LOWER(CONCAT_WS(' ', COALESCE(poste_actuel, ''), COALESCE(fonction, '')))";
+        $structureExpression = "LOWER(COALESCE(organe, ''))";
+
+        return $query
+            ->orderByRaw("
+                CASE
+                    WHEN {$structureExpression} LIKE '%national%' THEN 1
+                    WHEN {$structureExpression} LIKE '%provincial%' THEN 2
+                    WHEN {$structureExpression} LIKE '%local%' THEN 3
+                    ELSE 4
+                END
+            ")
+            ->orderByRaw("
+                CASE
+                    WHEN {$roleExpression} LIKE '%secr%taire ex%cutif%' THEN 1
+                    WHEN {$roleExpression} LIKE '%directeur%' THEN 2
+                    WHEN {$roleExpression} LIKE '%chef%section%' THEN 3
+                    WHEN {$roleExpression} LIKE '%chef%cellule%' THEN 4
+                    WHEN {$roleExpression} LIKE '%assistant%' THEN 5
+                    WHEN {$roleExpression} LIKE '%secr%taire%' THEN 5
+                    ELSE 6
+                END
+            ")
+            ->orderBy('nom')
+            ->orderBy('postnom')
+            ->orderBy('prenom');
+    }
+
     // Accessors
     public function getNomCompletAttribute()
     {
