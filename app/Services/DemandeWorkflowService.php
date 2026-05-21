@@ -141,63 +141,65 @@ class DemandeWorkflowService
     {
         $agentId = $user->agent?->id;
 
-        return $query->where(function (Builder $outer) use ($user, $steps, $agentId) {
-            if ($agentId) {
-                $outer->where('agent_id', $agentId);
-            }
+        return $query
+            ->whereHas('agent', fn(Builder $agentQuery) => $this->withoutAncienAgents($agentQuery))
+            ->where(function (Builder $outer) use ($user, $steps, $agentId) {
+                if ($agentId) {
+                    $outer->where('agent_id', $agentId);
+                }
 
-            foreach ($steps as $step) {
-                $outer->orWhere(function (Builder $stepQuery) use ($user, $step) {
-                    $stepQuery->where('current_step', $step);
+                foreach ($steps as $step) {
+                    $outer->orWhere(function (Builder $stepQuery) use ($user, $step) {
+                        $stepQuery->where('current_step', $step);
 
-                    if (in_array($step, ['caf', 'aaf'], true)) {
-                        $provinceId = $user->agent?->province_id;
-                        $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId));
-                    } elseif ($step === 'sep') {
-                        $provinceId = $user->agent?->province_id;
-                        $isLocalExecutive = $this->isSelManager($user);
+                        if (in_array($step, ['caf', 'aaf'], true)) {
+                            $provinceId = $user->agent?->province_id;
+                            $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId));
+                        } elseif ($step === 'sep') {
+                            $provinceId = $user->agent?->province_id;
+                            $isLocalExecutive = $this->isSelManager($user);
 
-                        $stepQuery
-                            ->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId))
-                            ->where(function (Builder $scope) use ($isLocalExecutive) {
-                                if ($isLocalExecutive) {
-                                    $scope->where('workflow_level', 'absence_local');
+                            $stepQuery
+                                ->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId))
+                                ->where(function (Builder $scope) use ($isLocalExecutive) {
+                                    if ($isLocalExecutive) {
+                                        $scope->where('workflow_level', 'absence_local');
 
-                                    return;
-                                }
+                                        return;
+                                    }
 
-                                $scope
-                                    ->whereNull('workflow_level')
-                                    ->orWhere('workflow_level', '!=', 'absence_local');
-                            });
-                    } elseif ($step === 'director') {
-                        $deptId = $user->agent?->departement_id;
-                        $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('departement_id', $deptId));
-                    } elseif ($step === 'sen') {
-                        $isSenAssistant = $this->isSenAssistant($user);
-
-                        $stepQuery
-                            ->whereHas('agent', function (Builder $agentQuery) {
-                                $agentQuery->where(function (Builder $scope) {
-                                    $scope->whereNull('departement_id')
-                                        ->orWhere('organe', 'Secrétariat Exécutif National');
+                                    $scope
+                                        ->whereNull('workflow_level')
+                                        ->orWhere('workflow_level', '!=', 'absence_local');
                                 });
-                            })
-                            ->where(function (Builder $scope) use ($isSenAssistant) {
-                                if ($isSenAssistant) {
-                                    $scope->where('workflow_level', 'absence_national_sen_direct');
+                        } elseif ($step === 'director') {
+                            $deptId = $user->agent?->departement_id;
+                            $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('departement_id', $deptId));
+                        } elseif ($step === 'sen') {
+                            $isSenAssistant = $this->isSenAssistant($user);
 
-                                    return;
-                                }
+                            $stepQuery
+                                ->whereHas('agent', function (Builder $agentQuery) {
+                                    $agentQuery->where(function (Builder $scope) {
+                                        $scope->whereNull('departement_id')
+                                            ->orWhere('organe', 'Secrétariat Exécutif National');
+                                    });
+                                })
+                                ->where(function (Builder $scope) use ($isSenAssistant) {
+                                    if ($isSenAssistant) {
+                                        $scope->where('workflow_level', 'absence_national_sen_direct');
 
-                                $scope
-                                    ->whereNull('workflow_level')
-                                    ->orWhere('workflow_level', '!=', 'absence_national_sen_direct');
-                            });
-                    }
-                });
-            }
-        });
+                                        return;
+                                    }
+
+                                    $scope
+                                        ->whereNull('workflow_level')
+                                        ->orWhere('workflow_level', '!=', 'absence_national_sen_direct');
+                                });
+                        }
+                    });
+                }
+            });
     }
 
     public function approve(User $user, RequestModel $request): array
@@ -514,7 +516,9 @@ class DemandeWorkflowService
         $request->loadMissing('agent.departement', 'agent.province');
         $agent = $request->agent;
 
-        $query = User::query()->with('agent.departement');
+        $query = User::query()
+            ->with('agent.departement')
+            ->whereHas('agent', fn(Builder $agentQuery) => $this->withoutAncienAgents($agentQuery));
 
         return match ($step) {
             'director' => $query
@@ -605,5 +609,14 @@ class DemandeWorkflowService
         $value = strtolower(trim($value));
 
         return preg_replace('/\s+/', ' ', $value) ?? '';
+    }
+
+    private function withoutAncienAgents(Builder $query): Builder
+    {
+        return $query->where(function (Builder $scope) {
+            $scope
+                ->whereNull('statut')
+                ->orWhere('statut', '!=', 'ancien');
+        });
     }
 }

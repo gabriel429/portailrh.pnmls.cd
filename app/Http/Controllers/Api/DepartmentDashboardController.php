@@ -10,6 +10,7 @@ use App\Models\Holiday;
 use App\Models\Department;
 use App\Models\AgentStatus;
 use App\Services\AgentPresenceService;
+use App\Services\DemandeWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -21,17 +22,8 @@ class DepartmentDashboardController extends ApiController
         $user     = $request->user();
         // Le département est sur le profil agent (agents.departement_id), pas sur users
         $deptId   = $user->agent?->departement_id ?? $user->departement_id;
-        $roleName = \Illuminate\Support\Str::ascii((string) ($user->role?->nom_role ?? ''));
-        $roleName = strtolower(trim($roleName));
-        $isDepartmentWorkflowValidator = in_array($roleName, [
-            'directeur',
-            'directrice',
-            'directeur de departement',
-            'directrice de departement',
-            'assistant',
-            'assistant de departement',
-            'secretaire de departement',
-        ], true) || str_starts_with($roleName, 'assistant');
+        $validatableSteps = app(DemandeWorkflowService::class)->getValidatableSteps($user);
+        $isDepartmentWorkflowValidator = in_array('director', $validatableSteps, true);
 
         if (!$deptId) {
             return response()->json(['message' => 'Aucun département associé à votre compte.'], 403);
@@ -53,9 +45,10 @@ class DepartmentDashboardController extends ApiController
         }
 
         // ─── Agents ────────────────────────────────────────────
-        $agentsActifs = Agent::where('departement_id', $deptId)->actifs()->count();
-        $agentsTotal  = Agent::where('departement_id', $deptId)->count();
-        $agentIds     = Agent::where('departement_id', $deptId)->pluck('id');
+        $departmentAgentsQuery = Agent::where('departement_id', $deptId)->actifs();
+        $agentsActifs = (clone $departmentAgentsQuery)->count();
+        $agentsTotal  = $agentsActifs;
+        $agentIds     = (clone $departmentAgentsQuery)->pluck('id');
         $presence = app(AgentPresenceService::class);
         $onlineAgentMap = $presence->onlineMap($agentIds->all());
         $recentOnlineAgentMap = $presence->recent($onlineAgentMap);
@@ -214,6 +207,7 @@ class DepartmentDashboardController extends ApiController
             ],
             'requests' => [
                 'en_attente' => $requestsPending,
+                'validation_en_attente' => $requestsPending,
             ],
             'attendance' => [
                 'today_present'  => $todayPresent,
@@ -250,7 +244,7 @@ class DepartmentDashboardController extends ApiController
 
         $now          = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
-        $agentIds     = Agent::where('departement_id', $deptId)->pluck('id');
+        $agentIds     = Agent::where('departement_id', $deptId)->actifs()->pluck('id');
 
         // Présences du mois par agent
         $monthlyPresence = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
@@ -289,6 +283,7 @@ class DepartmentDashboardController extends ApiController
         $onlineAgentMap = app(AgentPresenceService::class)->onlineMap($agentIds->all());
 
         $agents = Agent::where('departement_id', $deptId)
+            ->actifs()
             ->with([
                 'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
             ])

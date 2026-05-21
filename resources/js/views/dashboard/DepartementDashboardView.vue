@@ -56,7 +56,7 @@
             <div class="dept-kpi-pill-icon"><i class="fas fa-hourglass-half"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.requests?.en_attente ?? 0 }}</div>
-              <div class="dept-kpi-pill-lbl">Demandes</div>
+              <div class="dept-kpi-pill-lbl">À valider</div>
             </div>
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
@@ -283,16 +283,16 @@
         </div>
       </div>
 
-      <!-- ════════ DEMANDES EN ATTENTE ════════ -->
+      <!-- ════════ DEMANDES EN ATTENTE DE VALIDATION ════════ -->
       <div class="dept-section">
         <div class="dept-section-head">
           <div class="dept-section-icon" style="background:#fef3c7;color:#d97706;">
             <i class="fas fa-file-signature"></i>
           </div>
           <div>
-            <h3 class="dept-section-title">Demandes en attente</h3>
+            <h3 class="dept-section-title">Demandes en attente de validation</h3>
             <p class="dept-section-sub" v-if="auth.isDirecteur">
-              En tant que Directeur, vous pouvez viser les demandes avant transmission aux RH
+              En tant que Directeur, vous pouvez valider les demandes avant transmission aux RH
             </p>
             <p class="dept-section-sub" v-else>
               Suivi des demandes en cours de traitement dans votre département
@@ -302,7 +302,7 @@
         </div>
         <div v-if="!data.pending_requests?.length" class="dept-empty">
           <div class="dept-empty-icon-wrap" style="background:#dcfce7;"><i class="fas fa-check-double" style="color:#16a34a;"></i></div>
-          <span>Aucune demande en attente</span>
+          <span>Aucune demande en attente de validation</span>
           <span class="dept-empty-hint">Toutes les demandes sont traitées</span>
         </div>
         <div v-else class="dept-requests-grid">

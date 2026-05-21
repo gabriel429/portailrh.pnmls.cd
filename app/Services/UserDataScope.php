@@ -93,6 +93,8 @@ class UserDataScope
 
     public function applyAgentScope($query, ?User $user, string $table = 'agents')
     {
+        $this->excludeAncienAgents($query, $table);
+
         if ($this->hasGlobalAdminAccess($user)) {
             return $query;
         }
@@ -118,6 +120,10 @@ class UserDataScope
 
     public function applyRequestScope($query, ?User $user)
     {
+        $query->whereHas('agent', function ($agentQuery) {
+            $this->excludeAncienAgents($agentQuery);
+        });
+
         if ($this->hasGlobalAdminAccess($user)) {
             return $query;
         }
@@ -138,7 +144,11 @@ class UserDataScope
         if ($this->isDepartmentManager($user)) {
             $deptId = $user?->agent?->departement_id;
             if ($deptId) {
-                $deptAgentIds = Agent::where('departement_id', $deptId)->pluck('id');
+                $deptAgentIds = Agent::where('departement_id', $deptId)
+                    ->where(function ($agentQuery) {
+                        $this->excludeAncienAgents($agentQuery);
+                    })
+                    ->pluck('id');
                 return $query->whereIn('agent_id', $deptAgentIds);
             }
         }
@@ -152,6 +162,10 @@ class UserDataScope
 
     public function applySignalementScope($query, ?User $user)
     {
+        $query->whereHas('agent', function ($agentQuery) {
+            $this->excludeAncienAgents($agentQuery);
+        });
+
         if ($this->hasGlobalAdminAccess($user)) {
             return $query;
         }
@@ -172,6 +186,10 @@ class UserDataScope
 
     public function applyPointageScope($query, ?User $user)
     {
+        $query->whereHas('agent', function ($agentQuery) {
+            $this->excludeAncienAgents($agentQuery);
+        });
+
         if ($this->hasGlobalAdminAccess($user)) {
             return $query;
         }
@@ -192,6 +210,14 @@ class UserDataScope
 
     public function applyAffectationScope($query, ?User $user)
     {
+        $query->where(function ($scopeQuery) {
+            $scopeQuery
+                ->whereDoesntHave('agent')
+                ->orWhereHas('agent', function ($agentQuery) {
+                    $this->excludeAncienAgents($agentQuery);
+                });
+        });
+
         if ($this->hasGlobalAdminAccess($user)) {
             return $query;
         }
@@ -223,6 +249,10 @@ class UserDataScope
             return false;
         }
 
+        if ($this->isAncienAgent($agent)) {
+            return false;
+        }
+
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
         }
@@ -238,11 +268,15 @@ class UserDataScope
 
     public function canAccessRequest(?User $user, RequestModel $demande, bool $allowOwn = true): bool
     {
+        $agent = $demande->relationLoaded('agent') ? $demande->agent : $demande->agent()->first();
+
+        if ($this->isAncienAgent($agent)) {
+            return false;
+        }
+
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
         }
-
-        $agent = $demande->relationLoaded('agent') ? $demande->agent : $demande->agent()->first();
 
         if ($this->isProvincialUser($user)) {
             return $this->canAccessAgent($user, $agent, false);
@@ -260,6 +294,12 @@ class UserDataScope
 
     public function canAccessSignalement(?User $user, Signalement $signalement): bool
     {
+        $agent = $signalement->relationLoaded('agent') ? $signalement->agent : $signalement->agent()->first();
+
+        if ($this->isAncienAgent($agent)) {
+            return false;
+        }
+
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
         }
@@ -267,14 +307,18 @@ class UserDataScope
         if (!$this->isProvincialUser($user)) {
             return false;
         }
-
-        $agent = $signalement->relationLoaded('agent') ? $signalement->agent : $signalement->agent()->first();
 
         return $this->canAccessAgent($user, $agent, false);
     }
 
     public function canAccessPointage(?User $user, Pointage $pointage): bool
     {
+        $agent = $pointage->relationLoaded('agent') ? $pointage->agent : $pointage->agent()->first();
+
+        if ($this->isAncienAgent($agent)) {
+            return false;
+        }
+
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
         }
@@ -283,13 +327,17 @@ class UserDataScope
             return false;
         }
 
-        $agent = $pointage->relationLoaded('agent') ? $pointage->agent : $pointage->agent()->first();
-
         return $this->canAccessAgent($user, $agent, false);
     }
 
     public function canAccessAffectation(?User $user, Affectation $affectation): bool
     {
+        $agent = $affectation->relationLoaded('agent') ? $affectation->agent : $affectation->agent()->first();
+
+        if ($this->isAncienAgent($agent)) {
+            return false;
+        }
+
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
         }
@@ -307,7 +355,6 @@ class UserDataScope
             return true;
         }
 
-        $agent = $affectation->relationLoaded('agent') ? $affectation->agent : $affectation->agent()->first();
         if ($this->canAccessAgent($user, $agent, false)) {
             return true;
         }
@@ -369,5 +416,19 @@ class UserDataScope
         return $provinceId
             ? $query->where('id', $provinceId)
             : $query->whereRaw('1 = 0');
+    }
+
+    private function excludeAncienAgents($query, string $table = 'agents')
+    {
+        return $query->where(function ($agentQuery) use ($table) {
+            $agentQuery
+                ->whereNull($table . '.statut')
+                ->orWhere($table . '.statut', '!=', 'ancien');
+        });
+    }
+
+    private function isAncienAgent(?Agent $agent): bool
+    {
+        return strtolower((string) ($agent?->statut ?? '')) === 'ancien';
     }
 }
