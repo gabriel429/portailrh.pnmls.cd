@@ -186,6 +186,7 @@ class DocumentController extends ApiController
             'fichier'                => 'required|file|max:10240',
             'categories_document_id' => ['nullable', 'string', Rule::in(self::DOCUMENT_CATEGORY_VALUES)],
             'description'            => 'nullable|string|max:500',
+            'notify_by_mail'         => 'nullable|boolean',
         ]);
 
         $agent = Agent::findOrFail($validated['agent_id']);
@@ -217,7 +218,8 @@ class DocumentController extends ApiController
             'Nouveau document dans votre dossier',
             'Un nouveau document a été ajoute a votre dossier agent : ' . ($validated['nom_document'] ?? 'document') . '.',
             '/documents/' . $document->id,
-            $request->user()->id
+            $request->user()->id,
+            $request->boolean('notify_by_mail')
         );
 
         $resource = DocumentResource::make($document);
@@ -281,6 +283,7 @@ class DocumentController extends ApiController
             'description' => 'nullable|string|max:500',
             'statut' => 'nullable|string|max:100',
             'date_expiration' => 'nullable|date',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
 
         $data = [
@@ -315,7 +318,8 @@ class DocumentController extends ApiController
             'Document de dossier mis à jour',
             'Un document de votre dossier agent a été modifié : ' . ($validated['nom_document'] ?? 'document') . '.',
             '/documents/' . $document->id,
-            $user->id
+            $user->id,
+            $request->boolean('notify_by_mail')
         );
 
         return $this->resource(DocumentResource::make($document), [], [

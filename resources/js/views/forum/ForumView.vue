@@ -31,6 +31,10 @@
           required
         ></textarea>
         <div class="forum-composer-footer">
+          <label class="forum-mail-option">
+            <input v-model="form.notify_by_mail" type="checkbox">
+            <span>Notifier par mail</span>
+          </label>
           <span>{{ form.contenu.length }}/3000</span>
           <button class="forum-submit" type="submit" :disabled="posting || form.contenu.length < 2">
             <i class="fas fa-paper-plane"></i>
@@ -249,7 +253,7 @@ const posts = ref([])
 const loading = ref(true)
 const posting = ref(false)
 const search = ref('')
-const form = ref({ titre: '', contenu: '' })
+const form = ref({ titre: '', contenu: '', notify_by_mail: false })
 const meta = ref({ current_page: 1, last_page: 1, total: 0 })
 const showReadersModal = ref(false)
 const readersTarget = ref(null)
@@ -312,7 +316,7 @@ async function submitPost() {
     const { data } = await create(form.value)
     posts.value = [normalizePost(data.data), ...posts.value]
     meta.value.total = (meta.value.total || 0) + 1
-    form.value = { titre: '', contenu: '' }
+    form.value = { titre: '', contenu: '', notify_by_mail: false }
     ui.addToast(data.message || 'Sujet publié.', 'success')
   } catch (error) {
     const message = error.response?.data?.message || 'Impossible de publier le sujet.'
@@ -686,6 +690,24 @@ onMounted(() => loadPosts())
   gap: 1rem;
   color: #64748b;
   font-size: .86rem;
+}
+
+.forum-mail-option {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  min-height: 34px;
+  padding: 0 .65rem;
+  border-radius: 8px;
+  background: rgba(224, 242, 254, .64);
+  color: #075985;
+  font-weight: 850;
+}
+
+.forum-mail-option input {
+  width: 16px;
+  height: 16px;
+  accent-color: #0f766e;
 }
 
 .forum-submit,

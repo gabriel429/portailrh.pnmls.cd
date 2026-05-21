@@ -10,6 +10,7 @@ use App\Models\ForumPost;
 use App\Models\ForumPostRead;
 use App\Models\NotificationPortail;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -73,6 +74,7 @@ class ForumPostController extends ApiController
         $validated = $request->validate([
             'titre' => 'nullable|string|max:160',
             'contenu' => 'required|string|min:2|max:3000',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
 
         $user = $request->user();
@@ -97,6 +99,17 @@ class ForumPostController extends ApiController
             'comments',
         ]);
         $post->loadCount('comments');
+
+        if ($request->boolean('notify_by_mail')) {
+            $senderName = $user->agent?->nom_complet ?: $user->name;
+            $subject = $post->titre ?: str($post->contenu)->limit(70)->toString();
+
+            NotificationService::envoyerEmailAgentsProfessionnels(
+                'Nouveau sujet forum',
+                $senderName . ' a publié un nouveau sujet forum : "' . $subject . '".',
+                '/forum'
+            );
+        }
 
         return $this->resource(ForumPostResource::make($post), [], [
             'message' => 'Message publié avec succès.',

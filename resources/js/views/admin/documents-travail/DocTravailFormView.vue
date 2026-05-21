@@ -61,6 +61,14 @@
             <label for="actif" class="form-check-label">Actif</label>
           </div>
 
+          <div class="mail-option mb-3">
+            <input type="checkbox" id="notify_by_mail" v-model="form.notify_by_mail" class="form-check-input">
+            <label for="notify_by_mail" class="form-check-label">
+              Notifier par mail les agents
+              <span>Envoi uniquement aux e-mails professionnels.</span>
+            </label>
+          </div>
+
           <div class="d-flex gap-2">
             <button type="submit" class="btn btn-primary" :disabled="submitting">
               <span v-if="submitting" class="spinner-border spinner-border-sm me-1"></span>
@@ -96,6 +104,7 @@ const form = ref({
   description: '',
   categorie: '',
   actif: true,
+  notify_by_mail: false,
 })
 
 function onFileChange(event) {
@@ -113,6 +122,7 @@ async function fetchDocument() {
       description: doc.description || '',
       categorie: doc.categorie || '',
       actif: !!doc.actif,
+      notify_by_mail: false,
     }
     currentFileName.value = doc.fichier_nom || doc.fichier || ''
   } catch (e) {
@@ -132,6 +142,7 @@ async function submit() {
   formData.append('description', form.value.description || '')
   formData.append('categorie', form.value.categorie || '')
   formData.append('actif', form.value.actif ? '1' : '0')
+  formData.append('notify_by_mail', form.value.notify_by_mail ? '1' : '0')
 
   if (selectedFile.value) {
     formData.append('fichier', selectedFile.value)
@@ -166,3 +177,26 @@ onMounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.mail-option {
+  display: flex;
+  gap: .65rem;
+  align-items: flex-start;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(0,119,181,.18);
+  border-radius: 10px;
+  background: rgba(232,244,253,.72);
+}
+.mail-option label {
+  display: grid;
+  gap: .12rem;
+  margin: 0;
+  font-weight: 700;
+}
+.mail-option span {
+  color: #667085;
+  font-size: .8rem;
+  font-weight: 500;
+}
+</style>

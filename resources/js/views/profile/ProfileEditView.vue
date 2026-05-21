@@ -176,6 +176,14 @@
           </div>
 
           <!-- Buttons -->
+          <div class="profile-mail-option mb-3">
+            <input v-model="form.notify_by_mail" id="notify_by_mail" type="checkbox" class="form-check-input">
+            <label for="notify_by_mail">
+              Notifier par mail
+              <span>Le message sera envoyé uniquement à votre e-mail professionnel.</span>
+            </label>
+          </div>
+
           <div class="d-flex justify-content-between">
             <router-link :to="{ name: 'profile.show' }" class="btn btn-outline-secondary">
               <i class="fas fa-times me-2"></i> Annuler
@@ -213,6 +221,7 @@ const form = reactive({
   telephone: '',
   adresse: '',
   email_prive: '',
+  notify_by_mail: false,
 })
 
 const initials = computed(() => {
@@ -255,6 +264,7 @@ async function fetchProfileData() {
     form.telephone = data.agent.telephone || ''
     form.adresse = data.agent.adresse || ''
     form.email_prive = data.agent.email_prive || ''
+    form.notify_by_mail = false
   } catch (err) {
     fetchError.value = err.response?.data?.message || 'Impossible de charger le profil.'
   } finally {
@@ -272,6 +282,7 @@ async function submitForm() {
     formData.append('telephone', form.telephone || '')
     formData.append('adresse', form.adresse || '')
     formData.append('email_prive', form.email_prive || '')
+    formData.append('notify_by_mail', form.notify_by_mail ? '1' : '0')
     if (photoFile.value) {
       formData.append('photo', photoFile.value)
     }
@@ -320,6 +331,27 @@ onMounted(fetchProfileData)
 .form-control:disabled {
   background-color: #f8f9fc;
   color: #6c757d;
+}
+.profile-mail-option {
+  display: flex;
+  gap: .65rem;
+  align-items: flex-start;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(0,119,181,.18);
+  border-radius: 10px;
+  background: rgba(232,244,253,.68);
+}
+.profile-mail-option label {
+  display: grid;
+  gap: .12rem;
+  margin: 0;
+  color: #1a1a2e;
+  font-weight: 700;
+}
+.profile-mail-option span {
+  color: #667085;
+  font-size: .8rem;
+  font-weight: 500;
 }
 
 /* Mobile Responsive */

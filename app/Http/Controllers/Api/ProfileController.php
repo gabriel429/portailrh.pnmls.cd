@@ -81,7 +81,9 @@ class ProfileController extends ApiController
             'adresse'      => 'nullable|string|max:255',
             'email_prive'  => 'nullable|email|max:255',
             'photo'        => 'nullable|image|max:2048',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
+        unset($validated['notify_by_mail']);
 
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
@@ -93,14 +95,16 @@ class ProfileController extends ApiController
 
         $agent->update($validated);
 
-        NotificationService::notifierAgent(
-            $agent,
-            'message',
-            'Votre profil a été mis à jour',
-            'Une modification a été enregistrée sur votre profil E-PNMLS.',
-            '/profile',
-            $user->id
-        );
+        if ($request->boolean('notify_by_mail')) {
+            NotificationService::notifierAgent(
+                $agent,
+                'message',
+                'Votre profil a été mis à jour',
+                'Une modification a été enregistrée sur votre profil E-PNMLS.',
+                '/profile',
+                $user->id
+            );
+        }
 
         // Reload relations for the response
         $agent->load([

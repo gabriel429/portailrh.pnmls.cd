@@ -971,6 +971,7 @@ class ParametresController extends Controller
             'categorie' => 'nullable|string|max:100',
             'fichier' => 'required|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
             'actif' => 'boolean',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
         $file = $request->file('fichier');
         $path = $file->store('documents_travail', 'public');
@@ -991,7 +992,8 @@ class ParametresController extends Controller
             'Nouveau document de travail disponible',
             'Un nouveau document a été publié : ' . $doc->titre . '.',
             '/documents-travail',
-            $request->user()->id
+            $request->user()->id,
+            $request->boolean('notify_by_mail')
         );
 
         return response()->json($doc, 201);
@@ -1006,8 +1008,9 @@ class ParametresController extends Controller
             'categorie' => 'nullable|string|max:100',
             'fichier' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
             'actif' => 'boolean',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
-        $data = collect($validated)->except('fichier')->toArray();
+        $data = collect($validated)->except('fichier', 'notify_by_mail')->toArray();
         if ($request->hasFile('fichier')) {
             if ($documentTravail->fichier && Storage::disk('public')->exists($documentTravail->fichier)) {
                 Storage::disk('public')->delete($documentTravail->fichier);
@@ -1026,7 +1029,8 @@ class ParametresController extends Controller
             'Document de travail mis à jour',
             'Le document de travail "' . $documentTravail->titre . '" a été mis à jour.',
             '/documents-travail',
-            $request->user()->id
+            $request->user()->id,
+            $request->boolean('notify_by_mail')
         );
 
         return response()->json($documentTravail);

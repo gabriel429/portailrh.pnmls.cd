@@ -639,6 +639,14 @@
               <textarea v-model="documentUploadForm.description" class="form-control" rows="3" maxlength="500"></textarea>
             </div>
 
+            <div class="agent-doc-mail-option mb-3">
+              <input v-model="documentUploadForm.notify_by_mail" id="agent_doc_notify_by_mail" type="checkbox" class="form-check-input">
+              <label for="agent_doc_notify_by_mail">
+                Notifier par mail
+                <span>Envoi uniquement vers l'e-mail professionnel de l'agent.</span>
+              </label>
+            </div>
+
             <div class="d-flex justify-content-end gap-2">
               <button type="button" class="btn btn-outline-secondary" @click="closeDocumentUploadModal">Annuler</button>
               <button type="submit" class="btn btn-primary" :disabled="documentUploading">
@@ -692,6 +700,7 @@ function defaultDocumentUploadForm() {
         nom_document: '',
         categories_document_id: 'identite',
         description: '',
+        notify_by_mail: false,
     }
 }
 
@@ -836,6 +845,7 @@ async function submitAgentDocument() {
     payload.append('categories_document_id', documentUploadForm.value.categories_document_id)
     if (documentUploadForm.value.description) payload.append('description', documentUploadForm.value.description)
     if (selectedDocumentFile.value) payload.append('fichier', selectedDocumentFile.value)
+    payload.append('notify_by_mail', documentUploadForm.value.notify_by_mail ? '1' : '0')
 
     try {
         await createDocument(payload)
@@ -1094,6 +1104,27 @@ onMounted(() => {
 }
 .agent-doc-body {
     padding: 1.25rem;
+}
+.agent-doc-mail-option {
+    display: flex;
+    gap: .65rem;
+    align-items: flex-start;
+    padding: .85rem 1rem;
+    border: 1px solid rgba(0, 119, 181, .18);
+    border-radius: 10px;
+    background: rgba(232, 244, 253, .72);
+}
+.agent-doc-mail-option label {
+    display: grid;
+    gap: .12rem;
+    margin: 0;
+    color: #1a1a2e;
+    font-weight: 700;
+}
+.agent-doc-mail-option span {
+    color: #667085;
+    font-size: .8rem;
+    font-weight: 500;
 }
 .nav-tabs .nav-link { font-weight: 500; color: #666; }
 .nav-tabs .nav-link.active { color: #0077B5; border-bottom: 3px solid #0077B5; }

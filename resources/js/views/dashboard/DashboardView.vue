@@ -242,6 +242,13 @@
                 <textarea v-model="uplForm.description" rows="2" class="dum-input dum-textarea" :class="{ 'is-invalid': uplErrors.description }" placeholder="Ajoutez une description..."></textarea>
                 <div v-if="uplErrors.description" class="dum-error">{{ uplErrors.description[0] }}</div>
               </div>
+              <div class="dum-mail-option mb-3">
+                <input v-model="uplForm.notify_by_mail" id="dashboard_doc_notify_by_mail" type="checkbox">
+                <label for="dashboard_doc_notify_by_mail">
+                  Notifier par mail
+                  <span>Envoi uniquement vers l'e-mail professionnel de l'agent.</span>
+                </label>
+              </div>
               <div class="dum-footer">
                 <button type="button" class="dum-btn dum-btn-cancel" @click="closeUploadModal">Annuler</button>
                 <button type="submit" class="dum-btn dum-btn-submit" :disabled="uplSubmitting">
@@ -465,7 +472,7 @@ const uplFileInput = ref(null)
 
 const uplCatOptions = DOCUMENT_CATEGORY_OPTIONS
 
-function defaultUplForm() { return { nom_document: '', categories_document_id: '', description: '' } }
+function defaultUplForm() { return { nom_document: '', categories_document_id: '', description: '', notify_by_mail: false } }
 const uplForm = ref(defaultUplForm())
 
 function openUploadModal() {
@@ -494,6 +501,7 @@ async function handleUplSubmit() {
   if (uplForm.value.categories_document_id) fd.append('categories_document_id', uplForm.value.categories_document_id)
   if (uplForm.value.description) fd.append('description', uplForm.value.description)
   if (uplSelectedFile.value) fd.append('fichier', uplSelectedFile.value)
+  fd.append('notify_by_mail', uplForm.value.notify_by_mail ? '1' : '0')
   try {
     await createDocument(fd)
     ui.addToast('Document uploade avec succes.', 'success')
@@ -722,6 +730,10 @@ a.dash-activity-card { cursor: pointer; }
 .dum-input.is-invalid { border-color: #ef4444; }
 .dum-textarea { resize: vertical; min-height: 60px; }
 .dum-error { font-size: .75rem; color: #ef4444; margin-top: .2rem; }
+.dum-mail-option { display: flex; gap: .65rem; align-items: flex-start; padding: .78rem .9rem; border: 1px solid rgba(0,119,181,.18); border-radius: 10px; background: rgba(232,244,253,.72); }
+.dum-mail-option input { width: 18px; height: 18px; margin-top: .12rem; accent-color: #0077B5; }
+.dum-mail-option label { display: grid; gap: .12rem; margin: 0; color: #1a1a2e; font-weight: 700; font-size: .84rem; }
+.dum-mail-option span { color: #667085; font-size: .76rem; font-weight: 500; }
 .dum-upload-zone { border: 2px dashed #bde0f5; border-radius: 14px; padding: 1.5rem; text-align: center; cursor: pointer; transition: all .2s; background: #f8fbfe; }
 .dum-upload-zone:hover, .dum-upload-zone.dragging { border-color: #0077B5; background: #e8f4fd; }
 .dum-upload-icon { font-size: 2rem; color: #0077B5; margin-bottom: .4rem; display: block; }

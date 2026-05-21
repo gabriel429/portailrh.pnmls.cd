@@ -93,6 +93,15 @@
                 </label>
               </div>
             </div>
+            <div class="col-12">
+              <div class="mail-option">
+                <input v-model="form.notify_by_mail" class="form-check-input" type="checkbox" id="notify_by_mail">
+                <label class="form-check-label" for="notify_by_mail">
+                  Notifier par mail les agents
+                  <span>Envoi uniquement aux e-mails professionnels.</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -136,6 +145,7 @@ const form = ref({
   signataire: '',
   date_expiration: '',
   actif: true,
+  notify_by_mail: false,
 })
 
 async function loadCommunique() {
@@ -151,6 +161,7 @@ async function loadCommunique() {
       signataire: c.signataire || '',
       date_expiration: c.date_expiration ? c.date_expiration.split('T')[0] : '',
       actif: !!c.actif,
+      notify_by_mail: false,
     }
   } catch {
     ui.addToast('Communique introuvable.', 'danger')
@@ -254,6 +265,26 @@ onMounted(() => loadCommunique())
     transition: background .15s;
 }
 .btn-cancel:hover { background: #e4e7ec; color: #1a1a2e; }
+.mail-option {
+    display: flex;
+    gap: .65rem;
+    align-items: flex-start;
+    padding: .8rem .9rem;
+    border: 1px solid rgba(0,119,181,.18);
+    border-radius: 10px;
+    background: rgba(232,244,253,.72);
+}
+.mail-option label {
+    display: grid;
+    gap: .12rem;
+    font-weight: 700;
+    color: #1a1a2e;
+}
+.mail-option span {
+    color: #667085;
+    font-size: .8rem;
+    font-weight: 500;
+}
 
 @media (max-width: 767.98px) {
     .communique-hero {

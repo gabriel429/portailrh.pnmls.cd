@@ -36,15 +36,17 @@ class CommuniqueController extends ApiController
             'signataire' => 'nullable|string|max:255',
             'date_expiration' => 'nullable|date|after_or_equal:today',
             'actif' => 'nullable|boolean',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
 
         $validated['auteur_id'] = auth()->id();
         $validated['actif'] = $request->boolean('actif', true);
+        unset($validated['notify_by_mail']);
 
         $communique = Communique::create($validated);
 
         if ($communique->actif) {
-            CommuniquePublished::dispatch($communique);
+            CommuniquePublished::dispatch($communique, $request->boolean('notify_by_mail'));
         }
 
         $communique->load('auteur');
@@ -138,11 +140,21 @@ class CommuniqueController extends ApiController
             'signataire' => 'nullable|string|max:255',
             'date_expiration' => 'nullable|date',
             'actif' => 'nullable|boolean',
+            'notify_by_mail' => 'nullable|boolean',
         ]);
 
         $validated['actif'] = $request->boolean('actif', false);
+        unset($validated['notify_by_mail']);
 
         $communique->update($validated);
+
+        if ($communique->actif && $request->boolean('notify_by_mail')) {
+            \App\Services\NotificationService::envoyerEmailAgentsProfessionnels(
+                'Communiqué mis à jour',
+                'Le communiqué "' . $communique->titre . '" a été mis à jour.',
+                '/communiques/' . $communique->id
+            );
+        }
 
         $resource = CommuniqueResource::make($communique->fresh()->load('auteur')->loadCount('reads'));
 

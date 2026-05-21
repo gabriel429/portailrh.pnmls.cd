@@ -189,6 +189,14 @@
                 <span>Document actif et visible aux agents</span>
               </label>
 
+              <label class="docs-modal-check docs-modal-mail-check">
+                <input v-model="form.notify_by_mail" type="checkbox">
+                <span>
+                  Notifier par mail les agents
+                  <small>Envoi uniquement aux e-mails professionnels.</small>
+                </span>
+              </label>
+
               <div class="docs-modal-form-actions">
                 <button type="button" class="docs-modal-secondary" @click="returnToList">Annuler</button>
                 <button type="submit" class="docs-modal-save" :disabled="submitting">
@@ -250,6 +258,7 @@ const form = ref({
   description: '',
   categorie: '',
   actif: true,
+  notify_by_mail: false,
 })
 
 const currentFileName = computed(() => currentFileNameFromDoc(editingDoc.value))
@@ -325,6 +334,7 @@ function resetForm() {
     description: '',
     categorie: categorie.value || '',
     actif: true,
+    notify_by_mail: false,
   }
   selectedFile.value = null
   formError.value = null
@@ -348,6 +358,7 @@ function startEdit(doc) {
     description: doc.description || '',
     categorie: doc.categorie || '',
     actif: !!doc.actif,
+    notify_by_mail: false,
   }
   selectedFile.value = null
   formError.value = null
@@ -380,6 +391,7 @@ async function submitForm() {
   formData.append('description', form.value.description || '')
   formData.append('categorie', form.value.categorie || '')
   formData.append('actif', form.value.actif ? '1' : '0')
+  formData.append('notify_by_mail', form.value.notify_by_mail ? '1' : '0')
 
   if (selectedFile.value) {
     formData.append('fichier', selectedFile.value)
@@ -1057,6 +1069,27 @@ onUnmounted(() => {
 .docs-modal-check input {
   width: 18px;
   height: 18px;
+}
+
+.docs-modal-mail-check {
+  align-items: flex-start;
+  padding: .72rem .85rem;
+  border: 1px solid rgba(0, 119, 181, .18);
+  border-radius: 8px;
+  background: rgba(232, 244, 253, .72);
+}
+
+.docs-modal-mail-check input {
+  margin-top: .1rem;
+  accent-color: #0077B5;
+}
+
+.docs-modal-mail-check small {
+  display: block;
+  color: #64748b;
+  font-size: .76rem;
+  font-weight: 500;
+  margin-top: .12rem;
 }
 
 .docs-modal-form-actions {

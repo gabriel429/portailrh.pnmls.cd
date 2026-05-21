@@ -10,7 +10,7 @@ class CommuniquePublished
 {
     use Dispatchable, SerializesModels;
 
-    public function __construct(public Communique $communique)
+    public function __construct(public Communique $communique, public bool $notifyByMail = false)
     {
     }
 }

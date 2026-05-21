@@ -144,6 +144,14 @@
             </div>
           </div>
 
+          <div class="mail-option mb-4">
+            <input v-model="form.notify_by_mail" id="notify_by_mail" type="checkbox">
+            <label for="notify_by_mail">
+              Notifier par mail
+              <span>Envoi uniquement vers l'e-mail professionnel de l'agent concerné.</span>
+            </label>
+          </div>
+
           <!-- Actions -->
           <div class="d-flex gap-2 justify-content-between align-items-center mb-4">
             <router-link :to="{ name: 'documents.index' }" class="btn btn-cancel">
@@ -188,6 +196,7 @@ const form = ref({
   nom_document: '',
   categories_document_id: '',
   description: '',
+  notify_by_mail: false,
 })
 
 const categories = DOCUMENT_CATEGORY_OPTIONS.map((category) => ({
@@ -265,6 +274,7 @@ async function submitForm() {
   if (form.value.description) {
     formData.append('description', form.value.description)
   }
+  formData.append('notify_by_mail', form.value.notify_by_mail ? '1' : '0')
 
   try {
     await create(formData)
@@ -614,6 +624,35 @@ async function submitForm() {
 }
 .info-banner strong {
   color: #004165;
+}
+
+.mail-option {
+  display: flex;
+  gap: .65rem;
+  align-items: flex-start;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(0,119,181,.18);
+  border-radius: 12px;
+  background: rgba(232,244,253,.72);
+  box-shadow: 0 6px 18px rgba(0,119,181,.08);
+}
+.mail-option input {
+  width: 18px;
+  height: 18px;
+  margin-top: .15rem;
+  accent-color: #0077B5;
+}
+.mail-option label {
+  display: grid;
+  gap: .12rem;
+  margin: 0;
+  color: #1a1a2e;
+  font-weight: 800;
+}
+.mail-option span {
+  color: #667085;
+  font-size: .8rem;
+  font-weight: 500;
 }
 
 /* Buttons */

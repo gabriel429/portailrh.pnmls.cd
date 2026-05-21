@@ -11,11 +11,16 @@ class NotifyCommuniqueListener
     {
         $communique = $event->communique;
 
-        NotificationService::notifierTousAvecEmail(
+        $userIds = \App\Models\User::pluck('id')->toArray();
+
+        NotificationService::envoyerMultiple(
+            $userIds,
             'communique',
             'Nouveau communiqué',
             $communique->titre,
             '/communiques/' . $communique->id,
+            null,
+            $event->notifyByMail
         );
     }
 }

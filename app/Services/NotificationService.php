@@ -76,7 +76,7 @@ class NotificationService
     /**
      * Envoyer une notification à un user
      */
-    public static function envoyer(int $userId, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): NotificationPortail
+    public static function envoyer(int $userId, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null, bool $sendEmail = true): NotificationPortail
     {
         $config = self::$types[$type] ?? ['icone' => 'fa-bell', 'couleur' => '#0077B5'];
 
@@ -92,7 +92,7 @@ class NotificationService
         ]);
 
         $user = User::with('agent')->find($userId);
-        if ($user) {
+        if ($sendEmail && $user) {
             self::envoyerEmailProfessionnel($user, $titre, $message, $lien);
         }
 
@@ -102,8 +102,14 @@ class NotificationService
     /**
      * Envoyer une notification à plusieurs users
      */
-    public static function envoyerMultiple(array $userIds, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): void
+    public static function envoyerMultiple(array $userIds, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null, bool $sendEmail = true): void
     {
+        $userIds = array_values(array_unique(array_filter(array_map('intval', $userIds))));
+
+        if (empty($userIds)) {
+            return;
+        }
+
         $config = self::$types[$type] ?? ['icone' => 'fa-bell', 'couleur' => '#0077B5'];
 
         $records = [];
@@ -126,10 +132,12 @@ class NotificationService
 
         NotificationPortail::insert($records);
 
-        User::with('agent')
-            ->whereIn('id', $userIds)
-            ->get()
-            ->each(fn(User $user) => self::envoyerEmailProfessionnel($user, $titre, $message, $lien));
+        if ($sendEmail) {
+            User::with('agent')
+                ->whereIn('id', $userIds)
+                ->get()
+                ->each(fn(User $user) => self::envoyerEmailProfessionnel($user, $titre, $message, $lien));
+        }
     }
 
     /**
@@ -137,7 +145,7 @@ class NotificationService
      */
     public static function envoyerAvecEmail(int $userId, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): ?NotificationPortail
     {
-        return self::envoyer($userId, $type, $titre, $message, $lien, $emetteurId);
+        return self::envoyer($userId, $type, $titre, $message, $lien, $emetteurId, true);
     }
 
     /**
@@ -155,18 +163,59 @@ class NotificationService
     }
 
     /**
+     * Envoyer uniquement des e-mails aux adresses professionnelles des agents.
+     */
+    public static function envoyerEmailAgentsProfessionnels(string $titre, string $message, ?string $lien = null): int
+    {
+        if (!config('mail.mailer') || config('mail.mailer') === 'log') {
+            return 0;
+        }
+
+        $sent = 0;
+
+        Agent::query()
+            ->whereNotNull('email_professionnel')
+            ->where('email_professionnel', '!=', '')
+            ->orderBy('id')
+            ->chunkById(50, function ($agents) use ($titre, $message, $lien, &$sent) {
+                foreach ($agents as $agent) {
+                    $email = self::resolveProfessionalEmail(null, $agent);
+
+                    if (!$email) {
+                        continue;
+                    }
+
+                    try {
+                        Mail::to($email)->send(new NotificationMail($titre, $message, $lien));
+                        $sent++;
+                    } catch (\Throwable $e) {
+                        Log::warning('Broadcast professional email failed', [
+                            'agent_id' => $agent->id,
+                            'email' => $email,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+            });
+
+        return $sent;
+    }
+
+    /**
      * Notifier un agent concerné: notification interne si un user est lié, email pro sinon.
      */
-    public static function notifierAgent(Agent $agent, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): void
+    public static function notifierAgent(Agent $agent, string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null, bool $sendEmail = true): void
     {
         $agent->loadMissing('user');
 
         if ($agent->user) {
-            self::envoyerAvecEmail($agent->user->id, $type, $titre, $message, $lien, $emetteurId);
+            self::envoyer($agent->user->id, $type, $titre, $message, $lien, $emetteurId, $sendEmail);
             return;
         }
 
-        self::envoyerEmailProfessionnel(null, $titre, $message, $lien, $agent);
+        if ($sendEmail) {
+            self::envoyerEmailProfessionnel(null, $titre, $message, $lien, $agent);
+        }
     }
 
     /**
@@ -263,18 +312,10 @@ class NotificationService
 
     protected static function resolveProfessionalEmail(?User $user = null, ?Agent $agent = null): ?string
     {
-        $candidates = array_filter([
-            $agent?->email_professionnel,
-            $user?->email,
-            $agent?->email,
-            $agent?->email_prive,
-        ]);
+        $candidate = trim((string) ($agent?->email_professionnel ?? ''));
 
-        foreach ($candidates as $candidate) {
-            $candidate = trim((string) $candidate);
-            if (filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
-                return $candidate;
-            }
+        if (filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+            return $candidate;
         }
 
         return null;
