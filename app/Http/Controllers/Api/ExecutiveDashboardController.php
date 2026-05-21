@@ -847,7 +847,8 @@ class ExecutiveDashboardController extends ApiController
         }
 
         // ─── DEPARTMENTS de la province ──────────────────────────────────────────
-        $departments = Department::where('province_id', $provinceId)
+        $departments = Department::fonctionnel()
+            ->where('province_id', $provinceId)
             ->withCount([
                 'agents as total'  => fn($q) => $q,
                 'agents as actifs' => fn($q) => $q->where('statut', 'actif'),
@@ -1172,7 +1173,7 @@ class ExecutiveDashboardController extends ApiController
             usort($items, fn($a, $b) => strcasecmp($a['nom'], $b['nom']));
         } else {
             // SEN / SEL : breakdown par département (scoped pour RH Provincial)
-            $deptQuery = Department::query();
+            $deptQuery = Department::fonctionnel();
             if ($userProvinceId) {
                 $deptQuery->where('province_id', $userProvinceId);
             }
@@ -1367,7 +1368,8 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $ptaAvg = (clone $ptaQuery)->avg('pourcentage') ?? 0;
 
         // Départements de la province
-        $departments = Department::where('province_id', $id)
+        $departments = Department::fonctionnel()
+            ->where('province_id', $id)
             ->withCount([
                 'agents as total_agents' => fn($q) => $q,
                 'agents as actifs_agents' => fn($q) => $q->actifs(),
@@ -1504,6 +1506,10 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $department = Department::find($id);
         if (!$department) {
             return $this->error('Département introuvable', 404);
+        }
+
+        if (!$department->pris_en_charge) {
+            return $this->error('Département inactif dans le système.', 404);
         }
 
         // Provincial scoping: RH Provincial AND SEP can only see departments in their province
@@ -1819,7 +1825,8 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         }
 
         // ─── DEPARTMENTS de la province ────────────────────────────────────────
-        $departments = Department::where('province_id', $provinceId)
+        $departments = Department::fonctionnel()
+            ->where('province_id', $provinceId)
             ->withCount([
                 'agents as total'  => fn($q) => $q,
                 'agents as actifs' => fn($q) => $q->where('statut', 'actif'),

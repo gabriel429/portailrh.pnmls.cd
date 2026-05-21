@@ -773,7 +773,7 @@
                       <div
                         v-for="item in drilldownOrgane.items" :key="item.id"
                         class="drill-item-card drill-item-clickable"
-                        @click="drilldownOrgane.type_items === 'provinces' ? openProvinceDrilldown(item.id) : openDepartmentDrilldown(item.id)"
+                        @click.stop="drilldownOrgane.type_items === 'provinces' ? openProvinceDrilldown(item.id) : openDepartmentDrilldown(item.id)"
                       >
                         <div class="drill-item-head">
                           <div class="drill-item-badge" :style="{ background: drilldownColor }">
@@ -993,7 +993,7 @@
                       <!-- Départements -->
                       <div v-if="drilldownProvince.departments.length" class="drill-prov-section-title"><i class="fas fa-building"></i> Départements</div>
                       <div class="drill-prov-dept-grid">
-                        <div v-for="d in drilldownProvince.departments" :key="d.id" class="drill-prov-dept drill-item-clickable" @click="openDepartmentDrilldown(d.id)">
+                        <div v-for="d in drilldownProvince.departments" :key="d.id" class="drill-prov-dept drill-item-clickable" @click.stop="openDepartmentDrilldown(d.id)">
                           <div class="drill-prov-dept-name">{{ d.nom }} <i class="fas fa-chevron-right" style="font-size:0.7em;opacity:0.5;margin-left:4px;"></i></div>
                           <div class="drill-prov-dept-count">{{ d.actifs }} <small>actifs</small> / {{ d.total }}</div>
                         </div>
@@ -1541,6 +1541,7 @@ const drilldownDepartment = ref(null) // { department, effectifs, presence, agen
 const drilldownLevel = ref('organe') // 'organe' | 'province' | 'department'
 const drilldownSection = ref('effectifs') // 'effectifs' | 'presence' | 'pta'
 const drillPresenceFilter = ref('all') // 'all' | 'present' | 'absent'
+let drillRequestSeq = 0
 const agentContactOpen = ref(false)
 const selectedAgentContact = ref(null)
 const emailComposerOpen = ref(false)
@@ -1746,54 +1747,67 @@ async function sendAgentEmail() {
 }
 
 async function openOrganeDrilldown(code, section = 'effectifs') {
+  const requestSeq = ++drillRequestSeq
   drilldownOpen.value = true
   drilldownLoading.value = true
   drilldownLevel.value = 'organe'
   drilldownSection.value = section
   drillPresenceFilter.value = 'all'
   drilldownProvince.value = null
+  drilldownDepartment.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/organe/${code}`)
+    if (requestSeq !== drillRequestSeq) return
     drilldownOrgane.value = result.data ?? result
   } catch (e) {
+    if (requestSeq !== drillRequestSeq) return
     drilldownOrgane.value = null
   } finally {
-    drilldownLoading.value = false
+    if (requestSeq === drillRequestSeq) drilldownLoading.value = false
   }
 }
 
 async function openProvinceDrilldown(id) {
+  const requestSeq = ++drillRequestSeq
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
   drillPresenceFilter.value = 'all'
+  drilldownDepartment.value = null
   try {
     const params = drilldownOrgane.value?.organe ? { organe: drilldownOrgane.value.organe } : {}
     const { data: result } = await client.get(`/dashboard/executive/province/${id}`, { params })
+    if (requestSeq !== drillRequestSeq) return
     drilldownProvince.value = result.data ?? result
   } catch (e) {
+    if (requestSeq !== drillRequestSeq) return
     drilldownProvince.value = null
   } finally {
-    drilldownLoading.value = false
+    if (requestSeq === drillRequestSeq) drilldownLoading.value = false
   }
 }
 
 async function openDepartmentDrilldown(id) {
   if (id === null || id === undefined) return
+  const requestSeq = ++drillRequestSeq
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   drillPresenceFilter.value = 'all'
+  drilldownDepartment.value = null
   try {
     const params = drilldownOrgane.value?.organe ? { organe: drilldownOrgane.value.organe } : {}
     const { data: result } = await client.get(`/dashboard/executive/department/${id}`, { params })
+    if (requestSeq !== drillRequestSeq) return
     drilldownDepartment.value = result.data ?? result
   } catch (e) {
+    if (requestSeq !== drillRequestSeq) return
     drilldownDepartment.value = null
   } finally {
-    drilldownLoading.value = false
+    if (requestSeq === drillRequestSeq) drilldownLoading.value = false
   }
 }
 
 function closeDrilldown() {
+  drillRequestSeq += 1
   drilldownOpen.value = false
   drilldownOrgane.value = null
   drilldownProvince.value = null
@@ -1805,6 +1819,7 @@ function closeDrilldown() {
 }
 
 function backToOrgane() {
+  drillRequestSeq += 1
   drilldownLevel.value = 'organe'
   drilldownProvince.value = null
   drilldownDepartment.value = null
@@ -1812,6 +1827,7 @@ function backToOrgane() {
 }
 
 function backToPrevious() {
+  drillRequestSeq += 1
   drilldownDepartment.value = null
   if (drilldownProvince.value) {
     drilldownLevel.value = 'province'
