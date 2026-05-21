@@ -42,6 +42,7 @@
         <p class="ux-step-count">Étape {{ tourStep + 1 }} sur {{ tourSteps.length }}</p>
         <h2>{{ currentTourStep.title }}</h2>
         <p>{{ currentTourStep.text }}</p>
+        <p v-if="currentTourStep.help" class="ux-help-text">{{ currentTourStep.help }}</p>
         <ul v-if="currentTourStep.details" class="ux-detail-list">
           <li v-for="detail in currentTourStep.details" :key="detail">
             <i class="fas fa-check"></i>
@@ -162,89 +163,115 @@ const tourSteps = computed(() => [
   {
     icon: 'fa-gauge-high',
     title: 'Tableau de bord',
-    text: 'Retrouvez les indicateurs, les alertes et les activités importantes dès votre arrivée.',
+    text: 'Le tableau de bord est la page principale après la connexion.',
+    help: 'Il résume ce qui vous concerne directement: vos tâches, vos demandes, vos notifications, les échéances et les informations importantes. Un responsable y voit aussi les éléments à suivre pour son équipe ou sa structure.',
     details: [
-      'Consultez les demandes à traiter, les tâches récentes et les échéances importantes.',
-      'Les responsables voient les éléments de leur niveau: département, province, local ou national.',
+      'Commencez toujours par vérifier les notifications et les éléments en attente.',
+      'Si une demande attend votre validation, elle apparaît dans la zone prévue à cet effet.',
+      'Les cartes et tableaux servent à repérer rapidement les retards, présences, tâches et validations.',
     ],
   },
   {
     icon: 'fa-bars-staggered',
     title: 'Menu de navigation',
-    text: 'Le menu donne un accès rapide aux espaces de travail, aux documents et aux outils de suivi.',
+    text: 'Le menu permet d’aller d’un module à l’autre sans revenir en arrière.',
+    help: 'Les boutons affichés dépendent de votre rôle. Un agent simple ne voit pas les mêmes espaces qu’un Directeur, un SEP, un SEN ou les Ressources Humaines. C’est normal: chacun accède uniquement aux actions utiles à son travail.',
     details: [
-      'Utilisez Accueil pour revenir au tableau de bord et les modules pour passer d’un espace à l’autre.',
-      'Sur téléphone, ouvrez le menu puis choisissez directement l’action souhaitée.',
+      'Accueil ramène au tableau de bord.',
+      'Demandes sert à créer et suivre les absences, permissions ou autres demandes disponibles.',
+      'Documents, Docs RH, PTA, Congés et Mes tâches ouvrent les espaces spécialisés.',
+      'Sur téléphone, utilisez le menu compact en haut de l’écran pour garder une navigation simple.',
     ],
   },
   {
     icon: 'fa-layer-group',
     title: 'Modules accessibles',
-    text: 'Les modules visibles sont adaptés à votre rôle et à votre rattachement dans la structure.',
+    text: 'Chaque module correspond à une activité précise dans l’application.',
+    help: 'Si un bouton n’apparaît pas, cela signifie généralement que votre profil n’a pas le rôle nécessaire ou que l’action appartient à un autre niveau de validation. En cas d’erreur de rôle, contactez les RH ou l’administrateur.',
     modules: roleModules.value,
   },
   {
     icon: 'fa-paper-plane',
     title: 'Demandes et validations',
-    text: 'Les demandes suivent un circuit adapté à votre organe et à votre niveau hiérarchique.',
+    text: 'Le module Demandes sert à soumettre et suivre les demandes administratives.',
+    help: 'Quand un agent envoie une demande, l’application l’oriente automatiquement vers le bon valideur selon son organe: Directeur, RH, CAF, SEP, SEL, SEN ou assistant du SEN. L’agent peut suivre l’état sans devoir demander manuellement où se trouve son dossier.',
     details: [
-      'Un agent suit sa demande depuis le module Demandes.',
-      'Le valideur concerné retrouve les demandes dans son tableau de bord et dans la liste des demandes.',
-      'Après validation, la demande passe automatiquement à l’étape suivante.',
+      'Le statut “en attente” signifie que la demande n’est pas encore finalisée.',
+      'Le valideur concerné voit la demande sur son dashboard ou dans la liste des demandes.',
+      'Après chaque validation, la demande passe automatiquement à l’étape suivante.',
+      'Une demande approuvée ou rejetée doit être consultée dans son détail pour voir l’historique.',
     ],
   },
   {
     icon: 'fa-calendar-days',
     title: 'Présences et congés',
-    text: 'Les congés et absences approuvées sont pris en compte pour éviter les pointages incohérents.',
+    text: 'Les présences, absences et congés permettent de suivre la disponibilité des agents.',
+    help: 'Lorsqu’un congé ou une absence est approuvé, l’agent est considéré comme absent de manière justifiée pendant la période concernée. Cela évite les erreurs de pointage et garde les informations cohérentes entre les modules.',
     details: [
-      'Vérifiez vos congés, absences et permissions depuis les modules dédiés.',
+      'Un agent consulte ses congés et absences depuis les modules dédiés.',
+      'Un responsable vérifie les absences de son équipe depuis son espace de suivi.',
       'Pendant une absence justifiée, l’agent ne doit pas être pointé comme présent.',
+      'En cas d’erreur de présence, contactez le service RH avec la date concernée.',
     ],
   },
   {
     icon: 'fa-folder-open',
     title: 'Documents et communiqués',
-    text: 'Les documents RH, communiqués et pièces importantes restent centralisés dans l’application.',
+    text: 'Les documents et communiqués centralisent les informations officielles.',
+    help: 'L’application peut afficher un communiqué important à la connexion. Lisez-le avant de continuer: il peut contenir une instruction, une note de service, une annonce RH ou une information institutionnelle.',
     details: [
-      'Ouvrez les documents partagés et téléchargez les pièces jointes nécessaires.',
-      'Lisez les communiqués affichés à la connexion pour rester aligné avec les instructions officielles.',
+      'Documents regroupe les fichiers partagés selon votre accès.',
+      'Docs RH contient les documents administratifs et RH disponibles.',
+      'Les pièces jointes peuvent être ouvertes ou téléchargées si elles sont disponibles.',
+      'Marquez les communiqués comme lus après consultation.',
     ],
   },
   {
     icon: 'fa-bell',
     title: 'Notifications',
-    text: 'Les notifications signalent les communiqués, les tâches, les validations et les messages importants.',
+    text: 'Les notifications attirent votre attention sur les nouveautés importantes.',
+    help: 'Le nombre rouge indique les notifications non lues. Une notification peut concerner une demande, une tâche, un document, un communiqué, un forum ou une action à valider.',
     details: [
-      'Le badge rouge indique les nouveautés non lues.',
-      'Cliquez sur une notification pour accéder directement à l’élément concerné.',
+      'Cliquez sur la cloche pour afficher les dernières notifications.',
+      'Cliquez sur une notification pour aller directement à l’élément concerné.',
+      'Après lecture, vous pouvez marquer les notifications comme lues.',
+      'Si une notification ne s’ouvre pas, retournez au module indiqué dans son titre.',
     ],
   },
   {
     icon: 'fa-list-check',
     title: 'Tâches et activités',
-    text: 'Les tâches attribuées, les activités PTA et les demandes restent accessibles depuis leurs modules dédiés.',
+    text: 'Les tâches permettent de suivre le travail confié aux agents.',
+    help: 'Une tâche peut avoir une priorité, une échéance, un statut et un pourcentage d’avancement. La mise à jour régulière aide les responsables à suivre la réalisation du travail sans multiplier les échanges.',
     details: [
-      'Mettez à jour l’avancement des tâches pour garder le suivi à jour.',
-      'Les responsables peuvent consulter les performances et les retards de leur équipe.',
+      'Consultez “Mes tâches” pour voir ce qui vous est attribué.',
+      'Mettez à jour l’avancement lorsque le travail progresse.',
+      'Respectez les échéances affichées pour éviter les retards.',
+      'Les responsables suivent la performance de l’équipe depuis leur dashboard.',
     ],
   },
   {
     icon: 'fa-address-card',
     title: 'Profil et contacts',
-    text: 'Le profil agent et le carnet d’adresses facilitent la mise à jour des informations utiles.',
+    text: 'Le profil agent contient les informations personnelles et professionnelles.',
+    help: 'Un profil bien renseigné facilite les échanges, les validations, les notifications par mail et l’identification des agents dans les différents modules.',
     details: [
-      'Vérifiez votre photo, vos contacts, vos mails et votre poste dans le profil.',
-      'Le carnet d’adresses permet de retrouver rapidement un agent selon son poste ou son nom.',
+      'Vérifiez votre photo, votre poste, vos contacts, vos deux mails et vos numéros de téléphone.',
+      'Le carnet d’adresses permet de retrouver rapidement un agent par nom, poste ou groupe.',
+      'Si une information est incorrecte, demandez la mise à jour au service habilité.',
+      'Les responsables doivent vérifier que les agents de leur équipe sont bien rattachés.',
     ],
   },
   {
     icon: 'fa-circle-question',
     title: 'Assistance',
-    text: 'Le bouton Aide permet de revoir ces explications quand vous en avez besoin.',
+    text: 'Le bouton Aide permet de relire ce guide à tout moment.',
+    help: 'Avant de signaler un problème, identifiez la page, l’action effectuée et le message affiché. Ces détails permettent à l’administrateur ou aux RH de corriger plus vite.',
     details: [
-      'En cas de blocage, notez le module concerné, l’action effectuée et le message affiché.',
-      'Contactez les ressources humaines ou l’administrateur avec ces informations pour un traitement rapide.',
+      'Essayez d’abord d’actualiser la page si l’affichage semble ancien.',
+      'Vérifiez que vous êtes connecté avec le bon compte agent.',
+      'Notez le module concerné: Demandes, Présences, Congés, Tâches, Documents ou Profil.',
+      'Contactez les RH ou l’administrateur avec une capture d’écran si possible.',
     ],
   },
 ])
@@ -675,6 +702,19 @@ onUnmounted(() => {
   border: 1px solid rgba(148, 163, 184, .28);
   font-size: .78rem;
   font-weight: 800;
+}
+
+.ux-help-text {
+  margin-top: .85rem !important;
+  padding: .85rem .95rem;
+  border-radius: 16px;
+  color: #1f2937 !important;
+  background: rgba(255, 255, 255, .7);
+  border: 1px solid rgba(14, 165, 233, .2);
+  font-size: .9rem !important;
+  font-weight: 700;
+  line-height: 1.55 !important;
+  text-align: left;
 }
 
 .ux-detail-list {
