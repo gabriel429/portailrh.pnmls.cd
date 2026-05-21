@@ -39,6 +39,12 @@ const routes = [
         meta: { auth: true },
     },
     {
+        path: '/carnet-adresses',
+        name: 'address-book.index',
+        component: () => import('@/views/AddressBookView.vue'),
+        meta: { auth: true },
+    },
+    {
         path: '/profile/edit',
         name: 'profile.edit',
         component: () => import('@/views/profile/ProfileEditView.vue'),

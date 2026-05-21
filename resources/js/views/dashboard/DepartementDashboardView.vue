@@ -899,6 +899,7 @@ const quickActions = computed(() => {
   const base = [
     { to: '/taches/create',                    icon: 'fa-plus-circle',    color: '#0077B5', bg: '#e0f2fe', label: 'Nouvelle tâche',       desc: 'Créer et attribuer une tâche' },
     { to: taskBaseRoute.value,                  icon: 'fa-tasks',          color: '#dc2626', bg: '#fee2e2', label: 'Tâches du département', desc: 'Toutes les tâches assignées aux agents' },
+    { to: '/carnet-adresses',                   icon: 'fa-address-book',   color: '#2563eb', bg: '#dbeafe', label: "Carnet d'adresse",    desc: 'Contacts des agents par poste' },
     { to: '/requests',                          icon: 'fa-file-signature', color: '#7c3aed', bg: '#ede9fe', label: 'Demandes',              desc: auth.isDirecteur ? 'Viser et valider les demandes' : 'Suivre les demandes' },
     { to: '/mon-planning-conges',               icon: 'fa-calendar-alt',   color: '#0891b2', bg: '#cffafe', label: 'Congés',                desc: 'Planning et demandes de congé' },
   ]

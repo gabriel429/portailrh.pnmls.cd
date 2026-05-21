@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ProfileController as ApiProfileController;
 use App\Http\Controllers\Api\AgentController as ApiAgentController;
+use App\Http\Controllers\Api\AddressBookController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Api\DocumentController;
@@ -104,6 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/sena', [\App\Http\Controllers\Api\SenaDashboardController::class, 'index']);
     Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
     Route::get('/dashboard/department/agents', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'agentsDrill']);
+    Route::get('/address-book', [AddressBookController::class, 'index']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
 
     // Profile (SPA)

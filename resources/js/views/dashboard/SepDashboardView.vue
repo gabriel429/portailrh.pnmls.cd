@@ -1265,6 +1265,7 @@ function presenceFilterTitle(total = 0) {
 // ─── QUICK ACTIONS ───
 const quickActions = [
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Agents de la province', icon: 'fa-users', color: '#0ea5e9', bg: '#e0f2fe' },
+  { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
   { to: '/plan-travail', label: 'PTA provincial', desc: 'Suivi plan annuel SEP', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/requests', label: 'Demandes', desc: 'Validation provinciale', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
   { to: '/signalements', label: 'Signalements', desc: 'Alertes province', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
