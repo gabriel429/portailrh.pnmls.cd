@@ -92,13 +92,30 @@ class AddressBookController extends ApiController
                 'poste' => $poste,
                 'count' => $items->count(),
                 'agents' => $items->values(),
+                'order' => $this->institutionalPostOrder((string) $poste),
             ])
-            ->sortBy(fn ($group) => strtolower($group['poste']))
+            ->sortBy(fn ($group) => sprintf('%02d-%s', $group['order'], strtolower($group['poste'])))
+            ->map(fn ($group) => collect($group)->except('order')->all())
             ->values();
 
         return $this->success([
             'groups' => $groups,
             'total' => $agents->count(),
         ]);
+    }
+
+    private function institutionalPostOrder(string $poste): int
+    {
+        $label = strtolower($poste);
+
+        return match (true) {
+            str_contains($label, 'secr') && str_contains($label, 'ex') && str_contains($label, 'cutif') => 1,
+            str_contains($label, 'directeur') => 2,
+            str_contains($label, 'chef') && str_contains($label, 'section') => 3,
+            str_contains($label, 'chef') && str_contains($label, 'cellule') => 4,
+            str_contains($label, 'assistant') => 5,
+            str_contains($label, 'secr') && str_contains($label, 'taire') => 5,
+            default => 6,
+        };
     }
 }
