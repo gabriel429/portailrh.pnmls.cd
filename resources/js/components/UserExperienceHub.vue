@@ -42,6 +42,12 @@
         <p class="ux-step-count">Étape {{ tourStep + 1 }} sur {{ tourSteps.length }}</p>
         <h2>{{ currentTourStep.title }}</h2>
         <p>{{ currentTourStep.text }}</p>
+        <ul v-if="currentTourStep.details" class="ux-detail-list">
+          <li v-for="detail in currentTourStep.details" :key="detail">
+            <i class="fas fa-check"></i>
+            <span>{{ detail }}</span>
+          </li>
+        </ul>
         <div v-if="currentTourStep.modules" class="ux-module-list">
           <span v-for="module in currentTourStep.modules" :key="module">{{ module }}</span>
         </div>
@@ -157,11 +163,19 @@ const tourSteps = computed(() => [
     icon: 'fa-gauge-high',
     title: 'Tableau de bord',
     text: 'Retrouvez les indicateurs, les alertes et les activités importantes dès votre arrivée.',
+    details: [
+      'Consultez les demandes à traiter, les tâches récentes et les échéances importantes.',
+      'Les responsables voient les éléments de leur niveau: département, province, local ou national.',
+    ],
   },
   {
     icon: 'fa-bars-staggered',
     title: 'Menu de navigation',
     text: 'Le menu donne un accès rapide aux espaces de travail, aux documents et aux outils de suivi.',
+    details: [
+      'Utilisez Accueil pour revenir au tableau de bord et les modules pour passer d’un espace à l’autre.',
+      'Sur téléphone, ouvrez le menu puis choisissez directement l’action souhaitée.',
+    ],
   },
   {
     icon: 'fa-layer-group',
@@ -170,19 +184,68 @@ const tourSteps = computed(() => [
     modules: roleModules.value,
   },
   {
+    icon: 'fa-paper-plane',
+    title: 'Demandes et validations',
+    text: 'Les demandes suivent un circuit adapté à votre organe et à votre niveau hiérarchique.',
+    details: [
+      'Un agent suit sa demande depuis le module Demandes.',
+      'Le valideur concerné retrouve les demandes dans son tableau de bord et dans la liste des demandes.',
+      'Après validation, la demande passe automatiquement à l’étape suivante.',
+    ],
+  },
+  {
+    icon: 'fa-calendar-days',
+    title: 'Présences et congés',
+    text: 'Les congés et absences approuvées sont pris en compte pour éviter les pointages incohérents.',
+    details: [
+      'Vérifiez vos congés, absences et permissions depuis les modules dédiés.',
+      'Pendant une absence justifiée, l’agent ne doit pas être pointé comme présent.',
+    ],
+  },
+  {
+    icon: 'fa-folder-open',
+    title: 'Documents et communiqués',
+    text: 'Les documents RH, communiqués et pièces importantes restent centralisés dans l’application.',
+    details: [
+      'Ouvrez les documents partagés et téléchargez les pièces jointes nécessaires.',
+      'Lisez les communiqués affichés à la connexion pour rester aligné avec les instructions officielles.',
+    ],
+  },
+  {
     icon: 'fa-bell',
     title: 'Notifications',
     text: 'Les notifications signalent les communiqués, les tâches, les validations et les messages importants.',
+    details: [
+      'Le badge rouge indique les nouveautés non lues.',
+      'Cliquez sur une notification pour accéder directement à l’élément concerné.',
+    ],
   },
   {
     icon: 'fa-list-check',
     title: 'Tâches et activités',
     text: 'Les tâches attribuées, les activités PTA et les demandes restent accessibles depuis leurs modules dédiés.',
+    details: [
+      'Mettez à jour l’avancement des tâches pour garder le suivi à jour.',
+      'Les responsables peuvent consulter les performances et les retards de leur équipe.',
+    ],
+  },
+  {
+    icon: 'fa-address-card',
+    title: 'Profil et contacts',
+    text: 'Le profil agent et le carnet d’adresses facilitent la mise à jour des informations utiles.',
+    details: [
+      'Vérifiez votre photo, vos contacts, vos mails et votre poste dans le profil.',
+      'Le carnet d’adresses permet de retrouver rapidement un agent selon son poste ou son nom.',
+    ],
   },
   {
     icon: 'fa-circle-question',
-    title: 'Aide disponible',
-    text: 'Le bouton Aide permet de revoir cette visite quand vous en avez besoin.',
+    title: 'Assistance',
+    text: 'Le bouton Aide permet de revoir ces explications quand vous en avez besoin.',
+    details: [
+      'En cas de blocage, notez le module concerné, l’action effectuée et le message affiché.',
+      'Contactez les ressources humaines ou l’administrateur avec ces informations pour un traitement rapide.',
+    ],
   },
 ])
 
@@ -612,6 +675,42 @@ onUnmounted(() => {
   border: 1px solid rgba(148, 163, 184, .28);
   font-size: .78rem;
   font-weight: 800;
+}
+
+.ux-detail-list {
+  display: grid;
+  gap: .55rem;
+  margin: .95rem 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+
+.ux-detail-list li {
+  display: grid;
+  grid-template-columns: 1.35rem 1fr;
+  align-items: start;
+  gap: .55rem;
+  padding: .65rem .75rem;
+  border-radius: 14px;
+  color: #334155;
+  background: rgba(255, 255, 255, .64);
+  border: 1px solid rgba(148, 163, 184, .24);
+  font-size: .84rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.ux-detail-list i {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 999px;
+  color: #047857;
+  background: rgba(16, 185, 129, .14);
+  font-size: .68rem;
 }
 
 .ux-meta-grid {
