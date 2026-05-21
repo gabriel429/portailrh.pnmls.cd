@@ -71,6 +71,8 @@ class DepartmentDashboardController extends ApiController
             ->count();
 
         // ─── Demandes ──────────────────────────────────────────
+        $this->repairPendingRequestWorkflows($agentIds);
+
         $requestsPendingQuery = RequestModel::whereIn('agent_id', $agentIds)
             ->enAttente();
 
@@ -388,6 +390,16 @@ class DepartmentDashboardController extends ApiController
         }
 
         return $this->departmentFamilyCache[$departmentId] = array_values(array_unique($ids));
+    }
+
+    private function repairPendingRequestWorkflows($agentIds): void
+    {
+        RequestModel::whereIn('agent_id', $agentIds)
+            ->enAttente()
+            ->whereNull('current_step')
+            ->with('agent')
+            ->get()
+            ->each(fn(RequestModel $request) => app(DemandeWorkflowService::class)->initializeWorkflow($request));
     }
 
     private function normalizeScopeText(?string $value): string
