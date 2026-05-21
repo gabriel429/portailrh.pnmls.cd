@@ -57,21 +57,23 @@
 </FilesMatch>
 
 # PWA Cache Control
-<FilesMatch "\.(js|css|png|svg|woff2)$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
-</FilesMatch>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css|png|svg|woff2)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
 
-# Service Worker and Manifest - No Cache
-<FilesMatch "(sw\.js|manifest\.json|manifest\.webmanifest|workbox-.+\.js)$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
-    Header set Pragma "no-cache"
-    Header set Expires "0"
-</FilesMatch>
+    # Service Worker and Manifest - No Cache
+    <FilesMatch "(sw\.js|manifest\.json|manifest\.webmanifest|workbox-.+\.js)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires "0"
+    </FilesMatch>
 
-# Security Headers
-Header always set X-Content-Type-Options nosniff
-Header always set X-Frame-Options DENY
-Header always set X-XSS-Protection "1; mode=block"
+    # Security Headers
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
 
 # Compression
 <IfModule mod_deflate.c>

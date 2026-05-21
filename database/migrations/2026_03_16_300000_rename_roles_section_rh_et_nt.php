@@ -12,43 +12,66 @@ return new class extends Migration
             return;
         }
 
-        DB::table('roles')
-            ->where('nom_role', 'Chef Section RH')
-            ->update([
-                'nom_role' => 'Section ressources humaines',
-                'description' => 'Section ressources humaines',
-            ]);
-
-        DB::table('roles')
-            ->where('nom_role', 'Chef Section Nouvelle Technologie')
-            ->update([
-                'nom_role' => 'Section Nouvelle Technologie',
-                'description' => 'Section Nouvelle Technologie',
-            ]);
-
-        // Also handle variant name
-        DB::table('roles')
-            ->where('nom_role', 'Chef de Section Nouvelle Technologie')
-            ->update([
-                'nom_role' => 'Section Nouvelle Technologie',
-                'description' => 'Section Nouvelle Technologie',
-            ]);
+        $this->renameOrMergeRole('Chef Section RH', 'Section ressources humaines');
+        $this->renameOrMergeRole('Chef Section Nouvelle Technologie', 'Section Nouvelle Technologie');
+        $this->renameOrMergeRole('Chef de Section Nouvelle Technologie', 'Section Nouvelle Technologie');
     }
 
     public function down(): void
     {
-        DB::table('roles')
-            ->where('nom_role', 'Section ressources humaines')
-            ->update([
-                'nom_role' => 'Chef Section RH',
-                'description' => 'Chef de Section RH',
-            ]);
+        $this->renameOrMergeRole('Section ressources humaines', 'Chef Section RH', 'Chef de Section RH');
+        $this->renameOrMergeRole('Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie');
+    }
 
-        DB::table('roles')
-            ->where('nom_role', 'Section Nouvelle Technologie')
-            ->update([
-                'nom_role' => 'Chef Section Nouvelle Technologie',
-                'description' => 'Chef de Section Nouvelle Technologie',
-            ]);
+    private function renameOrMergeRole(string $from, string $to, ?string $description = null): void
+    {
+        $fromRole = DB::table('roles')->where('nom_role', $from)->first();
+
+        if (!$fromRole) {
+            return;
+        }
+
+        $toRole = DB::table('roles')->where('nom_role', $to)->first();
+
+        if (!$toRole) {
+            DB::table('roles')
+                ->where('id', $fromRole->id)
+                ->update([
+                    'nom_role' => $to,
+                    'description' => $description ?? $to,
+                ]);
+
+            return;
+        }
+
+        DB::transaction(function () use ($fromRole, $toRole) {
+            foreach (['agents', 'users'] as $table) {
+                if (Schema::hasTable($table) && Schema::hasColumn($table, 'role_id')) {
+                    DB::table($table)
+                        ->where('role_id', $fromRole->id)
+                        ->update(['role_id' => $toRole->id]);
+                }
+            }
+
+            if (Schema::hasTable('role_permission')) {
+                $now = now();
+                $permissionIds = DB::table('role_permission')
+                    ->where('role_id', $fromRole->id)
+                    ->pluck('permission_id');
+
+                foreach ($permissionIds as $permissionId) {
+                    DB::table('role_permission')->insertOrIgnore([
+                        'role_id' => $toRole->id,
+                        'permission_id' => $permissionId,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+                }
+
+                DB::table('role_permission')->where('role_id', $fromRole->id)->delete();
+            }
+
+            DB::table('roles')->where('id', $fromRole->id)->delete();
+        });
     }
 };

@@ -29,6 +29,16 @@ function patchHtaccess(buildDir) {
         patched = patched.replace('RewriteEngine On', `RewriteEngine On\n\n${fallbackRule}`);
     }
 
+    patched = patched.replace(
+        '<FilesMatch "\\.(png|jpg|jpeg|gif)$">\n    ForceType image/png\n</FilesMatch>',
+        '<FilesMatch "\\.(png|gif)$">\n    ForceType image/png\n</FilesMatch>\n<FilesMatch "\\.(jpg|jpeg)$">\n    ForceType image/jpeg\n</FilesMatch>',
+    );
+
+    patched = patched.replace(
+        /# Cache control - hashed assets can be cached forever\n<FilesMatch "\\\.\(js\|css\|woff2\|woff\|png\|svg\|ico\)\$">\n    Header set Cache-Control "public, max-age=31536000, immutable"\n<\/FilesMatch>\n# sw\.js must NEVER be cached \(browser must always check for updates\)\n<FilesMatch "\^sw\\\.js\$">\n    Header set Cache-Control "no-cache, no-store, must-revalidate"\n<\/FilesMatch>\n# manifest files must not be cached\n<FilesMatch "\(manifest\\\.json\|manifest\\\.webmanifest\)\$">\n    Header set Cache-Control "no-cache, no-store, must-revalidate"\n<\/FilesMatch>\n\n# Security headers\nHeader always set X-Content-Type-Options "nosniff"\nHeader always set X-Frame-Options "DENY"/,
+        '# Cache control - hashed assets can be cached forever\n<IfModule mod_headers.c>\n    <FilesMatch "\\.(js|css|woff2|woff|png|jpg|jpeg|gif|svg|ico)$">\n        Header set Cache-Control "public, max-age=31536000, immutable"\n    </FilesMatch>\n    # sw.js must NEVER be cached (browser must always check for updates)\n    <FilesMatch "^sw\\.js$">\n        Header set Cache-Control "no-cache, no-store, must-revalidate"\n    </FilesMatch>\n    # manifest files must not be cached\n    <FilesMatch "(manifest\\.json|manifest\\.webmanifest)$">\n        Header set Cache-Control "no-cache, no-store, must-revalidate"\n    </FilesMatch>\n\n    # Security headers\n    Header always set X-Content-Type-Options "nosniff"\n    Header always set X-Frame-Options "DENY"\n</IfModule>',
+    );
+
     const fallbackRewriteRules = [
         'RewriteRule ^assets/(.+\\.css)$ serve-asset.php?file=$1 [L,QSA]',
         'RewriteRule ^assets/(.+\\.js)$ serve-asset.php?file=$1 [L,QSA]',

@@ -12,9 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->boolean('is_frozen')->default(false)->after('is_super_admin');
-            $table->string('last_login_ip', 45)->nullable()->after('is_frozen');
-            $table->timestamp('last_login_at')->nullable()->after('last_login_ip');
+            if (!Schema::hasColumn('users', 'is_frozen')) {
+                $table->boolean('is_frozen')->default(false)->after('is_super_admin');
+            }
+
+            if (!Schema::hasColumn('users', 'last_login_ip')) {
+                $table->string('last_login_ip', 45)->nullable()->after('is_frozen');
+            }
+
+            if (!Schema::hasColumn('users', 'last_login_at')) {
+                $table->timestamp('last_login_at')->nullable()->after('last_login_ip');
+            }
         });
     }
 
@@ -24,7 +32,14 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->dropColumn(['is_frozen', 'last_login_ip', 'last_login_at']);
+            $columns = array_filter(
+                ['is_frozen', 'last_login_ip', 'last_login_at'],
+                fn (string $column) => Schema::hasColumn('users', $column),
+            );
+
+            if ($columns) {
+                $table->dropColumn($columns);
+            }
         });
     }
 };

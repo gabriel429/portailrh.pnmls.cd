@@ -25,8 +25,11 @@ RewriteRule ^assets/(.+\.(js|css))$ serve-asset.php?file=$1 [L,QSA]
 <FilesMatch "\.(woff2)$">
     ForceType font/woff2
 </FilesMatch>
-<FilesMatch "\.(png|jpg|jpeg|gif)$">
+<FilesMatch "\.(png|gif)$">
     ForceType image/png
+</FilesMatch>
+<FilesMatch "\.(jpg|jpeg)$">
+    ForceType image/jpeg
 </FilesMatch>
 <FilesMatch "\.(svg)$">
     ForceType image/svg+xml
@@ -77,18 +80,20 @@ RewriteRule ^manifest\.json$ serve-asset.php?file=../manifest.json [L,QSA]
 </FilesMatch>
 
 # Cache control - hashed assets can be cached forever
-<FilesMatch "\.(js|css|woff2|woff|png|svg|ico)$">
-    Header set Cache-Control "public, max-age=31536000, immutable"
-</FilesMatch>
-# sw.js must NEVER be cached (browser must always check for updates)
-<FilesMatch "^sw\.js$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
-</FilesMatch>
-# manifest files must not be cached
-<FilesMatch "(manifest\.json|manifest\.webmanifest)$">
-    Header set Cache-Control "no-cache, no-store, must-revalidate"
-</FilesMatch>
+<IfModule mod_headers.c>
+    <FilesMatch "\.(js|css|woff2|woff|png|jpg|jpeg|gif|svg|ico)$">
+        Header set Cache-Control "public, max-age=31536000, immutable"
+    </FilesMatch>
+    # sw.js must NEVER be cached (browser must always check for updates)
+    <FilesMatch "^sw\.js$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
+    # manifest files must not be cached
+    <FilesMatch "(manifest\.json|manifest\.webmanifest)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+    </FilesMatch>
 
-# Security headers
-Header always set X-Content-Type-Options "nosniff"
-Header always set X-Frame-Options "DENY"
+    # Security headers
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "DENY"
+</IfModule>
