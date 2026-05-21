@@ -46,7 +46,15 @@
 
         <div class="ab-list">
           <div v-for="agent in group.agents" :key="agent.id" class="ab-row">
-            <div class="ab-avatar">{{ initials(agent) }}</div>
+            <div class="ab-avatar">
+              <img
+                v-if="agent.photo && !agent._photoError"
+                :src="photoUrl(agent.photo)"
+                :alt="agent.nom_complet"
+                @error="agent._photoError = true"
+              >
+              <span v-else>{{ initials(agent) }}</span>
+            </div>
             <div class="ab-main">
               <strong>{{ agent.nom_complet }}</strong>
               <span v-if="agent.structure">{{ agent.structure }}</span>
@@ -108,6 +116,17 @@ function initials(agent) {
   return `${agent.prenom?.[0] || ''}${agent.nom?.[0] || ''}`.toUpperCase() || 'AG'
 }
 
+function photoUrl(photo) {
+  if (!photo) return null
+  const value = String(photo).trim()
+  if (/^https?:\/\//i.test(value)) return value
+  const normalized = value.replace(/^\/+/, '')
+  if (!normalized.includes('/') && !normalized.startsWith('uploads/')) {
+    return `/uploads/profiles/${normalized}`
+  }
+  return `/${normalized}`
+}
+
 watch(search, () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(load, 300)
@@ -155,8 +174,9 @@ onMounted(load)
 .ab-row:last-child { border-bottom: 0; }
 .ab-avatar {
   width: 42px; height: 42px; border-radius: 50%; background: #dbeafe; color: #1d4ed8;
-  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: .8rem;
+  display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: .8rem; overflow: hidden;
 }
+.ab-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .ab-main { min-width: 0; }
 .ab-main strong { display: block; color: #0f172a; font-size: .9rem; }
 .ab-main span { display: block; color: #64748b; font-size: .74rem; margin-top: .1rem; }
