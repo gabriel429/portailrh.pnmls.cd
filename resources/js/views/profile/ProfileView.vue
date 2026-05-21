@@ -820,18 +820,38 @@ onMounted(fetchProfile)
 </script>
 
 <style scoped>
+.container.py-4 {
+  --profile-glass: rgba(255, 255, 255, .68);
+  --profile-glass-strong: rgba(255, 255, 255, .84);
+  --profile-glass-border: rgba(125, 211, 252, .30);
+  --profile-glass-shadow: 0 18px 48px rgba(15, 35, 58, .13), inset 0 1px 0 rgba(255, 255, 255, .70);
+  position: relative;
+}
+
+.container.py-4::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 16% 10%, rgba(14, 165, 233, .16), transparent 30%),
+    radial-gradient(circle at 88% 18%, rgba(15, 118, 110, .12), transparent 28%),
+    linear-gradient(135deg, rgba(240, 249, 255, .70), rgba(236, 253, 245, .56));
+}
+
 /* Cover & Avatar */
 .profile-cover {
   background: linear-gradient(135deg, #0077B5 0%, #005885 50%, #00394f 100%);
   height: 200px;
-  border-radius: 16px 16px 0 0;
+  border-radius: 8px 8px 0 0;
   position: relative;
   overflow: hidden;
 }
 .profile-cover .cover-pattern {
   position: absolute;
   inset: 0;
-  border-radius: 16px 16px 0 0;
+  border-radius: 8px 8px 0 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -849,14 +869,19 @@ onMounted(fetchProfile)
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, rgba(0,119,181,0.2) 0%, rgba(0,57,79,0.4) 100%);
+    background:
+      linear-gradient(135deg, rgba(255,255,255,.24), rgba(255,255,255,0) 32%),
+      linear-gradient(135deg, rgba(0,119,181,0.24) 0%, rgba(0,57,79,0.44) 100%);
     pointer-events: none;
     z-index: 1;
 }
 .profile-main-card {
-  background: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  background: var(--profile-glass);
+  border: 1px solid var(--profile-glass-border);
+  border-radius: 8px;
+  box-shadow: var(--profile-glass-shadow);
+  backdrop-filter: blur(20px) saturate(155%);
+  -webkit-backdrop-filter: blur(20px) saturate(155%);
   overflow: hidden;
   margin-bottom: 1.5rem;
 }
@@ -871,9 +896,9 @@ onMounted(fetchProfile)
 .profile-avatar {
   width: 150px; height: 150px;
   border-radius: 50%;
-  border: 5px solid #fff;
-  box-shadow: 0 4px 14px rgba(0,0,0,.12);
-  background: #e9ecef;
+  border: 5px solid rgba(255,255,255,.82);
+  box-shadow: 0 18px 36px rgba(15,35,58,.18), inset 0 1px 0 rgba(255,255,255,.75);
+  background: rgba(233, 236, 239, .76);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
@@ -915,6 +940,7 @@ onMounted(fetchProfile)
   transition: transform .15s, box-shadow .15s;
   text-decoration: none;
   display: inline-block;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 10px 24px rgba(0,119,181,.22);
 }
 .btn-edit-profile:hover {
   transform: translateY(-1px);
@@ -929,6 +955,7 @@ onMounted(fetchProfile)
   padding: .5rem 1.35rem;
   border-radius: 10px;
   transition: transform .15s, box-shadow .15s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.26), 0 10px 24px rgba(14,116,144,.20);
 }
 .btn-job-description:hover {
   transform: translateY(-1px);
@@ -938,10 +965,12 @@ onMounted(fetchProfile)
 
 /* Info Cards */
 .info-card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06);
-  border: 1px solid #e9ecef;
+  background: var(--profile-glass);
+  border-radius: 8px;
+  box-shadow: var(--profile-glass-shadow);
+  border: 1px solid var(--profile-glass-border);
+  backdrop-filter: blur(18px) saturate(152%);
+  -webkit-backdrop-filter: blur(18px) saturate(152%);
   margin-bottom: 1.5rem;
   overflow: hidden;
 }
@@ -950,7 +979,8 @@ onMounted(fetchProfile)
   align-items: center;
   gap: .75rem;
   padding: 1.25rem 1.5rem;
-  border-bottom: 2px solid #f0f2f5;
+  border-bottom: 1px solid rgba(226, 232, 240, .72);
+  background: rgba(255,255,255,.30);
 }
 .info-card-icon {
   width: 40px; height: 40px;
@@ -972,7 +1002,7 @@ onMounted(fetchProfile)
 .info-item-icon {
   width: 32px; height: 32px;
   border-radius: 8px;
-  background: #f0f7ff;
+  background: rgba(240, 247, 255, .76);
   display: flex; align-items: center; justify-content: center;
   color: #0077B5;
   font-size: .85rem;
@@ -986,9 +1016,12 @@ onMounted(fetchProfile)
 .stat-badge {
   text-align: center;
   padding: 1rem;
-  border-radius: 12px;
-  background: #f8f9fc;
-  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  background: rgba(248, 249, 252, .62);
+  border: 1px solid rgba(226, 232, 240, .72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.70);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
 }
 .stat-badge .stat-number { font-size: 1.75rem; font-weight: 800; color: #0077B5; }
 .stat-badge .stat-label { font-size: .8rem; color: #6c757d; font-weight: 500; }
@@ -1029,17 +1062,19 @@ onMounted(fetchProfile)
 
 /* Sidebar Card */
 .sidebar-card {
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 2px 12px rgba(0,0,0,.06);
-  border: 1px solid #e9ecef;
+  background: var(--profile-glass);
+  border-radius: 8px;
+  box-shadow: var(--profile-glass-shadow);
+  border: 1px solid var(--profile-glass-border);
+  backdrop-filter: blur(18px) saturate(152%);
+  -webkit-backdrop-filter: blur(18px) saturate(152%);
   overflow: hidden;
   margin-bottom: 1.5rem;
 }
 .sidebar-card-header {
-  background: linear-gradient(135deg, #f8f9fc, #eef1f6);
+  background: linear-gradient(135deg, rgba(248, 249, 252, .62), rgba(238, 241, 246, .46));
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid rgba(226, 232, 240, .72);
   font-weight: 700;
   color: #1a1a2e;
   font-size: .95rem;
@@ -1087,19 +1122,22 @@ onMounted(fetchProfile)
   50% { box-shadow: 0 0 0 2px #28a745, 0 0 12px rgba(40,167,69,.5); }
 }
 .profile-tl-card {
-  background: #f8fafb;
-  border-radius: 10px;
+  background: rgba(248, 250, 251, .64);
+  border-radius: 8px;
   padding: 14px 16px;
   border-left: 3px solid #e0e0e0;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.72), 0 8px 18px rgba(15,35,58,.06);
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
   transition: all .2s;
 }
 .profile-tl-card:hover {
-  background: #f0f7f5;
+  background: rgba(240, 247, 245, .78);
   border-left-color: #00897b;
 }
 .profile-tl-card.current {
   border-left-color: #28a745;
-  background: #f0fff4;
+  background: rgba(240, 255, 244, .78);
 }
 
 /* Responsive */
