@@ -784,7 +784,6 @@ const photoIndex = ref(0)
 const onlineToast = ref(null)
 const seenOnlineAgents = ref(new Set())
 let onlineToastTimer = null
-let refreshTimer = null
 
 // ─── DRILL-DOWN STATE ───────────────────────────────────────────────────────
 const drillOpen    = ref(false)
@@ -947,11 +946,9 @@ async function loadData() {
 }
 onMounted(() => {
   loadData()
-  refreshTimer = window.setInterval(loadData, 60000)
 })
 
 onUnmounted(() => {
-  if (refreshTimer) window.clearInterval(refreshTimer)
   if (onlineToastTimer) window.clearTimeout(onlineToastTimer)
 })
 
