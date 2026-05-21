@@ -1,4 +1,4 @@
-// Version 2026-05-06-forum-reactions-cache: retire les anciens service workers racine qui peuvent garder des builds obsoletes.
+// Version 2026-05-21-build-refresh-cache: retire les anciens service workers racine qui peuvent garder des builds obsoletes.
 self.addEventListener('install', () => {
     self.skipWaiting()
 })
