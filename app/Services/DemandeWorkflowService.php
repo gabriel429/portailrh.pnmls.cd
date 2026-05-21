@@ -16,6 +16,10 @@ class DemandeWorkflowService
         'national_sen_direct' => ['sen'],
         'provincial' => ['caf', 'sep'],
         'local' => ['aaf', 'sep'],
+        'absence_national_with_department' => ['director', 'rh'],
+        'absence_national_sen_direct' => ['sen', 'rh'],
+        'absence_provincial' => ['caf', 'sep'],
+        'absence_local' => ['aaf', 'sep'],
     ];
 
     private const STEP_ROLE_LABELS = [
@@ -146,19 +150,50 @@ class DemandeWorkflowService
                 $outer->orWhere(function (Builder $stepQuery) use ($user, $step) {
                     $stepQuery->where('current_step', $step);
 
-                    if (in_array($step, ['caf', 'sep', 'aaf'], true)) {
+                    if (in_array($step, ['caf', 'aaf'], true)) {
                         $provinceId = $user->agent?->province_id;
                         $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId));
+                    } elseif ($step === 'sep') {
+                        $provinceId = $user->agent?->province_id;
+                        $isLocalExecutive = $this->isSelManager($user);
+
+                        $stepQuery
+                            ->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('province_id', $provinceId))
+                            ->where(function (Builder $scope) use ($isLocalExecutive) {
+                                if ($isLocalExecutive) {
+                                    $scope->where('workflow_level', 'absence_local');
+
+                                    return;
+                                }
+
+                                $scope
+                                    ->whereNull('workflow_level')
+                                    ->orWhere('workflow_level', '!=', 'absence_local');
+                            });
                     } elseif ($step === 'director') {
                         $deptId = $user->agent?->departement_id;
                         $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('departement_id', $deptId));
                     } elseif ($step === 'sen') {
-                        $stepQuery->whereHas('agent', function (Builder $agentQuery) {
-                            $agentQuery->where(function (Builder $scope) {
-                                $scope->whereNull('departement_id')
-                                    ->orWhere('organe', 'Secrétariat Exécutif National');
+                        $isSenAssistant = $this->isSenAssistant($user);
+
+                        $stepQuery
+                            ->whereHas('agent', function (Builder $agentQuery) {
+                                $agentQuery->where(function (Builder $scope) {
+                                    $scope->whereNull('departement_id')
+                                        ->orWhere('organe', 'Secrétariat Exécutif National');
+                                });
+                            })
+                            ->where(function (Builder $scope) use ($isSenAssistant) {
+                                if ($isSenAssistant) {
+                                    $scope->where('workflow_level', 'absence_national_sen_direct');
+
+                                    return;
+                                }
+
+                                $scope
+                                    ->whereNull('workflow_level')
+                                    ->orWhere('workflow_level', '!=', 'absence_national_sen_direct');
                             });
-                        });
                     }
                 });
             }
@@ -278,11 +313,19 @@ class DemandeWorkflowService
 
     private function getStepLabel(string $step, ?RequestModel $request = null): string
     {
-        if ($step === 'sen' && $request && $request->workflow_level === 'national_sen_direct') {
-            return 'Assistant de direction / SEN';
+        if ($step === 'sen' && $request && $request->workflow_level === 'absence_national_sen_direct') {
+            return 'Assistant du SEN';
         }
 
-        if ($step === 'sep' && $request && in_array($request->workflow_level, ['provincial', 'local'], true)) {
+        if ($step === 'sen' && $request && $request->workflow_level === 'national_sen_direct') {
+            return 'SEN';
+        }
+
+        if ($step === 'sep' && $request && $request->workflow_level === 'absence_local') {
+            return 'SEL';
+        }
+
+        if ($step === 'sep' && $request && in_array($request->workflow_level, ['provincial', 'local', 'absence_provincial'], true)) {
             return 'SEP';
         }
 
@@ -368,17 +411,34 @@ class DemandeWorkflowService
 
         $organe = strtolower((string) ($agent?->organe ?? ''));
         $hasDepartment = !empty($agent?->departement_id);
+        $isAbsence = $request->type === 'absence';
 
         if (str_contains($organe, 'local')) {
+            if ($isAbsence) {
+                return 'absence_local';
+            }
+
             return 'local';
         }
 
         if (str_contains($organe, 'provincial')) {
+            if ($isAbsence) {
+                return 'absence_provincial';
+            }
+
             return 'provincial';
         }
 
         if (!$hasDepartment) {
+            if ($isAbsence) {
+                return 'absence_national_sen_direct';
+            }
+
             return 'national_sen_direct';
+        }
+
+        if ($isAbsence) {
+            return 'absence_national_with_department';
         }
 
         return 'national_with_department';
@@ -401,8 +461,12 @@ class DemandeWorkflowService
             'caf' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
             'aaf' => str_contains((string) ($validatorAgent?->organe ?? ''), 'Local')
                 && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
-            'sep' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
-            'sen' => in_array($role, ['sen', 'sena'], true),
+            'sep' => $request->workflow_level === 'absence_local'
+                ? $this->isSelManager($user) && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0)
+                : in_array($role, ['sep', 'secom'], true) && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
+            'sen' => $request->workflow_level === 'absence_national_sen_direct'
+                ? $this->isSenAssistant($user)
+                : in_array($role, ['sen', 'sena'], true),
             default => false,
         };
     }
@@ -436,8 +500,11 @@ class DemandeWorkflowService
                 || str_contains($deptName, 'cellule administrative et financ'),
             'aaf' => str_contains($fonction, 'assistant administratif et financier')
                 || str_contains($poste, 'assistant administratif et financier'),
-            'sep' => in_array($role, ['sep', 'secom'], true),
-            'sen' => in_array($role, ['sen', 'sena'], true),
+            'sep' => in_array($role, ['sep', 'secom', 'sel'], true)
+                || str_contains($fonction, 'secretaire executif local')
+                || str_contains($poste, 'secretaire executif local'),
+            'sen' => in_array($role, ['sen', 'sena'], true)
+                || $this->isSenAssistant($user),
             default => false,
         };
     }
@@ -473,12 +540,49 @@ class DemandeWorkflowService
             'sep' => $query
                 ->whereHas('agent', fn($q) => $q->where('province_id', $agent?->province_id))
                 ->get()
-                ->filter(fn(User $user) => $this->hasStepRole($user, 'sep')),
+                ->filter(fn(User $user) => $request->workflow_level === 'absence_local'
+                    ? $this->isSelManager($user)
+                    : $this->hasStepRole($user, 'sep') && !$this->isSelManager($user)),
             'sen' => $query
-                ->whereHas('role', fn($q) => $q->whereIn('nom_role', ['SEN', 'SENA']))
-                ->get(),
+                ->get()
+                ->filter(fn(User $user) => $request->workflow_level === 'absence_national_sen_direct'
+                    ? $this->isSenAssistant($user)
+                    : in_array($this->normalizeValue($user->role?->nom_role), ['sen', 'sena'], true)),
             default => collect(),
         };
+    }
+
+    private function isSenAssistant(User $user): bool
+    {
+        $agent = $user->agent;
+        $profile = trim(
+            $this->normalizeValue($user->role?->nom_role) . ' ' .
+            $this->normalizeValue($agent?->fonction) . ' ' .
+            $this->normalizeValue($agent?->poste_actuel)
+        );
+        $organe = $this->normalizeValue($agent?->organe);
+
+        return str_contains($organe, 'national')
+            && (str_contains($profile, 'assistant') || str_contains($profile, 'secretaire'))
+            && (
+                str_contains($profile, 'direction')
+                || str_contains($profile, 'sen')
+                || empty($agent?->departement_id)
+            );
+    }
+
+    private function isSelManager(User $user): bool
+    {
+        $agent = $user->agent;
+        $role = $this->normalizeValue($user->role?->nom_role);
+        $fonction = $this->normalizeValue($agent?->fonction);
+        $poste = $this->normalizeValue($agent?->poste_actuel);
+        $organe = $this->normalizeValue($agent?->organe);
+
+        return (in_array($role, ['sel'], true)
+                || str_contains($fonction, 'secretaire executif local')
+                || str_contains($poste, 'secretaire executif local'))
+            && str_contains($organe, 'local');
     }
 
     private function recordHistory(RequestModel $request, User $user, string $step, string $action, ?string $commentaire = null): void
