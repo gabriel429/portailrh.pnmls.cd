@@ -4,7 +4,7 @@
       <div>
         <p class="ab-kicker">Carnet d'adresse</p>
         <h1>Contacts des agents</h1>
-        <p>{{ total }} agent(s), regroupés par poste et triés par ordre alphabétique.</p>
+        <p>{{ total }} agent(s), regroupés par poste selon l'ordre institutionnel.</p>
       </div>
       <router-link to="/dashboard" class="ab-back">
         <i class="fas fa-arrow-left"></i>
@@ -52,13 +52,22 @@
               <span v-if="agent.structure">{{ agent.structure }}</span>
             </div>
             <div class="ab-contact">
-              <a v-if="agent.contact && agent.contact !== 'N/A'" :href="`tel:${agent.contact}`">
-                <i class="fas fa-phone"></i>{{ agent.contact }}
+              <a v-if="agent.telephone_professionnel" :href="`tel:${agent.telephone_professionnel}`">
+                <i class="fas fa-phone"></i><b>Pro</b>{{ agent.telephone_professionnel }}
               </a>
-              <span v-else><i class="fas fa-phone-slash"></i>N/A</span>
-              <a v-if="agent.emails?.length" :href="`mailto:${agent.emails[0]}`">
-                <i class="fas fa-envelope"></i>{{ agent.emails[0] }}
+              <span v-else><i class="fas fa-phone-slash"></i><b>Pro</b>N/A</span>
+              <a v-if="agent.telephone_prive" :href="`tel:${agent.telephone_prive}`">
+                <i class="fas fa-mobile-alt"></i><b>Privé</b>{{ agent.telephone_prive }}
               </a>
+              <span v-else><i class="fas fa-mobile-alt"></i><b>Privé</b>N/A</span>
+              <a v-if="agent.email_professionnel" :href="`mailto:${agent.email_professionnel}`">
+                <i class="fas fa-envelope"></i><b>Pro</b>{{ agent.email_professionnel }}
+              </a>
+              <span v-else><i class="fas fa-envelope"></i><b>Pro</b>N/A</span>
+              <a v-if="agent.email_prive" :href="`mailto:${agent.email_prive}`">
+                <i class="fas fa-at"></i><b>Privé</b>{{ agent.email_prive }}
+              </a>
+              <span v-else><i class="fas fa-at"></i><b>Privé</b>N/A</span>
             </div>
           </div>
         </div>
@@ -140,7 +149,7 @@ onMounted(load)
 .ab-group-head span { color: #64748b; font-size: .76rem; font-weight: 700; }
 .ab-list { display: grid; }
 .ab-row {
-  display: grid; grid-template-columns: 42px minmax(0, 1fr) minmax(220px, auto);
+  display: grid; grid-template-columns: 42px minmax(0, 1fr) minmax(280px, auto);
   align-items: center; gap: .75rem; padding: .8rem 1rem; border-bottom: 1px solid #f1f5f9;
 }
 .ab-row:last-child { border-bottom: 0; }
@@ -151,8 +160,12 @@ onMounted(load)
 .ab-main { min-width: 0; }
 .ab-main strong { display: block; color: #0f172a; font-size: .9rem; }
 .ab-main span { display: block; color: #64748b; font-size: .74rem; margin-top: .1rem; }
-.ab-contact { display: flex; flex-direction: column; align-items: flex-start; gap: .25rem; font-size: .78rem; }
-.ab-contact a, .ab-contact span { color: #334155; text-decoration: none; display: inline-flex; align-items: center; gap: .4rem; }
+.ab-contact { display: grid; gap: .25rem; font-size: .78rem; }
+.ab-contact a, .ab-contact span {
+  color: #334155; text-decoration: none; display: grid; grid-template-columns: 14px 42px minmax(0, 1fr);
+  align-items: center; gap: .4rem; min-width: 0;
+}
+.ab-contact b { color: #64748b; font-size: .68rem; text-transform: uppercase; }
 .ab-contact a:hover { color: #0ea5e9; }
 @media (max-width: 720px) {
   .ab-head { align-items: flex-start; flex-direction: column; }

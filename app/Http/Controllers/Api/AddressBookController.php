@@ -55,17 +55,13 @@ class AddressBookController extends ApiController
                 'departement_id',
             ])
             ->map(function (Agent $agent) {
-                $telephones = collect([
-                    $agent->telephone_professionnel,
-                    $agent->telephone,
-                    $agent->telephone_prive,
-                ])->filter()->unique()->values();
+                $telephoneProfessionnel = $agent->telephone_professionnel ?: $agent->telephone;
+                $telephonePrive = $agent->telephone_prive;
+                $emailProfessionnel = $agent->email_professionnel ?: $agent->email;
+                $emailPrive = $agent->email_prive;
 
-                $emails = collect([
-                    $agent->email_professionnel,
-                    $agent->email,
-                    $agent->email_prive,
-                ])->filter()->unique()->values();
+                $telephones = collect([$telephoneProfessionnel, $telephonePrive])->filter()->unique()->values();
+                $emails = collect([$emailProfessionnel, $emailPrive])->filter()->unique()->values();
 
                 return [
                     'id' => $agent->id,
@@ -76,7 +72,11 @@ class AddressBookController extends ApiController
                     'poste' => $agent->poste_actuel ?: $agent->fonction ?: 'Poste non renseigné',
                     'contact' => $telephones->first() ?: 'N/A',
                     'telephones' => $telephones,
+                    'telephone_professionnel' => $telephoneProfessionnel,
+                    'telephone_prive' => $telephonePrive,
                     'emails' => $emails,
+                    'email_professionnel' => $emailProfessionnel,
+                    'email_prive' => $emailPrive,
                     'structure' => $agent->departement?->nom
                         ?: $agent->province?->nom
                         ?: $agent->organe
