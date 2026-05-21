@@ -637,7 +637,9 @@
               <div class="sep-task-meta">
                 <span class="sep-tag" :class="sepStatutClass(t.statut)">{{ sepStatutLabel(t.statut) }}</span>
                 <span v-if="t.agent" class="sep-task-agent">
-                  <i class="fas fa-user-circle me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
+                  <i class="fas fa-user-circle me-1"></i>
+                  <span class="sep-task-agent-name">{{ t.agent.prenom }} {{ t.agent.nom }}</span>
+                  <span v-if="agentPosteLabel(t.agent)" class="sep-task-agent-poste">{{ agentPosteLabel(t.agent) }}</span>
                 </span>
                 <span v-if="t.date_echeance" class="sep-task-due" :class="{ 'sep-overdue': sepIsOverdue(t) }">
                   <i class="fas fa-clock me-1"></i>{{ sepFormatDate(t.date_echeance) }}
@@ -1416,6 +1418,10 @@ function sepStatutClass(s) {
   return map[s] ?? ''
 }
 
+function agentPosteLabel(agent) {
+  return agent?.poste_actuel || agent?.fonction || ''
+}
+
 function sepPerfLabel(pct) {
   if (pct >= 80) return 'Excellent'
   if (pct >= 60) return 'Bon'
@@ -1822,7 +1828,17 @@ onMounted(async () => {
 .tag-en-cours { background: #fef3c7; color: #92400e; }
 .tag-terminee { background: #dcfce7; color: #15803d; }
 .tag-suspendue { background: #f1f5f9; color: #64748b; }
-.sep-task-agent { font-size: .72rem; color: #64748b; }
+.sep-task-agent { display: inline-flex; align-items: center; gap: .25rem; min-width: 0; font-size: .72rem; color: #64748b; }
+.sep-task-agent-name { font-weight: 700; color: #334155; }
+.sep-task-agent-poste {
+  max-width: 180px;
+  padding-left: .35rem;
+  border-left: 1px solid #cbd5e1;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .sep-task-due { font-size: .72rem; color: #94a3b8; }
 .sep-task-due.sep-overdue { color: #dc2626; font-weight: 600; }
 .sep-task-prog { display: flex; align-items: center; gap: .4rem; min-width: 90px; }
@@ -1910,7 +1926,17 @@ onMounted(async () => {
 .tag-en-cours { background: #fef3c7; color: #92400e; }
 .tag-terminee { background: #dcfce7; color: #15803d; }
 .tag-suspendue { background: #f1f5f9; color: #64748b; }
-.sep-task-agent { font-size: .72rem; color: #64748b; }
+.sep-task-agent { display: inline-flex; align-items: center; gap: .25rem; min-width: 0; font-size: .72rem; color: #64748b; }
+.sep-task-agent-name { font-weight: 700; color: #334155; }
+.sep-task-agent-poste {
+  max-width: 180px;
+  padding-left: .35rem;
+  border-left: 1px solid #cbd5e1;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .sep-task-due { font-size: .72rem; color: #94a3b8; }
 .sep-task-due.sep-overdue { color: #dc2626; font-weight: 600; }
 .sep-task-prog { display: flex; align-items: center; gap: .4rem; min-width: 90px; }
@@ -2119,9 +2145,16 @@ onMounted(async () => {
   .sep-affectations-row { grid-template-columns: repeat(2, 1fr); }
   .sep-plan-global-row { flex-direction: column; align-items: center; }
   .sep-task-grid { grid-template-columns: repeat(2, 1fr); }
+  .sep-task-row { align-items: flex-start; }
+  .sep-task-meta { gap: .4rem; }
+  .sep-task-agent { max-width: 100%; flex-wrap: wrap; }
+  .sep-task-agent-poste { max-width: 100%; white-space: normal; }
+  .sep-task-prog { min-width: 72px; }
 }
 @media (max-width: 575.98px) {
   .sep-actions { grid-template-columns: 1fr; }
   .sep-affectations-row { grid-template-columns: 1fr 1fr; }
+  .sep-task-row { padding: .7rem .75rem; gap: .55rem; }
+  .sep-task-prog { display: none; }
 }
 </style>

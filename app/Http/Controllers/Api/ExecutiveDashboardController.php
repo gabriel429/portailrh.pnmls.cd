@@ -892,7 +892,7 @@ class ExecutiveDashboardController extends ApiController
 
         // ─── TÂCHES RÉCENTES (province) ──────────────────────────────────────────
         $recentTaches = (clone $tacheQ)
-            ->with('agent:id,nom,prenom')
+            ->with('agent:id,nom,prenom,poste_actuel,fonction')
             ->orderByDesc('updated_at')
             ->limit(8)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
@@ -902,7 +902,7 @@ class ExecutiveDashboardController extends ApiController
             ->whereNotIn('statut', ['terminee'])
             ->whereNotNull('date_echeance')
             ->whereBetween('date_echeance', [$now->toDateString(), $nextWeek->toDateString()])
-            ->with('agent:id,nom,prenom')
+            ->with('agent:id,nom,prenom,poste_actuel,fonction')
             ->orderBy('date_echeance')
             ->limit(10)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
@@ -1861,7 +1861,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             ->whereNotNull('date_echeance')->where('date_echeance', '<', $now->toDateString())->count();
 
         $recentTaches = (clone $tacheQ)
-            ->with('agent:id,nom,prenom')
+            ->with('agent:id,nom,prenom,poste_actuel,fonction')
             ->orderByDesc('updated_at')
             ->limit(8)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
