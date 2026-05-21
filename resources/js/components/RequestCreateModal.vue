@@ -319,10 +319,13 @@ watch(() => props.show, async (newVal) => {
     resetForm()
     if (agents.value.length === 0) {
       try {
-        const { data } = await client.get('/agents', { params: { actifs: 1 } })
+        const endpoint = isRH.value ? '/agents' : '/address-book'
+        const { data } = await client.get(endpoint, isRH.value ? { params: { actifs: 1 } } : {})
         const raw = data.data ?? data
-        // L'API retourne les agents groupés par organe → aplatir
-        if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
+
+        if (!isRH.value && Array.isArray(raw?.groups)) {
+          agents.value = raw.groups.flatMap(g => g.agents || [])
+        } else if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
           agents.value = raw.flatMap(g => g.agents)
         } else {
           agents.value = Array.isArray(raw) ? raw : []
