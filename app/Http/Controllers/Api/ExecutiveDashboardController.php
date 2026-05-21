@@ -908,12 +908,11 @@ class ExecutiveDashboardController extends ApiController
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
 
         // ─── PERFORMANCE DES AGENTS (province) ──────────────────────────────────
-        $agentPerformance = Agent::whereIn('departement_id',
-                Department::where('province_id', $provinceId)->pluck('id')
-            )
+        $agentPerformance = Agent::where('province_id', $provinceId)
             ->actifs()
             ->with('departement:id,code')
-            ->get(['id', 'nom', 'prenom', 'departement_id'])
+            ->orderInstitutionally()
+            ->get(['id', 'nom', 'prenom', 'poste_actuel', 'fonction', 'organe', 'departement_id'])
             ->map(function ($agent) use ($now) {
                 $q       = Tache::where('agent_id', $agent->id);
                 $total   = (clone $q)->count();
@@ -927,7 +926,7 @@ class ExecutiveDashboardController extends ApiController
                     'id'             => $agent->id,
                     'nom'            => $agent->nom,
                     'prenom'         => $agent->prenom,
-                    'dept_code'      => $agent->departement?->code ?? '—',
+                    'dept_code'      => $agent->departement?->code ?? 'Province',
                     'taches_total'   => $total,
                     'taches_done'    => $done,
                     'taches_overdue' => $overdue,
@@ -1868,12 +1867,11 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
 
         // ─── PERFORMANCE AGENTS (province) ────────────────────────────────────
-        $agentPerformance = Agent::whereIn('departement_id',
-                Department::where('province_id', $provinceId)->pluck('id')
-            )
+        $agentPerformance = Agent::where('province_id', $provinceId)
             ->actifs()
             ->with('departement:id,code')
-            ->get(['id', 'nom', 'prenom', 'departement_id'])
+            ->orderInstitutionally()
+            ->get(['id', 'nom', 'prenom', 'poste_actuel', 'fonction', 'organe', 'departement_id'])
             ->map(function ($ag) use ($now) {
                 $q       = Tache::where('agent_id', $ag->id);
                 $total   = (clone $q)->count();
@@ -1887,7 +1885,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
                     'id'             => $ag->id,
                     'nom'            => $ag->nom,
                     'prenom'         => $ag->prenom,
-                    'dept_code'      => $ag->departement?->code ?? '—',
+                    'dept_code'      => $ag->departement?->code ?? 'Province',
                     'taches_total'   => $total,
                     'taches_done'    => $done,
                     'taches_overdue' => $overdue,
