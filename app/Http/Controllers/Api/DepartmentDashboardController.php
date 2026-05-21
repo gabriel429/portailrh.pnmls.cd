@@ -17,6 +17,8 @@ use Carbon\Carbon;
 
 class DepartmentDashboardController extends ApiController
 {
+    private array $departmentFamilyCache = [];
+
     public function index(Request $request)
     {
         $user     = $request->user();
@@ -44,8 +46,10 @@ class DepartmentDashboardController extends ApiController
             ], 403);
         }
 
+        $departmentIds = $this->departmentScopeIds((int) $deptId);
+
         // ─── Agents ────────────────────────────────────────────
-        $departmentAgentsQuery = Agent::where('departement_id', $deptId)->actifs();
+        $departmentAgentsQuery = Agent::whereIn('departement_id', $departmentIds)->actifs();
         $agentsActifs = (clone $departmentAgentsQuery)->count();
         $agentsTotal  = $agentsActifs;
         $agentIds     = (clone $departmentAgentsQuery)->pluck('id');
@@ -106,7 +110,7 @@ class DepartmentDashboardController extends ApiController
             ->count();
 
         // ─── Performance équipe ────────────────────────────────
-        $teamPerf = Agent::where('departement_id', $deptId)
+        $teamPerf = Agent::whereIn('departement_id', $departmentIds)
             ->actifs()
             ->with([
                 'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
@@ -173,7 +177,7 @@ class DepartmentDashboardController extends ApiController
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
 
         // ─── Liste agents du département ──────────────────────
-        $agentList = Agent::where('departement_id', $deptId)
+        $agentList = Agent::whereIn('departement_id', $departmentIds)
             ->actifs()
             ->orderInstitutionally()
             ->get(['id', 'nom', 'prenom', 'fonction', 'photo'])
@@ -244,7 +248,8 @@ class DepartmentDashboardController extends ApiController
 
         $now          = Carbon::now();
         $startOfMonth = $now->copy()->startOfMonth();
-        $agentIds     = Agent::where('departement_id', $deptId)->actifs()->pluck('id');
+        $departmentIds = $this->departmentScopeIds((int) $deptId);
+        $agentIds     = Agent::whereIn('departement_id', $departmentIds)->actifs()->pluck('id');
 
         // Présences du mois par agent
         $monthlyPresence = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
@@ -282,7 +287,7 @@ class DepartmentDashboardController extends ApiController
             ->flip();
         $onlineAgentMap = app(AgentPresenceService::class)->onlineMap($agentIds->all());
 
-        $agents = Agent::where('departement_id', $deptId)
+        $agents = Agent::whereIn('departement_id', $departmentIds)
             ->actifs()
             ->with([
                 'tachesAssignees' => fn($q) => $q->select('id', 'agent_id', 'statut', 'pourcentage', 'date_echeance'),
@@ -333,6 +338,63 @@ class DepartmentDashboardController extends ApiController
             'jours_ouvrables' => $joursOuvrables,
             'online_count'    => count($onlineAgentMap),
         ]);
+    }
+
+    private function departmentScopeIds(int $departmentId): array
+    {
+        if (isset($this->departmentFamilyCache[$departmentId])) {
+            return $this->departmentFamilyCache[$departmentId];
+        }
+
+        $department = Department::find($departmentId);
+        if (!$department || $department->province_id) {
+            return $this->departmentFamilyCache[$departmentId] = [$departmentId];
+        }
+
+        $name = $this->normalizeScopeText($department->nom);
+        $matchedGroup = null;
+        $bestScore = 0;
+
+        foreach (Department::ACTIVE_NATIONAL_DEPARTMENT_KEYWORDS as $keywordGroup) {
+            $score = 0;
+            foreach ($keywordGroup as $keyword) {
+                if (str_contains($name, $keyword)) {
+                    $score++;
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $matchedGroup = $keywordGroup;
+            }
+        }
+
+        if (!$matchedGroup) {
+            return $this->departmentFamilyCache[$departmentId] = [$departmentId];
+        }
+
+        $ids = Department::whereNull('province_id')
+            ->where(function ($query) use ($matchedGroup) {
+                foreach ($matchedGroup as $keyword) {
+                    $query->orWhere('nom', 'like', '%' . $keyword . '%');
+                }
+            })
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+
+        if (!in_array($departmentId, $ids, true)) {
+            $ids[] = $departmentId;
+        }
+
+        return $this->departmentFamilyCache[$departmentId] = array_values(array_unique($ids));
+    }
+
+    private function normalizeScopeText(?string $value): string
+    {
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', trim((string) $value));
+
+        return mb_strtolower($ascii !== false ? $ascii : (string) $value);
     }
 
 }

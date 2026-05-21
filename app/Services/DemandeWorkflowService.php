@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Models\Department;
 use App\Models\Request as RequestModel;
 use App\Models\RequestValidationHistory;
 use App\Models\User;
@@ -11,6 +12,8 @@ use Illuminate\Support\Str;
 
 class DemandeWorkflowService
 {
+    private array $departmentFamilyCache = [];
+
     private const WORKFLOWS = [
         'national_with_department' => ['director', 'rh', 'sen'],
         'national_sen_direct' => ['sen'],
@@ -174,7 +177,8 @@ class DemandeWorkflowService
                                 });
                         } elseif ($step === 'director') {
                             $deptId = $user->agent?->departement_id;
-                            $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->where('departement_id', $deptId));
+                            $departmentIds = $deptId ? $this->departmentScopeIds((int) $deptId) : [];
+                            $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->whereIn('departement_id', $departmentIds));
                         } elseif ($step === 'sen') {
                             $isSenAssistant = $this->isSenAssistant($user);
 
@@ -458,7 +462,10 @@ class DemandeWorkflowService
         $role = $this->normalizeValue($user->role?->nom_role);
 
         return match ($step) {
-            'director' => (int) ($validatorAgent?->departement_id ?? 0) === (int) ($agent?->departement_id ?? 0),
+            'director' => $this->sameDepartmentScope(
+                (int) ($validatorAgent?->departement_id ?? 0),
+                (int) ($agent?->departement_id ?? 0)
+            ),
             'rh' => true,
             'caf' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
             'aaf' => str_contains((string) ($validatorAgent?->organe ?? ''), 'Local')
@@ -522,7 +529,7 @@ class DemandeWorkflowService
 
         return match ($step) {
             'director' => $query
-                ->whereHas('agent', fn($q) => $q->where('departement_id', $agent?->departement_id))
+                ->whereHas('agent', fn($q) => $q->whereIn('departement_id', $this->departmentScopeIds((int) ($agent?->departement_id ?? 0))))
                 ->get()
                 ->filter(fn(User $user) => $this->hasStepRole($user, 'director')),
             'rh' => $query
@@ -609,6 +616,69 @@ class DemandeWorkflowService
         $value = strtolower(trim($value));
 
         return preg_replace('/\s+/', ' ', $value) ?? '';
+    }
+
+    private function sameDepartmentScope(int $validatorDepartmentId, int $agentDepartmentId): bool
+    {
+        if ($validatorDepartmentId <= 0 || $agentDepartmentId <= 0) {
+            return false;
+        }
+
+        return in_array($agentDepartmentId, $this->departmentScopeIds($validatorDepartmentId), true);
+    }
+
+    private function departmentScopeIds(int $departmentId): array
+    {
+        if ($departmentId <= 0) {
+            return [];
+        }
+
+        if (isset($this->departmentFamilyCache[$departmentId])) {
+            return $this->departmentFamilyCache[$departmentId];
+        }
+
+        $department = Department::find($departmentId);
+        if (!$department || $department->province_id) {
+            return $this->departmentFamilyCache[$departmentId] = [$departmentId];
+        }
+
+        $name = $this->normalizeValue($department->nom);
+        $matchedGroup = null;
+        $bestScore = 0;
+
+        foreach (Department::ACTIVE_NATIONAL_DEPARTMENT_KEYWORDS as $keywordGroup) {
+            $score = 0;
+            foreach ($keywordGroup as $keyword) {
+                if (str_contains($name, $keyword)) {
+                    $score++;
+                }
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $matchedGroup = $keywordGroup;
+            }
+        }
+
+        if (!$matchedGroup) {
+            return $this->departmentFamilyCache[$departmentId] = [$departmentId];
+        }
+
+        $ids = Department::whereNull('province_id')
+            ->where(function (Builder $query) use ($matchedGroup) {
+                foreach ($matchedGroup as $keyword) {
+                    $query->orWhere('nom', 'like', '%' . $keyword . '%');
+                }
+            })
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->all();
+
+        if (!in_array($departmentId, $ids, true)) {
+            $ids[] = $departmentId;
+        }
+
+        return $this->departmentFamilyCache[$departmentId] = array_values(array_unique($ids));
     }
 
     private function withoutAncienAgents(Builder $query): Builder
