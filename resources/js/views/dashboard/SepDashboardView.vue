@@ -39,6 +39,15 @@
             <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
           </div>
           <div class="kpi-divider"></div>
+          <div class="sep-kpi sep-kpi-clickable" @click="router.push({ path: '/taches', hash: '#agenda' })">
+            <div class="sep-kpi-icon"><i class="fas fa-calendar-day"></i></div>
+            <div>
+              <div class="sep-kpi-val">{{ data.upcoming_deadlines?.length ?? 0 }}</div>
+              <div class="sep-kpi-lbl">Agenda</div>
+            </div>
+            <i class="fas fa-arrow-right sep-kpi-drill-icon" title="Voir agenda"></i>
+          </div>
+          <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="openProvDrilldown('presence')">
             <div class="sep-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>

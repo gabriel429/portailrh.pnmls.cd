@@ -30,6 +30,14 @@
             </div>
           </div>
           <div class="kpi-divider"></div>
+          <div class="rh-kpi" @click="router.push({ path: '/taches', hash: '#agenda' })">
+            <div class="rh-kpi-icon"><i class="fas fa-calendar-day"></i></div>
+            <div>
+              <div class="rh-kpi-val">{{ d.upcoming_deadlines?.length ?? 0 }}</div>
+              <div class="rh-kpi-lbl">Agenda</div>
+            </div>
+          </div>
+          <div class="kpi-divider"></div>
           <div class="rh-kpi" @click="openOrganeDrilldown('SEN', 'presence')">
             <div class="rh-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>

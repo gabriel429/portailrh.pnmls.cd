@@ -43,6 +43,15 @@
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
+          <div class="dept-kpi-pill" @click="router.push({ path: '/taches', hash: '#agenda' })">
+            <div class="dept-kpi-pill-icon"><i class="fas fa-calendar-day"></i></div>
+            <div>
+              <div class="dept-kpi-pill-val">{{ data?.upcoming_deadlines?.length ?? 0 }}</div>
+              <div class="dept-kpi-pill-lbl">Agenda</div>
+            </div>
+            <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
+          </div>
+          <div class="kpi-divider"></div>
           <div class="dept-kpi-pill" @click="router.push(taskBaseRoute + '&statut=en_cours')">
             <div class="dept-kpi-pill-icon"><i class="fas fa-tasks"></i></div>
             <div>

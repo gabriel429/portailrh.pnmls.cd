@@ -25,6 +25,14 @@
             </div>
           </div>
           <div class="kpi-divider"></div>
+          <div class="sen-kpi sen-kpi-clickable" @click="router.push({ path: '/taches', hash: '#agenda' })">
+            <div class="sen-kpi-icon"><i class="fas fa-calendar-day"></i></div>
+            <div>
+              <div class="sen-kpi-val">{{ data.upcoming_deadlines?.length ?? 0 }}</div>
+              <div class="sen-kpi-lbl">Agenda</div>
+            </div>
+          </div>
+          <div class="kpi-divider"></div>
           <div class="sen-kpi sen-kpi-clickable" @click="openOrganeDrilldown('SEN', 'presence')">
             <div class="sen-kpi-icon"><i class="fas fa-chart-line"></i></div>
             <div>
