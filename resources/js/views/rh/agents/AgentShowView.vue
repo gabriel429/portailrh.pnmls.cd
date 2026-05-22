@@ -780,7 +780,7 @@ const isNational = computed(() =>
     agent.value?.organe && agent.value.organe.toLowerCase().includes('national')
 )
 const canManageAgentDocuments = computed(() =>
-    Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isAssistantRH
+    Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isRhOperationalAssistant
 )
 const canManageAssistantDelegations = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_assistant_delegations && agent.value?.permissions?.is_assistant_rh)

@@ -147,14 +147,14 @@
                 <span class="nav-link-label">Admin</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
-                <template v-if="auth.isRH || auth.isSEN">
+                <template v-if="auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant">
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
                       <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion des agents
                     </router-link>
                   </li>
                   <li>
-                    <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
+                    <router-link v-if="!auth.isRhOperationalAssistant" class="dropdown-item" :to="{ name: 'rh.holidays.planning' }">
                       <span class="dd-icon dd-icon-teal"><i class="fas fa-calendar-alt"></i></span> Gestion des congés
                     </router-link>
                     <span v-else class="dropdown-item is-disabled" title="Réservé à la Section RH">
@@ -162,7 +162,7 @@
                     </span>
                   </li>
                   <li>
-                    <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
+                    <router-link v-if="!auth.isRhOperationalAssistant" class="dropdown-item" :to="{ name: 'rh.communiques.index' }">
                       <span class="dd-icon dd-icon-green"><i class="fas fa-bullhorn"></i></span> Communiqués
                     </router-link>
                     <span v-else class="dropdown-item is-disabled" title="Réservé à la Section RH">
@@ -180,7 +180,7 @@
                     </router-link>
                   </li>
                   <li>
-                    <router-link v-if="!auth.isAssistantRH" class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
+                    <router-link v-if="!auth.isRhOperationalAssistant" class="dropdown-item" :to="{ name: 'rh.affectations.index' }">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-exchange-alt"></i></span> Affectations
                     </router-link>
                     <span v-else class="dropdown-item is-disabled" title="Réservé à la Section RH">
@@ -205,7 +205,7 @@
                   </li>
                 </template>
                 <template v-if="auth.isAdminNT">
-                  <li v-if="auth.isRH || auth.isSEN"><hr class="dropdown-divider"></li>
+                  <li v-if="auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant"><hr class="dropdown-divider"></li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'admin.dashboard' }">
                       <span class="dd-icon dd-icon-slate"><i class="fas fa-sliders-h"></i></span> Paramètres système

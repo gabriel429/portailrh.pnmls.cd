@@ -142,6 +142,12 @@ export const useAuthStore = defineStore('auth', {
 
             return organe.includes('provincial')
         },
+        isProvincialOperationalAssistant() {
+            return this.isSEP && normalizedRole(this.$state) === 'secom'
+        },
+        isRhOperationalAssistant() {
+            return this.isAssistantRH || this.isProvincialOperationalAssistant
+        },
         isDirecteur(state) {
             const role = normalizedRole(state)
             return [
@@ -227,20 +233,20 @@ export const useAuthStore = defineStore('auth', {
             ].includes(role)
         },
         canCreateAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isAssistantRH && this.hasPermission('create_agent'))
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isRhOperationalAssistant && this.hasPermission('create_agent'))
         },
         canEditAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isAssistantRH && this.hasPermission('edit_agent'))
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isRhOperationalAssistant && this.hasPermission('edit_agent'))
         },
         canDeleteAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isAssistantRH && this.hasPermission('delete_agent'))
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isRhOperationalAssistant && this.hasPermission('delete_agent'))
         },
         canManageRhAdminModules() {
             return this.isSuperAdmin || this.isSEN || this.isFullRH
         },
         hasAdminAccess(state) {
             if (state.user?.is_super_admin) return true
-            return this.isRH || this.isAdminNT || this.isSEN
+            return this.isRH || this.isAdminNT || this.isSEN || this.isSEP || this.isRhOperationalAssistant
         },
         permissions(state) {
             return state.user?.permissions || []

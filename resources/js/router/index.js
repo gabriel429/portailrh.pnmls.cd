@@ -261,7 +261,7 @@ const routes = [
         path: '/rh/dashboard',
         name: 'rh.dashboard',
         component: () => import('@/views/dashboard/RhDashboardView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/agents',
@@ -299,7 +299,7 @@ const routes = [
         path: '/rh/pointages/create',
         name: 'rh.pointages.create',
         component: () => import('@/views/rh/pointages/PointageCreateViewOffline.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/pointages/daily',
@@ -323,7 +323,7 @@ const routes = [
         path: '/rh/pointages/:id/edit',
         name: 'rh.pointages.edit',
         component: () => import('@/views/rh/pointages/PointageEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
 
     // RH Communiques
@@ -513,12 +513,15 @@ router.beforeEach(async (to) => {
     if (to.meta.roles) {
         const userRole = auth.role?.toLowerCase()
         const allowed = to.meta.roles.map(r => r.toLowerCase())
-        if (!allowed.includes(userRole) && !(to.meta.allowAssistantRH && auth.isAssistantRH)) {
+        const semanticallyAllowed = (allowed.includes('sep') && auth.isSEP)
+            || (to.meta.allowAssistantRH && auth.isRhOperationalAssistant)
+
+        if (!allowed.includes(userRole) && !semanticallyAllowed) {
             return { name: 'dashboard' }
         }
     }
 
-    if (auth.isAssistantRH && to.meta.assistantPermission && !auth.hasPermission(to.meta.assistantPermission)) {
+    if (auth.isRhOperationalAssistant && to.meta.assistantPermission && !auth.hasPermission(to.meta.assistantPermission)) {
         return { name: 'rh.dashboard' }
     }
 
@@ -534,7 +537,7 @@ router.beforeEach(async (to) => {
         return { name: 'dashboard' }
     }
 
-    if (to.meta.notAssistantRH && auth.isAssistantRH) {
+    if (to.meta.notAssistantRH && auth.isRhOperationalAssistant) {
         return { name: 'rh.dashboard' }
     }
 

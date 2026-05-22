@@ -812,7 +812,7 @@ const sm_unreadMessagesCount = computed(() =>
     (selectedAgent.value?.messages || []).filter(m => !m.lu).length
 )
 const sm_canManageAgentDocuments = computed(() =>
-    Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isAssistantRH
+    Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isRhOperationalAssistant
 )
 const sm_canManageAssistantDelegations = computed(() =>
     Boolean(selectedAgent.value?.permissions?.can_manage_assistant_delegations && selectedAgent.value?.permissions?.is_assistant_rh)

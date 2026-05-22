@@ -1264,7 +1264,7 @@ const baseQuickActions = [
 
 const quickActions = computed(() => {
   const disabledReason = 'Réservé à la Section RH'
-  const assistant = auth.isAssistantRH
+  const assistant = auth.isRhOperationalAssistant
 
   return baseQuickActions.map((action) => {
     if (action.to === '/rh/agents') {
