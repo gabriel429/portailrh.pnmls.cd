@@ -320,6 +320,10 @@ class TacheController extends ApiController
 
     protected function defaultSourceEmetteurForUser($user, RoleService $roles, TacheWorkflowService $workflow): string
     {
+        if ($roles->isAssistantRh($user)) {
+            return 'autre';
+        }
+
         if ($user->hasRole('SEN') || $roles->hasSENARole($user)) {
             return 'sen';
         }
@@ -500,7 +504,7 @@ class TacheController extends ApiController
                 // Vérification élargie pour les assistants/secrétaires
         // Ils peuvent voir les tâches assignées à leur responsable (créateur)
         $isAssistant = false;
-        if (!$isSENOrSENA && $agent) {
+        if (!$isSENOrSENA && $agent && !$roles->isAssistantRh($user)) {
             $userRole = strtolower($user->role?->nom_role ?? '');
             // Détection des rôles d'assistant/secrétaire : Assistant de département,
             // Assistant, Assistante, Secrétaire de direction, SECOM, etc.
@@ -1083,7 +1087,7 @@ class TacheController extends ApiController
         $isSENA = $roles->hasSENARole($user);
         $isSENOrSENA = $isSEN || $isSENA;
         $isSENStaff = !$isSENOrSENA && $agent && ($agent->organe ?? '') === 'Secrétariat Exécutif National';
-        if ($isSEN || $isAssistant) {
+        if ($isSEN || $isSENStaff) {
             return true;
         }
 

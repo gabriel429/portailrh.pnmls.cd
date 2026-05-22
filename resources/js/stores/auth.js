@@ -145,6 +145,8 @@ export const useAuthStore = defineStore('auth', {
             ].includes(role)
         },
         isAssistant(state) {
+            if (this.isAssistantRH) return false
+
             const role = normalizedRole(state)
             return [
                 'assistant',
@@ -155,6 +157,8 @@ export const useAuthStore = defineStore('auth', {
             ].includes(role)
         },
         isDepartement(state) {
+            if (this.isAssistantRH) return false
+
             const role = normalizedRole(state)
             return [
                 'directeur',

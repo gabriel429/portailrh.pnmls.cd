@@ -487,23 +487,30 @@ class DemandeWorkflowService
         $deptName = $this->normalizeValue($user->agent?->departement?->nom);
         $fonction = $this->normalizeValue($user->agent?->fonction);
         $poste = $this->normalizeValue($user->agent?->poste_actuel);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste);
+        $isAssistantRh = $this->isAssistantRh($user);
 
         return match ($step) {
-            'director' => in_array($role, [
-                'directeur',
-                'directrice',
-                'directeur de departement',
-                'directrice de departement',
-                'assistant',
-                'assistant de departement',
-                'secretaire de departement',
-            ], true) || str_starts_with($role, 'assistant'),
+            'director' => !$isAssistantRh && (
+                in_array($role, [
+                    'directeur',
+                    'directrice',
+                    'directeur de departement',
+                    'directrice de departement',
+                    'assistant',
+                    'assistant de departement',
+                    'secretaire de departement',
+                ], true)
+                || str_contains($profile, 'assistant de departement')
+                || str_contains($profile, 'assistante de departement')
+                || str_contains($profile, 'secretaire de departement')
+            ),
             'rh' => in_array($role, [
                 'section ressources humaines',
                 'chef section rh',
                 'rh national',
                 'rh provincial',
-            ], true),
+            ], true) || $isAssistantRh,
             'caf' => in_array($role, ['caf', 'chef caf', 'responsable caf'], true)
                 || $deptCode === 'caf'
                 || str_contains($deptName, 'cellule administrative et financ'),
@@ -580,6 +587,26 @@ class DemandeWorkflowService
                 || str_contains($profile, 'sen')
                 || empty($agent?->departement_id)
             );
+    }
+
+    private function isAssistantRh(User $user): bool
+    {
+        $role = $this->normalizeValue($user->role?->nom_role);
+        $agent = $user->agent;
+        $profile = trim(
+            $role . ' ' .
+            $this->normalizeValue($agent?->fonction) . ' ' .
+            $this->normalizeValue($agent?->poste_actuel)
+        );
+
+        return in_array($role, [
+            'assistant rh',
+            'assistant ressources humaines',
+            'assistant ressource humaine',
+        ], true)
+            || str_contains($profile, 'assistant rh')
+            || str_contains($profile, 'assistant ressources humaines')
+            || str_contains($profile, 'assistant ressource humaine');
     }
 
     private function isSelManager(User $user): bool

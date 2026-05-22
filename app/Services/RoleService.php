@@ -157,6 +157,9 @@ class RoleService
         }
 
         $role = $this->normalize($user->role?->nom_role);
+        if ($this->isAssistantRh($user)) {
+            return false;
+        }
 
         return in_array($role, [
             'directeur',
