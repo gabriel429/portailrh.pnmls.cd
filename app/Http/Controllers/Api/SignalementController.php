@@ -67,7 +67,7 @@ class SignalementController extends ApiController
         } else {
             $validated['is_anonymous'] = false;
             $agent = Agent::find($validated['agent_id']);
-            if (!$this->scopeService()->canAccessAgent($request->user(), $agent)) {
+            if (!$this->scopeService()->canAccessAgent($request->user(), $agent, true)) {
                 return response()->json([
                     'message' => 'Accès refusé pour cet agent.',
                 ], 403);
@@ -91,7 +91,7 @@ class SignalementController extends ApiController
      */
     public function show(Signalement $signalement): JsonResponse
     {
-        if (!$this->scopeService()->canAccessSignalement(request()->user(), $signalement)) {
+        if (!$this->scopeService()->canAccessSignalement(request()->user(), $signalement, true)) {
             abort(403, 'Vous n\'avez pas accès a ce signalement.');
         }
 
@@ -150,7 +150,18 @@ class SignalementController extends ApiController
     public function agents(): JsonResponse
     {
         $query = Agent::actifs()->orderInstitutionally();
-        $this->scopeService()->applyAgentScope($query, request()->user());
+        $user = request()->user();
+
+        if (
+            !$this->scopeService()->hasGlobalAdminAccess($user)
+            && !$this->scopeService()->isAssistantRh($user)
+            && !$this->scopeService()->isProvincialUser($user)
+        ) {
+            $agentId = $user?->agent?->id;
+            $query->where('id', $agentId ?: 0);
+        } else {
+            $this->scopeService()->applyAgentScope($query, $user);
+        }
 
         $agents = $query->get(['id', 'nom', 'prenom'])
             ->map(fn($a) => [

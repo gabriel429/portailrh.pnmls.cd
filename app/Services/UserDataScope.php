@@ -182,7 +182,11 @@ class UserDataScope
         }
 
         if (!$this->isProvincialUser($user)) {
-            return $query;
+            $agentId = $user?->agent?->id;
+
+            return $agentId
+                ? $query->where('agent_id', $agentId)
+                : $query->whereRaw('1 = 0');
         }
 
         $provinceId = $this->provinceId($user);
@@ -307,7 +311,7 @@ class UserDataScope
         return $allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $demande->agent_id;
     }
 
-    public function canAccessSignalement(?User $user, Signalement $signalement): bool
+    public function canAccessSignalement(?User $user, Signalement $signalement, bool $allowOwn = false): bool
     {
         $agent = $signalement->relationLoaded('agent') ? $signalement->agent : $signalement->agent()->first();
 
@@ -320,7 +324,7 @@ class UserDataScope
         }
 
         if (!$this->isProvincialUser($user)) {
-            return false;
+            return $allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $signalement->agent_id;
         }
 
         return $this->canAccessAgent($user, $agent, false);

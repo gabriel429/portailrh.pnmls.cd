@@ -137,19 +137,19 @@ const routes = [
         path: '/signalements',
         name: 'signalements.index',
         component: () => import('@/views/rh/signalements/SignalementListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true },
     },
     {
         path: '/signalements/create',
         name: 'signalements.create',
         component: () => import('@/views/rh/signalements/SignalementCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true },
     },
     {
         path: '/signalements/:id',
         name: 'signalements.show',
         component: () => import('@/views/rh/signalements/SignalementShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true },
     },
     {
         path: '/signalements/:id/edit',
