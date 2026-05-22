@@ -5,7 +5,7 @@
       <!-- Hero section -->
       <section class="agents-hero">
         <div class="container-fluid px-0">
-          <div class="row g-3 align-items-center mb-4">
+          <div class="row g-3 align-items-center mb-3">
             <div class="col-lg-7">
               <div class="hero-text">
                 <h1 class="hero-title">
@@ -1544,10 +1544,10 @@ onMounted(() => {
    ═══════════════════════════════════════════ */
 .agents-hero {
   background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
-  border-radius: 24px;
-  padding: 2rem;
-  margin-bottom: 2rem;
-  box-shadow: 0 10px 40px rgba(0, 119, 181, 0.15);
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 8px 24px rgba(0, 119, 181, 0.12);
 }
 
 .hero-text {
@@ -1555,28 +1555,28 @@ onMounted(() => {
 }
 
 .hero-title {
-  font-size: 2rem;
+  font-size: 1.45rem;
   font-weight: 800;
-  margin: 0 0 0.5rem 0;
+  margin: 0 0 0.35rem 0;
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.7rem;
 }
 
 .hero-icon-wrap {
-  width: 56px;
-  height: 56px;
+  width: 40px;
+  height: 40px;
   background: rgba(255,255,255,0.15);
-  border-radius: 16px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
 }
 
 .hero-subtitle {
-  font-size: 0.95rem;
+  font-size: 0.88rem;
   margin: 0;
   opacity: 0.9;
 }
@@ -1592,8 +1592,8 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.5rem;
-  border-radius: 12px;
+  padding: 0.62rem 1.05rem;
+  border-radius: 8px;
   border: none;
   font-weight: 600;
   font-size: 0.9rem;
@@ -1648,7 +1648,7 @@ onMounted(() => {
 
 /* Search Section */
 .search-section {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .search-wrapper {
@@ -1656,9 +1656,9 @@ onMounted(() => {
   align-items: center;
   background: rgba(255,255,255,0.15);
   backdrop-filter: blur(10px);
-  border-radius: 14px;
+  border-radius: 8px;
   border: 1.5px solid rgba(255,255,255,0.2);
-  padding: 0.5rem;
+  padding: 0.35rem;
   transition: all 0.3s;
 }
 
@@ -1679,8 +1679,8 @@ onMounted(() => {
   border: none;
   background: transparent;
   color: #fff;
-  font-size: 0.95rem;
-  padding: 0.5rem;
+  font-size: 0.88rem;
+  padding: 0.38rem;
   outline: none;
 }
 
@@ -1711,8 +1711,8 @@ onMounted(() => {
   background: rgba(255,255,255,0.2);
   border: none;
   color: #fff;
-  padding: 0.65rem 1.5rem;
-  border-radius: 10px;
+  padding: 0.5rem 1.1rem;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -1724,7 +1724,7 @@ onMounted(() => {
 
 /* Filters Section */
 .filters-section {
-  margin-top: 1rem;
+  margin-top: 0.8rem;
 }
 
 .filter-group {
@@ -1732,7 +1732,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   background: rgba(255,255,255,0.1);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1.5px solid rgba(255,255,255,0.15);
   overflow: hidden;
   transition: all 0.3s;
@@ -1757,7 +1757,7 @@ onMounted(() => {
   background: transparent;
   border: none;
   color: #fff;
-  padding: 0.75rem 0.75rem 0.75rem 2.75rem;
+  padding: 0.55rem 0.65rem 0.55rem 2.5rem;
   font-size: 0.88rem;
   font-weight: 500;
   cursor: pointer;
@@ -1780,17 +1780,17 @@ onMounted(() => {
 .stats-cards {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1.25rem;
-  margin-bottom: 2rem;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
 }
 
 .stat-card {
   background: #fff;
-  border-radius: 20px;
-  padding: 1.5rem;
+  border-radius: 8px;
+  padding: 1rem 1.15rem;
   display: flex;
   align-items: center;
-  gap: 1.25rem;
+  gap: 0.9rem;
   box-shadow: 0 4px 20px rgba(0,0,0,0.06);
   border: 1px solid rgba(0,0,0,0.04);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1834,13 +1834,13 @@ onMounted(() => {
 }
 
 .stat-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.05rem;
   flex-shrink: 0;
 }
 
@@ -1869,7 +1869,7 @@ onMounted(() => {
 }
 
 .stat-value {
-  font-size: 2rem;
+  font-size: 1.45rem;
   font-weight: 800;
   line-height: 1;
   margin-bottom: 0.25rem;
@@ -1880,7 +1880,7 @@ onMounted(() => {
 }
 
 .stat-label {
-  font-size: 0.8rem;
+  font-size: 0.7rem;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
