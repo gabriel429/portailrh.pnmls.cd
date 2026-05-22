@@ -90,6 +90,36 @@ class AgentController extends ApiController
             || $user->hasRole(['SEN', 'Section ressources humaines', 'Chef Section RH', 'RH National']);
     }
 
+    private function canDeleteAgentRecord($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        if ($this->isDelegatedOperationalAssistant($user)) {
+            return $user->hasPermission('delete_agent');
+        }
+
+        if ($user->isSuperAdmin() || $user->hasRole(['SEN', 'Section ressources humaines', 'Chef Section RH', 'RH National'])) {
+            return true;
+        }
+
+        $role = Str::lower(Str::ascii(trim((string) ($user->role?->nom_role ?? ''))));
+
+        return in_array($role, [
+            'rh',
+            'ressources humaines',
+            'section ressources humaines',
+            'chef de section rh',
+            'chef section rh',
+            'chef de section ressources humaines',
+            'chef section ressources humaines',
+        ], true) || (
+            str_contains($role, 'ressources humaines')
+            && !str_contains($role, 'assistant')
+        );
+    }
+
     private function authorizeAgentDocumentManagement(Request $request, Agent $agent): void
     {
         if (!$this->canManageAgentDocuments($request->user())) {
@@ -809,11 +839,9 @@ class AgentController extends ApiController
      */
     public function destroy(Agent $agent): JsonResponse
     {
-        $this->abortIfAssistantRhWithoutPermission(
-            request()->user(),
-            'delete_agent',
-            'Cet assistant doit avoir une permission explicite pour supprimer un agent.'
-        );
+        if (!$this->canDeleteAgentRecord(request()->user())) {
+            abort(403, 'Seul le Chef de Section Ressources Humaines, le SEN ou un assistant autorise peut supprimer un dossier agent.');
+        }
 
         $this->authorizeAgentAccess(request(), $agent);
 
