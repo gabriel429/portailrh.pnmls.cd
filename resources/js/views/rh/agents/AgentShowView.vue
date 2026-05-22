@@ -1632,66 +1632,293 @@ onMounted(() => {
 @media print {
     @page {
         size: A4 portrait;
-        margin: 10mm;
-    }
-    body {
-        background: #fff !important;
-    }
-    .container-fluid {
-        padding: 0 !important;
-    }
-    .agent-letterhead {
-        box-shadow: none !important;
-        border: 1px solid rgba(125, 211, 252, .5) !important;
-        border-radius: 16px !important;
-        padding: 10px 12px;
-        margin-bottom: 12px;
-        background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(224,242,254,.64)) !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-    .print-author-card {
-        display: flex !important;
-    }
-    .agent-header {
-        background: linear-gradient(135deg, #0077B5, #0f766e) !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        padding: 18px;
-        margin-bottom: 15px;
-        border-radius: 18px !important;
-        box-shadow: none !important;
-    }
-    .agent-header::after { display: none; }
-    .agent-avatar-lg {
-        width: 92px !important;
-        height: 92px !important;
-        border-radius: 22px !important;
+        margin: 8mm;
     }
 
-    .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
-    .agent-signature-panel {
+    html,
+    body {
+        background: #fff !important;
+        font-size: 10.5px !important;
+        line-height: 1.25 !important;
+    }
+
+    * {
         box-shadow: none !important;
-        border: 1px solid #ddd !important;
-        margin-top: 20px;
+        text-shadow: none !important;
+    }
+
+    .no-print,
+    .nav-tabs,
+    .agent-overview-grid,
+    .agent-doc-overlay,
+    .modal,
+    .btn {
+        display: none !important;
+    }
+
+    .container-fluid {
+        max-width: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .agent-letterhead {
+        border: 1px solid #bae6fd !important;
+        border-radius: 8px !important;
+        padding: 7px 9px !important;
+        margin-bottom: 7px !important;
+        background: #f8fcff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        gap: 8px !important;
+        break-inside: avoid;
+    }
+
+    .agent-letterhead-logo {
+        width: 44px !important;
+        height: 44px !important;
+    }
+
+    .agent-letterhead span {
+        font-size: 7.5px !important;
+    }
+
+    .agent-letterhead strong {
+        font-size: 14px !important;
+        margin-top: 1px !important;
+    }
+
+    .print-author-card {
+        display: flex !important;
+        padding: 5px 7px !important;
+        border-radius: 8px !important;
+    }
+
+    .print-author-photo {
+        width: 28px !important;
+        height: 28px !important;
+        border-radius: 7px !important;
+    }
+
+    .agent-header {
+        background: #0b7fab !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 10px 12px !important;
+        margin-bottom: 8px !important;
+        border-radius: 8px !important;
+        border: 1px solid #0b7fab !important;
+        break-inside: avoid;
+    }
+
+    .agent-header::after { display: none; }
+
+    .agent-header .d-flex.align-items-center {
+        gap: 9px !important;
+    }
+
+    .agent-avatar-lg {
+        width: 58px !important;
+        height: 58px !important;
+        border-radius: 8px !important;
+        border: 1px solid rgba(255, 255, 255, .75) !important;
+    }
+
+    .agent-profile-kicker {
+        font-size: 7px !important;
+        letter-spacing: .05em !important;
+    }
+
+    .agent-header h2 {
+        font-size: 17px !important;
+        margin-bottom: 1px !important;
+    }
+
+    .agent-profile-line {
+        font-size: 10px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .agent-header .badge {
+        font-size: 7.5px !important;
+        padding: 3px 5px !important;
+        border-radius: 4px !important;
+    }
+
+    .row {
+        --bs-gutter-x: 0 !important;
+        --bs-gutter-y: 0 !important;
+        display: block !important;
+    }
+
+    .col-lg-8,
+    .col-lg-4 {
+        width: 100% !important;
+        flex: 0 0 100% !important;
+        max-width: 100% !important;
+        padding: 0 !important;
+    }
+
+    .col-lg-4.no-print {
+        display: none !important;
+    }
+
+    .tab-content > div {
+        display: block !important;
+        margin-bottom: 7px !important;
+    }
+
+    .tab-content > div:nth-child(n+3) {
+        page-break-before: auto;
     }
 
     .card {
-        box-shadow: none !important;
-        border: 1px solid rgba(203, 213, 225, .85) !important;
-        border-radius: 14px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
         break-inside: avoid;
-        margin-bottom: 12px;
-        background: rgba(255,255,255,.82) !important;
+        page-break-inside: avoid;
+        margin-bottom: 7px !important;
+        background: #fff !important;
+        overflow: hidden !important;
     }
-    .card-header { padding: 10px 15px; }
-    .card-body { padding: 10px 15px; }
 
-    .tab-content > div { margin-bottom: 15px; }
+    .card-header {
+        padding: 5px 8px !important;
+        background: #eff6ff !important;
+        border-bottom: 1px solid #cbd5e1 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 
-    /* Section titles for print */
-    .tab-content > div > .card > .card-header h5 {
-        font-size: 1rem;
+    .card-header h5 {
+        font-size: 10px !important;
+        font-weight: 900 !important;
+        margin: 0 !important;
+        color: #075985 !important;
+    }
+
+    .card-body {
+        padding: 6px 8px !important;
+        background: #fff !important;
+    }
+
+    .tab-content .card-body .row {
+        display: grid !important;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 4px !important;
+        margin: 0 0 4px !important;
+    }
+
+    .tab-content .card-body .row > [class*="col-"] {
+        width: auto !important;
+        max-width: none !important;
+        padding: 4px 5px !important;
+        margin: 0 !important;
+        min-height: 0 !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 5px !important;
+        background: #f8fafc !important;
+        break-inside: avoid;
+    }
+
+    .tab-content .card-body label {
+        font-size: 6.8px !important;
+        color: #64748b !important;
+        font-weight: 900 !important;
+        letter-spacing: .03em !important;
+        text-transform: uppercase !important;
+        margin: 0 0 1px !important;
+    }
+
+    .tab-content .card-body p {
+        font-size: 8.7px !important;
+        margin: 0 !important;
+        color: #0f172a !important;
+        line-height: 1.2 !important;
+    }
+
+    .tab-content hr {
+        display: none !important;
+    }
+
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 8px !important;
+    }
+
+    .table th,
+    .table td {
+        padding: 3px 4px !important;
+        border: 1px solid #e2e8f0 !important;
+        vertical-align: top !important;
+    }
+
+    .table thead th {
+        background: #f1f5f9 !important;
+        color: #334155 !important;
+        font-size: 7px !important;
+        text-transform: uppercase;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .timeline-item {
+        padding-left: 16px !important;
+        padding-bottom: 7px !important;
+        border-left: 1px solid #bfdbfe !important;
+        break-inside: avoid;
+    }
+
+    .timeline-dot {
+        left: -5px !important;
+        top: 3px !important;
+        width: 9px !important;
+        height: 9px !important;
+        border-width: 1px !important;
+    }
+
+    .message-card {
+        padding: 6px 7px !important;
+        margin-bottom: 6px !important;
+        border-radius: 6px !important;
+        break-inside: avoid;
+    }
+
+    .agent-signature-panel {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 10px 12px !important;
+        margin-top: 10px !important;
+        gap: 14px !important;
+        break-inside: avoid;
+        page-break-inside: avoid;
+        background: #fff !important;
+    }
+
+    .agent-signature-kicker {
+        font-size: 7px !important;
+    }
+
+    .agent-signature-panel > div:first-child strong,
+    .agent-signature-box strong {
+        font-size: 9px !important;
+    }
+
+    .agent-signature-box {
+        width: 230px !important;
+    }
+
+    .agent-signature-line {
+        margin: 28px 0 6px !important;
+    }
+
+    .agent-signature-box span {
+        font-size: 7px !important;
     }
 }
 </style>
