@@ -443,6 +443,28 @@
                   <div class="asm-stat"><span class="asm-stat-val">{{ sm_affectationsCount }}</span><span class="asm-stat-lbl">Affectations</span></div>
                   <div class="asm-stat"><span class="asm-stat-val">{{ sm_messagesCount }}</span><span class="asm-stat-lbl">Messages</span></div>
                 </div>
+
+                <div v-if="sm_canManageAssistantDelegations" class="asm-delegations mt-3">
+                  <div class="asm-section-title"><i class="fas fa-key me-1"></i> Délégations Assistant RH</div>
+                  <div class="asm-delegation-grid">
+                    <label class="asm-delegation-check">
+                      <input v-model="delegationForm.create_agent" type="checkbox">
+                      <span>Créer un agent</span>
+                    </label>
+                    <label class="asm-delegation-check">
+                      <input v-model="delegationForm.edit_agent" type="checkbox">
+                      <span>Modifier les fiches agents</span>
+                    </label>
+                    <label class="asm-delegation-check">
+                      <input v-model="delegationForm.delete_agent" type="checkbox">
+                      <span>Supprimer un agent</span>
+                    </label>
+                  </div>
+                  <button class="asm-btn-save-delegations mt-2" :disabled="delegationsSaving" @click="saveSelectedAgentDelegations">
+                    <span v-if="delegationsSaving" class="spinner-border spinner-border-sm me-1"></span>
+                    Enregistrer les délégations
+                  </button>
+                </div>
               </div>
 
               <!-- TAB: Demandes -->
@@ -648,7 +670,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
-import { list, get, remove, exportCsv, getFormOptions, downloadDossier } from '@/api/agents'
+import { list, get, remove, exportCsv, getFormOptions, downloadDossier, updateDelegations } from '@/api/agents'
 import { create as createDocument } from '@/api/documents'
 import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -749,12 +771,22 @@ const documentFileInput = ref(null)
 const selectedDocumentFile = ref(null)
 const documentUploadErrors = ref({})
 const documentUploadForm = ref(defaultDocumentUploadForm())
+const delegationsSaving = ref(false)
+const delegationForm = ref(defaultDelegationForm())
 
 function defaultDocumentUploadForm() {
     return {
         nom_document: '',
         categories_document_id: 'identite',
         description: '',
+    }
+}
+
+function defaultDelegationForm() {
+    return {
+        create_agent: false,
+        edit_agent: false,
+        delete_agent: false,
     }
 }
 
@@ -770,6 +802,9 @@ const sm_unreadMessagesCount = computed(() =>
 )
 const sm_canManageAgentDocuments = computed(() =>
     Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isAssistantRH
+)
+const sm_canManageAssistantDelegations = computed(() =>
+    Boolean(selectedAgent.value?.permissions?.can_manage_assistant_delegations && selectedAgent.value?.permissions?.is_assistant_rh)
 )
 const selectedDocumentCategory = computed(() =>
     DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)
@@ -830,6 +865,10 @@ async function goToAgent(id) {
     try {
         const { data } = await get(id)
         selectedAgent.value = data.agent
+        delegationForm.value = {
+            ...defaultDelegationForm(),
+            ...(data.agent?.permissions?.agent_management || {}),
+        }
     } catch (err) {
         console.error('Error fetching agent:', err)
         ui.addToast('Erreur lors du chargement de l\'agent', 'danger')
@@ -840,6 +879,35 @@ async function goToAgent(id) {
 }
 
 function closeAgentModal() { showAgentModal.value = false }
+
+async function saveSelectedAgentDelegations() {
+    if (!selectedAgent.value || !sm_canManageAssistantDelegations.value) return
+
+    delegationsSaving.value = true
+    const permissions = Object.entries(delegationForm.value)
+        .filter(([, enabled]) => enabled)
+        .map(([code]) => code)
+
+    try {
+        const { data } = await updateDelegations(selectedAgent.value.id, permissions)
+        const updatedPermissions = data.permissions || data.data?.permissions || permissions
+        delegationForm.value = {
+            ...defaultDelegationForm(),
+            ...Object.fromEntries(updatedPermissions.map((code) => [code, true])),
+        }
+        selectedAgent.value.permissions = {
+            ...(selectedAgent.value.permissions || {}),
+            agent_management: { ...defaultDelegationForm(), ...delegationForm.value },
+            direct: updatedPermissions,
+        }
+        ui.addToast('Délégations mises à jour.', 'success')
+        await auth.fetchUser?.()
+    } catch (err) {
+        ui.addToast(err.response?.data?.message || 'Erreur lors de la mise à jour des délégations.', 'danger')
+    } finally {
+        delegationsSaving.value = false
+    }
+}
 
 function openSelectedAgentDocumentUpload() {
     if (!selectedAgent.value || !sm_canManageAgentDocuments.value) return
@@ -2044,6 +2112,49 @@ onMounted(() => {
 .asm-stat-val { display: block; font-size: 1.1rem; font-weight: 800; color: #1e293b; }
 .asm-stat-lbl { font-size: .62rem; color: #64748b; text-transform: uppercase; font-weight: 600; }
 
+.asm-delegations {
+  padding: .85rem;
+  border: 1px solid rgba(0,119,181,.18);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0,119,181,.08), rgba(14,165,233,.04));
+}
+.asm-delegation-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .5rem;
+}
+.asm-delegation-check {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  min-height: 42px;
+  padding: .55rem .6rem;
+  border: 1px solid rgba(148,163,184,.35);
+  border-radius: 10px;
+  background: rgba(255,255,255,.72);
+  font-size: .78rem;
+  font-weight: 600;
+  color: #1e293b;
+  cursor: pointer;
+}
+.asm-delegation-check input {
+  accent-color: #0077B5;
+}
+.asm-btn-save-delegations {
+  width: 100%;
+  padding: .5rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background: #0077B5;
+  color: #fff;
+  font-size: .8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+}
+.asm-btn-save-delegations:hover:not(:disabled) { background: #005885; }
+.asm-btn-save-delegations:disabled { opacity: .7; cursor: not-allowed; }
+
 /* Request cards */
 .asm-req-card {
   border-left: 3px solid #0077B5; background: #f8fafc;
@@ -2159,6 +2270,7 @@ onMounted(() => {
   .asm-info-grid { grid-template-columns: repeat(2, 1fr); }
   .asm-stats-row { flex-wrap: wrap; }
   .asm-stat { min-width: 30%; }
+  .asm-delegation-grid { grid-template-columns: 1fr; }
   .asm-footer { padding: .75rem 1rem; }
   .asm-tabs { padding: 0 .5rem; }
   .asm-tab { padding: .5rem .6rem; font-size: .72rem; }
