@@ -17,8 +17,7 @@
               </span>
             </h1>
             <p class="rh-sub">
-              Saisie groupée par département/service.
-              {{ isOffline ? 'Les pointages seront synchronisés au retour en ligne.' : 'Sélectionnez un département pour afficher ses agents.' }}
+              {{ pageSubtitle }}
             </p>
           </div>
           <div class="col-lg-4">
@@ -70,9 +69,9 @@
       </div>
 
       <div class="rh-list-card p-3 p-lg-4">
-        <!-- Sélection département et date -->
+        <!-- Sélection structure et date -->
         <div class="row g-3 mb-4">
-          <div class="col-md-5">
+          <div v-if="requiresDepartmentSelection" class="col-md-5">
             <label for="department_id" class="form-label fw-bold">
               Département / Service
               <span v-if="isOffline && departments.length === 0" class="text-warning">
@@ -87,11 +86,11 @@
               </option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div :class="requiresDepartmentSelection ? 'col-md-4' : 'col-md-7'">
             <label for="date_pointage" class="form-label fw-bold">Date du pointage</label>
             <input type="date" class="form-control" id="date_pointage" v-model="datePointage">
           </div>
-          <div class="col-md-3 d-flex align-items-end">
+          <div :class="requiresDepartmentSelection ? 'col-md-3 d-flex align-items-end' : 'col-md-5 d-flex align-items-end'">
             <button type="button" class="btn btn-primary w-100" @click="loadAgents" :disabled="loadingAgents">
               <span v-if="loadingAgents" class="spinner-border spinner-border-sm me-1"></span>
               <i v-else class="fas fa-search me-1"></i>
@@ -101,11 +100,11 @@
         </div>
 
         <!-- Message offline si pas de données -->
-        <div v-if="isOffline && !agentsLoaded && selectedDepartment" class="alert alert-warning">
+        <div v-if="isOffline && !agentsLoaded && (selectedDepartment || !requiresDepartmentSelection)" class="alert alert-warning">
           <i class="fas fa-wifi-slash me-2"></i>
           <strong>Mode offline :</strong>
           Seules les données en cache sont disponibles.
-          {{ agents.length === 0 ? 'Aucun agent trouvé pour ce département.' : '' }}
+          {{ offlineEmptyHint }}
         </div>
 
         <!-- Loading state -->
@@ -256,8 +255,8 @@
           <h5 class="text-muted">Aucun agent trouvé</h5>
           <p class="text-muted">
             {{ isOffline ?
-              'Aucun agent en cache pour ce département. Connectez-vous pour charger les données.' :
-              'Ce département ne contient aucun agent ou les agents ne sont pas encore chargés.'
+              offlineNoAgentText :
+              noAgentText
             }}
           </p>
         </div>
@@ -304,6 +303,32 @@ const selectedAgents = computed(() =>
 )
 
 const hasUnsavedChanges = computed(() => selectedAgents.value.length > 0)
+const currentOrgane = computed(() => String(auth.user?.agent?.organe || '').toLowerCase())
+const isTerritorialPointage = computed(() => currentOrgane.value.includes('provincial') || currentOrgane.value.includes('local'))
+const requiresDepartmentSelection = computed(() => !isTerritorialPointage.value)
+
+const pageSubtitle = computed(() => {
+  const offlineSuffix = isOffline.value ? ' Les pointages seront synchronisés au retour en ligne.' : ''
+  if (isTerritorialPointage.value) {
+    return `Saisie groupée des agents de votre structure.${offlineSuffix || ' Sélectionnez la date puis chargez les agents.'}`
+  }
+  return `Saisie groupée par département/service.${offlineSuffix || ' Sélectionnez un département pour afficher ses agents.'}`
+})
+
+const offlineEmptyHint = computed(() => {
+  if (agents.value.length > 0) return ''
+  return requiresDepartmentSelection.value
+    ? 'Aucun agent trouvé pour ce département.'
+    : 'Aucun agent trouvé dans le cache de votre structure.'
+})
+
+const offlineNoAgentText = computed(() => requiresDepartmentSelection.value
+  ? 'Aucun agent en cache pour ce département. Connectez-vous pour charger les données.'
+  : 'Aucun agent en cache pour votre structure. Connectez-vous pour charger les données.')
+
+const noAgentText = computed(() => requiresDepartmentSelection.value
+  ? 'Ce département ne contient aucun agent ou les agents ne sont pas encore chargés.'
+  : 'Votre structure ne contient aucun agent actif ou les agents ne sont pas encore chargés.')
 
 // Network listener
 function initNetworkListener() {
@@ -335,7 +360,7 @@ async function fetchDepartments() {
 
 // Chargement agents
 async function loadAgents() {
-  if (selectedDepartment.value === '') {
+  if (requiresDepartmentSelection.value && selectedDepartment.value === '') {
     ui.addToast('Veuillez sélectionner un département', 'warning')
     return
   }
@@ -346,10 +371,18 @@ async function loadAgents() {
     let result = []
 
     if (isOffline.value) {
-      result = await client.getAgentsByDepartment(selectedDepartment.value)
+      if (!requiresDepartmentSelection.value) {
+        ui.addToast('Connectez-vous pour charger les agents de votre structure.', 'warning')
+        result = []
+      } else {
+        result = await client.getAgentsByDepartment(selectedDepartment.value)
+      }
     } else {
       const response = await client.get('/pointages/agents-by-department', {
-          params: { department_id: selectedDepartment.value, date: datePointage.value }
+          params: {
+            department_id: requiresDepartmentSelection.value ? selectedDepartment.value : '',
+            date: datePointage.value,
+          }
         })
       result = response.data?.data || response.data?.agents || []
     }

@@ -5,7 +5,7 @@
         <div class="row g-2 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title"><i class="fas fa-clipboard-check me-2"></i>Saisie des pointages</h1>
-            <p class="rh-sub">Saisie groupée par département/service. Sélectionnez un département pour afficher ses agents.</p>
+            <p class="rh-sub">{{ pageSubtitle }}</p>
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
@@ -18,20 +18,20 @@
       </section>
 
       <div class="rh-list-card p-3 p-lg-4">
-        <!-- Step 1: Select date and department -->
+        <!-- Step 1: Select date and structure -->
         <div class="row g-3 mb-4">
-          <div class="col-md-5">
+          <div v-if="requiresDepartmentSelection" class="col-md-5">
             <label for="department_id" class="form-label fw-bold">Département / Service</label>
             <select class="form-select" id="department_id" v-model="selectedDepartment">
               <option value="">-- Sélectionner un département --</option>
               <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.nom }}</option>
             </select>
           </div>
-          <div class="col-md-4">
+          <div :class="requiresDepartmentSelection ? 'col-md-4' : 'col-md-7'">
             <label for="date_pointage" class="form-label fw-bold">Date du pointage</label>
             <input type="date" class="form-control" id="date_pointage" v-model="datePointage">
           </div>
-          <div class="col-md-3 d-flex align-items-end">
+          <div :class="requiresDepartmentSelection ? 'col-md-3 d-flex align-items-end' : 'col-md-5 d-flex align-items-end'">
             <button type="button" class="btn btn-primary w-100" @click="loadAgents" :disabled="loadingAgents">
               <span v-if="loadingAgents" class="spinner-border spinner-border-sm me-1"></span>
               <i v-else class="fas fa-search me-1"></i> Charger
@@ -52,7 +52,7 @@
           <!-- Alert/info bar -->
           <div class="alert alert-info py-2 mb-3">
             <i class="fas fa-info-circle me-1"></i>
-            <strong>{{ selectedDepartmentName }}</strong> &mdash;
+            <strong>{{ selectedScopeName }}</strong> &mdash;
             {{ agents.length }} agent(s).
             <span v-if="recordedCount > 0" class="badge bg-success ms-2">{{ recordedCount }} deja pointe(s)</span>
             <br><small class="text-muted">Les heures existantes sont pre-remplies. Vous pouvez completer les heures de sortie et re-enregistrer.</small>
@@ -136,14 +136,14 @@
         <!-- No agents found -->
         <div v-else-if="agentsLoaded && agents.length === 0" class="text-center py-5">
           <i class="fas fa-users-slash fa-3x text-muted mb-3 d-block"></i>
-          <h5 class="text-muted">Aucun agent actif dans ce département</h5>
+          <h5 class="text-muted">{{ emptyAgentsTitle }}</h5>
         </div>
 
         <!-- Initial state -->
         <div v-else class="text-center py-5">
-          <i class="fas fa-building fa-3x text-muted mb-3 d-block"></i>
-          <h5 class="text-muted">Sélectionnez un département</h5>
-          <p class="text-muted">Choisissez un département et une date, puis cliquez sur « Charger » pour afficher les agents.</p>
+          <i :class="initialStateIcon" class="fa-3x text-muted mb-3 d-block"></i>
+          <h5 class="text-muted">{{ initialStateTitle }}</h5>
+          <p class="text-muted">{{ initialStateText }}</p>
         </div>
       </div>
     </div>
@@ -154,11 +154,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import * as pointagesApi from '@/api/pointages'
 import client from '@/api/client'
 
 const router = useRouter()
 const ui = useUiStore()
+const auth = useAuthStore()
 
 const departments = ref([])
 const selectedDepartment = ref('')
@@ -174,6 +176,38 @@ const selectedDepartmentName = computed(() => {
     const dept = departments.value.find(d => d.id == selectedDepartment.value)
     return dept ? dept.nom : ''
 })
+
+const currentOrgane = computed(() => String(auth.user?.agent?.organe || '').toLowerCase())
+const isTerritorialPointage = computed(() => currentOrgane.value.includes('provincial') || currentOrgane.value.includes('local'))
+const requiresDepartmentSelection = computed(() => !isTerritorialPointage.value)
+
+const pageSubtitle = computed(() => {
+    if (isTerritorialPointage.value) {
+        return 'Saisie groupée des agents de votre structure. Sélectionnez la date puis chargez les agents.'
+    }
+    return 'Saisie groupée par département/service. Sélectionnez un département pour afficher ses agents.'
+})
+
+const selectedScopeName = computed(() => {
+    if (requiresDepartmentSelection.value) return selectedDepartmentName.value
+    return auth.user?.agent?.province?.nom_province
+        || auth.user?.agent?.province?.nom
+        || auth.user?.agent?.localite?.nom
+        || auth.user?.agent?.organe
+        || 'Votre structure'
+})
+
+const emptyAgentsTitle = computed(() => requiresDepartmentSelection.value
+    ? 'Aucun agent actif dans ce département'
+    : 'Aucun agent actif dans votre structure')
+
+const initialStateIcon = computed(() => requiresDepartmentSelection.value ? 'fas fa-building' : 'fas fa-users')
+const initialStateTitle = computed(() => requiresDepartmentSelection.value
+    ? 'Sélectionnez un département'
+    : 'Chargez les agents')
+const initialStateText = computed(() => requiresDepartmentSelection.value
+    ? 'Choisissez un département et une date, puis cliquez sur « Charger » pour afficher les agents.'
+    : 'Choisissez la date, puis cliquez sur « Charger » pour afficher les agents de votre structure.')
 
 const recordedCount = computed(() => {
     return agents.value.filter(a => a.pointage_existant).length
@@ -210,7 +244,7 @@ function clearAll() {
 }
 
 async function loadAgents() {
-    if (selectedDepartment.value === '') {
+    if (requiresDepartmentSelection.value && selectedDepartment.value === '') {
         ui.addToast('Veuillez sélectionner un département.', 'warning')
         return
     }
@@ -225,7 +259,7 @@ async function loadAgents() {
 
     try {
         const { data } = await pointagesApi.agentsByDepartment({
-            department_id: selectedDepartment.value,
+            department_id: requiresDepartmentSelection.value ? selectedDepartment.value : '',
             date: datePointage.value,
         })
 

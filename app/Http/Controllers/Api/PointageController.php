@@ -542,49 +542,11 @@ class PointageController extends ApiController
         $departmentId = $request->query('department_id');
         $date = $request->query('date');
 
-        if ($departmentId === null || $departmentId === '') {
-            return $this->success([]);
-        }
-
-        // Cas spécial id=0 : agents SEN sans département (rattachement direct)
-        if ((string) $departmentId === '0') {
-            $agentsQuery = Agent::actifs()
-                ->where('organe', 'Secrétariat Exécutif National')
-                ->whereNull('departement_id')
-                ->orderInstitutionally();
-            $scope->applyAgentScope($agentsQuery, $request->user());
-            $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
-            if ($date) {
-                $pointages = Pointage::where('date_pointage', $date)
-                    ->whereIn('agent_id', $agents->pluck('id'))
-                    ->get()->keyBy('agent_id');
-                $absenceMap = $this->justifiedAbsencesForAgents($agents->pluck('id')->all(), $date);
-                $agents->each(function ($agent) use ($pointages, $absenceMap) {
-                    $p = $pointages->get($agent->id);
-                    $agent->pointage_existant = $p ? [
-                        'heure_entree' => $p->heure_entree ? \Carbon\Carbon::parse($p->heure_entree)->format('H:i') : null,
-                        'heure_sortie' => $p->heure_sortie ? \Carbon\Carbon::parse($p->heure_sortie)->format('H:i') : null,
-                        'observations' => $p->observations,
-                    ] : null;
-                    $absence = $absenceMap[$agent->id] ?? null;
-                    $agent->absence_justifiee = $absence !== null;
-                    $agent->absence_justifiee_label = $absence['label'] ?? null;
-                    $agent->absence_justifiee_type = $absence['type'] ?? null;
-                });
+        $attachPointageContext = function ($agents) use ($date) {
+            if (!$date) {
+                return $agents;
             }
-            return $this->success($agents, [], ['agents' => $agents]);
-        }
 
-        $agentsQuery = Agent::actifs()
-            ->where('departement_id', $departmentId)
-            ->orderInstitutionally();
-
-        $scope->applyAgentScope($agentsQuery, $request->user());
-
-        $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
-
-        // Attach existing pointage for each agent on the given date
-        if ($date) {
             $pointages = Pointage::where('date_pointage', $date)
                 ->whereIn('agent_id', $agents->pluck('id'))
                 ->get()
@@ -603,7 +565,48 @@ class PointageController extends ApiController
                 $agent->absence_justifiee_label = $absence['label'] ?? null;
                 $agent->absence_justifiee_type = $absence['type'] ?? null;
             });
+
+            return $agents;
+        };
+
+        if ($departmentId === null || $departmentId === '') {
+            $userOrgane = strtolower((string) ($request->user()?->agent?->organe ?? ''));
+            $isTerritorialStructure = str_contains($userOrgane, 'provincial') || str_contains($userOrgane, 'local');
+
+            if ($isTerritorialStructure) {
+                $agentsQuery = Agent::actifs()->orderInstitutionally();
+                $scope->applyAgentScope($agentsQuery, $request->user());
+
+                $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+                $attachPointageContext($agents);
+
+                return $this->success($agents, [], ['agents' => $agents]);
+            }
+
+            return $this->success([]);
         }
+
+        // Cas spécial id=0 : agents SEN sans département (rattachement direct)
+        if ((string) $departmentId === '0') {
+            $agentsQuery = Agent::actifs()
+                ->where('organe', 'Secrétariat Exécutif National')
+                ->whereNull('departement_id')
+                ->orderInstitutionally();
+            $scope->applyAgentScope($agentsQuery, $request->user());
+            $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+            $attachPointageContext($agents);
+            return $this->success($agents, [], ['agents' => $agents]);
+        }
+
+        $agentsQuery = Agent::actifs()
+            ->where('departement_id', $departmentId)
+            ->orderInstitutionally();
+
+        $scope->applyAgentScope($agentsQuery, $request->user());
+
+        $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
+
+        $attachPointageContext($agents);
 
         return $this->success($agents, [], ['agents' => $agents]);
     }
