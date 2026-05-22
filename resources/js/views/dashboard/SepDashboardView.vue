@@ -85,18 +85,6 @@
     </div>
 
     <template v-else>
-      <div v-if="data.online_agents?.length" class="sep-online-strip">
-        <div class="sep-online-title">
-          <span class="sep-online-dot"></span>
-          Agents en ligne
-        </div>
-        <div class="sep-online-list">
-          <span v-for="agent in data.online_agents.slice(0, 8)" :key="agent.id" class="sep-online-chip">
-            {{ agent.prenom }} {{ agent.nom }}
-          </span>
-        </div>
-      </div>
-
       <!-- ═══ PROVINCE INFO ═══ -->
       <div class="sep-section" v-if="data.province">
         <div class="sep-province-card">
@@ -132,7 +120,15 @@
           </div>
         </div>
         <div class="sep-actions">
-          <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="sep-action">
+          <component
+            :is="quickActionComponent(a)"
+            v-for="a in quickActions"
+            :key="a.to || a.action"
+            :to="quickActionTo(a)"
+            :type="a.action ? 'button' : undefined"
+            class="sep-action"
+            @click="handleQuickAction(a)"
+          >
             <div class="sep-action-glow" :style="{ background: a.color }"></div>
             <div class="sep-action-icon" :style="{ background: a.bg, color: a.color }">
               <i class="fas" :class="a.icon"></i>
@@ -142,7 +138,7 @@
               <div class="sep-action-desc">{{ a.desc }}</div>
             </div>
             <i class="fas fa-chevron-right sep-action-arrow"></i>
-          </router-link>
+          </component>
         </div>
       </div>
 
@@ -1101,6 +1097,12 @@
         </div>
       </div>
     </Teleport>
+    <OnlineAgentsModal
+      :open="onlineAgentsOpen"
+      title="Agents actifs récemment"
+      :agents="onlineAgents"
+      @close="onlineAgentsOpen = false"
+    />
   </div>
 </template>
 
@@ -1110,9 +1112,11 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OnlineAgentsModal from '@/components/dashboard/OnlineAgentsModal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const onlineAgentsOpen = ref(false)
 const loading = ref(true)
 const loadError = ref(null)
 const data = ref({})
@@ -1273,6 +1277,7 @@ function presenceFilterTitle(total = 0) {
 
 // ─── QUICK ACTIONS ───
 const quickActions = [
+  { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Agents de la province', icon: 'fa-users', color: '#0ea5e9', bg: '#e0f2fe' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
   { to: '/plan-travail', label: 'PTA provincial', desc: 'Suivi plan annuel SEP', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
@@ -1281,6 +1286,22 @@ const quickActions = [
   { to: '/rh/pointages/monthly', label: 'Pointages', desc: 'Présence province', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/rh/communiques', label: 'Communiqués', desc: 'Informations officielles', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
 ]
+
+const onlineAgents = computed(() => data.value.online_agents || [])
+
+function quickActionComponent(action) {
+  return action.action ? 'button' : 'router-link'
+}
+
+function quickActionTo(action) {
+  return action.action ? undefined : action.to
+}
+
+function handleQuickAction(action) {
+  if (action.action === 'onlineAgents') {
+    onlineAgentsOpen.value = true
+  }
+}
 
 // ─── METRICS ───
 const maxMetric = computed(() => {
@@ -1506,6 +1527,7 @@ onMounted(async () => {
   position: relative; display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
   text-decoration: none; color: #374151; transition: all .25s; overflow: hidden;
+  width: 100%; text-align: left; font: inherit; cursor: pointer;
 }
 .sep-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .25s; }
 .sep-action:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }

@@ -67,18 +67,6 @@
     </div>
 
     <template v-else>
-      <div v-if="data.online_agents?.length" class="sen-online-strip">
-        <div class="sen-online-title">
-          <span class="sen-online-dot"></span>
-          Agents en ligne
-        </div>
-        <div class="sen-online-list">
-          <span v-for="agent in data.online_agents.slice(0, 8)" :key="agent.id" class="sen-online-chip">
-            {{ agent.prenom }} {{ agent.nom }}
-          </span>
-        </div>
-      </div>
-
       <!-- ═══ QUICK ACTIONS ═══ -->
       <div class="sen-section">
         <div class="sen-section-head">
@@ -90,7 +78,15 @@
           </div>
         </div>
         <div class="sen-actions">
-          <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="sen-action">
+          <component
+            :is="quickActionComponent(a)"
+            v-for="a in quickActions"
+            :key="a.to || a.action"
+            :to="quickActionTo(a)"
+            :type="a.action ? 'button' : undefined"
+            class="sen-action"
+            @click="handleQuickAction(a)"
+          >
             <div class="sen-action-glow" :style="{ background: a.color }"></div>
             <div class="sen-action-icon" :style="{ background: a.bg, color: a.color }">
               <i class="fas" :class="a.icon"></i>
@@ -100,7 +96,7 @@
               <div class="sen-action-desc">{{ a.desc }}</div>
             </div>
             <i class="fas fa-chevron-right sen-action-arrow"></i>
-          </router-link>
+          </component>
         </div>
       </div>
 
@@ -1468,6 +1464,12 @@
         </div>
       </div>
     </template>
+    <OnlineAgentsModal
+      :open="onlineAgentsOpen"
+      title="Agents actifs récemment"
+      :agents="onlineAgents"
+      @close="onlineAgentsOpen = false"
+    />
   </div>
 </template>
 
@@ -1478,10 +1480,12 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OnlineAgentsModal from '@/components/dashboard/OnlineAgentsModal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const ui = useUiStore()
+const onlineAgentsOpen = ref(false)
 const loading = ref(true)
 const data = ref({})
 const currentYear = new Date().getFullYear()
@@ -1926,6 +1930,7 @@ function presenceFilterTitle(total = 0) {
 
 const quickActions = [
   { to: '/rh/communiques/create?from=sen', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
+  { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Voir tous les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
   { to: '/signalements', label: 'Signalements', desc: 'Consulter les alertes', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
@@ -1933,6 +1938,22 @@ const quickActions = [
   { to: '/rh/pointages/monthly', label: 'Pointages', desc: 'Rapport mensuel', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
 ]
+
+const onlineAgents = computed(() => data.value.online_agents || [])
+
+function quickActionComponent(action) {
+  return action.action ? 'button' : 'router-link'
+}
+
+function quickActionTo(action) {
+  return action.action ? undefined : action.to
+}
+
+function handleQuickAction(action) {
+  if (action.action === 'onlineAgents') {
+    onlineAgentsOpen.value = true
+  }
+}
 
 const maxMetric = computed(() => {
   const vals = [
@@ -2116,6 +2137,7 @@ onMounted(async () => {
   position: relative; display: flex; align-items: center; gap: .62rem; padding: .65rem .75rem;
   background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
   text-decoration: none; color: #374151; transition: all .25s; overflow: hidden;
+  width: 100%; text-align: left; font: inherit; cursor: pointer;
 }
 .sen-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .25s; }
 .sen-action:hover { border-color: #cbd5e1; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(0,0,0,.07); }

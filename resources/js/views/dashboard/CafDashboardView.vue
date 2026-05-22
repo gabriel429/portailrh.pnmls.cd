@@ -84,18 +84,6 @@
     </div>
 
     <template v-else>
-      <div v-if="data.online_agents?.length" class="caf-online-strip">
-        <div class="caf-online-title">
-          <span class="caf-online-dot"></span>
-          Agents en ligne
-        </div>
-        <div class="caf-online-list">
-          <span v-for="agent in data.online_agents.slice(0, 8)" :key="agent.id" class="caf-online-chip">
-            {{ agent.prenom }} {{ agent.nom }}
-          </span>
-        </div>
-      </div>
-
       <!-- ═══ PROVINCE INFO ═══ -->
       <div class="caf-section" v-if="data.province">
         <div class="caf-province-card">
@@ -129,7 +117,15 @@
           </div>
         </div>
         <div class="caf-actions">
-          <router-link v-for="a in quickActions" :key="a.to" :to="a.to" class="caf-action">
+          <component
+            :is="quickActionComponent(a)"
+            v-for="a in quickActions"
+            :key="a.to || a.action"
+            :to="quickActionTo(a)"
+            :type="a.action ? 'button' : undefined"
+            class="caf-action"
+            @click="handleQuickAction(a)"
+          >
             <div class="caf-action-glow" :style="{ background: a.color }"></div>
             <div class="caf-action-icon" :style="{ background: a.bg, color: a.color }">
               <i class="fas" :class="a.icon"></i>
@@ -139,7 +135,7 @@
               <div class="caf-action-desc">{{ a.desc }}</div>
             </div>
             <i class="fas fa-chevron-right caf-action-arrow"></i>
-          </router-link>
+          </component>
         </div>
       </div>
 
@@ -545,6 +541,12 @@
         </div>
       </div>
     </Teleport>
+    <OnlineAgentsModal
+      :open="onlineAgentsOpen"
+      title="Agents actifs récemment"
+      :agents="onlineAgents"
+      @close="onlineAgentsOpen = false"
+    />
   </div>
 </template>
 
@@ -554,9 +556,11 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OnlineAgentsModal from '@/components/dashboard/OnlineAgentsModal.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
+const onlineAgentsOpen = ref(false)
 const loading = ref(true)
 const loadError = ref(null)
 const data = ref({})
@@ -662,6 +666,7 @@ function closeProvDrilldown() {
 
 // ─── QUICK ACTIONS ────────────────────────────────────────────────────────────
 const quickActions = [
+  { action: 'onlineAgents',       label: 'Agents en ligne', desc: 'Actifs sur 30 minutes',   icon: 'fa-user-clock',      color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents',             label: 'Agents',          desc: 'Agents de la province',   icon: 'fa-users',           color: '#0d9488', bg: '#d1fae5' },
   { to: '/carnet-adresses',       label: "Carnet d'adresse", desc: 'Contacts par poste',      icon: 'fa-address-book',    color: '#2563eb', bg: '#dbeafe' },
   { to: '/plan-travail',          label: 'PTA CAF',         desc: 'Plan de travail annuel',  icon: 'fa-tasks',           color: '#d97706', bg: '#fef3c7' },
@@ -670,6 +675,22 @@ const quickActions = [
   { to: '/rh/pointages/monthly',  label: 'Pointages',       desc: 'Présence province',        icon: 'fa-clock',           color: '#7c3aed', bg: '#ede9fe' },
   { to: '/rh/communiques',        label: 'Communiqués',     desc: 'Informations officielles', icon: 'fa-bullhorn',        color: '#0891b2', bg: '#cffafe' },
 ]
+
+const onlineAgents = computed(() => data.value.online_agents || [])
+
+function quickActionComponent(action) {
+  return action.action ? 'button' : 'router-link'
+}
+
+function quickActionTo(action) {
+  return action.action ? undefined : action.to
+}
+
+function handleQuickAction(action) {
+  if (action.action === 'onlineAgents') {
+    onlineAgentsOpen.value = true
+  }
+}
 
 // ─── METRICS ──────────────────────────────────────────────────────────────────
 const maxMetric = computed(() => Math.max(
@@ -792,7 +813,7 @@ onMounted(loadData)
 
 /* ─── ACTIONS ─── */
 .caf-actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .6rem; }
-.caf-action { display: flex; align-items: center; gap: .75rem; background: #fff; border-radius: 14px; padding: .85rem 1rem; text-decoration: none; color: inherit; border: 1px solid #f1f5f9; transition: all .2s; position: relative; overflow: hidden; }
+.caf-action { display: flex; align-items: center; gap: .75rem; background: #fff; border-radius: 14px; padding: .85rem 1rem; text-decoration: none; color: inherit; border: 1px solid #f1f5f9; transition: all .2s; position: relative; overflow: hidden; width: 100%; text-align: left; font: inherit; cursor: pointer; }
 .caf-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
 .caf-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; border-radius: 14px 0 0 14px; }
 .caf-action-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; }

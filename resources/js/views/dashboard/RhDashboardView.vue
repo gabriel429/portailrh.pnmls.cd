@@ -72,18 +72,6 @@
     </div>
 
     <template v-else>
-      <div v-if="d.online_agents?.length" class="rh-online-strip">
-        <div class="rh-online-title">
-          <span class="rh-online-dot"></span>
-          Agents en ligne
-        </div>
-        <div class="rh-online-list">
-          <span v-for="agent in d.online_agents.slice(0, 8)" :key="agent.id" class="rh-online-chip">
-            {{ agent.prenom }} {{ agent.nom }}
-          </span>
-        </div>
-      </div>
-
       <!-- ACTIONS RAPIDES -->
       <div class="rh-section">
         <div class="rh-section-head">
@@ -1228,6 +1216,12 @@
           </div>
         </Transition>
       </Teleport>
+      <OnlineAgentsModal
+        :open="onlineAgentsOpen"
+        title="Agents actifs récemment"
+        :agents="onlineAgents"
+        @close="onlineAgentsOpen = false"
+      />
     </template>
   </div>
 </template>
@@ -1238,8 +1232,10 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import OnlineAgentsModal from '@/components/dashboard/OnlineAgentsModal.vue'
 
 const router = useRouter()
+const onlineAgentsOpen = ref(false)
 
 const auth = useAuthStore()
 const loading = ref(true)
@@ -1259,6 +1255,7 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 }))
 
 const baseQuickActions = [
+  { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents', label: 'Gestion des agents', desc: 'Consulter et gérer les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts des agents par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
   { to: '/rh/agents/create', label: 'Nouvel agent', desc: 'Créer une fiche agent', icon: 'fa-user-plus', color: '#059669', bg: '#d1fae5' },
@@ -1294,6 +1291,8 @@ const quickActions = computed(() => {
   })
 })
 
+const onlineAgents = computed(() => d.value.online_agents || [])
+
 function quickActionComponent(action) {
   if (action.disabled) return 'div'
   return action.action ? 'button' : 'router-link'
@@ -1306,6 +1305,9 @@ function quickActionTo(action) {
 
 function handleQuickAction(action) {
   if (action.disabled || !action.action) return
+  if (action.action === 'onlineAgents') {
+    onlineAgentsOpen.value = true
+  }
 }
 
 const maxMetric = computed(() => {

@@ -16,7 +16,7 @@ class AgentPresenceService
         }
 
         try {
-            $threshold = now()->subMinutes(5)->timestamp;
+            $threshold = now()->subMinutes(30)->timestamp;
             $rows = DB::table('sessions')
                 ->join('users', 'sessions.user_id', '=', 'users.id')
                 ->join('agents', 'users.agent_id', '=', 'agents.id')
