@@ -2106,4 +2106,100 @@ onMounted(async () => {
   .sep-task-row { padding: .7rem .75rem; gap: .55rem; }
   .sep-task-prog { display: none; }
 }
+/* Accueil compact logiciel */
+.sep-hero {
+  border-radius: 14px;
+  margin-bottom: .9rem;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
+}
+.sep-hero-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+.sep-hero-inner {
+  padding: .95rem 1.25rem;
+  gap: 1rem;
+}
+.sep-hero-left { gap: .85rem; }
+.sep-hero-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+.sep-hero-greeting {
+  font-size: .68rem;
+  opacity: .72;
+  font-weight: 700;
+}
+.sep-hero-name {
+  font-size: 1.15rem;
+  margin: .05rem 0 0;
+}
+.sep-hero-fonction,
+.sep-hero-role,
+.sep-hero-date {
+  display: none;
+}
+.sep-hero-kpis {
+  border-radius: 10px;
+  padding: .48rem .65rem;
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.16);
+  backdrop-filter: none;
+}
+.sep-kpi {
+  gap: .45rem;
+  padding: 0 .65rem;
+}
+.sep-kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.sep-kpi-val { font-size: 1.15rem; }
+.sep-kpi-lbl {
+  font-size: .56rem;
+  opacity: .7;
+  letter-spacing: .2px;
+  font-weight: 700;
+}
+.sep-kpi-drill-icon { display: none; }
+.kpi-divider {
+  height: 28px;
+  margin: 0 .1rem;
+}
+.sep-section { margin-bottom: 1rem; }
+.sep-section-head {
+  gap: .55rem;
+  margin-bottom: .55rem;
+}
+.sep-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.sep-section-title { font-size: .9rem; }
+.sep-section-sub { display: none; }
+.sep-actions,
+.sep-metrics {
+  gap: .55rem;
+}
+.sep-action,
+.sep-metric {
+  border-radius: 8px;
+  padding: .75rem;
+}
+.sep-action-icon,
+.sep-metric-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.sep-action-label { font-size: .76rem; font-weight: 800; }
+.sep-action-desc { font-size: .64rem; }
+.sep-metric-val { font-size: 1.35rem; }
+.sep-metric-lbl { font-size: .62rem; letter-spacing: .2px; }
 </style>

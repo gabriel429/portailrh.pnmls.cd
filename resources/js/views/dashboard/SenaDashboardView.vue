@@ -1064,4 +1064,83 @@ button.sena-drill-stat-card { font: inherit; cursor: pointer; }
 .dark .sena-ring-val { color: #4ade80; }
 .dark .sena-pta-big-pct { color: #a78bfa; }
 .dark .sena-hero-kpis { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+/* Accueil compact logiciel */
+.sena-hero {
+  border-radius: 0 0 14px 14px;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
+}
+.sena-hero-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+.sena-hero-inner {
+  padding: .95rem 1.25rem;
+  gap: 1rem;
+}
+.sena-hero-left { gap: .85rem; }
+.sena-hero-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+.sena-hero-greeting {
+  font-size: .68rem;
+  opacity: .72;
+  font-weight: 700;
+}
+.sena-hero-name {
+  font-size: 1.15rem;
+  margin: .05rem 0 0;
+}
+.sena-hero-fonction,
+.sena-hero-role-pill,
+.sena-hero-date {
+  display: none;
+}
+.sena-hero-kpis {
+  border-radius: 10px;
+  padding: .48rem .65rem;
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.16);
+}
+.sena-kpi-pill {
+  gap: .45rem;
+  padding: 0 .65rem;
+  border-radius: 8px;
+}
+.sena-kpi-pill-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.sena-kpi-pill-val { font-size: 1.15rem; }
+.sena-kpi-pill-lbl {
+  font-size: .56rem;
+  opacity: .7;
+  letter-spacing: .2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.sena-kpi-pill-arrow { display: none; }
+.kpi-divider {
+  height: 28px;
+  margin: 0 .1rem;
+}
+.sena-body { gap: .75rem; }
+.sena-section-head {
+  gap: .55rem;
+  margin-bottom: .55rem;
+}
+.sena-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.sena-section-title { font-size: .9rem; }
+.sena-section-sub { display: none; }
+.sena-section {
+  border-radius: 8px;
+}
 </style>

@@ -2005,4 +2005,105 @@ html.dark .drill-stat-clickable.active { background: #1e3a5f !important; }
   .drill-agent-row { flex-wrap: wrap; }
   .drill-agent-meta { width: 100%; padding-left: 50px; }
 }
+/* Accueil compact logiciel */
+.dept-hero {
+  border-radius: 14px;
+  margin-bottom: .9rem;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
+}
+.dept-hero-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+.dept-hero-inner {
+  padding: .95rem 1.25rem;
+  gap: 1rem;
+}
+.dept-hero-left { gap: .85rem; }
+.dept-hero-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+.dept-hero-greeting {
+  font-size: .68rem;
+  opacity: .72;
+  font-weight: 700;
+  letter-spacing: .4px;
+}
+h1.dept-hero-name {
+  font-size: 1.15rem;
+  margin: .05rem 0 0;
+}
+.dept-hero-fonction,
+.dept-hero-role-pill,
+.dept-hero-date {
+  display: none;
+}
+.dept-hero-kpis {
+  border-radius: 10px;
+  padding: .48rem .65rem;
+  gap: 0;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.16);
+}
+.dept-kpi-pill {
+  gap: .45rem;
+  padding: 0 .65rem;
+  min-width: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+}
+.dept-kpi-pill-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.dept-kpi-pill-val { font-size: 1.15rem; }
+.dept-kpi-pill-lbl {
+  font-size: .56rem;
+  opacity: .7;
+  letter-spacing: .2px;
+  font-weight: 700;
+}
+.dept-kpi-pill-arrow { display: none; }
+.kpi-divider {
+  height: 28px;
+  margin: 0 .1rem;
+}
+.dept-section { margin-bottom: 1rem; }
+.dept-section-head {
+  gap: .55rem;
+  margin-bottom: .55rem;
+}
+.dept-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.dept-section-title { font-size: .9rem; }
+.dept-section-sub { display: none; }
+.dept-actions,
+.dept-metrics {
+  gap: .55rem;
+}
+.dept-action,
+.dept-metric {
+  border-radius: 8px;
+  padding: .75rem;
+}
+.dept-action-icon,
+.dept-metric-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.dept-action-label { font-size: .76rem; font-weight: 800; }
+.dept-action-desc { font-size: .64rem; }
+.dept-metric-val { font-size: 1.35rem; }
+.dept-metric-lbl { font-size: .62rem; letter-spacing: .2px; }
 </style>

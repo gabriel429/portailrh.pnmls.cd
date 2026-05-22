@@ -2961,4 +2961,20 @@ onMounted(async () => {
     border-radius: 16px 16px 0 0;
   }
 }
+/* Renfort compact pour l'accueil SEN */
+.sen-hero {
+  background: #0077B5;
+}
+.sen-section-sub {
+  display: none;
+}
+.sen-action,
+.sen-metric,
+.sen-info-card,
+.sen-organe-card {
+  border-radius: 8px;
+}
+.sen-metric-bar {
+  height: 3px;
+}
 </style>

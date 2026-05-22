@@ -912,4 +912,105 @@ onMounted(loadData)
   .drill-panel { width: 100vw !important; max-width: 100vw !important; border-radius: 16px 16px 0 0; }
   .drill-overlay { align-items: flex-end; }
 }
+/* Accueil compact logiciel */
+.caf-dashboard { background: #f8fafc; }
+.caf-hero {
+  border-radius: 14px;
+  margin: 0 auto .9rem;
+  max-width: 1200px;
+  padding: .95rem 1.25rem;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
+}
+.caf-hero-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+.caf-hero-inner {
+  gap: 1rem;
+}
+.caf-hero-left { gap: .85rem; }
+.caf-hero-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+.caf-hero-greeting {
+  font-size: .68rem;
+  opacity: .72;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.caf-hero-name {
+  font-size: 1.15rem;
+  margin: .05rem 0 0;
+}
+.caf-hero-fonction,
+.caf-hero-role,
+.caf-hero-date {
+  display: none;
+}
+.caf-hero-kpis {
+  border-radius: 10px;
+  padding: .48rem .65rem;
+  gap: 0;
+  background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.16);
+}
+.caf-kpi {
+  gap: .45rem;
+  padding: 0 .65rem;
+}
+.caf-kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.caf-kpi-val { font-size: 1.15rem; }
+.caf-kpi-lbl {
+  font-size: .56rem;
+  opacity: .7;
+  letter-spacing: .2px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.caf-kpi-drill-icon { display: none; }
+.kpi-divider {
+  height: 28px;
+  margin: 0 .1rem;
+}
+.caf-section { margin-bottom: 1rem; }
+.caf-section-head {
+  gap: .55rem;
+  margin-bottom: .55rem;
+}
+.caf-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.caf-section-title { font-size: .9rem; }
+.caf-section-sub { display: none; }
+.caf-actions,
+.caf-metrics {
+  gap: .55rem;
+}
+.caf-action,
+.caf-metric {
+  border-radius: 8px;
+  padding: .75rem;
+}
+.caf-action-icon,
+.caf-metric-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.caf-action-label { font-size: .76rem; font-weight: 800; }
+.caf-action-desc { font-size: .64rem; }
+.caf-metric-val { font-size: 1.35rem; }
+.caf-metric-lbl { font-size: .62rem; letter-spacing: .2px; }
 </style>

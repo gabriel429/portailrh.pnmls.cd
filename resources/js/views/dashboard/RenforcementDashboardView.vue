@@ -734,4 +734,98 @@ onMounted(async () => {
   .rc-stat-grid { grid-template-columns: repeat(2, 1fr); }
   .rc-task-grid { grid-template-columns: repeat(2, 1fr); }
 }
+/* Accueil compact logiciel */
+.rc-hero {
+  border-radius: 14px;
+  margin-bottom: .9rem;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
+}
+.rc-hero-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+.rc-hero-inner {
+  padding: .95rem 1.25rem;
+  gap: 1rem;
+}
+.rc-hero-left { gap: .85rem; }
+.rc-hero-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+.rc-hero-greeting {
+  font-size: .68rem;
+  opacity: .72;
+  font-weight: 700;
+}
+.rc-hero-name {
+  font-size: 1.15rem;
+  margin: .05rem 0 0;
+}
+.rc-hero-role,
+.rc-hero-date {
+  display: none;
+}
+.rc-hero-kpis {
+  border-radius: 10px;
+  padding: .48rem .65rem;
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.16);
+  backdrop-filter: none;
+}
+.rc-kpi {
+  gap: .45rem;
+  padding: 0 .65rem;
+}
+.rc-kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.rc-kpi-val { font-size: 1.15rem; }
+.rc-kpi-lbl {
+  font-size: .56rem;
+  opacity: .7;
+  letter-spacing: .2px;
+  font-weight: 700;
+}
+.kpi-divider {
+  height: 28px;
+  margin: 0 .1rem;
+}
+.rc-section { margin-bottom: 1rem; }
+.rc-section-head {
+  gap: .55rem;
+  margin-bottom: .55rem;
+}
+.rc-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.rc-section-title { font-size: .9rem; }
+.rc-section-sub { display: none; }
+.rc-actions,
+.rc-stat-grid {
+  gap: .55rem;
+}
+.rc-action,
+.rc-stat-card {
+  border-radius: 8px;
+  padding: .75rem;
+}
+.rc-action-icon,
+.rc-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.rc-action-label { font-size: .76rem; font-weight: 800; }
+.rc-action-desc { font-size: .64rem; }
+.rc-stat-val { font-size: 1.35rem; }
+.rc-stat-lbl { font-size: .62rem; letter-spacing: .2px; }
 </style>

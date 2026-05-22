@@ -2455,4 +2455,99 @@ onMounted(async () => {
     border-radius: 16px 16px 0 0;
   }
 }
+/* Accueil compact logiciel */
+.rh-hero {
+  border-radius: 14px;
+  margin-bottom: .9rem;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
+}
+.rh-hero-bg {
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+}
+.rh-hero-inner {
+  padding: .95rem 1.25rem;
+  gap: 1rem;
+}
+.rh-hero-left { gap: .85rem; }
+.rh-hero-badge {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+}
+.rh-hero-greeting {
+  font-size: .68rem;
+  opacity: .72;
+  font-weight: 700;
+}
+.rh-hero-name {
+  font-size: 1.15rem;
+  margin: .05rem 0 0;
+}
+.rh-hero-agent-fonction-block,
+.rh-hero-role,
+.rh-hero-date {
+  display: none;
+}
+.rh-hero-kpis {
+  border-radius: 10px;
+  padding: .48rem .65rem;
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.16);
+  backdrop-filter: none;
+}
+.rh-kpi {
+  gap: .45rem;
+  padding: 0 .65rem;
+}
+.rh-kpi-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  font-size: .75rem;
+}
+.rh-kpi-val { font-size: 1.15rem; }
+.rh-kpi-lbl {
+  font-size: .56rem;
+  opacity: .7;
+  letter-spacing: .2px;
+  font-weight: 700;
+}
+.kpi-divider {
+  height: 28px;
+  margin: 0 .1rem;
+}
+.rh-section { margin-bottom: 1rem; }
+.rh-section-head {
+  gap: .55rem;
+  margin-bottom: .55rem;
+}
+.rh-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  font-size: .82rem;
+}
+.rh-section-title { font-size: .9rem; }
+.rh-section-sub { display: none; }
+.rh-actions,
+.rh-metrics {
+  gap: .55rem;
+}
+.rh-action,
+.rh-metric {
+  border-radius: 8px;
+  padding: .75rem;
+}
+.rh-action-icon,
+.rh-metric-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.rh-action-label { font-size: .76rem; font-weight: 800; }
+.rh-action-desc { font-size: .64rem; }
+.rh-metric-val { font-size: 1.35rem; }
+.rh-metric-lbl { font-size: .62rem; letter-spacing: .2px; }
 </style>

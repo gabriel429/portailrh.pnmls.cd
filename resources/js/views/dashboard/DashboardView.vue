@@ -763,4 +763,61 @@ a.dash-activity-card { cursor: pointer; }
   .dum-footer { flex-direction: column; align-items: stretch; }
   .dum-btn { justify-content: center; }
 }
+/* Accueil compact logiciel - agents standard */
+.dash-section-header {
+  margin-bottom: .55rem;
+  padding-bottom: .35rem;
+}
+.dash-section-title {
+  font-size: .9rem;
+}
+.dash-action-grid,
+.dash-stat-grid,
+.dash-activity-grid,
+.dash-info-grid {
+  gap: .55rem;
+  margin-bottom: 1rem;
+}
+.dash-action-card,
+.dash-stat-card,
+.dash-activity-card,
+.dash-info-card {
+  border-radius: 8px;
+}
+.dash-action-card,
+.dash-stat-card {
+  padding: .75rem;
+}
+.dash-action-icon,
+.dash-stat-icon,
+.dash-info-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  font-size: .85rem;
+}
+.dash-action-name {
+  font-size: .76rem;
+  font-weight: 800;
+}
+.dash-action-desc {
+  font-size: .64rem;
+}
+.dash-stat-top {
+  gap: .6rem;
+  margin-bottom: .45rem;
+}
+.dash-stat-val {
+  font-size: 1.35rem;
+}
+.dash-stat-lbl {
+  font-size: .62rem;
+  letter-spacing: .2px;
+}
+.dash-stat-bar {
+  height: 3px;
+}
+.dash-empty {
+  padding: 1.5rem 1rem;
+}
 </style>
