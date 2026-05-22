@@ -74,6 +74,12 @@
               </router-link>
             </li>
             <li class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'taches.index', hash: '#agenda' }" title="Agenda">
+                <i class="fas fa-calendar-day nav-icon"></i>
+                <span class="nav-link-label">Agenda</span>
+              </router-link>
+            </li>
+            <li class="nav-item">
               <router-link class="nav-link" active-class="active" :to="{ name: 'plan-travail.index' }" title="PTA">
                 <i class="fas fa-calendar-check nav-icon"></i>
                 <span class="nav-link-label">PTA</span>
