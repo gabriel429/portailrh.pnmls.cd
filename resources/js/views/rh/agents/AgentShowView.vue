@@ -33,7 +33,7 @@
             <div v-if="agent.photo && !agent._photoError" class="agent-avatar-lg">
               <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:80px;height:80px;object-fit:cover;border:3px solid rgba(255,255,255,0.3);" @error="agent._photoError = true">
             </div>
-            <div v-else class="rounded-circle d-flex align-items-center justify-content-center" style="width:80px;height:80px;background:rgba(255,255,255,0.15);">
+            <div v-else class="agent-avatar-lg agent-avatar-placeholder">
               <i class="fas fa-user fa-2x"></i>
             </div>
             <div>
@@ -1115,16 +1115,25 @@ onMounted(() => {
 </script>
 
 <style scoped>
+:global(body) {
+    background: #f6f9fc;
+}
+
+.container-fluid {
+    max-width: 1480px;
+}
+
 .agent-letterhead {
     display: flex;
     align-items: center;
     gap: 14px;
-    background: #fff;
-    border: 1px solid #dbeafe;
+    background: rgba(255, 255, 255, .88);
+    border: 1px solid rgba(203, 213, 225, .78);
     border-radius: 8px;
     padding: 14px 18px;
     margin-bottom: 16px;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+    box-shadow: 0 12px 34px rgba(15, 23, 42, .07);
+    backdrop-filter: blur(16px) saturate(145%);
 }
 .agent-letterhead-logo {
     width: 68px;
@@ -1196,16 +1205,15 @@ onMounted(() => {
 }
 .agent-header {
     background:
-        radial-gradient(circle at 88% 8%, rgba(255,255,255,.18), transparent 28%),
-        linear-gradient(135deg, rgba(0,119,181,.96) 0%, rgba(13,148,136,.90) 100%);
+        linear-gradient(135deg, rgba(0,119,181,.96) 0%, rgba(13,148,136,.92) 100%);
     color: white;
-    padding: 30px;
-    border-radius: 22px;
+    padding: 24px;
+    border-radius: 8px;
     margin-bottom: 20px;
     position: relative;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,.42);
-    box-shadow: 0 24px 70px rgba(8,47,73,.20);
+    box-shadow: 0 18px 44px rgba(8,47,73,.18);
 }
 .agent-header::after {
     content: '';
@@ -1219,20 +1227,32 @@ onMounted(() => {
     opacity: 0.10;
     pointer-events: none;
 }
+.agent-header h2 {
+    font-size: clamp(1.35rem, 2.2vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0;
+}
 .agent-avatar-lg {
     width: 104px;
     height: 104px;
-    border-radius: 26px;
+    border-radius: 8px;
     overflow: hidden;
     border: 1px solid rgba(255,255,255,.64);
     box-shadow: 0 16px 40px rgba(15, 23, 42, .20);
     background: rgba(255,255,255,.16);
+    flex: 0 0 auto;
 }
 .agent-avatar-lg img {
     width: 100% !important;
     height: 100% !important;
     border-radius: 0 !important;
     border: 0 !important;
+}
+.agent-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,255,255,.92);
 }
 .agent-profile-kicker {
     display: block;
@@ -1247,6 +1267,20 @@ onMounted(() => {
     font-weight: 600;
 }
 .agent-header .badge { font-size: 0.85rem; }
+.agent-header .btn {
+    border-radius: 8px;
+    border-width: 1px;
+    font-weight: 800;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+}
+.agent-header .btn-light,
+.agent-header .btn-success,
+.agent-header .btn-warning {
+    border-color: rgba(255,255,255,.28);
+}
+.agent-header .btn-outline-light {
+    background: rgba(255,255,255,.08);
+}
 .agent-overview-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1254,9 +1288,9 @@ onMounted(() => {
     margin-bottom: 20px;
 }
 .agent-overview-card {
-    background: rgba(255,255,255,.76);
+    background: rgba(255,255,255,.86);
     border: 1px solid rgba(203,213,225,.64);
-    border-radius: 14px;
+    border-radius: 8px;
     padding: 14px;
     box-shadow: 0 10px 28px rgba(15, 23, 42, .07);
     backdrop-filter: blur(16px) saturate(145%);
@@ -1297,6 +1331,84 @@ onMounted(() => {
 .agent-overview-action:disabled {
     opacity: .7;
     cursor: not-allowed;
+}
+
+.tab-content .card,
+.col-lg-4 > .card {
+    border-radius: 8px;
+    border: 1px solid rgba(203, 213, 225, .76) !important;
+    box-shadow: 0 14px 34px rgba(15, 23, 42, .07) !important;
+    overflow: hidden;
+}
+
+.tab-content .card-header,
+.col-lg-4 > .card .card-header {
+    background: #f8fafc !important;
+    border-bottom: 1px solid rgba(226, 232, 240, .9) !important;
+    padding: 1rem 1.1rem;
+}
+
+.tab-content .card-header h5,
+.col-lg-4 > .card .card-header h5 {
+    color: #0f172a;
+    font-size: .95rem;
+    font-weight: 900;
+}
+
+.tab-content .card-body {
+    background: rgba(255,255,255,.92);
+}
+
+.tab-content .card-body .row {
+    --bs-gutter-x: .75rem;
+}
+
+.tab-content .card-body .row > [class*="col-"] {
+    background: #f8fafc;
+    border: 1px solid rgba(226, 232, 240, .85);
+    border-radius: 8px;
+    padding: .8rem .9rem;
+    min-height: 72px;
+}
+
+.tab-content .card-body label,
+.col-lg-4 small.text-muted {
+    display: block;
+    color: #64748b !important;
+    font-size: .68rem;
+    font-weight: 900;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: .25rem;
+}
+
+.tab-content .card-body p {
+    color: #0f172a;
+    font-size: .92rem;
+    overflow-wrap: anywhere;
+}
+
+.tab-content hr {
+    display: none;
+}
+
+.col-lg-4 > .card .card-body {
+    background: rgba(255,255,255,.94);
+}
+
+.col-lg-4 > .card .card-body > .mb-3,
+.col-lg-4 > .card .card-body > .d-flex {
+    padding: .7rem .8rem;
+    border: 1px solid rgba(226, 232, 240, .82);
+    border-radius: 8px;
+    background: #f8fafc;
+    margin-bottom: .6rem !important;
+}
+
+.col-lg-4 > .card .btn {
+    border-radius: 8px;
+    font-weight: 800;
+    padding: .65rem .85rem;
 }
 .agent-doc-overlay {
     position: fixed;
@@ -1348,14 +1460,36 @@ onMounted(() => {
     font-size: .8rem;
     font-weight: 500;
 }
-.nav-tabs .nav-link { font-weight: 500; color: #666; }
-.nav-tabs .nav-link.active { color: #0077B5; border-bottom: 3px solid #0077B5; }
+.nav-tabs {
+    gap: .45rem;
+    border-bottom: 0;
+    background: rgba(255,255,255,.78);
+    border: 1px solid rgba(203, 213, 225, .72);
+    border-radius: 8px;
+    padding: .45rem;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, .06);
+}
+.nav-tabs .nav-item {
+    margin-bottom: 0;
+}
+.nav-tabs .nav-link {
+    border: 0;
+    border-radius: 8px;
+    color: #475569;
+    font-weight: 800;
+    padding: .65rem .9rem;
+}
+.nav-tabs .nav-link.active {
+    color: #075985;
+    background: #e0f2fe;
+    box-shadow: inset 0 0 0 1px rgba(14, 165, 233, .22);
+}
 .tab-badge { font-size: 0.7rem; vertical-align: middle; }
 .timeline-item {
     position: relative;
     padding-left: 30px;
     padding-bottom: 20px;
-    border-left: 2px solid #e5e5e5;
+    border-left: 2px solid #dbeafe;
 }
 .timeline-item:last-child { border-left: 2px solid transparent; }
 .timeline-dot {
@@ -1367,12 +1501,13 @@ onMounted(() => {
     border-radius: 50%;
     border: 2px solid white;
 }
-.timeline-dot.active { background-color: #28a745; }
+.timeline-dot.active { background-color: #16a34a; }
 .timeline-dot.ended { background-color: #6c757d; }
 .message-card {
+    border: 1px solid rgba(203, 213, 225, .8);
     border-left: 4px solid #0077B5;
-    background: #f8f9fa;
-    border-radius: 4px;
+    background: #f8fafc;
+    border-radius: 8px;
     padding: 15px;
     margin-bottom: 15px;
 }
@@ -1385,12 +1520,13 @@ onMounted(() => {
     justify-content: space-between;
     align-items: flex-end;
     gap: 20px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
+    background: rgba(255,255,255,.92);
+    border: 1px solid rgba(203, 213, 225, .82);
     border-radius: 8px;
     padding: 22px;
     margin: 22px 0 4px;
     break-inside: avoid;
+    box-shadow: 0 12px 34px rgba(15, 23, 42, .06);
 }
 .agent-signature-kicker {
     display: block;
