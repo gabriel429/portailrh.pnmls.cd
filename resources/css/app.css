@@ -3687,6 +3687,217 @@ html.dark body :is(.table, .data-table, .rh-table, .ast-table) thead th {
     }
 }
 
+/* Dashboard polish: tighter, software-like views across roles */
+body :where(.sen-dashboard, .sep-dashboard, .rh-dashboard, .caf-dashboard, .dept-dashboard, .sena-dashboard, .rc-dashboard) {
+    padding: 1rem clamp(.75rem, 1.6vw, 1.5rem) 1.4rem !important;
+}
+
+body :where(.sen-hero, .sep-hero, .rh-hero, .caf-hero, .dept-hero, .sena-hero, .dash-hero) {
+    background:
+        linear-gradient(135deg, rgba(0, 119, 181, .96), rgba(15, 118, 110, .88)) !important;
+    border-radius: 14px !important;
+    border: 1px solid rgba(255, 255, 255, .22) !important;
+    box-shadow: 0 16px 38px rgba(0, 64, 96, .18) !important;
+    margin-bottom: 1rem !important;
+}
+
+body :where(.sen-hero-bg, .sep-hero-bg, .rh-hero-bg, .caf-hero-bg, .dept-hero-bg, .sena-hero-bg) {
+    background: transparent !important;
+}
+
+body :where(.sen-hero-inner, .sep-hero-inner, .rh-hero-inner, .caf-hero-inner, .dept-hero-inner, .sena-hero-inner) {
+    min-height: 0 !important;
+    padding: .9rem 1.05rem !important;
+    gap: 1rem !important;
+}
+
+body :where(.dash-hero) {
+    min-height: 0 !important;
+    padding: .9rem 1.05rem !important;
+    gap: .85rem !important;
+}
+
+body :where(.sen-hero-left, .sep-hero-left, .rh-hero-left, .caf-hero-left, .dept-hero-left, .sena-hero-left) {
+    min-width: 0 !important;
+}
+
+body :where(.sen-hero-avatar, .sep-hero-avatar, .rh-hero-badge, .caf-hero-avatar, .dept-hero-avatar, .sena-hero-avatar, .dash-hero-avatar) {
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+    border-radius: 10px !important;
+}
+
+body :where(.sen-hero-name, .sep-hero-name, .rh-hero-name, .caf-hero-name, .dept-hero-name, .sena-hero-name, .dash-hero-text h2) {
+    font-size: clamp(1.05rem, 1.4vw, 1.38rem) !important;
+    line-height: 1.12 !important;
+    margin-bottom: .18rem !important;
+    letter-spacing: 0 !important;
+}
+
+body :where(.sen-hero-greeting, .sep-hero-greeting, .rh-hero-greeting, .caf-hero-greeting, .dept-hero-greeting, .sena-hero-greeting, .dash-hero-greeting) {
+    font-size: .68rem !important;
+    letter-spacing: .04em !important;
+}
+
+body :where(.sen-hero-fonction, .sep-hero-fonction, .rh-hero-agent-fonction-block, .caf-hero-fonction, .dept-hero-fonction, .sena-hero-fonction, .sen-hero-date, .sep-hero-date, .rh-hero-date, .caf-hero-date, .dept-hero-date, .sena-hero-date) {
+    font-size: .72rem !important;
+    line-height: 1.25 !important;
+}
+
+body :where(.sen-hero-kpis, .sep-hero-kpis, .rh-hero-kpis, .caf-hero-kpis, .dept-hero-kpis, .sena-hero-kpis, .dash-hero-stats) {
+    align-items: stretch !important;
+    gap: .35rem !important;
+    padding: .35rem !important;
+    border-radius: 10px !important;
+    background: rgba(255, 255, 255, .13) !important;
+    border: 1px solid rgba(255, 255, 255, .18) !important;
+}
+
+body :where(.sen-kpi, .sep-kpi, .rh-kpi, .caf-kpi-pill, .dept-kpi-pill, .sena-kpi-pill, .dash-hero-stat-link) {
+    min-width: 86px !important;
+    min-height: 48px !important;
+    padding: .48rem .58rem !important;
+    border-radius: 8px !important;
+    gap: .45rem !important;
+}
+
+body :where(.sen-kpi-icon, .sep-kpi-icon, .rh-kpi-icon, .caf-kpi-pill-icon, .dept-kpi-pill-icon, .sena-kpi-pill-icon) {
+    width: 30px !important;
+    height: 30px !important;
+    flex: 0 0 30px !important;
+    border-radius: 8px !important;
+    font-size: .8rem !important;
+}
+
+body :where(.sen-kpi-val, .sep-kpi-val, .rh-kpi-val, .caf-kpi-pill-val, .dept-kpi-pill-val, .sena-kpi-pill-val, .dash-hero-stat-val) {
+    font-size: 1.05rem !important;
+    line-height: 1 !important;
+}
+
+body :where(.sen-kpi-lbl, .sep-kpi-lbl, .rh-kpi-lbl, .caf-kpi-pill-lbl, .dept-kpi-pill-lbl, .sena-kpi-pill-lbl, .dash-hero-stat-lbl) {
+    font-size: .58rem !important;
+    line-height: 1.08 !important;
+    letter-spacing: .02em !important;
+    overflow-wrap: anywhere;
+}
+
+body :where(.sen-section, .sep-section, .rh-section, .caf-section, .dept-section, .sena-section, .rc-section) {
+    margin-bottom: .9rem !important;
+}
+
+body :where(.sen-section-head, .sep-section-head, .rh-section-head, .caf-section-head, .dept-section-head, .sena-section-head, .rc-section-head) {
+    gap: .55rem !important;
+    margin-bottom: .65rem !important;
+}
+
+body :where(.sen-section-icon, .sep-section-icon, .rh-section-icon, .caf-section-icon, .dept-section-icon, .sena-section-icon, .rc-section-icon) {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+    border-radius: 8px !important;
+    font-size: .82rem !important;
+}
+
+body :where(.sen-section-title, .sep-section-title, .rh-section-title, .caf-section-title, .dept-section-title, .sena-section-title, .rc-section-title, .dash-section-title) {
+    font-size: .95rem !important;
+    line-height: 1.15 !important;
+    letter-spacing: 0 !important;
+}
+
+body :where(.sen-section-sub, .sep-section-sub, .rh-section-sub, .caf-section-sub, .dept-section-sub, .sena-section-sub, .rc-section-sub) {
+    font-size: .72rem !important;
+    line-height: 1.2 !important;
+    margin-top: .12rem !important;
+}
+
+body :where(.sen-actions, .sep-actions, .rh-actions, .caf-actions, .dept-actions, .dash-action-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) !important;
+    gap: .62rem !important;
+    margin-bottom: .9rem !important;
+}
+
+body :where(.sen-action, .sep-action, .rh-action, .caf-action, .dept-action, .dash-action-card) {
+    min-height: 62px !important;
+    padding: .68rem .75rem !important;
+    border-radius: 10px !important;
+    gap: .58rem !important;
+}
+
+body :where(.sen-action-icon, .sep-action-icon, .rh-action-icon, .caf-action-icon, .dept-action-icon, .dash-action-icon) {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+    border-radius: 9px !important;
+    font-size: .92rem !important;
+}
+
+body :where(.sen-action-label, .sep-action-label, .rh-action-label, .caf-action-label, .dept-action-label, .dash-action-name) {
+    font-size: .82rem !important;
+    line-height: 1.18 !important;
+}
+
+body :where(.sen-action-desc, .sep-action-desc, .rh-action-desc, .caf-action-desc, .dept-action-desc, .dash-action-desc) {
+    font-size: .68rem !important;
+    line-height: 1.18 !important;
+}
+
+body :where(.sen-metrics, .sep-metrics, .rh-metrics, .caf-metrics, .dept-metrics, .dash-stat-grid) {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+    gap: .72rem !important;
+    margin-bottom: .9rem !important;
+}
+
+body :where(.sen-metric, .sep-metric, .rh-metric, .caf-metric, .dept-metric, .dash-stat-card) {
+    min-height: 104px !important;
+    padding: .8rem !important;
+    border-radius: 10px !important;
+}
+
+body :where(.sen-metric-val, .sep-metric-val, .rh-metric-val, .caf-metric-val, .dept-metric-val, .dash-stat-val) {
+    font-size: clamp(1.25rem, 2vw, 1.75rem) !important;
+    line-height: 1.05 !important;
+}
+
+body :where(.sen-metric-lbl, .sep-metric-lbl, .rh-metric-lbl, .caf-metric-lbl, .dept-metric-lbl, .dash-stat-lbl) {
+    font-size: .7rem !important;
+    line-height: 1.18 !important;
+}
+
+body :where(.sen-agenda-row, .sep-agenda-row, .rh-pending-item, .dept-agenda-row, .sena-agenda-row, .sena-task-row, .sena-request-row, .sena-communique-row, .sena-signalement-row, .dash-activity-card) {
+    padding: .65rem .75rem !important;
+    border-radius: 10px !important;
+}
+
+@media (min-width: 992px) {
+    body :where(.sen-hero-inner, .sep-hero-inner, .rh-hero-inner, .caf-hero-inner, .dept-hero-inner, .sena-hero-inner, .dash-hero) {
+        display: grid !important;
+        grid-template-columns: minmax(220px, 1fr) auto !important;
+        align-items: center !important;
+    }
+
+    body :where(.sen-hero-kpis, .sep-hero-kpis, .rh-hero-kpis, .caf-hero-kpis, .dept-hero-kpis, .sena-hero-kpis, .dash-hero-stats) {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)) !important;
+        width: min(100%, 620px) !important;
+        margin-left: auto !important;
+    }
+
+    body :where(.kpi-divider) {
+        display: none !important;
+    }
+
+    body :where(.sen-actions, .sep-actions, .rh-actions, .caf-actions, .dept-actions, .dash-action-grid) {
+        grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+    }
+
+    body :where(.sen-metrics, .sep-metrics, .rh-metrics, .caf-metrics, .dept-metrics, .dash-stat-grid) {
+        grid-template-columns: repeat(auto-fit, minmax(145px, 1fr)) !important;
+    }
+}
+
 /* Responsive hardening */
 html,
 body,
