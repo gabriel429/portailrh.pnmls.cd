@@ -288,51 +288,71 @@ class AgentController extends ApiController
             $query->whereDoesntHave('affectations', fn($q) => $q->where('actif', true));
         }
 
-        $statsByOrgane = (clone $query)
+        $statsRows = (clone $query)
             ->select('organe', DB::raw('COUNT(*) as total'))
             ->groupBy('organe')
-            ->pluck('total', 'organe');
+            ->get();
+
+        $statsByOrgane = $statsRows->mapWithKeys(function ($row) {
+            $organeKey = $row->organe ?: 'Non assigne';
+
+            return [$organeKey => (int) $row->total];
+        });
 
         $perPage = max(10, min((int) $request->query('per_page', 25), 100));
-        $page = max(1, (int) $request->query('page', 1));
-        $paginator = $query
-            ->orderInstitutionally()
-            ->paginate($perPage, ['*'], 'page', $page);
 
-        $pagedAgents = $paginator->getCollection();
-
-        // Group by organe
-        $agentsByOrgane = [];
-        foreach ($pagedAgents as $agent) {
-            $organeKey = $agent->organe ?? 'Non assigne';
-            if (!isset($agentsByOrgane[$organeKey])) {
-                $agentsByOrgane[$organeKey] = [
-                    'label' => $organeKey,
-                    'agents' => [],
-                    'icon' => $this->organeLabels[$organeKey]['icon'] ?? 'fa-sitemap',
-                    'color' => $this->organeLabels[$organeKey]['color'] ?? '#6b7280',
-                    'bg' => $this->organeLabels[$organeKey]['bg'] ?? '#f3f4f6',
-                    'code' => $this->organeLabels[$organeKey]['code'] ?? '',
-                ];
-            }
-            $agentsByOrgane[$organeKey]['agents'][] = AgentResource::make($agent)->resolve();
-        }
-
-        // Reorder: SEN, SEP, SEL first, then others
-        $ordered = [];
+        $orderedKeys = [];
         foreach (['Secrétariat Exécutif National', 'Secrétariat Exécutif Provincial', 'Secrétariat Exécutif Local'] as $key) {
-            if (isset($agentsByOrgane[$key])) {
-                $ordered[$key] = $agentsByOrgane[$key];
+            if (($statsByOrgane[$key] ?? 0) > 0) {
+                $orderedKeys[] = $key;
             }
         }
-        if (isset($agentsByOrgane['Non assigne'])) {
-            $ordered['Non assigne'] = $agentsByOrgane['Non assigne'];
+
+        if (($statsByOrgane['Non assigne'] ?? 0) > 0) {
+            $orderedKeys[] = 'Non assigne';
         }
-        // Add any remaining organes not yet included
-        foreach ($agentsByOrgane as $key => $data) {
-            if (!isset($ordered[$key])) {
-                $ordered[$key] = $data;
+
+        foreach ($statsByOrgane->keys() as $key) {
+            if (!in_array($key, $orderedKeys, true)) {
+                $orderedKeys[] = $key;
             }
+        }
+
+        $ordered = [];
+        foreach ($orderedKeys as $organeKey) {
+            $groupCode = $this->organeLabels[$organeKey]['code'] ?? Str::slug(Str::ascii($organeKey), '_');
+            $groupCode = $groupCode ?: 'non_assigne';
+            $page = max(1, (int) $request->query('page_' . $groupCode, 1));
+            $groupQuery = clone $query;
+
+            if ($organeKey === 'Non assigne') {
+                $groupQuery->where(fn ($q) => $q->whereNull('organe')->orWhere('organe', ''));
+            } else {
+                $groupQuery->where('organe', $organeKey);
+            }
+
+            $paginator = $groupQuery
+                ->orderInstitutionally()
+                ->paginate($perPage, ['*'], 'page_' . $groupCode, $page);
+
+            $ordered[$organeKey] = [
+                'label' => $organeKey,
+                'agents' => AgentResource::collection($paginator->getCollection())->resolve(),
+                'icon' => $this->organeLabels[$organeKey]['icon'] ?? 'fa-sitemap',
+                'color' => $this->organeLabels[$organeKey]['color'] ?? '#6b7280',
+                'bg' => $this->organeLabels[$organeKey]['bg'] ?? '#f3f4f6',
+                'code' => $this->organeLabels[$organeKey]['code'] ?? $groupCode,
+                'pagination' => [
+                    'key' => $groupCode,
+                    'current_page' => $paginator->currentPage(),
+                    'last_page' => $paginator->lastPage(),
+                    'per_page' => $paginator->perPage(),
+                    'total' => $paginator->total(),
+                    'from' => $paginator->firstItem(),
+                    'to' => $paginator->lastItem(),
+                    'has_more_pages' => $paginator->hasMorePages(),
+                ],
+            ];
         }
 
         // Stats
@@ -344,13 +364,8 @@ class AgentController extends ApiController
         ];
 
         $pagination = [
-            'current_page' => $paginator->currentPage(),
-            'last_page' => $paginator->lastPage(),
-            'per_page' => $paginator->perPage(),
-            'total' => $paginator->total(),
-            'from' => $paginator->firstItem(),
-            'to' => $paginator->lastItem(),
-            'has_more_pages' => $paginator->hasMorePages(),
+            'per_page' => $perPage,
+            'total' => $stats['total'],
         ];
 
         return $this->success(

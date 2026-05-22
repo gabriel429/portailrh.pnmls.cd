@@ -183,7 +183,10 @@
               </div>
               <div class="organe-info">
                 <h3 class="organe-title">{{ organe.label }}</h3>
-                <p class="organe-count">{{ organe.agents.length }} agent{{ organe.agents.length > 1 ? 's' : '' }} sur cette page</p>
+                <p class="organe-count">
+                  {{ organe.pagination?.total || organe.agents.length }} agent{{ (organe.pagination?.total || organe.agents.length) > 1 ? 's' : '' }}
+                  <span v-if="organe.pagination?.total > organe.agents.length">, {{ organe.agents.length }} affiché{{ organe.agents.length > 1 ? 's' : '' }}</span>
+                </p>
               </div>
             </div>
             <div class="agents-card-body">
@@ -269,11 +272,10 @@
                 </table>
               </div>
             </div>
-          </div>
 
-          <div v-if="pagination.total > pagination.per_page" class="agents-pagination">
+            <div v-if="organe.pagination?.total > organe.pagination?.per_page" class="agents-pagination">
             <div class="pagination-summary">
-              Affichage {{ pagination.from || 0 }}-{{ pagination.to || 0 }} sur {{ pagination.total }} agents
+              {{ organe.label }} : {{ organe.pagination.from || 0 }}-{{ organe.pagination.to || 0 }} sur {{ organe.pagination.total }}
             </div>
             <div class="pagination-controls">
               <select v-model.number="pagination.per_page" class="pagination-size" :disabled="filtering" @change="changePerPage">
@@ -282,30 +284,31 @@
               <button
                 type="button"
                 class="pagination-btn"
-                :disabled="pagination.current_page <= 1 || filtering"
-                @click="goToPage(pagination.current_page - 1)"
+                :disabled="organe.pagination.current_page <= 1 || filtering"
+                @click="goToGroupPage(organe, organe.pagination.current_page - 1)"
               >
                 <i class="fas fa-chevron-left"></i>
               </button>
               <button
-                v-for="page in visiblePages"
+                v-for="page in visiblePagesFor(organe.pagination)"
                 :key="page"
                 type="button"
                 class="pagination-btn"
-                :class="{ active: page === pagination.current_page }"
+                :class="{ active: page === organe.pagination.current_page }"
                 :disabled="filtering"
-                @click="goToPage(page)"
+                @click="goToGroupPage(organe, page)"
               >
                 {{ page }}
               </button>
               <button
                 type="button"
                 class="pagination-btn"
-                :disabled="pagination.current_page >= pagination.last_page || filtering"
-                @click="goToPage(pagination.current_page + 1)"
+                :disabled="organe.pagination.current_page >= organe.pagination.last_page || filtering"
+                @click="goToGroupPage(organe, organe.pagination.current_page + 1)"
               >
                 <i class="fas fa-chevron-right"></i>
               </button>
+            </div>
             </div>
           </div>
         </template>
@@ -773,14 +776,10 @@ const provinces = ref([])
 const departments = ref([])
 const perPageOptions = [10, 25, 50, 100]
 const pagination = reactive({
-    current_page: 1,
-    last_page: 1,
     per_page: 25,
     total: 0,
-    from: 0,
-    to: 0,
-    has_more_pages: false,
 })
+const groupPages = reactive({})
 
 // Search and filters
 const searchInput = ref('')
@@ -817,9 +816,9 @@ const showCreateModal = ref(false)
 const canCreateAgents = computed(() => auth.canCreateAgents)
 const canEditAgents = computed(() => auth.canEditAgents)
 const canDeleteAgents = computed(() => auth.canDeleteAgents)
-const visiblePages = computed(() => {
-    const lastPage = Math.max(1, pagination.last_page || 1)
-    const currentPage = Math.min(Math.max(1, pagination.current_page || 1), lastPage)
+function visiblePagesFor(meta) {
+    const lastPage = Math.max(1, meta?.last_page || 1)
+    const currentPage = Math.min(Math.max(1, meta?.current_page || 1), lastPage)
     const start = Math.max(1, currentPage - 2)
     const end = Math.min(lastPage, currentPage + 2)
     const pages = []
@@ -829,7 +828,7 @@ const visiblePages = computed(() => {
     }
 
     return pages
-})
+}
 
 const showExportProvince = computed(() => {
     const val = exportFilters.organe
@@ -1373,9 +1372,11 @@ async function fetchAgents() {
     filtering.value = true
     try {
         const params = {
-            page: pagination.current_page,
             per_page: pagination.per_page,
         }
+        Object.entries(groupPages).forEach(([key, page]) => {
+            params[`page_${key}`] = page
+        })
         if (filters.search) params.search = filters.search
         if (filters.organe) params.organe = filters.organe
         if (filters.province_id) params.province_id = filters.province_id
@@ -1386,14 +1387,14 @@ async function fetchAgents() {
         const { data } = await list(params)
         agentsByOrgane.value = data.agentsByOrgane || []
         stats.value = data.stats || { total: 0, sen: 0, sep: 0, sel: 0 }
-        Object.assign(pagination, data.pagination || {
-            current_page: 1,
-            last_page: 1,
-            per_page: pagination.per_page,
-            total: stats.value.total || 0,
-            from: 0,
-            to: 0,
-            has_more_pages: false,
+        Object.assign(pagination, {
+            per_page: data.pagination?.per_page || pagination.per_page,
+            total: data.pagination?.total || stats.value.total || 0,
+        })
+        agentsByOrgane.value.forEach((organe) => {
+            if (organe.pagination?.key) {
+                groupPages[organe.pagination.key] = organe.pagination.current_page || 1
+            }
         })
         loadError.value = ''
     } catch (err) {
@@ -1424,43 +1425,60 @@ async function fetchOptions() {
 // Search
 function applySearch() {
     filters.search = searchInput.value
-    pagination.current_page = 1
+    resetGroupPages()
     fetchAgents()
 }
 
 function clearSearch() {
     searchInput.value = ''
     filters.search = ''
-    pagination.current_page = 1
+    resetGroupPages()
     fetchAgents()
 }
 
 function resetPaginationAndFetch() {
-    pagination.current_page = 1
+    resetGroupPages()
     fetchAgents()
 }
 
-function goToPage(page) {
-    const nextPage = Math.min(Math.max(Number(page) || 1, 1), pagination.last_page || 1)
+function goToGroupPage(organe, page) {
+    const meta = organe.pagination || {}
+    const nextPage = Math.min(Math.max(Number(page) || 1, 1), meta.last_page || 1)
+    const key = meta.key
 
-    if (nextPage === pagination.current_page || filtering.value) {
+    if (!key || nextPage === meta.current_page || filtering.value) {
         return
     }
 
-    pagination.current_page = nextPage
+    groupPages[key] = nextPage
+    fetchAgents()
+    scrollToOrgane(organe.label)
+}
+
+function changePerPage() {
+    resetGroupPages()
     fetchAgents()
     scrollToAgentsList()
 }
 
-function changePerPage() {
-    pagination.current_page = 1
-    fetchAgents()
-    scrollToAgentsList()
+function resetGroupPages() {
+    Object.keys(groupPages).forEach((key) => {
+        delete groupPages[key]
+    })
 }
 
 function scrollToAgentsList() {
     window.requestAnimationFrame(() => {
         document.querySelector('.stats-cards')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+}
+
+function scrollToOrgane(label) {
+    window.requestAnimationFrame(() => {
+        const card = [...document.querySelectorAll('.agents-card')]
+            .find((item) => item.querySelector('.organe-title')?.textContent?.trim() === label)
+
+        card?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     })
 }
 
