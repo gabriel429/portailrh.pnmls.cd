@@ -8,8 +8,6 @@ use Symfony\Component\HttpFoundation\Response;
 
 class SecurityHeaders
 {
-    private const CACHE_CLEAN_VERSION = '2026-05-07-assistant-rh-build-cache-v1';
-
     /**
      * Handle an incoming request.
      *
@@ -41,24 +39,6 @@ class SecurityHeaders
         // PWA Cache Control
         if (str_contains($request->path(), 'sw.js') || str_contains($request->path(), 'manifest')) {
             $response->headers->set('Cache-Control', 'no-cache, no-store, must-revalidate');
-        }
-
-        $contentType = (string) $response->headers->get('Content-Type', '');
-        $isHtmlResponse = str_contains($contentType, 'text/html');
-
-        if ($isHtmlResponse && $request->cookie('epnmls_cache_cleaned') !== self::CACHE_CLEAN_VERSION) {
-            $response->headers->set('Clear-Site-Data', '"cache"');
-            $response->headers->setCookie(cookie(
-                'epnmls_cache_cleaned',
-                self::CACHE_CLEAN_VERSION,
-                60 * 24 * 30,
-                '/',
-                null,
-                $request->secure(),
-                false,
-                false,
-                'Lax'
-            ));
         }
 
         return $response;
