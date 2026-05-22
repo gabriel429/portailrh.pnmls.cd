@@ -130,6 +130,48 @@
         </div>
       </div>
 
+      <!-- ═══ AGENDA : ÉCHÉANCES À VENIR ═══ -->
+      <div class="sen-section">
+        <div class="sen-section-head">
+          <div class="sen-section-icon" style="background:#fef9c3;color:#ca8a04;">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div>
+            <h3 class="sen-section-title">Agenda — Échéances à venir</h3>
+            <p class="sen-section-sub">Tâches SEN avec échéance dans les 7 prochains jours</p>
+          </div>
+          <router-link to="/taches" class="sen-section-btn ms-auto">
+            Tout voir <i class="fas fa-arrow-right ms-1"></i>
+          </router-link>
+        </div>
+        <div v-if="!(data.upcoming_deadlines?.length)" class="sen-empty-state">
+          <i class="fas fa-calendar-check sen-empty-icon"></i>
+          <span>Aucune échéance imminente.</span>
+        </div>
+        <div v-else class="sen-agenda-list">
+          <div v-for="t in data.upcoming_deadlines" :key="t.id"
+            class="sen-agenda-row"
+            :class="senAgendaDaysUntil(t.date_echeance) <= 1 ? 'sen-agenda-urgent' : ''">
+            <div class="sen-agenda-date-block">
+              <div class="sen-agenda-day">{{ senAgendaDay(t.date_echeance) }}</div>
+              <div class="sen-agenda-month">{{ senAgendaMonth(t.date_echeance) }}</div>
+            </div>
+            <div class="sen-agenda-info">
+              <router-link :to="`/taches/${t.id}`" class="sen-agenda-title">{{ t.titre }}</router-link>
+              <div class="sen-agenda-meta">
+                <span v-if="t.agent" class="sen-agenda-agent">
+                  <i class="fas fa-user-circle me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
+                </span>
+              </div>
+            </div>
+            <div class="sen-agenda-badge"
+              :class="senAgendaDaysUntil(t.date_echeance) <= 1 ? 'sen-agenda-badge-urgent' : 'sen-agenda-badge-normal'">
+              {{ senAgendaDaysUntil(t.date_echeance) === 0 ? "Aujourd'hui" : senAgendaDaysUntil(t.date_echeance) === 1 ? 'Demain' : `J-${senAgendaDaysUntil(t.date_echeance)}` }}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ═══ AGENTS PAR ORGANE (full width, detailed) ═══ -->
       <div class="sen-section">
         <div class="sen-section-head">
@@ -608,48 +650,6 @@
                   <div class="sen-audit-compact-lbl">Échecs login 24h</div>
                 </div>
               </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ═══ AGENDA : ÉCHÉANCES À VENIR ═══ -->
-      <div class="sen-section">
-        <div class="sen-section-head">
-          <div class="sen-section-icon" style="background:#fef9c3;color:#ca8a04;">
-            <i class="fas fa-calendar-check"></i>
-          </div>
-          <div>
-            <h3 class="sen-section-title">Agenda — Échéances à venir</h3>
-            <p class="sen-section-sub">Tâches SEN avec échéance dans les 7 prochains jours</p>
-          </div>
-          <router-link to="/taches" class="sen-section-btn ms-auto">
-            Tout voir <i class="fas fa-arrow-right ms-1"></i>
-          </router-link>
-        </div>
-        <div v-if="!(data.upcoming_deadlines?.length)" class="sen-empty-state">
-          <i class="fas fa-calendar-check sen-empty-icon"></i>
-          <span>Aucune échéance imminente.</span>
-        </div>
-        <div v-else class="sen-agenda-list">
-          <div v-for="t in data.upcoming_deadlines" :key="t.id"
-            class="sen-agenda-row"
-            :class="senAgendaDaysUntil(t.date_echeance) <= 1 ? 'sen-agenda-urgent' : ''">
-            <div class="sen-agenda-date-block">
-              <div class="sen-agenda-day">{{ senAgendaDay(t.date_echeance) }}</div>
-              <div class="sen-agenda-month">{{ senAgendaMonth(t.date_echeance) }}</div>
-            </div>
-            <div class="sen-agenda-info">
-              <router-link :to="`/taches/${t.id}`" class="sen-agenda-title">{{ t.titre }}</router-link>
-              <div class="sen-agenda-meta">
-                <span v-if="t.agent" class="sen-agenda-agent">
-                  <i class="fas fa-user-circle me-1"></i>{{ t.agent.prenom }} {{ t.agent.nom }}
-                </span>
-              </div>
-            </div>
-            <div class="sen-agenda-badge"
-              :class="senAgendaDaysUntil(t.date_echeance) <= 1 ? 'sen-agenda-badge-urgent' : 'sen-agenda-badge-normal'">
-              {{ senAgendaDaysUntil(t.date_echeance) === 0 ? "Aujourd'hui" : senAgendaDaysUntil(t.date_echeance) === 1 ? 'Demain' : `J-${senAgendaDaysUntil(t.date_echeance)}` }}
             </div>
           </div>
         </div>
