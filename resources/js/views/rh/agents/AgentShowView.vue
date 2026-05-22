@@ -10,6 +10,20 @@
           <span>Programme National Multisectoriel de Lutte contre le Sida</span>
           <strong>Fiche agent</strong>
         </div>
+        <div class="print-author-card">
+          <img
+            v-if="printAuthorPhoto"
+            :src="printAuthorPhoto"
+            :alt="printAuthorName"
+            class="print-author-photo"
+          >
+          <div v-else class="print-author-photo print-author-initials">{{ printAuthorInitials }}</div>
+          <div>
+            <span>Imprimée par</span>
+            <strong>{{ printAuthorName }}</strong>
+            <small>{{ printAuthorRole }}</small>
+          </div>
+        </div>
       </div>
 
       <!-- Agent header -->
@@ -799,6 +813,26 @@ const senSignatureTitle = computed(() =>
 const senSignatureName = computed(() =>
     agent.value?.signature?.sen_name || 'Nom du SEN non renseigné'
 )
+const printAuthorAgent = computed(() => auth.user?.agent || {})
+const printAuthorName = computed(() =>
+    printAuthorAgent.value?.nom_complet
+    || [printAuthorAgent.value?.prenom, printAuthorAgent.value?.nom].filter(Boolean).join(' ')
+    || auth.user?.name
+    || 'Utilisateur'
+)
+const printAuthorRole = computed(() =>
+    printAuthorAgent.value?.fonction || auth.user?.role?.nom_role || auth.user?.role || 'Agent PNMLS'
+)
+const printAuthorPhoto = computed(() => {
+    const photo = printAuthorAgent.value?.photo
+    if (!photo) return ''
+    return photo.startsWith('/') ? photo : `/${photo}`
+})
+const printAuthorInitials = computed(() => {
+    const first = printAuthorAgent.value?.prenom || printAuthorName.value || 'U'
+    const last = printAuthorAgent.value?.nom || ''
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase()
+})
 
 // Sorted arrays
 const sortedRequests = computed(() =>
@@ -1074,6 +1108,54 @@ onMounted(() => {
     color: #075985;
     font-size: 1.2rem;
     margin-top: 3px;
+}
+.print-author-card {
+    display: none;
+    margin-left: auto;
+    align-items: center;
+    gap: 9px;
+    max-width: 240px;
+    padding: 8px 10px;
+    border-radius: 14px;
+    border: 1px solid rgba(203, 213, 225, .78);
+    background: rgba(255, 255, 255, .72);
+}
+.print-author-photo {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    object-fit: cover;
+    flex: 0 0 auto;
+}
+.print-author-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #dbeafe;
+    color: #075985;
+    font-weight: 900;
+}
+.print-author-card span,
+.print-author-card small {
+    display: block;
+}
+.print-author-card span {
+    color: #64748b;
+    font-size: .62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+.print-author-card strong {
+    display: block;
+    color: #0f172a;
+    font-size: .78rem;
+    line-height: 1.1;
+}
+.print-author-card small {
+    color: #64748b;
+    font-size: .68rem;
+    line-height: 1.1;
+    margin-top: 2px;
 }
 .agent-header {
     background:
@@ -1375,20 +1457,44 @@ onMounted(() => {
 
 /* Print styles */
 @media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
+    }
+    body {
+        background: #fff !important;
+    }
+    .container-fluid {
+        padding: 0 !important;
+    }
     .agent-letterhead {
         box-shadow: none !important;
-        border: 1px solid #dbeafe !important;
+        border: 1px solid rgba(125, 211, 252, .5) !important;
+        border-radius: 16px !important;
         padding: 10px 12px;
         margin-bottom: 12px;
-    }
-    .agent-header {
-        background: #0077B5 !important;
+        background: linear-gradient(135deg, rgba(255,255,255,.92), rgba(224,242,254,.64)) !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        padding: 20px;
+    }
+    .print-author-card {
+        display: flex !important;
+    }
+    .agent-header {
+        background: linear-gradient(135deg, #0077B5, #0f766e) !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 18px;
         margin-bottom: 15px;
+        border-radius: 18px !important;
+        box-shadow: none !important;
     }
     .agent-header::after { display: none; }
+    .agent-avatar-lg {
+        width: 92px !important;
+        height: 92px !important;
+        border-radius: 22px !important;
+    }
 
     .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
     .agent-signature-panel {
@@ -1397,7 +1503,14 @@ onMounted(() => {
         margin-top: 20px;
     }
 
-    .card { box-shadow: none !important; border: 1px solid #ddd !important; break-inside: avoid; margin-bottom: 12px; }
+    .card {
+        box-shadow: none !important;
+        border: 1px solid rgba(203, 213, 225, .85) !important;
+        border-radius: 14px !important;
+        break-inside: avoid;
+        margin-bottom: 12px;
+        background: rgba(255,255,255,.82) !important;
+    }
     .card-header { padding: 10px 15px; }
     .card-body { padding: 10px 15px; }
 

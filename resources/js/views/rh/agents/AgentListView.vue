@@ -1026,15 +1026,32 @@ function printAgentFiche() {
     const a = selectedAgent.value
     if (!a) return
 
+    const escapeHtml = (value) => String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+
     const sexeLabel = a.sexe === 'M' ? 'Masculin' : a.sexe === 'F' ? 'Feminin' : (a.sexe || 'N/A')
     const provinceName = a.province ? (a.province.nom_province || a.province.nom) : 'N/A'
     const deptName = a.departement ? a.departement.nom : 'N/A'
     const gradeName = a.grade ? a.grade.libelle : 'N/A'
     const anciennete = a.anciennete != null ? a.anciennete + ' an' + (a.anciennete > 1 ? 's' : '') : 'N/A'
+    const printedByAgent = auth.user?.agent || {}
+    const printedByName = printedByAgent.nom_complet
+        || [printedByAgent.prenom, printedByAgent.nom].filter(Boolean).join(' ')
+        || auth.user?.name
+        || 'Utilisateur'
+    const printedByRole = printedByAgent.fonction || auth.user?.role?.nom_role || auth.user?.role || 'Agent PNMLS'
+    const printedByInitials = `${(printedByAgent.prenom || printedByName || 'U').charAt(0)}${(printedByAgent.nom || '').charAt(0)}`.toUpperCase()
+    const printedByPhoto = printedByAgent.photo
+        ? `<img src="/${escapeHtml(printedByAgent.photo)}" class="printed-by-photo" alt="${escapeHtml(printedByName)}">`
+        : `<div class="printed-by-photo printed-by-initials">${escapeHtml(printedByInitials)}</div>`
 
     const photoHtml = a.photo
-        ? `<img src="/${a.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:3px solid #0077B5;">`
-        : `<div style="width:90px;height:90px;border-radius:50%;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:700;color:#0077B5;border:3px solid #0077B5;">${(a.prenom || '').charAt(0).toUpperCase()}${(a.nom || '').charAt(0).toUpperCase()}</div>`
+        ? `<img src="/${escapeHtml(a.photo)}" class="agent-photo-print" alt="${escapeHtml(a.nom_complet || `${a.prenom} ${a.nom}`)}">`
+        : `<div class="agent-photo-print agent-photo-initials">${escapeHtml((a.prenom || '').charAt(0).toUpperCase())}${escapeHtml((a.nom || '').charAt(0).toUpperCase())}</div>`
 
     const affRows = (a.affectations || [])
         .sort((x, y) => new Date(y.date_debut) - new Date(x.date_debut))
@@ -1057,41 +1074,74 @@ function printAgentFiche() {
         </tr>`).join('')
 
     const html = `<!DOCTYPE html>
-<html lang="fr"><head><meta charset="UTF-8"><title>Fiche Agent - ${a.prenom} ${a.nom}</title>
+<html lang="fr"><head><meta charset="UTF-8"><title>Fiche Agent - ${escapeHtml(a.prenom)} ${escapeHtml(a.nom)}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:12px;color:#1e293b;padding:20px 30px;}
-.header{display:flex;align-items:center;gap:20px;border-bottom:3px solid #0077B5;padding-bottom:15px;margin-bottom:20px;}
-.header-info h1{font-size:20px;color:#0077B5;margin-bottom:4px;}
-.header-info .badges span{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;margin-right:5px;}
-.badge-id{background:#e2e8f0;color:#475569;}
-.badge-organe{background:#dbeafe;color:#1e40af;}
-.badge-actif{background:#dcfce7;color:#166534;}
-.badge-suspendu{background:#fef9c3;color:#854d0e;}
-.section{margin-bottom:18px;}
-.section h2{font-size:13px;color:#0077B5;border-bottom:1.5px solid #e2e8f0;padding-bottom:4px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
-.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px 16px;}
-.info-item .label{font-size:10px;color:#94a3b8;font-weight:500;display:block;}
-.info-item .value{font-size:12px;}
+@page{size:A4 portrait;margin:10mm;}
+body{font-family:'Segoe UI',Tahoma,sans-serif;font-size:11.5px;color:#172033;padding:0;background:linear-gradient(135deg,#f8fbff,#eef9f6);-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+.sheet{min-height:277mm;padding:12px;border:1px solid rgba(14,116,144,.18);border-radius:18px;background:rgba(255,255,255,.72);}
+.official{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:12px 14px;margin-bottom:12px;border:1px solid rgba(125,211,252,.42);border-radius:16px;background:linear-gradient(135deg,rgba(255,255,255,.86),rgba(224,242,254,.62));}
+.official-left{display:flex;align-items:center;gap:12px;}
+.official-logo{width:58px;height:58px;object-fit:contain;}
+.official-kicker{display:block;color:#64748b;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;}
+.official-title{display:block;color:#075985;font-size:16px;font-weight:900;margin-top:2px;}
+.printed-by{display:flex;align-items:center;gap:8px;max-width:210px;padding:7px 9px;border-radius:14px;background:rgba(255,255,255,.74);border:1px solid rgba(203,213,225,.76);}
+.printed-by-photo{width:34px;height:34px;border-radius:10px;object-fit:cover;display:flex;align-items:center;justify-content:center;background:#dbeafe;color:#075985;font-weight:900;}
+.printed-by-label{display:block;color:#64748b;font-size:8px;font-weight:800;text-transform:uppercase;}
+.printed-by-name{display:block;color:#0f172a;font-size:10.5px;font-weight:800;line-height:1.1;}
+.printed-by-role{display:block;color:#64748b;font-size:8.5px;margin-top:2px;line-height:1.1;}
+.header{display:flex;align-items:center;gap:18px;padding:16px;margin-bottom:14px;border-radius:18px;color:#fff;background:linear-gradient(135deg,#0077B5,#0f766e);}
+.agent-photo-print{width:92px;height:92px;border-radius:22px;object-fit:cover;border:1px solid rgba(255,255,255,.7);background:rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:#fff;}
+.header-info h1{font-size:22px;color:#fff;margin-bottom:3px;line-height:1.05;}
+.header-info .function{font-size:12px;font-weight:700;color:rgba(255,255,255,.86);margin-bottom:7px;}
+.header-info .badges span{display:inline-block;padding:3px 8px;border-radius:999px;font-size:9.5px;font-weight:800;margin-right:5px;}
+.badge-id{background:rgba(255,255,255,.22);color:#fff;}
+.badge-organe{background:#0ea5e9;color:#fff;}
+.badge-actif{background:#22c55e;color:#fff;}
+.badge-suspendu{background:#f59e0b;color:#fff;}
+.section{margin-bottom:12px;padding:11px;border:1px solid rgba(203,213,225,.72);border-radius:14px;background:rgba(255,255,255,.76);break-inside:avoid;}
+.section h2{font-size:11.5px;color:#075985;border-bottom:1px solid rgba(14,116,144,.18);padding-bottom:6px;margin-bottom:9px;text-transform:uppercase;letter-spacing:.04em;}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.info-item{padding:7px;border-radius:10px;background:rgba(248,250,252,.82);border:1px solid rgba(226,232,240,.8);}
+.info-item .label{font-size:8.5px;color:#64748b;font-weight:800;text-transform:uppercase;display:block;}
+.info-item .value{font-size:11px;color:#0f172a;font-weight:600;overflow-wrap:anywhere;}
 table{width:100%;border-collapse:collapse;font-size:11px;}
 th{background:#f1f5f9;color:#475569;text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;}
 td{padding:5px 8px;border-bottom:1px solid #f1f5f9;}
 .stats{display:flex;gap:12px;margin-top:10px;}
-.stat{flex:1;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 4px;}
+.stat{flex:1;text-align:center;background:rgba(248,250,252,.82);border:1px solid #e2e8f0;border-radius:12px;padding:8px 4px;}
 .stat-val{font-size:18px;font-weight:800;color:#1e293b;display:block;}
 .stat-lbl{font-size:9px;color:#64748b;text-transform:uppercase;font-weight:600;}
-.footer{margin-top:24px;text-align:center;font-size:10px;color:#94a3b8;border-top:1px solid #e2e8f0;padding-top:10px;}
-@media print{body{padding:10px 20px;} @page{margin:10mm;}}
+.footer{margin-top:14px;text-align:center;font-size:9.5px;color:#64748b;border-top:1px solid #e2e8f0;padding-top:8px;}
+@media print{body{background:#fff;}.sheet{border-radius:0;border:0;padding:0;}.official,.header,.section,.stat{box-shadow:none;}}
 </style></head><body>
+<main class="sheet">
+<div class="official">
+    <div class="official-left">
+        <img src="/images/logo-pnmls.png" class="official-logo" alt="PNMLS">
+        <div>
+            <span class="official-kicker">Programme National Multisectoriel de Lutte contre le Sida</span>
+            <strong class="official-title">Fiche agent</strong>
+        </div>
+    </div>
+    <div class="printed-by">
+        ${printedByPhoto}
+        <div>
+            <span class="printed-by-label">Imprimée par</span>
+            <strong class="printed-by-name">${escapeHtml(printedByName)}</strong>
+            <span class="printed-by-role">${escapeHtml(printedByRole)}</span>
+        </div>
+    </div>
+</div>
 <div class="header">
     ${photoHtml}
     <div class="header-info">
-        <h1>${a.prenom} ${a.postnom || ''} ${a.nom}</h1>
-        <div>${a.fonction || ''}</div>
+        <h1>${escapeHtml(a.prenom)} ${escapeHtml(a.postnom || '')} ${escapeHtml(a.nom)}</h1>
+        <div class="function">${escapeHtml(a.fonction || a.poste_actuel || 'Fonction non renseignée')}</div>
         <div class="badges" style="margin-top:4px;">
-            <span class="badge-id">${a.matricule_etat || 'N/A'}</span>
-            ${a.organe ? `<span class="badge-organe">${a.organe}</span>` : ''}
-            <span class="${a.statut === 'actif' ? 'badge-actif' : 'badge-suspendu'}">${capitalize(a.statut || '')}</span>
+            <span class="badge-id">${escapeHtml(a.matricule_etat || 'N/A')}</span>
+            ${a.organe ? `<span class="badge-organe">${escapeHtml(a.organe)}</span>` : ''}
+            <span class="${a.statut === 'actif' ? 'badge-actif' : 'badge-suspendu'}">${escapeHtml(capitalize(a.statut || ''))}</span>
         </div>
     </div>
 </div>
@@ -1152,7 +1202,8 @@ ${reqRows ? `<div class="section">
     <tbody>${reqRows}</tbody></table>
 </div>` : ''}
 
-<div class="footer">Fiche generee le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} - Portail RH PNMLS</div>
+<div class="footer">Fiche générée le ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })} - Portail RH PNMLS</div>
+</main>
 </body></html>`
 
     const w = window.open('', '_blank')
