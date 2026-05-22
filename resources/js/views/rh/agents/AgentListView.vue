@@ -520,8 +520,8 @@
 
               <!-- TAB: Parcours -->
               <div v-if="agentTab === 'parcours'">
-                <template v-if="sm_affectationsCount > 0">
-                  <div v-for="aff in sm_sortedAffectations" :key="aff.id" class="asm-timeline-item">
+                <template v-if="sm_displayAffectations.length > 0">
+                  <div v-for="aff in sm_displayAffectations" :key="aff.id" class="asm-timeline-item">
                     <div class="asm-tl-dot" :class="aff.actif ? 'active' : ''"></div>
                     <div class="d-flex justify-content-between align-items-start">
                       <div>
@@ -529,6 +529,7 @@
                         <div class="d-flex gap-1 mt-1 flex-wrap">
                           <span class="asm-badge asm-badge-organe" style="font-size:.65rem;">{{ aff.niveau_administratif }}</span>
                           <span class="asm-badge asm-badge-neutral" style="font-size:.65rem;">{{ capitalize(aff.niveau || '') }}</span>
+                          <span v-if="aff.is_current_fallback" class="asm-badge asm-badge-info" style="font-size:.65rem;">Poste actuel</span>
                         </div>
                         <div v-if="aff.department" class="text-muted small mt-1"><i class="fas fa-building me-1"></i>{{ aff.department.nom }}</div>
                         <div v-if="aff.province" class="text-muted small"><i class="fas fa-map-marker-alt me-1"></i>{{ aff.province.nom || aff.province.nom_province }}</div>
@@ -833,7 +834,7 @@ const sm_requestsCount = computed(() => selectedAgent.value?.requests?.length ||
 const sm_pendingRequestsCount = computed(() =>
     (selectedAgent.value?.requests || []).filter(r => r.statut === 'en_attente').length
 )
-const sm_affectationsCount = computed(() => selectedAgent.value?.affectations?.length || 0)
+const sm_affectationsCount = computed(() => sm_displayAffectations.value.length)
 const sm_messagesCount = computed(() => selectedAgent.value?.messages?.length || 0)
 const sm_unreadMessagesCount = computed(() =>
     (selectedAgent.value?.messages || []).filter(m => !m.lu).length
@@ -853,6 +854,11 @@ const sm_sortedRequests = computed(() =>
 const sm_sortedAffectations = computed(() =>
     [...(selectedAgent.value?.affectations || [])].sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))
 )
+const sm_displayAffectations = computed(() => {
+    if (sm_sortedAffectations.value.length > 0) return sm_sortedAffectations.value
+    const current = buildCurrentPostAffectation(selectedAgent.value)
+    return current ? [current] : []
+})
 const sm_sortedMessages = computed(() =>
     [...(selectedAgent.value?.messages || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 )
@@ -893,6 +899,26 @@ function sm_formatDateTime(dateStr) {
         return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) +
             ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     } catch { return dateStr }
+}
+
+function buildCurrentPostAffectation(sourceAgent) {
+    if (!sourceAgent) return null
+    const currentPost = sourceAgent.fonction || sourceAgent.poste_actuel
+    if (!currentPost) return null
+
+    return {
+        id: `current-post-${sourceAgent.id}`,
+        actif: true,
+        is_current_fallback: true,
+        niveau: 'actuel',
+        niveau_administratif: sourceAgent.organe || 'Affectation actuelle',
+        date_debut: sourceAgent.date_embauche || (sourceAgent.annee_engagement_programme ? `${sourceAgent.annee_engagement_programme}-01-01` : null),
+        date_fin: null,
+        fonction: { nom: currentPost },
+        department: sourceAgent.departement || null,
+        province: sourceAgent.province || null,
+        remarque: 'Poste actuel de l’agent',
+    }
 }
 
 function sm_truncate(str, length) {
@@ -1064,7 +1090,11 @@ function printAgentFiche() {
         ? `<img src="/${escapeHtml(a.photo)}" class="agent-photo-print" alt="${escapeHtml(a.nom_complet || `${a.prenom} ${a.nom}`)}">`
         : `<div class="agent-photo-print agent-photo-initials">${escapeHtml((a.prenom || '').charAt(0).toUpperCase())}${escapeHtml((a.nom || '').charAt(0).toUpperCase())}</div>`
 
-    const affRows = (a.affectations || [])
+    const printAffectations = (a.affectations || []).length > 0
+        ? [...(a.affectations || [])]
+        : (buildCurrentPostAffectation(a) ? [buildCurrentPostAffectation(a)] : [])
+
+    const affRows = printAffectations
         .sort((x, y) => new Date(y.date_debut) - new Date(x.date_debut))
         .map(aff => `<tr>
             <td>${aff.fonction ? aff.fonction.nom : 'N/A'}</td>
@@ -2188,6 +2218,7 @@ onMounted(() => {
 .asm-badge-warn { background: #f59e0b; color: #fff; }
 .asm-badge-err { background: #ef4444; color: #fff; }
 .asm-badge-neutral { background: #e2e8f0; color: #64748b; }
+.asm-badge-info { background: #0284c7; color: #fff; }
 .asm-close {
   background: rgba(255,255,255,.15); border: none; cursor: pointer;
   width: 34px; height: 34px; border-radius: 10px; display: flex;

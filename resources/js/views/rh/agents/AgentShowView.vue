@@ -354,10 +354,10 @@
                   <h5 class="mb-0"><i class="fas fa-route me-2 text-primary"></i>Parcours et Carriere</h5>
                 </div>
                 <div class="card-body">
-                  <template v-if="affectationsCount > 0">
+                  <template v-if="displayAffectations.length > 0">
                     <div class="ps-2">
                       <div
-                        v-for="affectation in sortedAffectations"
+                        v-for="affectation in displayAffectations"
                         :key="affectation.id"
                         class="timeline-item"
                       >
@@ -370,6 +370,7 @@
                             <div class="d-flex gap-2 flex-wrap mb-1">
                               <span class="badge bg-primary">{{ affectation.niveau_administratif_label || affectation.niveau_administratif || '' }}</span>
                               <span class="badge bg-outline-secondary border">{{ capitalize(affectation.niveau || '') }}</span>
+                              <span v-if="affectation.is_current_fallback" class="badge bg-info">Poste actuel</span>
                             </div>
                             <small v-if="affectation.department" class="text-muted d-block">
                               <i class="fas fa-building me-1"></i>{{ affectation.department.nom }}
@@ -793,7 +794,7 @@ const requestsCount = computed(() => agent.value?.requests?.length || 0)
 const pendingRequestsCount = computed(() =>
     (agent.value?.requests || []).filter(r => r.statut === 'en_attente').length
 )
-const affectationsCount = computed(() => agent.value?.affectations?.length || 0)
+const affectationsCount = computed(() => displayAffectations.value.length)
 const messagesCount = computed(() => agent.value?.messages?.length || 0)
 const unreadMessagesCount = computed(() =>
     (agent.value?.messages || []).filter(m => !m.lu).length
@@ -846,6 +847,11 @@ const sortedRequests = computed(() =>
 const sortedAffectations = computed(() =>
     [...(agent.value?.affectations || [])].sort((a, b) => new Date(b.date_debut) - new Date(a.date_debut))
 )
+const displayAffectations = computed(() => {
+    if (sortedAffectations.value.length > 0) return sortedAffectations.value
+    const current = buildCurrentPostAffectation(agent.value)
+    return current ? [current] : []
+})
 const sortedMessages = computed(() =>
     [...(agent.value?.messages || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 )
@@ -879,6 +885,27 @@ function formatDateTime(dateStr) {
             ' ' + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
     } catch {
         return dateStr
+    }
+}
+
+function buildCurrentPostAffectation(sourceAgent) {
+    if (!sourceAgent) return null
+    const currentPost = sourceAgent.fonction || sourceAgent.poste_actuel
+    if (!currentPost) return null
+
+    return {
+        id: `current-post-${sourceAgent.id}`,
+        actif: true,
+        is_current_fallback: true,
+        niveau: 'actuel',
+        niveau_administratif: sourceAgent.organe || 'Affectation actuelle',
+        niveau_administratif_label: sourceAgent.organe || 'Affectation actuelle',
+        date_debut: sourceAgent.date_embauche || (sourceAgent.annee_engagement_programme ? `${sourceAgent.annee_engagement_programme}-01-01` : null),
+        date_fin: null,
+        fonction: { nom: currentPost },
+        department: sourceAgent.departement || null,
+        province: sourceAgent.province || null,
+        remarque: 'Poste actuel de l’agent',
     }
 }
 
