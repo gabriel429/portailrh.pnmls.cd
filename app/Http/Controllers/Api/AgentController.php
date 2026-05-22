@@ -37,6 +37,7 @@ class AgentController extends ApiController
         'Assistant RH',
         'Assistant ressources humaines',
         'Assistant ressource humaine',
+        'SECOM',
     ];
 
     private function scopeService(): UserDataScope
@@ -66,9 +67,15 @@ class AgentController extends ApiController
         return app(RoleService::class)->isAssistantRh($user);
     }
 
+    private function isDelegatedOperationalAssistant($user): bool
+    {
+        return $this->isAssistantRh($user)
+            || ((bool) $user?->hasRole('SECOM') && $this->scopeService()->isProvincialSep($user));
+    }
+
     private function abortIfAssistantRhWithoutPermission($user, string $permissionCode, string $message): void
     {
-        if ($this->isAssistantRh($user) && !$user->hasPermission($permissionCode)) {
+        if ($this->isDelegatedOperationalAssistant($user) && !$user->hasPermission($permissionCode)) {
             abort(403, $message);
         }
     }
@@ -313,7 +320,7 @@ class AgentController extends ApiController
         $this->abortIfAssistantRhWithoutPermission(
             $request->user(),
             'create_agent',
-            'L assistant RH doit avoir la permission du Chef Section RH pour créer un nouvel agent.'
+            'Cet assistant doit avoir une permission explicite pour créer un nouvel agent.'
         );
 
         $validated = $request->validate([
@@ -668,7 +675,7 @@ class AgentController extends ApiController
         $this->abortIfAssistantRhWithoutPermission(
             $request->user(),
             'edit_agent',
-            'L assistant RH doit avoir la permission du Chef Section RH pour modifier un agent.'
+            'Cet assistant doit avoir une permission explicite pour modifier un agent.'
         );
 
         $this->authorizeAgentAccess($request, $agent);
@@ -794,7 +801,7 @@ class AgentController extends ApiController
         $this->abortIfAssistantRhWithoutPermission(
             request()->user(),
             'delete_agent',
-            'L assistant RH doit avoir la permission du Chef Section RH pour supprimer un agent.'
+            'Cet assistant doit avoir une permission explicite pour supprimer un agent.'
         );
 
         $this->authorizeAgentAccess(request(), $agent);

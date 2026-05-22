@@ -45,6 +45,7 @@ class DocumentController extends ApiController
         'Assistant RH',
         'Assistant ressources humaines',
         'Assistant ressource humaine',
+        'SECOM',
     ];
 
     private function normalizeDocumentCategory(?string $category): string
