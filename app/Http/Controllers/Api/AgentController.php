@@ -288,11 +288,22 @@ class AgentController extends ApiController
             $query->whereDoesntHave('affectations', fn($q) => $q->where('actif', true));
         }
 
-        $allAgents = $query->orderInstitutionally()->get();
+        $statsByOrgane = (clone $query)
+            ->select('organe', DB::raw('COUNT(*) as total'))
+            ->groupBy('organe')
+            ->pluck('total', 'organe');
+
+        $perPage = max(10, min((int) $request->query('per_page', 25), 100));
+        $page = max(1, (int) $request->query('page', 1));
+        $paginator = $query
+            ->orderInstitutionally()
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        $pagedAgents = $paginator->getCollection();
 
         // Group by organe
         $agentsByOrgane = [];
-        foreach ($allAgents as $agent) {
+        foreach ($pagedAgents as $agent) {
             $organeKey = $agent->organe ?? 'Non assigne';
             if (!isset($agentsByOrgane[$organeKey])) {
                 $agentsByOrgane[$organeKey] = [
@@ -326,18 +337,29 @@ class AgentController extends ApiController
 
         // Stats
         $stats = [
-            'total' => $allAgents->count(),
-            'sen' => $allAgents->where('organe', 'Secrétariat Exécutif National')->count(),
-            'sep' => $allAgents->where('organe', 'Secrétariat Exécutif Provincial')->count(),
-            'sel' => $allAgents->where('organe', 'Secrétariat Exécutif Local')->count(),
+            'total' => (int) $statsByOrgane->sum(),
+            'sen' => (int) ($statsByOrgane['Secrétariat Exécutif National'] ?? 0),
+            'sep' => (int) ($statsByOrgane['Secrétariat Exécutif Provincial'] ?? 0),
+            'sel' => (int) ($statsByOrgane['Secrétariat Exécutif Local'] ?? 0),
+        ];
+
+        $pagination = [
+            'current_page' => $paginator->currentPage(),
+            'last_page' => $paginator->lastPage(),
+            'per_page' => $paginator->perPage(),
+            'total' => $paginator->total(),
+            'from' => $paginator->firstItem(),
+            'to' => $paginator->lastItem(),
+            'has_more_pages' => $paginator->hasMorePages(),
         ];
 
         return $this->success(
             array_values($ordered),
-            ['stats' => $stats],
+            ['stats' => $stats, 'pagination' => $pagination],
             [
                 'agentsByOrgane' => array_values($ordered),
                 'stats' => $stats,
+                'pagination' => $pagination,
             ]
         );
     }

@@ -18,7 +18,7 @@
                 <div v-if="filterSansAffectation" class="mt-2">
                   <span class="badge bg-warning text-dark">
                     <i class="fas fa-filter me-1"></i>Agents sans affectation
-                    <button class="btn-close ms-1" style="font-size:.5rem" @click="filterSansAffectation=false; fetchAgents()"></button>
+                    <button class="btn-close ms-1" style="font-size:.5rem" @click="filterSansAffectation=false; resetPaginationAndFetch()"></button>
                   </span>
                 </div>
               </div>
@@ -73,7 +73,7 @@
               <div class="col-md-3">
                 <div class="filter-group">
                   <i class="fas fa-building filter-icon"></i>
-                  <select v-model="filters.organe" class="filter-select" @change="fetchAgents">
+                  <select v-model="filters.organe" class="filter-select" @change="resetPaginationAndFetch">
                     <option value="">Tous les organes</option>
                     <option value="SEN">SEN - National</option>
                     <option value="SEP">SEP - Provincial</option>
@@ -84,7 +84,7 @@
               <div class="col-md-3">
                 <div class="filter-group">
                   <i class="fas fa-map-marker-alt filter-icon"></i>
-                  <select v-model="filters.province_id" class="filter-select" @change="fetchAgents">
+                  <select v-model="filters.province_id" class="filter-select" @change="resetPaginationAndFetch">
                     <option value="">Toutes les provinces</option>
                     <option v-for="p in provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom }}</option>
                   </select>
@@ -93,7 +93,7 @@
               <div class="col-md-3">
                 <div class="filter-group">
                   <i class="fas fa-briefcase filter-icon"></i>
-                  <select v-model="filters.department_id" class="filter-select" @change="fetchAgents">
+                  <select v-model="filters.department_id" class="filter-select" @change="resetPaginationAndFetch">
                     <option value="">Tous les départements</option>
                     <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
                   </select>
@@ -102,7 +102,7 @@
               <div class="col-md-3">
                 <div class="filter-group">
                   <i class="fas fa-check-circle filter-icon"></i>
-                  <select v-model="filters.statut" class="filter-select" @change="fetchAgents">
+                  <select v-model="filters.statut" class="filter-select" @change="resetPaginationAndFetch">
                     <option value="">Tous les statuts</option>
                     <option value="actif">Actif</option>
                     <option value="suspendu">Suspendu</option>
@@ -183,7 +183,7 @@
               </div>
               <div class="organe-info">
                 <h3 class="organe-title">{{ organe.label }}</h3>
-                <p class="organe-count">{{ organe.agents.length }} agent{{ organe.agents.length > 1 ? 's' : '' }}</p>
+                <p class="organe-count">{{ organe.agents.length }} agent{{ organe.agents.length > 1 ? 's' : '' }} sur cette page</p>
               </div>
             </div>
             <div class="agents-card-body">
@@ -268,6 +268,44 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          <div v-if="pagination.total > pagination.per_page" class="agents-pagination">
+            <div class="pagination-summary">
+              Affichage {{ pagination.from || 0 }}-{{ pagination.to || 0 }} sur {{ pagination.total }} agents
+            </div>
+            <div class="pagination-controls">
+              <select v-model.number="pagination.per_page" class="pagination-size" :disabled="filtering" @change="changePerPage">
+                <option v-for="size in perPageOptions" :key="size" :value="size">{{ size }} / page</option>
+              </select>
+              <button
+                type="button"
+                class="pagination-btn"
+                :disabled="pagination.current_page <= 1 || filtering"
+                @click="goToPage(pagination.current_page - 1)"
+              >
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button
+                v-for="page in visiblePages"
+                :key="page"
+                type="button"
+                class="pagination-btn"
+                :class="{ active: page === pagination.current_page }"
+                :disabled="filtering"
+                @click="goToPage(page)"
+              >
+                {{ page }}
+              </button>
+              <button
+                type="button"
+                class="pagination-btn"
+                :disabled="pagination.current_page >= pagination.last_page || filtering"
+                @click="goToPage(pagination.current_page + 1)"
+              >
+                <i class="fas fa-chevron-right"></i>
+              </button>
             </div>
           </div>
         </template>
@@ -733,6 +771,16 @@ const agentsByOrgane = ref([])
 const stats = ref({ total: 0, sen: 0, sep: 0, sel: 0 })
 const provinces = ref([])
 const departments = ref([])
+const perPageOptions = [10, 25, 50, 100]
+const pagination = reactive({
+    current_page: 1,
+    last_page: 1,
+    per_page: 25,
+    total: 0,
+    from: 0,
+    to: 0,
+    has_more_pages: false,
+})
 
 // Search and filters
 const searchInput = ref('')
@@ -769,6 +817,19 @@ const showCreateModal = ref(false)
 const canCreateAgents = computed(() => auth.canCreateAgents)
 const canEditAgents = computed(() => auth.canEditAgents)
 const canDeleteAgents = computed(() => auth.canDeleteAgents)
+const visiblePages = computed(() => {
+    const lastPage = Math.max(1, pagination.last_page || 1)
+    const currentPage = Math.min(Math.max(1, pagination.current_page || 1), lastPage)
+    const start = Math.max(1, currentPage - 2)
+    const end = Math.min(lastPage, currentPage + 2)
+    const pages = []
+
+    for (let page = start; page <= end; page += 1) {
+        pages.push(page)
+    }
+
+    return pages
+})
 
 const showExportProvince = computed(() => {
     const val = exportFilters.organe
@@ -1311,7 +1372,10 @@ async function fetchAgents() {
     }
     filtering.value = true
     try {
-        const params = {}
+        const params = {
+            page: pagination.current_page,
+            per_page: pagination.per_page,
+        }
         if (filters.search) params.search = filters.search
         if (filters.organe) params.organe = filters.organe
         if (filters.province_id) params.province_id = filters.province_id
@@ -1322,6 +1386,15 @@ async function fetchAgents() {
         const { data } = await list(params)
         agentsByOrgane.value = data.agentsByOrgane || []
         stats.value = data.stats || { total: 0, sen: 0, sep: 0, sel: 0 }
+        Object.assign(pagination, data.pagination || {
+            current_page: 1,
+            last_page: 1,
+            per_page: pagination.per_page,
+            total: stats.value.total || 0,
+            from: 0,
+            to: 0,
+            has_more_pages: false,
+        })
         loadError.value = ''
     } catch (err) {
         console.error('Error fetching agents:', err)
@@ -1351,13 +1424,44 @@ async function fetchOptions() {
 // Search
 function applySearch() {
     filters.search = searchInput.value
+    pagination.current_page = 1
     fetchAgents()
 }
 
 function clearSearch() {
     searchInput.value = ''
     filters.search = ''
+    pagination.current_page = 1
     fetchAgents()
+}
+
+function resetPaginationAndFetch() {
+    pagination.current_page = 1
+    fetchAgents()
+}
+
+function goToPage(page) {
+    const nextPage = Math.min(Math.max(Number(page) || 1, 1), pagination.last_page || 1)
+
+    if (nextPage === pagination.current_page || filtering.value) {
+        return
+    }
+
+    pagination.current_page = nextPage
+    fetchAgents()
+    scrollToAgentsList()
+}
+
+function changePerPage() {
+    pagination.current_page = 1
+    fetchAgents()
+    scrollToAgentsList()
+}
+
+function scrollToAgentsList() {
+    window.requestAnimationFrame(() => {
+        document.querySelector('.stats-cards')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
 }
 
 // Delete
@@ -2058,6 +2162,67 @@ onMounted(() => {
   color: #cbd5e1;
 }
 
+.agents-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 1rem 0 0;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
+}
+
+.pagination-summary {
+  color: #475569;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pagination-size,
+.pagination-btn {
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.pagination-size {
+  padding: 0 0.75rem;
+}
+
+.pagination-btn {
+  min-width: 38px;
+  padding: 0 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pagination-btn.active {
+  background: #0ea5e9;
+  border-color: #0ea5e9;
+  color: #fff;
+}
+
+.pagination-btn:disabled,
+.pagination-size:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 /* Filtering Overlay */
 .ag-filtering {
   opacity: 0.5;
@@ -2128,6 +2293,15 @@ onMounted(() => {
   .agent-initials {
     width: 40px;
     height: 40px;
+  }
+
+  .agents-pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pagination-controls {
+    justify-content: flex-start;
   }
 }
 
