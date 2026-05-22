@@ -560,6 +560,30 @@
               </button>
             </div>
           </div>
+
+          <div v-if="canManageAssistantDelegations" class="card border-0 shadow-sm mt-3">
+            <div class="card-header bg-light border-bottom">
+              <h5 class="mb-0"><i class="fas fa-key me-2 text-primary"></i>Délégations Assistant RH</h5>
+            </div>
+            <div class="card-body">
+              <div class="form-check mb-2">
+                <input v-model="delegationForm.create_agent" class="form-check-input" id="delegation_create_agent" type="checkbox">
+                <label class="form-check-label" for="delegation_create_agent">Créer un agent</label>
+              </div>
+              <div class="form-check mb-2">
+                <input v-model="delegationForm.edit_agent" class="form-check-input" id="delegation_edit_agent" type="checkbox">
+                <label class="form-check-label" for="delegation_edit_agent">Modifier les fiches agents</label>
+              </div>
+              <div class="form-check mb-3">
+                <input v-model="delegationForm.delete_agent" class="form-check-input" id="delegation_delete_agent" type="checkbox">
+                <label class="form-check-label" for="delegation_delete_agent">Supprimer un agent</label>
+              </div>
+              <button class="btn btn-primary btn-sm w-100" :disabled="delegationsSaving" @click="saveDelegations">
+                <span v-if="delegationsSaving" class="spinner-border spinner-border-sm me-2"></span>
+                Enregistrer
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -666,7 +690,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
-import { get, remove, downloadDossier } from '@/api/agents'
+import { get, remove, downloadDossier, updateDelegations } from '@/api/agents'
 import { create as createDocument, download as downloadDocument, remove as removeDocument } from '@/api/documents'
 import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
@@ -690,10 +714,12 @@ const editAgentId = ref(null)
 const showDocumentUploadModal = ref(false)
 const documentUploading = ref(false)
 const dossierDownloading = ref(false)
+const delegationsSaving = ref(false)
 const documentFileInput = ref(null)
 const selectedDocumentFile = ref(null)
 const documentUploadErrors = ref({})
 const documentUploadForm = ref(defaultDocumentUploadForm())
+const delegationForm = ref(defaultDelegationForm())
 
 function defaultDocumentUploadForm() {
     return {
@@ -701,6 +727,14 @@ function defaultDocumentUploadForm() {
         categories_document_id: 'identite',
         description: '',
         notify_by_mail: false,
+    }
+}
+
+function defaultDelegationForm() {
+    return {
+        create_agent: false,
+        edit_agent: false,
+        delete_agent: false,
     }
 }
 
@@ -747,6 +781,9 @@ const isNational = computed(() =>
 )
 const canManageAgentDocuments = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isAssistantRH
+)
+const canManageAssistantDelegations = computed(() =>
+    Boolean(agent.value?.permissions?.can_manage_assistant_delegations && agent.value?.permissions?.is_assistant_rh)
 )
 const canEditAgent = computed(() => auth.canEditAgents)
 const canDeleteAgent = computed(() => auth.canDeleteAgents)
@@ -935,12 +972,40 @@ async function fetchAgent() {
     try {
         const { data } = await get(route.params.id)
         agent.value = data.agent
+        delegationForm.value = {
+            ...defaultDelegationForm(),
+            ...(data.agent?.permissions?.agent_management || {}),
+        }
     } catch (err) {
         console.error('Error fetching agent:', err)
         ui.addToast('Erreur lors du chargement de l\'agent', 'danger')
         router.push({ name: 'rh.agents.index' })
     } finally {
         loading.value = false
+    }
+}
+
+async function saveDelegations() {
+    if (!agent.value || !canManageAssistantDelegations.value) return
+
+    delegationsSaving.value = true
+    const permissions = Object.entries(delegationForm.value)
+        .filter(([, enabled]) => enabled)
+        .map(([code]) => code)
+
+    try {
+        const { data } = await updateDelegations(agent.value.id, permissions)
+        const updatedPermissions = data.permissions || data.data?.permissions || permissions
+        delegationForm.value = {
+            ...defaultDelegationForm(),
+            ...Object.fromEntries(updatedPermissions.map((code) => [code, true])),
+        }
+        ui.addToast('Délégations mises à jour.', 'success')
+        await auth.fetchUser?.()
+    } catch (err) {
+        ui.addToast(err.response?.data?.message || 'Erreur lors de la mise à jour des délégations.', 'danger')
+    } finally {
+        delegationsSaving.value = false
     }
 }
 

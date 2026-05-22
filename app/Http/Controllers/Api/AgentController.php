@@ -11,6 +11,7 @@ use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\InstitutionCategorie;
 use App\Models\Organe;
+use App\Models\Permission;
 use App\Models\Province;
 use App\Models\Section;
 use App\Services\SpreadsheetImportReader;
@@ -70,6 +71,16 @@ class AgentController extends ApiController
         if ($this->isAssistantRh($user) && !$user->hasPermission($permissionCode)) {
             abort(403, $message);
         }
+    }
+
+    private function canManageAssistantRhDelegations($user): bool
+    {
+        if (!$user || $this->isAssistantRh($user)) {
+            return false;
+        }
+
+        return $user->isSuperAdmin()
+            || $user->hasRole(['SEN', 'Section ressources humaines', 'Chef Section RH', 'RH National']);
     }
 
     private function authorizeAgentDocumentManagement(Request $request, Agent $agent): void
@@ -412,8 +423,17 @@ class AgentController extends ApiController
 
         $resource = AgentResource::make($agent);
         $agentPayload = $resource->resolve();
+        $directPermissionCodes = $agent->permissions()->pluck('code')->values()->toArray();
         $agentPayload['permissions'] = [
             'can_manage_documents' => $this->canManageAgentDocuments(request()->user()),
+            'can_manage_assistant_delegations' => $this->canManageAssistantRhDelegations(request()->user()),
+            'is_assistant_rh' => app(RoleService::class)->isAssistantRh($agent->user),
+            'direct' => $directPermissionCodes,
+            'agent_management' => [
+                'create_agent' => in_array('create_agent', $directPermissionCodes, true),
+                'edit_agent' => in_array('edit_agent', $directPermissionCodes, true),
+                'delete_agent' => in_array('delete_agent', $directPermissionCodes, true),
+            ],
         ];
         $agentPayload['signature'] = [
             'sen_name' => $this->resolveNationalExecutiveSecretaryName(),
@@ -422,6 +442,42 @@ class AgentController extends ApiController
 
         return $this->resource($resource, [], [
             'agent' => $agentPayload,
+        ]);
+    }
+
+    public function updateDelegations(Request $request, Agent $agent): JsonResponse
+    {
+        if (!$this->canManageAssistantRhDelegations($request->user())) {
+            abort(403, 'Seul le Chef Section RH ou le SEN peut accorder ces delegations.');
+        }
+
+        if (!app(RoleService::class)->isAssistantRh($agent->user)) {
+            abort(422, 'Les delegations de modification sont reservees aux assistants RH.');
+        }
+
+        $validated = $request->validate([
+            'permissions' => 'array',
+            'permissions.*' => ['string', Rule::in(['create_agent', 'edit_agent', 'delete_agent'])],
+        ]);
+
+        $codes = collect($validated['permissions'] ?? [])
+            ->intersect(['create_agent', 'edit_agent', 'delete_agent'])
+            ->values()
+            ->all();
+
+        $managedPermissionIds = Permission::whereIn('code', ['create_agent', 'edit_agent', 'delete_agent'])->pluck('id')->all();
+        $selectedPermissionIds = Permission::whereIn('code', $codes)->pluck('id')->all();
+
+        $agent->permissions()->detach($managedPermissionIds);
+        if (!empty($selectedPermissionIds)) {
+            $agent->permissions()->attach($selectedPermissionIds);
+        }
+
+        return $this->success([
+            'permissions' => $codes,
+        ], [], [
+            'message' => 'Delegations mises a jour avec succes.',
+            'permissions' => $codes,
         ]);
     }
 

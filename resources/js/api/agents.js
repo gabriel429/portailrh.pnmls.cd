@@ -69,6 +69,15 @@ export function downloadDossier(id) {
 }
 
 /**
+ * Update direct delegations for an assistant RH.
+ * @param {number|string} id
+ * @param {string[]} permissions
+ */
+export function updateDelegations(id, permissions = []) {
+    return client.put(`/agents/${id}/delegations`, { permissions })
+}
+
+/**
  * Get form options for create/edit (organes, departments, provinces, grades, etc.)
  */
 export function getFormOptions() {
