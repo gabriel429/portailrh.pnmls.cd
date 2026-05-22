@@ -2,7 +2,7 @@
   <SenDashboardView v-if="auth.isSEN" />
   <SenaDashboardView v-else-if="auth.isSENA" />
   <SepDashboardView v-else-if="auth.isSEP" />
-  <RhDashboardView v-else-if="auth.isRH" />
+  <RhDashboardView v-else-if="auth.isRH || auth.isAssistantRH" />
   <DepartementDashboardView v-else-if="auth.isDepartement" />
   <RenforcementDashboardView v-else-if="auth.isChefSectionRenforcement" />
   <CafDashboardView v-else-if="auth.isCAF" />

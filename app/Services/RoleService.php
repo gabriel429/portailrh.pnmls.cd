@@ -212,16 +212,25 @@ class RoleService
         $role = $this->normalize($user->role?->nom_role);
         $fonction = $this->normalize($user->agent?->fonction);
         $poste = $this->normalize($user->agent?->poste_actuel);
-        $profile = trim($role . ' ' . $fonction . ' ' . $poste);
+        $deptCode = $this->normalize($user->agent?->departement?->code);
+        $deptName = $this->normalize($user->agent?->departement?->nom);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste . ' ' . $deptCode . ' ' . $deptName);
+        $isAssistant = str_contains($profile, 'assistant');
+        $isRhScope = str_contains($profile, ' rh')
+            || str_contains($profile, 'ressource humaine')
+            || str_contains($profile, 'ressources humaines');
 
         return in_array($role, [
             'assistant rh',
             'assistant ressources humaines',
             'assistant ressource humaine',
+            'assistant section rh',
+            'assistant de section rh',
         ], true)
             || str_contains($profile, 'assistant rh')
             || str_contains($profile, 'assistant ressources humaines')
-            || str_contains($profile, 'assistant ressource humaine');
+            || str_contains($profile, 'assistant ressource humaine')
+            || ($isAssistant && $isRhScope);
     }
 
     private function isDepartmentPrincipalRole(User $user): bool

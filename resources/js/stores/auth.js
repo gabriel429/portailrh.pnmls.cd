@@ -35,6 +35,8 @@ function normalizedAgentProfile(state) {
     const profile = [
         state.user?.agent?.fonction,
         state.user?.agent?.poste_actuel,
+        state.user?.agent?.departement?.code,
+        state.user?.agent?.departement?.nom,
     ]
         .filter(Boolean)
         .join(' ')
@@ -83,10 +85,17 @@ export const useAuthStore = defineStore('auth', {
                 'assistant rh',
                 'assistant ressources humaines',
                 'assistant ressource humaine',
+                'assistant section rh',
+                'assistant de section rh',
             ].includes(role)
                 || profile.includes('assistant rh')
                 || profile.includes('assistant ressources humaines')
                 || profile.includes('assistant ressource humaine')
+                || (profile.includes('assistant') && (
+                    profile.includes(' rh')
+                    || profile.includes('ressource humaine')
+                    || profile.includes('ressources humaines')
+                ))
         },
         isFullRH() {
             return this.isRH && !this.isAssistantRH

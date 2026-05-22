@@ -596,17 +596,26 @@ class DemandeWorkflowService
         $profile = trim(
             $role . ' ' .
             $this->normalizeValue($agent?->fonction) . ' ' .
-            $this->normalizeValue($agent?->poste_actuel)
+            $this->normalizeValue($agent?->poste_actuel) . ' ' .
+            $this->normalizeValue($agent?->departement?->code) . ' ' .
+            $this->normalizeValue($agent?->departement?->nom)
         );
+        $isAssistant = str_contains($profile, 'assistant');
+        $isRhScope = str_contains($profile, ' rh')
+            || str_contains($profile, 'ressource humaine')
+            || str_contains($profile, 'ressources humaines');
 
         return in_array($role, [
             'assistant rh',
             'assistant ressources humaines',
             'assistant ressource humaine',
+            'assistant section rh',
+            'assistant de section rh',
         ], true)
             || str_contains($profile, 'assistant rh')
             || str_contains($profile, 'assistant ressources humaines')
-            || str_contains($profile, 'assistant ressource humaine');
+            || str_contains($profile, 'assistant ressource humaine')
+            || ($isAssistant && $isRhScope);
     }
 
     private function isSelManager(User $user): bool
