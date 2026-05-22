@@ -43,3 +43,12 @@ export function download(id) {
         responseType: 'blob',
     })
 }
+
+/**
+ * Browser URL for inline document viewing.
+ * @param {number|string} id
+ */
+export function viewUrl(id) {
+    const baseUrl = (client.defaults.baseURL || '/api').replace(/\/$/, '')
+    return `${baseUrl}/documents/${id}/view`
+}

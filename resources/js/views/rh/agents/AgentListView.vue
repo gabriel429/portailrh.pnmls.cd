@@ -560,9 +560,15 @@
                     </div>
                     <div v-if="sm_getDocsByType(dt.type).length > 0">
                       <div v-for="doc in sm_getDocsByType(dt.type)" :key="doc.id" class="asm-doc-item">
-                        <strong>{{ doc.nom_document || sm_getDocumentName(doc) }}</strong>
-                        <small v-if="doc.description_detail" class="text-muted d-block">{{ doc.description_detail }}</small>
-                        <small class="text-muted ms-2">{{ sm_formatDateTime(doc.created_at) }}</small>
+                        <div class="asm-doc-main">
+                          <strong>{{ doc.nom_document || sm_getDocumentName(doc) }}</strong>
+                          <small v-if="doc.description_detail" class="text-muted d-block">{{ doc.description_detail }}</small>
+                          <small class="text-muted">{{ sm_formatDateTime(doc.created_at) }}</small>
+                        </div>
+                        <button class="asm-doc-view-btn" type="button" title="Voir le document" @click="viewSelectedAgentDocument(doc)">
+                          <i class="fas fa-eye"></i>
+                          <span>Voir</span>
+                        </button>
                       </div>
                     </div>
                     <p v-else class="text-muted small ms-3">Aucun</p>
@@ -702,7 +708,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { list, get, remove, exportCsv, getFormOptions, downloadDossier, updateDelegations } from '@/api/agents'
-import { create as createDocument } from '@/api/documents'
+import { create as createDocument, viewUrl as documentViewUrl } from '@/api/documents'
 import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -865,6 +871,11 @@ function sm_getDocsByType(type) {
 function sm_getDocumentName(doc) {
     const parts = (doc?.description || '').split(' | ')
     return parts[0] || `Document ${doc?.id || ''}`.trim()
+}
+
+function viewSelectedAgentDocument(doc) {
+    if (!doc?.id) return
+    window.open(documentViewUrl(doc.id), '_blank', 'noopener')
 }
 
 function sm_formatDate(dateStr) {
@@ -2331,6 +2342,32 @@ onMounted(() => {
 .asm-doc-item {
   padding: .35rem .5rem; border-bottom: 1px solid #f3f4f6;
   font-size: .82rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+}
+.asm-doc-main {
+  min-width: 0;
+}
+.asm-doc-view-btn {
+  border: 1px solid rgba(14, 165, 233, .22);
+  background: rgba(14, 165, 233, .1);
+  color: #0369a1;
+  border-radius: 999px;
+  padding: .25rem .55rem;
+  font-weight: 700;
+  font-size: .72rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+  white-space: nowrap;
+  transition: all .18s ease;
+}
+.asm-doc-view-btn:hover {
+  background: rgba(14, 165, 233, .18);
+  border-color: rgba(14, 165, 233, .38);
+  transform: translateY(-1px);
 }
 .asm-tab-actions {
   display: flex;

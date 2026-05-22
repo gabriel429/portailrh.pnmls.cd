@@ -353,6 +353,32 @@ class DocumentController extends ApiController
     }
 
     /**
+     * Display a document in the browser when the format supports preview.
+     */
+    public function view(Document $document)
+    {
+        $user = auth()->user();
+
+        if (!$this->canAccessDocument($user, $document)) {
+            return response()->json(['message' => 'Non autorisé.'], 403);
+        }
+
+        $filePath = public_path($document->fichier);
+
+        if (!file_exists($filePath)) {
+            return response()->json(['message' => 'Fichier introuvable.'], 404);
+        }
+
+        $filename = basename($filePath);
+        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+
+        return response()->file($filePath, [
+            'Content-Type' => $mimeType,
+            'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+        ]);
+    }
+
+    /**
      * Delete a document and its file.
      */
     public function destroy(Document $document)

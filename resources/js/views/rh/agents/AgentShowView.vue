@@ -436,13 +436,18 @@
                             <small v-if="doc.description_detail" class="text-muted d-block">{{ doc.description_detail }}</small>
                             <small class="text-muted">{{ formatDateTime(doc.created_at) }} - {{ doc.statut || 'valide' }}</small>
                           </div>
-                          <div v-if="canManageAgentDocuments" class="d-flex gap-2 no-print">
+                          <div class="d-flex gap-2 no-print">
+                            <button class="btn btn-sm btn-outline-info" type="button" title="Voir le document" @click="viewAgentDocument(doc)">
+                              <i class="fas fa-eye"></i>
+                            </button>
+                            <template v-if="canManageAgentDocuments">
                             <button class="btn btn-sm btn-outline-primary" @click="downloadAgentDocument(doc)">
                               <i class="fas fa-download"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger" @click="deleteAgentDocument(doc)">
                               <i class="fas fa-trash"></i>
                             </button>
+                            </template>
                           </div>
                         </div>
                       </template>
@@ -708,7 +713,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { get, remove, downloadDossier, updateDelegations } from '@/api/agents'
-import { create as createDocument, download as downloadDocument, remove as removeDocument } from '@/api/documents'
+import { create as createDocument, download as downloadDocument, remove as removeDocument, viewUrl as documentViewUrl } from '@/api/documents'
 import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -956,6 +961,11 @@ async function downloadAgentDocument(doc) {
     } catch {
         ui.addToast('Erreur lors du telechargement du document.', 'danger')
     }
+}
+
+function viewAgentDocument(doc) {
+    if (!doc?.id) return
+    window.open(documentViewUrl(doc.id), '_blank', 'noopener')
 }
 
 async function deleteAgentDocument(doc) {

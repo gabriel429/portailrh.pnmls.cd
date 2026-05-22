@@ -128,6 +128,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Documents (GED)
     Route::apiResource('documents', DocumentController::class);
+    Route::get('documents/{document}/view', [DocumentController::class, 'view']);
     Route::get('documents/{document}/download', [DocumentController::class, 'download']);
 
     // Requests (Demandes)
@@ -449,6 +450,7 @@ Route::prefix('v1')->as('v1.')->group(function () {
         Route::delete('notifications/{notification}', [ApiNotificationController::class, 'destroy']);
 
         Route::apiResource('documents', DocumentController::class)->names('documents');
+        Route::get('documents/{document}/view', [DocumentController::class, 'view'])->name('documents.view');
         Route::get('documents/{document}/download', [DocumentController::class, 'download'])->name('documents.download');
 
         Route::apiResource('requests', RequestController::class)->names('requests');
