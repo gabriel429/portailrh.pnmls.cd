@@ -16,9 +16,6 @@
       <div class="dash-hero-text">
         <div class="dash-hero-greeting">{{ heroGreeting }},</div>
         <h2>{{ heroCivility }} {{ heroDisplayName }}</h2>
-        <p v-if="heroFonction" class="dash-hero-fonction">{{ heroFonction }}</p>
-        <p v-if="heroStructure" class="dash-hero-structure"><i class="fas fa-map-marker-alt"></i> {{ heroStructure }}</p>
-        <p class="dash-hero-date">{{ today }}</p>
       </div>
       <div class="dash-hero-stats">
         <router-link to="/documents" class="dash-hero-stat-link">
@@ -525,17 +522,14 @@ watch(profilePhotoCandidates, () => {
 <style scoped>
 /* Hero */
 .dash-hero {
-  background: linear-gradient(135deg, #0077B5 0%, #005a87 50%, #004165 100%);
-  border-radius: 18px; padding: 2rem 2.2rem; margin-bottom: 1.5rem; color: #fff;
+  background: #0077B5;
+  border-radius: 14px; padding: .95rem 1.25rem; margin-bottom: .9rem; color: #fff;
   position: relative; overflow: hidden;
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
 }
-.dash-hero::before {
-  content: ''; position: absolute; top: -40%; right: -8%;
-  width: min(240px, 50vw); height: min(240px, 50vw); border-radius: 50%; background: rgba(255,255,255,.07);
-}
+.dash-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0)); }
 .dash-hero-avatar {
-  width: 52px; height: 52px; border-radius: 14px;
+  width: 48px; height: 48px; border-radius: 10px;
   background: rgba(255,255,255,.18); display: flex; align-items: center;
   justify-content: center; font-size: 1.3rem; flex-shrink: 0;
   border: 2px solid rgba(255,255,255,.15);
@@ -559,18 +553,18 @@ watch(profilePhotoCandidates, () => {
 }
 .dash-hero-text { flex: 1; min-width: 150px; }
 .dash-hero-greeting { font-size: .78rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-bottom: .1rem; }
-.dash-hero-text h2 { font-size: 1.3rem; font-weight: 700; margin: 0 0 .2rem; word-break: break-word; }
+.dash-hero-text h2 { font-size: 1.15rem; font-weight: 800; margin: 0; word-break: break-word; }
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
 .dash-hero-structure { font-size: .8rem; opacity: .65; margin: 0 0 .15rem; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
-.dash-hero-stats { display: flex; gap: 1.5rem; margin-left: auto; flex-wrap: wrap; }
+.dash-hero-stats { display: flex; gap: .45rem; margin-left: auto; flex-wrap: wrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .4rem .5rem; }
 .dash-hero-stat-link {
   text-decoration: none; color: inherit; display: block;
   padding: .3rem .5rem; border-radius: 8px; transition: background .15s;
 }
 .dash-hero-stat-link:hover { background: rgba(255,255,255,.15); }
-.dash-hero-stat-val { font-size: 1.4rem; font-weight: 800; text-align: center; }
-.dash-hero-stat-lbl { font-size: .68rem; opacity: .7; text-transform: uppercase; letter-spacing: .5px; text-align: center; }
+.dash-hero-stat-val { font-size: 1.05rem; font-weight: 800; text-align: center; }
+.dash-hero-stat-lbl { font-size: .56rem; opacity: .75; text-transform: uppercase; letter-spacing: .2px; text-align: center; }
 
 /* Section headers */
 .dash-section-header {

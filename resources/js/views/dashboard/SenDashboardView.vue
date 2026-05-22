@@ -14,16 +14,6 @@
           <div>
             <div class="sen-hero-greeting">{{ senGreeting }},</div>
             <h1 class="sen-hero-name">{{ senCivility }} {{ senFullName }}</h1>
-            <div class="sen-hero-role" v-if="senFonction">
-              <i class="fas fa-briefcase me-1"></i>{{ senFonction }}
-            </div>
-            <div class="sen-hero-role">
-              <i class="fas fa-shield-alt me-1"></i>
-              Secrétariat Exécutif National
-            </div>
-            <div class="sen-hero-date">
-              <i class="fas fa-calendar-alt me-1"></i>{{ today }}
-            </div>
           </div>
         </div>
         <div class="sen-hero-kpis">
@@ -89,7 +79,6 @@
           </div>
           <div>
             <h3 class="sen-section-title">Actions rapides</h3>
-            <p class="sen-section-sub">Accès direct aux modules clés</p>
           </div>
         </div>
         <div class="sen-actions">
@@ -2048,112 +2037,110 @@ onMounted(async () => {
 
 /* ═══════════ HERO ═══════════ */
 .sen-hero {
-  position: relative; border-radius: 20px; overflow: hidden; margin-bottom: 1.8rem;
-  background: linear-gradient(135deg, #0a1628 0%, #0f2847 30%, #0c4a6e 60%, #0077B5 100%);
-  box-shadow: 0 8px 32px rgba(0, 30, 60, .25);
+  position: relative; border-radius: 14px; overflow: hidden; margin-bottom: .9rem;
+  background: #0077B5;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
 }
 .sen-hero-bg {
   position: absolute; inset: 0;
-  background:
-    radial-gradient(ellipse 400px 300px at 85% 20%, rgba(0,119,181,.25) 0%, transparent 70%),
-    radial-gradient(ellipse 200px 200px at 10% 80%, rgba(56,189,248,.1) 0%, transparent 60%);
+  background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0));
   pointer-events: none;
 }
 .sen-hero-inner {
-  position: relative; z-index: 1; padding: 2rem 2.5rem;
-  display: flex; align-items: center; justify-content: space-between; gap: 2rem; flex-wrap: wrap;
+  position: relative; z-index: 1; padding: .95rem 1.25rem;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;
 }
-.sen-hero-left { display: flex; align-items: center; gap: 1.2rem; color: #fff; }
+.sen-hero-left { display: flex; align-items: center; gap: .85rem; color: #fff; }
 .sen-hero-avatar {
-  width: 68px; height: 68px; border-radius: 50%; flex-shrink: 0; overflow: hidden;
+  width: 48px; height: 48px; border-radius: 10px; flex-shrink: 0; overflow: hidden;
   border: 2.5px solid rgba(255,255,255,.35);
   box-shadow: 0 4px 16px rgba(0,0,0,.25);
   background: linear-gradient(135deg, rgba(251,191,36,.5), rgba(146,64,14,.6));
   display: flex; align-items: center; justify-content: center;
 }
 .sen-hero-avatar-photo { width: 100%; height: 100%; object-fit: cover; }
-.sen-hero-avatar-initials { font-size: 1.4rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
-.sen-hero-greeting { font-size: .82rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; }
-.sen-hero-name { font-size: 1.5rem; font-weight: 800; margin: .1rem 0 .35rem; line-height: 1.15; color: #fff; }
+.sen-hero-avatar-initials { font-size: 1rem; font-weight: 800; color: #fff; letter-spacing: .5px; }
+.sen-hero-greeting { font-size: .68rem; opacity: .72; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; }
+.sen-hero-name { font-size: 1.15rem; font-weight: 800; margin: .05rem 0 0; line-height: 1.12; color: #fff; }
 .sen-hero-role { font-size: .78rem; font-weight: 600; opacity: .75; margin-bottom: .2rem; display: flex; align-items: center; }
 .sen-hero-date { font-size: .72rem; opacity: .45; text-transform: capitalize; }
 
 .sen-hero-kpis {
   display: flex; align-items: center; gap: 0;
-  background: rgba(255,255,255,.08); border-radius: 16px; padding: .8rem 1.2rem;
-  border: 1px solid rgba(255,255,255,.1); backdrop-filter: blur(8px);
+  background: rgba(255,255,255,.12); border-radius: 10px; padding: .48rem .65rem;
+  border: 1px solid rgba(255,255,255,.16);
 }
-.sen-kpi { display: flex; align-items: center; gap: .6rem; padding: 0 1rem; color: #fff; }
-.sen-kpi-clickable { cursor: pointer; border-radius: 10px; transition: background .15s; }
+.sen-kpi { display: flex; align-items: center; gap: .45rem; padding: 0 .65rem; color: #fff; }
+.sen-kpi-clickable { cursor: pointer; border-radius: 8px; transition: background .15s; }
 .sen-kpi-clickable:hover { background: rgba(255,255,255,.15); }
 .sen-kpi-icon {
-  width: 38px; height: 38px; border-radius: 10px;
+  width: 28px; height: 28px; border-radius: 8px;
   background: rgba(255,255,255,.1); display: flex; align-items: center;
-  justify-content: center; font-size: .85rem; flex-shrink: 0;
+  justify-content: center; font-size: .75rem; flex-shrink: 0;
 }
-.sen-kpi-val { font-size: 1.5rem; font-weight: 800; line-height: 1; }
+.sen-kpi-val { font-size: 1.15rem; font-weight: 800; line-height: 1; }
 .kpi-unit { font-size: .85rem; font-weight: 600; opacity: .7; }
-.sen-kpi-lbl { font-size: .62rem; opacity: .5; text-transform: uppercase; letter-spacing: .4px; margin-top: .1rem; font-weight: 600; }
-.kpi-divider { width: 1px; height: 36px; background: rgba(255,255,255,.12); margin: 0 .2rem; }
+.sen-kpi-lbl { font-size: .56rem; opacity: .7; text-transform: uppercase; letter-spacing: .2px; margin-top: .05rem; font-weight: 700; }
+.kpi-divider { width: 1px; height: 28px; background: rgba(255,255,255,.16); margin: 0 .1rem; }
 
 /* ═══════════ SECTIONS ═══════════ */
-.sen-section { margin-bottom: 1.8rem; }
+.sen-section { margin-bottom: 1rem; }
 .sen-online-strip {
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  margin-bottom: 1.2rem; padding: .85rem 1rem;
-  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
+  margin-bottom: .8rem; padding: .55rem .75rem;
+  background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
 }
-.sen-online-title { display: flex; align-items: center; gap: .5rem; font-weight: 800; color: #166534; font-size: .9rem; }
-.sen-online-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, .14); }
+.sen-online-title { display: flex; align-items: center; gap: .45rem; font-weight: 800; color: #166534; font-size: .82rem; }
+.sen-online-dot { width: 8px; height: 8px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 3px rgba(22, 163, 74, .14); }
 .sen-online-list { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
-.sen-online-chip { padding: .28rem .55rem; border-radius: 999px; background: #fff; color: #14532d; font-size: .75rem; font-weight: 700; border: 1px solid #dcfce7; }
-.sen-section-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
+.sen-online-chip { padding: .2rem .45rem; border-radius: 999px; background: #fff; color: #14532d; font-size: .68rem; font-weight: 700; border: 1px solid #dcfce7; }
+.sen-section-head { display: flex; align-items: center; gap: .55rem; margin-bottom: .55rem; }
 .sen-section-icon {
-  width: 40px; height: 40px; border-radius: 12px; display: flex;
-  align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0;
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: .82rem; flex-shrink: 0;
 }
-.sen-section-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2; }
-.sen-section-sub { font-size: .72rem; color: #94a3b8; margin: 0; font-weight: 500; }
+.sen-section-title { font-size: .9rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2; }
+.sen-section-sub { display: none; }
 
 /* ═══════════ QUICK ACTIONS ═══════════ */
-.sen-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.sen-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: .55rem; }
 .sen-action {
-  position: relative; display: flex; align-items: center; gap: .8rem; padding: 1rem 1.1rem;
-  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
+  position: relative; display: flex; align-items: center; gap: .62rem; padding: .65rem .75rem;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
   text-decoration: none; color: #374151; transition: all .25s; overflow: hidden;
 }
 .sen-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; opacity: 0; transition: opacity .25s; }
-.sen-action:hover { border-color: #cbd5e1; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.sen-action:hover { border-color: #cbd5e1; transform: translateY(-1px); box-shadow: 0 5px 14px rgba(0,0,0,.07); }
 .sen-action:hover .sen-action-glow { opacity: 1; }
 .sen-action-icon {
-  width: 42px; height: 42px; border-radius: 12px; display: flex;
-  align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;
+  width: 34px; height: 34px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: .85rem; flex-shrink: 0;
 }
 .sen-action-text { flex: 1; min-width: 0; }
-.sen-action-label { font-size: .84rem; font-weight: 700; line-height: 1.2; }
-.sen-action-desc { font-size: .7rem; color: #94a3b8; margin-top: .1rem; }
+.sen-action-label { font-size: .76rem; font-weight: 800; line-height: 1.2; }
+.sen-action-desc { font-size: .64rem; color: #94a3b8; margin-top: .05rem; }
 .sen-action-arrow { font-size: .65rem; color: #cbd5e1; transition: all .2s; }
 .sen-action:hover .sen-action-arrow { color: #0077B5; transform: translateX(3px); }
 
 /* ═══════════ METRICS ═══════════ */
-.sen-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
+.sen-metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: .55rem; }
 .sen-metric {
-  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  padding: 1.1rem; transition: all .25s; position: relative;
+  background: #fff; border-radius: 8px; border: 1px solid #e5e7eb;
+  padding: .75rem; transition: all .25s; position: relative;
 }
 .sen-metric-clickable { cursor: pointer; }
 .sen-clickable { cursor: pointer; }
-.sen-metric:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
-.sen-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+.sen-metric:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(0,0,0,.07); }
+.sen-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .45rem; }
 .sen-metric-icon {
-  width: 40px; height: 40px; border-radius: 12px; display: flex;
-  align-items: center; justify-content: center; font-size: .9rem;
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: .78rem;
 }
 .sen-metric-alert { color: #ef4444; font-size: .75rem; animation: pulse-alert 2s infinite; }
 @keyframes pulse-alert { 0%,100% { opacity: 1; } 50% { opacity: .4; } }
-.sen-metric-val { font-size: 1.75rem; font-weight: 800; line-height: 1; margin-bottom: .2rem; }
-.sen-metric-lbl { font-size: .68rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: .3px; }
-.sen-metric-bar { height: 4px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: .7rem; }
+.sen-metric-val { font-size: 1.35rem; font-weight: 800; line-height: 1; margin-bottom: .15rem; }
+.sen-metric-lbl { font-size: .62rem; color: #94a3b8; font-weight: 700; text-transform: uppercase; letter-spacing: .2px; }
+.sen-metric-bar { height: 3px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: .45rem; }
 .sen-metric-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; min-width: 3px; }
 
 /* ═══════════ ORGANE CARDS (agents) ═══════════ */
