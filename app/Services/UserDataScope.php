@@ -52,6 +52,11 @@ class UserDataScope
         return (bool) $user?->hasRole('RH Provincial');
     }
 
+    public function isAssistantRh(?User $user): bool
+    {
+        return app(RoleService::class)->isAssistantRh($user);
+    }
+
     public function isProvincialSep(?User $user): bool
     {
         if (!$user) {
@@ -96,6 +101,12 @@ class UserDataScope
         $this->excludeAncienAgents($query, $table);
 
         if ($this->hasGlobalAdminAccess($user)) {
+            return $query;
+        }
+
+        // Les assistants RH doivent pouvoir consulter les dossiers agents pour
+        // les opérations déléguées: pointage, documents, suivi administratif.
+        if ($this->isAssistantRh($user)) {
             return $query;
         }
 
@@ -254,6 +265,10 @@ class UserDataScope
         }
 
         if ($this->hasGlobalAdminAccess($user)) {
+            return true;
+        }
+
+        if ($this->isAssistantRh($user)) {
             return true;
         }
 
