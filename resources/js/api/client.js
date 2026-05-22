@@ -11,11 +11,25 @@ import cacheService from '@/services/cacheService'
 const client = axios.create({
     baseURL: '/api',
     withCredentials: true,
+    timeout: 30000,
     headers: {
         'Accept': 'application/json',
         'X-Requested-With': 'XMLHttpRequest',
     },
 })
+
+function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function isTransientNetworkError(error) {
+    return !error.response && (
+        error.code === 'ERR_NETWORK' ||
+        error.code === 'ECONNABORTED' ||
+        error.message === 'Network Error' ||
+        error.message?.includes('timeout')
+    )
+}
 
 // Initialisation du stockage offline
 let offlineInitialized = false
@@ -144,8 +158,19 @@ client.interceptors.response.use(
 
         return response
     },
-    error => {
+    async error => {
         if (axios.isCancel(error)) return Promise.reject(error)
+
+        const method = (error.config?.method || '').toLowerCase()
+        if (method === 'get' && isTransientNetworkError(error)) {
+            error.config.__retryCount = error.config.__retryCount || 0
+
+            if (error.config.__retryCount < 2) {
+                error.config.__retryCount += 1
+                await wait(error.config.__retryCount * 1500)
+                return client(error.config)
+            }
+        }
 
         // Gestion des erreurs d'authentification
         // Avoid double-redirect: the router guard already redirects unauthenticated users
@@ -169,7 +194,7 @@ client.interceptors.response.use(
         }
 
         // FALLBACK CACHE EN CAS D'ERREUR RÉSEAU
-        if (!navigator.onLine || error.code === 'NETWORK_ERROR') {
+        if (!navigator.onLine || isTransientNetworkError(error)) {
             const isDataFetch = error.config.url.includes('/agents/form-options') ||
                                error.config.url.includes('/departments')
 

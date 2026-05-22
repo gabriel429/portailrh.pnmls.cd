@@ -158,6 +158,16 @@
       <!-- Loading spinner (initial load only) -->
       <LoadingSpinner v-if="loading" message="Chargement des agents..." />
 
+      <div v-else-if="loadError" class="rh-list-card text-center py-5">
+        <i class="fas fa-wifi fa-3x text-muted mb-3 d-block"></i>
+        <h5 class="text-muted">Connexion instable</h5>
+        <p class="text-muted mb-3">{{ loadError }}</p>
+        <button type="button" class="btn btn-primary" :disabled="filtering" @click="fetchAgents">
+          <span v-if="filtering" class="spinner-border spinner-border-sm me-1"></span>
+          <i v-else class="fas fa-sync-alt me-1"></i> Réessayer
+        </button>
+      </div>
+
       <template v-else>
         <div :class="{ 'ag-filtering': filtering }">
         <!-- Agents grouped by organe -->
@@ -687,6 +697,7 @@ const auth = useAuthStore()
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
+const loadError = ref('')
 const agentsByOrgane = ref([])
 const stats = ref({ total: 0, sen: 0, sep: 0, sel: 0 })
 const provinces = ref([])
@@ -1189,9 +1200,14 @@ async function fetchAgents() {
         const { data } = await list(params)
         agentsByOrgane.value = data.agentsByOrgane || []
         stats.value = data.stats || { total: 0, sen: 0, sep: 0, sel: 0 }
+        loadError.value = ''
     } catch (err) {
         console.error('Error fetching agents:', err)
-        ui.addToast('Erreur lors du chargement des agents', 'danger')
+        const networkError = !err.response
+        loadError.value = networkError
+            ? 'La connexion au serveur a été interrompue. Vérifiez internet puis réessayez.'
+            : (err.response?.data?.message || 'Erreur lors du chargement des agents.')
+        ui.addToast(loadError.value, networkError ? 'warning' : 'danger')
     } finally {
         loading.value = false
         filtering.value = false
