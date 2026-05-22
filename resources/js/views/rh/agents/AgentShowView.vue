@@ -23,7 +23,11 @@
               <i class="fas fa-user fa-2x"></i>
             </div>
             <div>
+              <span class="agent-profile-kicker">Profil agent</span>
               <h2 class="mb-1">{{ agent.prenom }} {{ agent.nom }}</h2>
+              <p class="agent-profile-line mb-2">
+                {{ agent.fonction || agent.poste_actuel || 'Fonction non renseignée' }}
+              </p>
               <div class="d-flex gap-2 align-items-center flex-wrap">
                 <span class="badge bg-light text-dark">{{ agent.matricule_etat || 'N/A' }}</span>
                 <span v-if="agent.organe" class="badge bg-info">{{ agent.organe }}</span>
@@ -31,7 +35,6 @@
                 <span v-else-if="agent.statut === 'suspendu'" class="badge bg-warning text-dark">Suspendu</span>
                 <span v-else class="badge bg-secondary">{{ capitalize(agent.statut) }}</span>
               </div>
-              <small v-if="agent.fonction" class="opacity-75 mt-1 d-block">{{ agent.fonction }}</small>
             </div>
           </div>
           <div class="d-flex gap-2 flex-wrap no-print">
@@ -1073,13 +1076,17 @@ onMounted(() => {
     margin-top: 3px;
 }
 .agent-header {
-    background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
+    background:
+        radial-gradient(circle at 88% 8%, rgba(255,255,255,.18), transparent 28%),
+        linear-gradient(135deg, rgba(0,119,181,.96) 0%, rgba(13,148,136,.90) 100%);
     color: white;
     padding: 30px;
-    border-radius: 8px;
+    border-radius: 22px;
     margin-bottom: 20px;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255,255,255,.42);
+    box-shadow: 0 24px 70px rgba(8,47,73,.20);
 }
 .agent-header::after {
     content: '';
@@ -1093,6 +1100,33 @@ onMounted(() => {
     opacity: 0.10;
     pointer-events: none;
 }
+.agent-avatar-lg {
+    width: 104px;
+    height: 104px;
+    border-radius: 26px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.64);
+    box-shadow: 0 16px 40px rgba(15, 23, 42, .20);
+    background: rgba(255,255,255,.16);
+}
+.agent-avatar-lg img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    border: 0 !important;
+}
+.agent-profile-kicker {
+    display: block;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    opacity: .82;
+}
+.agent-profile-line {
+    color: rgba(255,255,255,.88);
+    font-weight: 600;
+}
 .agent-header .badge { font-size: 0.85rem; }
 .agent-overview-grid {
     display: grid;
@@ -1101,11 +1135,12 @@ onMounted(() => {
     margin-bottom: 20px;
 }
 .agent-overview-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
+    background: rgba(255,255,255,.76);
+    border: 1px solid rgba(203,213,225,.64);
+    border-radius: 14px;
     padding: 14px;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, .06);
+    box-shadow: 0 10px 28px rgba(15, 23, 42, .07);
+    backdrop-filter: blur(16px) saturate(145%);
     min-width: 0;
 }
 .agent-overview-label {

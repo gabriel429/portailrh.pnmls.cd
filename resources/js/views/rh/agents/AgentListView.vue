@@ -370,6 +370,9 @@
                 </div>
                 <div>
                   <h4 class="asm-name">{{ selectedAgent.prenom }} {{ selectedAgent.nom }}</h4>
+                  <div class="asm-headline">
+                    {{ selectedAgent.fonction || selectedAgent.poste_actuel || 'Fonction non renseignée' }}
+                  </div>
                   <div class="asm-badges">
                     <span class="asm-badge asm-badge-id">{{ selectedAgent.matricule_etat || 'N/A' }}</span>
                     <span v-if="selectedAgent.organe" class="asm-badge asm-badge-organe">{{ selectedAgent.organe }}</span>
@@ -377,10 +380,28 @@
                     <span v-else-if="selectedAgent.statut === 'suspendu'" class="asm-badge asm-badge-warn">Suspendu</span>
                     <span v-else class="asm-badge asm-badge-neutral">{{ capitalize(selectedAgent.statut) }}</span>
                   </div>
-                  <div v-if="selectedAgent.fonction" class="asm-fonction">{{ selectedAgent.fonction }}</div>
                 </div>
               </div>
               <button class="asm-close" @click="closeAgentModal"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="asm-profile-strip">
+              <div class="asm-profile-card">
+                <span>Structure</span>
+                <strong>{{ selectedAgent.departement ? selectedAgent.departement.nom : (selectedAgent.province ? (selectedAgent.province.nom_province || selectedAgent.province.nom) : 'N/A') }}</strong>
+              </div>
+              <div class="asm-profile-card">
+                <span>Contact pro</span>
+                <strong>{{ selectedAgent.telephone_professionnel || selectedAgent.telephone || 'N/A' }}</strong>
+              </div>
+              <div class="asm-profile-card">
+                <span>E-mail professionnel</span>
+                <strong>{{ selectedAgent.email_professionnel || 'N/A' }}</strong>
+              </div>
+              <div class="asm-profile-card">
+                <span>Ancienneté</span>
+                <strong>{{ selectedAgent.anciennete !== null && selectedAgent.anciennete !== undefined ? selectedAgent.anciennete + ' an' + (selectedAgent.anciennete > 1 ? 's' : '') : 'N/A' }}</strong>
+              </div>
             </div>
 
             <!-- Tabs -->
@@ -2037,7 +2058,10 @@ onMounted(() => {
 /* ── Agent Show Modal (asm-*) ── */
 .asm-overlay {
   position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  background:
+    radial-gradient(circle at 18% 12%, rgba(14,165,233,.18), transparent 28%),
+    rgba(15, 23, 42, .58);
+  backdrop-filter: blur(14px) saturate(145%);
   display: flex; align-items: center; justify-content: center;
   padding: 1rem;
   animation: asmFadeIn .2s ease;
@@ -2045,8 +2069,15 @@ onMounted(() => {
 @keyframes asmFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .asm-dialog {
-  background: #fff; border-radius: 20px; width: 100%; max-width: 720px;
-  max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 60px rgba(0,0,0,.25);
+  background: rgba(255,255,255,.82);
+  border: 1px solid rgba(255,255,255,.68);
+  border-radius: 24px;
+  width: 100%;
+  max-width: 920px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: 0 30px 90px rgba(8,47,73,.32);
+  backdrop-filter: blur(22px) saturate(150%);
   animation: asmSlideUp .25s ease;
 }
 @keyframes asmSlideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
@@ -2055,40 +2086,89 @@ onMounted(() => {
 
 .asm-header {
   display: flex; align-items: flex-start; justify-content: space-between;
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid #f3f4f6;
-  background: linear-gradient(135deg, #0077B5 0%, #005a87 100%);
-  border-radius: 20px 20px 0 0; color: #fff;
+  padding: 1.45rem 1.65rem;
+  border-bottom: 1px solid rgba(255,255,255,.28);
+  background:
+    linear-gradient(135deg, rgba(0,119,181,.94) 0%, rgba(13,148,136,.88) 100%);
+  border-radius: 24px 24px 0 0;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
 }
-.asm-header-left { display: flex; align-items: center; gap: .8rem; }
+.asm-header::after {
+  content: '';
+  position: absolute;
+  right: -70px;
+  top: -60px;
+  width: 230px;
+  height: 230px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.12);
+  pointer-events: none;
+}
+.asm-header-left { display: flex; align-items: center; gap: 1rem; position: relative; z-index: 1; }
 .asm-avatar {
-  width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
-  border: 2px solid rgba(255,255,255,.3); overflow: hidden;
+  width: 86px; height: 86px; border-radius: 22px; flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,.72); overflow: hidden;
   display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,.16);
+  box-shadow: 0 14px 36px rgba(15,23,42,.20);
 }
 .asm-avatar-img { width: 100%; height: 100%; object-fit: cover; }
-.asm-avatar-initials { background: rgba(255,255,255,.15); font-size: 1.2rem; font-weight: 700; color: #fff; }
-.asm-name { font-size: 1.05rem; font-weight: 700; margin: 0; }
-.asm-badges { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .2rem; }
-.asm-badge { padding: .15rem .5rem; border-radius: 6px; font-size: .68rem; font-weight: 600; }
+.asm-avatar-initials { background: rgba(255,255,255,.15); font-size: 1.45rem; font-weight: 800; color: #fff; }
+.asm-name { font-size: 1.35rem; font-weight: 800; margin: 0; line-height: 1.15; }
+.asm-headline { font-size: .9rem; opacity: .9; margin-top: .18rem; font-weight: 600; }
+.asm-badges { display: flex; gap: .35rem; flex-wrap: wrap; margin-top: .55rem; }
+.asm-badge { padding: .22rem .58rem; border-radius: 999px; font-size: .68rem; font-weight: 700; }
 .asm-badge-id { background: rgba(255,255,255,.2); color: #fff; }
 .asm-badge-organe { background: #0ea5e9; color: #fff; }
 .asm-badge-ok { background: #22c55e; color: #fff; }
 .asm-badge-warn { background: #f59e0b; color: #fff; }
 .asm-badge-err { background: #ef4444; color: #fff; }
 .asm-badge-neutral { background: #e2e8f0; color: #64748b; }
-.asm-fonction { font-size: .78rem; opacity: .8; margin-top: .2rem; }
 .asm-close {
   background: rgba(255,255,255,.15); border: none; cursor: pointer;
   width: 34px; height: 34px; border-radius: 10px; display: flex;
   align-items: center; justify-content: center; color: #fff;
-  transition: all .2s; font-size: .95rem; flex-shrink: 0;
+  transition: all .2s; font-size: .95rem; flex-shrink: 0; position: relative; z-index: 2;
 }
 .asm-close:hover { background: rgba(255,255,255,.3); }
+
+.asm-profile-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .8rem;
+  padding: 1rem 1.5rem;
+  background: linear-gradient(180deg, rgba(255,255,255,.58), rgba(248,250,252,.72));
+  border-bottom: 1px solid rgba(226,232,240,.78);
+}
+.asm-profile-card {
+  min-width: 0;
+  padding: .75rem .85rem;
+  border-radius: 14px;
+  background: rgba(255,255,255,.72);
+  border: 1px solid rgba(203,213,225,.62);
+  box-shadow: 0 8px 24px rgba(15,23,42,.06);
+}
+.asm-profile-card span {
+  display: block;
+  color: #64748b;
+  font-size: .66rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+.asm-profile-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: .82rem;
+  margin-top: .25rem;
+  overflow-wrap: anywhere;
+}
 
 /* Tabs */
 .asm-tabs {
   display: flex; border-bottom: 1px solid #f3f4f6;
-  padding: 0 1rem; overflow-x: auto; background: #f8fafc;
+  padding: .15rem 1rem 0; overflow-x: auto; background: rgba(248,250,252,.74);
 }
 .asm-tab {
   padding: .65rem .8rem; border: none; background: none;
@@ -2106,7 +2186,7 @@ onMounted(() => {
 .asm-tab-badge.warn { background: #f59e0b; color: #fff; }
 
 /* Body */
-.asm-body { padding: 1.25rem 1.5rem; max-height: 55vh; overflow-y: auto; }
+.asm-body { padding: 1.25rem 1.5rem; max-height: 52vh; overflow-y: auto; }
 
 .asm-section-title {
   font-size: .82rem; font-weight: 700; color: #0077B5;
@@ -2116,9 +2196,15 @@ onMounted(() => {
 .asm-info-grid {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem;
 }
-.asm-info-item { padding: .3rem 0; }
-.asm-info-label { display: block; font-size: .68rem; color: #94a3b8; font-weight: 500; }
-.asm-info-value { font-size: .82rem; color: #1e293b; }
+.asm-info-item {
+  min-width: 0;
+  padding: .65rem .75rem;
+  border-radius: 12px;
+  background: rgba(248,250,252,.78);
+  border: 1px solid rgba(226,232,240,.72);
+}
+.asm-info-label { display: block; font-size: .66rem; color: #64748b; font-weight: 800; text-transform: uppercase; }
+.asm-info-value { display: block; font-size: .84rem; color: #1e293b; overflow-wrap: anywhere; margin-top: .2rem; }
 
 .asm-stats-row {
   display: flex; gap: .5rem; padding: .75rem; background: #f8fafc;
@@ -2282,8 +2368,11 @@ onMounted(() => {
   .asm-dialog { max-width: 100%; border-radius: 16px; }
   .asm-header { padding: 1rem; border-radius: 16px 16px 0 0; flex-direction: column; gap: .5rem; }
   .asm-close { position: absolute; top: .75rem; right: .75rem; }
+  .asm-avatar { width: 68px; height: 68px; border-radius: 18px; }
+  .asm-name { font-size: 1.05rem; padding-right: 2.2rem; }
+  .asm-profile-strip { grid-template-columns: 1fr; padding: .8rem; gap: .55rem; }
   .asm-body { padding: 1rem; max-height: 50vh; }
-  .asm-info-grid { grid-template-columns: repeat(2, 1fr); }
+  .asm-info-grid { grid-template-columns: 1fr; }
   .asm-stats-row { flex-wrap: wrap; }
   .asm-stat { min-width: 30%; }
   .asm-delegation-grid { grid-template-columns: 1fr; }
