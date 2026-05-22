@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\RoleService;
 use App\Support\RoleNames;
 use Closure;
 use Illuminate\Http\Request;
@@ -29,6 +30,9 @@ class RoleMiddleware
 
         // Check if user has any of the required roles
         $hasRole = RoleNames::matches($user->role?->nom_role, $roles);
+        if (!$hasRole && app(RoleService::class)->isAssistantRh($user)) {
+            $hasRole = RoleNames::matches('Assistant RH', $roles);
+        }
 
         if (!$hasRole) {
             if ($request->expectsJson()) {

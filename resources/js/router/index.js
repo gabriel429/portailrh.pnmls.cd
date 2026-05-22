@@ -261,31 +261,31 @@ const routes = [
         path: '/rh/dashboard',
         name: 'rh.dashboard',
         component: () => import('@/views/dashboard/RhDashboardView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true },
     },
     {
         path: '/rh/agents',
         name: 'rh.agents.index',
         component: () => import('@/views/rh/agents/AgentListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/agents/create',
         name: 'rh.agents.create',
         component: () => import('@/views/rh/agents/AgentCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], notAssistantRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true, assistantPermission: 'create_agent' },
     },
     {
         path: '/rh/agents/:id',
         name: 'rh.agents.show',
         component: () => import('@/views/rh/agents/AgentShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/agents/:id/edit',
         name: 'rh.agents.edit',
         component: () => import('@/views/rh/agents/AgentEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true, assistantPermission: 'edit_agent' },
     },
 
     // RH Pointages
@@ -293,37 +293,37 @@ const routes = [
         path: '/rh/pointages',
         name: 'rh.pointages.index',
         component: () => import('@/views/rh/pointages/PointageListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/pointages/create',
         name: 'rh.pointages.create',
         component: () => import('@/views/rh/pointages/PointageCreateViewOffline.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true },
     },
     {
         path: '/rh/pointages/daily',
         name: 'rh.pointages.daily',
         component: () => import('@/views/rh/pointages/PointageDailyView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/pointages/monthly',
         name: 'rh.pointages.monthly',
         component: () => import('@/views/rh/pointages/PointageMonthlyView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/pointages/:id',
         name: 'rh.pointages.show',
         component: () => import('@/views/rh/pointages/PointageShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
     },
     {
         path: '/rh/pointages/:id/edit',
         name: 'rh.pointages.edit',
         component: () => import('@/views/rh/pointages/PointageEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'] },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true },
     },
 
     // RH Communiques
@@ -513,9 +513,13 @@ router.beforeEach(async (to) => {
     if (to.meta.roles) {
         const userRole = auth.role?.toLowerCase()
         const allowed = to.meta.roles.map(r => r.toLowerCase())
-        if (!allowed.includes(userRole)) {
+        if (!allowed.includes(userRole) && !(to.meta.allowAssistantRH && auth.isAssistantRH)) {
             return { name: 'dashboard' }
         }
+    }
+
+    if (auth.isAssistantRH && to.meta.assistantPermission && !auth.hasPermission(to.meta.assistantPermission)) {
+        return { name: 'rh.dashboard' }
     }
 
     if (to.meta.docsTravail && !auth.canManageDocsTravail) {

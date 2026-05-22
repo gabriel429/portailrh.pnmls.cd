@@ -33,6 +33,9 @@ class AgentController extends ApiController
         'Chef Section RH',
         'RH National',
         'RH Provincial',
+        'Assistant RH',
+        'Assistant ressources humaines',
+        'Assistant ressource humaine',
     ];
 
     private function scopeService(): UserDataScope
@@ -46,7 +49,7 @@ class AgentController extends ApiController
             return false;
         }
 
-        if ($user->isSuperAdmin() || $user->hasRole($this->documentManagerRoles)) {
+        if ($user->isSuperAdmin() || $user->hasRole($this->documentManagerRoles) || $this->isAssistantRh($user)) {
             return true;
         }
 
@@ -62,9 +65,9 @@ class AgentController extends ApiController
         return app(RoleService::class)->isAssistantRh($user);
     }
 
-    private function abortIfAssistantRh($user, string $message): void
+    private function abortIfAssistantRhWithoutPermission($user, string $permissionCode, string $message): void
     {
-        if ($this->isAssistantRh($user)) {
+        if ($this->isAssistantRh($user) && !$user->hasPermission($permissionCode)) {
             abort(403, $message);
         }
     }
@@ -296,7 +299,11 @@ class AgentController extends ApiController
      */
     public function store(Request $request): JsonResponse
     {
-        $this->abortIfAssistantRh($request->user(), 'L assistant RH ne peut pas créer un nouvel agent.');
+        $this->abortIfAssistantRhWithoutPermission(
+            $request->user(),
+            'create_agent',
+            'L assistant RH doit avoir la permission du Chef Section RH pour créer un nouvel agent.'
+        );
 
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat',
@@ -602,6 +609,12 @@ class AgentController extends ApiController
      */
     public function update(Request $request, Agent $agent): JsonResponse
     {
+        $this->abortIfAssistantRhWithoutPermission(
+            $request->user(),
+            'edit_agent',
+            'L assistant RH doit avoir la permission du Chef Section RH pour modifier un agent.'
+        );
+
         $this->authorizeAgentAccess($request, $agent);
 
         $validated = $request->validate([
@@ -722,7 +735,11 @@ class AgentController extends ApiController
      */
     public function destroy(Agent $agent): JsonResponse
     {
-        $this->abortIfAssistantRh(request()->user(), 'L assistant RH ne peut pas supprimer un agent.');
+        $this->abortIfAssistantRhWithoutPermission(
+            request()->user(),
+            'delete_agent',
+            'L assistant RH doit avoir la permission du Chef Section RH pour supprimer un agent.'
+        );
 
         $this->authorizeAgentAccess(request(), $agent);
 

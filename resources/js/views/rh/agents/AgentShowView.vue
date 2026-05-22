@@ -45,7 +45,7 @@
             <button class="btn btn-light btn-sm" @click="printAgent">
               <i class="fas fa-print me-1"></i> Imprimer
             </button>
-            <button class="btn btn-warning btn-sm" @click="openEditModal">
+            <button v-if="canEditAgent" class="btn btn-warning btn-sm" @click="openEditModal">
               <i class="fas fa-edit me-1"></i> Modifier
             </button>
             <router-link :to="{ name: 'rh.agents.index' }" class="btn btn-outline-light btn-sm">
@@ -546,7 +546,7 @@
                 <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-2"></span>
                 <i v-else class="fas fa-file-archive me-2"></i> Télécharger le dossier complet
               </button>
-              <button class="btn btn-warning btn-sm w-100 mb-2" @click="openEditModal">
+              <button v-if="canEditAgent" class="btn btn-warning btn-sm w-100 mb-2" @click="openEditModal">
                 <i class="fas fa-edit me-2"></i> Modifier
               </button>
               <button
@@ -705,6 +705,8 @@ function defaultDocumentUploadForm() {
 }
 
 function openEditModal() {
+    if (!canEditAgent.value) return
+
     if (agent.value) {
         editAgentId.value = agent.value.id
         showEditModal.value = true
@@ -744,8 +746,9 @@ const isNational = computed(() =>
     agent.value?.organe && agent.value.organe.toLowerCase().includes('national')
 )
 const canManageAgentDocuments = computed(() =>
-    Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
+    Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isAssistantRH
 )
+const canEditAgent = computed(() => auth.canEditAgents)
 const canDeleteAgent = computed(() => auth.canDeleteAgents)
 const selectedDocumentCategory = computed(() =>
     DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)

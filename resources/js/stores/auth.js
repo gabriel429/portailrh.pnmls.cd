@@ -218,10 +218,13 @@ export const useAuthStore = defineStore('auth', {
             ].includes(role)
         },
         canCreateAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isAssistantRH && this.hasPermission('create_agent'))
+        },
+        canEditAgents() {
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isAssistantRH && this.hasPermission('edit_agent'))
         },
         canDeleteAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isAssistantRH && this.hasPermission('delete_agent'))
         },
         canManageRhAdminModules() {
             return this.isSuperAdmin || this.isSEN || this.isFullRH

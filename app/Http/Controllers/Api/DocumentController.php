@@ -6,6 +6,7 @@ use App\Http\Resources\DocumentResource;
 use App\Models\Agent;
 use App\Models\Document;
 use App\Services\NotificationService;
+use App\Services\RoleService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -41,6 +42,9 @@ class DocumentController extends ApiController
         'Chef Section RH',
         'RH National',
         'RH Provincial',
+        'Assistant RH',
+        'Assistant ressources humaines',
+        'Assistant ressource humaine',
     ];
 
     private function normalizeDocumentCategory(?string $category): string
@@ -88,7 +92,7 @@ class DocumentController extends ApiController
             return false;
         }
 
-        if ($user->isSuperAdmin() || $user->hasRole($this->documentManagerRoles)) {
+        if ($user->isSuperAdmin() || $user->hasRole($this->documentManagerRoles) || app(RoleService::class)->isAssistantRh($user)) {
             return true;
         }
 

@@ -558,7 +558,7 @@
               <button class="asm-btn-print" @click="printAgentFiche">
                 <i class="fas fa-print me-1"></i> Imprimer
               </button>
-              <button class="asm-btn-edit" @click="openEditModal">
+              <button v-if="canEditAgents" class="asm-btn-edit" @click="openEditModal">
                 <i class="fas fa-edit me-1"></i> Modifier
               </button>
               <button class="asm-btn-close" @click="closeAgentModal">Fermer</button>
@@ -703,6 +703,7 @@ const agentToEdit = ref(null)
 const showCreateModal = ref(false)
 
 const canCreateAgents = computed(() => auth.canCreateAgents)
+const canEditAgents = computed(() => auth.canEditAgents)
 const canDeleteAgents = computed(() => auth.canDeleteAgents)
 
 const showExportProvince = computed(() => {
@@ -768,7 +769,7 @@ const sm_unreadMessagesCount = computed(() =>
     (selectedAgent.value?.messages || []).filter(m => !m.lu).length
 )
 const sm_canManageAgentDocuments = computed(() =>
-    Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH
+    Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isAssistantRH
 )
 const selectedDocumentCategory = computed(() =>
     DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)
@@ -1062,6 +1063,8 @@ ${reqRows ? `<div class="section">
 
 // Edit Modal functions
 function openEditModal() {
+    if (!canEditAgents.value) return
+
     if (selectedAgent.value) {
         agentToEdit.value = selectedAgent.value.id
         showEditModal.value = true
