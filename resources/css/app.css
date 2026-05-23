@@ -3898,6 +3898,290 @@ body :where(.sen-agenda-row, .sep-agenda-row, .rh-pending-item, .dept-agenda-row
     }
 }
 
+/* Director dashboard finish applied as the reference model */
+body :where(.sen-dashboard, .sep-dashboard, .rh-dashboard, .caf-dashboard, .dept-dashboard, .sena-dashboard, .rc-dashboard) {
+    max-width: 1200px !important;
+    margin: 0 auto !important;
+    padding: 0 1rem 2rem !important;
+}
+
+body :where(.sen-hero, .sep-hero, .rh-hero, .caf-hero, .dept-hero, .sena-hero, .dash-hero) {
+    position: relative !important;
+    overflow: hidden !important;
+    color: #fff !important;
+    border-radius: 20px !important;
+    margin-bottom: 1.55rem !important;
+    background:
+        radial-gradient(ellipse at 84% 0%, rgba(255,255,255,.13) 0%, transparent 58%),
+        radial-gradient(ellipse at 10% 100%, rgba(0,0,0,.18) 0%, transparent 55%),
+        linear-gradient(135deg, #0a1628 0%, #0f2847 30%, #0c4a6e 60%, #0077B5 100%) !important;
+    border: 0 !important;
+    box-shadow: 0 8px 32px rgba(0, 30, 60, .25) !important;
+}
+
+body :where(.sen-hero-inner, .sep-hero-inner, .rh-hero-inner, .caf-hero-inner, .dept-hero-inner, .sena-hero-inner) {
+    position: relative !important;
+    padding: 1.45rem 1.75rem !important;
+    gap: 1.35rem !important;
+}
+
+body :where(.dash-hero) {
+    position: relative !important;
+    padding: 1.45rem 1.75rem !important;
+    gap: 1.15rem !important;
+}
+
+body :where(.sen-hero-avatar, .sep-hero-avatar, .rh-hero-badge, .caf-hero-avatar, .dept-hero-avatar, .sena-hero-avatar, .dash-hero-avatar) {
+    width: 64px !important;
+    height: 64px !important;
+    flex: 0 0 64px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    border: 3px solid rgba(255,255,255,.3) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,.3) !important;
+    background: linear-gradient(135deg, rgba(101,163,213,.5), rgba(30,58,95,.6)) !important;
+}
+
+body :where(.sen-hero-name, .sep-hero-name, .rh-hero-name, .caf-hero-name, .dept-hero-name, .sena-hero-name, .dash-hero-text h2) {
+    color: #fff !important;
+    font-size: clamp(1.2rem, 1.5vw, 1.45rem) !important;
+    font-weight: 800 !important;
+    line-height: 1.14 !important;
+    margin: .12rem 0 .25rem !important;
+    letter-spacing: 0 !important;
+}
+
+body :where(.sen-hero-greeting, .sep-hero-greeting, .rh-hero-greeting, .caf-hero-greeting, .dept-hero-greeting, .sena-hero-greeting, .dash-hero-greeting) {
+    font-size: .78rem !important;
+    font-weight: 600 !important;
+    opacity: .75 !important;
+    text-transform: uppercase !important;
+    letter-spacing: .08em !important;
+}
+
+body :where(.sen-hero-fonction, .sep-hero-fonction, .rh-hero-agent-fonction-block, .caf-hero-fonction, .dept-hero-fonction, .sena-hero-fonction, .sen-hero-role, .sep-hero-role, .rh-hero-role, .caf-hero-role, .dept-hero-role-pill, .sena-hero-role-pill, .sen-hero-date, .sep-hero-date, .rh-hero-date, .caf-hero-date, .dept-hero-date, .sena-hero-date) {
+    font-size: .78rem !important;
+    line-height: 1.28 !important;
+}
+
+body :where(.dept-hero-role-pill, .sena-hero-role-pill, .rh-hero-role, .sep-hero-role, .caf-hero-role) {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: .38rem !important;
+    max-width: 100% !important;
+    padding: .26rem .8rem !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.15) !important;
+    border: 1px solid rgba(255,255,255,.12) !important;
+    backdrop-filter: blur(4px);
+}
+
+body :where(.sen-hero-kpis, .sep-hero-kpis, .rh-hero-kpis, .caf-hero-kpis, .dept-hero-kpis, .sena-hero-kpis, .dash-hero-stats) {
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    gap: .5rem !important;
+}
+
+body :where(.sen-kpi, .sep-kpi, .rh-kpi, .caf-kpi-pill, .dept-kpi-pill, .sena-kpi-pill, .dash-hero-stat-link) {
+    min-width: 110px !important;
+    min-height: 60px !important;
+    padding: .7rem .92rem !important;
+    border-radius: 14px !important;
+    background: rgba(255,255,255,.12) !important;
+    border: 1px solid rgba(255,255,255,.18) !important;
+    box-shadow: none !important;
+    backdrop-filter: blur(6px);
+    transition: background .2s, transform .18s !important;
+}
+
+body :where(.sen-kpi, .sep-kpi, .rh-kpi, .caf-kpi-pill, .dept-kpi-pill, .sena-kpi-pill, .dash-hero-stat-link):hover {
+    background: rgba(255,255,255,.22) !important;
+    transform: translateY(-1px) !important;
+}
+
+body :where(.sen-kpi-icon, .sep-kpi-icon, .rh-kpi-icon, .caf-kpi-pill-icon, .dept-kpi-pill-icon, .sena-kpi-pill-icon) {
+    width: 36px !important;
+    height: 36px !important;
+    flex: 0 0 36px !important;
+    border-radius: 10px !important;
+    background: rgba(255,255,255,.18) !important;
+    color: #fff !important;
+    font-size: 1rem !important;
+}
+
+body :where(.sen-kpi-val, .sep-kpi-val, .rh-kpi-val, .caf-kpi-pill-val, .dept-kpi-pill-val, .sena-kpi-pill-val, .dash-hero-stat-val) {
+    color: #fff !important;
+    font-size: 1.28rem !important;
+    font-weight: 800 !important;
+    line-height: 1.08 !important;
+}
+
+body :where(.sen-kpi-lbl, .sep-kpi-lbl, .rh-kpi-lbl, .caf-kpi-pill-lbl, .dept-kpi-pill-lbl, .sena-kpi-pill-lbl, .dash-hero-stat-lbl) {
+    color: rgba(255,255,255,.78) !important;
+    font-size: .68rem !important;
+    font-weight: 600 !important;
+    line-height: 1.1 !important;
+    text-transform: none !important;
+    letter-spacing: 0 !important;
+}
+
+body :where(.sen-section, .sep-section, .rh-section, .caf-section, .dept-section, .rc-section) {
+    margin-bottom: 1.65rem !important;
+}
+
+body :where(.sena-section) {
+    border-radius: 14px !important;
+}
+
+body :where(.sen-section-head, .sep-section-head, .rh-section-head, .caf-section-head, .dept-section-head, .sena-section-head, .rc-section-head) {
+    gap: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+body :where(.sen-section-icon, .sep-section-icon, .rh-section-icon, .caf-section-icon, .dept-section-icon, .sena-section-icon, .rc-section-icon) {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+    border-radius: 12px !important;
+    font-size: 1.05rem !important;
+}
+
+body :where(.sen-section-title, .sep-section-title, .rh-section-title, .caf-section-title, .dept-section-title, .sena-section-title, .rc-section-title, .dash-section-title) {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    color: #1f2937 !important;
+}
+
+body :where(.sen-section-sub, .sep-section-sub, .rh-section-sub, .caf-section-sub, .dept-section-sub, .sena-section-sub, .rc-section-sub) {
+    color: #6b7280 !important;
+    font-size: .8rem !important;
+    line-height: 1.22 !important;
+}
+
+body :where(.sen-actions, .sep-actions, .rh-actions, .caf-actions, .dept-actions, .dash-action-grid) {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)) !important;
+    gap: .85rem !important;
+    margin-bottom: 1.35rem !important;
+}
+
+body :where(.sen-action, .sep-action, .rh-action, .caf-action, .dept-action, .dash-action-card) {
+    position: relative !important;
+    min-height: 78px !important;
+    padding: 1rem 1.1rem !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05) !important;
+    color: #1f2937 !important;
+    overflow: hidden !important;
+    transition: transform .18s, box-shadow .18s, border-color .18s !important;
+}
+
+body :where(.sen-action, .sep-action, .rh-action, .caf-action, .dept-action, .dash-action-card):hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,.1) !important;
+    border-color: #d1d5db !important;
+}
+
+body :where(.sen-action-glow, .sep-action-glow, .rh-action-glow, .caf-action-glow, .dept-action-glow) {
+    position: absolute !important;
+    top: -32px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: 90px !important;
+    height: 90px !important;
+    border-radius: 50% !important;
+    opacity: .1 !important;
+    pointer-events: none !important;
+}
+
+body :where(.sen-action-icon, .sep-action-icon, .rh-action-icon, .caf-action-icon, .dept-action-icon, .dash-action-icon) {
+    width: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px !important;
+    border-radius: 12px !important;
+    font-size: 1.08rem !important;
+}
+
+body :where(.sen-action-label, .sep-action-label, .rh-action-label, .caf-action-label, .dept-action-label, .dash-action-name) {
+    color: #1f2937 !important;
+    font-size: .88rem !important;
+    font-weight: 700 !important;
+    line-height: 1.18 !important;
+}
+
+body :where(.sen-action-desc, .sep-action-desc, .rh-action-desc, .caf-action-desc, .dept-action-desc, .dash-action-desc) {
+    color: #6b7280 !important;
+    font-size: .74rem !important;
+    line-height: 1.2 !important;
+}
+
+body :where(.sen-action-arrow, .sep-action-arrow, .rh-action-arrow, .caf-action-arrow, .dept-action-arrow) {
+    color: #cbd5e1 !important;
+}
+
+body :where(.sen-metrics, .sep-metrics, .rh-metrics, .caf-metrics, .dept-metrics, .dash-stat-grid) {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+    gap: .85rem !important;
+    margin-bottom: 1.35rem !important;
+}
+
+body :where(.sen-metric, .sep-metric, .rh-metric, .caf-metric, .dept-metric, .dash-stat-card) {
+    min-height: 126px !important;
+    padding: 1.08rem 1rem !important;
+    border-radius: 14px !important;
+    background: #fff !important;
+    border: 1px solid #e5e7eb !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05) !important;
+    transition: transform .18s, box-shadow .18s !important;
+}
+
+body :where(.sen-metric, .sep-metric, .rh-metric, .caf-metric, .dept-metric, .dash-stat-card):hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 16px rgba(0,0,0,.08) !important;
+}
+
+body :where(.sen-metric-icon, .sep-metric-icon, .rh-metric-icon, .caf-metric-icon, .dept-metric-icon, .dash-stat-icon) {
+    width: 36px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    font-size: .95rem !important;
+}
+
+body :where(.sen-metric-val, .sep-metric-val, .rh-metric-val, .caf-metric-val, .dept-metric-val, .dash-stat-val) {
+    font-size: 1.62rem !important;
+    font-weight: 800 !important;
+    line-height: 1.08 !important;
+}
+
+body :where(.sen-metric-lbl, .sep-metric-lbl, .rh-metric-lbl, .caf-metric-lbl, .dept-metric-lbl, .dash-stat-lbl) {
+    color: #6b7280 !important;
+    font-size: .75rem !important;
+    line-height: 1.18 !important;
+}
+
+body :where(.sen-metric-bar, .sep-metric-bar, .rh-metric-bar, .caf-metric-bar, .dept-metric-bar, .dash-stat-bar) {
+    height: 5px !important;
+    background: #f1f5f9 !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+}
+
+@media (min-width: 992px) {
+    body :where(.sen-hero-inner, .sep-hero-inner, .rh-hero-inner, .caf-hero-inner, .dept-hero-inner, .sena-hero-inner, .dash-hero) {
+        grid-template-columns: minmax(260px, 1fr) auto !important;
+    }
+
+    body :where(.sen-hero-kpis, .sep-hero-kpis, .rh-hero-kpis, .caf-hero-kpis, .dept-hero-kpis, .sena-hero-kpis, .dash-hero-stats) {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        justify-content: flex-end !important;
+        width: min(100%, 720px) !important;
+    }
+}
+
 /* Responsive hardening */
 html,
 body,
