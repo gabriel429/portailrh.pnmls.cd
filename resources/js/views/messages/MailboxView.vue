@@ -1,28 +1,6 @@
 <template>
   <div class="mailbox-page">
-    <section class="mailbox-hero">
-      <div>
-        <span class="mailbox-kicker">Messagerie professionnelle</span>
-        <h1>Boite mail</h1>
-        <p>{{ settings?.account_email || 'Compte professionnel' }}</p>
-      </div>
-      <div class="mailbox-hero-actions">
-        <router-link :to="{ name: 'mail.history' }" class="mailbox-ghost-btn">
-          <i class="fas fa-paper-plane"></i>
-          Envoyes
-        </router-link>
-        <button v-if="settings?.has_credentials" type="button" class="mailbox-ghost-btn" @click="composerOpen = !composerOpen">
-          <i class="fas fa-pen"></i>
-          Nouveau mail
-        </button>
-        <button type="button" class="mailbox-primary-btn" @click="settingsOpen = !settingsOpen">
-          <i class="fas fa-cog"></i>
-          Reglages
-        </button>
-      </div>
-    </section>
-
-    <div v-if="loadingSettings" class="mailbox-loading">
+    <div v-if="loadingSettings" class="mailbox-loading mailbox-loading-page">
       <div class="spinner-border text-primary" role="status"></div>
       <span>Preparation de la messagerie...</span>
     </div>
@@ -30,7 +8,8 @@
     <section v-else-if="showSettingsPanel" class="mailbox-settings">
       <div class="mailbox-settings-head">
         <div>
-          <h2>Connexion de la boite professionnelle</h2>
+          <span class="mailbox-kicker">Messagerie professionnelle</span>
+          <h1>Connexion de la boite mail</h1>
           <p>Les identifiants IMAP sont chiffres dans l'application.</p>
         </div>
         <button
@@ -95,152 +74,276 @@
       </form>
     </section>
 
-    <section v-if="settings?.has_credentials && composerOpen && !showSettingsPanel" class="mailbox-compose">
-      <div class="mailbox-settings-head">
-        <div>
-          <h2>Nouveau mail</h2>
-          <p>{{ settings.account_email }}</p>
+    <section v-else class="outlook-shell">
+      <aside class="mailbox-sidebar">
+        <div class="mailbox-account">
+          <div class="mailbox-account-avatar">{{ accountInitial }}</div>
+          <div>
+            <span>Compte</span>
+            <strong>{{ settings?.account_email }}</strong>
+          </div>
         </div>
-        <button type="button" class="mailbox-icon-btn" title="Fermer" @click="composerOpen = false">
-          <i class="fas fa-times"></i>
+
+        <button type="button" class="mailbox-compose-btn" @click="openComposer">
+          <i class="fas fa-pen"></i>
+          Nouveau mail
         </button>
-      </div>
 
-      <form class="mailbox-compose-form" @submit.prevent="sendMail">
-        <label>
-          <span>Destinataires</span>
-          <input v-model.trim="composeForm.to" type="text" placeholder="email@domaine.cd, autre@domaine.cd" required>
-        </label>
-        <label>
-          <span>Objet</span>
-          <input v-model.trim="composeForm.subject" type="text" required maxlength="180">
-        </label>
-        <label class="mailbox-compose-body">
-          <span>Message</span>
-          <textarea v-model.trim="composeForm.body" rows="8" required></textarea>
-        </label>
-
-        <div v-if="composeError" class="mailbox-alert mailbox-alert-danger">
-          <i class="fas fa-triangle-exclamation"></i>
-          {{ composeError }}
-        </div>
-
-        <div class="mailbox-settings-actions">
-          <button type="button" class="mailbox-ghost-light-btn" @click="composerOpen = false">Annuler</button>
-          <button type="submit" class="mailbox-primary-btn" :disabled="sendingMail">
-            <span v-if="sendingMail" class="spinner-border spinner-border-sm"></span>
-            <i v-else class="fas fa-paper-plane"></i>
-            Envoyer
+        <nav class="mailbox-folder-nav" aria-label="Navigation messagerie">
+          <div class="mailbox-nav-title">Favoris</div>
+          <button type="button" class="mailbox-folder-btn" :class="{ active: isInboxActive }" @click="openInbox">
+            <i class="fas fa-inbox"></i>
+            <span>Boite de reception</span>
+            <b v-if="inboxFolder?.unread">{{ inboxFolder.unread }}</b>
           </button>
-        </div>
-      </form>
-    </section>
-
-    <section v-if="settings?.has_credentials && !showSettingsPanel" class="mailbox-workspace">
-      <header class="mailbox-toolbar">
-        <div class="mailbox-search">
-          <i class="fas fa-search"></i>
-          <input
-            v-model.trim="search"
-            type="search"
-            placeholder="Rechercher dans les mails..."
-            @input="onSearch"
-          >
-        </div>
-        <div class="mailbox-toolbar-actions">
-          <span class="mailbox-unread">{{ meta.unread_count || 0 }} non lu(s)</span>
-          <button type="button" class="mailbox-icon-btn" title="Actualiser" @click="loadMessages(meta.current_page || 1)">
-            <i class="fas fa-rotate-right"></i>
+          <button type="button" class="mailbox-folder-btn" :class="{ active: activeFilter === 'unread' }" @click="openFilter('unread')">
+            <i class="fas fa-envelope"></i>
+            <span>Non lus</span>
+            <b v-if="inboxFolder?.unread">{{ inboxFolder.unread }}</b>
           </button>
-        </div>
-      </header>
+          <button type="button" class="mailbox-folder-btn" :class="{ active: activeFilter === 'flagged' }" @click="openFilter('flagged')">
+            <i class="fas fa-star"></i>
+            <span>Avec etoile</span>
+          </button>
+          <router-link :to="{ name: 'mail.history' }" class="mailbox-folder-btn">
+            <i class="fas fa-paper-plane"></i>
+            <span>Historique envoyes</span>
+          </router-link>
 
-      <div v-if="messagesError" class="mailbox-alert mailbox-alert-danger mailbox-alert-inline">
-        <i class="fas fa-triangle-exclamation"></i>
-        {{ messagesError }}
-      </div>
-
-      <div v-if="loadingMessages" class="mailbox-loading mailbox-loading-panel">
-        <div class="spinner-border text-primary" role="status"></div>
-        <span>Chargement des mails...</span>
-      </div>
-
-      <div v-else-if="!messages.length" class="mailbox-empty">
-        <i class="fas fa-inbox"></i>
-        <h3>Aucun mail trouve</h3>
-        <p>{{ search ? 'Essayez une autre recherche.' : 'La boite de reception est vide.' }}</p>
-      </div>
-
-      <div v-else class="mailbox-grid">
-        <aside class="mailbox-list" aria-label="Liste des mails">
+          <div class="mailbox-nav-title">Dossiers</div>
           <button
-            v-for="message in messages"
-            :key="message.uid"
+            v-for="folder in visibleFolders"
+            :key="folder.name"
             type="button"
-            class="mailbox-list-item"
-            :class="{ active: selectedUid === message.uid, unread: message.unread }"
-            @click="selectMessage(message)"
+            class="mailbox-folder-btn"
+            :class="{ active: activeFilter === '' && activeFolder === folder.name }"
+            @click="openFolder(folder)"
           >
-            <span class="mailbox-avatar">{{ senderInitial(message.from) }}</span>
-            <span class="mailbox-list-content">
-              <span class="mailbox-list-top">
-                <strong>{{ cleanSender(message.from) || 'Expediteur' }}</strong>
-                <time>{{ formatDate(message.date, true) }}</time>
-              </span>
-              <span class="mailbox-subject">{{ message.subject }}</span>
-              <span class="mailbox-list-meta">
-                <i v-if="message.answered" class="fas fa-reply"></i>
-                <i v-if="message.flagged" class="fas fa-star"></i>
-                {{ formatSize(message.size) }}
-              </span>
-            </span>
+            <i class="fas" :class="folderIcon(folder.type)"></i>
+            <span>{{ folder.label }}</span>
+            <b v-if="folder.unread">{{ folder.unread }}</b>
           </button>
+        </nav>
 
-          <nav v-if="meta.last_page > 1" class="mailbox-pagination" aria-label="Pagination mails">
-            <button type="button" :disabled="meta.current_page <= 1" @click="loadMessages(meta.current_page - 1)">
-              <i class="fas fa-chevron-left"></i>
-            </button>
-            <span>{{ meta.current_page }} / {{ meta.last_page }}</span>
-            <button type="button" :disabled="meta.current_page >= meta.last_page" @click="loadMessages(meta.current_page + 1)">
-              <i class="fas fa-chevron-right"></i>
-            </button>
-          </nav>
-        </aside>
+        <div class="mailbox-side-card">
+          <span>Connecte via IMAP</span>
+          <strong>{{ folders.length }} dossier(s)</strong>
+        </div>
+      </aside>
 
-        <article class="mailbox-reader">
-          <div v-if="selectedLoading" class="mailbox-loading mailbox-loading-panel">
-            <div class="spinner-border text-primary" role="status"></div>
-            <span>Ouverture du mail...</span>
+      <main class="mailbox-main">
+        <header class="mailbox-topbar">
+          <div>
+            <span class="mailbox-kicker">{{ activeSubtitle }}</span>
+            <h1>{{ activeTitle }}</h1>
           </div>
+          <div class="mailbox-search">
+            <i class="fas fa-search"></i>
+            <input
+              v-model.trim="search"
+              type="search"
+              placeholder="Rechercher dans les mails..."
+              @input="onSearch"
+            >
+          </div>
+        </header>
 
-          <template v-else-if="selectedMessage">
-            <header class="mailbox-reader-head">
-              <div>
-                <h2>{{ selectedMessage.subject }}</h2>
-                <div class="mailbox-reader-meta">
-                  <span>{{ selectedMessage.from }}</span>
-                  <time>{{ formatDate(selectedMessage.date) }}</time>
+        <div class="mailbox-commandbar">
+          <button type="button" class="mailbox-command primary" @click="openComposer">
+            <i class="fas fa-plus"></i>
+            Nouveau
+          </button>
+          <button type="button" class="mailbox-command" @click="loadMessages(meta.current_page || 1)">
+            <i class="fas fa-rotate-right"></i>
+            Actualiser
+          </button>
+          <button type="button" class="mailbox-command" :disabled="!selectedMessage" @click="toggleRead(selectedMessage)">
+            <i class="fas" :class="selectedMessage?.unread ? 'fa-envelope-open' : 'fa-envelope'"></i>
+            {{ selectedMessage?.unread ? 'Marquer lu' : 'Non lu' }}
+          </button>
+          <button type="button" class="mailbox-command" :disabled="!selectedMessage" @click="toggleFlag(selectedMessage)">
+            <i class="fas fa-star"></i>
+            {{ selectedMessage?.flagged ? 'Retirer etoile' : 'Etoile' }}
+          </button>
+          <button type="button" class="mailbox-command" :disabled="!selectedMessage || !archiveFolder" @click="archiveSelected">
+            <i class="fas fa-box-archive"></i>
+            Archiver
+          </button>
+          <button type="button" class="mailbox-command danger" :disabled="!selectedMessage" @click="deleteMessage(selectedMessage.uid)">
+            <i class="fas fa-trash"></i>
+            Supprimer
+          </button>
+          <div class="mailbox-move">
+            <select v-model="targetFolder" :disabled="!selectedMessage || !moveTargets.length">
+              <option value="">Deplacer vers...</option>
+              <option v-for="folder in moveTargets" :key="folder.name" :value="folder.name">{{ folder.label }}</option>
+            </select>
+            <button type="button" class="mailbox-command" :disabled="!selectedMessage || !targetFolder" @click="moveSelectedTo(targetFolder)">
+              <i class="fas fa-folder-tree"></i>
+            </button>
+          </div>
+          <button type="button" class="mailbox-command settings" @click="settingsOpen = true">
+            <i class="fas fa-cog"></i>
+          </button>
+        </div>
+
+        <div v-if="messagesError" class="mailbox-alert mailbox-alert-danger mailbox-alert-inline">
+          <i class="fas fa-triangle-exclamation"></i>
+          {{ messagesError }}
+        </div>
+
+        <div class="mailbox-content">
+          <section class="mailbox-list-pane">
+            <div class="mailbox-list-head">
+              <strong>{{ meta.total || 0 }} message(s)</strong>
+              <span>{{ meta.unread_count || 0 }} non lu(s)</span>
+            </div>
+
+            <div v-if="loadingMessages" class="mailbox-loading mailbox-loading-panel">
+              <div class="spinner-border text-primary" role="status"></div>
+              <span>Chargement des mails...</span>
+            </div>
+
+            <div v-else-if="!messages.length" class="mailbox-empty">
+              <i class="fas fa-inbox"></i>
+              <h3>Aucun mail trouve</h3>
+              <p>{{ search ? 'Essayez une autre recherche.' : 'Ce dossier est vide.' }}</p>
+            </div>
+
+            <div v-else class="mailbox-message-list">
+              <button
+                v-for="message in messages"
+                :key="message.uid"
+                type="button"
+                class="mailbox-message-item"
+                :class="{ active: selectedUid === message.uid, unread: message.unread }"
+                @click="selectMessage(message)"
+              >
+                <span class="mailbox-avatar">{{ senderInitial(message.from) }}</span>
+                <span class="mailbox-message-content">
+                  <span class="mailbox-message-top">
+                    <strong>{{ cleanSender(message.from) || 'Expediteur' }}</strong>
+                    <time>{{ formatDate(message.date, true) }}</time>
+                  </span>
+                  <span class="mailbox-subject">{{ message.subject }}</span>
+                  <span class="mailbox-message-meta">
+                    <i v-if="message.flagged" class="fas fa-star"></i>
+                    <i v-if="message.answered" class="fas fa-reply"></i>
+                    {{ formatSize(message.size) }}
+                  </span>
+                </span>
+              </button>
+            </div>
+
+            <nav v-if="meta.last_page > 1" class="mailbox-pagination" aria-label="Pagination mails">
+              <button type="button" :disabled="meta.current_page <= 1" @click="loadMessages(meta.current_page - 1)">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <span>{{ meta.current_page }} / {{ meta.last_page }}</span>
+              <button type="button" :disabled="meta.current_page >= meta.last_page" @click="loadMessages(meta.current_page + 1)">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </nav>
+          </section>
+
+          <article class="mailbox-reader">
+            <div v-if="selectedLoading" class="mailbox-loading mailbox-loading-panel">
+              <div class="spinner-border text-primary" role="status"></div>
+              <span>Ouverture du mail...</span>
+            </div>
+
+            <template v-else-if="selectedMessage">
+              <header class="mailbox-reader-head">
+                <div>
+                  <h2>{{ selectedMessage.subject }}</h2>
+                  <div class="mailbox-reader-meta">
+                    <span>{{ selectedMessage.from }}</span>
+                    <time>{{ formatDate(selectedMessage.date) }}</time>
+                  </div>
                 </div>
-              </div>
-              <div class="mailbox-reader-actions">
-                <button type="button" class="mailbox-icon-btn" title="Lu / non lu" @click="toggleRead(selectedMessage)">
-                  <i class="fas" :class="selectedMessage.unread ? 'fa-envelope-open' : 'fa-envelope'"></i>
-                </button>
-                <button type="button" class="mailbox-icon-btn mailbox-danger-btn" title="Supprimer" @click="deleteMessage(selectedMessage.uid)">
-                  <i class="fas fa-trash"></i>
-                </button>
-              </div>
-            </header>
-            <div class="mailbox-reader-body">{{ selectedMessage.body || 'Aucun contenu lisible.' }}</div>
-          </template>
+                <div class="mailbox-reader-actions">
+                  <button type="button" class="mailbox-icon-btn" title="Repondre" @click="replyToSelected">
+                    <i class="fas fa-reply"></i>
+                  </button>
+                  <button type="button" class="mailbox-icon-btn" title="Transferer" @click="forwardSelected">
+                    <i class="fas fa-share"></i>
+                  </button>
+                  <button type="button" class="mailbox-icon-btn" title="Lu / non lu" @click="toggleRead(selectedMessage)">
+                    <i class="fas" :class="selectedMessage.unread ? 'fa-envelope-open' : 'fa-envelope'"></i>
+                  </button>
+                </div>
+              </header>
 
-          <div v-else class="mailbox-reader-empty">
-            <i class="fas fa-envelope-open-text"></i>
-            <p>Selectionnez un mail pour l'afficher.</p>
-          </div>
-        </article>
-      </div>
+              <div class="mailbox-reader-tools">
+                <button type="button" @click="toggleFlag(selectedMessage)">
+                  <i class="fas fa-star"></i>
+                  {{ selectedMessage.flagged ? 'Retirer l etoile' : 'Marquer avec etoile' }}
+                </button>
+                <button type="button" :disabled="!archiveFolder" @click="archiveSelected">
+                  <i class="fas fa-box-archive"></i>
+                  Archiver
+                </button>
+                <button type="button" class="danger" @click="deleteMessage(selectedMessage.uid)">
+                  <i class="fas fa-trash"></i>
+                  Supprimer
+                </button>
+              </div>
+
+              <div class="mailbox-reader-body">{{ selectedMessage.body || 'Aucun contenu lisible.' }}</div>
+            </template>
+
+            <div v-else class="mailbox-reader-empty">
+              <i class="fas fa-envelope-open-text"></i>
+              <h3>Selectionnez un message</h3>
+              <p>{{ activeTitle }}</p>
+            </div>
+          </article>
+        </div>
+      </main>
     </section>
+
+    <div v-if="composerOpen && !showSettingsPanel" class="mailbox-compose-backdrop" @click.self="composerOpen = false">
+      <section class="mailbox-compose-drawer">
+        <div class="mailbox-compose-head">
+          <div>
+            <span class="mailbox-kicker">Depuis {{ settings?.account_email }}</span>
+            <h2>Nouveau mail</h2>
+          </div>
+          <button type="button" class="mailbox-icon-btn" title="Fermer" @click="composerOpen = false">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <form class="mailbox-compose-form" @submit.prevent="sendMail">
+          <label>
+            <span>Destinataires</span>
+            <input v-model.trim="composeForm.to" type="text" placeholder="email@domaine.cd, autre@domaine.cd" required>
+          </label>
+          <label>
+            <span>Objet</span>
+            <input v-model.trim="composeForm.subject" type="text" required maxlength="180">
+          </label>
+          <label class="mailbox-compose-body">
+            <span>Message</span>
+            <textarea v-model.trim="composeForm.body" rows="12" required></textarea>
+          </label>
+
+          <div v-if="composeError" class="mailbox-alert mailbox-alert-danger">
+            <i class="fas fa-triangle-exclamation"></i>
+            {{ composeError }}
+          </div>
+
+          <div class="mailbox-compose-actions">
+            <button type="button" class="mailbox-ghost-light-btn" @click="composerOpen = false">Annuler</button>
+            <button type="submit" class="mailbox-primary-btn" :disabled="sendingMail">
+              <span v-if="sendingMail" class="spinner-border spinner-border-sm"></span>
+              <i v-else class="fas fa-paper-plane"></i>
+              Envoyer
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
   </div>
 </template>
 
@@ -253,6 +356,12 @@ const loadingSettings = ref(true)
 const settingsOpen = ref(false)
 const savingSettings = ref(false)
 const settingsError = ref('')
+
+const folders = ref([])
+const activeFolder = ref('INBOX')
+const activeFilter = ref('')
+const targetFolder = ref('')
+
 const composerOpen = ref(false)
 const sendingMail = ref(false)
 const composeError = ref('')
@@ -283,6 +392,20 @@ const composeForm = reactive({
 })
 
 const showSettingsPanel = computed(() => !settings.value?.has_credentials || settingsOpen.value)
+const accountInitial = computed(() => (settings.value?.account_email?.charAt(0) || '@').toUpperCase())
+const inboxFolder = computed(() => folders.value.find(folder => folder.type === 'inbox') || folders.value[0])
+const archiveFolder = computed(() => folders.value.find(folder => folder.type === 'archive'))
+const trashFolder = computed(() => folders.value.find(folder => folder.type === 'trash'))
+const activeFolderMeta = computed(() => folders.value.find(folder => folder.name === activeFolder.value))
+const visibleFolders = computed(() => folders.value.length ? folders.value : [{ name: 'INBOX', label: 'Boite de reception', type: 'inbox', unread: 0 }])
+const moveTargets = computed(() => folders.value.filter(folder => folder.name !== activeFolder.value))
+const isInboxActive = computed(() => activeFilter.value === '' && activeFolder.value === inboxFolder.value?.name)
+const activeTitle = computed(() => {
+  if (activeFilter.value === 'unread') return 'Messages non lus'
+  if (activeFilter.value === 'flagged') return 'Messages avec etoile'
+  return activeFolderMeta.value?.label || 'Boite mail'
+})
+const activeSubtitle = computed(() => activeFilter.value ? 'Vue rapide' : 'Dossier')
 
 function hydrateSettingsForm(payload) {
   settingsForm.email = payload?.account_email || ''
@@ -302,6 +425,8 @@ async function loadSettings() {
     hydrateSettingsForm(data.data)
     settingsOpen.value = !data.data?.has_credentials
     if (data.data?.has_credentials) {
+      await loadFolders()
+      activeFolder.value = inboxFolder.value?.name || 'INBOX'
       await loadMessages(1)
     }
   } catch (error) {
@@ -332,11 +457,177 @@ async function saveMailboxSettings() {
     settings.value = data.data
     hydrateSettingsForm(data.data)
     settingsOpen.value = false
+    await loadFolders()
+    activeFolder.value = inboxFolder.value?.name || 'INBOX'
     await loadMessages(1)
   } catch (error) {
     settingsError.value = firstError(error) || 'Connexion a la boite mail impossible.'
   } finally {
     savingSettings.value = false
+  }
+}
+
+async function loadFolders() {
+  try {
+    const { data } = await client.get('/mailbox/folders')
+    folders.value = data.data || []
+  } catch (_) {
+    folders.value = [{ name: 'INBOX', label: 'Boite de reception', type: 'inbox', total: 0, unread: 0 }]
+  }
+}
+
+function openInbox() {
+  activeFolder.value = inboxFolder.value?.name || 'INBOX'
+  activeFilter.value = ''
+  resetSelection()
+  loadMessages(1)
+}
+
+function openFolder(folder) {
+  activeFolder.value = folder.name
+  activeFilter.value = ''
+  resetSelection()
+  loadMessages(1)
+}
+
+function openFilter(filter) {
+  activeFolder.value = inboxFolder.value?.name || activeFolder.value || 'INBOX'
+  activeFilter.value = filter
+  resetSelection()
+  loadMessages(1)
+}
+
+async function loadMessages(page = 1) {
+  if (!settings.value?.has_credentials) return
+
+  loadingMessages.value = true
+  messagesError.value = ''
+
+  try {
+    const { data } = await client.get('/mailbox/messages', {
+      params: {
+        page,
+        per_page: meta.value.per_page || 15,
+        folder: activeFolder.value,
+        filter: activeFilter.value || undefined,
+        search: search.value || undefined,
+      },
+    })
+
+    messages.value = data.data || []
+    meta.value = { ...meta.value, ...(data.meta || {}) }
+
+    if (messages.value.length) {
+      const currentStillVisible = messages.value.some(message => message.uid === selectedUid.value)
+      if (!currentStillVisible) {
+        await selectMessage(messages.value[0])
+      }
+    } else {
+      resetSelection()
+    }
+  } catch (error) {
+    messages.value = []
+    resetSelection()
+    messagesError.value = firstError(error) || 'Impossible de lire la boite mail.'
+    if (error.response?.status === 422) {
+      settingsOpen.value = true
+    }
+  } finally {
+    loadingMessages.value = false
+  }
+}
+
+async function selectMessage(message) {
+  selectedUid.value = message.uid
+  selectedLoading.value = true
+
+  try {
+    const { data } = await client.get(`/mailbox/messages/${message.uid}`, {
+      params: { folder: activeFolder.value },
+    })
+    selectedMessage.value = data.data
+    patchMessage(message.uid, { seen: true, unread: false })
+    meta.value.unread_count = Math.max((meta.value.unread_count || 0) - (message.unread ? 1 : 0), 0)
+  } catch (error) {
+    messagesError.value = firstError(error) || 'Impossible d ouvrir ce mail.'
+  } finally {
+    selectedLoading.value = false
+  }
+}
+
+async function toggleRead(message) {
+  if (!message) return
+  const nextSeen = !!message.unread
+  try {
+    const { data } = await client.post(`/mailbox/messages/${message.uid}/read`, {
+      seen: nextSeen,
+      source_folder: activeFolder.value,
+    })
+    patchMessage(message.uid, data.data)
+    if (selectedMessage.value?.uid === message.uid) {
+      selectedMessage.value = { ...selectedMessage.value, ...data.data }
+    }
+    meta.value.unread_count = Math.max((meta.value.unread_count || 0) + (nextSeen ? -1 : 1), 0)
+  } catch (error) {
+    messagesError.value = firstError(error) || 'Action impossible.'
+  }
+}
+
+async function toggleFlag(message) {
+  if (!message) return
+  const nextFlagged = !message.flagged
+  try {
+    const { data } = await client.post(`/mailbox/messages/${message.uid}/flag`, {
+      flagged: nextFlagged,
+      source_folder: activeFolder.value,
+    })
+    patchMessage(message.uid, data.data)
+    if (selectedMessage.value?.uid === message.uid) {
+      selectedMessage.value = { ...selectedMessage.value, ...data.data }
+    }
+  } catch (error) {
+    messagesError.value = firstError(error) || 'Action impossible.'
+  }
+}
+
+async function moveSelectedTo(folderName) {
+  if (!selectedMessage.value || !folderName) return
+
+  try {
+    await client.post(`/mailbox/messages/${selectedMessage.value.uid}/move`, {
+      folder: folderName,
+      source_folder: activeFolder.value,
+    })
+    targetFolder.value = ''
+    await loadFolders()
+    await loadMessages(messages.value.length > 1 ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
+  } catch (error) {
+    messagesError.value = firstError(error) || 'Deplacement impossible.'
+  }
+}
+
+function archiveSelected() {
+  if (archiveFolder.value) {
+    moveSelectedTo(archiveFolder.value.name)
+  }
+}
+
+async function deleteMessage(uid) {
+  if (!uid || !window.confirm('Supprimer ce mail ?')) return
+
+  if (trashFolder.value && activeFolder.value !== trashFolder.value.name) {
+    await moveSelectedTo(trashFolder.value.name)
+    return
+  }
+
+  try {
+    await client.delete(`/mailbox/messages/${uid}`, {
+      params: { folder: activeFolder.value },
+    })
+    await loadFolders()
+    await loadMessages(messages.value.length > 1 ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
+  } catch (error) {
+    messagesError.value = firstError(error) || 'Suppression impossible.'
   }
 }
 
@@ -365,6 +656,7 @@ async function sendMail() {
     composeForm.subject = ''
     composeForm.body = ''
     composerOpen.value = false
+    await loadFolders()
   } catch (error) {
     composeError.value = firstError(error) || 'Envoi impossible.'
   } finally {
@@ -372,90 +664,35 @@ async function sendMail() {
   }
 }
 
-async function loadMessages(page = 1) {
-  if (!settings.value?.has_credentials) return
-
-  loadingMessages.value = true
-  messagesError.value = ''
-
-  try {
-    const { data } = await client.get('/mailbox/messages', {
-      params: {
-        page,
-        per_page: meta.value.per_page || 15,
-        search: search.value || undefined,
-      },
-    })
-
-    messages.value = data.data || []
-    meta.value = { ...meta.value, ...(data.meta || {}) }
-
-    if (messages.value.length) {
-      const currentStillVisible = messages.value.some(message => message.uid === selectedUid.value)
-      if (!currentStillVisible) {
-        await selectMessage(messages.value[0])
-      }
-    } else {
-      selectedUid.value = null
-      selectedMessage.value = null
-    }
-  } catch (error) {
-    messages.value = []
-    selectedUid.value = null
-    selectedMessage.value = null
-    messagesError.value = firstError(error) || 'Impossible de lire la boite mail.'
-    if (error.response?.status === 422) {
-      settingsOpen.value = true
-    }
-  } finally {
-    loadingMessages.value = false
-  }
+function openComposer() {
+  composeError.value = ''
+  composerOpen.value = true
 }
 
-async function selectMessage(message) {
-  selectedUid.value = message.uid
-  selectedLoading.value = true
-
-  try {
-    const { data } = await client.get(`/mailbox/messages/${message.uid}`)
-    selectedMessage.value = data.data
-    patchMessage(message.uid, { seen: true, unread: false })
-    meta.value.unread_count = Math.max((meta.value.unread_count || 0) - (message.unread ? 1 : 0), 0)
-  } catch (error) {
-    messagesError.value = firstError(error) || 'Impossible d ouvrir ce mail.'
-  } finally {
-    selectedLoading.value = false
-  }
+function replyToSelected() {
+  if (!selectedMessage.value) return
+  composeForm.to = extractEmail(selectedMessage.value.from)
+  composeForm.subject = selectedMessage.value.subject?.startsWith('Re:')
+    ? selectedMessage.value.subject
+    : `Re: ${selectedMessage.value.subject || ''}`.trim()
+  composeForm.body = `\n\n--- Message original ---\n${selectedMessage.value.body || ''}`
+  openComposer()
 }
 
-async function toggleRead(message) {
-  const nextSeen = !!message.unread
-  try {
-    const { data } = await client.post(`/mailbox/messages/${message.uid}/read`, { seen: nextSeen })
-    patchMessage(message.uid, data.data)
-    if (selectedMessage.value?.uid === message.uid) {
-      selectedMessage.value = { ...selectedMessage.value, ...data.data }
-    }
-    meta.value.unread_count = Math.max((meta.value.unread_count || 0) + (nextSeen ? -1 : 1), 0)
-  } catch (error) {
-    messagesError.value = firstError(error) || 'Action impossible.'
-  }
+function forwardSelected() {
+  if (!selectedMessage.value) return
+  composeForm.to = ''
+  composeForm.subject = selectedMessage.value.subject?.startsWith('Tr:')
+    ? selectedMessage.value.subject
+    : `Tr: ${selectedMessage.value.subject || ''}`.trim()
+  composeForm.body = `\n\n--- Message transfere ---\nDe: ${selectedMessage.value.from}\nDate: ${formatDate(selectedMessage.value.date)}\n\n${selectedMessage.value.body || ''}`
+  openComposer()
 }
 
-async function deleteMessage(uid) {
-  if (!window.confirm('Supprimer ce mail ?')) return
-
-  try {
-    await client.delete(`/mailbox/messages/${uid}`)
-    messages.value = messages.value.filter(message => message.uid !== uid)
-    if (selectedUid.value === uid) {
-      selectedUid.value = null
-      selectedMessage.value = null
-    }
-    await loadMessages(messages.value.length ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
-  } catch (error) {
-    messagesError.value = firstError(error) || 'Suppression impossible.'
-  }
+function resetSelection() {
+  selectedUid.value = null
+  selectedMessage.value = null
+  targetFolder.value = ''
 }
 
 function patchMessage(uid, patch) {
@@ -484,9 +721,27 @@ function cleanSender(value) {
   return value.replace(/<[^>]+>/g, '').replace(/"/g, '').trim()
 }
 
+function extractEmail(value) {
+  if (!value) return ''
+  const match = value.match(/<([^>]+)>/)
+  return (match?.[1] || value).replace(/"/g, '').trim()
+}
+
 function senderInitial(value) {
   const cleaned = cleanSender(value)
   return (cleaned.charAt(0) || '@').toUpperCase()
+}
+
+function folderIcon(type) {
+  return {
+    inbox: 'fa-inbox',
+    sent: 'fa-paper-plane',
+    drafts: 'fa-file-lines',
+    archive: 'fa-box-archive',
+    junk: 'fa-ban',
+    trash: 'fa-trash',
+    folder: 'fa-folder',
+  }[type] || 'fa-folder'
 }
 
 function formatDate(value, compact = false) {
@@ -511,261 +766,253 @@ onMounted(loadSettings)
 
 <style scoped>
 .mailbox-page {
-  max-width: 1180px;
+  min-height: calc(100vh - 88px);
+  padding: 14px;
+  color: #172033;
+  background: #eef6fa;
+}
+
+.outlook-shell,
+.mailbox-settings {
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 20px;
-}
-
-.mailbox-hero,
-.mailbox-settings,
-.mailbox-compose,
-.mailbox-workspace {
-  border: 1px solid rgba(14, 116, 144, 0.18);
+  border: 1px solid #cfe1e8;
   border-radius: 8px;
-  box-shadow: 0 12px 34px rgba(15, 118, 110, 0.12);
+  background: #fff;
+  box-shadow: 0 14px 42px rgba(15, 76, 92, 0.14);
 }
 
-.mailbox-hero {
+.outlook-shell {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  min-height: calc(100vh - 116px);
+  overflow: hidden;
+}
+
+.mailbox-sidebar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
-  padding: 18px 20px;
-  color: #fff;
-  background: linear-gradient(135deg, #0877a8 0%, #168b7f 100%);
+  flex-direction: column;
+  gap: 14px;
+  padding: 14px;
+  background: #f4f9fb;
+  border-right: 1px solid #dbeaf0;
 }
 
+.mailbox-account {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #d8e9ef;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.mailbox-account-avatar,
+.mailbox-avatar {
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  font-weight: 900;
+}
+
+.mailbox-account-avatar {
+  width: 44px;
+  height: 44px;
+  color: #fff;
+  background: #05769a;
+}
+
+.mailbox-account span,
+.mailbox-side-card span,
 .mailbox-kicker {
   display: block;
-  margin-bottom: 4px;
-  font-size: 0.76rem;
+  color: #64748b;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: uppercase;
-  opacity: 0.82;
 }
 
-.mailbox-hero h1 {
-  margin: 0;
-  font-size: 1.55rem;
-  font-weight: 800;
+.mailbox-account strong {
+  display: block;
+  overflow: hidden;
+  color: #102a43;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.mailbox-hero p {
-  margin: 4px 0 0;
-  opacity: 0.9;
-}
-
-.mailbox-hero-actions,
-.mailbox-toolbar-actions,
-.mailbox-reader-actions,
-.mailbox-settings-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+.mailbox-compose-btn,
 .mailbox-primary-btn,
-.mailbox-ghost-btn,
-.mailbox-icon-btn {
+.mailbox-command,
+.mailbox-icon-btn,
+.mailbox-ghost-light-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
-  border: 0;
+  min-height: 38px;
   border-radius: 8px;
   font-weight: 800;
   line-height: 1;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
 }
 
-.mailbox-primary-btn {
-  padding: 0 16px;
+.mailbox-compose-btn,
+.mailbox-primary-btn,
+.mailbox-command.primary {
+  border: 0;
   color: #fff;
-  background: #03779c;
-  box-shadow: 0 8px 18px rgba(3, 119, 156, 0.2);
+  background: #04769a;
 }
 
-.mailbox-ghost-btn {
-  padding: 0 14px;
-  color: #fff;
-  text-decoration: none;
-  background: rgba(255, 255, 255, 0.18);
-  border: 1px solid rgba(255, 255, 255, 0.28);
+.mailbox-compose-btn {
+  width: 100%;
+}
+
+.mailbox-command,
+.mailbox-ghost-light-btn {
+  border: 1px solid #cfe1e8;
+  color: #0f5f76;
+  background: #fff;
 }
 
 .mailbox-icon-btn {
-  width: 40px;
+  width: 38px;
+  border: 0;
   color: #0f5f76;
-  background: #e8f5f8;
+  background: #e7f3f7;
 }
 
-.mailbox-danger-btn {
-  color: #b42318;
-  background: #fee4e2;
-}
-
+.mailbox-command:hover,
+.mailbox-compose-btn:hover,
 .mailbox-primary-btn:hover,
-.mailbox-ghost-btn:hover,
 .mailbox-icon-btn:hover {
   transform: translateY(-1px);
 }
 
+.mailbox-command:disabled,
 .mailbox-primary-btn:disabled,
-.mailbox-icon-btn:disabled {
-  opacity: 0.55;
+.mailbox-icon-btn:disabled,
+.mailbox-move select:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
   transform: none;
 }
 
-.mailbox-compose,
-.mailbox-settings {
-  padding: 20px;
-  background: #fff;
+.mailbox-command.danger {
+  color: #b42318;
+  border-color: #fecaca;
+  background: #fff7f7;
 }
 
-.mailbox-compose {
-  margin-bottom: 18px;
+.mailbox-command.settings {
+  width: 38px;
+  padding: 0;
+  margin-left: auto;
 }
 
-.mailbox-settings-head {
+.mailbox-folder-nav {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 18px;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  overflow: auto;
 }
 
-.mailbox-settings h2 {
-  margin: 0 0 4px;
-  color: #102a43;
-  font-size: 1.12rem;
-  font-weight: 800;
+.mailbox-nav-title {
+  margin: 10px 8px 4px;
+  color: #6b7b8d;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
-.mailbox-settings p {
-  margin: 0;
-  color: #64748b;
-}
-
-.mailbox-settings-form {
+.mailbox-folder-btn {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.mailbox-settings-form label {
-  display: grid;
-  gap: 6px;
-  color: #334155;
-  font-size: 0.86rem;
-  font-weight: 800;
-}
-
-.mailbox-settings-form input,
-.mailbox-settings-form select,
-.mailbox-compose-form input,
-.mailbox-compose-form textarea,
-.mailbox-search input {
-  width: 100%;
-  border: 1px solid #cfe1e8;
-  border-radius: 8px;
-  background: #fff;
-  color: #102a43;
-  outline: none;
-}
-
-.mailbox-settings-form input,
-.mailbox-settings-form select,
-.mailbox-compose-form input {
-  min-height: 42px;
-  padding: 0 12px;
-}
-
-.mailbox-settings-form input:focus,
-.mailbox-settings-form select:focus,
-.mailbox-compose-form input:focus,
-.mailbox-compose-form textarea:focus,
-.mailbox-search input:focus {
-  border-color: #0786b1;
-  box-shadow: 0 0 0 3px rgba(7, 134, 177, 0.12);
-}
-
-.mailbox-settings-actions,
-.mailbox-alert {
-  grid-column: 1 / -1;
-}
-
-.mailbox-compose-form {
-  display: grid;
-  gap: 14px;
-}
-
-.mailbox-compose-form label {
-  display: grid;
-  gap: 6px;
-  color: #334155;
-  font-size: 0.86rem;
-  font-weight: 800;
-}
-
-.mailbox-compose-form textarea {
-  min-height: 190px;
-  padding: 12px;
-  resize: vertical;
-}
-
-.mailbox-ghost-light-btn {
-  min-height: 40px;
-  padding: 0 16px;
-  border: 1px solid #cfe1e8;
-  border-radius: 8px;
-  color: #0f5f76;
-  background: #fff;
-  font-weight: 800;
-}
-
-.mailbox-alert {
-  display: flex;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 8px;
   align-items: center;
-  gap: 10px;
-  padding: 11px 12px;
+  min-height: 36px;
+  padding: 0 9px;
+  border: 1px solid transparent;
   border-radius: 8px;
-  font-weight: 700;
+  color: #23364d;
+  background: transparent;
+  text-align: left;
+  text-decoration: none;
 }
 
-.mailbox-alert-danger {
-  color: #9f1239;
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
-}
-
-.mailbox-alert-inline {
-  margin: 14px;
-}
-
-.mailbox-workspace {
+.mailbox-folder-btn span {
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mailbox-folder-btn:hover,
+.mailbox-folder-btn.active {
+  color: #075985;
+  background: #e7f5fa;
+  border-color: #c3e3ee;
+}
+
+.mailbox-folder-btn b {
+  min-width: 22px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  color: #fff;
+  background: #0b83a5;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.mailbox-side-card {
+  margin-top: auto;
+  padding: 12px;
+  border: 1px solid #d8e9ef;
+  border-radius: 8px;
   background: #fff;
 }
 
-.mailbox-toolbar {
+.mailbox-side-card strong {
+  display: block;
+  margin-top: 2px;
+  color: #102a43;
+}
+
+.mailbox-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  background: #fff;
+}
+
+.mailbox-topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px;
-  background: #f4fbfd;
-  border-bottom: 1px solid #d9ecf2;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid #e0edf2;
+  background: #fff;
+}
+
+.mailbox-topbar h1,
+.mailbox-settings h1,
+.mailbox-compose-head h2 {
+  margin: 2px 0 0;
+  color: #102a43;
+  font-size: 1.22rem;
+  font-weight: 900;
 }
 
 .mailbox-search {
   position: relative;
   flex: 1;
-  max-width: 520px;
+  max-width: 440px;
 }
 
 .mailbox-search i {
@@ -776,98 +1023,151 @@ onMounted(loadSettings)
   transform: translateY(-50%);
 }
 
+.mailbox-search input,
+.mailbox-settings-form input,
+.mailbox-settings-form select,
+.mailbox-compose-form input,
+.mailbox-compose-form textarea,
+.mailbox-move select {
+  width: 100%;
+  border: 1px solid #cfe1e8;
+  border-radius: 8px;
+  background: #fff;
+  color: #102a43;
+  outline: none;
+}
+
 .mailbox-search input {
-  min-height: 42px;
+  min-height: 40px;
   padding: 0 14px 0 40px;
 }
 
-.mailbox-unread {
-  padding: 9px 12px;
-  border-radius: 999px;
-  color: #075985;
-  background: #e0f2fe;
-  font-size: 0.84rem;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.mailbox-grid {
-  display: grid;
-  grid-template-columns: minmax(310px, 390px) minmax(0, 1fr);
-  min-height: 590px;
-}
-
-.mailbox-list {
+.mailbox-commandbar {
   display: flex;
-  flex-direction: column;
-  max-height: 72vh;
-  overflow: auto;
-  border-right: 1px solid #e2edf2;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e0edf2;
   background: #f8fbfc;
 }
 
-.mailbox-list-item {
+.mailbox-command {
+  min-height: 34px;
+  padding: 0 11px;
+  font-size: 0.84rem;
+}
+
+.mailbox-move {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.mailbox-move select {
+  min-height: 34px;
+  min-width: 164px;
+  padding: 0 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.mailbox-content {
+  display: grid;
+  grid-template-columns: minmax(300px, 390px) minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+}
+
+.mailbox-list-pane {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  border-right: 1px solid #e0edf2;
+  background: #f8fbfc;
+}
+
+.mailbox-list-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e0edf2;
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.mailbox-list-head strong {
+  color: #102a43;
+}
+
+.mailbox-message-list {
+  min-height: 0;
+  overflow: auto;
+}
+
+.mailbox-message-item {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   gap: 10px;
   width: 100%;
   padding: 13px 12px;
   border: 0;
-  border-bottom: 1px solid #e2edf2;
+  border-bottom: 1px solid #e0edf2;
   background: transparent;
   color: #243b53;
   text-align: left;
   cursor: pointer;
 }
 
-.mailbox-list-item:hover,
-.mailbox-list-item.active {
+.mailbox-message-item:hover,
+.mailbox-message-item.active {
   background: #e9f7fb;
 }
 
-.mailbox-list-item.unread .mailbox-subject,
-.mailbox-list-item.unread strong {
+.mailbox-message-item.active {
+  box-shadow: inset 3px 0 0 #087da0;
+}
+
+.mailbox-message-item.unread .mailbox-subject,
+.mailbox-message-item.unread strong {
   color: #062f4f;
   font-weight: 900;
 }
 
 .mailbox-avatar {
-  display: grid;
-  place-items: center;
   width: 42px;
   height: 42px;
-  border-radius: 8px;
   color: #06708f;
   background: #d9f3f6;
-  font-weight: 900;
 }
 
-.mailbox-list-content,
-.mailbox-list-top {
+.mailbox-message-content,
+.mailbox-message-top {
   min-width: 0;
 }
 
-.mailbox-list-top {
+.mailbox-message-top {
   display: flex;
   justify-content: space-between;
   gap: 10px;
 }
 
-.mailbox-list-top strong,
+.mailbox-message-top strong,
 .mailbox-subject {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.mailbox-list-top strong {
+.mailbox-message-top strong {
   display: block;
   color: #334155;
   font-size: 0.9rem;
 }
 
-.mailbox-list-top time,
-.mailbox-list-meta {
+.mailbox-message-top time,
+.mailbox-message-meta {
   color: #64748b;
   font-size: 0.78rem;
 }
@@ -879,32 +1179,15 @@ onMounted(loadSettings)
   font-size: 0.88rem;
 }
 
-.mailbox-list-meta {
+.mailbox-message-meta {
   display: flex;
   align-items: center;
   gap: 7px;
   margin-top: 6px;
 }
 
-.mailbox-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 12px;
-  margin-top: auto;
-  background: #fff;
-}
-
-.mailbox-pagination button {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border: 1px solid #cfe1e8;
-  border-radius: 8px;
-  color: #0f5f76;
-  background: #fff;
+.mailbox-message-meta .fa-star {
+  color: #c28a05;
 }
 
 .mailbox-reader {
@@ -936,14 +1219,149 @@ onMounted(loadSettings)
   font-size: 0.86rem;
 }
 
+.mailbox-reader-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.mailbox-reader-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 18px;
+  border-bottom: 1px solid #e2edf2;
+  background: #fbfdfe;
+}
+
+.mailbox-reader-tools button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #d6e6ec;
+  border-radius: 8px;
+  color: #0f5f76;
+  background: #fff;
+  font-weight: 800;
+}
+
+.mailbox-reader-tools button.danger {
+  color: #b42318;
+  border-color: #fecaca;
+}
+
 .mailbox-reader-body {
   min-height: 420px;
-  padding: 18px;
+  padding: 20px;
   color: #1f2937;
   font-size: 0.94rem;
   line-height: 1.65;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.mailbox-settings {
+  padding: 22px;
+}
+
+.mailbox-settings-head,
+.mailbox-compose-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+}
+
+.mailbox-settings p {
+  margin: 4px 0 0;
+  color: #64748b;
+}
+
+.mailbox-settings-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mailbox-settings-form label,
+.mailbox-compose-form label {
+  display: grid;
+  gap: 6px;
+  color: #334155;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.mailbox-settings-form input,
+.mailbox-settings-form select,
+.mailbox-compose-form input {
+  min-height: 42px;
+  padding: 0 12px;
+}
+
+.mailbox-compose-form textarea {
+  min-height: 260px;
+  padding: 12px;
+  resize: vertical;
+}
+
+.mailbox-settings-form input:focus,
+.mailbox-settings-form select:focus,
+.mailbox-compose-form input:focus,
+.mailbox-compose-form textarea:focus,
+.mailbox-search input:focus,
+.mailbox-move select:focus {
+  border-color: #0786b1;
+  box-shadow: 0 0 0 3px rgba(7, 134, 177, 0.12);
+}
+
+.mailbox-settings-actions,
+.mailbox-alert {
+  grid-column: 1 / -1;
+}
+
+.mailbox-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.mailbox-alert-danger {
+  color: #9f1239;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+}
+
+.mailbox-alert-inline {
+  margin: 10px 12px 0;
+}
+
+.mailbox-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px;
+  margin-top: auto;
+  border-top: 1px solid #e0edf2;
+  background: #fff;
+}
+
+.mailbox-pagination button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid #cfe1e8;
+  border-radius: 8px;
+  color: #0f5f76;
+  background: #fff;
 }
 
 .mailbox-loading,
@@ -952,9 +1370,13 @@ onMounted(loadSettings)
   display: grid;
   place-items: center;
   gap: 12px;
-  min-height: 220px;
+  min-height: 240px;
   color: #64748b;
   text-align: center;
+}
+
+.mailbox-loading-page {
+  min-height: calc(100vh - 140px);
 }
 
 .mailbox-loading-panel {
@@ -967,7 +1389,8 @@ onMounted(loadSettings)
   font-size: 2.4rem;
 }
 
-.mailbox-empty h3 {
+.mailbox-empty h3,
+.mailbox-reader-empty h3 {
   margin: 0;
   color: #334155;
   font-size: 1rem;
@@ -979,40 +1402,114 @@ onMounted(loadSettings)
   margin: 0;
 }
 
-@media (max-width: 860px) {
-  .mailbox-page {
-    padding: 14px;
+.mailbox-compose-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  display: flex;
+  justify-content: flex-end;
+  padding: 18px;
+  background: rgba(11, 31, 46, 0.32);
+}
+
+.mailbox-compose-drawer {
+  display: flex;
+  width: min(720px, 100%);
+  flex-direction: column;
+  padding: 18px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 22px 70px rgba(11, 31, 46, 0.28);
+}
+
+.mailbox-compose-form {
+  display: grid;
+  gap: 14px;
+  min-height: 0;
+}
+
+.mailbox-compose-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.mailbox-ghost-light-btn {
+  padding: 0 16px;
+}
+
+@media (max-width: 1040px) {
+  .outlook-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 
-  .mailbox-hero,
-  .mailbox-toolbar,
+  .mailbox-content {
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .mailbox-page {
+    padding: 10px;
+  }
+
+  .outlook-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .mailbox-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid #dbeaf0;
+  }
+
+  .mailbox-folder-nav {
+    flex-direction: row;
+    padding-bottom: 4px;
+    overflow-x: auto;
+  }
+
+  .mailbox-nav-title,
+  .mailbox-side-card {
+    display: none;
+  }
+
+  .mailbox-folder-btn {
+    min-width: 160px;
+  }
+
+  .mailbox-topbar,
   .mailbox-reader-head,
-  .mailbox-settings-head {
+  .mailbox-settings-head,
+  .mailbox-compose-head {
     align-items: stretch;
     flex-direction: column;
   }
 
-  .mailbox-hero-actions,
-  .mailbox-toolbar-actions {
-    justify-content: space-between;
+  .mailbox-search {
+    max-width: none;
+  }
+
+  .mailbox-content {
+    grid-template-columns: 1fr;
+  }
+
+  .mailbox-list-pane {
+    max-height: 480px;
+    border-right: 0;
+    border-bottom: 1px solid #e0edf2;
   }
 
   .mailbox-settings-form {
     grid-template-columns: 1fr;
   }
 
-  .mailbox-grid {
-    grid-template-columns: 1fr;
+  .mailbox-compose-backdrop {
+    padding: 10px;
   }
 
-  .mailbox-list {
-    max-height: 420px;
-    border-right: 0;
-    border-bottom: 1px solid #e2edf2;
-  }
-
-  .mailbox-reader-body {
-    min-height: 300px;
+  .mailbox-compose-drawer {
+    max-height: calc(100vh - 20px);
+    overflow: auto;
   }
 }
 </style>

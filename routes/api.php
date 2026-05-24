@@ -190,10 +190,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('mail-history', [MessageController::class, 'history']);
     Route::get('mailbox/settings', [MailboxController::class, 'settings']);
     Route::post('mailbox/settings', [MailboxController::class, 'saveSettings']);
+    Route::get('mailbox/folders', [MailboxController::class, 'folders']);
     Route::get('mailbox/messages', [MailboxController::class, 'messages']);
     Route::post('mailbox/send', [MailboxController::class, 'send']);
     Route::get('mailbox/messages/{uid}', [MailboxController::class, 'show'])->whereNumber('uid');
     Route::post('mailbox/messages/{uid}/read', [MailboxController::class, 'markRead'])->whereNumber('uid');
+    Route::post('mailbox/messages/{uid}/flag', [MailboxController::class, 'flag'])->whereNumber('uid');
+    Route::post('mailbox/messages/{uid}/move', [MailboxController::class, 'move'])->whereNumber('uid');
     Route::delete('mailbox/messages/{uid}', [MailboxController::class, 'destroy'])->whereNumber('uid');
 
     // RH Agents (role-protected)

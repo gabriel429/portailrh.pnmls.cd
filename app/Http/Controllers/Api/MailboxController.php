@@ -91,11 +91,13 @@ class MailboxController extends ApiController
         $perPage = min(max((int) $request->query('per_page', config('mailbox.per_page', 15)), 5), 50);
         $page = max((int) $request->query('page', 1), 1);
         $search = trim((string) $request->query('search', ''));
+        $filter = (string) $request->query('filter', '');
+        $folder = $this->mailboxFromRequest($request);
 
-        $stream = $this->openCredentialConnection($credential);
+        $stream = $this->openCredentialConnection($credential, $folder);
 
         try {
-            $uids = $this->searchMessageUids($stream, $search);
+            $uids = $this->searchMessageUids($stream, $search, $filter);
             rsort($uids, SORT_NUMERIC);
 
             $total = count($uids);
@@ -114,7 +116,21 @@ class MailboxController extends ApiController
                 'current_page' => $page,
                 'last_page' => max((int) ceil($total / $perPage), 1),
                 'unread_count' => $unreadCount,
+                'folder' => $folder,
+                'filter' => $filter,
             ]);
+        } finally {
+            imap_close($stream);
+        }
+    }
+
+    public function folders(Request $request): JsonResponse
+    {
+        $credential = $this->requireCredential($request);
+        $stream = $this->openCredentialConnection($credential);
+
+        try {
+            return $this->success($this->folderPayloads($stream, $credential));
         } finally {
             imap_close($stream);
         }
@@ -123,7 +139,8 @@ class MailboxController extends ApiController
     public function show(Request $request, int $uid): JsonResponse
     {
         $credential = $this->requireCredential($request);
-        $stream = $this->openCredentialConnection($credential);
+        $folder = $this->mailboxFromRequest($request);
+        $stream = $this->openCredentialConnection($credential, $folder);
 
         try {
             $overview = $this->overviewPayload($stream, $uid);
@@ -151,8 +168,9 @@ class MailboxController extends ApiController
             'seen' => ['sometimes', 'boolean'],
         ]);
         $seen = (bool) ($validated['seen'] ?? true);
+        $folder = $this->mailboxFromRequest($request);
 
-        $stream = $this->openCredentialConnection($credential);
+        $stream = $this->openCredentialConnection($credential, $folder);
 
         try {
             if ($seen) {
@@ -165,6 +183,66 @@ class MailboxController extends ApiController
                 'uid' => $uid,
                 'seen' => $seen,
                 'unread' => !$seen,
+            ]);
+        } finally {
+            imap_close($stream);
+        }
+    }
+
+    public function flag(Request $request, int $uid): JsonResponse
+    {
+        $credential = $this->requireCredential($request);
+        $validated = $request->validate([
+            'flagged' => ['sometimes', 'boolean'],
+        ]);
+        $flagged = (bool) ($validated['flagged'] ?? true);
+        $folder = $this->mailboxFromRequest($request);
+        $stream = $this->openCredentialConnection($credential, $folder);
+
+        try {
+            if ($flagged) {
+                imap_setflag_full($stream, (string) $uid, '\\Flagged', ST_UID);
+            } else {
+                imap_clearflag_full($stream, (string) $uid, '\\Flagged', ST_UID);
+            }
+
+            return $this->success([
+                'uid' => $uid,
+                'flagged' => $flagged,
+            ]);
+        } finally {
+            imap_close($stream);
+        }
+    }
+
+    public function move(Request $request, int $uid): JsonResponse
+    {
+        $credential = $this->requireCredential($request);
+        $validated = $request->validate([
+            'folder' => ['required', 'string', 'max:255'],
+        ]);
+
+        $sourceFolder = $this->mailboxFromRequest($request);
+        $targetFolder = $this->sanitizeMailboxName($validated['folder']);
+        $stream = $this->openCredentialConnection($credential, $sourceFolder);
+
+        try {
+            if (!@imap_mail_move($stream, (string) $uid, $targetFolder, CP_UID)) {
+                $errors = imap_errors() ?: [];
+
+                throw ValidationException::withMessages([
+                    'folder' => [Arr::first($errors) ?: 'Deplacement du mail impossible.'],
+                ]);
+            }
+
+            imap_expunge($stream);
+
+            return $this->success([
+                'uid' => $uid,
+                'source_folder' => $sourceFolder,
+                'target_folder' => $targetFolder,
+            ], [], [
+                'message' => 'Mail deplace.',
             ]);
         } finally {
             imap_close($stream);
@@ -232,7 +310,8 @@ class MailboxController extends ApiController
     public function destroy(Request $request, int $uid): JsonResponse
     {
         $credential = $this->requireCredential($request);
-        $stream = $this->openCredentialConnection($credential);
+        $folder = $this->mailboxFromRequest($request);
+        $stream = $this->openCredentialConnection($credential, $folder);
 
         try {
             imap_delete($stream, (string) $uid, FT_UID);
@@ -289,7 +368,27 @@ class MailboxController extends ApiController
         return $credential;
     }
 
-    private function openCredentialConnection(MailboxCredential $credential)
+    private function mailboxFromRequest(Request $request): string
+    {
+        $folder = $request->query('folder', $request->input('source_folder', 'INBOX'));
+
+        return $this->sanitizeMailboxName((string) $folder);
+    }
+
+    private function sanitizeMailboxName(string $folder): string
+    {
+        $folder = trim($folder) ?: 'INBOX';
+
+        if (strlen($folder) > 255 || str_contains($folder, "\0") || str_contains($folder, "\r") || str_contains($folder, "\n") || str_contains($folder, '{') || str_contains($folder, '}')) {
+            throw ValidationException::withMessages([
+                'folder' => ['Dossier mail invalide.'],
+            ]);
+        }
+
+        return $folder;
+    }
+
+    private function openCredentialConnection(MailboxCredential $credential, string $folder = 'INBOX')
     {
         return $this->openConnectionFor(
             $credential->imap_host,
@@ -297,10 +396,11 @@ class MailboxController extends ApiController
             $credential->imap_encryption,
             $credential->imap_username,
             $credential->imap_password,
+            $folder,
         );
     }
 
-    private function openConnectionFor(string $host, int $port, string $encryption, string $username, string $password)
+    private function openConnectionFor(string $host, int $port, string $encryption, string $username, string $password, string $folder = 'INBOX')
     {
         if (!function_exists('imap_open')) {
             throw ValidationException::withMessages([
@@ -311,7 +411,7 @@ class MailboxController extends ApiController
         imap_errors();
         imap_alerts();
 
-        $mailbox = sprintf('{%s:%d/imap%s}INBOX', $host, $port, $this->imapFlags($encryption));
+        $mailbox = $this->mailboxPath($host, $port, $encryption, $this->sanitizeMailboxName($folder));
         $stream = @imap_open($mailbox, $username, $password, 0, 1, [
             'DISABLE_AUTHENTICATOR' => 'GSSAPI',
         ]);
@@ -326,6 +426,21 @@ class MailboxController extends ApiController
         return $stream;
     }
 
+    private function mailboxRoot(MailboxCredential $credential): string
+    {
+        return $this->mailboxPath(
+            $credential->imap_host,
+            (int) $credential->imap_port,
+            $credential->imap_encryption,
+            '',
+        );
+    }
+
+    private function mailboxPath(string $host, int $port, string $encryption, string $folder): string
+    {
+        return sprintf('{%s:%d/imap%s}%s', $host, $port, $this->imapFlags($encryption), $folder);
+    }
+
     private function imapFlags(string $encryption): string
     {
         return match ($encryption) {
@@ -335,13 +450,124 @@ class MailboxController extends ApiController
         };
     }
 
-    private function searchMessageUids($stream, string $search): array
+    private function folderPayloads($stream, MailboxCredential $credential): array
     {
-        if ($search === '') {
-            return imap_search($stream, 'ALL', SE_UID) ?: [];
+        $root = $this->mailboxRoot($credential);
+        $mailboxes = @imap_getmailboxes($stream, $root, '*') ?: [];
+        $folders = [];
+
+        foreach ($mailboxes as $mailbox) {
+            $rawName = str_starts_with($mailbox->name, $root)
+                ? substr($mailbox->name, strlen($root))
+                : $mailbox->name;
+
+            $rawName = trim((string) $rawName);
+            if ($rawName === '') {
+                continue;
+            }
+
+            $decodedName = $this->decodeFolderName($rawName);
+            $status = @imap_status($stream, $root . $rawName, SA_MESSAGES | SA_UNSEEN);
+            $type = $this->specialFolderType($decodedName);
+
+            $folders[] = [
+                'name' => $rawName,
+                'label' => $this->friendlyFolderLabel($decodedName, $type),
+                'type' => $type,
+                'total' => (int) ($status->messages ?? 0),
+                'unread' => (int) ($status->unseen ?? 0),
+            ];
         }
 
-        $criteria = 'TEXT "' . str_replace(['\\', '"'], ['\\\\', '\"'], $search) . '"';
+        if (!collect($folders)->contains(fn (array $folder) => $folder['type'] === 'inbox')) {
+            array_unshift($folders, [
+                'name' => 'INBOX',
+                'label' => 'Boite de reception',
+                'type' => 'inbox',
+                'total' => 0,
+                'unread' => 0,
+            ]);
+        }
+
+        return collect($folders)
+            ->unique('name')
+            ->sortBy(fn (array $folder) => sprintf('%02d-%s', $this->folderSortWeight($folder['type']), $folder['label']))
+            ->values()
+            ->all();
+    }
+
+    private function specialFolderType(string $name): string
+    {
+        $normalized = mb_strtolower($name);
+
+        return match (true) {
+            $normalized === 'inbox' || str_ends_with($normalized, '.inbox') || str_ends_with($normalized, '/inbox') => 'inbox',
+            str_contains($normalized, 'sent') || str_contains($normalized, 'envoy') => 'sent',
+            str_contains($normalized, 'draft') || str_contains($normalized, 'brouillon') => 'drafts',
+            str_contains($normalized, 'archive') => 'archive',
+            str_contains($normalized, 'junk') || str_contains($normalized, 'spam') || str_contains($normalized, 'indesirable') => 'junk',
+            str_contains($normalized, 'trash') || str_contains($normalized, 'deleted') || str_contains($normalized, 'corbeille') => 'trash',
+            default => 'folder',
+        };
+    }
+
+    private function folderSortWeight(string $type): int
+    {
+        return [
+            'inbox' => 0,
+            'sent' => 1,
+            'drafts' => 2,
+            'archive' => 3,
+            'junk' => 4,
+            'trash' => 5,
+            'folder' => 10,
+        ][$type] ?? 10;
+    }
+
+    private function friendlyFolderLabel(string $name, string $type): string
+    {
+        if ($type !== 'folder') {
+            return [
+                'inbox' => 'Boite de reception',
+                'sent' => 'Envoyes',
+                'drafts' => 'Brouillons',
+                'archive' => 'Archives',
+                'junk' => 'Indesirables',
+                'trash' => 'Corbeille',
+            ][$type];
+        }
+
+        $cleaned = preg_replace('/^INBOX[.\/]/i', '', $name) ?: $name;
+        $parts = preg_split('/[.\/]/', $cleaned);
+
+        return trim((string) end($parts)) ?: $name;
+    }
+
+    private function decodeFolderName(string $name): string
+    {
+        if (function_exists('imap_utf7_decode')) {
+            $decoded = @imap_utf7_decode($name);
+            if (is_string($decoded) && $decoded !== '') {
+                return $decoded;
+            }
+        }
+
+        return $name;
+    }
+
+    private function searchMessageUids($stream, string $search, string $filter = ''): array
+    {
+        $criteria = match ($filter) {
+            'unread' => 'UNSEEN',
+            'flagged' => 'FLAGGED',
+            'answered' => 'ANSWERED',
+            default => 'ALL',
+        };
+
+        if ($search !== '') {
+            $criteria = trim(($criteria === 'ALL' ? '' : $criteria) . ' TEXT "' . str_replace(['\\', '"'], ['\\\\', '\"'], $search) . '"');
+        }
+
         $uids = imap_search($stream, $criteria, SE_UID, 'UTF-8');
 
         return $uids ?: [];
