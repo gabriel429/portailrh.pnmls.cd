@@ -255,9 +255,17 @@ class MailboxController extends ApiController
         $validated = $request->validate([
             'to' => ['required', 'array', 'min:1', 'max:25'],
             'to.*' => ['required', 'email:rfc'],
+            'cc' => ['nullable', 'array', 'max:25'],
+            'cc.*' => ['required', 'email:rfc'],
+            'bcc' => ['nullable', 'array', 'max:25'],
+            'bcc.*' => ['required', 'email:rfc'],
             'subject' => ['required', 'string', 'max:180'],
             'body' => ['required', 'string', 'max:10000'],
         ]);
+
+        $to = collect($validated['to'])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->values();
+        $cc = collect($validated['cc'] ?? [])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->diff($to)->values();
+        $bcc = collect($validated['bcc'] ?? [])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->diff($to)->diff($cc)->values();
 
         config([
             'mail.mailers.mailbox' => [
@@ -274,11 +282,19 @@ class MailboxController extends ApiController
         ]);
 
         try {
-            Mail::mailer('mailbox')->raw($validated['body'], function ($message) use ($credential, $validated) {
+            Mail::mailer('mailbox')->raw($validated['body'], function ($message) use ($credential, $validated, $to, $cc, $bcc) {
                 $message
                     ->from($credential->email, config('app.name', 'E-PNMLS'))
-                    ->to($validated['to'])
+                    ->to($to->all())
                     ->subject($validated['subject']);
+
+                if ($cc->isNotEmpty()) {
+                    $message->cc($cc->all());
+                }
+
+                if ($bcc->isNotEmpty()) {
+                    $message->bcc($bcc->all());
+                }
             });
         } catch (Throwable $exception) {
             report($exception);
@@ -288,7 +304,7 @@ class MailboxController extends ApiController
             ]);
         }
 
-        foreach ($validated['to'] as $recipientEmail) {
+        foreach ($to->merge($cc)->merge($bcc)->unique()->values() as $recipientEmail) {
             SentMailHistory::create([
                 'sender_id' => $request->user()->id,
                 'agent_id' => null,
@@ -301,7 +317,9 @@ class MailboxController extends ApiController
         }
 
         return $this->success([
-            'sent' => count($validated['to']),
+            'sent' => $to->count(),
+            'cc' => $cc->count(),
+            'bcc' => $bcc->count(),
         ], [], [
             'message' => 'Mail envoye avec succes.',
         ], 201);
