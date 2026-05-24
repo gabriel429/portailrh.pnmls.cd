@@ -4481,7 +4481,7 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
     }
 }
 
-/* Mobile dashboards: quick actions must read as one full-width button per row */
+/* Mobile dashboards: quick actions read as two compact buttons per row */
 @media (max-width: 767.98px) {
     body #app :is(
         .dash-action-grid,
@@ -4493,8 +4493,8 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
         .rc-actions
     ) {
         display: grid !important;
-        grid-template-columns: 1fr !important;
-        gap: .78rem !important;
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: .62rem !important;
         width: 100% !important;
         margin-bottom: 1.15rem !important;
     }
@@ -4510,12 +4510,12 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
     ) {
         width: 100% !important;
         max-width: 100% !important;
-        min-height: 78px !important;
+        min-height: 92px !important;
         display: flex !important;
-        align-items: center !important;
+        align-items: flex-start !important;
         justify-content: flex-start !important;
-        gap: .85rem !important;
-        padding: .95rem 1rem !important;
+        gap: .6rem !important;
+        padding: .78rem .72rem !important;
     }
 
     body #app :is(
@@ -4533,6 +4533,36 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
     }
 
     body #app :is(
+        .dash-action-icon,
+        .sen-action-icon,
+        .sep-action-icon,
+        .rh-action-icon,
+        .dept-action-icon,
+        .caf-action-icon,
+        .rc-action-icon
+    ) {
+        width: 36px !important;
+        height: 36px !important;
+        flex: 0 0 36px !important;
+        border-radius: 10px !important;
+        font-size: .95rem !important;
+    }
+
+    body #app :is(
+        .dash-action-name,
+        .sen-action-label,
+        .sep-action-label,
+        .rh-action-label,
+        .dept-action-label,
+        .caf-action-label,
+        .rc-action-label
+    ) {
+        font-size: .76rem !important;
+        line-height: 1.12 !important;
+        overflow-wrap: anywhere !important;
+    }
+
+    body #app :is(
         .dash-action-desc,
         .sen-action-desc,
         .sep-action-desc,
@@ -4545,6 +4575,7 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
         white-space: normal !important;
         overflow: visible !important;
         text-overflow: clip !important;
-        line-height: 1.18 !important;
+        font-size: .64rem !important;
+        line-height: 1.12 !important;
     }
 }
