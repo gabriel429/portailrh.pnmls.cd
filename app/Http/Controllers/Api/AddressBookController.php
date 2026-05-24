@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Agent;
+use App\Models\SentMailHistory;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -102,8 +103,36 @@ class AddressBookController extends ApiController
 
         return $this->success([
             'groups' => $groups,
+            'recent_recipients' => $this->recentRecipients($request),
             'total' => $agents->count(),
         ]);
+    }
+
+    private function recentRecipients(Request $request): array
+    {
+        return SentMailHistory::query()
+            ->where('sender_id', $request->user()->id)
+            ->whereNotNull('recipient_email')
+            ->where('recipient_email', '<>', '')
+            ->orderByDesc('sent_at')
+            ->orderByDesc('id')
+            ->limit(120)
+            ->get(['recipient_name', 'recipient_email', 'sent_at'])
+            ->map(function (SentMailHistory $history) {
+                $email = mb_strtolower(trim((string) $history->recipient_email));
+
+                return [
+                    'name' => trim((string) $history->recipient_name) ?: $email,
+                    'email' => $email,
+                    'label' => 'Destinataire recent',
+                    'last_sent_at' => $history->sent_at?->toISOString(),
+                ];
+            })
+            ->filter(fn (array $recipient) => filter_var($recipient['email'], FILTER_VALIDATE_EMAIL))
+            ->unique('email')
+            ->take(30)
+            ->values()
+            ->all();
     }
 
     private function institutionalPostOrder(string $poste): int

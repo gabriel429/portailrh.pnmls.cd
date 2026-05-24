@@ -498,6 +498,7 @@ const sendingMail = ref(false)
 const composeError = ref('')
 const loadingContacts = ref(false)
 const addressBookGroups = ref([])
+const recentRecipients = ref([])
 const activeRecipientField = ref('to')
 const toInput = ref(null)
 const ccInput = ref(null)
@@ -569,6 +570,8 @@ const contactOptions = computed(() => {
         email,
         poste: agent.poste || group.poste || '',
         structure: agent.structure || '',
+        source: 'agent',
+        recent: false,
         search: normalizeText([
           agent.nom_complet,
           email,
@@ -578,6 +581,28 @@ const contactOptions = computed(() => {
         ].filter(Boolean).join(' ')),
       })
     }
+  }
+
+  for (const recipient of recentRecipients.value) {
+    const email = normalizeEmail(recipient.email)
+    if (!email || seen.has(email)) continue
+
+    seen.add(email)
+    contacts.push({
+      id: `recent-${email}`,
+      name: recipient.name || email,
+      email,
+      poste: recipient.label || 'Destinataire recent',
+      structure: 'Mail recent',
+      source: 'recent',
+      recent: true,
+      search: normalizeText([
+        recipient.name,
+        email,
+        recipient.label,
+        'recent',
+      ].filter(Boolean).join(' ')),
+    })
   }
 
   return contacts
@@ -605,7 +630,7 @@ const smartGroups = computed(() => {
       key: `poste-${normalizeText(group.poste)}`,
       label: group.poste,
       icon: 'fa-id-badge',
-      contacts: contacts.filter(contact => normalizeText(contact.poste) === normalizeText(group.poste)),
+      contacts: contacts.filter(contact => contact.source === 'agent' && normalizeText(contact.poste) === normalizeText(group.poste)),
     }))
     .filter(group => group.contacts.length > 1)
 
@@ -625,13 +650,18 @@ const filteredContactSuggestions = computed(() => {
   const field = activeRecipientField.value
   const term = normalizeText(recipientDraft[field] || '')
   const pool = contactOptions.value.filter(contact => !isRecipientSelected(field, contact.email))
+  const bySmartOrder = (first, second) => Number(second.recent) - Number(first.recent)
+    || (first.name || first.email).localeCompare(second.name || second.email)
 
   if (!term) {
-    return pool.slice(0, 8)
+    return pool
+      .sort(bySmartOrder)
+      .slice(0, 8)
   }
 
   return pool
     .filter(contact => contact.search.includes(term))
+    .sort(bySmartOrder)
     .slice(0, 10)
 })
 
@@ -712,8 +742,10 @@ async function loadContacts() {
   try {
     const { data } = await client.get('/address-book')
     addressBookGroups.value = data.data?.groups || []
+    recentRecipients.value = data.data?.recent_recipients || []
   } catch (_) {
     addressBookGroups.value = []
+    recentRecipients.value = []
   } finally {
     loadingContacts.value = false
   }
@@ -903,6 +935,7 @@ async function sendMail() {
     resetComposeForm()
     composerOpen.value = false
     await loadFolders()
+    await loadContacts()
   } catch (error) {
     composeError.value = firstError(error) || 'Envoi impossible.'
   } finally {
