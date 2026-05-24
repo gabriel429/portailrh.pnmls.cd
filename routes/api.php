@@ -20,6 +20,7 @@ use App\Http\Controllers\Api\CommuniqueController;
 use App\Http\Controllers\Api\DocumentTravailController;
 use App\Http\Controllers\Api\ForumPostController;
 use App\Http\Controllers\Api\MessageController;
+use App\Http\Controllers\Api\MailboxController;
 use App\Http\Controllers\Api\UserExperienceController;
 use App\Http\Controllers\Api\JobDescriptionController;
 use App\Http\Controllers\Admin\ParametresController;
@@ -187,6 +188,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('messages', [MessageController::class, 'store']);
     Route::get('messages/{message}', [MessageController::class, 'show']);
     Route::get('mail-history', [MessageController::class, 'history']);
+    Route::get('mailbox/settings', [MailboxController::class, 'settings']);
+    Route::post('mailbox/settings', [MailboxController::class, 'saveSettings']);
+    Route::get('mailbox/messages', [MailboxController::class, 'messages']);
+    Route::post('mailbox/send', [MailboxController::class, 'send']);
+    Route::get('mailbox/messages/{uid}', [MailboxController::class, 'show'])->whereNumber('uid');
+    Route::post('mailbox/messages/{uid}/read', [MailboxController::class, 'markRead'])->whereNumber('uid');
+    Route::delete('mailbox/messages/{uid}', [MailboxController::class, 'destroy'])->whereNumber('uid');
 
     // RH Agents (role-protected)
     Route::middleware('role:Section ressources humaines,Chef Section RH,RH National,RH Provincial,Assistant RH,Assistant ressources humaines,Assistant ressource humaine,SECOM,Section Nouvelle Technologie,Chef Section Nouvelle Technologie,Chef de Section Nouvelle Technologie,SEN,SEP')->group(function () {

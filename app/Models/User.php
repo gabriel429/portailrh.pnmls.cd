@@ -94,6 +94,11 @@ class User extends Authenticatable
         return $this->hasOne(UserGuidedTour::class);
     }
 
+    public function mailboxCredential(): HasOne
+    {
+        return $this->hasOne(MailboxCredential::class);
+    }
+
     public function communiqueReads(): HasMany
     {
         return $this->hasMany(CommuniqueRead::class);

@@ -67,6 +67,12 @@ const routes = [
 
     // Historique emails
     {
+        path: '/mailbox',
+        name: 'mailbox.index',
+        component: () => import('@/views/messages/MailboxView.vue'),
+        meta: { auth: true },
+    },
+    {
         path: '/mail-history',
         name: 'mail.history',
         component: () => import('@/views/messages/MailHistoryView.vue'),

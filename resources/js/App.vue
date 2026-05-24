@@ -48,14 +48,12 @@
     </router-view>
   </component>
 
-  <!-- Bouton flottant Webmail -->
-  <a v-if="auth.isAuthenticated"
-     href="https://camulus.o2switch.net:2096/"
-     target="_blank"
-     rel="noopener noreferrer"
+  <!-- Bouton flottant Mail -->
+  <router-link v-if="auth.isAuthenticated"
+     :to="{ name: 'mailbox.index' }"
      class="webmail-fab text-decoration-none">
-    <i class="fas fa-at me-2"></i> Webmail
-  </a>
+    <i class="fas fa-at me-2"></i> Mail
+  </router-link>
 </template>
 
 <script setup>
