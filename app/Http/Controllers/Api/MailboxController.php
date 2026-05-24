@@ -261,11 +261,14 @@ class MailboxController extends ApiController
             'bcc.*' => ['required', 'email:rfc'],
             'subject' => ['required', 'string', 'max:180'],
             'body' => ['required', 'string', 'max:10000'],
+            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments.*' => ['file', 'max:10240'],
         ]);
 
         $to = collect($validated['to'])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->values();
         $cc = collect($validated['cc'] ?? [])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->diff($to)->values();
         $bcc = collect($validated['bcc'] ?? [])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->diff($to)->diff($cc)->values();
+        $attachments = collect($request->file('attachments', []))->filter()->values();
 
         config([
             'mail.mailers.mailbox' => [
@@ -282,7 +285,7 @@ class MailboxController extends ApiController
         ]);
 
         try {
-            Mail::mailer('mailbox')->raw($validated['body'], function ($message) use ($credential, $validated, $to, $cc, $bcc) {
+            Mail::mailer('mailbox')->raw($validated['body'], function ($message) use ($credential, $validated, $to, $cc, $bcc, $attachments) {
                 $message
                     ->from($credential->email, config('app.name', 'E-PNMLS'))
                     ->to($to->all())
@@ -294,6 +297,13 @@ class MailboxController extends ApiController
 
                 if ($bcc->isNotEmpty()) {
                     $message->bcc($bcc->all());
+                }
+
+                foreach ($attachments as $attachment) {
+                    $message->attach($attachment->getRealPath(), [
+                        'as' => $attachment->getClientOriginalName(),
+                        'mime' => $attachment->getMimeType(),
+                    ]);
                 }
             });
         } catch (Throwable $exception) {
@@ -312,6 +322,7 @@ class MailboxController extends ApiController
                 'recipient_email' => mb_strtolower($recipientEmail),
                 'subject' => $validated['subject'],
                 'body' => $validated['body'],
+                'attachment_name' => $this->attachmentHistoryLabel($attachments),
                 'sent_at' => now(),
             ]);
         }
@@ -320,9 +331,27 @@ class MailboxController extends ApiController
             'sent' => $to->count(),
             'cc' => $cc->count(),
             'bcc' => $bcc->count(),
+            'attachments' => $attachments->count(),
         ], [], [
             'message' => 'Mail envoye avec succes.',
         ], 201);
+    }
+
+    private function attachmentHistoryLabel($attachments): ?string
+    {
+        $attachments = collect($attachments);
+
+        if ($attachments->isEmpty()) {
+            return null;
+        }
+
+        $firstName = (string) $attachments->first()->getClientOriginalName();
+
+        if ($attachments->count() === 1) {
+            return mb_strimwidth($firstName, 0, 180, '...');
+        }
+
+        return mb_strimwidth($firstName.' (+'.($attachments->count() - 1).')', 0, 180, '...');
     }
 
     public function destroy(Request $request, int $uid): JsonResponse

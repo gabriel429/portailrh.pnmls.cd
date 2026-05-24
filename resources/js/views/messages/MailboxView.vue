@@ -429,6 +429,36 @@
             <textarea v-model.trim="composeForm.body" rows="12" required></textarea>
           </label>
 
+          <div class="mailbox-attachments">
+            <input
+              ref="attachmentInput"
+              class="mailbox-file-input"
+              type="file"
+              multiple
+              @change="handleAttachmentChange"
+            >
+            <button type="button" class="mailbox-attach-btn" @click="openAttachmentPicker">
+              <i class="fas fa-paperclip"></i>
+              Pieces jointes
+            </button>
+            <span>5 fichiers max, 10 Mo par fichier</span>
+          </div>
+
+          <div v-if="composeForm.attachments.length" class="mailbox-attachment-list">
+            <div
+              v-for="(file, index) in composeForm.attachments"
+              :key="`${file.name}-${file.size}-${index}`"
+              class="mailbox-attachment-item"
+            >
+              <i class="fas fa-file"></i>
+              <span>{{ file.name }}</span>
+              <small>{{ formatSize(file.size) }}</small>
+              <button type="button" title="Retirer" @click="removeAttachment(index)">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+
           <div v-if="composeError" class="mailbox-alert mailbox-alert-danger">
             <i class="fas fa-triangle-exclamation"></i>
             {{ composeError }}
@@ -472,6 +502,7 @@ const activeRecipientField = ref('to')
 const toInput = ref(null)
 const ccInput = ref(null)
 const bccInput = ref(null)
+const attachmentInput = ref(null)
 
 const messages = ref([])
 const meta = ref({ total: 0, current_page: 1, last_page: 1, per_page: 15, unread_count: 0 })
@@ -498,6 +529,7 @@ const composeForm = reactive({
   bcc: [],
   subject: '',
   body: '',
+  attachments: [],
 })
 
 const recipientDraft = reactive({
@@ -858,19 +890,17 @@ async function sendMail() {
   composeError.value = ''
 
   try {
-    await client.post('/mailbox/send', {
-      to: recipients,
-      cc: recipientEmails('cc'),
-      bcc: recipientEmails('bcc'),
-      subject: composeForm.subject,
-      body: composeForm.body,
-    })
+    const payload = new FormData()
+    recipients.forEach(email => payload.append('to[]', email))
+    recipientEmails('cc').forEach(email => payload.append('cc[]', email))
+    recipientEmails('bcc').forEach(email => payload.append('bcc[]', email))
+    payload.append('subject', composeForm.subject)
+    payload.append('body', composeForm.body)
+    composeForm.attachments.forEach(file => payload.append('attachments[]', file))
 
-    composeForm.to = []
-    composeForm.cc = []
-    composeForm.bcc = []
-    composeForm.subject = ''
-    composeForm.body = ''
+    await client.post('/mailbox/send', payload)
+
+    resetComposeForm()
     composerOpen.value = false
     await loadFolders()
   } catch (error) {
@@ -886,11 +916,22 @@ function openComposer() {
   window.setTimeout(() => focusRecipient('to'), 80)
 }
 
-function replyToSelected() {
-  if (!selectedMessage.value) return
+function resetComposeForm() {
   composeForm.to = []
   composeForm.cc = []
   composeForm.bcc = []
+  composeForm.subject = ''
+  composeForm.body = ''
+  composeForm.attachments = []
+
+  if (attachmentInput.value) {
+    attachmentInput.value.value = ''
+  }
+}
+
+function replyToSelected() {
+  if (!selectedMessage.value) return
+  resetComposeForm()
   addRecipient('to', {
     email: extractEmail(selectedMessage.value.from),
     name: cleanSender(selectedMessage.value.from),
@@ -904,9 +945,7 @@ function replyToSelected() {
 
 function forwardSelected() {
   if (!selectedMessage.value) return
-  composeForm.to = []
-  composeForm.cc = []
-  composeForm.bcc = []
+  resetComposeForm()
   composeForm.subject = selectedMessage.value.subject?.startsWith('Tr:')
     ? selectedMessage.value.subject
     : `Tr: ${selectedMessage.value.subject || ''}`.trim()
@@ -1002,6 +1041,45 @@ function isRecipientSelected(field, email) {
 
 function recipientEmails(field) {
   return composeForm[field].map(recipient => recipient.email)
+}
+
+function openAttachmentPicker() {
+  attachmentInput.value?.click()
+}
+
+function handleAttachmentChange(event) {
+  const files = Array.from(event.target.files || [])
+  const nextAttachments = [...composeForm.attachments]
+  composeError.value = ''
+
+  for (const file of files) {
+    if (nextAttachments.length >= 5) {
+      composeError.value = 'Maximum 5 pieces jointes par mail.'
+      break
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      composeError.value = `${file.name} depasse 10 Mo.`
+      continue
+    }
+
+    const alreadyAdded = nextAttachments.some(item => (
+      item.name === file.name
+      && item.size === file.size
+      && item.lastModified === file.lastModified
+    ))
+
+    if (!alreadyAdded) {
+      nextAttachments.push(file)
+    }
+  }
+
+  composeForm.attachments = nextAttachments
+  event.target.value = ''
+}
+
+function removeAttachment(index) {
+  composeForm.attachments = composeForm.attachments.filter((_, itemIndex) => itemIndex !== index)
 }
 
 function contactInitial(contact) {
@@ -1740,20 +1818,24 @@ onMounted(loadSettings)
 
 .mailbox-compose-backdrop {
   position: fixed;
-  inset: 0;
-  z-index: 2100;
+  top: var(--mailbox-compose-top, 76px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 6000;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 18px;
+  overflow: auto;
+  padding: 14px;
   background: rgba(11, 31, 46, 0.42);
   backdrop-filter: blur(6px);
 }
 
 .mailbox-compose-drawer {
   display: flex;
-  width: min(900px, 100%);
-  max-height: calc(100vh - 36px);
+  width: min(900px, calc(100vw - 28px));
+  max-height: calc(100dvh - var(--mailbox-compose-top, 76px) - 28px);
   flex-direction: column;
   overflow: hidden;
   padding: 0;
@@ -1977,6 +2059,94 @@ onMounted(loadSettings)
   font-size: 0.74rem;
 }
 
+.mailbox-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px dashed #b8d7e2;
+  border-radius: 8px;
+  background: #f8fbfc;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.mailbox-file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mailbox-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid #9ccbd8;
+  border-radius: 8px;
+  color: #0f5f76;
+  background: #fff;
+  font-weight: 900;
+}
+
+.mailbox-attach-btn:hover {
+  border-color: #0786b1;
+  background: #eef9fc;
+}
+
+.mailbox-attachment-list {
+  display: grid;
+  gap: 8px;
+}
+
+.mailbox-attachment-item {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto 30px;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border: 1px solid #e0edf2;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.mailbox-attachment-item span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mailbox-attachment-item small {
+  color: #64748b;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
+.mailbox-attachment-item button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  color: #64748b;
+  background: #eef4f7;
+}
+
+.mailbox-attachment-item button:hover {
+  color: #9f1239;
+  background: #ffe4e6;
+}
+
 .mailbox-compose-actions {
   display: flex;
   justify-content: flex-end;
@@ -1994,6 +2164,14 @@ onMounted(loadSettings)
 
   .mailbox-content {
     grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  }
+
+  .mailbox-compose-drawer {
+    width: min(820px, calc(100vw - 24px));
+  }
+
+  .mailbox-smart-groups button {
+    flex: 1 1 180px;
   }
 }
 
@@ -2053,12 +2231,18 @@ onMounted(loadSettings)
   }
 
   .mailbox-compose-backdrop {
+    top: 66px;
     padding: 10px;
   }
 
+  .mailbox-compose-head {
+    align-items: center;
+    flex-direction: row;
+  }
+
   .mailbox-compose-drawer {
-    max-height: calc(100vh - 20px);
-    overflow: auto;
+    width: min(720px, calc(100vw - 20px));
+    max-height: calc(100dvh - 86px);
   }
 
   .mailbox-contact-suggestions {
@@ -2067,6 +2251,65 @@ onMounted(loadSettings)
 
   .mailbox-recipient-row {
     grid-template-columns: 36px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .mailbox-compose-backdrop {
+    top: 64px;
+    padding: 8px;
+  }
+
+  .mailbox-compose-drawer {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 80px);
+  }
+
+  .mailbox-compose-head {
+    padding: 12px;
+  }
+
+  .mailbox-compose-form {
+    gap: 11px;
+    padding: 12px;
+  }
+
+  .mailbox-compose-form textarea {
+    min-height: 190px;
+  }
+
+  .mailbox-smart-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mailbox-smart-groups button {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    min-width: 0;
+    padding: 0 8px;
+  }
+
+  .mailbox-smart-groups button span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mailbox-attachments {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mailbox-attach-btn {
+    justify-content: center;
+  }
+
+  .mailbox-attachment-item {
+    grid-template-columns: 20px minmax(0, 1fr) 28px;
+  }
+
+  .mailbox-attachment-item small {
+    display: none;
   }
 }
 </style>
