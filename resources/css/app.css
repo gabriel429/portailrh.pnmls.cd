@@ -4480,3 +4480,71 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
         grid-template-columns: 1fr !important;
     }
 }
+
+/* Mobile dashboards: quick actions must read as one full-width button per row */
+@media (max-width: 767.98px) {
+    body #app :is(
+        .dash-action-grid,
+        .sen-actions,
+        .sep-actions,
+        .rh-actions,
+        .dept-actions,
+        .caf-actions,
+        .rc-actions
+    ) {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: .78rem !important;
+        width: 100% !important;
+        margin-bottom: 1.15rem !important;
+    }
+
+    body #app :is(
+        .dash-action-card,
+        .sen-action,
+        .sep-action,
+        .rh-action,
+        .dept-action,
+        .caf-action,
+        .rc-action
+    ) {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-height: 78px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: .85rem !important;
+        padding: .95rem 1rem !important;
+    }
+
+    body #app :is(
+        .dash-action-info,
+        .sen-action-text,
+        .sep-action-text,
+        .rh-action-text,
+        .dept-action-text,
+        .caf-action-text,
+        .rc-action-text
+    ) {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        text-align: left !important;
+    }
+
+    body #app :is(
+        .dash-action-desc,
+        .sen-action-desc,
+        .sep-action-desc,
+        .rh-action-desc,
+        .dept-action-desc,
+        .caf-action-desc,
+        .rc-action-desc
+    ) {
+        display: block !important;
+        white-space: normal !important;
+        overflow: visible !important;
+        text-overflow: clip !important;
+        line-height: 1.18 !important;
+    }
+}
