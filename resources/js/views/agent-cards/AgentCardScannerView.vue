@@ -78,6 +78,8 @@ const supportMessage = computed(() => {
 function extractToken(value) {
   const input = String(value || '').trim()
   if (!input) return ''
+  const compact = input.match(/^PNMLS-CARD:([A-Za-z0-9]+)/i)
+  if (compact?.[1]) return compact[1]
   const match = input.match(/agent-cards\/verify\/([^/?#]+)/)
   return decodeURIComponent(match?.[1] || input)
 }
@@ -110,7 +112,11 @@ async function startCamera() {
     }
 
     stream.value = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment' },
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
       audio: false,
     })
 
@@ -136,19 +142,27 @@ function startLoop() {
     if (scanning || !videoRef.value || videoRef.value.readyState < 2) return
     scanning = true
     try {
-      const value = detector.value
-        ? await detectWithNativeApi()
-        : detectWithCanvas()
+      let value = ''
+
+      if (detector.value) {
+        try {
+          value = await detectWithNativeApi()
+        } catch (_) {
+          detector.value = null
+        }
+      }
+
+      if (!value) {
+        value = detectWithCanvas()
+      }
 
       if (value) navigateToToken(value)
     } catch (_) {
-      if (detector.value) {
-        detector.value = null
-      }
+      detector.value = null
     } finally {
       scanning = false
     }
-  }, 450)
+  }, 260)
 }
 
 async function detectWithNativeApi() {
@@ -172,8 +186,15 @@ function detectWithCanvas() {
   ctx.drawImage(video, 0, 0, width, height)
 
   const imageData = ctx.getImageData(0, 0, width, height)
-  const code = jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })
-  return code?.data || ''
+  const fullCode = jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })
+  if (fullCode?.data) return fullCode.data
+
+  const side = Math.floor(Math.min(width, height) * .72)
+  const sx = Math.floor((width - side) / 2)
+  const sy = Math.floor((height - side) / 2)
+  const cropData = ctx.getImageData(sx, sy, side, side)
+  const cropCode = jsQR(cropData.data, side, side, { inversionAttempts: 'attemptBoth' })
+  return cropCode?.data || ''
 }
 
 function stopLoop() {

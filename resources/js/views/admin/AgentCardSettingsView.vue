@@ -196,7 +196,7 @@ const cardStyle = computed(() => ({
 
 const primaryLogo = computed(() => files.logo_primary ? URL.createObjectURL(files.logo_primary) : form.logo_primary_url)
 const secondaryLogo = computed(() => files.logo_secondary ? URL.createObjectURL(files.logo_secondary) : form.logo_secondary_url)
-const watermarkLogo = computed(() => primaryLogo.value || '/images/logo-pnmls.png')
+const watermarkLogo = computed(() => secondaryLogo.value || primaryLogo.value || '/images/logo-pnmls.png')
 
 function assignSettings(settings = {}) {
   Object.keys(form).forEach((key) => {
@@ -411,7 +411,9 @@ onMounted(load)
 }
 
 .identity-card {
-  background: #fff;
+  background:
+    radial-gradient(circle at 74% 53%, rgba(246, 195, 67, .18), transparent 145px),
+    linear-gradient(135deg, #ffffff 0%, #f6fbff 45%, #fff9ea 100%);
   border-radius: 14px;
   box-shadow: 0 16px 34px rgba(15, 23, 42, .14);
   height: 255px;
@@ -431,17 +433,17 @@ onMounted(load)
 }
 
 .card-watermark {
-  filter: blur(6px) saturate(.95);
-  height: 170px;
-  left: 50%;
+  filter: blur(2px) saturate(1.05);
+  height: 210px;
+  left: 68%;
   mix-blend-mode: multiply;
   object-fit: contain;
-  opacity: .09;
+  opacity: .18;
   pointer-events: none;
   position: absolute;
   top: 58%;
-  transform: translate(-50%, -50%) rotate(-8deg);
-  width: 170px;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  width: 210px;
   z-index: 0;
 }
 
@@ -465,6 +467,7 @@ onMounted(load)
   border-radius: 0;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
   height: 42px;
+  mix-blend-mode: multiply;
   object-fit: contain;
   padding: 0;
   width: 42px;

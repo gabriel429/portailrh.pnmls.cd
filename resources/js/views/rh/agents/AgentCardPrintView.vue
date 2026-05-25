@@ -133,11 +133,11 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getAgentCard, issueAgentCard } from '@/api/agentCards'
-import { qrToSvgDataUri } from '@/utils/qrCode'
 import { useUiStore } from '@/stores/ui'
+import QRCode from 'qrcode'
 
 const route = useRoute()
 const router = useRouter()
@@ -147,6 +147,7 @@ const loading = ref(true)
 const busy = ref(false)
 const agent = ref(null)
 const card = ref(null)
+const qrImage = ref('')
 const settings = reactive({
   country: '',
   ministry: '',
@@ -187,8 +188,11 @@ const agentPhoto = computed(() => {
 const agentFunction = computed(() => agent.value?.fonction || agent.value?.poste_actuel || agent.value?.role?.nom_role || 'Agent PNMLS')
 const structureLabel = computed(() => agent.value?.departement?.nom || agent.value?.department?.nom || agent.value?.section?.nom || 'PNMLS')
 const provinceLabel = computed(() => agent.value?.province?.nom_province || agent.value?.province?.nom || 'N/A')
-const qrImage = computed(() => card.value?.verification_url ? qrToSvgDataUri(card.value.verification_url) : '')
-const watermarkLogo = computed(() => settings.logo_primary_url || '/images/logo-pnmls.png')
+const qrPayload = computed(() => {
+  if (card.value?.token) return `PNMLS-CARD:${card.value.token}`
+  return card.value?.verification_url || ''
+})
+const watermarkLogo = computed(() => settings.logo_secondary_url || settings.logo_primary_url || '/images/logo-pnmls.png')
 
 const statusLabel = computed(() => ({
   valid: 'Carte valide',
@@ -243,6 +247,27 @@ function formatDate(value) {
   if (!value) return 'N/A'
   return new Date(value).toLocaleDateString('fr-FR')
 }
+
+watch(qrPayload, async (value) => {
+  if (!value) {
+    qrImage.value = ''
+    return
+  }
+
+  try {
+    qrImage.value = await QRCode.toDataURL(value, {
+      errorCorrectionLevel: 'M',
+      margin: 4,
+      width: 520,
+      color: {
+        dark: '#071827',
+        light: '#ffffff',
+      },
+    })
+  } catch (_) {
+    qrImage.value = ''
+  }
+}, { immediate: true })
 
 onMounted(load)
 </script>
@@ -423,7 +448,9 @@ onMounted(load)
 }
 
 .identity-card {
-  background: #fff;
+  background:
+    radial-gradient(circle at 74% 53%, rgba(246, 195, 67, .18), transparent 31mm),
+    linear-gradient(135deg, #ffffff 0%, #f6fbff 45%, #fff9ea 100%);
   border-radius: 4mm;
   box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
   box-sizing: border-box;
@@ -444,30 +471,30 @@ onMounted(load)
 }
 
 .card-bg::after {
-  background: var(--accent);
+  background: linear-gradient(135deg, rgba(255, 255, 255, .06), rgba(246, 195, 67, .32));
   border-radius: 999px;
   content: "";
-  height: 24mm;
-  opacity: .16;
+  height: 27mm;
+  opacity: .72;
   position: absolute;
-  right: -7mm;
-  top: 7mm;
-  width: 40mm;
+  right: -8mm;
+  top: 8mm;
+  width: 41mm;
 }
 
 .card-watermark {
-  filter: blur(1.4mm) saturate(.95);
-  height: 45mm;
-  left: 50%;
+  filter: blur(.55mm) saturate(1.05);
+  height: 50mm;
+  left: 68%;
   mix-blend-mode: multiply;
   object-fit: contain;
-  opacity: .09;
+  opacity: .18;
   pointer-events: none;
   position: absolute;
   top: 58%;
-  transform: translate(-50%, -50%) rotate(-8deg);
-  width: 45mm;
-  z-index: 0;
+  transform: translate(-50%, -50%) rotate(-10deg);
+  width: 50mm;
+  z-index: 1;
 }
 
 .id-header {
@@ -492,6 +519,7 @@ onMounted(load)
   border-radius: 0;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
   height: 9.6mm;
+  mix-blend-mode: multiply;
   object-fit: contain;
   padding: 0;
   width: 9.6mm;
@@ -519,7 +547,7 @@ onMounted(load)
   display: inline-flex;
   font-size: 1.48mm;
   font-weight: 900;
-  margin: 2mm 0 1.4mm;
+  margin: 1.6mm 0 1mm;
   padding: .85mm 2.6mm;
   position: relative;
   z-index: 2;
@@ -527,8 +555,8 @@ onMounted(load)
 
 .front-body {
   display: grid;
-  gap: 2.6mm;
-  grid-template-columns: 21mm 1fr;
+  gap: 3mm;
+  grid-template-columns: 26mm 1fr;
   position: relative;
   z-index: 2;
 }
@@ -542,7 +570,7 @@ onMounted(load)
   display: flex;
   font-size: 6.4mm;
   font-weight: 900;
-  height: 25mm;
+  height: 29mm;
   justify-content: center;
   overflow: hidden;
 }
@@ -555,7 +583,7 @@ onMounted(load)
 
 .identity-data h2 {
   color: #0f3552;
-  font-size: 3.45mm;
+  font-size: 3.7mm;
   font-weight: 900;
   line-height: 1;
   margin: 0 0 .75mm;
@@ -571,20 +599,20 @@ onMounted(load)
   font-size: 1.75mm;
   font-weight: 900;
   line-height: 1.15;
-  margin: 0 0 1mm;
+  margin: 0 0 1.2mm;
   max-height: 4.2mm;
   overflow: hidden;
 }
 
 .identity-data dl {
   display: grid;
-  gap: .42mm;
+  gap: .58mm;
   margin: 0;
 }
 
 .identity-data dl div {
   display: grid;
-  grid-template-columns: 16.4mm 1fr;
+  grid-template-columns: 15mm 1fr;
   min-width: 0;
 }
 
@@ -624,21 +652,21 @@ onMounted(load)
 .back-body {
   align-items: center;
   display: grid;
-  gap: 3.6mm;
-  grid-template-columns: 27mm 1fr;
-  margin-top: 5.8mm;
+  gap: 4mm;
+  grid-template-columns: 31mm 1fr;
+  margin-top: 4.2mm;
   position: relative;
   z-index: 2;
 }
 
 .qr-box {
   background: #fff;
-  border: .35mm solid #d8e3eb;
+  border: .35mm solid #cbdce8;
   border-radius: 3mm;
   box-shadow: 0 5px 14px rgba(15, 23, 42, .12);
-  height: 27mm;
-  padding: 1.8mm;
-  width: 27mm;
+  height: 31mm;
+  padding: 1.2mm;
+  width: 31mm;
 }
 
 .qr-box img {
@@ -651,7 +679,7 @@ onMounted(load)
   font-size: 2.45mm;
   font-weight: 900;
   line-height: 1.1;
-  margin: 0 0 5mm;
+  margin: 0 0 4.3mm;
 }
 
 .signature-line {
@@ -675,9 +703,9 @@ onMounted(load)
 }
 
 .verification-link {
-  bottom: 8mm;
+  bottom: 7.4mm;
   color: #64748b;
-  font-size: 1.25mm;
+  font-size: 1.15mm;
   font-weight: 800;
   left: 3.2mm;
   overflow: hidden;
