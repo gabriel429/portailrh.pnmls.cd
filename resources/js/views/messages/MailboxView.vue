@@ -1777,6 +1777,7 @@ onBeforeUnmount(() => {
 }
 
 .mailbox-message-item {
+  position: relative;
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
   gap: 10px;
@@ -1790,6 +1791,21 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
+.mailbox-message-item.unread {
+  background: #f8fcff;
+}
+
+.mailbox-message-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 13px;
+  bottom: 13px;
+  width: 3px;
+  border-radius: 0 999px 999px 0;
+  background: #087da0;
+}
+
 .mailbox-message-item:hover,
 .mailbox-message-item.active {
   background: #e9f7fb;
@@ -1799,10 +1815,36 @@ onBeforeUnmount(() => {
   box-shadow: inset 3px 0 0 #087da0;
 }
 
+.mailbox-message-item.unread.active {
+  box-shadow: inset 3px 0 0 #075f7a;
+}
+
 .mailbox-message-item.unread .mailbox-subject,
 .mailbox-message-item.unread strong {
   color: #062f4f;
   font-weight: 900;
+}
+
+.mailbox-message-item.unread .mailbox-message-top time,
+.mailbox-message-item.unread .mailbox-message-meta {
+  color: #12344d;
+  font-weight: 800;
+}
+
+.mailbox-message-item:not(.unread) .mailbox-message-top strong {
+  color: #475569;
+  font-weight: 650;
+}
+
+.mailbox-message-item:not(.unread) .mailbox-subject {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.mailbox-message-item:not(.unread) .mailbox-message-meta,
+.mailbox-message-item:not(.unread) .mailbox-message-top time {
+  color: #7b8794;
+  font-weight: 500;
 }
 
 .mailbox-avatar {
@@ -1847,6 +1889,7 @@ onBeforeUnmount(() => {
   margin-top: 3px;
   color: #475569;
   font-size: 0.88rem;
+  font-weight: 600;
 }
 
 .mailbox-message-meta {
@@ -3066,9 +3109,9 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-message-top strong {
-    color: #111827;
+    color: #374151;
     font-size: 1rem;
-    font-weight: 900;
+    font-weight: 650;
   }
 
   .mailbox-message-top time {
@@ -3079,9 +3122,34 @@ onBeforeUnmount(() => {
 
   .mailbox-subject {
     margin-top: 4px;
-    color: #172033;
+    color: #4b5563;
     font-size: 0.95rem;
-    font-weight: 700;
+    font-weight: 500;
+  }
+
+  .mailbox-message-item.unread {
+    background: #f8fcff;
+  }
+
+  .mailbox-message-item.unread::before {
+    top: 16px;
+    bottom: 16px;
+  }
+
+  .mailbox-message-item.unread .mailbox-message-top strong {
+    color: #071b2c;
+    font-weight: 900;
+  }
+
+  .mailbox-message-item.unread .mailbox-subject {
+    color: #111827;
+    font-weight: 800;
+  }
+
+  .mailbox-message-item.unread .mailbox-message-top time,
+  .mailbox-message-item.unread .mailbox-message-meta {
+    color: #172033;
+    font-weight: 800;
   }
 
   .mailbox-message-meta {
