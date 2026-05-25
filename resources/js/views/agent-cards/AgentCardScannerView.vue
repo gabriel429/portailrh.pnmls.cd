@@ -14,6 +14,7 @@
       <div class="scanner-body">
         <div class="camera-frame">
           <video ref="videoRef" autoplay muted playsinline></video>
+          <canvas ref="canvasRef" class="scan-canvas" aria-hidden="true"></canvas>
           <div class="scan-window"></div>
           <div v-if="!cameraReady" class="camera-placeholder">
             <i class="fas fa-qrcode"></i>
@@ -25,7 +26,7 @@
           <div class="status-card" :class="{ active: cameraReady }">
             <i class="fas" :class="cameraReady ? 'fa-video' : 'fa-mobile-screen'"></i>
             <div>
-              <strong>{{ cameraReady ? 'Camera active' : 'Lecture manuelle disponible' }}</strong>
+              <strong>{{ cameraReady ? 'Lecture QR active' : 'Camera en attente' }}</strong>
               <span>{{ supportMessage }}</span>
             </div>
           </div>
@@ -54,10 +55,12 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import jsQR from 'jsqr'
 
 const router = useRouter()
 const ui = useUiStore()
 const videoRef = ref(null)
+const canvasRef = ref(null)
 const stream = ref(null)
 const detector = ref(null)
 const cameraReady = ref(false)
@@ -67,8 +70,9 @@ let scanTimer = null
 let scanning = false
 
 const supportMessage = computed(() => {
-  if ('BarcodeDetector' in window) return 'Placez le QR code dans le cadre.'
-  return 'Votre navigateur ne lit pas directement le QR code; collez le lien scanne.'
+  if (!cameraReady.value) return 'Activez la camera pour scanner la carte.'
+  if (detector.value) return 'Lecture native active: placez le QR code dans le cadre.'
+  return 'Mode compatible actif: l application analyse l image de la camera.'
 })
 
 function extractToken(value) {
@@ -126,21 +130,50 @@ async function startCamera() {
 }
 
 function startLoop() {
-  if (!detector.value || !videoRef.value) return
+  if (!videoRef.value) return
   stopLoop()
   scanTimer = window.setInterval(async () => {
     if (scanning || !videoRef.value || videoRef.value.readyState < 2) return
     scanning = true
     try {
-      const codes = await detector.value.detect(videoRef.value)
-      const value = codes?.[0]?.rawValue
+      const value = detector.value
+        ? await detectWithNativeApi()
+        : detectWithCanvas()
+
       if (value) navigateToToken(value)
     } catch (_) {
-      stopLoop()
+      if (detector.value) {
+        detector.value = null
+      }
     } finally {
       scanning = false
     }
   }, 450)
+}
+
+async function detectWithNativeApi() {
+  const codes = await detector.value.detect(videoRef.value)
+  return codes?.[0]?.rawValue || ''
+}
+
+function detectWithCanvas() {
+  const video = videoRef.value
+  const canvas = canvasRef.value
+  if (!video || !canvas || !video.videoWidth || !video.videoHeight) return ''
+
+  const scale = Math.min(1, 960 / video.videoWidth)
+  const width = Math.max(1, Math.floor(video.videoWidth * scale))
+  const height = Math.max(1, Math.floor(video.videoHeight * scale))
+  const ctx = canvas.getContext('2d', { willReadFrequently: true })
+  if (!ctx) return ''
+
+  canvas.width = width
+  canvas.height = height
+  ctx.drawImage(video, 0, 0, width, height)
+
+  const imageData = ctx.getImageData(0, 0, width, height)
+  const code = jsQR(imageData.data, width, height, { inversionAttempts: 'attemptBoth' })
+  return code?.data || ''
 }
 
 function stopLoop() {
@@ -158,7 +191,7 @@ function stopCamera() {
 }
 
 onMounted(() => {
-  if ('BarcodeDetector' in window) startCamera()
+  startCamera()
 })
 
 onBeforeUnmount(stopCamera)
@@ -237,6 +270,10 @@ header h1 {
   height: 100%;
   object-fit: cover;
   width: 100%;
+}
+
+.scan-canvas {
+  display: none;
 }
 
 .scan-window {
