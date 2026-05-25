@@ -569,14 +569,14 @@ watch(profilePhotoCandidates, () => {
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
 .dash-hero-structure { font-size: .8rem; opacity: .65; margin: 0 0 .15rem; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
-.dash-hero-stats { position: relative; z-index: 1; display: flex; gap: .45rem; margin-left: auto; flex-wrap: wrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .4rem .5rem; }
+.dash-hero-stats { position: relative; z-index: 1; display: flex; gap: .55rem; margin-left: auto; flex-wrap: wrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .45rem .6rem; }
 .dash-hero-stat-link {
   text-decoration: none; color: inherit; display: block;
-  padding: .3rem .5rem; border-radius: 8px; transition: background .15s;
+  min-width: 82px; padding: .3rem .55rem; border-radius: 8px; transition: background .15s;
 }
 .dash-hero-stat-link:hover { background: rgba(255,255,255,.15); }
 .dash-hero-stat-val { font-size: 1.05rem; font-weight: 800; text-align: center; }
-.dash-hero-stat-lbl { font-size: .56rem; opacity: .75; text-transform: uppercase; letter-spacing: .2px; text-align: center; }
+.dash-hero-stat-lbl { font-size: .6rem; opacity: .78; text-transform: uppercase; letter-spacing: 0; line-height: 1.1; text-align: center; }
 
 /* Section headers */
 .dash-section-header {
@@ -603,7 +603,7 @@ watch(profilePhotoCandidates, () => {
 .dash-action-desc { font-size: .7rem; opacity: .6; }
 
 /* Stat Cards */
-.dash-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
+.dash-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
 .dash-stat-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1rem; transition: all .2s;
@@ -631,7 +631,7 @@ watch(profilePhotoCandidates, () => {
 .dash-stat-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 4px; }
 
 @media (min-width: 1100px) {
-  .dash-stat-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .dash-stat-grid { grid-template-columns: repeat(6, minmax(180px, 1fr)); }
 }
 
 /* Activity */
@@ -804,6 +804,10 @@ a.dash-activity-card { cursor: pointer; }
   gap: .55rem;
   margin-bottom: 1rem;
 }
+.dash-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+  gap: .7rem;
+}
 .dash-action-card,
 .dash-stat-card,
 .dash-activity-card,
@@ -813,6 +817,10 @@ a.dash-activity-card { cursor: pointer; }
 .dash-action-card,
 .dash-stat-card {
   padding: .75rem;
+}
+.dash-stat-card {
+  min-height: 112px;
+  padding: .85rem .9rem;
 }
 .dash-action-icon,
 .dash-stat-icon,
@@ -830,18 +838,42 @@ a.dash-activity-card { cursor: pointer; }
   font-size: .64rem;
 }
 .dash-stat-top {
-  gap: .6rem;
+  align-items: center;
+  gap: .72rem;
   margin-bottom: .45rem;
 }
 .dash-stat-val {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
 }
 .dash-stat-lbl {
-  font-size: .62rem;
-  letter-spacing: .2px;
+  font-size: .68rem;
+  line-height: 1.18;
+  letter-spacing: 0;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: auto;
 }
 .dash-stat-bar {
   height: 3px;
+}
+
+@media (min-width: 1200px) {
+  .dash-stat-grid {
+    grid-template-columns: repeat(6, minmax(188px, 1fr));
+  }
+}
+
+@media (max-width: 768px) {
+  .dash-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+  }
+}
+
+@media (max-width: 380px) {
+  .dash-stat-grid {
+    grid-template-columns: 1fr;
+  }
 }
 .dash-empty {
   padding: 1.5rem 1rem;
