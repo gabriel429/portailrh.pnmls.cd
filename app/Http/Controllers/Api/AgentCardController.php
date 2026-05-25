@@ -154,7 +154,7 @@ class AgentCardController extends ApiController
             return $matches[1];
         }
 
-        if (preg_match('#agent-cards/verify/([^/?#\s]+)#i', $token, $matches)) {
+        if (preg_match('~agent-cards/verify/([^/?#\s]+)~i', $token, $matches)) {
             $token = $matches[1];
         }
 
