@@ -62,7 +62,7 @@
         <div class="cards-sheet">
           <article class="identity-card recto" :style="cardStyle">
             <div class="card-bg"></div>
-            <img v-if="settings.logo_primary_url" class="card-watermark" :src="settings.logo_primary_url" alt="" aria-hidden="true">
+            <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header class="id-header">
               <img v-if="settings.logo_primary_url" :src="settings.logo_primary_url" alt="Logo PNMLS">
               <div>
@@ -103,7 +103,7 @@
 
           <article class="identity-card verso" :style="cardStyle">
             <div class="card-bg"></div>
-            <img v-if="settings.logo_primary_url" class="card-watermark" :src="settings.logo_primary_url" alt="" aria-hidden="true">
+            <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header class="id-header single">
               <div>
                 <strong>{{ settings.subtitle }}</strong>
@@ -188,6 +188,7 @@ const agentFunction = computed(() => agent.value?.fonction || agent.value?.poste
 const structureLabel = computed(() => agent.value?.departement?.nom || agent.value?.department?.nom || agent.value?.section?.nom || 'PNMLS')
 const provinceLabel = computed(() => agent.value?.province?.nom_province || agent.value?.province?.nom || 'N/A')
 const qrImage = computed(() => card.value?.verification_url ? qrToSvgDataUri(card.value.verification_url) : '')
+const watermarkLogo = computed(() => settings.logo_primary_url || '/images/logo-pnmls.png')
 
 const statusLabel = computed(() => ({
   valid: 'Carte valide',
@@ -455,11 +456,12 @@ onMounted(load)
 }
 
 .card-watermark {
-  filter: blur(1.8mm);
+  filter: blur(1.4mm) saturate(.95);
   height: 45mm;
   left: 50%;
+  mix-blend-mode: multiply;
   object-fit: contain;
-  opacity: .075;
+  opacity: .09;
   pointer-events: none;
   position: absolute;
   top: 58%;
@@ -486,11 +488,12 @@ onMounted(load)
 }
 
 .id-header img {
-  background: #fff;
-  border-radius: 2mm;
+  background: transparent;
+  border-radius: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
   height: 9.6mm;
   object-fit: contain;
-  padding: 1mm;
+  padding: 0;
   width: 9.6mm;
 }
 

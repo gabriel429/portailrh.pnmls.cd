@@ -108,7 +108,7 @@
 
         <div class="card-preview-stack">
           <article class="identity-card recto" :style="cardStyle">
-            <img v-if="primaryLogo" class="card-watermark" :src="primaryLogo" alt="" aria-hidden="true">
+            <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header>
               <img v-if="primaryLogo" :src="primaryLogo" alt="Logo principal">
               <div>
@@ -137,7 +137,7 @@
           </article>
 
           <article class="identity-card verso" :style="cardStyle">
-            <img v-if="primaryLogo" class="card-watermark" :src="primaryLogo" alt="" aria-hidden="true">
+            <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header>
               <div>
                 <strong>{{ form.subtitle }}</strong>
@@ -196,6 +196,7 @@ const cardStyle = computed(() => ({
 
 const primaryLogo = computed(() => files.logo_primary ? URL.createObjectURL(files.logo_primary) : form.logo_primary_url)
 const secondaryLogo = computed(() => files.logo_secondary ? URL.createObjectURL(files.logo_secondary) : form.logo_secondary_url)
+const watermarkLogo = computed(() => primaryLogo.value || '/images/logo-pnmls.png')
 
 function assignSettings(settings = {}) {
   Object.keys(form).forEach((key) => {
@@ -430,11 +431,12 @@ onMounted(load)
 }
 
 .card-watermark {
-  filter: blur(7px);
+  filter: blur(6px) saturate(.95);
   height: 170px;
   left: 50%;
+  mix-blend-mode: multiply;
   object-fit: contain;
-  opacity: .075;
+  opacity: .09;
   pointer-events: none;
   position: absolute;
   top: 58%;
@@ -459,11 +461,12 @@ onMounted(load)
 }
 
 .identity-card header img {
-  background: #fff;
-  border-radius: 10px;
+  background: transparent;
+  border-radius: 0;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
   height: 42px;
   object-fit: contain;
-  padding: 4px;
+  padding: 0;
   width: 42px;
 }
 
