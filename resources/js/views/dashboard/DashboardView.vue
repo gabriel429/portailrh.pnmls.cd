@@ -6,7 +6,7 @@
   <DepartementDashboardView v-else-if="auth.isDepartement" />
   <RenforcementDashboardView v-else-if="auth.isChefSectionRenforcement" />
   <CafDashboardView v-else-if="auth.isCAF" />
-  <div v-else class="container py-4">
+  <div v-else class="container-fluid dash-standard-page py-4">
     <!-- Hero -->
     <div class="dash-hero">
       <div class="dash-hero-profile">
@@ -523,6 +523,12 @@ watch(profilePhotoCandidates, () => {
 </script>
 
 <style scoped>
+.dash-standard-page {
+  width: 100%;
+  max-width: none;
+  padding-inline: clamp(1rem, 2vw, 2rem);
+}
+
 /* Hero */
 .dash-hero {
   background: #0077B5;
