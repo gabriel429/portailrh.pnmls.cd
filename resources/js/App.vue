@@ -49,7 +49,7 @@
   </component>
 
   <!-- Bouton flottant Mail -->
-  <router-link v-if="auth.isAuthenticated"
+  <router-link v-if="showWebmailFab"
      :to="{ name: 'mailbox.index' }"
      class="webmail-fab text-decoration-none">
     <i class="fas fa-at me-2"></i> Mail
@@ -76,6 +76,9 @@ const layouts = {
 }
 
 const layout = computed(() => layouts[route.meta.layout || 'app'] || AppLayout)
+const showWebmailFab = computed(() => (
+  auth.isAuthenticated && !['mailbox.index', 'mail.history'].includes(String(route.name || ''))
+))
 
 const showLaunchScreen = ref(true)
 let launchTimer = null

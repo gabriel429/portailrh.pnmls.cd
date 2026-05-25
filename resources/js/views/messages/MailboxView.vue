@@ -75,6 +75,73 @@
     </section>
 
     <section v-else class="outlook-shell">
+      <div v-if="mobileMenuOpen" class="mailbox-mobile-menu-backdrop" @click.self="closeMobileMenu">
+        <aside class="mailbox-mobile-menu" aria-label="Dossiers messagerie mobile">
+          <div class="mailbox-mobile-menu-rail">
+            <button type="button" class="mailbox-mobile-rail-btn active" title="Boite" @click="openInbox">
+              <i class="fas fa-globe"></i>
+            </button>
+            <button type="button" class="mailbox-mobile-rail-avatar" title="Compte" @click="openInbox">
+              {{ accountInitial }}
+            </button>
+            <button type="button" class="mailbox-mobile-rail-btn" title="Nouveau mail" @click="openComposer">
+              <i class="fas fa-plus"></i>
+            </button>
+            <button type="button" class="mailbox-mobile-rail-btn mt-auto" title="Parametres" @click="settingsOpen = true; closeMobileMenu()">
+              <i class="fas fa-cog"></i>
+            </button>
+          </div>
+
+          <div class="mailbox-mobile-menu-panel">
+            <div class="mailbox-mobile-menu-head">
+              <div>
+                <span>IMAP</span>
+                <strong>{{ settings?.account_email }}</strong>
+              </div>
+              <button type="button" class="mailbox-mobile-menu-close" title="Fermer" @click="closeMobileMenu">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+
+            <nav class="mailbox-mobile-menu-nav" aria-label="Navigation messagerie mobile">
+              <div class="mailbox-mobile-nav-title">Favoris</div>
+              <button type="button" class="mailbox-folder-btn" :class="{ active: isInboxActive }" @click="openInbox">
+                <i class="fas fa-inbox"></i>
+                <span>Boite de reception</span>
+                <b v-if="inboxFolder?.unread">{{ inboxFolder.unread }}</b>
+              </button>
+              <button type="button" class="mailbox-folder-btn" :class="{ active: activeFilter === 'unread' }" @click="openFilter('unread')">
+                <i class="fas fa-envelope"></i>
+                <span>Non lus</span>
+                <b v-if="inboxFolder?.unread">{{ inboxFolder.unread }}</b>
+              </button>
+              <button type="button" class="mailbox-folder-btn" :class="{ active: activeFilter === 'flagged' }" @click="openFilter('flagged')">
+                <i class="fas fa-star"></i>
+                <span>Avec etoile</span>
+              </button>
+              <router-link :to="{ name: 'mail.history' }" class="mailbox-folder-btn" @click="closeMobileMenu">
+                <i class="fas fa-paper-plane"></i>
+                <span>Historique envoyes</span>
+              </router-link>
+
+              <div class="mailbox-mobile-nav-title">Dossiers</div>
+              <button
+                v-for="folder in visibleFolders"
+                :key="`mobile-${folder.name}`"
+                type="button"
+                class="mailbox-folder-btn"
+                :class="{ active: activeFilter === '' && activeFolder === folder.name }"
+                @click="openFolder(folder)"
+              >
+                <i class="fas" :class="folderIcon(folder.type)"></i>
+                <span>{{ folder.label }}</span>
+                <b v-if="folder.unread">{{ folder.unread }}</b>
+              </button>
+            </nav>
+          </div>
+        </aside>
+      </div>
+
       <aside class="mailbox-sidebar">
         <div class="mailbox-account">
           <div class="mailbox-account-avatar">{{ accountInitial }}</div>
@@ -131,7 +198,48 @@
         </div>
       </aside>
 
-      <main class="mailbox-main">
+      <main class="mailbox-main" :class="{ 'mailbox-main-reading': isMobileMailbox && selectedUid }">
+        <header class="mailbox-mobile-header">
+          <button type="button" class="mailbox-mobile-avatar-btn" title="Dossiers" @click="openMobileMenu">
+            <span>{{ accountInitial }}</span>
+          </button>
+          <div class="mailbox-mobile-heading">
+            <span>{{ activeSubtitle }}</span>
+            <h1>{{ selectedMessage?.subject || activeTitle }}</h1>
+          </div>
+          <button type="button" class="mailbox-mobile-action" title="Actualiser" @click="loadMessages(meta.current_page || 1)">
+            <i class="fas fa-rotate-right"></i>
+          </button>
+          <button type="button" class="mailbox-mobile-action" title="Rechercher" @click="toggleMobileSearch">
+            <i class="fas fa-search"></i>
+          </button>
+        </header>
+
+        <div class="mailbox-mobile-filterbar">
+          <div class="mailbox-mobile-pills">
+            <button type="button" :class="{ active: activeFilter === '' }" @click="openInbox">Prioritaire</button>
+            <button type="button" :class="{ active: activeFilter === 'unread' }" @click="openFilter('unread')">
+              Non lus
+              <b v-if="inboxFolder?.unread">{{ inboxFolder.unread }}</b>
+            </button>
+          </div>
+          <button type="button" class="mailbox-mobile-filter" @click="toggleMobileSearch">
+            <i class="fas fa-filter"></i>
+            Filtrer
+          </button>
+        </div>
+
+        <div v-if="mobileSearchOpen" class="mailbox-mobile-search">
+          <i class="fas fa-search"></i>
+          <input
+            ref="mobileSearchInput"
+            v-model.trim="search"
+            type="search"
+            placeholder="Rechercher dans les mails..."
+            @input="onSearch"
+          >
+        </div>
+
         <header class="mailbox-topbar">
           <div>
             <span class="mailbox-kicker">{{ activeSubtitle }}</span>
@@ -305,6 +413,31 @@
         </div>
       </main>
     </section>
+
+    <nav v-if="!showSettingsPanel" class="mailbox-mobile-tabbar" aria-label="Navigation messagerie">
+      <button type="button" class="active" @click="openInbox">
+        <i class="fas fa-envelope"></i>
+        <span>Courrier</span>
+      </button>
+      <button type="button" @click="openMobileMenu">
+        <i class="fas fa-folder"></i>
+        <span>Dossiers</span>
+      </button>
+      <router-link :to="{ name: 'dashboard' }">
+        <i class="fas fa-table-cells-large"></i>
+        <span>Applications</span>
+      </router-link>
+    </nav>
+
+    <button
+      v-if="!showSettingsPanel && !composerOpen"
+      type="button"
+      class="mailbox-mobile-compose-fab"
+      title="Nouveau mail"
+      @click="openComposer"
+    >
+      <i class="fas fa-pen"></i>
+    </button>
 
     <div v-if="composerOpen && !showSettingsPanel" class="mailbox-compose-backdrop" @click.self="composerOpen = false">
       <section class="mailbox-compose-drawer">
@@ -504,9 +637,12 @@ const loadingContacts = ref(false)
 const addressBookGroups = ref([])
 const recentRecipients = ref([])
 const activeRecipientField = ref('to')
+const mobileMenuOpen = ref(false)
+const mobileSearchOpen = ref(false)
 const toInput = ref(null)
 const ccInput = ref(null)
 const bccInput = ref(null)
+const mobileSearchInput = ref(null)
 const attachmentInput = ref(null)
 
 const messages = ref([])
@@ -760,6 +896,7 @@ async function loadContacts() {
 function openInbox() {
   activeFolder.value = inboxFolder.value?.name || 'INBOX'
   activeFilter.value = ''
+  closeMobileMenu()
   resetSelection()
   loadMessages(1)
 }
@@ -767,6 +904,7 @@ function openInbox() {
 function openFolder(folder) {
   activeFolder.value = folder.name
   activeFilter.value = ''
+  closeMobileMenu()
   resetSelection()
   loadMessages(1)
 }
@@ -774,6 +912,7 @@ function openFolder(folder) {
 function openFilter(filter) {
   activeFolder.value = inboxFolder.value?.name || activeFolder.value || 'INBOX'
   activeFilter.value = filter
+  closeMobileMenu()
   resetSelection()
   loadMessages(1)
 }
@@ -958,6 +1097,7 @@ async function sendMail() {
 }
 
 function openComposer() {
+  closeMobileMenu()
   composeError.value = ''
   composerOpen.value = true
   window.setTimeout(() => focusRecipient('to'), 80)
@@ -1139,6 +1279,22 @@ function resetSelection() {
   targetFolder.value = ''
 }
 
+function openMobileMenu() {
+  mobileMenuOpen.value = true
+}
+
+function closeMobileMenu() {
+  mobileMenuOpen.value = false
+}
+
+function toggleMobileSearch() {
+  mobileSearchOpen.value = !mobileSearchOpen.value
+
+  if (mobileSearchOpen.value) {
+    window.setTimeout(() => mobileSearchInput.value?.focus(), 80)
+  }
+}
+
 function patchMessage(uid, patch) {
   messages.value = messages.value.map(message => (
     message.uid === uid ? { ...message, ...patch } : message
@@ -1223,7 +1379,13 @@ function formatSize(size) {
 }
 
 function syncMobileMailbox(event = null) {
-  isMobileMailbox.value = Boolean(event?.matches ?? mobileMediaQuery?.matches)
+  const nextState = Boolean(event?.matches ?? mobileMediaQuery?.matches)
+  isMobileMailbox.value = nextState
+
+  if (!nextState) {
+    closeMobileMenu()
+    mobileSearchOpen.value = false
+  }
 }
 
 onMounted(() => {
@@ -2629,6 +2791,639 @@ onBeforeUnmount(() => {
 
   .mailbox-attachment-item small {
     display: none;
+  }
+}
+
+.mailbox-mobile-header,
+.mailbox-mobile-filterbar,
+.mailbox-mobile-search,
+.mailbox-mobile-tabbar,
+.mailbox-mobile-compose-fab,
+.mailbox-mobile-menu-backdrop {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .mailbox-page {
+    min-height: calc(100dvh - 64px);
+    margin-inline: calc(var(--bs-gutter-x, 1.5rem) * -0.5);
+    padding: 0;
+    background: #fff;
+  }
+
+  .outlook-shell,
+  .mailbox-settings {
+    max-width: none;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .outlook-shell {
+    display: block;
+    min-height: calc(100dvh - 64px);
+    overflow: visible;
+    background: #fff;
+  }
+
+  .mailbox-sidebar,
+  .mailbox-topbar,
+  .mailbox-commandbar {
+    display: none;
+  }
+
+  .mailbox-main {
+    min-height: calc(100dvh - 64px);
+    padding-bottom: 82px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: #fff;
+  }
+
+  .mailbox-mobile-header {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr) 40px 40px;
+    gap: 10px;
+    align-items: center;
+    min-height: 74px;
+    padding: 12px 16px 10px;
+    color: #fff;
+    background: #0877b7;
+  }
+
+  .mailbox-mobile-avatar-btn,
+  .mailbox-mobile-action,
+  .mailbox-mobile-menu-close,
+  .mailbox-mobile-rail-btn,
+  .mailbox-mobile-rail-avatar {
+    display: inline-grid;
+    place-items: center;
+    border: 0;
+    cursor: pointer;
+  }
+
+  .mailbox-mobile-avatar-btn,
+  .mailbox-mobile-action {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  .mailbox-mobile-avatar-btn span {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    background: #d97706;
+    font-weight: 900;
+  }
+
+  .mailbox-mobile-heading {
+    min-width: 0;
+  }
+
+  .mailbox-mobile-heading span {
+    display: block;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .mailbox-mobile-heading h1 {
+    overflow: hidden;
+    margin: 1px 0 0;
+    color: #fff;
+    font-size: 1.28rem;
+    font-weight: 900;
+    line-height: 1.15;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mailbox-mobile-filterbar {
+    position: sticky;
+    top: 74px;
+    z-index: 28;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 0 16px 12px;
+    color: #fff;
+    background: #0877b7;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  }
+
+  .mailbox-mobile-pills {
+    display: inline-flex;
+    min-width: 0;
+    padding: 3px;
+    border-radius: 999px;
+    background: rgba(8, 47, 73, 0.34);
+  }
+
+  .mailbox-mobile-pills button,
+  .mailbox-mobile-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    border: 0;
+    border-radius: 999px;
+    font-weight: 900;
+  }
+
+  .mailbox-mobile-pills button {
+    min-width: 86px;
+    padding: 0 12px;
+    color: #d9f0fb;
+    background: transparent;
+  }
+
+  .mailbox-mobile-pills button.active {
+    color: #0877b7;
+    background: #fff;
+  }
+
+  .mailbox-mobile-pills b {
+    min-width: 22px;
+    padding: 2px 6px;
+    border-radius: 999px;
+    color: #fff;
+    background: #0877b7;
+    font-size: 0.7rem;
+  }
+
+  .mailbox-mobile-filter {
+    flex: 0 0 auto;
+    padding: 0 2px;
+    color: #fff;
+    background: transparent;
+    font-size: 0.95rem;
+  }
+
+  .mailbox-mobile-search {
+    position: sticky;
+    top: 118px;
+    z-index: 27;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #e5eef4;
+    background: #fff;
+  }
+
+  .mailbox-mobile-search i {
+    color: #0877b7;
+  }
+
+  .mailbox-mobile-search input {
+    min-width: 0;
+    width: 100%;
+    min-height: 42px;
+    border: 0;
+    outline: none;
+    color: #111827;
+    background: transparent;
+    font-size: 1rem;
+  }
+
+  .mailbox-main-reading .mailbox-mobile-filterbar,
+  .mailbox-main-reading .mailbox-mobile-search {
+    display: none;
+  }
+
+  .mailbox-content {
+    display: block;
+    flex: 1;
+    min-height: calc(100dvh - 150px);
+  }
+
+  .mailbox-list-pane {
+    border: 0;
+    background: #fff;
+  }
+
+  .mailbox-list-head {
+    display: none;
+  }
+
+  .mailbox-message-list {
+    overflow: visible;
+    background: #fff;
+  }
+
+  .mailbox-message-item {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    min-height: 0;
+    padding: 14px 22px;
+    border-bottom: 0;
+    color: #111827;
+    background: #fff;
+  }
+
+  .mailbox-message-item + .mailbox-message-item {
+    border-top: 1px solid #eef2f6;
+  }
+
+  .mailbox-message-item:hover,
+  .mailbox-message-item.active {
+    background: #f4f9fc;
+    box-shadow: none;
+  }
+
+  .mailbox-avatar {
+    display: none;
+  }
+
+  .mailbox-message-top strong {
+    color: #111827;
+    font-size: 1rem;
+    font-weight: 900;
+  }
+
+  .mailbox-message-top time {
+    flex: 0 0 auto;
+    color: #4b5563;
+    font-size: 0.9rem;
+  }
+
+  .mailbox-subject {
+    margin-top: 4px;
+    color: #172033;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  .mailbox-message-meta {
+    margin-top: 3px;
+    color: #6b7280;
+    font-size: 0.9rem;
+  }
+
+  .mailbox-pagination {
+    border-top: 0;
+    padding: 16px 18px 22px;
+    background: #fff;
+  }
+
+  .mailbox-pagination span {
+    color: #0877b7;
+    font-weight: 900;
+  }
+
+  .mailbox-content.mailbox-content-reading .mailbox-list-pane,
+  .mailbox-content:not(.mailbox-content-reading) .mailbox-reader {
+    display: none;
+  }
+
+  .mailbox-reader {
+    min-height: calc(100dvh - 138px);
+    background: #fff;
+  }
+
+  .mailbox-reader-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    padding: 14px 16px;
+  }
+
+  .mailbox-reader-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    width: max-content;
+    min-height: 32px;
+    margin-bottom: 10px;
+    padding: 0;
+    border: 0;
+    color: #0877b7;
+    background: transparent;
+    font-weight: 900;
+  }
+
+  .mailbox-reader-head h2 {
+    overflow-wrap: anywhere;
+    color: #111827;
+    font-size: 1.04rem;
+    line-height: 1.3;
+  }
+
+  .mailbox-reader-meta {
+    display: grid;
+    gap: 4px;
+    font-size: 0.82rem;
+  }
+
+  .mailbox-reader-actions {
+    flex-wrap: nowrap;
+  }
+
+  .mailbox-reader-tools {
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 10px 16px;
+    background: #f8fafc;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mailbox-reader-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mailbox-reader-tools button {
+    flex: 0 0 auto;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+
+  .mailbox-reader-body {
+    min-height: calc(100dvh - 250px);
+    padding: 18px 16px 28px;
+    color: #111827;
+    font-size: 0.96rem;
+    line-height: 1.65;
+  }
+
+  .mailbox-mobile-compose-fab {
+    position: fixed;
+    right: 18px;
+    bottom: 88px;
+    z-index: 1200;
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 16px;
+    color: #0877b7;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.2);
+  }
+
+  .mailbox-mobile-tabbar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 1100;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    min-height: 72px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    border-top: 1px solid #e5edf3;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 0 -10px 28px rgba(15, 23, 42, 0.08);
+  }
+
+  .mailbox-mobile-tabbar button,
+  .mailbox-mobile-tabbar a {
+    display: grid;
+    place-items: center;
+    gap: 3px;
+    min-width: 0;
+    border: 0;
+    color: #64748b;
+    background: transparent;
+    text-decoration: none;
+    font-size: 0.74rem;
+    font-weight: 800;
+  }
+
+  .mailbox-mobile-tabbar i {
+    font-size: 1.1rem;
+  }
+
+  .mailbox-mobile-tabbar .active {
+    color: #0877b7;
+  }
+
+  .mailbox-mobile-menu-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 6500;
+    display: flex;
+    align-items: stretch;
+    background: rgba(15, 23, 42, 0.46);
+  }
+
+  .mailbox-mobile-menu {
+    display: grid;
+    grid-template-columns: 78px minmax(0, 1fr);
+    width: min(92vw, 420px);
+    max-width: 100%;
+    min-height: 100dvh;
+    overflow: hidden;
+    background: #fff;
+    box-shadow: 22px 0 48px rgba(15, 23, 42, 0.22);
+  }
+
+  .mailbox-mobile-menu-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 10px;
+    background: #eef2f5;
+  }
+
+  .mailbox-mobile-rail-btn,
+  .mailbox-mobile-rail-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 999px;
+    color: #64748b;
+    background: #fff;
+    font-weight: 900;
+  }
+
+  .mailbox-mobile-rail-btn.active,
+  .mailbox-mobile-rail-avatar {
+    color: #fff;
+    background: #0877b7;
+  }
+
+  .mailbox-mobile-rail-avatar {
+    background: #d97706;
+  }
+
+  .mailbox-mobile-menu-panel {
+    min-width: 0;
+    overflow-y: auto;
+    padding: 22px 18px;
+    background: #fff;
+  }
+
+  .mailbox-mobile-menu-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    gap: 10px;
+    align-items: start;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eef2f6;
+  }
+
+  .mailbox-mobile-menu-head span,
+  .mailbox-mobile-nav-title {
+    display: block;
+    color: #64748b;
+    font-size: 0.78rem;
+    font-weight: 900;
+    text-transform: uppercase;
+  }
+
+  .mailbox-mobile-menu-head strong {
+    display: block;
+    overflow: hidden;
+    margin-top: 2px;
+    color: #111827;
+    font-size: 0.96rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mailbox-mobile-menu-close {
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: #64748b;
+    background: #f1f5f9;
+  }
+
+  .mailbox-mobile-menu-nav {
+    display: grid;
+    gap: 6px;
+    padding-top: 14px;
+  }
+
+  .mailbox-mobile-nav-title {
+    margin: 12px 0 4px;
+  }
+
+  .mailbox-mobile-menu-nav .mailbox-folder-btn {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    min-height: 46px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 8px;
+    color: #4b5563;
+    background: #fff;
+    font-size: 1rem;
+  }
+
+  .mailbox-mobile-menu-nav .mailbox-folder-btn i {
+    color: #7b8794;
+    font-size: 1rem;
+  }
+
+  .mailbox-mobile-menu-nav .mailbox-folder-btn.active,
+  .mailbox-mobile-menu-nav .mailbox-folder-btn:hover {
+    color: #0877b7;
+    background: #eef8fd;
+  }
+
+  .mailbox-mobile-menu-nav .mailbox-folder-btn.active i,
+  .mailbox-mobile-menu-nav .mailbox-folder-btn:hover i {
+    color: #0877b7;
+  }
+
+  .mailbox-compose-backdrop {
+    top: 0;
+    z-index: 6600;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.44);
+  }
+
+  .mailbox-compose-drawer {
+    width: 100vw;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 0;
+  }
+
+  .mailbox-compose-head {
+    align-items: center;
+    flex-direction: row;
+    min-height: 64px;
+    padding: 12px 16px;
+    background: #0877b7;
+  }
+
+  .mailbox-compose-head h2 {
+    font-size: 1.12rem;
+  }
+
+  .mailbox-compose-form {
+    gap: 12px;
+    padding: 14px 16px 18px;
+  }
+
+  .mailbox-compose-recipients,
+  .mailbox-smart-panel {
+    border-radius: 8px;
+    background: #f8fafc;
+  }
+
+  .mailbox-recipient-row {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .mailbox-recipient-box input {
+    min-width: 120px;
+  }
+
+  .mailbox-contact-suggestions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .mailbox-mobile-header {
+    grid-template-columns: 40px minmax(0, 1fr) 38px 38px;
+    gap: 8px;
+    padding-inline: 14px;
+  }
+
+  .mailbox-mobile-heading h1 {
+    font-size: 1.18rem;
+  }
+
+  .mailbox-mobile-filterbar {
+    padding-inline: 14px;
+  }
+
+  .mailbox-mobile-pills button {
+    min-width: 76px;
+    padding-inline: 10px;
+  }
+
+  .mailbox-mobile-menu {
+    grid-template-columns: 68px minmax(0, 1fr);
+    width: 94vw;
+  }
+
+  .mailbox-mobile-rail-btn,
+  .mailbox-mobile-rail-avatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .mailbox-message-item {
+    padding-inline: 18px;
   }
 }
 </style>
