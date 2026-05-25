@@ -24,9 +24,9 @@
           <div class="dash-hero-stat-val">{{ stats.documents ?? 0 }}</div>
           <div class="dash-hero-stat-lbl">Documents</div>
         </router-link>
-        <router-link to="/notifications" class="dash-hero-stat-link">
+        <router-link to="/mailbox" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.messages_non_lus ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Messages</div>
+          <div class="dash-hero-stat-lbl">Mails</div>
         </router-link>
         <router-link to="/notifications" class="dash-hero-stat-link">
           <div class="dash-hero-stat-val">{{ stats.communiques ?? 0 }}</div>
@@ -418,8 +418,8 @@ const maxStat = computed(() => {
 
 const statCards = computed(() => [
   { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', color: '#0077B5', bg: '#e0f2fe', pct: ((stats.value.documents ?? 0) / maxStat.value) * 100, to: '/documents' },
-  { label: 'Messages non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100, to: '/notifications' },
-  { label: 'Communiqués du SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100, to: '/notifications' },
+  { label: 'Mails non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100, to: '/mailbox' },
+  { label: 'Communiqués SEN', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe', pct: ((stats.value.communiques ?? 0) / maxStat.value) * 100, to: '/notifications' },
   { label: 'Demandes en attente', value: stats.value.requests_pending ?? 0, icon: 'fa-clock', color: '#d97706', bg: '#fef3c7', pct: ((stats.value.requests_pending ?? 0) / maxStat.value) * 100, to: '/requests' },
   { label: 'Demandes approuvées', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', color: '#059669', bg: '#d1fae5', pct: ((stats.value.requests_approved ?? 0) / maxStat.value) * 100, to: '/requests' },
   { label: 'Absences', value: stats.value.absences ?? 0, icon: 'fa-calendar-times', color: '#dc2626', bg: '#fee2e2', pct: ((stats.value.absences ?? 0) / maxStat.value) * 100, to: '/mes-absences' },
@@ -603,24 +603,36 @@ watch(profilePhotoCandidates, () => {
 .dash-action-desc { font-size: .7rem; opacity: .6; }
 
 /* Stat Cards */
-.dash-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.dash-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
 .dash-stat-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1.2rem; transition: all .2s;
-  text-decoration: none; color: inherit; display: block;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1rem; transition: all .2s;
+  text-decoration: none; color: inherit; display: flex; flex-direction: column; justify-content: space-between;
+  min-height: 106px;
 }
 .dash-stat-card-link { cursor: pointer; }
 .dash-stat-card:hover { box-shadow: 0 6px 24px rgba(0,0,0,.08); transform: translateY(-2px); border-color: #0077B5; }
-.dash-stat-top { display: flex; align-items: center; gap: .8rem; margin-bottom: .8rem; }
+.dash-stat-top { display: flex; align-items: flex-start; gap: .72rem; margin-bottom: .7rem; }
 .dash-stat-icon {
-  width: 44px; height: 44px; border-radius: 12px; display: flex;
-  align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0;
+  width: 38px; height: 38px; border-radius: 10px; display: flex;
+  align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0;
 }
 .dash-stat-info { flex: 1; min-width: 0; }
 .dash-stat-val { font-size: 1.6rem; font-weight: 800; color: #1e293b; line-height: 1.1; }
-.dash-stat-lbl { font-size: .72rem; color: #9ca3af; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+.dash-stat-lbl {
+  color: #6b7280;
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: 1.15;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
 .dash-stat-bar { height: 4px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
 .dash-stat-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 4px; }
+
+@media (min-width: 1100px) {
+  .dash-stat-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
 
 /* Activity */
 .dash-activity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }

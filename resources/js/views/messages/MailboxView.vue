@@ -972,7 +972,10 @@ async function selectMessage(message) {
     })
     selectedMessage.value = data.data
     patchMessage(message.uid, { seen: true, unread: false })
-    meta.value.unread_count = Math.max((meta.value.unread_count || 0) - (message.unread ? 1 : 0), 0)
+    if (message.unread) {
+      meta.value.unread_count = Math.max((meta.value.unread_count || 0) - 1, 0)
+      adjustFolderUnread(activeFolder.value, -1)
+    }
   } catch (error) {
     messagesError.value = firstError(error) || 'Impossible d ouvrir ce mail.'
     if (isMobileMailbox.value) {
@@ -995,7 +998,9 @@ async function toggleRead(message) {
     if (selectedMessage.value?.uid === message.uid) {
       selectedMessage.value = { ...selectedMessage.value, ...data.data }
     }
-    meta.value.unread_count = Math.max((meta.value.unread_count || 0) + (nextSeen ? -1 : 1), 0)
+    const unreadDelta = nextSeen ? -1 : 1
+    meta.value.unread_count = Math.max((meta.value.unread_count || 0) + unreadDelta, 0)
+    adjustFolderUnread(activeFolder.value, unreadDelta)
   } catch (error) {
     messagesError.value = firstError(error) || 'Action impossible.'
   }
@@ -1299,6 +1304,19 @@ function patchMessage(uid, patch) {
   messages.value = messages.value.map(message => (
     message.uid === uid ? { ...message, ...patch } : message
   ))
+}
+
+function adjustFolderUnread(folderName, delta) {
+  if (!folderName || !delta) return
+
+  folders.value = folders.value.map(folder => {
+    if (folder.name !== folderName) return folder
+
+    return {
+      ...folder,
+      unread: Math.max(Number(folder.unread || 0) + delta, 0),
+    }
+  })
 }
 
 function onSearch() {
