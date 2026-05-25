@@ -192,7 +192,7 @@
           {{ messagesError }}
         </div>
 
-        <div class="mailbox-content">
+        <div class="mailbox-content" :class="{ 'mailbox-content-reading': isMobileMailbox && selectedUid }">
           <section class="mailbox-list-pane">
             <div class="mailbox-list-head">
               <strong>{{ meta.total || 0 }} message(s)</strong>
@@ -255,6 +255,10 @@
             <template v-else-if="selectedMessage">
               <header class="mailbox-reader-head">
                 <div>
+                  <button type="button" class="mailbox-reader-back" @click="resetSelection">
+                    <i class="fas fa-arrow-left"></i>
+                    Messages
+                  </button>
                   <h2>{{ selectedMessage.subject }}</h2>
                   <div class="mailbox-reader-meta">
                     <span>{{ selectedMessage.from }}</span>
@@ -479,7 +483,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import client from '@/api/client'
 
 const settings = ref(null)
@@ -513,7 +517,9 @@ const search = ref('')
 const selectedUid = ref(null)
 const selectedMessage = ref(null)
 const selectedLoading = ref(false)
+const isMobileMailbox = ref(false)
 let searchTimer = null
+let mobileMediaQuery = null
 
 const settingsForm = reactive({
   email: '',
@@ -792,10 +798,15 @@ async function loadMessages(page = 1) {
     messages.value = data.data || []
     meta.value = { ...meta.value, ...(data.meta || {}) }
 
-    if (messages.value.length) {
+    if (messages.value.length && !isMobileMailbox.value) {
       const currentStillVisible = messages.value.some(message => message.uid === selectedUid.value)
       if (!currentStillVisible) {
         await selectMessage(messages.value[0])
+      }
+    } else if (messages.value.length) {
+      const currentStillVisible = messages.value.some(message => message.uid === selectedUid.value)
+      if (!currentStillVisible) {
+        resetSelection()
       }
     } else {
       resetSelection()
@@ -825,6 +836,9 @@ async function selectMessage(message) {
     meta.value.unread_count = Math.max((meta.value.unread_count || 0) - (message.unread ? 1 : 0), 0)
   } catch (error) {
     messagesError.value = firstError(error) || 'Impossible d ouvrir ce mail.'
+    if (isMobileMailbox.value) {
+      resetSelection()
+    }
   } finally {
     selectedLoading.value = false
   }
@@ -1208,7 +1222,36 @@ function formatSize(size) {
   return `${(value / 1024 / 1024).toFixed(1)} Mo`
 }
 
-onMounted(loadSettings)
+function syncMobileMailbox(event = null) {
+  isMobileMailbox.value = Boolean(event?.matches ?? mobileMediaQuery?.matches)
+}
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    mobileMediaQuery = window.matchMedia('(max-width: 860px)')
+    syncMobileMailbox()
+
+    if (mobileMediaQuery.addEventListener) {
+      mobileMediaQuery.addEventListener('change', syncMobileMailbox)
+    } else {
+      mobileMediaQuery.addListener(syncMobileMailbox)
+    }
+  }
+
+  loadSettings()
+})
+
+onBeforeUnmount(() => {
+  window.clearTimeout(searchTimer)
+
+  if (!mobileMediaQuery) return
+
+  if (mobileMediaQuery.removeEventListener) {
+    mobileMediaQuery.removeEventListener('change', syncMobileMailbox)
+  } else {
+    mobileMediaQuery.removeListener(syncMobileMailbox)
+  }
+})
 </script>
 
 <style scoped>
@@ -1670,6 +1713,10 @@ onMounted(loadSettings)
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+.mailbox-reader-back {
+  display: none;
 }
 
 .mailbox-reader-tools {
@@ -2215,9 +2262,12 @@ onMounted(loadSettings)
 
   .outlook-shell {
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .mailbox-sidebar {
+    gap: 10px;
+    padding: 10px;
     border-right: 0;
     border-bottom: 1px solid #dbeaf0;
   }
@@ -2226,6 +2276,13 @@ onMounted(loadSettings)
     flex-direction: row;
     padding-bottom: 4px;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .mailbox-folder-nav::-webkit-scrollbar,
+  .mailbox-commandbar::-webkit-scrollbar {
+    display: none;
   }
 
   .mailbox-nav-title,
@@ -2234,7 +2291,8 @@ onMounted(loadSettings)
   }
 
   .mailbox-folder-btn {
-    min-width: 160px;
+    min-width: 150px;
+    flex: 0 0 auto;
   }
 
   .mailbox-topbar,
@@ -2250,13 +2308,36 @@ onMounted(loadSettings)
   }
 
   .mailbox-content {
-    grid-template-columns: 1fr;
+    display: block;
   }
 
   .mailbox-list-pane {
-    max-height: 480px;
     border-right: 0;
-    border-bottom: 1px solid #e0edf2;
+    border-bottom: 0;
+  }
+
+  .mailbox-content.mailbox-content-reading .mailbox-list-pane,
+  .mailbox-content:not(.mailbox-content-reading) .mailbox-reader {
+    display: none;
+  }
+
+  .mailbox-reader {
+    min-height: calc(100dvh - 220px);
+  }
+
+  .mailbox-reader-back {
+    display: inline-flex;
+    align-items: center;
+    width: max-content;
+    gap: 8px;
+    min-height: 34px;
+    margin-bottom: 10px;
+    padding: 0 12px;
+    border: 1px solid #cfe1e8;
+    border-radius: 8px;
+    color: #0f5f76;
+    background: #fff;
+    font-weight: 900;
   }
 
   .mailbox-settings-form {
@@ -2288,6 +2369,211 @@ onMounted(loadSettings)
 }
 
 @media (max-width: 620px) {
+  .mailbox-page {
+    min-height: calc(100dvh - 64px);
+    padding: 8px;
+  }
+
+  .outlook-shell,
+  .mailbox-settings {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .outlook-shell {
+    min-height: calc(100dvh - 80px);
+    gap: 8px;
+  }
+
+  .mailbox-sidebar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    gap: 8px;
+    padding: 0;
+    border-bottom: 0;
+    background: transparent;
+  }
+
+  .mailbox-account {
+    min-width: 0;
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 8px;
+  }
+
+  .mailbox-account-avatar {
+    width: 36px;
+    height: 36px;
+  }
+
+  .mailbox-account span {
+    font-size: 0.68rem;
+  }
+
+  .mailbox-account strong {
+    font-size: 0.82rem;
+  }
+
+  .mailbox-compose-btn {
+    width: 44px;
+    min-height: 44px;
+    align-self: stretch;
+    padding: 0;
+    font-size: 0;
+  }
+
+  .mailbox-compose-btn i {
+    font-size: 1rem;
+  }
+
+  .mailbox-folder-nav {
+    grid-column: 1 / -1;
+    gap: 6px;
+    padding: 0 0 2px;
+  }
+
+  .mailbox-folder-btn {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 38px;
+    gap: 8px;
+    padding: 0 10px;
+    background: #fff;
+    border-color: #d8e9ef;
+  }
+
+  .mailbox-folder-btn span {
+    max-width: 112px;
+  }
+
+  .mailbox-folder-btn b {
+    min-width: 24px;
+  }
+
+  .mailbox-main {
+    overflow: hidden;
+    border: 1px solid #d8e9ef;
+    border-radius: 8px;
+  }
+
+  .mailbox-topbar {
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .mailbox-topbar h1 {
+    font-size: 1.02rem;
+  }
+
+  .mailbox-search input {
+    min-height: 38px;
+    font-size: 0.9rem;
+  }
+
+  .mailbox-commandbar {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mailbox-command {
+    min-height: 36px;
+    flex: 0 0 auto;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+
+  .mailbox-command.settings {
+    margin-left: 0;
+  }
+
+  .mailbox-move {
+    flex: 0 0 auto;
+  }
+
+  .mailbox-move select {
+    min-width: 150px;
+    max-width: 170px;
+  }
+
+  .mailbox-list-head {
+    padding: 9px 10px;
+  }
+
+  .mailbox-message-list {
+    overflow: visible;
+  }
+
+  .mailbox-message-item {
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 9px;
+    min-height: 76px;
+    padding: 11px 10px;
+  }
+
+  .mailbox-avatar {
+    width: 38px;
+    height: 38px;
+  }
+
+  .mailbox-message-top {
+    gap: 8px;
+  }
+
+  .mailbox-message-top strong {
+    font-size: 0.86rem;
+  }
+
+  .mailbox-subject {
+    font-size: 0.84rem;
+  }
+
+  .mailbox-reader-head {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .mailbox-reader-head h2 {
+    font-size: 1rem;
+    line-height: 1.3;
+  }
+
+  .mailbox-reader-meta {
+    display: grid;
+    gap: 4px;
+    font-size: 0.78rem;
+  }
+
+  .mailbox-reader-actions {
+    flex-wrap: wrap;
+  }
+
+  .mailbox-reader-tools {
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    padding: 8px 10px;
+  }
+
+  .mailbox-reader-tools button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .mailbox-reader-body {
+    min-height: calc(100dvh - 260px);
+    padding: 14px;
+    font-size: 0.9rem;
+    line-height: 1.55;
+  }
+
+  .mailbox-pagination {
+    padding: 10px;
+  }
+
   .mailbox-compose-backdrop {
     top: 64px;
     padding: 8px;
