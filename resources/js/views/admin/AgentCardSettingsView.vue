@@ -129,6 +129,7 @@
                   <div><dt>Matricule</dt><dd>PNMLS-2026-001</dd></div>
                   <div><dt>Organe</dt><dd>SEN</dd></div>
                   <div><dt>Province</dt><dd>Kinshasa</dd></div>
+                  <div class="address-line"><dt>Adresse</dt><dd>{{ professionalAddress }}</dd></div>
                   <div><dt>Validite</dt><dd>25/05/2026 - 25/05/2027</dd></div>
                 </dl>
               </div>
@@ -172,6 +173,7 @@ const files = reactive({
   logo_primary: null,
   logo_secondary: null,
 })
+const professionalAddress = 'croisement boulevard triomphal/avenue de la liberation commune de Kasa-Vubu'
 
 const form = reactive({
   country: '',
@@ -541,6 +543,11 @@ onMounted(load)
 .agent-lines dl div {
   display: grid;
   grid-template-columns: 88px 1fr;
+}
+
+.agent-lines .address-line dd {
+  font-size: .6rem;
+  line-height: 1.15;
 }
 
 .agent-lines dt {

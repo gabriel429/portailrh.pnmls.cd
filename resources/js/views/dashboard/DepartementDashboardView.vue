@@ -2115,4 +2115,53 @@ h1.dept-hero-name {
 .dept-action-desc { font-size: .64rem; }
 .dept-metric-val { font-size: 1.35rem; }
 .dept-metric-lbl { font-size: .62rem; letter-spacing: .2px; }
+
+@media (max-width: 1300px) {
+  .dept-hero-inner {
+    align-items: stretch;
+  }
+
+  .dept-hero-left {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .dept-hero-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .45rem;
+    width: 100%;
+  }
+
+  .dept-kpi-pill {
+    justify-content: flex-start;
+    min-height: 46px;
+    padding: .5rem .62rem;
+  }
+
+  .dept-kpi-pill > div:not(.dept-kpi-pill-icon) {
+    min-width: 0;
+  }
+
+  .dept-kpi-pill-lbl {
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .kpi-divider {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .dept-hero-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .dept-hero-kpis {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

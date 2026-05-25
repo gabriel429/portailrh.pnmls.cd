@@ -1159,6 +1159,48 @@ body {
     }
 }
 
+@media (min-width: 992px) and (max-width: 1199.98px) {
+    .navbar-main .container-fluid {
+        gap: 0.45rem;
+        padding-left: 0.7rem !important;
+        padding-right: 0.7rem !important;
+    }
+
+    .navbar-main .navbar-collapse {
+        gap: 0.35rem;
+    }
+
+    .navbar-primary-nav,
+    .navbar-secondary-nav {
+        gap: 0.18rem;
+    }
+
+    .navbar-main .nav-link {
+        height: 34px;
+        justify-content: center;
+        min-width: 38px;
+        padding: 0.36rem 0.42rem !important;
+    }
+
+    .navbar-main .nav-link-label {
+        display: none;
+    }
+
+    .navbar-main .nav-link .nav-icon {
+        font-size: 0.82rem;
+        width: auto;
+    }
+
+    .navbar-main .nav-badge-stack {
+        right: -8px;
+        top: -7px;
+    }
+
+    .nav-divider {
+        display: none !important;
+    }
+}
+
 @keyframes notif-pulse {
     0%, 100% {
         transform: scale(1);

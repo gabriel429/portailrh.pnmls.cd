@@ -44,6 +44,7 @@
           <div><span>Organe</span><strong>{{ agent.organe || 'N/A' }}</strong></div>
           <div><span>Structure</span><strong>{{ structureLabel }}</strong></div>
           <div><span>Province</span><strong>{{ provinceLabel }}</strong></div>
+          <div class="wide-detail"><span>Adresse professionnelle</span><strong>{{ professionalAddress }}</strong></div>
           <div><span>Numero carte</span><strong>{{ card.serial }}</strong></div>
           <div><span>Validite</span><strong>{{ formatDate(card.issued_at) }} - {{ formatDate(card.expires_at) }}</strong></div>
         </section>
@@ -73,6 +74,7 @@ const loading = ref(true)
 const error = ref('')
 const agent = ref(null)
 const card = ref(null)
+const professionalAddress = 'croisement boulevard triomphal/avenue de la liberation commune de Kasa-Vubu'
 
 const agentName = computed(() => {
   const a = agent.value || {}
@@ -92,7 +94,7 @@ const photoUrl = computed(() => {
 
 const agentFunction = computed(() => agent.value?.fonction || agent.value?.poste_actuel || agent.value?.role?.nom_role || 'Agent PNMLS')
 const structureLabel = computed(() => agent.value?.departement?.nom || agent.value?.department?.nom || agent.value?.section?.nom || 'PNMLS')
-const provinceLabel = computed(() => agent.value?.province?.nom_province || agent.value?.province?.nom || 'N/A')
+const provinceLabel = computed(() => normalizeProvinceLabel(agent.value?.province?.nom_province || agent.value?.province?.nom))
 
 const statusClass = computed(() => `status-${card.value?.status || 'unknown'}`)
 const statusLabel = computed(() => ({
@@ -149,6 +151,11 @@ function normalizeToken(value) {
 function formatDate(value) {
   if (!value) return 'N/A'
   return new Date(value).toLocaleDateString('fr-FR')
+}
+
+function normalizeProvinceLabel(value) {
+  const label = String(value || '').trim()
+  return !label || ['n/a', 'na', 'non applicable'].includes(label.toLowerCase()) ? 'NATIONAL' : label
 }
 
 watch(() => route.params.token, load)
@@ -324,6 +331,11 @@ onMounted(load)
 
 .details-grid div:nth-child(odd) {
   border-right: 1px solid #e5edf3;
+}
+
+.details-grid .wide-detail {
+  grid-column: 1 / -1;
+  border-right: 0 !important;
 }
 
 .details-grid span {

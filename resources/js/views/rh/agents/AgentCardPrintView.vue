@@ -136,6 +136,7 @@
                   <div><dt>Organe</dt><dd>{{ agent.organe || 'N/A' }}</dd></div>
                   <div><dt>Structure</dt><dd>{{ structureLabel }}</dd></div>
                   <div><dt>Province</dt><dd>{{ provinceLabel }}</dd></div>
+                  <div class="address-row"><dt>Adresse</dt><dd>{{ professionalAddress }}</dd></div>
                   <div><dt>Emission</dt><dd>{{ formatDate(card.issued_at) }}</dd></div>
                   <div><dt>Expiration</dt><dd>{{ formatDate(card.expires_at) }}</dd></div>
                 </dl>
@@ -199,6 +200,7 @@ const printMode = ref('a4')
 const pvcSide = ref('both')
 const pvcOffsetX = ref(0)
 const pvcOffsetY = ref(0)
+const professionalAddress = 'croisement boulevard triomphal/avenue de la liberation commune de Kasa-Vubu'
 const settings = reactive({
   country: '',
   ministry: '',
@@ -243,7 +245,7 @@ const agentPhoto = computed(() => {
 
 const agentFunction = computed(() => agent.value?.fonction || agent.value?.poste_actuel || agent.value?.role?.nom_role || 'Agent PNMLS')
 const structureLabel = computed(() => agent.value?.departement?.nom || agent.value?.department?.nom || agent.value?.section?.nom || 'PNMLS')
-const provinceLabel = computed(() => agent.value?.province?.nom_province || agent.value?.province?.nom || 'N/A')
+const provinceLabel = computed(() => normalizeProvinceLabel(agent.value?.province?.nom_province || agent.value?.province?.nom))
 const qrPayload = computed(() => {
   if (card.value?.verification_url) return card.value.verification_url
   if (card.value?.token) return `${window.location.origin}/agent-cards/verify/${card.value.token}`
@@ -322,6 +324,11 @@ function print() {
 function formatDate(value) {
   if (!value) return 'N/A'
   return new Date(value).toLocaleDateString('fr-FR')
+}
+
+function normalizeProvinceLabel(value) {
+  const label = String(value || '').trim()
+  return !label || ['n/a', 'na', 'non applicable'].includes(label.toLowerCase()) ? 'NATIONAL' : label
 }
 
 function loadPrintPrefs() {
@@ -897,14 +904,14 @@ onBeforeUnmount(() => {
   font-size: 1.92mm;
   font-weight: 900;
   line-height: 1.15;
-  margin: 0 0 1.35mm;
+  margin: 0 0 1mm;
   max-height: 4.7mm;
   overflow: hidden;
 }
 
 .identity-data dl {
   display: grid;
-  gap: .66mm;
+  gap: .48mm;
   margin: 0;
 }
 
@@ -931,6 +938,18 @@ onBeforeUnmount(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.identity-data .address-row dd {
+  display: -webkit-box;
+  font-size: 1.34mm;
+  line-height: 1.08;
+  max-height: 3mm;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .identity-card footer {
