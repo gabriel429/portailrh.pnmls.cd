@@ -1,5 +1,9 @@
 <template>
-  <div class="card-print-page">
+  <div
+    class="card-print-page"
+    :class="{ 'pvc-mode': printMode === 'pvc' }"
+    :style="calibrationStyle"
+  >
     <div class="toolbar no-print">
       <div>
         <button class="back-btn" type="button" @click="router.back()">
@@ -29,7 +33,7 @@
         </button>
         <button class="print-btn" type="button" :disabled="!card" @click="print">
           <i class="fas fa-print"></i>
-          Imprimer
+          {{ printMode === 'pvc' ? 'Imprimer PVC' : 'Imprimer' }}
         </button>
       </div>
     </div>
@@ -59,8 +63,51 @@
           <small>Validite: {{ formatDate(card.issued_at) }} au {{ formatDate(card.expires_at) }}</small>
         </div>
 
+        <div class="print-options no-print">
+          <div class="option-block">
+            <span>Mode impression</span>
+            <div class="segmented-control">
+              <button type="button" :class="{ active: printMode === 'a4' }" @click="setPrintMode('a4')">
+                <i class="fas fa-file-lines"></i>
+                A4
+              </button>
+              <button type="button" :class="{ active: printMode === 'pvc' }" @click="setPrintMode('pvc')">
+                <i class="fas fa-id-card"></i>
+                PVC / Sigma
+              </button>
+            </div>
+          </div>
+
+          <div v-if="printMode === 'pvc'" class="pvc-controls">
+            <label>
+              <span>Faces</span>
+              <select v-model="pvcSide">
+                <option value="both">Recto + verso</option>
+                <option value="front">Recto seulement</option>
+                <option value="back">Verso seulement</option>
+              </select>
+            </label>
+            <label>
+              <span>Decalage X</span>
+              <input v-model.number="pvcOffsetX" type="number" step="0.1">
+            </label>
+            <label>
+              <span>Decalage Y</span>
+              <input v-model.number="pvcOffsetY" type="number" step="0.1">
+            </label>
+            <button class="mini-btn" type="button" @click="savePrintPrefs">
+              <i class="fas fa-save"></i>
+              Sauver
+            </button>
+            <button class="mini-btn ghost" type="button" @click="resetCalibration">
+              <i class="fas fa-rotate-left"></i>
+              Reset
+            </button>
+          </div>
+        </div>
+
         <div class="cards-sheet">
-          <article class="identity-card recto" :style="cardStyle">
+          <article class="identity-card recto" :class="printSideClass('front')" :style="cardStyle">
             <div class="card-bg"></div>
             <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header class="id-header">
@@ -101,7 +148,7 @@
             </footer>
           </article>
 
-          <article class="identity-card verso" :style="cardStyle">
+          <article class="identity-card verso" :class="printSideClass('back')" :style="cardStyle">
             <div class="card-bg"></div>
             <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header class="id-header single">
@@ -133,7 +180,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getAgentCard, issueAgentCard } from '@/api/agentCards'
 import { useUiStore } from '@/stores/ui'
@@ -148,6 +195,10 @@ const busy = ref(false)
 const agent = ref(null)
 const card = ref(null)
 const qrImage = ref('')
+const printMode = ref('a4')
+const pvcSide = ref('both')
+const pvcOffsetX = ref(0)
+const pvcOffsetY = ref(0)
 const settings = reactive({
   country: '',
   ministry: '',
@@ -167,6 +218,11 @@ const settings = reactive({
 const cardStyle = computed(() => ({
   '--primary': settings.primary_color || '#0077B5',
   '--accent': settings.accent_color || '#f6c343',
+}))
+
+const calibrationStyle = computed(() => ({
+  '--pvc-offset-x': `${Number(pvcOffsetX.value) || 0}mm`,
+  '--pvc-offset-y': `${Number(pvcOffsetY.value) || 0}mm`,
 }))
 
 const agentName = computed(() => {
@@ -206,6 +262,9 @@ const statusIcon = computed(() => ({
   revoked: 'fas fa-ban',
 }[card.value?.status] || 'fas fa-circle-info'))
 
+const PRINT_PREFS_KEY = 'pnmls-agent-card-print-prefs'
+const PRINT_STYLE_ID = 'pnmls-pvc-print-style'
+
 function assignPayload(payload = {}) {
   agent.value = payload.agent || null
   card.value = payload.card || null
@@ -239,13 +298,147 @@ async function generate(renew) {
   }
 }
 
+function setPrintMode(mode) {
+  printMode.value = mode === 'pvc' ? 'pvc' : 'a4'
+  savePrintPrefs(false)
+}
+
+function printSideClass(side) {
+  const hidden = printMode.value === 'pvc'
+    && ((pvcSide.value === 'front' && side !== 'front') || (pvcSide.value === 'back' && side !== 'back'))
+
+  return {
+    'print-side-hidden': hidden,
+    'single-page-card': printMode.value === 'pvc' && pvcSide.value !== 'both' && !hidden,
+  }
+}
+
 function print() {
-  window.print()
+  preparePrintMode()
+  window.setTimeout(() => window.print(), 60)
 }
 
 function formatDate(value) {
   if (!value) return 'N/A'
   return new Date(value).toLocaleDateString('fr-FR')
+}
+
+function loadPrintPrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem(PRINT_PREFS_KEY) || '{}')
+    if (prefs.printMode === 'pvc') printMode.value = 'pvc'
+    if (['both', 'front', 'back'].includes(prefs.pvcSide)) pvcSide.value = prefs.pvcSide
+    pvcOffsetX.value = Number.isFinite(Number(prefs.pvcOffsetX)) ? Number(prefs.pvcOffsetX) : 0
+    pvcOffsetY.value = Number.isFinite(Number(prefs.pvcOffsetY)) ? Number(prefs.pvcOffsetY) : 0
+  } catch (_) {
+    pvcOffsetX.value = 0
+    pvcOffsetY.value = 0
+  }
+}
+
+function savePrintPrefs(showToast = true) {
+  localStorage.setItem(PRINT_PREFS_KEY, JSON.stringify({
+    printMode: printMode.value,
+    pvcSide: pvcSide.value,
+    pvcOffsetX: Number(pvcOffsetX.value) || 0,
+    pvcOffsetY: Number(pvcOffsetY.value) || 0,
+  }))
+
+  if (showToast) ui.addToast('Reglages d impression enregistres.', 'success')
+}
+
+function resetCalibration() {
+  pvcOffsetX.value = 0
+  pvcOffsetY.value = 0
+  savePrintPrefs(false)
+}
+
+function preparePrintMode() {
+  document.body.classList.toggle('sigma-pvc-print', printMode.value === 'pvc')
+
+  let style = document.getElementById(PRINT_STYLE_ID)
+  if (printMode.value !== 'pvc') {
+    style?.remove()
+    return
+  }
+
+  if (!style) {
+    style = document.createElement('style')
+    style.id = PRINT_STYLE_ID
+    document.head.appendChild(style)
+  }
+
+  style.textContent = `
+@media print {
+  @page {
+    size: 85.6mm 54mm;
+    margin: 0;
+  }
+
+  html,
+  body.sigma-pvc-print {
+    background: #fff !important;
+    margin: 0 !important;
+    min-height: 54mm !important;
+    padding: 0 !important;
+    width: 85.6mm !important;
+  }
+
+  body.sigma-pvc-print .no-print,
+  body.sigma-pvc-print .status-strip {
+    display: none !important;
+  }
+
+  body.sigma-pvc-print .card-print-page {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 85.6mm !important;
+  }
+
+  body.sigma-pvc-print .print-stage,
+  body.sigma-pvc-print .cards-sheet {
+    display: block !important;
+    gap: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: none !important;
+    width: 85.6mm !important;
+  }
+
+  body.sigma-pvc-print .identity-card {
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-after: page !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    height: 54mm !important;
+    margin: 0 !important;
+    page-break-after: always !important;
+    position: relative !important;
+    transform: translate(var(--pvc-offset-x, 0mm), var(--pvc-offset-y, 0mm)) !important;
+    transform-origin: left top !important;
+    width: 85.6mm !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body.sigma-pvc-print .identity-card.print-side-hidden {
+    display: none !important;
+  }
+
+  body.sigma-pvc-print .identity-card.single-page-card,
+  body.sigma-pvc-print .cards-sheet > .identity-card:last-child {
+    break-after: auto !important;
+    page-break-after: auto !important;
+  }
+}
+`
+}
+
+function cleanupPrintMode() {
+  document.body.classList.remove('sigma-pvc-print')
+  document.getElementById(PRINT_STYLE_ID)?.remove()
 }
 
 watch(qrPayload, async (value) => {
@@ -269,7 +462,20 @@ watch(qrPayload, async (value) => {
   }
 }, { immediate: true })
 
-onMounted(load)
+watch([pvcSide, pvcOffsetX, pvcOffsetY], () => savePrintPrefs(false))
+
+onMounted(() => {
+  loadPrintPrefs()
+  window.addEventListener('beforeprint', preparePrintMode)
+  window.addEventListener('afterprint', cleanupPrintMode)
+  load()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeprint', preparePrintMode)
+  window.removeEventListener('afterprint', cleanupPrintMode)
+  cleanupPrintMode()
+})
 </script>
 
 <style scoped>
@@ -436,6 +642,95 @@ onMounted(load)
 .status-strip small {
   color: #64748b;
   font-weight: 700;
+}
+
+.print-options {
+  align-items: center;
+  background: rgba(255, 255, 255, .94);
+  border: 1px solid rgba(148, 163, 184, .24);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, .08);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .85rem;
+  padding: .85rem 1rem;
+}
+
+.option-block,
+.pvc-controls,
+.pvc-controls label {
+  align-items: center;
+  display: flex;
+  gap: .6rem;
+}
+
+.option-block > span,
+.pvc-controls label span {
+  color: #526176;
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.segmented-control {
+  background: #eaf5fb;
+  border: 1px solid #cfe2ee;
+  border-radius: 12px;
+  display: inline-flex;
+  gap: .25rem;
+  padding: .25rem;
+}
+
+.segmented-control button,
+.mini-btn {
+  align-items: center;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  font-weight: 900;
+  gap: .4rem;
+  justify-content: center;
+  min-height: 36px;
+  padding: .55rem .75rem;
+}
+
+.segmented-control button {
+  background: transparent;
+  color: #526176;
+}
+
+.segmented-control button.active {
+  background: #0077b5;
+  color: #fff;
+  box-shadow: 0 6px 14px rgba(0, 119, 181, .2);
+}
+
+.pvc-controls {
+  flex-wrap: wrap;
+}
+
+.pvc-controls select,
+.pvc-controls input {
+  background: #f8fbfd;
+  border: 1px solid #d8e3eb;
+  border-radius: 10px;
+  color: #172033;
+  font-weight: 800;
+  min-height: 36px;
+  padding: .45rem .6rem;
+}
+
+.pvc-controls input {
+  width: 76px;
+}
+
+.mini-btn {
+  background: #0f8aa9;
+  color: #fff;
+}
+
+.mini-btn.ghost {
+  background: #eef5f9;
+  color: #0f3552;
 }
 
 .cards-sheet {
@@ -726,6 +1021,20 @@ onMounted(load)
 
   .toolbar-actions {
     justify-content: flex-start;
+    width: 100%;
+  }
+
+  .print-options,
+  .option-block,
+  .pvc-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .segmented-control,
+  .pvc-controls label,
+  .pvc-controls select,
+  .mini-btn {
     width: 100%;
   }
 
