@@ -62,6 +62,7 @@
         <div class="cards-sheet">
           <article class="identity-card recto" :style="cardStyle">
             <div class="card-bg"></div>
+            <img v-if="settings.logo_primary_url" class="card-watermark" :src="settings.logo_primary_url" alt="" aria-hidden="true">
             <header class="id-header">
               <img v-if="settings.logo_primary_url" :src="settings.logo_primary_url" alt="Logo PNMLS">
               <div>
@@ -102,6 +103,7 @@
 
           <article class="identity-card verso" :style="cardStyle">
             <div class="card-bg"></div>
+            <img v-if="settings.logo_primary_url" class="card-watermark" :src="settings.logo_primary_url" alt="" aria-hidden="true">
             <header class="id-header single">
               <div>
                 <strong>{{ settings.subtitle }}</strong>
@@ -427,40 +429,55 @@ onMounted(load)
   color: #172033;
   height: 54mm;
   overflow: hidden;
-  padding: 3.5mm;
+  padding: 3.2mm;
   position: relative;
   width: 85.6mm;
 }
 
 .card-bg {
   background: linear-gradient(135deg, var(--primary), #0f8aa9);
-  height: 17mm;
+  height: 16mm;
   inset: 0 0 auto;
   position: absolute;
+  z-index: 0;
 }
 
 .card-bg::after {
   background: var(--accent);
   border-radius: 999px;
   content: "";
-  height: 26mm;
-  opacity: .18;
+  height: 24mm;
+  opacity: .16;
   position: absolute;
-  right: -8mm;
+  right: -7mm;
   top: 7mm;
-  width: 42mm;
+  width: 40mm;
+}
+
+.card-watermark {
+  filter: blur(1.8mm);
+  height: 45mm;
+  left: 50%;
+  object-fit: contain;
+  opacity: .075;
+  pointer-events: none;
+  position: absolute;
+  top: 58%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  width: 45mm;
+  z-index: 0;
 }
 
 .id-header {
   align-items: center;
   color: #fff;
   display: grid;
-  gap: 2mm;
-  grid-template-columns: 10mm 1fr 10mm;
-  min-height: 12mm;
+  gap: 1.8mm;
+  grid-template-columns: 9.6mm 1fr 9.6mm;
+  min-height: 10.8mm;
   position: relative;
   text-align: center;
-  z-index: 1;
+  z-index: 2;
 }
 
 .id-header.single {
@@ -471,15 +488,15 @@ onMounted(load)
 .id-header img {
   background: #fff;
   border-radius: 2mm;
-  height: 10mm;
+  height: 9.6mm;
   object-fit: contain;
   padding: 1mm;
-  width: 10mm;
+  width: 9.6mm;
 }
 
 .id-header strong {
   display: block;
-  font-size: 1.8mm;
+  font-size: 1.55mm;
   font-weight: 900;
   line-height: 1.1;
   text-transform: uppercase;
@@ -487,7 +504,7 @@ onMounted(load)
 
 .id-header span {
   display: block;
-  font-size: 1.35mm;
+  font-size: 1.16mm;
   font-weight: 700;
   line-height: 1.15;
 }
@@ -497,20 +514,20 @@ onMounted(load)
   border-radius: 999px;
   color: #172033;
   display: inline-flex;
-  font-size: 1.65mm;
+  font-size: 1.48mm;
   font-weight: 900;
-  margin: 2.4mm 0 2mm;
-  padding: 1mm 3mm;
+  margin: 2mm 0 1.4mm;
+  padding: .85mm 2.6mm;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .front-body {
   display: grid;
-  gap: 3mm;
-  grid-template-columns: 22mm 1fr;
+  gap: 2.6mm;
+  grid-template-columns: 21mm 1fr;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .agent-photo {
@@ -520,9 +537,9 @@ onMounted(load)
   border-radius: 3mm;
   color: var(--primary);
   display: flex;
-  font-size: 7mm;
+  font-size: 6.4mm;
   font-weight: 900;
-  height: 27mm;
+  height: 25mm;
   justify-content: center;
   overflow: hidden;
 }
@@ -535,65 +552,80 @@ onMounted(load)
 
 .identity-data h2 {
   color: #0f3552;
-  font-size: 4mm;
+  font-size: 3.45mm;
   font-weight: 900;
   line-height: 1;
-  margin: 0 0 1mm;
+  margin: 0 0 .75mm;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .identity-data p {
   color: #526176;
-  font-size: 2.2mm;
+  font-size: 1.75mm;
   font-weight: 900;
-  margin: 0 0 1.8mm;
+  line-height: 1.15;
+  margin: 0 0 1mm;
+  max-height: 4.2mm;
+  overflow: hidden;
 }
 
 .identity-data dl {
   display: grid;
-  gap: .7mm;
+  gap: .42mm;
   margin: 0;
 }
 
 .identity-data dl div {
   display: grid;
-  grid-template-columns: 18mm 1fr;
+  grid-template-columns: 16.4mm 1fr;
+  min-width: 0;
 }
 
 .identity-data dt {
   color: #64748b;
-  font-size: 1.7mm;
+  font-size: 1.36mm;
   font-weight: 900;
+  line-height: 1.1;
 }
 
 .identity-data dd {
   color: #172033;
-  font-size: 1.85mm;
+  font-size: 1.45mm;
   font-weight: 800;
+  line-height: 1.1;
   margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .identity-card footer {
   align-items: center;
-  bottom: 2.5mm;
+  bottom: 2.2mm;
   color: #64748b;
   display: flex;
-  font-size: 1.55mm;
+  font-size: 1.35mm;
   font-weight: 900;
   justify-content: space-between;
-  left: 3.5mm;
+  left: 3.2mm;
   position: absolute;
-  right: 3.5mm;
+  right: 3.2mm;
+  z-index: 2;
 }
 
 .back-body {
   align-items: center;
   display: grid;
-  gap: 4mm;
-  grid-template-columns: 29mm 1fr;
-  margin-top: 5mm;
+  gap: 3.6mm;
+  grid-template-columns: 27mm 1fr;
+  margin-top: 5.8mm;
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .qr-box {
@@ -601,9 +633,9 @@ onMounted(load)
   border: .35mm solid #d8e3eb;
   border-radius: 3mm;
   box-shadow: 0 5px 14px rgba(15, 23, 42, .12);
-  height: 29mm;
+  height: 27mm;
   padding: 1.8mm;
-  width: 29mm;
+  width: 27mm;
 }
 
 .qr-box img {
@@ -613,10 +645,10 @@ onMounted(load)
 
 .back-copy h3 {
   color: #0f3552;
-  font-size: 2.8mm;
+  font-size: 2.45mm;
   font-weight: 900;
   line-height: 1.1;
-  margin: 0 0 6mm;
+  margin: 0 0 5mm;
 }
 
 .signature-line {
@@ -642,14 +674,15 @@ onMounted(load)
 .verification-link {
   bottom: 8mm;
   color: #64748b;
-  font-size: 1.45mm;
-  font-weight: 700;
-  left: 3.5mm;
+  font-size: 1.25mm;
+  font-weight: 800;
+  left: 3.2mm;
   overflow: hidden;
   position: absolute;
-  right: 3.5mm;
+  right: 3.2mm;
   text-overflow: ellipsis;
   white-space: nowrap;
+  z-index: 2;
 }
 
 @media (max-width: 940px) {

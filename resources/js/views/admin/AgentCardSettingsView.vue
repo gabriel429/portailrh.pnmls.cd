@@ -108,6 +108,7 @@
 
         <div class="card-preview-stack">
           <article class="identity-card recto" :style="cardStyle">
+            <img v-if="primaryLogo" class="card-watermark" :src="primaryLogo" alt="" aria-hidden="true">
             <header>
               <img v-if="primaryLogo" :src="primaryLogo" alt="Logo principal">
               <div>
@@ -136,6 +137,7 @@
           </article>
 
           <article class="identity-card verso" :style="cardStyle">
+            <img v-if="primaryLogo" class="card-watermark" :src="primaryLogo" alt="" aria-hidden="true">
             <header>
               <div>
                 <strong>{{ form.subtitle }}</strong>
@@ -427,7 +429,21 @@ onMounted(load)
   z-index: 0;
 }
 
-.identity-card > * {
+.card-watermark {
+  filter: blur(7px);
+  height: 170px;
+  left: 50%;
+  object-fit: contain;
+  opacity: .075;
+  pointer-events: none;
+  position: absolute;
+  top: 58%;
+  transform: translate(-50%, -50%) rotate(-8deg);
+  width: 170px;
+  z-index: 0;
+}
+
+.identity-card > *:not(.card-watermark) {
   position: relative;
   z-index: 1;
 }
