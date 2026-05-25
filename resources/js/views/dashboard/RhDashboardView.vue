@@ -1657,7 +1657,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.rh-dashboard { max-width: 1200px; margin: 0 auto; padding: 0 1rem 2rem; }
+.rh-dashboard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 clamp(1rem, 2vw, 2rem) 2rem;
+}
 
 /* PENDING REQUESTS VALIDATION */
 .rh-pending-list { display: flex; flex-direction: column; gap: .6rem; }

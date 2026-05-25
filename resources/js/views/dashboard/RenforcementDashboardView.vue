@@ -488,7 +488,12 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.rc-dashboard { max-width: 1200px; margin: 0 auto; padding: 0 1rem 2rem; }
+.rc-dashboard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0 clamp(1rem, 2vw, 2rem) 2rem;
+}
 
 /* ═══ HERO ═══ */
 .rc-hero {

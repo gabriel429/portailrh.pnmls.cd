@@ -743,7 +743,7 @@ onMounted(async () => {
 <style scoped>
 /* ══════════ LAYOUT ══════════ */
 .sena-dashboard { min-height: 100vh; background: #f1f5f9; }
-.sena-body { padding: 1.25rem; display: flex; flex-direction: column; gap: 1rem; max-width: 1100px; margin: 0 auto; }
+.sena-body { width: 100%; padding: 1.25rem clamp(1rem, 2vw, 2rem); display: flex; flex-direction: column; gap: 1rem; max-width: none; margin: 0; }
 
 /* ══════════ HERO ══════════ */
 .sena-hero {

@@ -764,7 +764,7 @@ onMounted(loadData)
 /* ─── HERO ─── */
 .caf-hero { position: relative; background: linear-gradient(135deg, #0d9488 0%, #0f766e 40%, #065f46 100%); color: #fff; padding: 1.5rem 1.25rem 2rem; overflow: hidden; }
 .caf-hero-bg { position: absolute; inset: 0; background: radial-gradient(ellipse at 80% 20%, rgba(255,255,255,.08) 0%, transparent 60%); pointer-events: none; }
-.caf-hero-inner { position: relative; max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
+.caf-hero-inner { position: relative; width: 100%; max-width: none; margin: 0; display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; }
 .caf-hero-left { display: flex; align-items: center; gap: 1rem; }
 .caf-hero-avatar { width: 64px; height: 64px; border-radius: 50%; border: 3px solid rgba(255,255,255,.35); overflow: hidden; background: rgba(255,255,255,.2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .caf-hero-avatar-photo { width: 100%; height: 100%; object-fit: cover; }
@@ -787,9 +787,9 @@ onMounted(loadData)
 .kpi-unit { font-size: .7em; margin-left: 1px; }
 
 /* ─── SECTIONS ─── */
-.caf-section { max-width: 1200px; margin: 0 auto; padding: 1rem 1.25rem; }
+.caf-section { width: 100%; max-width: none; margin: 0; padding: 1rem clamp(1rem, 2vw, 2rem); }
 .caf-online-strip {
-  max-width: 1200px; margin: 0 auto .7rem; padding: .85rem 1rem;
+  width: 100%; max-width: none; margin: 0 0 .7rem; padding: .85rem 1rem;
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
 }
@@ -946,8 +946,8 @@ onMounted(loadData)
 .caf-dashboard { background: #f8fafc; }
 .caf-hero {
   border-radius: 14px;
-  margin: 0 auto .9rem;
-  max-width: 1200px;
+  margin: 0 0 .9rem;
+  max-width: none;
   padding: .95rem 1.25rem;
   background: #0077B5;
   box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
