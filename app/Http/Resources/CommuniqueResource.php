@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class CommuniqueResource extends JsonResource
 {
@@ -14,6 +15,26 @@ class CommuniqueResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $attachments = $this->relationLoaded('attachments')
+            ? $this->attachments->map(function ($attachment) {
+                $url = $attachment->path
+                    ? Storage::disk($attachment->disk ?: 'public')->url($attachment->path)
+                    : null;
+
+                return [
+                    'id' => $attachment->id,
+                    'name' => $attachment->original_name,
+                    'original_name' => $attachment->original_name,
+                    'mime_type' => $attachment->mime_type,
+                    'size' => $attachment->size,
+                    'url' => $url,
+                    'download_url' => $url,
+                    'created_at' => optional($attachment->created_at)?->toIso8601String(),
+                ];
+            })->values()
+            : collect();
+        $firstAttachment = $attachments->first();
+
         return [
             'id' => $this->id,
             'titre' => $this->titre,
@@ -26,6 +47,9 @@ class CommuniqueResource extends JsonResource
             'has_read' => $request->user()
                 ? $this->hasBeenReadBy((int) $request->user()->id)
                 : false,
+            'attachments' => $attachments->all(),
+            'piece_jointe_url' => $firstAttachment['url'] ?? null,
+            'piece_jointe_name' => $firstAttachment['name'] ?? null,
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
             'auteur' => $this->whenLoaded('auteur', function () {

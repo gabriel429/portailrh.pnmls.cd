@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Events\CommuniquePublished;
 use App\Http\Resources\CommuniqueResource;
 use App\Models\Communique;
+use App\Models\CommuniqueAttachment;
 use App\Models\CommuniqueRead;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ class CommuniqueController extends ApiController
      */
     public function index(Request $request): JsonResponse
     {
-        $communiques = Communique::with('auteur')
+        $communiques = Communique::with(['attachments', 'auteur'])
             ->withCount('reads')
             ->latest()
             ->paginate(15);
@@ -37,19 +38,22 @@ class CommuniqueController extends ApiController
             'date_expiration' => 'nullable|date|after_or_equal:today',
             'actif' => 'nullable|boolean',
             'notify_by_mail' => 'nullable|boolean',
+            'attachments' => 'nullable|array|max:10',
+            'attachments.*' => 'file|max:10240',
         ]);
 
         $validated['auteur_id'] = auth()->id();
         $validated['actif'] = $request->boolean('actif', true);
-        unset($validated['notify_by_mail']);
+        unset($validated['notify_by_mail'], $validated['attachments']);
 
         $communique = Communique::create($validated);
+        $this->storeAttachments($communique, $request->file('attachments', []));
 
         if ($communique->actif) {
             CommuniquePublished::dispatch($communique, $request->boolean('notify_by_mail'));
         }
 
-        $communique->load('auteur');
+        $communique->load(['attachments', 'auteur']);
         $communique->loadCount('reads');
         $resource = CommuniqueResource::make($communique);
 
@@ -63,7 +67,7 @@ class CommuniqueController extends ApiController
      */
     public function show(Communique $communique): JsonResponse
     {
-        $communique->load('auteur');
+        $communique->load(['attachments', 'auteur']);
         $communique->loadCount('reads');
 
         return $this->resource(CommuniqueResource::make($communique));
@@ -141,12 +145,19 @@ class CommuniqueController extends ApiController
             'date_expiration' => 'nullable|date',
             'actif' => 'nullable|boolean',
             'notify_by_mail' => 'nullable|boolean',
+            'attachments' => 'nullable|array|max:10',
+            'attachments.*' => 'file|max:10240',
+            'remove_attachment_ids' => 'nullable|array',
+            'remove_attachment_ids.*' => 'integer|exists:communique_attachments,id',
         ]);
 
         $validated['actif'] = $request->boolean('actif', false);
-        unset($validated['notify_by_mail']);
+        $removeAttachmentIds = $validated['remove_attachment_ids'] ?? [];
+        unset($validated['notify_by_mail'], $validated['attachments'], $validated['remove_attachment_ids']);
 
         $communique->update($validated);
+        $this->deleteAttachments($communique, $removeAttachmentIds);
+        $this->storeAttachments($communique, $request->file('attachments', []));
 
         if ($communique->actif && $request->boolean('notify_by_mail')) {
             \App\Services\NotificationService::envoyerEmailAgentsProfessionnels(
@@ -156,7 +167,7 @@ class CommuniqueController extends ApiController
             );
         }
 
-        $resource = CommuniqueResource::make($communique->fresh()->load('auteur')->loadCount('reads'));
+        $resource = CommuniqueResource::make($communique->fresh()->load(['attachments', 'auteur'])->loadCount('reads'));
 
         return $this->resource($resource, [], [
             'message' => 'Communiqué mis à jour avec succès.',
@@ -168,10 +179,44 @@ class CommuniqueController extends ApiController
      */
     public function destroy(Communique $communique): JsonResponse
     {
+        $communique->attachments()->get()->each->delete();
         $communique->delete();
 
         return $this->success(null, [], [
             'message' => 'Communiqué supprimé.',
         ]);
+    }
+
+    private function storeAttachments(Communique $communique, array $files): void
+    {
+        foreach ($files as $file) {
+            if (! $file) {
+                continue;
+            }
+
+            $path = $file->store('communiques/' . $communique->id, 'public');
+
+            $communique->attachments()->create([
+                'disk' => 'public',
+                'path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getClientMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+    }
+
+    private function deleteAttachments(Communique $communique, array $attachmentIds): void
+    {
+        if (empty($attachmentIds)) {
+            return;
+        }
+
+        CommuniqueAttachment::query()
+            ->where('communique_id', $communique->id)
+            ->whereIn('id', $attachmentIds)
+            ->get()
+            ->each
+            ->delete();
     }
 }

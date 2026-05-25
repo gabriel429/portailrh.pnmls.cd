@@ -46,6 +46,25 @@
                 <!-- Contenu -->
                 <div style="white-space: pre-wrap; line-height: 1.8; font-size: 1.05rem;">{{ communique.contenu }}</div>
 
+                <!-- Pièces jointes -->
+                <div v-if="communique.attachments?.length" class="attachments-card mt-4 pt-3 border-top">
+                  <h6><i class="fas fa-paperclip me-2"></i>Pièces jointes</h6>
+                  <div class="attachments-list">
+                    <a
+                      v-for="file in communique.attachments"
+                      :key="file.id"
+                      class="attachment-link"
+                      :href="file.url"
+                      target="_blank"
+                      rel="noopener"
+                    >
+                      <i class="fas fa-file-lines"></i>
+                      <span>{{ file.name }}</span>
+                      <small>{{ formatFileSize(file.size) }}</small>
+                    </a>
+                  </div>
+                </div>
+
                 <!-- Signataire -->
                 <div v-if="communique.signataire" class="mt-4 pt-3 border-top">
                   <small class="text-muted">Signataire</small>
@@ -70,6 +89,9 @@
                   <dd class="col-sm-7">
                     {{ communique.date_expiration ? formatDate(communique.date_expiration) : 'Illimite' }}
                   </dd>
+
+                  <dt class="col-sm-5 text-muted">Pièces jointes</dt>
+                  <dd class="col-sm-7">{{ communique.attachments?.length || 0 }}</dd>
                 </dl>
               </div>
             </div>
@@ -155,6 +177,13 @@ function isExpired(dateStr) {
   return new Date(dateStr) < new Date()
 }
 
+function formatFileSize(bytes) {
+  const size = Number(bytes || 0)
+  if (!size) return ''
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} Ko`
+  return `${(size / (1024 * 1024)).toFixed(1)} Mo`
+}
+
 function confirmDelete() {
   showDeleteModal.value = true
 }
@@ -189,6 +218,41 @@ onMounted(() => loadCommunique())
 </script>
 
 <style scoped>
+.attachments-card h6 {
+    font-weight: 800;
+    color: #1e293b;
+}
+.attachments-list {
+    display: grid;
+    gap: .55rem;
+}
+.attachment-link {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .65rem;
+    padding: .7rem .8rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    background: #f8fbfc;
+    color: #1e293b;
+    text-decoration: none;
+}
+.attachment-link:hover {
+    border-color: #0077B5;
+    background: #f0f9ff;
+}
+.attachment-link span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 700;
+}
+.attachment-link small {
+    color: #64748b;
+    font-size: .78rem;
+}
 @media (max-width: 767.98px) {
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }
@@ -196,5 +260,11 @@ onMounted(() => loadCommunique())
     dl.row dt { font-size: .8rem; }
     dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
     .badge { font-size: .7rem; }
+    .attachment-link {
+        grid-template-columns: 24px minmax(0, 1fr);
+    }
+    .attachment-link small {
+        grid-column: 2;
+    }
 }
 </style>

@@ -599,6 +599,23 @@ class DeploymentController extends Controller
                 $output_messages[] = "Table communiques existe deja";
             }
 
+            if (!Schema::hasTable('communique_attachments')) {
+                Schema::create('communique_attachments', function ($table) {
+                    $table->id();
+                    $table->foreignId('communique_id')->constrained('communiques')->onDelete('cascade');
+                    $table->string('disk')->default('public');
+                    $table->string('path');
+                    $table->string('original_name');
+                    $table->string('mime_type')->nullable();
+                    $table->unsignedBigInteger('size')->nullable();
+                    $table->timestamps();
+                });
+
+                $output_messages[] = "Table pieces jointes communiques creee !";
+            } else {
+                $output_messages[] = "Table pieces jointes communiques existe deja";
+            }
+
             if (Schema::hasTable('communiques')) {
                 $count = DB::table('communiques')->count();
                 $output_messages[] = "Table communiques existe avec $count enregistrements";

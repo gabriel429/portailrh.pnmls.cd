@@ -13,6 +13,14 @@ export function create(data) {
 }
 
 export function update(id, data) {
+    if (typeof FormData !== 'undefined' && data instanceof FormData) {
+        if (!data.has('_method')) {
+            data.append('_method', 'PUT')
+        }
+
+        return client.post(`/communiques/${id}`, data)
+    }
+
     return client.put(`/communiques/${id}`, data)
 }
 

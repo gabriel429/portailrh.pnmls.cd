@@ -37,6 +37,11 @@ class Communique extends Model
         return $this->hasMany(CommuniqueRead::class);
     }
 
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(CommuniqueAttachment::class);
+    }
+
     public function scopeVisibles($query)
     {
         return $query->where('actif', true)

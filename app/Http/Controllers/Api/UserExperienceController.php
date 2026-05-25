@@ -25,7 +25,7 @@ class UserExperienceController extends ApiController
 
         $communiques = Communique::query()
             ->visibles()
-            ->with(['auteur.role', 'auteur.agent.departement', 'auteur.agent.province'])
+            ->with(['attachments', 'auteur.role', 'auteur.agent.departement', 'auteur.agent.province'])
             ->withCount('reads')
             ->whereDoesntHave('reads', fn ($query) => $query->where('user_id', $user->id))
             ->latest()

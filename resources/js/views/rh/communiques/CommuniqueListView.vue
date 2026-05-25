@@ -44,6 +44,9 @@
                 <td>
                   <strong>{{ c.titre }}</strong>
                   <br><small class="text-muted">{{ truncate(c.contenu, 60) }}</small>
+                  <span v-if="c.attachments?.length" class="attachment-count">
+                    <i class="fas fa-paperclip"></i>{{ c.attachments.length }}
+                  </span>
                 </td>
                 <td>
                   <span :class="urgenceBadge(c.urgence)">{{ capitalize(c.urgence) }}</span>
@@ -200,6 +203,52 @@
                 placeholder="Rédigez le contenu du communiqué..."></textarea>
             </div>
 
+            <div class="ccm-field">
+              <label class="ccm-label">Pièces jointes</label>
+              <div class="ccm-file-zone">
+                <input
+                  ref="attachmentInput"
+                  type="file"
+                  class="ccm-file-input"
+                  multiple
+                  @change="handleAttachmentChange"
+                >
+                <button type="button" class="ccm-file-btn" @click="openAttachmentPicker">
+                  <i class="fas fa-paperclip"></i>
+                  Ajouter des fichiers
+                </button>
+                <span>10 fichiers max, 10 Mo par fichier.</span>
+              </div>
+              <div v-if="selectedAttachments.length" class="ccm-file-list">
+                <div
+                  v-for="(file, index) in selectedAttachments"
+                  :key="`${file.name}-${file.size}-${index}`"
+                  class="ccm-file-item"
+                >
+                  <i class="fas fa-file"></i>
+                  <span>{{ file.name }}</span>
+                  <small>{{ formatFileSize(file.size) }}</small>
+                  <button type="button" title="Retirer" @click="removeSelectedAttachment(index)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <div v-if="existingAttachments.length" class="ccm-file-list existing">
+                <div
+                  v-for="file in existingAttachments"
+                  :key="file.id"
+                  class="ccm-file-item"
+                >
+                  <i class="fas fa-file-lines"></i>
+                  <a :href="file.url" target="_blank" rel="noopener">{{ file.name }}</a>
+                  <small>{{ formatFileSize(file.size) }}</small>
+                  <button type="button" title="Supprimer" @click="removeExistingAttachment(file.id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Row: Urgence + Signataire -->
             <div class="ccm-row">
               <div class="ccm-field">
@@ -318,6 +367,10 @@ const showReadersModal = ref(false)
 const readersTarget = ref(null)
 const readersLoading = ref(false)
 const readersList = ref([])
+const attachmentInput = ref(null)
+const selectedAttachments = ref([])
+const existingAttachments = ref([])
+const removedAttachmentIds = ref([])
 
 const defaultForm = () => ({
   titre: '',
@@ -333,6 +386,7 @@ function openCreateModal() {
   editTarget.value = null
   form.value = defaultForm()
   formErrors.value = []
+  resetAttachments()
   showFormModal.value = true
 }
 
@@ -340,6 +394,7 @@ async function openEditModal(c) {
   editTarget.value = c
   form.value = defaultForm()
   formErrors.value = []
+  resetAttachments()
   showFormModal.value = true
   formLoading.value = true
   try {
@@ -353,6 +408,7 @@ async function openEditModal(c) {
       date_expiration: d.date_expiration ? d.date_expiration.substring(0, 10) : '',
       actif: d.actif ?? true,
     }
+    existingAttachments.value = Array.isArray(d.attachments) ? d.attachments : []
   } catch {
     ui.addToast('Erreur lors du chargement du communiqué.', 'danger')
     showFormModal.value = false
@@ -365,17 +421,20 @@ function closeFormModal() {
   showFormModal.value = false
   editTarget.value = null
   formErrors.value = []
+  resetAttachments()
 }
 
 async function handleFormSubmit() {
   submitting.value = true
   formErrors.value = []
   try {
+    const payload = buildPayload()
+
     if (editTarget.value) {
-      await update(editTarget.value.id, form.value)
+      await update(editTarget.value.id, payload)
       ui.addToast('Communiqué mis à jour avec succès.', 'success')
     } else {
-      await create(form.value)
+      await create(payload)
       ui.addToast('Communiqué publié avec succès.', 'success')
     }
     closeFormModal()
@@ -389,6 +448,86 @@ async function handleFormSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+function buildPayload() {
+  const payload = new FormData()
+
+  Object.entries(form.value).forEach(([key, value]) => {
+    if (typeof value === 'boolean') {
+      payload.append(key, value ? '1' : '0')
+      return
+    }
+
+    payload.append(key, value ?? '')
+  })
+
+  selectedAttachments.value.forEach(file => payload.append('attachments[]', file))
+  removedAttachmentIds.value.forEach(id => payload.append('remove_attachment_ids[]', String(id)))
+
+  return payload
+}
+
+function resetAttachments() {
+  selectedAttachments.value = []
+  existingAttachments.value = []
+  removedAttachmentIds.value = []
+
+  if (attachmentInput.value) {
+    attachmentInput.value.value = ''
+  }
+}
+
+function openAttachmentPicker() {
+  attachmentInput.value?.click()
+}
+
+function handleAttachmentChange(event) {
+  const files = Array.from(event.target.files || [])
+  const nextAttachments = [...selectedAttachments.value]
+
+  for (const file of files) {
+    if (nextAttachments.length >= 10) {
+      formErrors.value = ['Maximum 10 pièces jointes par communiqué.']
+      break
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      formErrors.value = [`${file.name} dépasse 10 Mo.`]
+      continue
+    }
+
+    const alreadyAdded = nextAttachments.some(item =>
+      item.name === file.name
+      && item.size === file.size
+      && item.lastModified === file.lastModified
+    )
+
+    if (!alreadyAdded) {
+      nextAttachments.push(file)
+    }
+  }
+
+  selectedAttachments.value = nextAttachments
+  event.target.value = ''
+}
+
+function removeSelectedAttachment(index) {
+  selectedAttachments.value = selectedAttachments.value.filter((_, itemIndex) => itemIndex !== index)
+}
+
+function removeExistingAttachment(id) {
+  existingAttachments.value = existingAttachments.value.filter(file => file.id !== id)
+  if (!removedAttachmentIds.value.includes(id)) {
+    removedAttachmentIds.value.push(id)
+  }
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes || 0)
+  if (!size) return ''
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} Ko`
+  return `${(size / (1024 * 1024)).toFixed(1)} Mo`
 }
 
 /* ─── List ─── */
@@ -630,6 +769,95 @@ onMounted(() => loadCommuniqués())
   font-weight: 700;
 }
 
+.attachment-count {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  margin-left: .35rem;
+  color: #0077B5;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.ccm-file-input {
+  display: none;
+}
+
+.ccm-file-zone {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .55rem;
+  padding: .65rem;
+  border: 1px dashed #b8d7e2;
+  border-radius: 10px;
+  background: #f8fbfc;
+  color: #64748b;
+  font-size: .75rem;
+}
+
+.ccm-file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  border: 0;
+  border-radius: 8px;
+  background: #0077B5;
+  color: #fff;
+  padding: .42rem .75rem;
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.ccm-file-list {
+  display: grid;
+  gap: .45rem;
+  margin-top: .55rem;
+}
+
+.ccm-file-list.existing {
+  border-top: 1px solid #eef2f7;
+  padding-top: .55rem;
+}
+
+.ccm-file-item {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto 28px;
+  align-items: center;
+  gap: .5rem;
+  padding: .48rem .58rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+}
+
+.ccm-file-item span,
+.ccm-file-item a {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #1e293b;
+  text-decoration: none;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.ccm-file-item small {
+  color: #64748b;
+  font-size: .7rem;
+}
+
+.ccm-file-item button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #dc2626;
+}
+
 .readers-overlay {
   position: fixed;
   inset: 0;
@@ -799,6 +1027,19 @@ onMounted(() => loadCommuniqués())
   .ccm-header { padding: .85rem 1rem; }
   .ccm-body { padding: 1rem; }
   .ccm-footer { padding: .7rem 1rem; }
+  .ccm-file-zone {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .ccm-file-btn {
+    justify-content: center;
+  }
+  .ccm-file-item {
+    grid-template-columns: 20px minmax(0, 1fr) 28px;
+  }
+  .ccm-file-item small {
+    display: none;
+  }
   .reader-row { grid-template-columns: 40px minmax(0, 1fr); }
   .reader-row time { grid-column: 2; }
 }

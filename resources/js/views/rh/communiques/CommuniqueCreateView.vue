@@ -52,6 +52,51 @@
               <textarea v-model="form.contenu" class="form-control" id="contenu" rows="8" required
                         placeholder="Rédigez le contenu du communiqué..."></textarea>
             </div>
+            <div class="col-12">
+              <label class="form-label fw-bold">Pièces jointes</label>
+              <div class="attachment-zone">
+                <input
+                  ref="attachmentInput"
+                  type="file"
+                  class="d-none"
+                  multiple
+                  @change="handleAttachmentChange"
+                >
+                <button type="button" class="attachment-picker" @click="openAttachmentPicker">
+                  <i class="fas fa-paperclip"></i>
+                  Ajouter des fichiers
+                </button>
+                <span>10 fichiers max, 10 Mo par fichier.</span>
+              </div>
+              <div v-if="selectedAttachments.length" class="attachment-list">
+                <div
+                  v-for="(file, index) in selectedAttachments"
+                  :key="`${file.name}-${file.size}-${index}`"
+                  class="attachment-item"
+                >
+                  <i class="fas fa-file"></i>
+                  <span>{{ file.name }}</span>
+                  <small>{{ formatFileSize(file.size) }}</small>
+                  <button type="button" title="Retirer" @click="removeSelectedAttachment(index)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+              <div v-if="existingAttachments.length" class="attachment-list existing">
+                <div
+                  v-for="file in existingAttachments"
+                  :key="file.id"
+                  class="attachment-item"
+                >
+                  <i class="fas fa-file-lines"></i>
+                  <a :href="file.url" target="_blank" rel="noopener">{{ file.name }}</a>
+                  <small>{{ formatFileSize(file.size) }}</small>
+                  <button type="button" title="Supprimer" @click="removeExistingAttachment(file.id)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -138,6 +183,10 @@ const backRoute = computed(() => fromSen.value ? { name: 'dashboard' } : { name:
 const loadingEdit = ref(false)
 const submitting = ref(false)
 const errors = ref([])
+const attachmentInput = ref(null)
+const selectedAttachments = ref([])
+const existingAttachments = ref([])
+const removedAttachmentIds = ref([])
 const form = ref({
   titre: '',
   contenu: '',
@@ -163,6 +212,7 @@ async function loadCommunique() {
       actif: !!c.actif,
       notify_by_mail: false,
     }
+    existingAttachments.value = Array.isArray(c.attachments) ? c.attachments : []
   } catch {
     ui.addToast('Communique introuvable.', 'danger')
     router.push(backRoute.value)
@@ -175,11 +225,13 @@ async function handleSubmit() {
   errors.value = []
   submitting.value = true
   try {
+    const payload = buildPayload()
+
     if (isEdit.value) {
-      await update(route.query.edit, form.value)
+      await update(route.query.edit, payload)
       ui.addToast('Communique mis à jour avec succes.', 'success')
     } else {
-      await create(form.value)
+      await create(payload)
       ui.addToast('Communiqué publié avec succès.', 'success')
     }
     router.push(backRoute.value)
@@ -193,6 +245,76 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+function buildPayload() {
+  const payload = new FormData()
+
+  Object.entries(form.value).forEach(([key, value]) => {
+    if (typeof value === 'boolean') {
+      payload.append(key, value ? '1' : '0')
+      return
+    }
+
+    payload.append(key, value ?? '')
+  })
+
+  selectedAttachments.value.forEach(file => payload.append('attachments[]', file))
+  removedAttachmentIds.value.forEach(id => payload.append('remove_attachment_ids[]', String(id)))
+
+  return payload
+}
+
+function openAttachmentPicker() {
+  attachmentInput.value?.click()
+}
+
+function handleAttachmentChange(event) {
+  const files = Array.from(event.target.files || [])
+  const nextAttachments = [...selectedAttachments.value]
+
+  for (const file of files) {
+    if (nextAttachments.length >= 10) {
+      errors.value = ['Maximum 10 pièces jointes par communiqué.']
+      break
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      errors.value = [`${file.name} dépasse 10 Mo.`]
+      continue
+    }
+
+    const alreadyAdded = nextAttachments.some(item =>
+      item.name === file.name
+      && item.size === file.size
+      && item.lastModified === file.lastModified
+    )
+
+    if (!alreadyAdded) {
+      nextAttachments.push(file)
+    }
+  }
+
+  selectedAttachments.value = nextAttachments
+  event.target.value = ''
+}
+
+function removeSelectedAttachment(index) {
+  selectedAttachments.value = selectedAttachments.value.filter((_, itemIndex) => itemIndex !== index)
+}
+
+function removeExistingAttachment(id) {
+  existingAttachments.value = existingAttachments.value.filter(file => file.id !== id)
+  if (!removedAttachmentIds.value.includes(id)) {
+    removedAttachmentIds.value.push(id)
+  }
+}
+
+function formatFileSize(bytes) {
+  const size = Number(bytes || 0)
+  if (!size) return ''
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)} Ko`
+  return `${(size / (1024 * 1024)).toFixed(1)} Mo`
 }
 
 onMounted(() => loadCommunique())
@@ -285,6 +407,71 @@ onMounted(() => loadCommunique())
     font-size: .8rem;
     font-weight: 500;
 }
+.attachment-zone {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .65rem;
+    padding: .85rem;
+    border: 1px dashed #b8d7e2;
+    border-radius: 10px;
+    background: #f8fbfc;
+    color: #667085;
+    font-size: .84rem;
+}
+.attachment-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    border: 0;
+    border-radius: 8px;
+    background: #0077B5;
+    color: #fff;
+    padding: .48rem .85rem;
+    font-weight: 700;
+}
+.attachment-list {
+    display: grid;
+    gap: .5rem;
+    margin-top: .65rem;
+}
+.attachment-list.existing {
+    border-top: 1px solid #eef2f7;
+    padding-top: .65rem;
+}
+.attachment-item {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto 30px;
+    align-items: center;
+    gap: .55rem;
+    padding: .55rem .65rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    color: #334155;
+}
+.attachment-item span,
+.attachment-item a {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1e293b;
+    text-decoration: none;
+    font-weight: 600;
+}
+.attachment-item small {
+    color: #64748b;
+    font-size: .75rem;
+}
+.attachment-item button {
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 8px;
+    background: #fee2e2;
+    color: #dc2626;
+}
 
 @media (max-width: 767.98px) {
     .communique-hero {
@@ -309,6 +496,19 @@ onMounted(() => loadCommunique())
     }
     .d-flex.gap-3.justify-content-end .btn {
         width: 100%;
+    }
+    .attachment-zone {
+        align-items: stretch;
+        flex-direction: column;
+    }
+    .attachment-picker {
+        justify-content: center;
+    }
+    .attachment-item {
+        grid-template-columns: 22px minmax(0, 1fr) 30px;
+    }
+    .attachment-item small {
+        display: none;
     }
 }
 </style>

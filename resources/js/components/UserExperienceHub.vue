@@ -79,10 +79,19 @@
           <span><i class="fas fa-user-tie"></i>{{ currentCommunique.signataire || currentCommunique.auteur?.name || 'SEN' }}</span>
         </div>
         <div class="ux-message">{{ currentCommunique.contenu }}</div>
-        <a v-if="currentCommunique.piece_jointe_url" class="ux-attachment" :href="currentCommunique.piece_jointe_url" target="_blank" rel="noopener">
-          <i class="fas fa-paperclip"></i>
-          Pièce jointe
-        </a>
+        <div v-if="currentCommuniqueAttachments.length" class="ux-attachments">
+          <a
+            v-for="file in currentCommuniqueAttachments"
+            :key="file.id || file.url"
+            class="ux-attachment"
+            :href="file.url"
+            target="_blank"
+            rel="noopener"
+          >
+            <i class="fas fa-paperclip"></i>
+            <span>{{ file.name || 'Pièce jointe' }}</span>
+          </a>
+        </div>
         <div class="ux-actions">
           <button class="ux-btn ux-btn-ghost" type="button" @click="openCommunique">
             <i class="fas fa-eye"></i>
@@ -278,6 +287,27 @@ const tourSteps = computed(() => [
 
 const currentTourStep = computed(() => tourSteps.value[tourStep.value] || tourSteps.value[0])
 const currentCommunique = computed(() => communiques.value[0] || null)
+const currentCommuniqueAttachments = computed(() => {
+  const communique = currentCommunique.value
+
+  if (!communique) {
+    return []
+  }
+
+  if (Array.isArray(communique.attachments) && communique.attachments.length) {
+    return communique.attachments.filter(file => file?.url)
+  }
+
+  if (communique.piece_jointe_url) {
+    return [{
+      id: 'legacy',
+      name: communique.piece_jointe_name || 'Pièce jointe',
+      url: communique.piece_jointe_url,
+    }]
+  }
+
+  return []
+})
 const currentForum = computed(() => forums.value[0] || null)
 
 watch(
@@ -759,6 +789,13 @@ onUnmounted(() => {
   gap: .55rem;
 }
 
+.ux-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: .8rem;
+}
+
 .ux-meta-grid span,
 .ux-attachment {
   display: inline-flex;
@@ -774,8 +811,15 @@ onUnmounted(() => {
 }
 
 .ux-attachment {
-  margin-top: .8rem;
+  max-width: 100%;
   text-decoration: none;
+}
+
+.ux-attachment span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 @media (max-width: 576px) {
