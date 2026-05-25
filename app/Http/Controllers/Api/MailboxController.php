@@ -148,14 +148,58 @@ class MailboxController extends ApiController
                 return response()->json(['message' => 'Message introuvable.'], 404);
             }
 
-            $body = $this->messageBody($stream, $uid);
+            $structure = @imap_fetchstructure($stream, $uid, FT_UID);
+            $body = $this->messageBody($stream, $uid, $structure);
+            $headers = $this->headerPayload($stream, $uid);
+            $attachments = $structure ? $this->attachmentPayloads($structure) : [];
+
             imap_setflag_full($stream, (string) $uid, '\\Seen', ST_UID);
 
-            return $this->success(array_merge($overview, [
+            return $this->success(array_merge($overview, $headers, [
                 'seen' => true,
                 'unread' => false,
                 'body' => $body,
+                'attachments' => $attachments,
+                'has_attachments' => count($attachments) > 0,
             ]));
+        } finally {
+            imap_close($stream);
+        }
+    }
+
+    public function downloadAttachment(Request $request, int $uid, string $part)
+    {
+        $credential = $this->requireCredential($request);
+        $folder = $this->mailboxFromRequest($request);
+        $stream = $this->openCredentialConnection($credential, $folder);
+
+        try {
+            $structure = @imap_fetchstructure($stream, $uid, FT_UID);
+            $attachmentPart = $structure ? $this->findAttachmentPart($structure, $part) : null;
+
+            if (!$attachmentPart) {
+                return response()->json(['message' => 'Piece jointe introuvable.'], 404);
+            }
+
+            $info = $this->attachmentInfo($attachmentPart, $part);
+            if (!$info) {
+                return response()->json(['message' => 'Piece jointe introuvable.'], 404);
+            }
+
+            $raw = @imap_fetchbody($stream, $uid, $part, FT_UID | FT_PEEK);
+            if (($raw === false || $raw === '') && $part === '1') {
+                $raw = @imap_body($stream, $uid, FT_UID | FT_PEEK);
+            }
+
+            $content = $this->decodeContent($raw ?: '', (int) ($attachmentPart->encoding ?? 0));
+            $filename = $this->safeAttachmentFilename($info['name']);
+            $fallbackName = preg_replace('/[^\x20-\x7E]/', '_', $filename) ?: 'piece-jointe';
+
+            return response($content, 200, [
+                'Content-Type' => $info['mime'] ?: 'application/octet-stream',
+                'Content-Length' => (string) strlen($content),
+                'Content-Disposition' => 'attachment; filename="'.$fallbackName.'"; filename*=UTF-8\'\''.rawurlencode($filename),
+            ]);
         } finally {
             imap_close($stream);
         }
@@ -644,18 +688,257 @@ class MailboxController extends ApiController
             'subject' => $this->decodeMimeHeader($item->subject ?? '(Sans objet)') ?: '(Sans objet)',
             'from' => $this->decodeMimeHeader($item->from ?? ''),
             'to' => $this->decodeMimeHeader($item->to ?? ''),
+            'cc' => $this->decodeMimeHeader($item->cc ?? ''),
             'date' => $date,
             'size' => (int) ($item->size ?? 0),
             'seen' => (bool) ($item->seen ?? false),
             'unread' => !(bool) ($item->seen ?? false),
             'answered' => (bool) ($item->answered ?? false),
             'flagged' => (bool) ($item->flagged ?? false),
+            'has_attachments' => $this->messageHasAttachments(@imap_fetchstructure($stream, $uid, FT_UID) ?: null),
         ];
     }
 
-    private function messageBody($stream, int $uid): string
+    private function headerPayload($stream, int $uid): array
     {
-        $structure = imap_fetchstructure($stream, $uid, FT_UID);
+        $messageNumber = @imap_msgno($stream, $uid);
+        if (!$messageNumber) {
+            return [];
+        }
+
+        $header = @imap_headerinfo($stream, $messageNumber);
+        if (!$header) {
+            return [];
+        }
+
+        $from = $this->addressListPayload($header->from ?? []);
+        $to = $this->addressListPayload($header->to ?? []);
+        $cc = $this->addressListPayload($header->cc ?? []);
+        $bcc = $this->addressListPayload($header->bcc ?? []);
+        $replyTo = $this->addressListPayload($header->reply_to ?? []);
+
+        $payload = [
+            'from_addresses' => $from,
+            'to_addresses' => $to,
+            'cc_addresses' => $cc,
+            'bcc_addresses' => $bcc,
+            'reply_to_addresses' => $replyTo,
+        ];
+
+        foreach ([
+            'from' => $from,
+            'to' => $to,
+            'cc' => $cc,
+            'bcc' => $bcc,
+            'reply_to' => $replyTo,
+        ] as $key => $addresses) {
+            $line = $this->formatAddressList($addresses);
+            if ($line !== '') {
+                $payload[$key] = $line;
+            }
+        }
+
+        return $payload;
+    }
+
+    private function addressListPayload($addresses): array
+    {
+        if (!is_array($addresses)) {
+            return [];
+        }
+
+        return collect($addresses)
+            ->map(function ($address) {
+                $mailbox = trim((string) ($address->mailbox ?? ''));
+                $host = trim((string) ($address->host ?? ''));
+                $email = $host !== '' ? $mailbox.'@'.$host : $mailbox;
+                $email = mb_strtolower(trim(str_replace(' ', '', $email)));
+
+                if ($email === '' || !str_contains($email, '@')) {
+                    return null;
+                }
+
+                $name = $this->decodeMimeHeader($address->personal ?? '');
+                $label = $name !== '' ? $name.' <'.$email.'>' : $email;
+
+                return [
+                    'name' => $name,
+                    'email' => $email,
+                    'label' => $label,
+                ];
+            })
+            ->filter()
+            ->values()
+            ->all();
+    }
+
+    private function formatAddressList(array $addresses): string
+    {
+        return collect($addresses)
+            ->map(fn (array $address) => $address['label'] ?? $address['email'] ?? '')
+            ->filter()
+            ->implode(', ');
+    }
+
+    private function messageHasAttachments(?object $structure): bool
+    {
+        if (!$structure) {
+            return false;
+        }
+
+        return count($this->attachmentPayloads($structure)) > 0;
+    }
+
+    private function attachmentPayloads(object $part, string $partNumber = ''): array
+    {
+        $section = $partNumber !== '' ? $partNumber : '1';
+        $attachments = [];
+        $info = $this->attachmentInfo($part, $section);
+
+        if ($info) {
+            $attachments[] = $info;
+        }
+
+        foreach (($part->parts ?? []) as $index => $childPart) {
+            $nextPartNumber = $partNumber === ''
+                ? (string) ($index + 1)
+                : $partNumber.'.'.($index + 1);
+
+            $attachments = array_merge($attachments, $this->attachmentPayloads($childPart, $nextPartNumber));
+        }
+
+        return $attachments;
+    }
+
+    private function findAttachmentPart(object $part, string $targetPart, string $partNumber = ''): ?object
+    {
+        $section = $partNumber !== '' ? $partNumber : '1';
+
+        if ($section === $targetPart && $this->attachmentInfo($part, $section)) {
+            return $part;
+        }
+
+        foreach (($part->parts ?? []) as $index => $childPart) {
+            $nextPartNumber = $partNumber === ''
+                ? (string) ($index + 1)
+                : $partNumber.'.'.($index + 1);
+            $found = $this->findAttachmentPart($childPart, $targetPart, $nextPartNumber);
+
+            if ($found) {
+                return $found;
+            }
+        }
+
+        return null;
+    }
+
+    private function attachmentInfo(object $part, string $partNumber): ?array
+    {
+        if ((int) ($part->type ?? -1) === 1) {
+            return null;
+        }
+
+        $attributes = $this->partAttributes($part);
+        $filename = $attributes['filename*']
+            ?? $attributes['filename']
+            ?? $attributes['name*']
+            ?? $attributes['name']
+            ?? '';
+        $disposition = strtolower((string) ($part->disposition ?? ''));
+
+        if ($filename === '' && $disposition !== 'attachment') {
+            return null;
+        }
+
+        $name = $filename !== ''
+            ? $this->decodePartFilename($filename)
+            : 'piece-jointe-'.$partNumber;
+
+        return [
+            'part' => $partNumber,
+            'name' => $name ?: 'piece-jointe-'.$partNumber,
+            'size' => (int) ($part->bytes ?? 0),
+            'mime' => $this->partMimeType($part),
+            'disposition' => $disposition ?: 'attachment',
+        ];
+    }
+
+    private function partAttributes(object $part): array
+    {
+        $attributes = [];
+        $segments = [];
+
+        foreach (['parameters', 'dparameters'] as $parameterSet) {
+            foreach (($part->{$parameterSet} ?? []) as $parameter) {
+                $attribute = strtolower((string) ($parameter->attribute ?? ''));
+                $value = (string) ($parameter->value ?? '');
+
+                if ($attribute === '') {
+                    continue;
+                }
+
+                if (preg_match('/^([^*]+)\*(\d+)\*?$/', $attribute, $matches)) {
+                    $segments[$matches[1]][(int) $matches[2]] = $value;
+                    continue;
+                }
+
+                $attributes[$attribute] = $value;
+            }
+        }
+
+        foreach ($segments as $base => $values) {
+            ksort($values);
+            $attributes[$base.'*'] = implode('', $values);
+        }
+
+        return $attributes;
+    }
+
+    private function decodePartFilename(string $filename): string
+    {
+        $filename = trim($filename, "\"' \t\r\n");
+
+        if (preg_match("/^([^']*)'[^']*'(.*)$/", $filename, $matches)) {
+            $charset = $matches[1] ?: 'UTF-8';
+            return $this->convertToUtf8(rawurldecode($matches[2]), $charset);
+        }
+
+        $decoded = $this->decodeMimeHeader($filename);
+
+        return $decoded !== '' ? $decoded : rawurldecode($filename);
+    }
+
+    private function partMimeType(object $part): string
+    {
+        $primaryTypes = [
+            0 => 'text',
+            1 => 'multipart',
+            2 => 'message',
+            3 => 'application',
+            4 => 'audio',
+            5 => 'image',
+            6 => 'video',
+            7 => 'application',
+        ];
+
+        $type = (int) ($part->type ?? 3);
+        $primary = $primaryTypes[$type] ?? 'application';
+        $subtype = strtolower((string) ($part->subtype ?? 'octet-stream')) ?: 'octet-stream';
+
+        return $primary.'/'.$subtype;
+    }
+
+    private function safeAttachmentFilename(string $filename): string
+    {
+        $filename = trim(preg_replace('/[\/\\\\\x00-\x1F\x7F]+/', '-', $filename) ?: '');
+        $filename = str_replace('"', "'", $filename);
+
+        return mb_strimwidth($filename ?: 'piece-jointe', 0, 180, '...');
+    }
+
+    private function messageBody($stream, int $uid, ?object $structure = null): string
+    {
+        $structure ??= @imap_fetchstructure($stream, $uid, FT_UID);
         $bodies = [
             'plain' => [],
             'html' => [],
@@ -685,9 +968,9 @@ class MailboxController extends ApiController
     {
         $isText = (int) ($part->type ?? -1) === 0;
         $subtype = strtolower((string) ($part->subtype ?? ''));
+        $section = $partNumber !== '' ? $partNumber : '1';
 
-        if ($isText && in_array($subtype, ['plain', 'html'], true)) {
-            $section = $partNumber !== '' ? $partNumber : '1';
+        if ($isText && in_array($subtype, ['plain', 'html'], true) && !$this->attachmentInfo($part, $section)) {
             $raw = imap_fetchbody($stream, $uid, $section, FT_UID | FT_PEEK);
 
             if ($raw === false || $raw === '') {

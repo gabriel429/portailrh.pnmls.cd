@@ -337,6 +337,7 @@
                   <span class="mailbox-message-meta">
                     <i v-if="message.flagged" class="fas fa-star"></i>
                     <i v-if="message.answered" class="fas fa-reply"></i>
+                    <i v-if="message.has_attachments" class="fas fa-paperclip"></i>
                     {{ formatSize(message.size) }}
                   </span>
                 </span>
@@ -369,7 +370,22 @@
                   </button>
                   <h2>{{ selectedMessage.subject }}</h2>
                   <div class="mailbox-reader-meta">
-                    <span>{{ selectedMessage.from }}</span>
+                    <span class="mailbox-reader-meta-line">
+                      <b>De</b>
+                      <span>{{ selectedMessage.from }}</span>
+                    </span>
+                    <span class="mailbox-reader-meta-line">
+                      <b>A</b>
+                      <span>{{ addressLine(selectedMessage.to_addresses, selectedMessage.to) || '-' }}</span>
+                    </span>
+                    <span v-if="addressLine(selectedMessage.cc_addresses, selectedMessage.cc)" class="mailbox-reader-meta-line">
+                      <b>CC</b>
+                      <span>{{ addressLine(selectedMessage.cc_addresses, selectedMessage.cc) }}</span>
+                    </span>
+                    <span v-if="addressLine(selectedMessage.bcc_addresses, selectedMessage.bcc)" class="mailbox-reader-meta-line">
+                      <b>CCI</b>
+                      <span>{{ addressLine(selectedMessage.bcc_addresses, selectedMessage.bcc) }}</span>
+                    </span>
                     <time>{{ formatDate(selectedMessage.date) }}</time>
                   </div>
                 </div>
@@ -399,6 +415,29 @@
                   <i class="fas fa-trash"></i>
                   Supprimer
                 </button>
+              </div>
+
+              <div v-if="selectedMessage.attachments?.length" class="mailbox-reader-attachments">
+                <strong>
+                  <i class="fas fa-paperclip"></i>
+                  Pieces jointes
+                </strong>
+                <div class="mailbox-reader-attachment-list">
+                  <button
+                    v-for="attachment in selectedMessage.attachments"
+                    :key="attachment.part"
+                    type="button"
+                    class="mailbox-reader-attachment"
+                    @click="downloadAttachment(attachment)"
+                  >
+                    <i class="fas" :class="attachmentIcon(attachment.mime)"></i>
+                    <span>
+                      <b>{{ attachment.name }}</b>
+                      <small>{{ formatSize(attachment.size) }} - {{ attachment.mime || 'fichier' }}</small>
+                    </span>
+                    <i class="fas fa-download"></i>
+                  </button>
+                </div>
               </div>
 
               <div class="mailbox-reader-body">{{ selectedMessage.body || 'Aucun contenu lisible.' }}</div>
@@ -1124,9 +1163,15 @@ function resetComposeForm() {
 function replyToSelected() {
   if (!selectedMessage.value) return
   resetComposeForm()
+  const replyTarget = selectedMessage.value.reply_to_addresses?.[0]
+    || selectedMessage.value.from_addresses?.[0]
+    || {
+      email: extractEmail(selectedMessage.value.from),
+      name: cleanSender(selectedMessage.value.from),
+    }
   addRecipient('to', {
-    email: extractEmail(selectedMessage.value.from),
-    name: cleanSender(selectedMessage.value.from),
+    email: replyTarget.email,
+    name: replyTarget.name || cleanSender(replyTarget.label || replyTarget.email),
   })
   composeForm.subject = selectedMessage.value.subject?.startsWith('Re:')
     ? selectedMessage.value.subject
@@ -1274,6 +1319,31 @@ function removeAttachment(index) {
   composeForm.attachments = composeForm.attachments.filter((_, itemIndex) => itemIndex !== index)
 }
 
+async function downloadAttachment(attachment) {
+  if (!selectedMessage.value?.uid || !attachment?.part) return
+
+  try {
+    const response = await client.get(`/mailbox/messages/${selectedMessage.value.uid}/attachments/${encodeURIComponent(attachment.part)}`, {
+      params: { folder: activeFolder.value },
+      responseType: 'blob',
+    })
+    const filename = filenameFromDisposition(response.headers?.['content-disposition'])
+      || attachment.name
+      || 'piece-jointe'
+    const blob = new Blob([response.data], { type: attachment.mime || response.data?.type || 'application/octet-stream' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 250)
+  } catch (error) {
+    messagesError.value = firstError(error) || 'Telechargement de la piece jointe impossible.'
+  }
+}
+
 function contactInitial(contact) {
   return (contact.name?.charAt(0) || contact.email?.charAt(0) || '@').toUpperCase()
 }
@@ -1362,9 +1432,42 @@ function extractEmail(value) {
   return (match?.[1] || value).replace(/"/g, '').trim()
 }
 
+function addressLine(addresses, fallback = '') {
+  if (Array.isArray(addresses) && addresses.length) {
+    return addresses
+      .map(address => address.label || address.email || '')
+      .filter(Boolean)
+      .join(', ')
+  }
+
+  return fallback || ''
+}
+
 function senderInitial(value) {
   const cleaned = cleanSender(value)
   return (cleaned.charAt(0) || '@').toUpperCase()
+}
+
+function attachmentIcon(mime = '') {
+  if (mime.startsWith('image/')) return 'fa-file-image'
+  if (mime.includes('pdf')) return 'fa-file-pdf'
+  if (mime.includes('word') || mime.includes('document')) return 'fa-file-word'
+  if (mime.includes('excel') || mime.includes('spreadsheet')) return 'fa-file-excel'
+  if (mime.startsWith('text/')) return 'fa-file-lines'
+  return 'fa-file'
+}
+
+function filenameFromDisposition(value = '') {
+  const encoded = value.match(/filename\*=UTF-8''([^;]+)/i)
+  if (encoded?.[1]) {
+    try {
+      return decodeURIComponent(encoded[1])
+    } catch (_) {
+      return encoded[1]
+    }
+  }
+
+  return value.match(/filename="?([^";]+)"?/i)?.[1] || ''
 }
 
 function folderIcon(type) {
@@ -1932,6 +2035,27 @@ onBeforeUnmount(() => {
   font-size: 0.86rem;
 }
 
+.mailbox-reader-meta-line {
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  gap: 6px;
+}
+
+.mailbox-reader-meta-line b {
+  flex: 0 0 auto;
+  color: #0f5f76;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.mailbox-reader-meta-line span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .mailbox-reader-actions {
   display: flex;
   gap: 8px;
@@ -1967,6 +2091,84 @@ onBeforeUnmount(() => {
 .mailbox-reader-tools button.danger {
   color: #b42318;
   border-color: #fecaca;
+}
+
+.mailbox-reader-attachments {
+  display: grid;
+  gap: 10px;
+  padding: 12px 18px;
+  border-bottom: 1px solid #e2edf2;
+  background: #f8fbfc;
+}
+
+.mailbox-reader-attachments > strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #102a43;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.mailbox-reader-attachment-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.mailbox-reader-attachment {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 28px;
+  align-items: center;
+  gap: 9px;
+  min-height: 52px;
+  padding: 8px 10px;
+  border: 1px solid #d7e8ee;
+  border-radius: 8px;
+  color: #334155;
+  background: #fff;
+  text-align: left;
+}
+
+.mailbox-reader-attachment:hover {
+  border-color: #8fd3e8;
+  background: #eef9fc;
+}
+
+.mailbox-reader-attachment > i:first-child {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  color: #0877b7;
+  background: #e6f5fb;
+}
+
+.mailbox-reader-attachment > span {
+  min-width: 0;
+}
+
+.mailbox-reader-attachment b,
+.mailbox-reader-attachment small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mailbox-reader-attachment b {
+  color: #102a43;
+  font-size: 0.84rem;
+}
+
+.mailbox-reader-attachment small {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.mailbox-reader-attachment > i:last-child {
+  color: #0f5f76;
 }
 
 .mailbox-reader-body {
@@ -3213,6 +3415,12 @@ onBeforeUnmount(() => {
     font-size: 0.82rem;
   }
 
+  .mailbox-reader-meta-line {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    gap: 8px;
+  }
+
   .mailbox-reader-actions {
     flex-wrap: nowrap;
   }
@@ -3234,6 +3442,14 @@ onBeforeUnmount(() => {
     flex: 0 0 auto;
     border-radius: 999px;
     white-space: nowrap;
+  }
+
+  .mailbox-reader-attachments {
+    padding: 12px 16px;
+  }
+
+  .mailbox-reader-attachment-list {
+    grid-template-columns: 1fr;
   }
 
   .mailbox-reader-body {
