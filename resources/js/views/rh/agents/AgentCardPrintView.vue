@@ -160,8 +160,11 @@
             </header>
 
             <div class="back-body">
-              <div class="qr-box">
-                <img :src="qrImage" alt="QR verification">
+              <div class="qr-area">
+                <div class="qr-box">
+                  <img :src="qrImage" alt="QR verification">
+                </div>
+                <span>Scan E-PNMLS</span>
               </div>
               <div class="back-copy">
                 <h3>{{ settings.authority_title }}</h3>
@@ -171,7 +174,6 @@
               </div>
             </div>
 
-            <div class="verification-link">{{ card.verification_url }}</div>
             <footer>{{ settings.footer_note }}</footer>
           </article>
         </div>
@@ -247,8 +249,7 @@ const agentFunction = computed(() => agent.value?.fonction || agent.value?.poste
 const structureLabel = computed(() => agent.value?.departement?.nom || agent.value?.department?.nom || agent.value?.section?.nom || 'PNMLS')
 const provinceLabel = computed(() => normalizeProvinceLabel(agent.value?.province?.nom_province || agent.value?.province?.nom))
 const qrPayload = computed(() => {
-  if (card.value?.verification_url) return card.value.verification_url
-  if (card.value?.token) return `${window.location.origin}/agent-cards/verify/${card.value.token}`
+  if (card.value?.token) return `PNMLS-CARD:${card.value.token}`
   return ''
 })
 const watermarkLogo = computed(() => settings.logo_secondary_url || settings.logo_primary_url || '/images/logo-pnmls.png')
@@ -457,9 +458,9 @@ watch(qrPayload, async (value) => {
 
   try {
     qrImage.value = await QRCode.toDataURL(value, {
-      errorCorrectionLevel: 'M',
-      margin: 4,
-      width: 520,
+      errorCorrectionLevel: 'H',
+      margin: 5,
+      width: 720,
       color: {
         dark: '#071827',
         light: '#ffffff',
@@ -969,11 +970,27 @@ onBeforeUnmount(() => {
 .back-body {
   align-items: center;
   display: grid;
-  gap: 4mm;
+  gap: 4.2mm;
   grid-template-columns: 31mm 1fr;
   margin-top: 4.2mm;
   position: relative;
   z-index: 2;
+}
+
+.qr-area {
+  align-items: center;
+  display: grid;
+  gap: 1mm;
+  justify-items: center;
+  min-width: 0;
+}
+
+.qr-area span {
+  color: #64748b;
+  font-size: 1.2mm;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
 }
 
 .qr-box {
@@ -981,9 +998,9 @@ onBeforeUnmount(() => {
   border: .35mm solid #cbdce8;
   border-radius: 3mm;
   box-shadow: 0 5px 14px rgba(15, 23, 42, .12);
-  height: 31mm;
-  padding: 1.2mm;
-  width: 31mm;
+  height: 29.6mm;
+  padding: 1.55mm;
+  width: 29.6mm;
 }
 
 .qr-box img {
@@ -1017,20 +1034,6 @@ onBeforeUnmount(() => {
   font-size: 1.75mm;
   font-weight: 700;
   line-height: 1.2;
-}
-
-.verification-link {
-  bottom: 7.4mm;
-  color: #64748b;
-  font-size: 1.15mm;
-  font-weight: 800;
-  left: 3.2mm;
-  overflow: hidden;
-  position: absolute;
-  right: 3.2mm;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  z-index: 2;
 }
 
 @media (max-width: 940px) {
