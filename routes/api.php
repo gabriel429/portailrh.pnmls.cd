@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\ProfileController as ApiProfileController;
 use App\Http\Controllers\Api\AgentController as ApiAgentController;
+use App\Http\Controllers\Api\AgentCardController;
 use App\Http\Controllers\Api\AddressBookController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ProfileController;
@@ -107,6 +108,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
     Route::get('/dashboard/department/agents', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'agentsDrill']);
     Route::get('/address-book', [AddressBookController::class, 'index']);
+    Route::get('/agent-cards/verify/{token}', [AgentCardController::class, 'verify']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
 
     // Profile (SPA)
@@ -299,6 +301,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin NT (Chef Section Nouvelle Technologie)
     Route::middleware('admin.nt')->prefix('admin')->group(function () {
         Route::get('dashboard', [ParametresController::class, 'apiDashboard']);
+        Route::get('agent-card-settings', [AgentCardController::class, 'settings']);
+        Route::post('agent-card-settings', [AgentCardController::class, 'updateSettings']);
+        Route::get('agents/{agent}/id-card', [AgentCardController::class, 'current']);
+        Route::post('agents/{agent}/id-card', [AgentCardController::class, 'issue']);
         Route::get('agents/import-template', [ApiAgentController::class, 'importTemplate']);
         Route::post('agents/import', [ApiAgentController::class, 'import']);
 

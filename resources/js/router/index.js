@@ -79,6 +79,18 @@ const routes = [
         meta: { auth: true },
     },
     {
+        path: '/agent-cards/scan',
+        name: 'agent-cards.scan',
+        component: () => import('@/views/agent-cards/AgentCardScannerView.vue'),
+        meta: { auth: true },
+    },
+    {
+        path: '/agent-cards/verify/:token',
+        name: 'agent-cards.verify',
+        component: () => import('@/views/agent-cards/AgentCardVerifyView.vue'),
+        meta: { auth: true },
+    },
+    {
         path: '/notifications/:id/read',
         name: 'notifications.read',
         redirect: to => ({ name: 'notifications.index' }),
@@ -273,7 +285,7 @@ const routes = [
         path: '/rh/agents',
         name: 'rh.agents.index',
         component: () => import('@/views/rh/agents/AgentListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true },
     },
     {
         path: '/rh/agents/create',
@@ -285,7 +297,13 @@ const routes = [
         path: '/rh/agents/:id',
         name: 'rh.agents.show',
         component: () => import('@/views/rh/agents/AgentShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], allowAssistantRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true },
+    },
+    {
+        path: '/rh/agents/:id/card',
+        name: 'rh.agents.card',
+        component: () => import('@/views/rh/agents/AgentCardPrintView.vue'),
+        meta: { auth: true, adminNT: true },
     },
     {
         path: '/rh/agents/:id/edit',
@@ -421,6 +439,12 @@ const routes = [
                 path: 'agents/import',
                 name: 'admin.agents.import',
                 component: () => import('@/views/admin/agents/AgentImportView.vue'),
+                meta: { auth: true, adminNT: true, layout: 'admin' },
+            },
+            {
+                path: 'cartes-agents',
+                name: 'admin.agent-cards.settings',
+                component: () => import('@/views/admin/AgentCardSettingsView.vue'),
                 meta: { auth: true, adminNT: true, layout: 'admin' },
             },
             // CRUD entities

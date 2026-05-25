@@ -207,6 +207,21 @@
                 <template v-if="auth.isAdminNT">
                   <li v-if="auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant"><hr class="dropdown-divider"></li>
                   <li>
+                    <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
+                      <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion des agents
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link class="dropdown-item" :to="{ name: 'admin.agent-cards.settings' }">
+                      <span class="dd-icon dd-icon-teal"><i class="fas fa-id-card"></i></span> Cartes agents
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link class="dropdown-item" :to="{ name: 'agent-cards.scan' }">
+                      <span class="dd-icon dd-icon-green"><i class="fas fa-qrcode"></i></span> Scanner carte
+                    </router-link>
+                  </li>
+                  <li>
                     <router-link class="dropdown-item" :to="{ name: 'admin.dashboard' }">
                       <span class="dd-icon dd-icon-slate"><i class="fas fa-sliders-h"></i></span> Paramètres système
                     </router-link>

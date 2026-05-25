@@ -59,6 +59,9 @@
             <button v-if="canManageAgentDocuments" class="btn btn-light btn-sm" @click="openDocumentUploadModal">
               <i class="fas fa-cloud-upload-alt me-1"></i> Ajouter document
             </button>
+            <button v-if="canManageAgentCards" class="btn btn-light btn-sm" @click="openAgentCard">
+              <i class="fas fa-address-card me-1"></i> Carte ID
+            </button>
             <button class="btn btn-light btn-sm" @click="printAgent">
               <i class="fas fa-print me-1"></i> Imprimer
             </button>
@@ -569,6 +572,9 @@
                 <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-2"></span>
                 <i v-else class="fas fa-file-archive me-2"></i> Télécharger le dossier complet
               </button>
+              <button v-if="canManageAgentCards" class="btn btn-outline-info btn-sm w-100 mb-2" @click="openAgentCard">
+                <i class="fas fa-address-card me-2"></i> Imprimer la carte ID
+              </button>
               <button v-if="canEditAgent" class="btn btn-warning btn-sm w-100 mb-2" @click="openEditModal">
                 <i class="fas fa-edit me-2"></i> Modifier
               </button>
@@ -808,6 +814,7 @@ const canManageAgentDocuments = computed(() =>
 const canManageAssistantDelegations = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_assistant_delegations && agent.value?.permissions?.is_assistant_rh)
 )
+const canManageAgentCards = computed(() => auth.isAdminNT)
 const canEditAgent = computed(() => auth.canEditAgents)
 const canDeleteAgent = computed(() => auth.canDeleteAgents)
 const selectedDocumentCategory = computed(() =>
@@ -1038,6 +1045,12 @@ function printAgent() {
         window.print()
         printing.value = false
     })
+}
+
+function openAgentCard() {
+    if (!agent.value?.id || !canManageAgentCards.value) return
+
+    router.push({ name: 'rh.agents.card', params: { id: agent.value.id } })
 }
 
 // Fetch

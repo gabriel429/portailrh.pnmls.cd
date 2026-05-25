@@ -211,6 +211,19 @@ class Agent extends Authenticatable
         return $this->hasMany(AgentStatus::class);
     }
 
+    public function idCards(): HasMany
+    {
+        return $this->hasMany(AgentIdCard::class);
+    }
+
+    public function activeIdCard(): HasOne
+    {
+        return $this->hasOne(AgentIdCard::class)
+            ->whereNull('revoked_at')
+            ->whereDate('expires_at', '>=', now()->toDateString())
+            ->latestOfMany();
+    }
+
     public function currentStatus(): ?AgentStatus
     {
         return $this->agentStatuses()

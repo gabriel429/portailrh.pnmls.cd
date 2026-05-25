@@ -187,6 +187,8 @@ const statCards = computed(() => [
 
 const baseQuickLinks = [
   { to: '/plan-travail', label: 'PTA', icon: 'fa-calendar-check', color: '#0077B5' },
+  { to: '/admin/cartes-agents', label: 'Cartes agents', icon: 'fa-id-card', color: '#0077B5' },
+  { to: '/agent-cards/scan', label: 'Scanner carte', icon: 'fa-qrcode', color: '#0d9488' },
   { to: '/admin/utilisateurs', label: 'Utilisateurs', icon: 'fa-user-shield', color: '#059669' },
   { to: '/admin/agents/import', label: 'Import agents', icon: 'fa-file-import', color: '#2563eb' },
   { action: 'documents-travail-popup', label: 'Gestion des documents', icon: 'fa-folder-open', color: '#f97316' },

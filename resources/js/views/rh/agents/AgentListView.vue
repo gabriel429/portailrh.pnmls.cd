@@ -642,6 +642,9 @@
               <button class="asm-btn-view-full" type="button" @click="openFullAgentFiche">
                 <i class="fas fa-id-card me-1"></i> Voir fiche complète
               </button>
+              <button v-if="auth.isAdminNT" class="asm-btn-card" type="button" @click="openAgentCard">
+                <i class="fas fa-address-card me-1"></i> Carte ID
+              </button>
               <button
                 v-if="sm_canManageAgentDocuments"
                 class="asm-btn-download"
@@ -1016,6 +1019,12 @@ function openFullAgentFiche() {
     if (!selectedAgent.value?.id) return
 
     router.push({ name: 'rh.agents.show', params: { id: selectedAgent.value.id } })
+}
+
+function openAgentCard() {
+    if (!selectedAgent.value?.id) return
+
+    router.push({ name: 'rh.agents.card', params: { id: selectedAgent.value.id } })
 }
 
 async function saveSelectedAgentDelegations() {
@@ -2633,6 +2642,16 @@ onMounted(() => {
 .asm-btn-view-full:hover {
   transform: translateY(-1px);
   box-shadow: 0 12px 28px rgba(14, 165, 233, .28);
+}
+.asm-btn-card {
+  padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 700;
+  border: none; background: linear-gradient(135deg, #0077B5, #0d9488); color: #fff; cursor: pointer;
+  box-shadow: 0 8px 22px rgba(0, 119, 181, .18);
+  transition: all .2s;
+}
+.asm-btn-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 28px rgba(0, 119, 181, .24);
 }
 .asm-btn-edit {
   padding: .45rem 1rem; border-radius: 10px; font-size: .8rem; font-weight: 600;
