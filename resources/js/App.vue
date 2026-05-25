@@ -51,7 +51,7 @@
   <!-- Bouton flottant Mail -->
   <router-link v-if="showWebmailFab"
      :to="{ name: 'mailbox.index' }"
-     class="webmail-fab text-decoration-none">
+     class="webmail-fab text-decoration-none no-print">
     <i class="fas fa-at me-2"></i> Mail
   </router-link>
 </template>

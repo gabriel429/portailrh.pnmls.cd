@@ -2511,6 +2511,7 @@ body.is-offline .navbar-main {
     .offline-banner,
     .reconnected-banner,
     #pwa-update-banner,
+    .webmail-fab,
     .dropdown-menu,
     .no-print {
         display: none !important;
