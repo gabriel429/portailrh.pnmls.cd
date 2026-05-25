@@ -3298,8 +3298,12 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-mobile-menu-backdrop {
+    --mailbox-mobile-nav-offset: 66px;
     position: fixed;
-    inset: 0;
+    top: var(--mailbox-mobile-nav-offset);
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 6500;
     display: flex;
     align-items: stretch;
@@ -3311,7 +3315,9 @@ onBeforeUnmount(() => {
     grid-template-columns: 78px minmax(0, 1fr);
     width: min(92vw, 420px);
     max-width: 100%;
-    min-height: 100dvh;
+    height: calc(100dvh - var(--mailbox-mobile-nav-offset));
+    min-height: 0;
+    max-height: calc(100dvh - var(--mailbox-mobile-nav-offset));
     overflow: hidden;
     background: #fff;
     box-shadow: 22px 0 48px rgba(15, 23, 42, 0.22);
@@ -3323,6 +3329,8 @@ onBeforeUnmount(() => {
     align-items: center;
     gap: 14px;
     padding: 18px 10px;
+    min-height: 0;
+    overflow-y: auto;
     background: #eef2f5;
   }
 
@@ -3348,6 +3356,7 @@ onBeforeUnmount(() => {
 
   .mailbox-mobile-menu-panel {
     min-width: 0;
+    min-height: 0;
     overflow-y: auto;
     padding: 22px 18px;
     background: #fff;
@@ -3478,6 +3487,10 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 420px) {
+  .mailbox-mobile-menu-backdrop {
+    --mailbox-mobile-nav-offset: 62px;
+  }
+
   .mailbox-mobile-header {
     grid-template-columns: 40px minmax(0, 1fr) 38px 38px;
     gap: 8px;
