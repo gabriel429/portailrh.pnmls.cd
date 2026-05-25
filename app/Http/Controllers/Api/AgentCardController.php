@@ -126,21 +126,77 @@ class AgentCardController extends ApiController
 
     public function verify(string $token): JsonResponse
     {
+        $token = $this->normalizeToken($token);
+
         $card = AgentIdCard::query()
             ->where('token', $token)
             ->with(['agent.role', 'agent.province', 'agent.departement', 'agent.grade', 'agent.institution', 'issuer'])
-            ->firstOrFail();
+            ->first();
+
+        if (! $card) {
+            return response()->json([
+                'message' => 'Carte introuvable. Verifiez que la carte a bien ete generee et que le QR code est complet.',
+            ], 404);
+        }
 
         return $this->success([
             'card' => $this->cardPayload($card),
-            'agent' => AgentResource::make($card->agent)->resolve(),
+            'agent' => $this->verificationAgentPayload($card->agent),
             'settings' => $this->settingsPayload(),
         ]);
+    }
+
+    private function normalizeToken(string $token): string
+    {
+        $token = trim(urldecode($token));
+
+        if (preg_match('/^PNMLS-CARD:([A-Za-z0-9_-]+)/i', $token, $matches)) {
+            return $matches[1];
+        }
+
+        if (preg_match('#agent-cards/verify/([^/?#\s]+)#i', $token, $matches)) {
+            $token = $matches[1];
+        }
+
+        $token = preg_replace('/[?#\s].*$/', '', $token) ?? $token;
+        $token = preg_replace('/^PNMLS-CARD:/i', '', $token) ?? $token;
+
+        return trim($token);
     }
 
     private function loadAgent(Agent $agent): Agent
     {
         return $agent->load(['role', 'province', 'departement', 'grade', 'institution']);
+    }
+
+    private function verificationAgentPayload(Agent $agent): array
+    {
+        return [
+            'id' => $agent->id,
+            'nom' => $agent->nom,
+            'postnom' => $agent->postnom,
+            'prenom' => $agent->prenom,
+            'nom_complet' => $agent->nom_complet,
+            'photo' => $agent->photo,
+            'matricule_etat' => $agent->matricule_etat,
+            'matricule' => $agent->matricule ?? null,
+            'organe' => $agent->organe,
+            'fonction' => $agent->fonction,
+            'poste_actuel' => $agent->poste_actuel,
+            'statut' => $agent->statut,
+            'province' => $agent->relationLoaded('province') && $agent->province ? [
+                'id' => $agent->province->id,
+                'nom' => $agent->province->nom_province ?? $agent->province->nom,
+            ] : null,
+            'departement' => $agent->relationLoaded('departement') && $agent->departement ? [
+                'id' => $agent->departement->id,
+                'nom' => $agent->departement->nom,
+            ] : null,
+            'role' => $agent->relationLoaded('role') && $agent->role ? [
+                'id' => $agent->role->id,
+                'nom_role' => $agent->role->nom_role,
+            ] : null,
+        ];
     }
 
     private function settingsPayload(): array

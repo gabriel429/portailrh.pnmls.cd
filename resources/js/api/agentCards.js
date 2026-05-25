@@ -19,5 +19,5 @@ export function issueAgentCard(agentId, renew = false) {
 }
 
 export function verifyAgentCard(token) {
-    return client.get(`/agent-cards/verify/${token}`)
+    return client.get(`/agent-cards/verify/${encodeURIComponent(token)}`)
 }

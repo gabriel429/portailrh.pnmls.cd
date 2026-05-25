@@ -16,6 +16,7 @@
           <video ref="videoRef" autoplay muted playsinline></video>
           <canvas ref="canvasRef" class="scan-canvas" aria-hidden="true"></canvas>
           <div class="scan-window"></div>
+          <div v-if="scanStatus" class="scan-status">{{ scanStatus }}</div>
           <div v-if="!cameraReady" class="camera-placeholder">
             <i class="fas fa-qrcode"></i>
             <span>{{ cameraMessage }}</span>
@@ -66,8 +67,13 @@ const detector = ref(null)
 const cameraReady = ref(false)
 const cameraMessage = ref('Activez la camera pour scanner le QR code imprime au verso.')
 const manualValue = ref('')
+const scanStatus = ref('')
 let scanTimer = null
 let scanning = false
+let lastCandidate = ''
+let stableReads = 0
+let firstSeenAt = 0
+let navigating = false
 
 const supportMessage = computed(() => {
   if (!cameraReady.value) return 'Activez la camera pour scanner la carte.'
@@ -78,17 +84,56 @@ const supportMessage = computed(() => {
 function extractToken(value) {
   const input = String(value || '').trim()
   if (!input) return ''
-  const compact = input.match(/^PNMLS-CARD:([A-Za-z0-9]+)/i)
+
+  const compact = input.match(/^PNMLS-CARD:([A-Za-z0-9_-]+)/i)
   if (compact?.[1]) return compact[1]
-  const match = input.match(/agent-cards\/verify\/([^/?#]+)/)
-  return decodeURIComponent(match?.[1] || input)
+
+  const match = input.match(/agent-cards\/verify\/([^/?#\s]+)/i)
+  const candidate = decodeURIComponent(match?.[1] || input)
+    .replace(/^PNMLS-CARD:/i, '')
+    .split(/[?#\s]/)[0]
+    .trim()
+
+  return /^[A-Za-z0-9_-]{20,80}$/.test(candidate) ? candidate : ''
 }
 
 function navigateToToken(value) {
   const token = extractToken(value)
-  if (!token) return
+  if (!token || navigating) return
+  navigating = true
   stopCamera()
   router.push({ name: 'agent-cards.verify', params: { token } })
+}
+
+function confirmScan(value) {
+  const token = extractToken(value)
+  if (!token || navigating) {
+    resetScanCandidate()
+    return
+  }
+
+  const now = Date.now()
+  if (token !== lastCandidate) {
+    lastCandidate = token
+    stableReads = 1
+    firstSeenAt = now
+    scanStatus.value = 'QR detecte, gardez la carte stable...'
+    return
+  }
+
+  stableReads += 1
+  scanStatus.value = 'Lecture confirmee...'
+
+  if (stableReads >= 2 && now - firstSeenAt >= 650) {
+    navigateToToken(token)
+  }
+}
+
+function resetScanCandidate() {
+  lastCandidate = ''
+  stableReads = 0
+  firstSeenAt = 0
+  scanStatus.value = ''
 }
 
 function openManualToken() {
@@ -156,13 +201,13 @@ function startLoop() {
         value = detectWithCanvas()
       }
 
-      if (value) navigateToToken(value)
+      if (value) confirmScan(value)
     } catch (_) {
       detector.value = null
     } finally {
       scanning = false
     }
-  }, 260)
+  }, 520)
 }
 
 async function detectWithNativeApi() {
@@ -209,6 +254,7 @@ function stopCamera() {
   stream.value?.getTracks?.().forEach(track => track.stop())
   stream.value = null
   cameraReady.value = false
+  resetScanCandidate()
 }
 
 onMounted(() => {
@@ -307,6 +353,23 @@ header h1 {
   top: 50%;
   transform: translate(-50%, -50%);
   width: min(62%, 330px);
+}
+
+.scan-status {
+  background: rgba(15, 23, 42, .78);
+  border: 1px solid rgba(255, 255, 255, .22);
+  border-radius: 999px;
+  bottom: 1rem;
+  color: #fff;
+  font-size: .88rem;
+  font-weight: 900;
+  left: 50%;
+  padding: .55rem .85rem;
+  position: absolute;
+  text-align: center;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: calc(100% - 2rem);
 }
 
 .camera-placeholder {

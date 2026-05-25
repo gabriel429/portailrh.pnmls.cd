@@ -72,6 +72,7 @@ Route::prefix('mobile')->group(function () {
 
 // Sync status (public, for online detection)
 Route::get('/sync/status', [SyncController::class, 'status']);
+Route::get('/agent-cards/verify/{token}', [AgentCardController::class, 'verify']);
 
 // Authenticated (Sanctum SPA cookie auth)
 Route::middleware('auth:sanctum')->group(function () {
@@ -108,7 +109,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/department', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'index']);
     Route::get('/dashboard/department/agents', [\App\Http\Controllers\Api\DepartmentDashboardController::class, 'agentsDrill']);
     Route::get('/address-book', [AddressBookController::class, 'index']);
-    Route::get('/agent-cards/verify/{token}', [AgentCardController::class, 'verify']);
     Route::get('/profile', [ProfileController::class, 'apiShow']);
 
     // Profile (SPA)

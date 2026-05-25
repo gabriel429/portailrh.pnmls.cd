@@ -114,15 +114,36 @@ async function load() {
   card.value = null
 
   try {
-    const { data } = await verifyAgentCard(route.params.token)
+    const token = normalizeToken(route.params.token)
+    if (!token) {
+      throw new Error('Code QR invalide ou incomplet.')
+    }
+
+    const { data } = await verifyAgentCard(token)
     const payload = data.data || data
     agent.value = payload.agent
     card.value = payload.card
   } catch (err) {
-    error.value = err.response?.data?.message || 'Le code scanne ne correspond a aucune carte agent.'
+    error.value = err.response?.data?.message || err.message || 'Le code scanne ne correspond a aucune carte agent.'
   } finally {
     loading.value = false
   }
+}
+
+function normalizeToken(value) {
+  const input = String(value || '').trim()
+  if (!input) return ''
+
+  const compact = input.match(/^PNMLS-CARD:([A-Za-z0-9_-]+)/i)
+  if (compact?.[1]) return compact[1]
+
+  const match = input.match(/agent-cards\/verify\/([^/?#\s]+)/i)
+  const candidate = decodeURIComponent(match?.[1] || input)
+    .replace(/^PNMLS-CARD:/i, '')
+    .split(/[?#\s]/)[0]
+    .trim()
+
+  return /^[A-Za-z0-9_-]{20,80}$/.test(candidate) ? candidate : ''
 }
 
 function formatDate(value) {

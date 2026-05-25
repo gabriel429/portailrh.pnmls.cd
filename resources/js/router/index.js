@@ -88,7 +88,7 @@ const routes = [
         path: '/agent-cards/verify/:token',
         name: 'agent-cards.verify',
         component: () => import('@/views/agent-cards/AgentCardVerifyView.vue'),
-        meta: { auth: true },
+        meta: { layout: 'guest' },
     },
     {
         path: '/notifications/:id/read',

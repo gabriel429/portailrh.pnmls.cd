@@ -245,8 +245,9 @@ const agentFunction = computed(() => agent.value?.fonction || agent.value?.poste
 const structureLabel = computed(() => agent.value?.departement?.nom || agent.value?.department?.nom || agent.value?.section?.nom || 'PNMLS')
 const provinceLabel = computed(() => agent.value?.province?.nom_province || agent.value?.province?.nom || 'N/A')
 const qrPayload = computed(() => {
-  if (card.value?.token) return `PNMLS-CARD:${card.value.token}`
-  return card.value?.verification_url || ''
+  if (card.value?.verification_url) return card.value.verification_url
+  if (card.value?.token) return `${window.location.origin}/agent-cards/verify/${card.value.token}`
+  return ''
 })
 const watermarkLogo = computed(() => settings.logo_secondary_url || settings.logo_primary_url || '/images/logo-pnmls.png')
 
