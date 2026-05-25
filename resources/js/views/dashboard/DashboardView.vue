@@ -519,8 +519,9 @@ watch(profilePhotoCandidates, () => {
 <style scoped>
 .dash-standard-page {
   width: 100%;
-  max-width: none;
-  padding-inline: clamp(1rem, 2vw, 2rem);
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(.85rem, 1.5vw, 1.25rem);
 }
 
 /* Hero */
