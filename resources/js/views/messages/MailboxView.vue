@@ -424,8 +424,8 @@
         <span>Dossiers</span>
       </button>
       <router-link :to="{ name: 'dashboard' }">
-        <i class="fas fa-table-cells-large"></i>
-        <span>Applications</span>
+        <i class="fas fa-house"></i>
+        <span>Accueil</span>
       </router-link>
     </nav>
 
