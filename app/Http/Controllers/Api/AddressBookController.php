@@ -16,7 +16,8 @@ class AddressBookController extends ApiController
             ->with(['province:id,nom', 'departement:id,nom,code'])
             ->actifs();
 
-        app(UserDataScope::class)->applyAgentScope($query, $request->user());
+        $scope = app(UserDataScope::class);
+        $scope->applyContactScope($query, $request->user());
 
         if ($search = trim((string) $request->query('search', ''))) {
             $term = '%' . $search . '%';
@@ -104,6 +105,7 @@ class AddressBookController extends ApiController
         return $this->success([
             'groups' => $groups,
             'recent_recipients' => $this->recentRecipients($request),
+            'scope' => $scope->hasInstitutionAuthorityAccess($request->user()) ? 'all' : 'local',
             'total' => $agents->count(),
         ]);
     }

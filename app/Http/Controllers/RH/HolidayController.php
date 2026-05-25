@@ -205,8 +205,30 @@ class HolidayController extends Controller
 
         $validated = $request->validate($rules);
 
+        $scope = app(UserDataScope::class);
+
         // Vérifier les conflits de dates
         $agent = Agent::find($validated['agent_id']);
+
+        if (!$scope->canAccessAgent($request->user(), $agent, true)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas créer une demande de congé pour cet agent.'
+            ], 403);
+        }
+
+        if (!empty($validated['interim_assure_par'])) {
+            $interim = Agent::find($validated['interim_assure_par']);
+
+            if (!$scope->canUseAgentAsInterim($request->user(), $interim, $agent)) {
+                return response()->json([
+                    'message' => 'L\'intérimaire doit être un agent actif de votre département, de votre province ou de votre périmètre autorisé.',
+                    'errors' => [
+                        'interim_assure_par' => ['Choisissez un intérimaire autorisé pour cette demande.'],
+                    ],
+                ], 422);
+            }
+        }
+
         $dateDébut = Carbon::parse($validated['date_debut']);
         $dateFin = Carbon::parse($validated['date_fin']);
 
@@ -304,6 +326,7 @@ class HolidayController extends Controller
 
         $currentAgent = auth()->user()->agent;
         $isRh = $currentAgent && $currentAgent->hasRole(['Section ressources humaines', 'Chef Section RH', 'RH National', 'RH Provincial']);
+        $scope = app(UserDataScope::class);
 
         $created = [];
         $errors = [];
@@ -318,6 +341,19 @@ class HolidayController extends Controller
             // Vérifier conflit
             $entryAgent = Agent::find($entry['agent_id']);
             $entryNom = trim(($entryAgent->nom ?? '') . ' ' . ($entryAgent->postnom ?? ''));
+
+            if (!$scope->canAccessAgent($request->user(), $entryAgent, false)) {
+                $errors[] = "Accès refusé pour {$entryNom} : agent hors de votre périmètre";
+                continue;
+            }
+
+            if (!empty($entry['interim_assure_par'])) {
+                $entryInterim = Agent::find($entry['interim_assure_par']);
+                if (!$scope->canUseAgentAsInterim($request->user(), $entryInterim, $entryAgent)) {
+                    $errors[] = "Intérimaire non autorisé pour {$entryNom} : choisissez un agent actif du même périmètre";
+                    continue;
+                }
+            }
 
             if (Holiday::hasConflict($entry['agent_id'], $dateDébut, $dateFin)) {
                 $errors[] = "Conflit de dates pour {$entryNom} : congé existant sur cette période";
@@ -734,6 +770,20 @@ class HolidayController extends Controller
             return response()->json([
                 'message' => 'Conflit de dates : vous avez déjà un congé sur cette période.'
             ], 422);
+        }
+
+        if (!empty($validated['interim_assure_par'])) {
+            $scope = app(UserDataScope::class);
+            $interim = Agent::find($validated['interim_assure_par']);
+
+            if (!$scope->canUseAgentAsInterim($user, $interim, $agent)) {
+                return response()->json([
+                    'message' => 'L\'intérimaire doit être un agent actif de votre département, de votre province ou de votre périmètre autorisé.',
+                    'errors' => [
+                        'interim_assure_par' => ['Choisissez un intérimaire autorisé pour cette demande.'],
+                    ],
+                ], 422);
+            }
         }
 
         // Auto-résolution du planning

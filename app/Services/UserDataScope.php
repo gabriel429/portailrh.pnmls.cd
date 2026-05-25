@@ -47,6 +47,36 @@ class UserDataScope
         return false;
     }
 
+    /**
+     * Contacts and interim selections are intentionally stricter than the
+     * administrative RH scope: only institutional authorities see everyone.
+     */
+    public function hasInstitutionAuthorityAccess(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        $roleService = app(RoleService::class);
+
+        if ($roleService->isSuperAdmin($user)) {
+            return true;
+        }
+
+        if ($user->hasRole([
+            'SEN',
+            'SENA',
+            'RH National',
+            'Section ressources humaines',
+            'Chef Section RH',
+            'DAF',
+        ])) {
+            return true;
+        }
+
+        return $roleService->hasDirecteurOrDafRole($user);
+    }
+
     public function isProvincialRh(?User $user): bool
     {
         return (bool) $user?->hasRole('RH Provincial');
@@ -122,6 +152,44 @@ class UserDataScope
         return $query->whereHas('departement', function ($dq) {
             $dq->operational();
         });
+    }
+
+    public function applyContactScope($query, ?User $user, string $table = 'agents')
+    {
+        $this->excludeAncienAgents($query, $table);
+
+        if ($this->hasInstitutionAuthorityAccess($user)) {
+            return $query;
+        }
+
+        return $this->applyAgentLocalScope($query, $user?->agent, $table);
+    }
+
+    public function canUseAgentAsInterim(?User $user, ?Agent $interimAgent, ?Agent $requestAgent = null): bool
+    {
+        if (!$interimAgent || $this->isAncienAgent($interimAgent)) {
+            return false;
+        }
+
+        if (strtolower((string) $interimAgent->statut) !== 'actif') {
+            return false;
+        }
+
+        $ownerAgent = $requestAgent ?: $user?->agent;
+
+        if (!$ownerAgent) {
+            return false;
+        }
+
+        if ((int) $interimAgent->id === (int) $ownerAgent->id) {
+            return false;
+        }
+
+        if ($this->hasInstitutionAuthorityAccess($user)) {
+            return true;
+        }
+
+        return $this->agentsShareLocalScope($ownerAgent, $interimAgent);
     }
 
     public function isDepartmentManager(?User $user): bool
@@ -449,5 +517,45 @@ class UserDataScope
     private function isAncienAgent(?Agent $agent): bool
     {
         return strtolower((string) ($agent?->statut ?? '')) === 'ancien';
+    }
+
+    private function applyAgentLocalScope($query, ?Agent $agent, string $table = 'agents')
+    {
+        if (!$agent) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($agent->province_id) {
+            return $query->where($table . '.province_id', $agent->province_id);
+        }
+
+        if ($agent->departement_id) {
+            return $query->where($table . '.departement_id', $agent->departement_id);
+        }
+
+        $organe = trim((string) $agent->organe);
+        if ($organe !== '') {
+            return $query->where($table . '.organe', $organe);
+        }
+
+        return $query->where($table . '.id', $agent->id);
+    }
+
+    private function agentsShareLocalScope(Agent $ownerAgent, Agent $candidateAgent): bool
+    {
+        if ($ownerAgent->province_id) {
+            return (int) $candidateAgent->province_id === (int) $ownerAgent->province_id;
+        }
+
+        if ($ownerAgent->departement_id) {
+            return (int) $candidateAgent->departement_id === (int) $ownerAgent->departement_id;
+        }
+
+        $ownerOrgane = trim((string) $ownerAgent->organe);
+        if ($ownerOrgane !== '') {
+            return trim((string) $candidateAgent->organe) === $ownerOrgane;
+        }
+
+        return false;
     }
 }
