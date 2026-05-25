@@ -9,13 +9,15 @@
   <div v-else class="container py-4">
     <!-- Hero -->
     <div class="dash-hero">
-      <div class="dash-hero-avatar">
-        <img v-if="currentProfilePhotoUrl" :src="currentProfilePhotoUrl" :alt="heroDisplayName" class="dash-hero-avatar-photo" @error="handleProfilePhotoError">
-        <span v-else class="dash-hero-avatar-fallback">{{ heroInitials }}</span>
-      </div>
-      <div class="dash-hero-text">
-        <div class="dash-hero-greeting">{{ heroGreeting }},</div>
-        <h2>{{ heroCivility }} {{ heroDisplayName }}</h2>
+      <div class="dash-hero-profile">
+        <div class="dash-hero-avatar">
+          <img v-if="currentProfilePhotoUrl" :src="currentProfilePhotoUrl" :alt="heroDisplayName" class="dash-hero-avatar-photo" @error="handleProfilePhotoError">
+          <span v-else class="dash-hero-avatar-fallback">{{ heroInitials }}</span>
+        </div>
+        <div class="dash-hero-text">
+          <div class="dash-hero-greeting">{{ heroGreeting }},</div>
+          <h2>{{ heroCivility }} {{ heroDisplayName }}</h2>
+        </div>
       </div>
       <div class="dash-hero-stats">
         <router-link to="/documents" class="dash-hero-stat-link">
@@ -529,6 +531,15 @@ watch(profilePhotoCandidates, () => {
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
 }
 .dash-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0)); }
+.dash-hero-profile {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: .85rem;
+  min-width: 260px;
+  flex: 1 1 280px;
+}
 .dash-hero-avatar {
   width: 48px; height: 48px; border-radius: 10px;
   background: rgba(255,255,255,.18); display: flex; align-items: center;
@@ -552,13 +563,13 @@ watch(profilePhotoCandidates, () => {
   font-weight: 800;
   color: #fff;
 }
-.dash-hero-text { flex: 1; min-width: 150px; }
+.dash-hero-text { min-width: 0; text-align: left; }
 .dash-hero-greeting { font-size: .78rem; opacity: .6; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-bottom: .1rem; }
-.dash-hero-text h2 { font-size: 1.15rem; font-weight: 800; margin: 0; word-break: break-word; }
+.dash-hero-text h2 { font-size: 1.15rem; font-weight: 800; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
 .dash-hero-structure { font-size: .8rem; opacity: .65; margin: 0 0 .15rem; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
-.dash-hero-stats { display: flex; gap: .45rem; margin-left: auto; flex-wrap: wrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .4rem .5rem; }
+.dash-hero-stats { position: relative; z-index: 1; display: flex; gap: .45rem; margin-left: auto; flex-wrap: wrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .4rem .5rem; }
 .dash-hero-stat-link {
   text-decoration: none; color: inherit; display: block;
   padding: .3rem .5rem; border-radius: 8px; transition: background .15s;
@@ -677,6 +688,7 @@ a.dash-activity-card { cursor: pointer; }
 /* Responsive */
 @media (max-width: 768px) {
   .dash-hero { padding: 1.5rem 1.2rem; gap: .8rem; }
+  .dash-hero-profile { flex: 1 1 100%; min-width: 0; }
   .dash-hero-text h2 { font-size: 1.1rem; }
   .dash-hero-stats { gap: .5rem .8rem; margin-left: 0; margin-top: .3rem; width: 100%; }
   .dash-hero-stat-val { font-size: 1.2rem; }
@@ -691,6 +703,7 @@ a.dash-activity-card { cursor: pointer; }
 
 @media (max-width: 576px) {
   .dash-hero { flex-direction: column; align-items: flex-start; padding: 1.2rem 1rem; }
+  .dash-hero-profile { width: 100%; }
   .dash-hero-stats { margin-left: 0; margin-top: .4rem; gap: .4rem .8rem; flex-wrap: wrap; width: 100%; }
   /* router-link + div enfants des stats : 3 par ligne */
   .dash-hero-stats > * { flex: 0 0 calc(33.33% - .6rem); min-width: 56px; }
