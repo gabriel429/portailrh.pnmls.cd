@@ -20,29 +20,14 @@
         </div>
       </div>
       <div class="dash-hero-stats">
-        <router-link to="/documents" class="dash-hero-stat-link">
-          <div class="dash-hero-stat-val">{{ stats.documents ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Documents</div>
-        </router-link>
-        <router-link to="/mailbox" class="dash-hero-stat-link">
-          <div class="dash-hero-stat-val">{{ stats.messages_non_lus ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Mails</div>
-        </router-link>
-        <router-link to="/notifications" class="dash-hero-stat-link">
-          <div class="dash-hero-stat-val">{{ stats.communiques ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Communiqués</div>
-        </router-link>
-        <router-link to="/requests" class="dash-hero-stat-link">
-          <div class="dash-hero-stat-val">{{ stats.requests_pending ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">En attente</div>
-        </router-link>
-        <router-link to="/requests" class="dash-hero-stat-link">
-          <div class="dash-hero-stat-val">{{ stats.requests_approved ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Approuvées</div>
-        </router-link>
-        <router-link to="/mes-absences" class="dash-hero-stat-link">
-          <div class="dash-hero-stat-val">{{ stats.absences ?? 0 }}</div>
-          <div class="dash-hero-stat-lbl">Absences</div>
+        <router-link v-for="card in heroStatCards" :key="card.label" :to="card.to" class="dash-hero-stat-link">
+          <div class="dash-hero-stat-icon">
+            <i class="fas" :class="card.icon"></i>
+          </div>
+          <div>
+            <div class="dash-hero-stat-val">{{ card.value }}</div>
+            <div class="dash-hero-stat-lbl">{{ card.label }}</div>
+          </div>
         </router-link>
       </div>
     </div>
@@ -416,6 +401,15 @@ const maxStat = computed(() => {
   return Math.max(...vals, 1)
 })
 
+const heroStatCards = computed(() => [
+  { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', to: '/documents' },
+  { label: 'Mails', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', to: '/mailbox' },
+  { label: 'Communiqués', value: stats.value.communiques ?? 0, icon: 'fa-bullhorn', to: '/notifications' },
+  { label: 'En attente', value: stats.value.requests_pending ?? 0, icon: 'fa-clock', to: '/requests' },
+  { label: 'Approuvées', value: stats.value.requests_approved ?? 0, icon: 'fa-check-circle', to: '/requests' },
+  { label: 'Absences', value: stats.value.absences ?? 0, icon: 'fa-calendar-times', to: '/mes-absences' },
+])
+
 const statCards = computed(() => [
   { label: 'Documents', value: stats.value.documents ?? 0, icon: 'fa-folder-open', color: '#0077B5', bg: '#e0f2fe', pct: ((stats.value.documents ?? 0) / maxStat.value) * 100, to: '/documents' },
   { label: 'Mails non lus', value: stats.value.messages_non_lus ?? 0, icon: 'fa-envelope', color: '#8b5cf6', bg: '#ede9fe', pct: ((stats.value.messages_non_lus ?? 0) / maxStat.value) * 100, to: '/mailbox' },
@@ -535,6 +529,7 @@ watch(profilePhotoCandidates, () => {
   border-radius: 14px; padding: .95rem 1.25rem; margin-bottom: .9rem; color: #fff;
   position: relative; overflow: hidden;
   display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  box-shadow: 0 4px 18px rgba(0, 119, 181, .18);
 }
 .dash-hero::before { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.08), rgba(255,255,255,0)); }
 .dash-hero-profile {
@@ -575,14 +570,23 @@ watch(profilePhotoCandidates, () => {
 .dash-hero-fonction { font-size: .85rem; opacity: .85; margin: 0 0 .15rem; font-weight: 500; }
 .dash-hero-structure { font-size: .8rem; opacity: .65; margin: 0 0 .15rem; }
 .dash-hero-date { font-size: .78rem; opacity: .6; margin: 0; text-transform: capitalize; }
-.dash-hero-stats { position: relative; z-index: 1; display: flex; gap: .55rem; margin-left: auto; flex-wrap: wrap; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .45rem .6rem; }
+.dash-hero-stats {
+  position: relative; z-index: 1; display: flex; gap: 0; margin-left: auto;
+  flex-wrap: wrap; background: rgba(255,255,255,.12);
+  border: 1px solid rgba(255,255,255,.16); border-radius: 10px; padding: .45rem .6rem;
+}
 .dash-hero-stat-link {
-  text-decoration: none; color: inherit; display: block;
-  min-width: 82px; padding: .3rem .55rem; border-radius: 8px; transition: background .15s;
+  text-decoration: none; color: inherit; display: flex; align-items: center; gap: .45rem;
+  min-width: 112px; padding: .35rem .65rem; border-radius: 8px; transition: background .15s;
 }
 .dash-hero-stat-link:hover { background: rgba(255,255,255,.15); }
-.dash-hero-stat-val { font-size: 1.05rem; font-weight: 800; text-align: center; }
-.dash-hero-stat-lbl { font-size: .6rem; opacity: .78; text-transform: uppercase; letter-spacing: 0; line-height: 1.1; text-align: center; }
+.dash-hero-stat-icon {
+  width: 28px; height: 28px; border-radius: 8px;
+  background: rgba(255,255,255,.1); display: flex; align-items: center;
+  justify-content: center; font-size: .76rem; flex-shrink: 0;
+}
+.dash-hero-stat-val { font-size: 1.05rem; font-weight: 800; line-height: 1; }
+.dash-hero-stat-lbl { font-size: .58rem; opacity: .78; text-transform: uppercase; letter-spacing: 0; line-height: 1.1; }
 
 /* Section headers */
 .dash-section-header {
@@ -592,10 +596,10 @@ watch(profilePhotoCandidates, () => {
 .dash-section-title { font-size: 1.05rem; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: .5rem; }
 
 /* Quick Actions */
-.dash-action-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
+.dash-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
 .dash-action-card {
   display: flex; align-items: center; gap: .7rem; padding: .9rem 1rem;
-  background: #fff; border: 2px solid #e5e7eb; border-radius: 14px;
+  background: #fff; border: 1px solid #e5e7eb; border-radius: 14px;
   text-decoration: none; color: #374151; transition: all .25s; cursor: pointer;
   width: 100%; text-align: left; font: inherit;
 }
@@ -609,7 +613,7 @@ watch(profilePhotoCandidates, () => {
 .dash-action-desc { font-size: .7rem; opacity: .6; }
 
 /* Stat Cards */
-.dash-stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .8rem; margin-bottom: 1.5rem; }
+.dash-stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
 .dash-stat-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1rem; transition: all .2s;
@@ -637,11 +641,11 @@ watch(profilePhotoCandidates, () => {
 .dash-stat-bar-fill { height: 100%; border-radius: 4px; transition: width .6s ease; min-width: 4px; }
 
 @media (min-width: 1100px) {
-  .dash-stat-grid { grid-template-columns: repeat(6, minmax(180px, 1fr)); }
+  .dash-stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 /* Activity */
-.dash-activity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.dash-activity-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin-bottom: 1.5rem; }
 .dash-activity-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0,0,0,.04); padding: 1rem 1.2rem; transition: all .2s;
@@ -677,7 +681,7 @@ a.dash-activity-card { cursor: pointer; }
 .dash-action-btn:hover { background: #0077B5; color: #fff; border-color: #0077B5; }
 
 /* Info Cards */
-.dash-info-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; }
+.dash-info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
 .dash-info-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0,0,0,.04); overflow: hidden; transition: all .2s;
@@ -723,8 +727,8 @@ a.dash-activity-card { cursor: pointer; }
   .dash-hero { flex-direction: column; align-items: flex-start; padding: 1.2rem 1rem; }
   .dash-hero-profile { width: 100%; }
   .dash-hero-stats { margin-left: 0; margin-top: .4rem; gap: .4rem .8rem; flex-wrap: wrap; width: 100%; }
-  /* router-link + div enfants des stats : 3 par ligne */
-  .dash-hero-stats > * { flex: 0 0 calc(33.33% - .6rem); min-width: 56px; }
+  .dash-hero-stat-link { flex: 0 0 calc(33.33% - .6rem); min-width: 0; justify-content: center; }
+  .dash-hero-stat-icon { display: none; }
   .dash-hero-stat-val { font-size: 1.1rem; }
   .dash-hero-stat-lbl { font-size: .62rem; }
   .dash-action-grid { grid-template-columns: repeat(2, 1fr); }
@@ -737,7 +741,7 @@ a.dash-activity-card { cursor: pointer; }
   .dash-action-grid { grid-template-columns: 1fr; }
   .dash-stat-grid { grid-template-columns: 1fr; }
   .dash-hero-text h2 { font-size: 1rem; }
-  .dash-hero-stats > * { flex: 0 0 calc(33.33% - .4rem); }
+  .dash-hero-stat-link { flex: 0 0 calc(33.33% - .4rem); }
 }
 
 /* ── Document Upload Modal (dum-*) ── */
@@ -811,7 +815,7 @@ a.dash-activity-card { cursor: pointer; }
   margin-bottom: 1rem;
 }
 .dash-stat-grid {
-  grid-template-columns: repeat(auto-fit, minmax(188px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: .7rem;
 }
 .dash-action-card,
@@ -865,7 +869,7 @@ a.dash-activity-card { cursor: pointer; }
 
 @media (min-width: 1200px) {
   .dash-stat-grid {
-    grid-template-columns: repeat(6, minmax(188px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
