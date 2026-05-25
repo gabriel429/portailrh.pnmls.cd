@@ -414,6 +414,7 @@ onMounted(load)
   background:
     radial-gradient(circle at 74% 53%, rgba(246, 195, 67, .18), transparent 145px),
     linear-gradient(135deg, #ffffff 0%, #f6fbff 45%, #fff9ea 100%);
+  border: 1px solid rgba(15, 53, 82, .16);
   border-radius: 14px;
   box-shadow: 0 16px 34px rgba(15, 23, 42, .14);
   height: 255px;
@@ -427,7 +428,7 @@ onMounted(load)
   background: linear-gradient(135deg, var(--primary), #0f8aa9);
   content: "";
   inset: 0 0 auto;
-  height: 70px;
+  height: 58px;
   position: absolute;
   z-index: 0;
 }
@@ -458,7 +459,7 @@ onMounted(load)
   display: grid;
   gap: .5rem;
   grid-template-columns: 42px 1fr 42px;
-  min-height: 52px;
+  min-height: 40px;
   text-align: center;
 }
 
@@ -466,7 +467,7 @@ onMounted(load)
   background: transparent;
   border-radius: 0;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
-  height: 42px;
+  height: 36px;
   mix-blend-mode: multiply;
   object-fit: contain;
   padding: 0;
@@ -475,14 +476,15 @@ onMounted(load)
 
 .identity-card header strong {
   display: block;
-  font-size: .62rem;
-  line-height: 1.1;
+  font-size: .68rem;
+  line-height: 1.05;
 }
 
 .identity-card header span {
   display: block;
-  font-size: .5rem;
-  line-height: 1.1;
+  font-size: .54rem;
+  font-weight: 800;
+  line-height: 1.08;
 }
 
 .card-title {
@@ -490,16 +492,16 @@ onMounted(load)
   border-radius: 999px;
   color: #172033;
   display: inline-flex;
-  font-size: .62rem;
+  font-size: .66rem;
   font-weight: 900;
-  margin: 8px 0;
+  margin: 11px 0 8px;
   padding: .25rem .7rem;
 }
 
 .card-body {
   display: grid;
-  gap: .75rem;
-  grid-template-columns: 92px 1fr;
+  gap: .85rem;
+  grid-template-columns: 108px 1fr;
 }
 
 .photo {
@@ -509,21 +511,23 @@ onMounted(load)
   border-radius: 14px;
   color: var(--primary);
   display: flex;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 900;
-  height: 108px;
+  height: 122px;
   justify-content: center;
+  width: 108px;
 }
 
 .agent-lines h2 {
   color: #0f3552;
-  font-size: 1.1rem;
+  font-size: 1.25rem;
   font-weight: 900;
   margin: 0;
 }
 
 .agent-lines p {
   color: #526176;
+  font-size: .85rem;
   font-weight: 800;
   margin: .1rem 0 .35rem;
 }
@@ -536,19 +540,19 @@ onMounted(load)
 
 .agent-lines dl div {
   display: grid;
-  grid-template-columns: 78px 1fr;
+  grid-template-columns: 88px 1fr;
 }
 
 .agent-lines dt {
   color: #6b778c;
-  font-size: .58rem;
+  font-size: .64rem;
   font-weight: 800;
 }
 
 .agent-lines dd {
   color: #172033;
-  font-size: .62rem;
-  font-weight: 800;
+  font-size: .68rem;
+  font-weight: 900;
   margin: 0;
 }
 

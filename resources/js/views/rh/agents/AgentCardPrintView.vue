@@ -451,20 +451,21 @@ onMounted(load)
   background:
     radial-gradient(circle at 74% 53%, rgba(246, 195, 67, .18), transparent 31mm),
     linear-gradient(135deg, #ffffff 0%, #f6fbff 45%, #fff9ea 100%);
+  border: .25mm solid rgba(15, 53, 82, .16);
   border-radius: 4mm;
   box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
   box-sizing: border-box;
   color: #172033;
   height: 54mm;
   overflow: hidden;
-  padding: 3.2mm;
+  padding: 3mm 3.3mm;
   position: relative;
   width: 85.6mm;
 }
 
 .card-bg {
   background: linear-gradient(135deg, var(--primary), #0f8aa9);
-  height: 16mm;
+  height: 12.8mm;
   inset: 0 0 auto;
   position: absolute;
   z-index: 0;
@@ -474,12 +475,12 @@ onMounted(load)
   background: linear-gradient(135deg, rgba(255, 255, 255, .06), rgba(246, 195, 67, .32));
   border-radius: 999px;
   content: "";
-  height: 27mm;
+  height: 22mm;
   opacity: .72;
   position: absolute;
   right: -8mm;
-  top: 8mm;
-  width: 41mm;
+  top: 6mm;
+  width: 38mm;
 }
 
 .card-watermark {
@@ -503,7 +504,7 @@ onMounted(load)
   display: grid;
   gap: 1.8mm;
   grid-template-columns: 9.6mm 1fr 9.6mm;
-  min-height: 10.8mm;
+  min-height: 8.6mm;
   position: relative;
   text-align: center;
   z-index: 2;
@@ -518,7 +519,7 @@ onMounted(load)
   background: transparent;
   border-radius: 0;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
-  height: 9.6mm;
+  height: 8.6mm;
   mix-blend-mode: multiply;
   object-fit: contain;
   padding: 0;
@@ -527,17 +528,17 @@ onMounted(load)
 
 .id-header strong {
   display: block;
-  font-size: 1.55mm;
+  font-size: 1.82mm;
   font-weight: 900;
-  line-height: 1.1;
+  line-height: 1.04;
   text-transform: uppercase;
 }
 
 .id-header span {
   display: block;
-  font-size: 1.16mm;
-  font-weight: 700;
-  line-height: 1.15;
+  font-size: 1.28mm;
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .id-title {
@@ -545,18 +546,18 @@ onMounted(load)
   border-radius: 999px;
   color: #172033;
   display: inline-flex;
-  font-size: 1.48mm;
+  font-size: 1.62mm;
   font-weight: 900;
-  margin: 1.6mm 0 1mm;
-  padding: .85mm 2.6mm;
+  margin: 2mm 0 1.2mm;
+  padding: .9mm 2.8mm;
   position: relative;
   z-index: 2;
 }
 
 .front-body {
   display: grid;
-  gap: 3mm;
-  grid-template-columns: 26mm 1fr;
+  gap: 3.2mm;
+  grid-template-columns: 27mm 1fr;
   position: relative;
   z-index: 2;
 }
@@ -564,15 +565,16 @@ onMounted(load)
 .agent-photo {
   align-items: center;
   background: #e9f5fb;
-  border: .8mm solid #fff;
-  border-radius: 3mm;
+  border: .55mm solid #fff;
+  border-radius: 2.4mm;
   color: var(--primary);
   display: flex;
-  font-size: 6.4mm;
+  font-size: 6.8mm;
   font-weight: 900;
-  height: 29mm;
+  height: 30mm;
   justify-content: center;
   overflow: hidden;
+  width: 27mm;
 }
 
 .agent-photo img {
@@ -583,10 +585,10 @@ onMounted(load)
 
 .identity-data h2 {
   color: #0f3552;
-  font-size: 3.7mm;
+  font-size: 3.95mm;
   font-weight: 900;
-  line-height: 1;
-  margin: 0 0 .75mm;
+  line-height: 1.04;
+  margin: 0 0 .85mm;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -596,37 +598,37 @@ onMounted(load)
 
 .identity-data p {
   color: #526176;
-  font-size: 1.75mm;
+  font-size: 1.92mm;
   font-weight: 900;
   line-height: 1.15;
-  margin: 0 0 1.2mm;
-  max-height: 4.2mm;
+  margin: 0 0 1.35mm;
+  max-height: 4.7mm;
   overflow: hidden;
 }
 
 .identity-data dl {
   display: grid;
-  gap: .58mm;
+  gap: .66mm;
   margin: 0;
 }
 
 .identity-data dl div {
   display: grid;
-  grid-template-columns: 15mm 1fr;
+  grid-template-columns: 16.5mm 1fr;
   min-width: 0;
 }
 
 .identity-data dt {
   color: #64748b;
-  font-size: 1.36mm;
+  font-size: 1.5mm;
   font-weight: 900;
   line-height: 1.1;
 }
 
 .identity-data dd {
   color: #172033;
-  font-size: 1.45mm;
-  font-weight: 800;
+  font-size: 1.56mm;
+  font-weight: 900;
   line-height: 1.1;
   margin: 0;
   min-width: 0;
@@ -637,10 +639,10 @@ onMounted(load)
 
 .identity-card footer {
   align-items: center;
-  bottom: 2.2mm;
+  bottom: 2mm;
   color: #64748b;
   display: flex;
-  font-size: 1.35mm;
+  font-size: 1.28mm;
   font-weight: 900;
   justify-content: space-between;
   left: 3.2mm;
@@ -766,6 +768,7 @@ onMounted(load)
   }
 
   .identity-card {
+    border-color: rgba(15, 53, 82, .28);
     box-shadow: none;
     break-inside: avoid;
     -webkit-print-color-adjust: exact !important;
