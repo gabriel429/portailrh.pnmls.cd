@@ -102,6 +102,237 @@ img {
     height: auto;
 }
 
+/* Lightweight layout utilities used by the Vue shell. */
+.container,
+.container-fluid {
+    width: 100%;
+    margin-right: auto;
+    margin-left: auto;
+    padding-right: .75rem;
+    padding-left: .75rem;
+}
+
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -.75rem;
+    margin-left: -.75rem;
+}
+
+.col,
+[class*="col-"] {
+    min-width: 0;
+    padding-right: .75rem;
+    padding-left: .75rem;
+}
+
+.col {
+    flex: 1 0 0%;
+}
+
+.d-none { display: none !important; }
+.d-flex { display: flex !important; }
+.d-grid { display: grid !important; }
+.align-items-center { align-items: center !important; }
+.justify-content-center { justify-content: center !important; }
+.justify-content-between { justify-content: space-between !important; }
+.text-center { text-align: center !important; }
+.text-danger { color: var(--danger) !important; }
+.mx-auto { margin-right: auto !important; margin-left: auto !important; }
+.mt-5 { margin-top: 3rem !important; }
+.mb-0 { margin-bottom: 0 !important; }
+.m-0 { margin: 0 !important; }
+.px-3 { padding-right: 1rem !important; padding-left: 1rem !important; }
+
+.navbar {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.navbar > .container,
+.navbar > .container-fluid {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.navbar-brand {
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.navbar-toggler {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.navbar-toggler-icon {
+    display: inline-block;
+    width: 1.5em;
+    height: 1.5em;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: 100%;
+}
+
+.collapse:not(.show) {
+    display: none !important;
+}
+
+.navbar-collapse {
+    flex-basis: 100%;
+    flex-grow: 1;
+    align-items: center;
+}
+
+.navbar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+    padding-left: 0;
+    margin: 0;
+    list-style: none;
+}
+
+.nav-item {
+    list-style: none;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1080;
+    min-width: 12rem;
+    margin: .25rem 0 0;
+    padding: .5rem 0;
+    list-style: none;
+}
+
+.dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+.dropdown:hover > .dropdown-menu,
+.dropdown:focus-within > .dropdown-menu,
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    clear: both;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.dropdown-divider {
+    height: 0;
+    margin: .5rem 0;
+    overflow: hidden;
+    border: 0;
+    border-top: 1px solid var(--grey-200);
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card {
+    background: #fff;
+    border: 1px solid var(--grey-200);
+}
+
+.table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.form-control,
+.form-select {
+    display: block;
+    width: 100%;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1060;
+    display: none;
+    overflow: auto;
+}
+
+.modal.show {
+    display: block;
+}
+
+.modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+}
+
+.modal-content {
+    position: relative;
+}
+
+@media (min-width: 992px) {
+    .d-lg-none { display: none !important; }
+    .d-lg-block { display: block !important; }
+    .d-lg-flex { display: flex !important; }
+    .align-items-lg-center { align-items: center !important; }
+
+    .navbar-expand-lg {
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+    }
+
+    .navbar-expand-lg .navbar-toggler {
+        display: none !important;
+    }
+
+    .navbar-expand-lg .navbar-collapse {
+        display: flex !important;
+        flex-basis: auto;
+    }
+
+    .navbar-expand-lg .navbar-nav {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
 /* Scrollable table containers */
 .table-responsive,
 .rh-table-wrap {
