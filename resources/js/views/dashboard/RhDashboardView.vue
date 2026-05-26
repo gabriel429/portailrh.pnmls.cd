@@ -2565,4 +2565,49 @@ onMounted(async () => {
 .rh-action-desc { font-size: .64rem; }
 .rh-metric-val { font-size: 1.35rem; }
 .rh-metric-lbl { font-size: .62rem; letter-spacing: .2px; }
+
+/* Wide dashboard alignment with the modern module pages */
+.rh-dashboard {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 1.5rem 1.5rem 2rem !important;
+}
+
+.rh-dashboard .rh-hero {
+  min-height: 110px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, .42);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #087ec0 0%, #3d9a87 100%) !important;
+  box-shadow: 0 18px 38px rgba(2, 93, 128, .18);
+}
+
+.rh-dashboard .rh-hero-inner {
+  min-height: 110px;
+  padding: 1.4rem 1.75rem;
+}
+
+.rh-dashboard .rh-actions {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: .85rem;
+}
+
+.rh-dashboard .rh-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: .85rem;
+}
+
+.rh-dashboard .rh-action,
+.rh-dashboard .rh-metric {
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+}
+
+@media (max-width: 767.98px) {
+  .rh-dashboard {
+    padding: 1rem .75rem 1.5rem !important;
+  }
+}
 </style>
