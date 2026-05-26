@@ -4206,6 +4206,32 @@ body :where(.page-hero, .doc-hero, .dt-hero, .notif-hero, .agents-hero, .req-her
     background: rgba(255, 255, 255, .12) !important;
 }
 
+/* Functional pages keep the dashboard color, but use a compact banner. */
+body :where(.rh-modern:not(.rh-dashboard) .rh-hero, .page-hero, .doc-hero, .dt-hero, .notif-hero, .agents-hero, .req-hero, .pt-hero) {
+    min-height: 0 !important;
+    padding: 1.2rem 1.5rem !important;
+    border-radius: 16px !important;
+    margin-bottom: 1rem !important;
+}
+
+body :where(.rh-modern:not(.rh-dashboard) .rh-hero .row, .req-hero-body, .pt-hero-body, .doc-hero-content, .notif-hero) {
+    min-height: 0 !important;
+}
+
+body :where(.rh-modern:not(.rh-dashboard) .rh-title, .req-hero-text h2, .pt-hero-text h2, .doc-hero h2, .notif-hero h2) {
+    font-size: clamp(1.15rem, 1.5vw, 1.45rem) !important;
+    line-height: 1.12 !important;
+}
+
+body :where(.rh-modern:not(.rh-dashboard) .rh-sub, .req-hero-text p, .pt-hero-text p, .doc-hero p, .notif-hero p) {
+    margin-bottom: 0 !important;
+    font-size: .86rem !important;
+}
+
+body :where(.rh-modern:not(.rh-dashboard) .hero-tools, .req-hero-actions, .pt-hero-actions) {
+    gap: .55rem !important;
+}
+
 body :where(.sen-hero-inner, .sep-hero-inner, .rh-hero-inner, .caf-hero-inner, .dept-hero-inner, .sena-hero-inner) {
     position: relative !important;
     padding: 1.45rem 1.75rem !important;
