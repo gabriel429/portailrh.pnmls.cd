@@ -519,9 +519,9 @@ watch(profilePhotoCandidates, () => {
 <style scoped>
 .dash-standard-page {
   width: 100%;
-  max-width: 1200px;
-  margin-inline: auto;
-  padding-inline: clamp(.85rem, 1.5vw, 1.25rem);
+  max-width: none;
+  margin-inline: 0;
+  padding: 1.5rem 1.5rem 2rem;
 }
 
 /* Hero */
@@ -710,6 +710,7 @@ a.dash-activity-card { cursor: pointer; }
 
 /* Responsive */
 @media (max-width: 768px) {
+  .dash-standard-page { padding: 1rem .75rem 1.5rem; }
   .dash-hero { padding: 1.5rem 1.2rem; gap: .8rem; }
   .dash-hero-profile { flex: 1 1 100%; min-width: 0; }
   .dash-hero-text h2 { font-size: 1.1rem; }

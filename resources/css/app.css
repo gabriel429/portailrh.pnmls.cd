@@ -4172,11 +4172,12 @@ body :where(.sen-agenda-row, .sep-agenda-row, .rh-pending-item, .dept-agenda-row
     }
 }
 
-/* Director dashboard finish applied as the reference model */
+/* Wide dashboard finish applied as the reference model */
 body :where(.sen-dashboard, .sep-dashboard, .rh-dashboard, .caf-dashboard, .dept-dashboard, .sena-dashboard, .rc-dashboard) {
-    max-width: 1200px !important;
-    margin: 0 auto !important;
-    padding: 0 1rem 2rem !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 1.5rem 1.5rem 2rem !important;
 }
 
 body :where(.sen-hero, .sep-hero, .rh-hero, .caf-hero, .dept-hero, .sena-hero, .dash-hero) {
