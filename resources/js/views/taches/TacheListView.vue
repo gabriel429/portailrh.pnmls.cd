@@ -33,9 +33,9 @@
                   <i class="fas fa-arrow-left me-1"></i> Retour à mes tâches
                 </router-link>
               </template>
-              <router-link :to="{ name: 'taches.create' }" class="btn-rh main">
+              <button type="button" class="btn-rh main" @click="openCreateModal">
                 <i class="fas fa-plus-circle me-1"></i> Nouvelle tâche
-              </router-link>
+              </button>
             </div>
           </div>
         </div>
@@ -139,6 +139,136 @@
         </div>
       </template>
     </div>
+
+    <div v-if="createModalOpen" class="task-modal-overlay" @click.self="closeCreateModal">
+      <div class="task-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="task-create-title">
+        <button type="button" class="task-modal-close" aria-label="Fermer" @click="closeCreateModal">
+          <i class="fas fa-times"></i>
+        </button>
+
+        <header class="task-modal-header">
+          <div class="task-modal-icon"><i class="fas fa-plus-circle"></i></div>
+          <div>
+            <h2 id="task-create-title">Nouvelle tâche</h2>
+            <p>{{ createPageSubtitle }}</p>
+          </div>
+        </header>
+
+        <div v-if="loadingCreateData" class="text-center py-5">
+          <LoadingSpinner message="Chargement du formulaire..." />
+        </div>
+
+        <form v-else class="task-create-form" @submit.prevent="handleCreateSubmit">
+          <div v-if="createErrors.length" class="alert alert-danger">
+            <ul class="mb-0">
+              <li v-for="(err, i) in createErrors" :key="i">{{ err }}</li>
+            </ul>
+          </div>
+
+          <div class="task-form-grid">
+            <div>
+              <label for="task_source_type" class="form-label fw-bold">Origine <span class="text-danger">*</span></label>
+              <select id="task_source_type" v-model="createForm.source_type" class="form-select" required>
+                <option value="hors_pta">Hors PTA</option>
+                <option value="pta">Issue du PTA</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="task_source_emetteur" class="form-label fw-bold">Source <span class="text-danger">*</span></label>
+              <select id="task_source_emetteur" v-model="createForm.source_emetteur" class="form-select" required>
+                <option v-for="source in createSourceEmetteurs" :key="source.value" :value="source.value">
+                  {{ source.label }}
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label for="task_date_tache" class="form-label fw-bold">Date de la tâche</label>
+              <input id="task_date_tache" v-model="createForm.date_tache" type="date" class="form-control">
+            </div>
+
+            <div v-if="createForm.source_type === 'pta'" class="task-form-full">
+              <label for="task_activite_plan_id" class="form-label fw-bold">Activité PTA liée <span class="text-danger">*</span></label>
+              <select id="task_activite_plan_id" v-model="createForm.activite_plan_id" class="form-select" required>
+                <option value="">-- Choisir une activité du PTA --</option>
+                <option v-for="activite in createActivitesPta" :key="activite.id" :value="activite.id">
+                  {{ activiteLabel(activite) }}
+                </option>
+              </select>
+            </div>
+
+            <div class="task-form-wide">
+              <label for="task_agent_id" class="form-label fw-bold">Assigner à <span class="text-danger">*</span></label>
+              <select id="task_agent_id" v-model="createForm.agent_id" class="form-select" required>
+                <option value="">-- Choisir un agent --</option>
+                <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
+                  {{ ag.prenom }} {{ ag.nom }} ({{ ag.matricule || 'N/A' }})
+                </option>
+              </select>
+            </div>
+
+            <div>
+              <label for="task_priorite" class="form-label fw-bold">Priorité <span class="text-danger">*</span></label>
+              <select id="task_priorite" v-model="createForm.priorite" class="form-select" required>
+                <option value="faible">Faible</option>
+                <option value="normale">Normale</option>
+                <option value="haute">Haute</option>
+                <option value="urgente">Urgente</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="task_date_echeance" class="form-label fw-bold">Échéance</label>
+              <input id="task_date_echeance" v-model="createForm.date_echeance" type="date" class="form-control">
+            </div>
+
+            <div class="task-form-full">
+              <label for="task_titre" class="form-label fw-bold">Titre de la tâche <span class="text-danger">*</span></label>
+              <input id="task_titre" v-model="createForm.titre" type="text" class="form-control" required placeholder="Ex: Préparer le rapport mensuel">
+            </div>
+
+            <div class="task-form-full">
+              <label for="task_description" class="form-label fw-bold">Description</label>
+              <textarea id="task_description" v-model="createForm.description" class="form-control" rows="4" placeholder="Détails et instructions pour l'agent..."></textarea>
+            </div>
+
+            <div class="task-form-full">
+              <label for="task_documents" class="form-label fw-bold">Documents joints</label>
+              <input
+                id="task_documents"
+                ref="createDocumentsInput"
+                type="file"
+                class="form-control"
+                multiple
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png"
+                @change="handleCreateDocumentsChange"
+              >
+              <small class="text-muted d-block mt-1">Vous pouvez joindre un ou plusieurs documents au moment de l'assignation.</small>
+              <div v-if="createSelectedDocuments.length" class="task-file-list mt-2">
+                <div v-for="(file, index) in createSelectedDocuments" :key="file.name + index" class="task-file-item">
+                  <div>
+                    <strong>{{ file.name }}</strong>
+                    <small class="d-block text-muted">{{ formatFileSize(file.size) }}</small>
+                  </div>
+                  <button type="button" class="btn btn-sm btn-outline-danger" @click="removeCreateDocument(index)">
+                    <i class="fas fa-times"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer class="task-modal-footer">
+            <button type="button" class="btn btn-outline-secondary" @click="closeCreateModal">Annuler</button>
+            <button type="submit" class="btn btn-primary" :disabled="submittingCreate">
+              <span v-if="submittingCreate" class="spinner-border spinner-border-sm me-1"></span>
+              <i v-else class="fas fa-paper-plane me-1"></i> Assigner la tâche
+            </button>
+          </footer>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -147,7 +277,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
-import { list } from '@/api/taches'
+import { create, getCreateData, list } from '@/api/taches'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
@@ -161,11 +291,30 @@ const isDirecteur = ref(false)
 const canManageTaches = ref(false)
 const sourceFilter = ref('all')
 const statusFilter = ref(route.query.statut ?? 'all')
+const createModalOpen = ref(false)
+const loadingCreateData = ref(false)
+const submittingCreate = ref(false)
+const createErrors = ref([])
+const createAgents = ref([])
+const createActivitesPta = ref([])
+const createSourceEmetteurs = ref([])
+const createSelectedDocuments = ref([])
+const createDocumentsInput = ref(null)
+const createScopeFlags = ref({ isSENScope: false, isSENAScope: false, isProvinceScope: false, isLocalScope: false })
+const createForm = ref(defaultCreateForm())
 
 const isDeptScope = computed(() => route.query.scope === 'departement')
 const isSENScope = computed(() => route.query.scope === 'sen')
 const isProvinceScope = computed(() => route.query.scope === 'province')
 const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
+
+const createPageSubtitle = computed(() => {
+  if (createScopeFlags.value.isLocalScope) return 'Assigner une tâche à un agent local de votre ressort.'
+  if (createScopeFlags.value.isProvinceScope) return 'Assigner une tâche à un agent provincial et organiser son suivi.'
+  if (createScopeFlags.value.isSENAScope) return 'Assigner une tâche uniquement aux attachés du SEN, aux directeurs de département et aux SEP suivis par le Secrétariat de direction.'
+  if (createScopeFlags.value.isSENScope) return 'Assigner une tâche à un agent du Secrétariat exécutif national.'
+  return 'Assigner une tâche à un agent de votre département.'
+})
 
 watch(() => route.query.statut, (val) => {
   statusFilter.value = val ?? 'all'
@@ -280,6 +429,125 @@ async function loadTaches() {
   }
 }
 
+function defaultCreateForm() {
+  return {
+    agent_id: '',
+    titre: '',
+    description: '',
+    source_type: 'hors_pta',
+    source_emetteur: 'directeur',
+    activite_plan_id: '',
+    priorite: 'normale',
+    date_tache: '',
+    date_echeance: '',
+  }
+}
+
+async function openCreateModal() {
+  createModalOpen.value = true
+  createErrors.value = []
+  createForm.value = defaultCreateForm()
+  createSelectedDocuments.value = []
+  if (createDocumentsInput.value) createDocumentsInput.value.value = ''
+  await loadCreateData()
+}
+
+function closeCreateModal() {
+  if (submittingCreate.value) return
+  createModalOpen.value = false
+  createErrors.value = []
+  removeCreateQuery()
+}
+
+async function loadCreateData() {
+  loadingCreateData.value = true
+  try {
+    const { data } = await getCreateData()
+    createAgents.value = data.data.agents || []
+    createActivitesPta.value = data.data.activites_pta || []
+    createSourceEmetteurs.value = data.data.source_emetteurs || []
+    createForm.value.source_emetteur = data.data.default_source_emetteur || 'directeur'
+    createScopeFlags.value = {
+      isSENScope: Boolean(data.data.isSENScope),
+      isSENAScope: Boolean(data.data.isSENAScope),
+      isProvinceScope: Boolean(data.data.isProvinceScope),
+      isLocalScope: Boolean(data.data.isLocalScope),
+    }
+  } catch (err) {
+    createModalOpen.value = false
+    if (err.response?.status === 403) {
+      ui.addToast('Accès refusé. Seuls les gestionnaires habilités peuvent créer des tâches.', 'danger')
+    } else {
+      ui.addToast(err.response?.data?.message || 'Erreur lors du chargement du formulaire.', 'danger')
+    }
+    removeCreateQuery()
+  } finally {
+    loadingCreateData.value = false
+  }
+}
+
+async function handleCreateSubmit() {
+  createErrors.value = []
+  submittingCreate.value = true
+  try {
+    const payload = new FormData()
+    Object.entries(createForm.value).forEach(([key, value]) => {
+      if (key === 'activite_plan_id' && createForm.value.source_type !== 'pta') return
+      if (value !== null && value !== undefined && value !== '') payload.append(key, value)
+    })
+
+    createSelectedDocuments.value.forEach((file) => {
+      payload.append('documents[]', file)
+    })
+
+    await create(payload)
+    ui.addToast('Tâche créée avec succès.', 'success')
+    createModalOpen.value = false
+    removeCreateQuery()
+    await loadTaches()
+  } catch (err) {
+    if (err.response?.status === 422) {
+      const validationErrors = err.response.data.errors || {}
+      createErrors.value = Object.values(validationErrors).flat()
+    } else {
+      ui.addToast(err.response?.data?.message || 'Erreur lors de la création.', 'danger')
+    }
+  } finally {
+    submittingCreate.value = false
+  }
+}
+
+function handleCreateDocumentsChange(event) {
+  createSelectedDocuments.value = Array.from(event.target.files || [])
+}
+
+function removeCreateDocument(index) {
+  createSelectedDocuments.value.splice(index, 1)
+  if (createDocumentsInput.value) {
+    const dataTransfer = new DataTransfer()
+    createSelectedDocuments.value.forEach((file) => dataTransfer.items.add(file))
+    createDocumentsInput.value.files = dataTransfer.files
+  }
+}
+
+function removeCreateQuery() {
+  if (!route.query.create) return
+  const query = { ...route.query }
+  delete query.create
+  router.replace({ name: route.name, query })
+}
+
+function formatFileSize(size) {
+  if (!size) return '0 Ko'
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} Mo`
+  return `${Math.round(size / 1024)} Ko`
+}
+
+function activiteLabel(activite) {
+  const trimestre = activite.trimestre ? ` (${activite.trimestre})` : ''
+  return `${activite.titre} - ${activite.annee}${trimestre}`
+}
+
 function capitalize(str) {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1)
@@ -354,7 +622,9 @@ onMounted(() => {
     const valid = ['nouvelle', 'en_cours', 'bloquee', 'terminee', 'en_retard']
     if (valid.includes(route.query.statut)) statusFilter.value = route.query.statut
   }
-  loadTaches()
+  loadTaches().then(() => {
+    if (route.query.create) openCreateModal()
+  })
 })
 
 watch(statusFilter, (val) => {
@@ -713,6 +983,127 @@ watch(statusFilter, (val) => {
   color: #fff;
 }
 
+.task-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1060;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .48);
+  backdrop-filter: blur(8px);
+}
+
+.task-modal-dialog {
+  position: relative;
+  width: min(940px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .98);
+  border: 1px solid rgba(226, 232, 240, .95);
+  box-shadow: 0 28px 70px rgba(15, 23, 42, .28);
+}
+
+.task-modal-close {
+  position: absolute;
+  top: .85rem;
+  right: .85rem;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(148, 163, 184, .35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .9);
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.task-modal-close:hover {
+  color: #ef4444;
+  border-color: #fecaca;
+}
+
+.task-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: .85rem;
+  padding: 1.35rem 1.5rem 1rem;
+  color: #fff;
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(255,255,255,.12) 0%, transparent 56%),
+    linear-gradient(135deg, #0a1628 0%, #0f2847 34%, #0c4a6e 66%, #0077B5 100%);
+}
+
+.task-modal-icon {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 44px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .16);
+  border: 1px solid rgba(255, 255, 255, .22);
+}
+
+.task-modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.task-modal-header p {
+  margin: .2rem 2.4rem 0 0;
+  color: rgba(255, 255, 255, .78);
+  font-size: .86rem;
+}
+
+.task-create-form {
+  padding: 1.2rem 1.5rem 1.35rem;
+}
+
+.task-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .95rem;
+}
+
+.task-form-wide {
+  grid-column: span 2;
+}
+
+.task-form-full {
+  grid-column: 1 / -1;
+}
+
+.task-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: .7rem;
+  margin-top: 1.15rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.task-file-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.task-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem .9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
 @media (max-width: 767.98px) {
   .tache-status-tabs {
     gap: .3rem;
@@ -732,6 +1123,39 @@ watch(statusFilter, (val) => {
     font-size: .68rem;
     min-width: 1.2rem;
     height: 1.2rem;
+  }
+
+  .task-modal-overlay {
+    padding: .5rem;
+  }
+
+  .task-modal-dialog {
+    width: calc(100vw - 1rem);
+    max-height: calc(100dvh - 1rem);
+    border-radius: 14px;
+  }
+
+  .task-modal-header,
+  .task-create-form {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .task-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-form-wide {
+    grid-column: 1 / -1;
+  }
+
+  .task-modal-footer {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .task-modal-footer .btn {
+    width: 100%;
   }
 }
 </style>

@@ -192,7 +192,7 @@ const routes = [
     {
         path: '/taches/create',
         name: 'taches.create',
-        component: () => import('@/views/taches/TacheCreateView.vue'),
+        redirect: { name: 'taches.index', query: { create: '1' } },
         meta: { auth: true },
     },
     {
