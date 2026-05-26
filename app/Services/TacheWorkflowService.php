@@ -61,6 +61,10 @@ class TacheWorkflowService
             return false;
         }
 
+        if ($tache->validation_responsable_id) {
+            return (int) $tache->validation_responsable_id === (int) $agent->id;
+        }
+
         $taskAgent = $tache->agent ?: Agent::find($tache->agent_id);
         if (!$taskAgent) {
             return false;
@@ -209,6 +213,13 @@ class TacheWorkflowService
 
     public function finalValidators(Tache $tache): Collection
     {
+        if ($tache->validation_responsable_id) {
+            return User::query()
+                ->with(['role', 'agent.departement'])
+                ->whereHas('agent', fn($q) => $q->whereKey($tache->validation_responsable_id))
+                ->get();
+        }
+
         $taskAgent = $tache->agent ?: Agent::find($tache->agent_id);
         if (!$taskAgent) {
             return collect();
@@ -270,6 +281,67 @@ class TacheWorkflowService
             'sep' => 'SEP',
             'sel' => 'SEL',
         ][$role] ?? 'Responsable';
+    }
+
+    public function availableValidatorsFor(User $user, ?Agent $targetAgent = null): Collection
+    {
+        $agent = $user->agent;
+        if (!$agent) {
+            return collect();
+        }
+
+        $targetAgent ??= $agent;
+        $roles = app(RoleService::class);
+        $level = $this->determineManagementLevel($user);
+
+        $query = Agent::query()
+            ->with('role')
+            ->actifs()
+            ->whereHas('user');
+
+        if ($user->hasRole('SEN')) {
+            return $query->get()->filter(fn(Agent $candidate) => $this->isEligibleValidatorAgent($candidate, 'sen', $targetAgent))->values();
+        }
+
+        if ($roles->hasSENARole($user)) {
+            return $query->get()->filter(fn(Agent $candidate) => $this->isEligibleValidatorAgent($candidate, 'sen', $targetAgent))->values();
+        }
+
+        return $query->get()->filter(fn(Agent $candidate) => $this->isEligibleValidatorAgent($candidate, $level, $targetAgent))->values();
+    }
+
+    public function isEligibleValidatorAgent(Agent $candidate, string $level, Agent $targetAgent): bool
+    {
+        $role = $this->normalize($candidate->role?->nom_role);
+        $fonction = $this->normalize($candidate->fonction);
+        $poste = $this->normalize($candidate->poste_actuel);
+        $organe = $this->normalize($candidate->organe);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste);
+
+        if ($level === 'sen' || $level === 'departement') {
+            $sameDepartment = $candidate->departement_id && $targetAgent->departement_id
+                && (int) $candidate->departement_id === (int) $targetAgent->departement_id;
+
+            return $role === 'sen'
+                || str_contains($organe, 'national') && (
+                    str_contains($role, 'directeur')
+                    || str_contains($profile, 'directeur national')
+                    || ($sameDepartment && str_contains($profile, 'chef de section'))
+                );
+        }
+
+        if ($level === 'province') {
+            return (int) $candidate->province_id === (int) $targetAgent->province_id
+                && $role === 'sep';
+        }
+
+        if ($level === 'local') {
+            return (int) $candidate->province_id === (int) $targetAgent->province_id
+                && str_contains($organe, 'local')
+                && ($role === 'sel' || str_contains($profile, 'secretaire executif local'));
+        }
+
+        return false;
     }
 
     public function isDepartmentPrincipal(?User $user): bool

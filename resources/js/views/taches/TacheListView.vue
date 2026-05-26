@@ -200,10 +200,34 @@
 
             <div class="task-form-wide">
               <label for="task_agent_id" class="form-label fw-bold">Assigner à <span class="text-danger">*</span></label>
-              <select id="task_agent_id" v-model="createForm.agent_id" class="form-select" required>
+              <select
+                v-if="createCanMultiAssign"
+                id="task_agent_id"
+                v-model="createForm.agent_ids"
+                class="form-select"
+                multiple
+                required
+                size="6"
+              >
+                <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
+                  {{ agentOptionLabel(ag) }}
+                </option>
+              </select>
+              <select v-else id="task_agent_id" v-model="createForm.agent_id" class="form-select" required>
                 <option value="">-- Choisir un agent --</option>
                 <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
-                  {{ ag.prenom }} {{ ag.nom }} ({{ ag.matricule || 'N/A' }})
+                  {{ agentOptionLabel(ag) }}
+                </option>
+              </select>
+              <small v-if="createCanMultiAssign" class="text-muted d-block mt-1">Maintenez Ctrl pour choisir plusieurs agents.</small>
+            </div>
+
+            <div class="task-form-wide">
+              <label for="task_validation_responsable_id" class="form-label fw-bold">Validateur final <span class="text-danger">*</span></label>
+              <select id="task_validation_responsable_id" v-model="createForm.validation_responsable_id" class="form-select" required>
+                <option value="">-- Choisir le validateur autorisé --</option>
+                <option v-for="validator in createValidators" :key="validator.id" :value="validator.id">
+                  {{ agentOptionLabel(validator) }}
                 </option>
               </select>
             </div>
@@ -296,10 +320,12 @@ const loadingCreateData = ref(false)
 const submittingCreate = ref(false)
 const createErrors = ref([])
 const createAgents = ref([])
+const createValidators = ref([])
 const createActivitesPta = ref([])
 const createSourceEmetteurs = ref([])
 const createSelectedDocuments = ref([])
 const createDocumentsInput = ref(null)
+const createCanMultiAssign = ref(false)
 const createScopeFlags = ref({ isSENScope: false, isSENAScope: false, isProvinceScope: false, isLocalScope: false })
 const createForm = ref(defaultCreateForm())
 
@@ -432,6 +458,8 @@ async function loadTaches() {
 function defaultCreateForm() {
   return {
     agent_id: '',
+    agent_ids: [],
+    validation_responsable_id: '',
     titre: '',
     description: '',
     source_type: 'hors_pta',
@@ -464,9 +492,14 @@ async function loadCreateData() {
   try {
     const { data } = await getCreateData()
     createAgents.value = data.data.agents || []
+    createValidators.value = data.data.validators || []
     createActivitesPta.value = data.data.activites_pta || []
     createSourceEmetteurs.value = data.data.source_emetteurs || []
     createForm.value.source_emetteur = data.data.default_source_emetteur || 'directeur'
+    createCanMultiAssign.value = Boolean(data.data.can_multi_assign)
+    if (!createCanMultiAssign.value && data.data.current_agent_id && createAgents.value.length === 1) {
+      createForm.value.agent_id = data.data.current_agent_id
+    }
     createScopeFlags.value = {
       isSENScope: Boolean(data.data.isSENScope),
       isSENAScope: Boolean(data.data.isSENAScope),
@@ -493,6 +526,10 @@ async function handleCreateSubmit() {
     const payload = new FormData()
     Object.entries(createForm.value).forEach(([key, value]) => {
       if (key === 'activite_plan_id' && createForm.value.source_type !== 'pta') return
+      if (key === 'agent_ids') {
+        if (createCanMultiAssign.value) value.forEach((id) => payload.append('agent_ids[]', id))
+        return
+      }
       if (value !== null && value !== undefined && value !== '') payload.append(key, value)
     })
 
@@ -515,6 +552,12 @@ async function handleCreateSubmit() {
   } finally {
     submittingCreate.value = false
   }
+}
+
+function agentOptionLabel(agent) {
+  const name = agent.nom_complet || `${agent.prenom || ''} ${agent.nom || ''}`.trim()
+  const meta = [agent.role, agent.matricule].filter(Boolean).join(' · ')
+  return meta ? `${name} (${meta})` : name
 }
 
 function handleCreateDocumentsChange(event) {

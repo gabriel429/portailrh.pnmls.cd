@@ -25,6 +25,7 @@ class TacheResource extends JsonResource
             'statut' => $this->statut,
             'pourcentage' => (int) ($this->pourcentage ?? 0),
             'validation_responsable_role' => $this->validation_responsable_role,
+            'validation_responsable_id' => $this->validation_responsable_id,
             'validation_statut' => $this->validation_statut,
             'validation_commentaire' => $this->validation_commentaire,
             'soumise_validation_at' => optional($this->soumise_validation_at)?->toIso8601String(),
@@ -53,6 +54,9 @@ class TacheResource extends JsonResource
             }),
             'agent' => $this->whenLoaded('agent', function () {
                 return $this->agent ? AgentResource::make($this->agent)->toArray(request()) : null;
+            }),
+            'validation_responsable' => $this->whenLoaded('validationResponsable', function () {
+                return $this->validationResponsable ? AgentResource::make($this->validationResponsable)->toArray(request()) : null;
             }),
             'commentaires' => $this->whenLoaded('commentaires', function () use ($request) {
                 return $this->commentaires->map(function ($commentaire) use ($request) {

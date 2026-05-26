@@ -60,7 +60,12 @@
                   <dd class="col-sm-8">{{ sourceEmetteurLabel(tache.source_emetteur) }}</dd>
 
                   <dt class="col-sm-4 text-muted">Validation finale</dt>
-                  <dd class="col-sm-8">{{ validationRoleLabel }}</dd>
+                  <dd class="col-sm-8">
+                    {{ tache.validation_responsable?.nom_complet || validationRoleLabel }}
+                    <small v-if="tache.validation_responsable?.role?.nom_role" class="text-muted d-block">
+                      {{ tache.validation_responsable.role.nom_role }}
+                    </small>
+                  </dd>
 
                   <dt class="col-sm-4 text-muted">Créée par</dt>
                   <dd class="col-sm-8">{{ tache.createur?.nom_complet }}</dd>

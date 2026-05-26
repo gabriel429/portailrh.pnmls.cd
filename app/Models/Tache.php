@@ -15,12 +15,14 @@ class Tache extends Model
     protected $fillable = [
         'createur_id',
         'agent_id',
+        'assignment_group',
         'titre',
         'description',
         'source_type',
         'source_emetteur',
         'niveau_gestion',
         'validation_responsable_role',
+        'validation_responsable_id',
         'activite_plan_id',
         'priorite',
         'statut',
@@ -82,6 +84,11 @@ class Tache extends Model
     public function validateur(): BelongsTo
     {
         return $this->belongsTo(Agent::class, 'validated_by');
+    }
+
+    public function validationResponsable(): BelongsTo
+    {
+        return $this->belongsTo(Agent::class, 'validation_responsable_id');
     }
 
     public function rejecteur(): BelongsTo

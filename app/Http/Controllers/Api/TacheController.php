@@ -17,6 +17,7 @@ use App\Services\UserDataScope;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -71,7 +72,7 @@ class TacheController extends ApiController
                 : $senAgentIds->all();
             $senTaches   = Tache::query()
                 ->whereIn('agent_id', $senAgentIds)
-                ->with(['agent', 'createur', 'activitePlan', 'documents.agent'])
+                ->with(['agent', 'createur', 'validationResponsable', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get();
             $senResource = TacheResource::collection($senTaches)->resolve();
@@ -90,7 +91,7 @@ class TacheController extends ApiController
                 $agentIds = Agent::where('departement_id', $deptId)->pluck('id');
                 $deptTaches = Tache::query()
                     ->whereIn('agent_id', $agentIds)
-                    ->with(['agent', 'createur', 'activitePlan', 'documents.agent'])
+                    ->with(['agent', 'createur', 'validationResponsable', 'activitePlan', 'documents.agent'])
                     ->latest()
                     ->get();
                 $deptResource = TacheResource::collection($deptTaches)->resolve();
@@ -108,7 +109,7 @@ class TacheController extends ApiController
             if ($provinceId) {
                 $provinceTaches = Tache::query()
                     ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
-                    ->with(['agent', 'createur', 'activitePlan', 'documents.agent'])
+                    ->with(['agent', 'createur', 'validationResponsable', 'activitePlan', 'documents.agent'])
                     ->latest()
                     ->get();
                 $provinceResource = TacheResource::collection($provinceTaches)->resolve();
@@ -150,6 +151,7 @@ class TacheController extends ApiController
         $mesTaches = $agent
             ? (clone $mesTachesQuery)
                 ->with('createur')
+                ->with('validationResponsable')
                 ->with('activitePlan')
                 ->with('documents.agent')
                 ->latest()
@@ -159,7 +161,7 @@ class TacheController extends ApiController
         $tachesCreees = collect();
         if (($isTaskManager || $isSENStaff) && $agent) {
             $tachesCreees = (clone $tachesCreeesQuery)
-                ->with(['agent', 'activitePlan', 'documents.agent'])
+                ->with(['agent', 'validationResponsable', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get();
         }
@@ -192,11 +194,12 @@ class TacheController extends ApiController
         $roles = app(RoleService::class);
         $workflow = $this->workflowService();
 
-        if (!$roles->hasTacheManagerRole($user)) {
-            return response()->json(['message' => 'Accès refusé.'], 403);
+        $currentAgent = $user->agent;
+        if (!$currentAgent) {
+            return response()->json(['message' => 'Vous devez être enregistré comme agent pour créer des tâches.'], 422);
         }
 
-        $agent       = $user->agent;
+        $agent       = $currentAgent;
         $isSEN = $user->hasRole('SEN');
         $isSENA = $roles->hasSENARole($user);
         $isSENOrSENA = $isSEN || $isSENA;
@@ -206,13 +209,10 @@ class TacheController extends ApiController
         if ($isSEN) {
             $senOrgane         = 'Secrétariat Exécutif National';
             $agentsDisponibles = Agent::actifs()
-                ->where('organe', $senOrgane)
-                ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
+                ->with('role')
                 ->orderInstitutionally()
-                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
-                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
                 ->get()
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
+                ->map(fn($a) => $this->agentOption($a));
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
@@ -274,18 +274,20 @@ class TacheController extends ApiController
                 ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
                 ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
         } else {
-            if (!$agent || !$agent->departement_id) {
-                return response()->json(['message' => 'Vous devez être affecté à un département pour créer des tâches.'], 422);
-            }
+            if ($roles->hasTacheManagerRole($user)) {
+                if (!$agent->departement_id) {
+                    return response()->json(['message' => 'Vous devez être affecté à un département pour créer des tâches.'], 422);
+                }
 
-            $agentsDisponibles = Agent::actifs()
-                ->where('departement_id', $agent->departement_id)
-                ->where('id', '!=', $agent->id)
-                ->orderInstitutionally()
-                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
-                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
-                ->get()
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
+                $agentsDisponibles = Agent::actifs()
+                    ->with('role')
+                    ->where('departement_id', $agent->departement_id)
+                    ->orderInstitutionally()
+                    ->get()
+                    ->map(fn($a) => $this->agentOption($a));
+            } else {
+                $agentsDisponibles = collect([$this->agentOption($agent)]);
+            }
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
@@ -298,6 +300,9 @@ class TacheController extends ApiController
 
         return $this->success([
             'agents'          => $agentsDisponibles,
+            'validators'      => $workflow->availableValidatorsFor($user, $agent)->map(fn($a) => $this->agentOption($a))->values(),
+            'current_agent_id'=> $agent->id,
+            'can_multi_assign'=> $isSEN,
             'activites_pta'   => $activitesPta,
             'isSENScope'      => $isSENOrSENA,
             'isSENAScope'     => $isSENA,
@@ -362,12 +367,11 @@ class TacheController extends ApiController
         $roles = app(RoleService::class);
         $workflow = $this->workflowService();
 
-        if (!$roles->hasTacheManagerRole($user)) {
-            return response()->json(['message' => 'Accès refusé.'], 403);
-        }
-
         $validated = $request->validate([
-            'agent_id'        => 'required|exists:agents,id',
+            'agent_id'        => 'nullable|exists:agents,id',
+            'agent_ids'       => 'nullable|array',
+            'agent_ids.*'     => 'integer|exists:agents,id',
+            'validation_responsable_id' => 'required|exists:agents,id',
             'titre'           => 'required|string|max:255',
             'description'     => 'nullable|string',
             'source_type'     => 'required|in:pta,hors_pta',
@@ -381,47 +385,80 @@ class TacheController extends ApiController
         ]);
 
         $agent       = $user->agent;
-        $targetAgent = Agent::findOrFail($validated['agent_id']);
+        if (!$agent) {
+            return response()->json(['message' => 'Vous devez être enregistré comme agent pour créer des tâches.'], 422);
+        }
+
+        $targetAgentIds = collect($validated['agent_ids'] ?? [])
+            ->push($validated['agent_id'] ?? null)
+            ->filter()
+            ->map(fn($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        if ($targetAgentIds->isEmpty()) {
+            $targetAgentIds = collect([(int) $agent->id]);
+        }
+
+        if (!$user->hasRole('SEN') && $targetAgentIds->count() > 1) {
+            return response()->json(['message' => 'Seul le SEN peut attribuer une même tâche à plusieurs agents.'], 403);
+        }
+
+        $targetAgents = Agent::whereIn('id', $targetAgentIds)->get()->keyBy('id');
+        $validationAgent = Agent::findOrFail($validated['validation_responsable_id']);
         $isSEN = $user->hasRole('SEN');
         $isSENA = $roles->hasSENARole($user);
         $isSENOrSENA = $isSEN || $isSENA;
         $isSEP = $roles->isSepManager($user);
         $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
 
-        if ($isSEN) {
-            if ($targetAgent->organe !== 'Secrétariat Exécutif National') {
-                return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents du SEN.'], 403);
+        foreach ($targetAgentIds as $targetAgentId) {
+            $targetAgent = $targetAgents->get($targetAgentId);
+            if (!$targetAgent) {
+                return response()->json(['message' => 'Agent assigné introuvable.'], 422);
             }
+
+            if (!$this->canAssignTacheToAgent($user, $agent, $targetAgent, $roles, $workflow)) {
+                return response()->json(['message' => 'Vous ne pouvez pas assigner cette tâche à ' . $this->agentDisplayName($targetAgent) . '.'], 403);
+            }
+
+            $level = $isSEN ? 'sen' : $workflow->determineManagementLevel($user);
+            if (!$workflow->isEligibleValidatorAgent($validationAgent, $level, $targetAgent)) {
+                return response()->json([
+                    'message' => 'Le validateur choisi n’est pas autorisé pour ' . $this->agentDisplayName($targetAgent) . '.',
+                    'errors' => ['validation_responsable_id' => ['Choisissez un validateur autorisé pour le niveau hiérarchique de la tâche.']],
+                ], 422);
+            }
+        }
+
+        $firstTargetAgent = $targetAgents->get($targetAgentIds->first());
+
+        if ($isSEN) {
         } elseif ($isSENA) {
-            if (!$roles->canManageSenaScopedAgent($user, $targetAgent)) {
+            if (!$roles->canManageSenaScopedAgent($user, $firstTargetAgent)) {
                 return response()->json(['message' => 'Vous ne pouvez gérer que les attachés du SEN, les directeurs de département et les SEP.'], 403);
             }
         } elseif ($isSEP) {
             if (!$agent || !$agent->province_id) {
                 return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
             }
-            if ((int) $targetAgent->province_id !== (int) $agent->province_id) {
+            if ((int) $firstTargetAgent->province_id !== (int) $agent->province_id) {
                 return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents de votre province.'], 403);
             }
         } elseif ($isSEL) {
             if (!$agent || !$agent->province_id) {
                 return response()->json(['message' => 'Vous devez être affecté à une structure locale pour créer des tâches.'], 422);
             }
-            if ((int) $targetAgent->province_id !== (int) $agent->province_id || $targetAgent->organe !== 'Secrétariat Exécutif Local') {
+            if ((int) $firstTargetAgent->province_id !== (int) $agent->province_id || $firstTargetAgent->organe !== 'Secrétariat Exécutif Local') {
                 return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents locaux de votre ressort.'], 403);
             }
         } else {
-            if (!$agent) {
-                return response()->json(['message' => 'Vous devez être affecté à un agent pour créer des tâches.'], 422);
+            if (!$roles->hasTacheManagerRole($user) && (int) $firstTargetAgent->id !== (int) $agent->id) {
+                return response()->json(['message' => 'Un agent standard ne peut créer qu’une tâche pour lui-même.'], 403);
             }
-            if ($targetAgent->departement_id !== $agent->departement_id) {
+            if ($roles->hasTacheManagerRole($user) && $firstTargetAgent->departement_id !== $agent->departement_id) {
                 return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents de votre département.'], 403);
             }
-        }
-
-        // createur_id : utilise l'agent SEN/SENA s'il existe, sinon l'agent du département
-        if (!$agent) {
-            return response()->json(['message' => 'Vous devez être enregistré comme agent pour créer des tâches.'], 422);
         }
 
         if ($validated['source_type'] === 'pta' && $isSEP) {
@@ -448,36 +485,49 @@ class TacheController extends ApiController
         $validated['pourcentage'] = 0;
         $validated['niveau_gestion'] = $workflow->determineManagementLevel($user);
         $validated['validation_responsable_role'] = $workflow->determineValidationRole($user);
+        $validated['validation_responsable_id'] = $validationAgent->id;
         $validated['validation_statut'] = 'non_requise';
+        $validated['assignment_group'] = $targetAgentIds->count() > 1 ? (string) Str::uuid() : null;
         if ($validated['source_type'] !== 'pta') {
             $validated['activite_plan_id'] = null;
         }
 
-        $tache = Tache::create($validated);
-        $workflow->recordHistory(
-            $tache,
-            $agent,
-            'creation',
-            'Création de la tâche',
-            null,
-            $tache->statut,
-            null,
-            $tache->validation_statut,
-            $validated['description'] ?? null,
-            [
-                'priorite' => $tache->priorite,
-                'niveau_gestion' => $tache->niveau_gestion,
-                'validation_responsable_role' => $tache->validation_responsable_role,
-            ]
-        );
+        unset($validated['agent_ids']);
+        $createdTaches = DB::transaction(function () use ($targetAgentIds, $validated, $workflow, $agent, $request) {
+            return $targetAgentIds->map(function (int $targetAgentId) use ($validated, $workflow, $agent, $request) {
+                $payload = $validated;
+                $payload['agent_id'] = $targetAgentId;
+                $tache = Tache::create($payload);
+                $workflow->recordHistory(
+                    $tache,
+                    $agent,
+                    'creation',
+                    'Création de la tâche',
+                    null,
+                    $tache->statut,
+                    null,
+                    $tache->validation_statut,
+                    $validated['description'] ?? null,
+                    [
+                        'priorite' => $tache->priorite,
+                        'niveau_gestion' => $tache->niveau_gestion,
+                        'validation_responsable_role' => $tache->validation_responsable_role,
+                        'validation_responsable_id' => $tache->validation_responsable_id,
+                    ]
+                );
 
-        TacheAssigned::dispatch($tache);
+                TacheAssigned::dispatch($tache);
 
-        foreach ($request->file('documents', []) as $uploadedFile) {
-            $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
-        }
+                foreach ($request->file('documents', []) as $uploadedFile) {
+                    $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
+                }
 
-        $resource = TacheResource::make($tache->load(['createur', 'agent', 'activitePlan', 'documents.agent']));
+                return $tache;
+            });
+        });
+
+        $tache = $createdTaches->first();
+        $resource = TacheResource::make($tache->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'documents.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Tâche créée avec succès.',
@@ -547,7 +597,7 @@ class TacheController extends ApiController
 
         // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
         if ($isSEN || ($isSENA && $roles->canManageSenaScopedAgent($user, $taskAgent)) || $isAssistant) {
-            $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
+            $tache->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
             $resource = TacheResource::make($tache);
             return $this->resource($resource, [
                 'isCreateur' => $isCreateur,
@@ -588,7 +638,7 @@ class TacheController extends ApiController
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
-        $tache->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
+        $tache->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
 
         return $this->resource(TacheResource::make($tache), [
             'isCreateur' => $isCreateur,
@@ -805,7 +855,7 @@ class TacheController extends ApiController
             );
         }
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis à jour avec succès.',
@@ -870,7 +920,7 @@ class TacheController extends ApiController
         }
 
         return $this->success([
-            'tache'   => TacheResource::make($tache->fresh(['createur', 'agent', 'activitePlan'])),
+            'tache'   => TacheResource::make($tache->fresh(['createur', 'agent', 'validationResponsable', 'activitePlan'])),
             'message' => 'Tâche mise à jour avec succès.',
         ]);
     }
@@ -968,7 +1018,7 @@ class TacheController extends ApiController
             $message
         );
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
             'message' => 'Commentaire ajouté.',
@@ -1008,7 +1058,7 @@ class TacheController extends ApiController
         );
 
         return $this->resource(
-            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
+            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
             [],
             ['message' => 'Tâche validée avec succès.']
         );
@@ -1047,7 +1097,7 @@ class TacheController extends ApiController
         );
 
         return $this->resource(
-            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
+            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
             [],
             ['message' => 'Tâche retournée pour correction.']
         );
@@ -1079,7 +1129,11 @@ class TacheController extends ApiController
         $roles = app(RoleService::class);
         $agent = $user?->agent;
 
-        if ($agent && ((int) $tache->createur_id === (int) $agent->id || (int) $tache->agent_id === (int) $agent->id)) {
+        if ($agent && (
+            (int) $tache->createur_id === (int) $agent->id
+            || (int) $tache->agent_id === (int) $agent->id
+            || (int) $tache->validation_responsable_id === (int) $agent->id
+        )) {
             return true;
         }
 
@@ -1119,11 +1173,12 @@ class TacheController extends ApiController
 
     protected function notifyTacheParticipants(Tache $tache, ?int $emetteurId, string $titre, string $message): void
     {
-        $tache->loadMissing(['agent.user', 'createur.user']);
+        $tache->loadMissing(['agent.user', 'createur.user', 'validationResponsable.user']);
 
         $recipientIds = collect([
             $tache->agent?->user?->id,
             $tache->createur?->user?->id,
+            $tache->validationResponsable?->user?->id,
         ])
             ->filter(fn($id) => $id && (!$emetteurId || (int) $id !== (int) $emetteurId))
             ->map(fn($id) => (int) $id)
@@ -1154,6 +1209,52 @@ class TacheController extends ApiController
         $name = trim(($agent->prenom ?? '') . ' ' . ($agent->nom ?? ''));
 
         return $name !== '' ? $name : 'Un utilisateur';
+    }
+
+    protected function agentOption(Agent $agent): array
+    {
+        $agent->loadMissing('role');
+
+        return [
+            'id' => $agent->id,
+            'nom' => $agent->nom,
+            'prenom' => $agent->prenom,
+            'nom_complet' => $this->agentDisplayName($agent),
+            'id_agent' => $agent->id_agent,
+            'matricule' => $agent->matricule_etat,
+            'role' => $agent->role?->nom_role,
+            'fonction' => $agent->fonction,
+            'organe' => $agent->organe,
+        ];
+    }
+
+    protected function canAssignTacheToAgent($user, Agent $creatorAgent, Agent $targetAgent, RoleService $roles, TacheWorkflowService $workflow): bool
+    {
+        if ($user->hasRole('SEN')) {
+            return true;
+        }
+
+        if ($roles->hasSENARole($user)) {
+            return $roles->canManageSenaScopedAgent($user, $targetAgent);
+        }
+
+        if ($roles->isSepManager($user)) {
+            return $creatorAgent->province_id
+                && (int) $targetAgent->province_id === (int) $creatorAgent->province_id;
+        }
+
+        if ($workflow->isSelManager($user) || $workflow->isLocalSupport($user)) {
+            return $creatorAgent->province_id
+                && (int) $targetAgent->province_id === (int) $creatorAgent->province_id
+                && Str::ascii((string) $targetAgent->organe) === Str::ascii((string) $creatorAgent->organe);
+        }
+
+        if ($roles->hasTacheManagerRole($user)) {
+            return $creatorAgent->departement_id
+                && (int) $targetAgent->departement_id === (int) $creatorAgent->departement_id;
+        }
+
+        return (int) $targetAgent->id === (int) $creatorAgent->id;
     }
 
     protected function tacheStatutLabel(?string $statut): string
@@ -1210,7 +1311,10 @@ class TacheController extends ApiController
             mkdir($directory, 0755, true);
         }
 
-        $uploadedFile->move($directory, $filename);
+        $sourcePath = $uploadedFile->getRealPath();
+        if (!$sourcePath || !copy($sourcePath, $directory . DIRECTORY_SEPARATOR . $filename)) {
+            $uploadedFile->move($directory, $filename);
+        }
 
         return TacheDocument::create([
             'tache_id' => $tache->id,
@@ -1381,9 +1485,7 @@ class TacheController extends ApiController
         }
 
         if ($user?->hasRole('SEN')) {
-            return $taskAgent
-                ? $taskAgent->organe === (Agent::ORGANES[0] ?? 'Secrétariat Exécutif National')
-                : true;
+            return true;
         }
 
         if ($roles->hasSENARole($user)) {
