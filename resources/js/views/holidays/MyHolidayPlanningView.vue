@@ -1,6 +1,6 @@
 <template>
-  <div class="rh-modern">
-    <div class="rh-shell">
+  <div class="rh-modern holiday-modern">
+    <div class="rh-shell holiday-shell">
       <section class="rh-hero">
         <div class="row g-3 align-items-center">
           <div class="col-lg-7 col-md-6">
@@ -397,6 +397,98 @@ onMounted(() => loadPlanning())
 </script>
 
 <style scoped>
+.holiday-modern {
+  width: 100%;
+  max-width: none;
+  padding: 1.5rem 1.5rem 2rem;
+}
+
+.holiday-shell {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+}
+
+.holiday-shell .rh-hero {
+  position: relative;
+  min-height: 200px;
+  padding: 2rem 2.25rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, .42);
+  border-radius: 18px;
+  background: linear-gradient(135deg, #087ec0 0%, #3d9a87 100%);
+  box-shadow: 0 18px 38px rgba(2, 93, 128, .18);
+}
+
+.holiday-shell .rh-hero::after {
+  right: -2rem;
+  top: -3rem;
+  width: 14rem;
+  height: 14rem;
+  opacity: .14;
+}
+
+.holiday-shell .rh-hero .row {
+  min-height: 132px;
+}
+
+.holiday-shell .rh-title {
+  margin: 0 0 .55rem;
+  font-size: 1.6rem;
+  line-height: 1.15;
+  color: #fff;
+}
+
+.holiday-shell .rh-sub {
+  margin: 0;
+  color: rgba(255, 255, 255, .86);
+  font-weight: 600;
+}
+
+.holiday-shell .hero-tools {
+  align-items: center;
+  justify-content: flex-end;
+  gap: .65rem;
+}
+
+.holiday-shell .hero-tools .btn-rh {
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(14, 132, 197, .94), rgba(0, 125, 118, .94));
+  box-shadow: 0 12px 28px rgba(6, 78, 107, .22);
+}
+
+.holiday-shell .dash-panel {
+  margin-top: 1.5rem !important;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, .25);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 16px 38px rgba(15, 23, 42, .08);
+}
+
+.holiday-shell .panel-head {
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+}
+
+.holiday-shell .panel-title {
+  margin-bottom: .2rem;
+  color: #334155;
+}
+
+.holiday-shell .table {
+  margin-bottom: 0;
+}
+
+.holiday-shell .table thead th {
+  background: linear-gradient(135deg, rgba(224, 242, 254, .72), rgba(240, 253, 250, .72));
+  color: #1e3a5f;
+  font-size: .78rem;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+
 /* ── Year filter in hero ── */
 .year-filter {
   display: inline-flex;
@@ -470,6 +562,16 @@ onMounted(() => loadPlanning())
 
 /* ── Mobile responsive ── */
 @media (max-width: 767.98px) {
+  .holiday-modern {
+    padding: 1rem .75rem 1.5rem;
+  }
+
+  .holiday-shell .rh-hero {
+    min-height: auto;
+    padding: 1.35rem 1rem;
+    border-radius: 14px;
+  }
+
   .rh-hero .row { text-align: center; }
   .rh-hero .col-md-6 { text-align: center; }
   .hero-tools { justify-content: center; display: flex; flex-wrap: wrap; gap: 0.5rem; }
