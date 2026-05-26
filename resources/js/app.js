@@ -5,15 +5,13 @@ import App from './App.vue'
 import { debugLog, reportError } from '@/utils/logger'
 import { recoverFromAssetLoadFailure, registerRuntimeNoiseFilter } from '@/utils/runtimeNoiseFilter'
 
-import 'bootstrap/dist/css/bootstrap.min.css'
-import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
 debugLog('PWA: Service Worker disabled to prevent stale builds')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-11-rh-docs-access-v1'
+const BUILD_CACHE_VERSION = '2026-05-26-no-bootstrap-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 
 async function clearBuildCachesOnVersionChange() {

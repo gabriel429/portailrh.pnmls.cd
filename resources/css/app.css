@@ -1353,7 +1353,7 @@ body {
 }
 
 /* ── MODALS Z-INDEX FIX ── */
-/* Ensure all Bootstrap modals appear above navbar (Bootstrap navbar default: z-index 1030) */
+/* Ensure app modals appear above navbar */
 .modal-backdrop {
     z-index: 1900 !important;
 }
@@ -2876,7 +2876,7 @@ html.dark * {
     border-color: var(--dm-border);
 }
 
-/* Neutraliser les couleurs de texte fixes de Bootstrap */
+/* Neutraliser les couleurs de texte fixes des composants generiques */
 html.dark .text-dark,
 html.dark .text-black,
 html.dark .text-body {
@@ -2913,7 +2913,7 @@ html.dark body {
     color: var(--dm-text);
 }
 
-/* -- Cartes Bootstrap et personnalisées -- */
+/* -- Cartes applicatives et personnalisees -- */
 html.dark .card,
 html.dark .rh-card,
 html.dark .stat-card,
@@ -3022,7 +3022,7 @@ html.dark .badge.bg-light {
     color: var(--dm-text) !important;
 }
 
-/* -- Dropdowns Bootstrap -- */
+/* -- Menus deroulants -- */
 html.dark .dropdown-menu {
     background: #1e293b !important;
     border-color: var(--dm-border) !important;
@@ -3119,7 +3119,7 @@ html.dark .page-item.active .page-link {
     color: #fff !important;
 }
 
-/* -- Alertes Bootstrap -- */
+/* -- Alertes -- */
 html.dark .alert {
     background: var(--dm-bg-card2) !important;
     border-color: var(--dm-border) !important;
