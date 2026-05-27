@@ -809,6 +809,89 @@ onMounted(() => loadTache())
 </script>
 
 <style scoped>
+.rh-hero > .row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+}
+
+.rh-shell > .row.mt-3.g-3 {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
+  gap: 1rem;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.rh-shell > .row.mt-3.g-3 > [class*="col-"] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dash-panel dl.row {
+  display: grid;
+  grid-template-columns: minmax(110px, .45fr) minmax(160px, 1fr) minmax(110px, .45fr) minmax(160px, 1fr);
+  column-gap: 1rem;
+  row-gap: .7rem;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.dash-panel dl.row dt,
+.dash-panel dl.row dd {
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.dash-panel dl.row dt {
+  color: #64748b;
+  font-weight: 700;
+}
+
+.dash-panel dl.row dd {
+  color: #1e293b;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.dash-panel form .row.g-3,
+.edit-tache-panel .row.g-3 {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: .9rem;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.dash-panel form .row.g-3 > [class*="col-"],
+.edit-tache-panel .row.g-3 > [class*="col-"] {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.dash-panel form .col-md-4 {
+  grid-column: span 4;
+}
+
+.dash-panel form .col-12,
+.edit-tache-panel .col-12 {
+  grid-column: 1 / -1;
+}
+
+.edit-tache-panel .col-sm-6 {
+  grid-column: span 6;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
 .task-progress-wrap {
   display: flex;
   align-items: center;
@@ -868,6 +951,33 @@ onMounted(() => loadTache())
 }
 
 @media (max-width: 767.98px) {
+  .rh-hero > .row,
+  .rh-shell > .row.mt-3.g-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-tools {
+    justify-content: flex-start;
+  }
+
+  .dash-panel dl.row {
+    grid-template-columns: 1fr;
+  }
+
+  .dash-panel dl.row dt {
+    margin-top: .25rem;
+  }
+
+  .dash-panel form .col-md-4,
+  .edit-tache-panel .col-sm-6 {
+    grid-column: 1 / -1;
+  }
+
+  .panel-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
   .rh-list-card,
   .dash-panel {
     border-radius: 12px;
