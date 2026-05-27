@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
     <title>E-PNMLS</title>
 
@@ -14,10 +14,10 @@
     <link rel="manifest" href="{{ route('pwa.manifest') }}">
 
     <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#0077B5">
+    <meta name="theme-color" content="#006c9f">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="PNMLS RH">
     <meta name="application-name" content="PNMLS RH">
     <meta name="description" content="Portail Ressources Humaines - Programme National Multisectoriel de Lutte contre le Sida">

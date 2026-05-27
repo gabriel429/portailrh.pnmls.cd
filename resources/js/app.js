@@ -11,9 +11,15 @@ import '../css/app.css'
 debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-27-auth-guard-v7'
+const BUILD_CACHE_VERSION = '2026-05-28-pwa-harmony-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 const APP_SW_PATH = '/build/sw.js'
+
+function emitPwaRuntimeEvent(name, detail = {}) {
+    if (typeof window === 'undefined') return
+
+    window.dispatchEvent(new CustomEvent(`epnmls:${name}`, { detail }))
+}
 
 async function clearBuildCachesOnVersionChange() {
     if (typeof window === 'undefined') return false
@@ -123,11 +129,33 @@ async function registerAppServiceWorker() {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
     try {
-        await navigator.serviceWorker.register(APP_SW_PATH, { scope: '/' })
+        const registration = await navigator.serviceWorker.register(APP_SW_PATH, { scope: '/' })
+        watchServiceWorkerUpdate(registration)
+        emitPwaRuntimeEvent('pwa-registration', { registration })
+        registration.update?.().catch(() => {})
         debugLog('PWA: Service worker registered')
     } catch (error) {
         reportError('PWA: Service worker registration failed:', error)
     }
+}
+
+function watchServiceWorkerUpdate(registration) {
+    if (!registration) return
+
+    if (registration.waiting && navigator.serviceWorker.controller) {
+        emitPwaRuntimeEvent('pwa-update-ready', { registration })
+    }
+
+    registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing
+        if (!newWorker) return
+
+        newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                emitPwaRuntimeEvent('pwa-update-ready', { registration })
+            }
+        })
+    })
 }
 
 async function prepareRuntimeCaches() {

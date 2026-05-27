@@ -26,13 +26,13 @@
   <!-- Offline banner -->
   <div v-if="!isOnline" class="offline-banner">
     <i class="fas fa-exclamation-triangle"></i>
-    Mode hors ligne — donnees en cache
+    Mode hors ligne - données en cache
   </div>
 
   <!-- Reconnected banner -->
   <div v-if="showReconnected" class="reconnected-banner">
     <i class="fas fa-wifi"></i>
-    Connexion retablie
+    Connexion rétablie
   </div>
 
   <!-- Global loading during initial auth check -->
@@ -47,6 +47,8 @@
       </transition>
     </router-view>
   </component>
+
+  <PwaExperiencePrompt />
 
   <!-- Bouton flottant Mail -->
   <router-link v-if="showWebmailFab"
@@ -64,6 +66,7 @@ import { useAuthStore } from '@/stores/auth'
 import AppLayout from './layouts/AppLayout.vue'
 import AdminLayout from './layouts/AdminLayout.vue'
 import GuestLayout from './layouts/GuestLayout.vue'
+import PwaExperiencePrompt from '@/components/PwaExperiencePrompt.vue'
 
 const route = useRoute()
 const auth = useAuthStore()

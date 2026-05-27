@@ -232,6 +232,18 @@
 
             <div class="nav-divider d-none d-lg-block"></div>
 
+            <li class="nav-item d-none d-lg-flex align-items-center">
+              <SyncStatusBar />
+            </li>
+
+            <div class="nav-divider d-none d-lg-block"></div>
+
+            <li class="nav-item d-lg-none">
+              <div class="mobile-sync-status">
+                <SyncStatusBar />
+              </div>
+            </li>
+
             <li class="nav-item d-lg-none">
               <button class="mobile-theme-toggle" type="button" @click="openUserGuide">
                 <span class="mobile-theme-toggle-icon">
@@ -383,6 +395,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { useUiStore } from '@/stores/ui'
 import { getSummary as getTaskSummary } from '@/api/taches'
 import AppToast from '@/components/common/AppToast.vue'
+import SyncStatusBar from '@/components/SyncStatusBar.vue'
 import UserExperienceHub from '@/components/UserExperienceHub.vue'
 
 const ui = useUiStore()
@@ -608,5 +621,23 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 .nav-link-button:focus-visible {
   outline: 2px solid rgba(255, 255, 255, .72);
   outline-offset: 3px;
+}
+
+.mobile-sync-status {
+  display: flex;
+  padding: .15rem 0 .65rem;
+}
+
+.mobile-sync-status :deep(.sync-status-bar) {
+  width: 100%;
+  margin-right: 0;
+}
+
+.mobile-sync-status :deep(.sync-indicator) {
+  width: 100%;
+  justify-content: center;
+  color: #0f6c9f;
+  border-color: rgba(0, 119, 181, .18);
+  background: rgba(0, 119, 181, .08);
 }
 </style>
