@@ -7,15 +7,15 @@
 
       <template v-else-if="communique">
         <section class="rh-hero">
-          <div class="row g-3 align-items-center">
-            <div class="col-lg-8">
+          <div class="ep-detail-hero-row">
+            <div>
               <h1 class="rh-title"><i class="fas fa-bullhorn me-2"></i>{{ communique.titre }}</h1>
               <p class="rh-sub">
                 Publié le {{ formatDateTime(communique.created_at) }}
                 <template v-if="communique.auteur"> par {{ communique.auteur.name }}</template>
               </p>
             </div>
-            <div class="col-lg-4">
+            <div>
               <div class="hero-tools">
                 <router-link :to="{ name: 'rh.communiques.create', query: { edit: communique.id } }" class="btn-rh main">
                   <i class="fas fa-edit me-1"></i> Modifier
@@ -28,8 +28,8 @@
           </div>
         </section>
 
-        <div class="row g-3 mt-1">
-          <div class="col-lg-8">
+        <div class="ep-detail-layout">
+          <div class="ep-detail-main">
             <div class="dash-panel">
               <div class="p-4">
                 <!-- Badges -->
@@ -74,24 +74,24 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
+          <div class="ep-detail-side">
             <div class="dash-panel">
               <div class="p-3">
                 <h6 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informations</h6>
-                <dl class="row mb-0">
-                  <dt class="col-sm-5 text-muted">Auteur</dt>
-                  <dd class="col-sm-7">{{ communique.auteur?.name ?? 'N/A' }}</dd>
+                <dl class="ep-dl-grid mb-0">
+                  <dt class="text-muted">Auteur</dt>
+                  <dd>{{ communique.auteur?.name ?? 'N/A' }}</dd>
 
-                  <dt class="col-sm-5 text-muted">Date</dt>
-                  <dd class="col-sm-7">{{ formatDateTime(communique.created_at) }}</dd>
+                  <dt class="text-muted">Date</dt>
+                  <dd>{{ formatDateTime(communique.created_at) }}</dd>
 
-                  <dt class="col-sm-5 text-muted">Expiration</dt>
-                  <dd class="col-sm-7">
+                  <dt class="text-muted">Expiration</dt>
+                  <dd>
                     {{ communique.date_expiration ? formatDate(communique.date_expiration) : 'Illimite' }}
                   </dd>
 
-                  <dt class="col-sm-5 text-muted">Pièces jointes</dt>
-                  <dd class="col-sm-7">{{ communique.attachments?.length || 0 }}</dd>
+                  <dt class="text-muted">Pièces jointes</dt>
+                  <dd>{{ communique.attachments?.length || 0 }}</dd>
                 </dl>
               </div>
             </div>
@@ -257,8 +257,8 @@ onMounted(() => loadCommunique())
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }
     .card-body { padding: .85rem; }
-    dl.row dt { font-size: .8rem; }
-    dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
+    .ep-dl-grid dt { font-size: .8rem; }
+    .ep-dl-grid dd { font-size: .85rem; margin-bottom: .6rem; }
     .badge { font-size: .7rem; }
     .attachment-link {
         grid-template-columns: 24px minmax(0, 1fr);

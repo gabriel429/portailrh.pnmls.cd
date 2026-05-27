@@ -47,6 +47,23 @@ export default defineConfig({
                 skipWaiting: true,
                 clientsClaim: true,
                 navigateFallback: null,
+                runtimeCaching: [
+                    {
+                        urlPattern: ({ request }) => request.mode === 'navigate',
+                        handler: 'NetworkFirst',
+                        options: {
+                            cacheName: 'pnmls-pages',
+                            networkTimeoutSeconds: 3,
+                            expiration: {
+                                maxEntries: 20,
+                                maxAgeSeconds: 7 * 24 * 60 * 60,
+                            },
+                            cacheableResponse: {
+                                statuses: [0, 200],
+                            },
+                        },
+                    },
+                ],
             },
             includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
             manifest: {

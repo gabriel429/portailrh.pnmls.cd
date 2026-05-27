@@ -109,9 +109,9 @@
         </div>
       </div>
 
-      <div class="agent-profile-layout row">
+      <div class="agent-profile-layout">
         <!-- Main column with tabs -->
-        <div class="col-lg-8">
+        <div class="agent-profile-main">
           <ul class="nav nav-tabs mb-3 no-print" role="tablist">
             <li class="nav-item" role="presentation">
               <button class="nav-link" :class="{ active: activeTab === 'informations' }" @click="activeTab = 'informations'" type="button">
@@ -508,7 +508,7 @@
         </div>
 
         <!-- Sidebar -->
-        <div class="col-lg-4 no-print">
+        <div class="agent-profile-side no-print">
           <!-- Résumé rapide -->
           <div class="card border-0 shadow-sm mb-3">
             <div class="card-header bg-light border-bottom">
@@ -1389,15 +1389,16 @@ onMounted(() => {
     margin: 0;
 }
 
-.agent-profile-layout > .col-lg-8,
-.agent-profile-layout > .col-lg-4 {
+.agent-profile-main,
+.agent-profile-side {
     width: 100%;
     max-width: none;
     padding: 0;
+    min-width: 0;
 }
 
 .tab-content .card,
-.col-lg-4 > .card {
+.agent-profile-side > .card {
     border-radius: 8px;
     border: 1px solid rgba(203, 213, 225, .76) !important;
     box-shadow: 0 14px 34px rgba(15, 23, 42, .07) !important;
@@ -1405,14 +1406,14 @@ onMounted(() => {
 }
 
 .tab-content .card-header,
-.col-lg-4 > .card .card-header {
+.agent-profile-side > .card .card-header {
     background: #f8fafc !important;
     border-bottom: 1px solid rgba(226, 232, 240, .9) !important;
     padding: 1rem 1.1rem;
 }
 
 .tab-content .card-header h5,
-.col-lg-4 > .card .card-header h5 {
+.agent-profile-side > .card .card-header h5 {
     color: #0f172a;
     font-size: .95rem;
     font-weight: 900;
@@ -1442,7 +1443,7 @@ onMounted(() => {
 }
 
 .tab-content .card-body label,
-.col-lg-4 small.text-muted {
+.agent-profile-side small.text-muted {
     display: block;
     color: #64748b !important;
     font-size: .68rem;
@@ -1462,12 +1463,12 @@ onMounted(() => {
     display: none;
 }
 
-.col-lg-4 > .card .card-body {
+.agent-profile-side > .card .card-body {
     background: rgba(255,255,255,.94);
 }
 
-.col-lg-4 > .card .card-body > .mb-3,
-.col-lg-4 > .card .card-body > .d-flex {
+.agent-profile-side > .card .card-body > .mb-3,
+.agent-profile-side > .card .card-body > .d-flex {
     padding: .7rem .8rem;
     border: 1px solid rgba(226, 232, 240, .82);
     border-radius: 8px;
@@ -1475,7 +1476,7 @@ onMounted(() => {
     margin-bottom: .6rem !important;
 }
 
-.col-lg-4 > .card .btn {
+.agent-profile-side > .card .btn {
     border-radius: 8px;
     font-weight: 800;
     padding: .65rem .85rem;
@@ -1848,15 +1849,15 @@ onMounted(() => {
         display: block !important;
     }
 
-    .col-lg-8,
-    .col-lg-4 {
+    .agent-profile-main,
+    .agent-profile-side {
         width: 100% !important;
         flex: 0 0 100% !important;
         max-width: 100% !important;
         padding: 0 !important;
     }
 
-    .col-lg-4.no-print {
+    .agent-profile-side.no-print {
         display: none !important;
     }
 

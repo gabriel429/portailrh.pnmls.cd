@@ -31,6 +31,16 @@ function isTransientNetworkError(error) {
     )
 }
 
+function resolveFromRequestInterceptor(config, response) {
+    config.adapter = () => Promise.resolve({
+        ...response,
+        config,
+        headers: response.headers || {},
+    })
+
+    return config
+}
+
 // Initialisation du stockage offline
 let offlineInitialized = false
 async function initializeOffline() {
@@ -66,7 +76,7 @@ client.interceptors.request.use(
                 ui.addToast('📱 Pointage sauvegardé localement (sera synchronisé)', 'success', 4000)
 
                 // Simuler une réponse réussie
-                return Promise.resolve({
+                return resolveFromRequestInterceptor(config, {
                     data: {
                         id: tempId,
                         offline: true,
@@ -75,8 +85,6 @@ client.interceptors.request.use(
                     },
                     status: 201,
                     statusText: 'Created (Offline)',
-                    config,
-                    headers: {}
                 })
 
             } catch (error) {
@@ -102,12 +110,10 @@ client.interceptors.request.use(
                 if (cachedData) {
                     ui.addToast('📱 Données depuis le cache local', 'info', 3000)
 
-                    return Promise.resolve({
+                    return resolveFromRequestInterceptor(config, {
                         data: cachedData,
                         status: 200,
                         statusText: 'OK (Cache)',
-                        config,
-                        headers: {},
                         fromCache: true
                     })
                 }

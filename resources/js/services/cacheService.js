@@ -116,6 +116,18 @@ class CacheService {
         }
     }
 
+    async cacheDepartments(departments) {
+        if (!Array.isArray(departments)) return
+
+        await offlineStorage.cacheDepartments(departments)
+    }
+
+    async cacheAgents(departmentId, agents) {
+        if (!departmentId || !Array.isArray(agents)) return
+
+        await offlineStorage.cacheAgents(departmentId, agents)
+    }
+
     async refreshDepartmentsBackground() {
         try {
             debugLog('🔄 Mise à jour départements en arrière-plan')

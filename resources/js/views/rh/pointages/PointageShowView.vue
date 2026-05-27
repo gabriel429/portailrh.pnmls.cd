@@ -6,12 +6,12 @@
 
       <template v-else-if="pointage">
         <section class="rh-hero">
-          <div class="row g-2 align-items-center">
-            <div class="col-lg-8">
+          <div class="ep-detail-hero-row">
+            <div>
               <h1 class="rh-title"><i class="fas fa-file-alt me-2"></i>Details du pointage</h1>
               <p class="rh-sub">{{ formatDate(pointage.date_pointage) }} - {{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</p>
             </div>
-            <div class="col-lg-4">
+            <div>
               <div class="hero-tools">
                 <router-link :to="{ name: 'rh.pointages.edit', params: { id: pointage.id } }" class="btn-rh main">
                   <i class="fas fa-edit me-1"></i> Modifier
@@ -24,24 +24,24 @@
           </div>
         </section>
 
-        <div class="row g-3">
-          <div class="col-lg-8">
+        <div class="ep-detail-layout">
+          <div class="ep-detail-main">
             <div class="rh-list-card p-3 p-lg-4 mb-3">
               <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informations pointage</h5>
-              <div class="row g-3">
-                <div class="col-md-6">
+              <div class="ep-info-grid">
+                <div>
                   <small class="text-muted">Date</small>
                   <p class="mb-0 fw-bold">{{ formatDate(pointage.date_pointage) }}</p>
                 </div>
-                <div class="col-md-6">
+                <div>
                   <small class="text-muted">Entree</small>
                   <p class="mb-0">{{ pointage.heure_entree ? formatTime(pointage.heure_entree) : 'Non enregistrée' }}</p>
                 </div>
-                <div class="col-md-6">
+                <div>
                   <small class="text-muted">Sortie</small>
                   <p class="mb-0">{{ pointage.heure_sortie ? formatTime(pointage.heure_sortie) : 'Non enregistrée' }}</p>
                 </div>
-                <div class="col-md-6">
+                <div>
                   <small class="text-muted">Heures travaillees</small>
                   <p class="mb-0">{{ pointage.heures_travaillees ? pointage.heures_travaillees + ' heures' : '-' }}</p>
                 </div>
@@ -54,7 +54,7 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
+          <div class="ep-detail-side">
             <div class="rh-list-card p-3 mb-3">
               <h6 class="mb-2"><i class="fas fa-user me-2"></i>Agent</h6>
               <p class="mb-1"><strong>{{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</strong></p>
@@ -182,8 +182,6 @@ onMounted(() => {
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }
     .card-body { padding: .85rem; }
-    dl.row dt { font-size: .8rem; }
-    dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
     .badge { font-size: .7rem; }
 }
 </style>

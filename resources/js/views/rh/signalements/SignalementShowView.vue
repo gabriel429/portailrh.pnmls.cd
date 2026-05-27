@@ -7,12 +7,12 @@
 
       <template v-else-if="signalement">
         <section class="rh-hero">
-          <div class="row g-2 align-items-center">
-            <div class="col-lg-8">
+          <div class="ep-detail-hero-row">
+            <div>
               <h1 class="rh-title"><i class="fas fa-file-circle-exclamation me-2"></i>Detail du signalement</h1>
               <p class="rh-sub">Dossier #{{ signalement.id }} | {{ capitalize(signalement.type) }}</p>
             </div>
-            <div class="col-lg-4">
+            <div>
               <div class="hero-tools">
                 <router-link :to="{ name: 'signalements.edit', params: { id: signalement.id } }" class="btn-rh main">
                   <i class="fas fa-edit me-1"></i> Modifier
@@ -25,32 +25,32 @@
           </div>
         </section>
 
-        <div class="row g-3 mt-1">
-          <div class="col-lg-8">
+        <div class="ep-detail-layout">
+          <div class="ep-detail-main">
             <div class="rh-list-card p-3 p-lg-4 mb-3">
               <h5 class="mb-3"><i class="fas fa-info-circle me-2"></i>Informations incident</h5>
-              <div class="row g-3">
-                <div class="col-md-6">
+              <div class="ep-info-grid">
+                <div>
                   <small class="text-muted">Type</small>
                   <p class="mb-0 fw-bold">{{ capitalize(signalement.type) }}</p>
                 </div>
-                <div class="col-md-6">
+                <div>
                   <small class="text-muted">Severite</small>
                   <p class="mb-0">
                     <span :class="severiteChip(signalement.severite)">{{ capitalize(signalement.severite) }}</span>
                   </p>
                 </div>
-                <div class="col-md-6">
+                <div>
                   <small class="text-muted">Statut</small>
                   <p class="mb-0">
                     <span :class="statutChip(signalement.statut)">{{ statutLabel(signalement.statut) }}</span>
                   </p>
                 </div>
-                <div class="col-md-6">
+                <div>
                   <small class="text-muted">Date creation</small>
                   <p class="mb-0">{{ formatDateTime(signalement.created_at) }}</p>
                 </div>
-                <div class="col-12">
+                <div>
                   <small class="text-muted">Description</small>
                   <p class="mb-0">{{ signalement.description }}</p>
                 </div>
@@ -63,7 +63,7 @@
             </div>
           </div>
 
-          <div class="col-lg-4">
+          <div class="ep-detail-side">
             <div class="rh-list-card p-3 mb-3">
               <h6 class="mb-2"><i class="fas fa-user me-2"></i>Agent concerne</h6>
               <p class="mb-1"><strong>{{ signalement.agent?.prenom }} {{ signalement.agent?.nom }}</strong></p>
@@ -175,8 +175,6 @@ onMounted(() => loadSignalement())
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }
     .card-body { padding: .85rem; }
-    dl.row dt { font-size: .8rem; }
-    dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
     .badge { font-size: .7rem; }
 }
 </style>

@@ -8,11 +8,12 @@ import { recoverFromAssetLoadFailure, registerRuntimeNoiseFilter } from '@/utils
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
 
-debugLog('PWA: Service Worker disabled to prevent stale builds')
+debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-27-task-create-button-v1'
+const BUILD_CACHE_VERSION = '2026-05-27-desktop-layout-v2'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
+const APP_SW_PATH = '/build/sw.js'
 
 async function clearBuildCachesOnVersionChange() {
     if (typeof window === 'undefined') return false
@@ -45,7 +46,9 @@ async function clearBuildCachesOnVersionChange() {
         jobs.push(
             navigator.serviceWorker.getRegistrations()
                 .then((registrations) => Promise.all(
-                    registrations.map((registration) => registration.unregister().catch(() => false))
+                    registrations
+                        .filter((registration) => !isCurrentAppServiceWorker(registration))
+                        .map((registration) => registration.unregister().catch(() => false))
                 ))
         )
     }
@@ -77,16 +80,53 @@ async function clearLegacyServiceWorkers() {
     try {
         const registrations = await navigator.serviceWorker.getRegistrations()
 
-        await Promise.all(registrations.map((registration) => registration.unregister()))
-
-        if ('caches' in window) {
-            const cacheKeys = await caches.keys()
-            await Promise.all(cacheKeys
-                .filter((key) => /workbox|precache|runtime|vite|pnmls|e-pnmls/i.test(key))
-                .map((key) => caches.delete(key)))
-        }
+        await Promise.all(
+            registrations
+                .filter((registration) => !isCurrentAppServiceWorker(registration))
+                .map((registration) => registration.unregister())
+        )
     } catch (error) {
-        reportError('PWA: Service worker cleanup failed:', error)
+        reportError('PWA: Legacy service worker cleanup failed:', error)
+    }
+}
+
+function isCurrentAppServiceWorker(registration) {
+    const workers = [
+        registration.active,
+        registration.waiting,
+        registration.installing,
+    ].filter(Boolean)
+
+    return workers.some((worker) => {
+        try {
+            return new URL(worker.scriptURL).pathname === APP_SW_PATH
+        } catch (_) {
+            return false
+        }
+    })
+}
+
+async function clearLegacyBuildCaches() {
+    if (typeof window === 'undefined' || !('caches' in window)) return
+
+    try {
+        const cacheKeys = await caches.keys()
+        await Promise.all(cacheKeys
+            .filter((key) => /vite|e-pnmls/i.test(key))
+            .map((key) => caches.delete(key)))
+    } catch (error) {
+        reportError('PWA: Legacy cache cleanup failed:', error)
+    }
+}
+
+async function registerAppServiceWorker() {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
+
+    try {
+        await navigator.serviceWorker.register(APP_SW_PATH, { scope: '/' })
+        debugLog('PWA: Service worker registered')
+    } catch (error) {
+        reportError('PWA: Service worker registration failed:', error)
     }
 }
 
@@ -95,6 +135,8 @@ async function prepareRuntimeCaches() {
     if (reloadScheduled) return
 
     await clearLegacyServiceWorkers()
+    await clearLegacyBuildCaches()
+    await registerAppServiceWorker()
 }
 
 prepareRuntimeCaches()

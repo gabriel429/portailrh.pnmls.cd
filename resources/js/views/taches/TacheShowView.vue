@@ -1,20 +1,20 @@
 <template>
-  <div class="rh-modern">
+  <div class="rh-modern task-show-view">
     <div class="rh-shell">
       <div v-if="loading" class="text-center py-5">
         <LoadingSpinner message="Chargement de la tâche..." />
       </div>
 
       <template v-else-if="hasLoadedTache">
-        <section class="rh-hero">
-          <div class="row g-3 align-items-center">
-            <div class="col-lg-8">
+        <section class="rh-hero task-show-hero">
+          <div class="task-show-hero-inner">
+            <div class="task-show-hero-copy">
               <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ tache.titre }}</h1>
               <p class="rh-sub">
                 Assignée à {{ tache.agent?.nom_complet }} par {{ tache.createur?.nom_complet }}
               </p>
             </div>
-            <div class="col-lg-4">
+            <div class="task-show-hero-actions">
               <div class="hero-tools">
                 <span v-if="isOverdue" class="badge bg-danger me-2"><i class="fas fa-clock me-1"></i>En retard</span>
                 <router-link :to="{ name: 'taches.index' }" class="btn-rh alt">
@@ -33,8 +33,8 @@
           </div>
         </section>
 
-        <div class="row mt-3 g-3">
-          <div class="col-lg-7">
+        <div class="task-show-layout">
+          <div class="task-show-main">
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
@@ -47,55 +47,55 @@
                 </div>
               </header>
               <div class="p-3">
-                <dl class="row mb-0">
-                  <dt class="col-sm-4 text-muted">Origine</dt>
-                  <dd class="col-sm-8">
+                <dl class="task-detail-grid mb-0">
+                  <dt class="text-muted">Origine</dt>
+                  <dd>
                     {{ tache.source_type === 'pta' ? 'Issue du PTA' : 'Hors PTA' }}
                     <template v-if="tache.activite_plan">
                       <br><small class="text-muted">{{ tache.activite_plan.titre }} - {{ tache.activite_plan.annee }}</small>
                     </template>
                   </dd>
 
-                  <dt class="col-sm-4 text-muted">Source</dt>
-                  <dd class="col-sm-8">{{ sourceEmetteurLabel(tache.source_emetteur) }}</dd>
+                  <dt class="text-muted">Source</dt>
+                  <dd>{{ sourceEmetteurLabel(tache.source_emetteur) }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Validation finale</dt>
-                  <dd class="col-sm-8">
+                  <dt class="text-muted">Validation finale</dt>
+                  <dd>
                     {{ tache.validation_responsable?.nom_complet || validationRoleLabel }}
                     <small v-if="tache.validation_responsable?.role?.nom_role" class="text-muted d-block">
                       {{ tache.validation_responsable.role.nom_role }}
                     </small>
                   </dd>
 
-                  <dt class="col-sm-4 text-muted">Créée par</dt>
-                  <dd class="col-sm-8">{{ tache.createur?.nom_complet }}</dd>
+                  <dt class="text-muted">Créée par</dt>
+                  <dd>{{ tache.createur?.nom_complet }}</dd>
 
                   <template v-if="tache.date_tache">
-                    <dt class="col-sm-4 text-muted">Date de la tâche</dt>
-                    <dd class="col-sm-8">{{ formatDate(tache.date_tache) }}</dd>
+                    <dt class="text-muted">Date de la tâche</dt>
+                    <dd>{{ formatDate(tache.date_tache) }}</dd>
                   </template>
 
-                  <dt class="col-sm-4 text-muted">Assignee a</dt>
-                  <dd class="col-sm-8">{{ tache.agent?.nom_complet }}</dd>
+                  <dt class="text-muted">Assignee a</dt>
+                  <dd>{{ tache.agent?.nom_complet }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Date de creation</dt>
-                  <dd class="col-sm-8">{{ formatDateTime(tache.created_at) }}</dd>
+                  <dt class="text-muted">Date de creation</dt>
+                  <dd>{{ formatDateTime(tache.created_at) }}</dd>
 
                   <template v-if="tache.date_echeance">
-                    <dt class="col-sm-4 text-muted">Échéance</dt>
-                    <dd class="col-sm-8">
+                    <dt class="text-muted">Échéance</dt>
+                    <dd>
                       {{ formatDate(tache.date_echeance) }}
                       <span v-if="isOverdue" class="badge bg-danger ms-1">En retard</span>
                     </dd>
                   </template>
 
                   <template v-if="tache.blocking_reason">
-                    <dt class="col-sm-4 text-muted">Blocage</dt>
-                    <dd class="col-sm-8">{{ tache.blocking_reason }}</dd>
+                    <dt class="text-muted">Blocage</dt>
+                    <dd>{{ tache.blocking_reason }}</dd>
                   </template>
 
-                  <dt class="col-sm-4 text-muted">Progression</dt>
-                  <dd class="col-sm-8">
+                  <dt class="text-muted">Progression</dt>
+                  <dd>
                     <div class="task-progress-wrap">
                       <div class="progress task-progress-bar">
                         <div class="progress-bar" :class="tache.pourcentage >= 100 ? 'bg-success' : 'bg-primary'" :style="{ width: `${tache.pourcentage || 0}%` }"></div>
@@ -248,7 +248,7 @@
             </div>
           </div>
 
-          <div class="col-lg-5">
+          <div class="task-show-side">
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
@@ -809,49 +809,72 @@ onMounted(() => loadTache())
 </script>
 
 <style scoped>
-.rh-hero > .row {
+.task-show-hero {
+  width: 100%;
+}
+
+.task-show-hero-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 1rem;
-}
-
-.rh-shell > .row.mt-3.g-3 {
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, .65fr);
-  gap: 1rem;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.rh-shell > .row.mt-3.g-3 > [class*="col-"] {
-  padding-left: 0;
-  padding-right: 0;
-}
-
-.dash-panel dl.row {
-  display: grid;
-  grid-template-columns: minmax(135px, .48fr) minmax(180px, 1fr) minmax(135px, .48fr) minmax(180px, 1fr);
-  column-gap: 1rem;
-  row-gap: .7rem;
-  margin-left: 0;
-  margin-right: 0;
-}
-
-.dash-panel dl.row dt,
-.dash-panel dl.row dd {
-  padding-left: 0;
-  padding-right: 0;
-  margin: 0;
   min-width: 0;
 }
 
-.dash-panel dl.row dt {
+.task-show-hero-copy {
+  min-width: 0;
+}
+
+.task-show-hero-actions {
+  min-width: 0;
+}
+
+.task-show-layout {
+  display: grid;
+  grid-template-columns: minmax(640px, 1fr) minmax(360px, 420px);
+  align-items: start;
+  gap: 1.25rem;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.task-show-main,
+.task-show-side {
+  min-width: 0;
+  width: 100%;
+}
+
+.task-show-side {
+  max-width: 420px;
+  justify-self: stretch;
+}
+
+.task-show-main > .dash-panel,
+.task-show-side > .dash-panel {
+  width: 100%;
+}
+
+.task-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(140px, .5fr) minmax(0, 1fr) minmax(140px, .5fr) minmax(0, 1fr);
+  column-gap: 1rem;
+  row-gap: .7rem;
+}
+
+.task-detail-grid dt,
+.task-detail-grid dd {
+  margin: 0;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+}
+
+.task-detail-grid dt {
   color: #64748b;
   font-weight: 700;
 }
 
-.dash-panel dl.row dd {
+.task-detail-grid dd {
   color: #1e293b;
   font-weight: 600;
   overflow-wrap: anywhere;
@@ -958,9 +981,18 @@ onMounted(() => loadTache())
   margin-top: .75rem;
 }
 
+@media (max-width: 1100px) {
+  .task-show-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .task-show-side {
+    max-width: none;
+  }
+}
+
 @media (max-width: 767.98px) {
-  .rh-hero > .row,
-  .rh-shell > .row.mt-3.g-3 {
+  .task-show-hero-inner {
     grid-template-columns: 1fr;
   }
 
@@ -968,11 +1000,11 @@ onMounted(() => loadTache())
     justify-content: flex-start;
   }
 
-  .dash-panel dl.row {
+  .task-detail-grid {
     grid-template-columns: minmax(120px, .38fr) minmax(0, 1fr);
   }
 
-  .dash-panel dl.row dt {
+  .task-detail-grid dt {
     margin-top: .25rem;
   }
 
@@ -999,11 +1031,11 @@ onMounted(() => loadTache())
     padding: .85rem;
   }
 
-  dl.row dt {
+  .task-detail-grid dt {
     font-size: .8rem;
   }
 
-  dl.row dd {
+  .task-detail-grid dd {
     font-size: .85rem;
     margin-bottom: .6rem;
   }

@@ -51,11 +51,16 @@ Route::get('/build/{file}', function (string $file) {
         'webmanifest' => 'application/manifest+json',
     ];
     $mime = $mimeTypes[$ext] ?? 'application/octet-stream';
-    $cache = in_array($file, ['sw.js']) ? 'no-cache' : 'public, max-age=31536000, immutable';
-    return response()->file($path, [
+    $headers = [
         'Content-Type' => $mime,
-        'Cache-Control' => $cache,
-    ]);
+        'Cache-Control' => in_array($file, ['sw.js']) ? 'no-cache' : 'public, max-age=31536000, immutable',
+    ];
+
+    if ($file === 'sw.js') {
+        $headers['Service-Worker-Allowed'] = '/';
+    }
+
+    return response()->file($path, $headers);
 })->where('file', '[^/]+');
 
 // Named login route — required by Laravel auth middleware for redirect

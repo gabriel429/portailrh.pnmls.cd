@@ -18,8 +18,8 @@
 
       <template v-else-if="activite">
         <section class="rh-hero">
-          <div class="row g-3 align-items-center">
-            <div class="col-lg-8">
+          <div class="ep-detail-hero-row">
+            <div>
               <h1 class="rh-title"><i class="fas fa-calendar-check me-2"></i>{{ activite.titre }}</h1>
               <p class="rh-sub">
                 Plan de Travail {{ activite.annee }}
@@ -28,7 +28,7 @@
                 <template v-if="activite.categorie"> | {{ activite.categorie }}</template>
               </p>
             </div>
-            <div class="col-lg-4">
+            <div>
               <div class="hero-tools">
                 <router-link :to="{ name: 'plan-travail.index', query: { annee: activite.annee } }" class="btn-rh alt">
                   <i class="fas fa-arrow-left me-1"></i> Retour
@@ -41,9 +41,9 @@
           </div>
         </section>
 
-        <div class="row mt-3 g-3">
+        <div class="ep-detail-layout">
           <!-- Colonne gauche: Detail -->
-          <div class="col-lg-7">
+          <div class="ep-detail-main">
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
@@ -54,18 +54,18 @@
                 </div>
               </header>
               <div class="p-3">
-                <dl class="row mb-0">
-                  <dt class="col-sm-4 text-muted">Objectif</dt>
-                  <dd class="col-sm-8">{{ activite.objectif || 'Non renseigné' }}</dd>
+                <dl class="ep-dl-grid mb-0">
+                  <dt class="text-muted">Objectif</dt>
+                  <dd>{{ activite.objectif || 'Non renseigné' }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Rubrique</dt>
-                  <dd class="col-sm-8">{{ activite.categorie || 'Non renseignée' }}</dd>
+                  <dt class="text-muted">Rubrique</dt>
+                  <dd>{{ activite.categorie || 'Non renseignée' }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Resultat attendu</dt>
-                  <dd class="col-sm-8">{{ activite.resultat_attendu || 'Non renseigné' }}</dd>
+                  <dt class="text-muted">Resultat attendu</dt>
+                  <dd>{{ activite.resultat_attendu || 'Non renseigné' }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Attribution</dt>
-                  <dd class="col-sm-8">
+                  <dt class="text-muted">Attribution</dt>
+                  <dd>
                     <template v-if="activite.assigned_agents?.length">
                       <span v-for="agent in activite.assigned_agents" :key="agent.id" class="badge bg-primary-subtle text-primary border me-1 mb-1">
                         <i class="fas fa-user-check me-1"></i>{{ agent.nom_complet }}
@@ -74,28 +74,28 @@
                     <span v-else>{{ activite.responsable_code || 'Non renseigné' }}</span>
                   </dd>
 
-                  <dt class="col-sm-4 text-muted">Cout en CDF</dt>
-                  <dd class="col-sm-8">{{ activite.cout_cdf !== null && activite.cout_cdf !== undefined ? formatCurrency(activite.cout_cdf) + ' CDF' : 'Non renseigné' }}</dd>
+                  <dt class="text-muted">Cout en CDF</dt>
+                  <dd>{{ activite.cout_cdf !== null && activite.cout_cdf !== undefined ? formatCurrency(activite.cout_cdf) + ' CDF' : 'Non renseigné' }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Niveau</dt>
-                  <dd class="col-sm-8">
+                  <dt class="text-muted">Niveau</dt>
+                  <dd>
                     {{ activite.niveau_administratif }}
                     <template v-if="activite.departement"> - {{ activite.departement.nom }}</template>
                     <template v-if="provinceSummary"> - {{ provinceSummary }}</template>
                     <template v-if="activite.localite"> - {{ activite.localite.nom }}</template>
                   </dd>
 
-                  <dt class="col-sm-4 text-muted">Annee</dt>
-                  <dd class="col-sm-8">{{ activite.annee }}</dd>
+                  <dt class="text-muted">Annee</dt>
+                  <dd>{{ activite.annee }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Validation</dt>
-                  <dd class="col-sm-8">{{ validationLabel(activite.validation_niveau) }}</dd>
+                  <dt class="text-muted">Validation</dt>
+                  <dd>{{ validationLabel(activite.validation_niveau) }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Trimestre</dt>
-                  <dd class="col-sm-8">{{ triLabel(activite.trimestre) }}</dd>
+                  <dt class="text-muted">Trimestre</dt>
+                  <dd>{{ triLabel(activite.trimestre) }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Chronogramme</dt>
-                  <dd class="col-sm-8">
+                  <dt class="text-muted">Chronogramme</dt>
+                  <dd>
                     <div class="pta-quarter-strip" :aria-label="`Chronogramme ${activite.titre}`">
                       <span
                         v-for="slot in trimestreSlots(activite)"
@@ -109,8 +109,8 @@
                   </dd>
 
                   <template v-if="activite.date_debut || activite.date_fin">
-                    <dt class="col-sm-4 text-muted">Periode</dt>
-                    <dd class="col-sm-8">
+                    <dt class="text-muted">Periode</dt>
+                    <dd>
                       {{ formatDate(activite.date_debut) || '?' }}
                       &rarr;
                       {{ formatDate(activite.date_fin) || '?' }}
@@ -118,11 +118,11 @@
                     </dd>
                   </template>
 
-                  <dt class="col-sm-4 text-muted">Créé par</dt>
-                  <dd class="col-sm-8">{{ activite.createur?.nom_complet ?? 'N/A' }}</dd>
+                  <dt class="text-muted">Créé par</dt>
+                  <dd>{{ activite.createur?.nom_complet ?? 'N/A' }}</dd>
 
-                  <dt class="col-sm-4 text-muted">Date de creation</dt>
-                  <dd class="col-sm-8">{{ formatDateTime(activite.created_at) }}</dd>
+                  <dt class="text-muted">Date de creation</dt>
+                  <dd>{{ formatDateTime(activite.created_at) }}</dd>
                 </dl>
 
                 <!-- Barre de progression -->
@@ -171,7 +171,7 @@
           </div>
 
           <!-- Colonne droite: Mise a jour rapide -->
-          <div class="col-lg-5">
+          <div class="ep-detail-side">
             <div v-if="canUpdateStatut && activite.statut !== 'terminee'" class="dash-panel">
               <header class="panel-head">
                 <div>
@@ -437,8 +437,8 @@ onMounted(() => loadActivite())
     .rh-list-card, .dash-panel { border-radius: 12px; }
     .card { border-radius: 12px; }
     .card-body { padding: .85rem; }
-    dl.row dt { font-size: .8rem; }
-    dl.row dd { font-size: .85rem; margin-bottom: .6rem; }
+    .ep-dl-grid dt { font-size: .8rem; }
+    .ep-dl-grid dd { font-size: .85rem; margin-bottom: .6rem; }
     .badge { font-size: .7rem; }
 }
 </style>

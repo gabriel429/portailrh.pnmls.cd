@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import axios from 'axios'
 import client from '@/api/client'
 
+const AUTH_USER_CACHE_KEY = 'epnmls_auth_user'
+
 function normalizeText(value) {
     return (value ?? '')
         .toString()
@@ -265,15 +267,39 @@ export const useAuthStore = defineStore('auth', {
         },
     },
     actions: {
+        cachedUser() {
+            if (typeof window === 'undefined') return null
+
+            try {
+                const raw = window.localStorage.getItem(AUTH_USER_CACHE_KEY)
+                return raw ? JSON.parse(raw) : null
+            } catch (_) {
+                return null
+            }
+        },
+        cacheUser(user) {
+            if (typeof window === 'undefined') return
+
+            try {
+                if (user) {
+                    window.localStorage.setItem(AUTH_USER_CACHE_KEY, JSON.stringify(user))
+                } else {
+                    window.localStorage.removeItem(AUTH_USER_CACHE_KEY)
+                }
+            } catch (_) {
+                // Ignore storage quota/private-mode failures.
+            }
+        },
         hasSessionHint() {
             if (typeof window === 'undefined') return false
 
             const authHint = window.localStorage.getItem('epnmls_auth_hint') === '1'
+            const hasCachedUser = !!this.cachedUser()
             const hasXsrfCookie = document.cookie.split(';').some((cookie) =>
                 cookie.trim().startsWith('XSRF-TOKEN=')
             )
 
-            return authHint || hasXsrfCookie
+            return authHint || hasCachedUser || hasXsrfCookie
         },
         markSessionHint(enabled = true) {
             if (typeof window === 'undefined') return
@@ -296,10 +322,21 @@ export const useAuthStore = defineStore('auth', {
             try {
                 const { data } = await client.get('/user')
                 this.user = data
+                this.cacheUser(data)
                 this.markSessionHint(true)
                 return data
-            } catch {
+            } catch (error) {
+                const networkFailed = !error.response
+                const cached = this.cachedUser()
+
+                if (networkFailed && cached) {
+                    this.user = cached
+                    this.markSessionHint(true)
+                    return cached
+                }
+
                 this.user = null
+                this.cacheUser(null)
                 this.markSessionHint(false)
                 return null
             } finally {
@@ -315,6 +352,7 @@ export const useAuthStore = defineStore('auth', {
         async logout() {
             await client.post('/logout')
             this.user = null
+            this.cacheUser(null)
             this.markSessionHint(false)
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' })
@@ -322,6 +360,7 @@ export const useAuthStore = defineStore('auth', {
         },
         clearUser() {
             this.user = null
+            this.cacheUser(null)
             this.markSessionHint(false)
         },
     },

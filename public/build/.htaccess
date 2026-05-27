@@ -87,6 +87,7 @@ RewriteRule ^manifest\.json$ serve-asset.php?file=../manifest.json [L,QSA]
     # sw.js must NEVER be cached (browser must always check for updates)
     <FilesMatch "^sw\.js$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Service-Worker-Allowed "/"
     </FilesMatch>
     # manifest files must not be cached
     <FilesMatch "(manifest\.json|manifest\.webmanifest)$">
