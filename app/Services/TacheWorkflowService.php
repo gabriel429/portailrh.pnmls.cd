@@ -325,7 +325,7 @@ class TacheWorkflowService
                 && str_contains($profile, 'chef')
                 && str_contains($profile, 'section');
 
-            return $role === 'sen'
+            return in_array($role, ['sen', 'sena'], true)
                 || (str_contains($organe, 'national') && (
                     str_contains($role, 'directeur')
                     || str_contains($profile, 'directeur national')
