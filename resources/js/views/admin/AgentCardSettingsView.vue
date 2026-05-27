@@ -119,7 +119,13 @@
               <img v-if="secondaryLogo" :src="secondaryLogo" alt="Logo secondaire">
             </header>
 
-            <div class="card-title">{{ form.card_title }}</div>
+            <div class="official-stripe" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+
+            <div class="card-title">
+              <strong>{{ form.card_title }}</strong>
+            </div>
             <div class="card-body">
               <div class="photo">AK</div>
               <div class="agent-lines">
@@ -145,6 +151,12 @@
                 <span>Verification numerique integree</span>
               </div>
             </header>
+            <div class="official-stripe" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+            <div class="back-card-title">
+              <strong>{{ form.card_title }}</strong>
+            </div>
             <div class="verso-body">
               <div class="qr-placeholder"><i class="fas fa-qrcode"></i></div>
               <div>
@@ -414,8 +426,10 @@ onMounted(load)
 
 .identity-card {
   background:
-    radial-gradient(circle at 74% 53%, rgba(246, 195, 67, .18), transparent 145px),
-    linear-gradient(135deg, #ffffff 0%, #f6fbff 45%, #fff9ea 100%);
+    linear-gradient(116deg, transparent 0 69%, rgba(0, 119, 181, .08) 69.2%, rgba(0, 119, 181, .02) 100%),
+    radial-gradient(circle at 78% 70%, rgba(0, 119, 181, .18), transparent 105px),
+    radial-gradient(circle at 50% 56%, rgba(246, 195, 67, .1), transparent 118px),
+    linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
   border: 1px solid rgba(15, 53, 82, .16);
   border-radius: 14px;
   box-shadow: 0 16px 34px rgba(15, 23, 42, .14);
@@ -427,11 +441,25 @@ onMounted(load)
 }
 
 .identity-card::before {
-  background: linear-gradient(135deg, var(--primary), #0f8aa9);
+  background:
+    linear-gradient(90deg, rgba(0, 119, 181, .08), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(248, 252, 255, .82));
   content: "";
-  inset: 0 0 auto;
-  height: 58px;
+  inset: 0;
   position: absolute;
+  z-index: 0;
+}
+
+.identity-card::after {
+  background: linear-gradient(135deg, rgba(0, 119, 181, .06), rgba(0, 119, 181, .24));
+  clip-path: polygon(62% 0, 100% 0, 100% 100%, 24% 100%);
+  content: "";
+  height: 100%;
+  opacity: .72;
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 132px;
   z-index: 0;
 }
 
@@ -457,7 +485,7 @@ onMounted(load)
 
 .identity-card header {
   align-items: center;
-  color: #fff;
+  color: #172033;
   display: grid;
   gap: .5rem;
   grid-template-columns: 42px 1fr 42px;
@@ -466,44 +494,77 @@ onMounted(load)
 }
 
 .identity-card header img {
-  background: transparent;
-  border-radius: 0;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
+  background: rgba(255, 255, 255, .82);
+  border: 1px solid rgba(148, 163, 184, .32);
+  border-radius: 50%;
+  filter: drop-shadow(0 2px 4px rgba(15, 23, 42, .12));
   height: 36px;
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
   object-fit: contain;
-  padding: 0;
+  padding: 3px;
   width: 42px;
 }
 
 .identity-card header strong {
+  color: #82b8ee;
   display: block;
   font-size: .68rem;
   line-height: 1.05;
 }
 
 .identity-card header span {
+  color: #172033;
   display: block;
   font-size: .54rem;
   font-weight: 800;
   line-height: 1.08;
 }
 
+.official-stripe {
+  display: grid;
+  gap: 2px;
+  grid-template-columns: 1fr 1fr 1fr;
+  height: 4px;
+  margin: 6px 0 0;
+}
+
+.official-stripe span:nth-child(1) {
+  background: #c8333a;
+}
+
+.official-stripe span:nth-child(2) {
+  background: #f6c343;
+}
+
+.official-stripe span:nth-child(3) {
+  background: var(--primary);
+}
+
 .card-title {
-  background: var(--accent);
-  border-radius: 999px;
-  color: #172033;
-  display: inline-flex;
-  font-size: .66rem;
-  font-weight: 900;
-  margin: 11px 0 8px;
-  padding: .25rem .7rem;
+  align-items: center;
+  color: #7db8f2;
+  display: flex;
+  justify-content: center;
+  margin: 6px auto 5px;
+  max-width: 270px;
+  min-height: 28px;
+  text-align: center;
+}
+
+.card-title strong,
+.back-card-title strong {
+  display: block;
+  font-size: .95rem;
+  font-weight: 950;
+  letter-spacing: .04rem;
+  line-height: 1.05;
+  text-transform: uppercase;
 }
 
 .card-body {
   display: grid;
-  gap: .85rem;
-  grid-template-columns: 108px 1fr;
+  gap: .75rem;
+  grid-template-columns: 96px 1fr;
 }
 
 .photo {
@@ -515,9 +576,9 @@ onMounted(load)
   display: flex;
   font-size: 1.8rem;
   font-weight: 900;
-  height: 122px;
+  height: 104px;
   justify-content: center;
-  width: 108px;
+  width: 96px;
 }
 
 .agent-lines h2 {
@@ -582,8 +643,15 @@ onMounted(load)
   align-items: center;
   display: grid;
   gap: 1rem;
-  grid-template-columns: 118px 1fr;
-  margin-top: 16px;
+  grid-template-columns: 96px 1fr;
+  margin-top: 8px;
+}
+
+.back-card-title {
+  color: #7db8f2;
+  margin: 16px auto 6px;
+  max-width: 310px;
+  text-align: center;
 }
 
 .qr-placeholder {
@@ -594,8 +662,9 @@ onMounted(load)
   color: var(--primary);
   display: flex;
   font-size: 3rem;
-  height: 118px;
+  height: 96px;
   justify-content: center;
+  width: 96px;
 }
 
 .verso h3 {

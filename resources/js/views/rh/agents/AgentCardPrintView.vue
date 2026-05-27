@@ -120,7 +120,13 @@
               <img v-if="settings.logo_secondary_url" :src="settings.logo_secondary_url" alt="Logo secondaire">
             </header>
 
-            <div class="id-title">{{ settings.card_title }}</div>
+            <div class="official-stripe" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+
+            <div class="id-title">
+              <strong>{{ settings.card_title }}</strong>
+            </div>
 
             <div class="front-body">
               <div class="agent-photo">
@@ -158,6 +164,14 @@
                 <span>Verification securisee par QR code</span>
               </div>
             </header>
+
+            <div class="official-stripe" aria-hidden="true">
+              <span></span><span></span><span></span>
+            </div>
+
+            <div class="back-card-title">
+              <strong>{{ settings.card_title }}</strong>
+            </div>
 
             <div class="back-body">
               <div class="qr-area">
@@ -753,8 +767,10 @@ onBeforeUnmount(() => {
 
 .identity-card {
   background:
-    radial-gradient(circle at 74% 53%, rgba(246, 195, 67, .18), transparent 31mm),
-    linear-gradient(135deg, #ffffff 0%, #f6fbff 45%, #fff9ea 100%);
+    linear-gradient(116deg, transparent 0 69%, rgba(0, 119, 181, .08) 69.2%, rgba(0, 119, 181, .02) 100%),
+    radial-gradient(circle at 78% 70%, rgba(0, 119, 181, .18), transparent 22mm),
+    radial-gradient(circle at 50% 56%, rgba(246, 195, 67, .1), transparent 24mm),
+    linear-gradient(180deg, #ffffff 0%, #f8fcff 100%);
   border: .25mm solid rgba(15, 53, 82, .16);
   border-radius: 4mm;
   box-shadow: 0 18px 44px rgba(15, 23, 42, .18);
@@ -768,23 +784,24 @@ onBeforeUnmount(() => {
 }
 
 .card-bg {
-  background: linear-gradient(135deg, var(--primary), #0f8aa9);
-  height: 12.8mm;
-  inset: 0 0 auto;
+  background:
+    linear-gradient(90deg, rgba(0, 119, 181, .08), rgba(255, 255, 255, 0) 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, .95), rgba(248, 252, 255, .82));
+  inset: 0;
   position: absolute;
   z-index: 0;
 }
 
 .card-bg::after {
-  background: linear-gradient(135deg, rgba(255, 255, 255, .06), rgba(246, 195, 67, .32));
-  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(0, 119, 181, .06), rgba(0, 119, 181, .24));
+  clip-path: polygon(62% 0, 100% 0, 100% 100%, 24% 100%);
   content: "";
-  height: 22mm;
+  height: 54mm;
   opacity: .72;
   position: absolute;
-  right: -8mm;
-  top: 6mm;
-  width: 38mm;
+  right: 0;
+  top: 0;
+  width: 28mm;
 }
 
 .card-watermark {
@@ -804,7 +821,7 @@ onBeforeUnmount(() => {
 
 .id-header {
   align-items: center;
-  color: #fff;
+  color: #172033;
   display: grid;
   gap: 1.8mm;
   grid-template-columns: 9.6mm 1fr 9.6mm;
@@ -820,48 +837,83 @@ onBeforeUnmount(() => {
 }
 
 .id-header img {
-  background: transparent;
-  border-radius: 0;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .22));
+  background: rgba(255, 255, 255, .82);
+  border: .2mm solid rgba(148, 163, 184, .32);
+  border-radius: 50%;
+  filter: drop-shadow(0 .45mm 1mm rgba(15, 23, 42, .12));
   height: 8.6mm;
-  mix-blend-mode: multiply;
+  mix-blend-mode: normal;
   object-fit: contain;
-  padding: 0;
+  padding: .7mm;
   width: 9.6mm;
 }
 
 .id-header strong {
+  color: #82b8ee;
   display: block;
-  font-size: 1.82mm;
+  font-size: 1.92mm;
   font-weight: 900;
   line-height: 1.04;
   text-transform: uppercase;
 }
 
 .id-header span {
+  color: #172033;
   display: block;
   font-size: 1.28mm;
   font-weight: 800;
   line-height: 1.1;
 }
 
-.id-title {
-  background: var(--accent);
-  border-radius: 999px;
-  color: #172033;
-  display: inline-flex;
-  font-size: 1.62mm;
-  font-weight: 900;
-  margin: 2mm 0 1.2mm;
-  padding: .9mm 2.8mm;
+.official-stripe {
+  display: grid;
+  gap: .4mm;
+  grid-template-columns: 1fr 1fr 1fr;
+  height: .75mm;
+  margin: 1.2mm 0 0;
   position: relative;
   z-index: 2;
 }
 
+.official-stripe span:nth-child(1) {
+  background: #c8333a;
+}
+
+.official-stripe span:nth-child(2) {
+  background: #f6c343;
+}
+
+.official-stripe span:nth-child(3) {
+  background: var(--primary);
+}
+
+.id-title {
+  align-items: center;
+  color: #7db8f2;
+  display: flex;
+  justify-content: center;
+  margin: 1.2mm auto 1mm;
+  max-width: 56mm;
+  min-height: 5.8mm;
+  position: relative;
+  text-align: center;
+  z-index: 2;
+}
+
+.id-title strong,
+.back-card-title strong {
+  display: block;
+  font-size: 2.55mm;
+  font-weight: 950;
+  letter-spacing: .12mm;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
 .front-body {
   display: grid;
-  gap: 3.2mm;
-  grid-template-columns: 27mm 1fr;
+  gap: 2.8mm;
+  grid-template-columns: 24.5mm 1fr;
   position: relative;
   z-index: 2;
 }
@@ -875,10 +927,10 @@ onBeforeUnmount(() => {
   display: flex;
   font-size: 6.8mm;
   font-weight: 900;
-  height: 30mm;
+  height: 25.5mm;
   justify-content: center;
   overflow: hidden;
-  width: 27mm;
+  width: 24.5mm;
 }
 
 .agent-photo img {
@@ -970,10 +1022,19 @@ onBeforeUnmount(() => {
 .back-body {
   align-items: center;
   display: grid;
-  gap: 4.2mm;
-  grid-template-columns: 31mm 1fr;
-  margin-top: 4.2mm;
+  gap: 4mm;
+  grid-template-columns: 26mm 1fr;
+  margin-top: .8mm;
   position: relative;
+  z-index: 2;
+}
+
+.back-card-title {
+  color: #7db8f2;
+  margin: 2.4mm auto 1.2mm;
+  max-width: 62mm;
+  position: relative;
+  text-align: center;
   z-index: 2;
 }
 
@@ -998,9 +1059,9 @@ onBeforeUnmount(() => {
   border: .35mm solid #cbdce8;
   border-radius: 3mm;
   box-shadow: 0 5px 14px rgba(15, 23, 42, .12);
-  height: 29.6mm;
-  padding: 1.55mm;
-  width: 29.6mm;
+  height: 25mm;
+  padding: 1.1mm;
+  width: 25mm;
 }
 
 .qr-box img {

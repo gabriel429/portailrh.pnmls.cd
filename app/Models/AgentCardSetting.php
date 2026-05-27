@@ -15,7 +15,7 @@ class AgentCardSetting extends Model
         'country' => 'REPUBLIQUE DEMOCRATIQUE DU CONGO',
         'ministry' => 'Ministere de la Sante Publique, Hygiene et Prevention',
         'program_name' => 'Programme National Multisectoriel de Lutte contre le Sida',
-        'card_title' => "CARTE D'IDENTITE PROFESSIONNELLE",
+        'card_title' => "CARTE DE L'AGENT PNMLS",
         'subtitle' => 'Personnel PNMLS',
         'authority_title' => 'Le Secretaire Executif National',
         'signature_name' => '',
