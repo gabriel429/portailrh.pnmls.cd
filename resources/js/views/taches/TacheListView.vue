@@ -41,64 +41,65 @@
         </div>
       </section>
 
-      <div v-if="loading" class="text-center py-5">
-        <LoadingSpinner message="Chargement des tâches..." />
+      <div class="tache-status-tabs mt-3">
+        <button
+          v-for="tab in statusTabs"
+          :key="tab.key"
+          type="button"
+          class="tache-tab"
+          :class="{ active: statusFilter === tab.key, [tab.color]: true }"
+          @click="setStatusFilter(tab.key)"
+        >
+          <i :class="tab.icon + ' me-1'"></i>
+          <span class="tache-tab-label">{{ tab.label }}</span>
+          <span class="tache-tab-count">{{ tab.count }}</span>
+        </button>
       </div>
 
-      <template v-else>
-        <div class="tache-status-tabs mt-3">
-          <button
-            v-for="tab in statusTabs"
-            :key="tab.key"
-            type="button"
-            class="tache-tab"
-            :class="{ active: statusFilter === tab.key, [tab.color]: true }"
-            @click="setStatusFilter(tab.key)"
-          >
-            <i :class="tab.icon + ' me-1'"></i>
-            <span class="tache-tab-label">{{ tab.label }}</span>
-            <span class="tache-tab-count">{{ tab.count }}</span>
-          </button>
-        </div>
-
-        <div class="dash-panel mt-2">
-          <header class="panel-head">
-            <div>
-              <h3 class="panel-title">
-                <i :class="showAssignedByMe ? 'fas fa-clipboard-list me-2 text-success' : 'fas fa-clipboard-check me-2 text-primary'"></i>
-                {{ panelTitle }}
-              </h3>
-              <p class="panel-sub">{{ panelSubtitle }}</p>
-            </div>
-            <div class="task-filters">
-              <label for="source-filter" class="task-filter-label">Source</label>
-              <select id="source-filter" v-model="sourceFilter" class="form-select form-select-sm task-filter-select">
-                <option value="all">Toutes</option>
-                <option value="direction">Direction</option>
-                <option value="sen">SEN</option>
-                <option value="sep">SEP</option>
-                <option value="secom">SECOM</option>
-                <option value="sel">SEL</option>
-                <option value="aaf_local">AAF / RH local</option>
-                <option value="autre">Autre</option>
-              </select>
-            </div>
-          </header>
-          <div class="table-responsive">
-            <table class="table table-hover mb-0">
-              <thead>
-                <tr>
-                  <th>Titre</th>
-                  <th>Origine</th>
-                  <th>{{ showAssignedByMe || isDeptScope || isSENScope || isProvinceScope ? 'Assigne a' : 'De' }}</th>
-                  <th>Priorite</th>
-                  <th>Statut</th>
-                  <th>Échéance</th>
-                  <th>Date</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
+      <div class="dash-panel mt-2">
+        <header class="panel-head">
+          <div>
+            <h3 class="panel-title">
+              <i :class="showAssignedByMe ? 'fas fa-clipboard-list me-2 text-success' : 'fas fa-clipboard-check me-2 text-primary'"></i>
+              {{ panelTitle }}
+            </h3>
+            <p class="panel-sub">{{ panelSubtitle }}</p>
+          </div>
+          <div class="task-filters">
+            <label for="source-filter" class="task-filter-label">Source</label>
+            <select id="source-filter" v-model="sourceFilter" class="form-select form-select-sm task-filter-select">
+              <option value="all">Toutes</option>
+              <option value="direction">Direction</option>
+              <option value="sen">SEN</option>
+              <option value="sep">SEP</option>
+              <option value="secom">SECOM</option>
+              <option value="sel">SEL</option>
+              <option value="aaf_local">AAF / RH local</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+        </header>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0" :aria-busy="loading">
+            <thead>
+              <tr>
+                <th>Titre</th>
+                <th>Origine</th>
+                <th>{{ showAssignedByMe || isDeptScope || isSENScope || isProvinceScope ? 'Assigne a' : 'De' }}</th>
+                <th>Priorite</th>
+                <th>Statut</th>
+                <th>Échéance</th>
+                <th>Date</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-if="loading" class="task-table-loading">
+                <td colspan="8">
+                  <LoadingSpinner message="Chargement des données..." />
+                </td>
+              </tr>
+              <template v-else>
                 <tr v-for="t in filteredTaches" :key="t.id">
                   <td>
                     <strong>{{ t.titre }}</strong>
@@ -128,17 +129,17 @@
                     </router-link>
                   </td>
                 </tr>
-                <tr v-if="!filteredTaches.length">
-                  <td colspan="8" class="text-center text-muted py-4">
-                    <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                    {{ emptyStateText }}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+              </template>
+              <tr v-if="!loading && !filteredTaches.length">
+                <td colspan="8" class="text-center text-muted py-4">
+                  <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
+                  {{ emptyStateText }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-      </template>
+      </div>
     </div>
 
     <div v-if="createModalOpen" class="task-modal-overlay" @click.self="closeCreateModal">
@@ -848,6 +849,14 @@ watch(statusFilter, (val) => {
   font-size: .78rem;
   letter-spacing: .02em;
   text-transform: uppercase;
+}
+
+.task-table-loading td {
+  height: 220px;
+  padding: 2.5rem 1rem !important;
+  background: rgba(248, 250, 252, .56);
+  text-align: center;
+  vertical-align: middle;
 }
 
 @media (max-width: 767.98px) {
