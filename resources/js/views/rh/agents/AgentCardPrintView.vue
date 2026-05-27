@@ -157,7 +157,6 @@
 
           <article class="identity-card verso" :class="printSideClass('back')" :style="cardStyle">
             <div class="card-bg"></div>
-            <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header class="id-header single">
               <div>
                 <strong>{{ settings.subtitle }}</strong>
@@ -783,6 +782,21 @@ onBeforeUnmount(() => {
   width: 85.6mm;
 }
 
+.identity-card.verso {
+  background: #f8fcff;
+}
+
+.identity-card.verso::before {
+  background: url('/images/pnmls.jpeg') center / cover no-repeat;
+  content: "";
+  filter: blur(.9mm) saturate(.86) contrast(1.04);
+  inset: -1.8mm;
+  opacity: .42;
+  position: absolute;
+  transform: scale(1.04);
+  z-index: 0;
+}
+
 .card-bg {
   background:
     linear-gradient(90deg, rgba(0, 119, 181, .08), rgba(255, 255, 255, 0) 55%),
@@ -790,6 +804,13 @@ onBeforeUnmount(() => {
   inset: 0;
   position: absolute;
   z-index: 0;
+}
+
+.identity-card.verso .card-bg {
+  background:
+    radial-gradient(circle at 76% 70%, rgba(0, 119, 181, .18), transparent 24mm),
+    linear-gradient(116deg, rgba(255, 255, 255, .9) 0 58%, rgba(235, 247, 255, .72) 58.2% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(248, 252, 255, .9));
 }
 
 .card-bg::after {

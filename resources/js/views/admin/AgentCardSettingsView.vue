@@ -144,7 +144,6 @@
           </article>
 
           <article class="identity-card verso" :style="cardStyle">
-            <img v-if="watermarkLogo" class="card-watermark" :src="watermarkLogo" alt="" aria-hidden="true">
             <header>
               <div>
                 <strong>{{ form.subtitle }}</strong>
@@ -450,6 +449,18 @@ onMounted(load)
   z-index: 0;
 }
 
+.identity-card.verso {
+  background: #f8fcff;
+}
+
+.identity-card.verso::before {
+  background: url('/images/pnmls.jpeg') center / cover no-repeat;
+  filter: blur(3px) saturate(.86) contrast(1.04);
+  inset: -7px;
+  opacity: .42;
+  transform: scale(1.04);
+}
+
 .identity-card::after {
   background: linear-gradient(135deg, rgba(0, 119, 181, .06), rgba(0, 119, 181, .24));
   clip-path: polygon(62% 0, 100% 0, 100% 100%, 24% 100%);
@@ -461,6 +472,16 @@ onMounted(load)
   top: 0;
   width: 132px;
   z-index: 0;
+}
+
+.identity-card.verso::after {
+  background:
+    radial-gradient(circle at 76% 70%, rgba(0, 119, 181, .18), transparent 116px),
+    linear-gradient(116deg, rgba(255, 255, 255, .9) 0 58%, rgba(235, 247, 255, .72) 58.2% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(248, 252, 255, .9));
+  clip-path: none;
+  left: 0;
+  width: 100%;
 }
 
 .card-watermark {
