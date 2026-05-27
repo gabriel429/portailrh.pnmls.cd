@@ -34,8 +34,8 @@
       <template v-else>
         <!-- Structure non identifiée -->
         <div v-if="!structure" class="dash-panel mt-3">
-          <div class="text-center py-5 text-muted">
-            <i class="fas fa-building fa-3x mb-3 d-block text-warning"></i>
+          <div class="holiday-empty-state text-muted">
+            <i class="fas fa-building text-warning"></i>
             <h5>Structure non identifiée</h5>
             <p class="mb-0">Votre département ou organe n'a pas pu être déterminé.<br>Veuillez contacter la Section RH.</p>
           </div>
@@ -43,8 +43,8 @@
 
         <!-- Pas de planning -->
         <div v-else-if="!planning" class="dash-panel mt-3">
-          <div class="text-center py-5 text-muted">
-            <i class="fas fa-calendar-times fa-3x mb-3 d-block"></i>
+          <div class="holiday-empty-state text-muted">
+            <i class="fas fa-calendar-times"></i>
             <h5>Aucun planning pour {{ selectedYear }}</h5>
             <p class="mb-0">Le planning de congés de <strong>{{ structure.nom }}</strong> n'a pas encore été créé pour cette année.</p>
           </div>
@@ -268,8 +268,8 @@
             </table>
           </div>
 
-          <div v-else class="text-center py-4 text-muted">
-            <i class="fas fa-check-circle fa-2x mb-2 d-block text-success"></i>
+          <div v-else class="holiday-empty-state holiday-empty-state-sm text-muted">
+            <i class="fas fa-check-circle text-success"></i>
             <p class="mb-0">Aucun collègue en congé approuvé pour cette année.</p>
           </div>
         </div>
@@ -400,23 +400,24 @@ onMounted(() => loadPlanning())
 .holiday-modern {
   width: 100%;
   max-width: none;
-  padding: 1.5rem 1.5rem 2rem;
+  padding: 1.6rem clamp(1rem, 3vw, 2.4rem) 2.5rem;
 }
 
 .holiday-shell {
   width: 100%;
-  max-width: none;
+  max-width: 1320px;
+  margin: 0 auto;
   padding: 0;
 }
 
 .holiday-shell .rh-hero {
   position: relative;
-  min-height: 200px;
-  padding: 2rem 2.25rem;
+  min-height: 132px;
+  padding: 1.55rem 1.75rem;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .42);
   border-radius: 18px;
-  background: linear-gradient(135deg, #087ec0 0%, #3d9a87 100%);
+  background: radial-gradient(circle at 92% -20%, rgba(255, 255, 255, .18), transparent 28%), linear-gradient(135deg, #0a1f37 0%, #0b5f8d 68%, #0785bd 100%);
   box-shadow: 0 18px 38px rgba(2, 93, 128, .18);
 }
 
@@ -429,7 +430,7 @@ onMounted(() => loadPlanning())
 }
 
 .holiday-shell .rh-hero .row {
-  min-height: 132px;
+  min-height: 84px;
 }
 
 .holiday-shell .rh-title {
@@ -465,6 +466,44 @@ onMounted(() => loadPlanning())
   border-radius: 14px;
   background: rgba(255, 255, 255, .9);
   box-shadow: 0 16px 38px rgba(15, 23, 42, .08);
+}
+
+.holiday-empty-state {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: .7rem;
+  min-height: 210px;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+}
+
+.holiday-empty-state-sm {
+  min-height: 120px;
+  padding: 1.8rem 1.25rem;
+}
+
+.holiday-empty-state i {
+  display: grid;
+  place-items: center;
+  width: 54px;
+  height: 54px;
+  border-radius: 16px;
+  background: rgba(226, 232, 240, .7);
+  color: #94a3b8;
+  font-size: 1.8rem;
+}
+
+.holiday-empty-state h5 {
+  margin: 0;
+  color: #475569;
+  font-weight: 800;
+}
+
+.holiday-empty-state p {
+  max-width: 680px;
+  color: #64748b;
+  line-height: 1.55;
 }
 
 .holiday-shell .panel-head {
@@ -570,6 +609,11 @@ onMounted(() => loadPlanning())
     min-height: auto;
     padding: 1.35rem 1rem;
     border-radius: 14px;
+  }
+
+  .holiday-empty-state {
+    min-height: 180px;
+    padding: 2rem 1rem;
   }
 
   .rh-hero .row { text-align: center; }
