@@ -831,9 +831,9 @@ onMounted(() => loadTache())
 
 .task-show-layout {
   display: grid;
-  grid-template-columns: minmax(640px, 1fr) minmax(360px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
   align-items: start;
-  gap: 1.25rem;
+  gap: 1.5rem;
   width: 100%;
   margin-top: 1rem;
 }
@@ -845,6 +845,7 @@ onMounted(() => loadTache())
 }
 
 .task-show-side {
+  min-width: 360px;
   max-width: 420px;
   justify-self: stretch;
 }
@@ -987,6 +988,7 @@ onMounted(() => loadTache())
   }
 
   .task-show-side {
+    min-width: 0;
     max-width: none;
   }
 }
