@@ -321,13 +321,16 @@ class TacheWorkflowService
         if ($level === 'sen' || $level === 'departement') {
             $sameDepartment = $candidate->departement_id && $targetAgent->departement_id
                 && (int) $candidate->departement_id === (int) $targetAgent->departement_id;
+            $isChefSectionSameDepartment = $sameDepartment
+                && str_contains($profile, 'chef')
+                && str_contains($profile, 'section');
 
             return $role === 'sen'
-                || str_contains($organe, 'national') && (
+                || (str_contains($organe, 'national') && (
                     str_contains($role, 'directeur')
                     || str_contains($profile, 'directeur national')
-                    || ($sameDepartment && str_contains($profile, 'chef de section'))
-                );
+                ))
+                || $isChefSectionSameDepartment;
         }
 
         if ($level === 'province') {
