@@ -50,9 +50,10 @@
           <button
             v-for="tab in statusTabs"
             :key="tab.key"
+            type="button"
             class="tache-tab"
             :class="{ active: statusFilter === tab.key, [tab.color]: true }"
-            @click="statusFilter = tab.key"
+            @click="setStatusFilter(tab.key)"
           >
             <i :class="tab.icon + ' me-1'"></i>
             <span class="tache-tab-label">{{ tab.label }}</span>
@@ -315,7 +316,12 @@ const isDirecteur = ref(false)
 const canManageTaches = ref(false)
 const canCreateTaches = ref(false)
 const sourceFilter = ref('all')
-const statusFilter = ref(route.query.statut ?? 'all')
+const validStatusFilters = ['all', 'nouvelle', 'en_cours', 'bloquee', 'terminee', 'en_retard']
+const normalizeStatusFilter = (value) => {
+  const filter = Array.isArray(value) ? value[0] : value
+  return validStatusFilters.includes(filter) ? filter : 'all'
+}
+const statusFilter = ref(normalizeStatusFilter(route.query.statut))
 const createModalOpen = ref(false)
 const loadingCreateData = ref(false)
 const submittingCreate = ref(false)
@@ -344,10 +350,13 @@ const createPageSubtitle = computed(() => {
 })
 
 watch(() => route.query.statut, (val) => {
-  statusFilter.value = val ?? 'all'
+  const nextFilter = normalizeStatusFilter(val)
+  if (statusFilter.value !== nextFilter) {
+    statusFilter.value = nextFilter
+  }
 })
 
-watch(() => route.fullPath, () => {
+watch(() => [route.name, route.query.scope], () => {
   loadTaches()
 })
 
@@ -582,6 +591,10 @@ function removeCreateQuery() {
   router.replace({ name: route.name, query })
 }
 
+function setStatusFilter(filter) {
+  statusFilter.value = normalizeStatusFilter(filter)
+}
+
 function formatFileSize(size) {
   if (!size) return '0 Ko'
   if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} Mo`
@@ -663,23 +676,30 @@ function formatDate(dateStr) {
 }
 
 onMounted(() => {
-  if (route.query.statut) {
-    const valid = ['nouvelle', 'en_cours', 'bloquee', 'terminee', 'en_retard']
-    if (valid.includes(route.query.statut)) statusFilter.value = route.query.statut
-  }
+  statusFilter.value = normalizeStatusFilter(route.query.statut)
   loadTaches().then(() => {
     if (route.query.create) openCreateModal()
   })
 })
 
 watch(statusFilter, (val) => {
+  const nextFilter = normalizeStatusFilter(val)
+  if (val !== nextFilter) {
+    statusFilter.value = nextFilter
+    return
+  }
+
+  const currentFilter = normalizeStatusFilter(route.query.statut)
+  const hasStatusQuery = Object.prototype.hasOwnProperty.call(route.query, 'statut')
+  if (currentFilter === nextFilter && (nextFilter !== 'all' || !hasStatusQuery)) return
+
   const query = { ...route.query }
-  if (val === 'all') {
+  if (nextFilter === 'all') {
     delete query.statut
   } else {
-    query.statut = val
+    query.statut = nextFilter
   }
-  router.replace({ query })
+  router.replace({ name: route.name, query })
 })
 </script>
 
