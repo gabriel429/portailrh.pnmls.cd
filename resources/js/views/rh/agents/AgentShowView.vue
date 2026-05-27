@@ -28,8 +28,8 @@
 
       <!-- Agent header -->
       <div class="agent-header">
-        <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
-          <div class="d-flex align-items-center gap-3">
+        <div class="agent-header-main d-flex justify-content-between align-items-start flex-wrap gap-3">
+          <div class="agent-header-identity d-flex align-items-center gap-3">
             <div v-if="agent.photo && !agent._photoError" class="agent-avatar-lg">
               <img :src="'/' + agent.photo" :alt="agent.nom_complet" class="rounded-circle" style="width:80px;height:80px;object-fit:cover;border:3px solid rgba(255,255,255,0.3);" @error="agent._photoError = true">
             </div>
@@ -51,7 +51,7 @@
               </div>
             </div>
           </div>
-          <div class="d-flex gap-2 flex-wrap no-print">
+          <div class="agent-header-actions d-flex gap-2 flex-wrap no-print">
             <button v-if="canManageAgentDocuments" class="btn btn-success btn-sm" :disabled="dossierDownloading" @click="downloadAgentDossier">
               <span v-if="dossierDownloading" class="spinner-border spinner-border-sm me-1"></span>
               <i v-else class="fas fa-download me-1"></i> Télécharger le dossier
@@ -1240,6 +1240,30 @@ onMounted(() => {
     opacity: 0.10;
     pointer-events: none;
 }
+.agent-header-main {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1.25rem;
+}
+.agent-header-identity {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    flex: 1 1 420px;
+}
+.agent-header-actions {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+    gap: .5rem;
+    max-width: 520px;
+}
 .agent-header h2 {
     font-size: clamp(1.35rem, 2.2vw, 2rem);
     font-weight: 900;
@@ -1281,6 +1305,17 @@ onMounted(() => {
 }
 .agent-header .badge { font-size: 0.85rem; }
 .agent-header .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .35rem;
+    width: auto;
+    min-width: 0;
+    min-height: 34px;
+    padding: .48rem .75rem;
+    line-height: 1;
+    white-space: nowrap;
+    flex: 0 0 auto;
     border-radius: 8px;
     border-width: 1px;
     font-weight: 800;
@@ -1620,6 +1655,20 @@ onMounted(() => {
     .agent-header {
         padding: 20px 16px;
         border-radius: 6px;
+    }
+    .agent-header-main,
+    .agent-header-identity {
+        align-items: flex-start;
+    }
+    .agent-header-actions {
+        justify-content: flex-start;
+        max-width: none;
+        width: 100%;
+    }
+    .agent-header .btn {
+        min-height: 32px;
+        padding: .45rem .65rem;
+        font-size: .8rem;
     }
     .agent-header::after {
         width: 120px;
