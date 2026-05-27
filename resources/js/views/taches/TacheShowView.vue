@@ -33,8 +33,8 @@
           </div>
         </section>
 
-        <div class="task-show-layout">
-          <div class="task-show-main">
+        <div class="task-show-layout" :style="taskLayoutStyle">
+          <div class="task-show-main" :style="taskPanelColumnStyle">
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
@@ -248,7 +248,7 @@
             </div>
           </div>
 
-          <div class="task-show-side">
+          <div class="task-show-side" :style="taskPanelColumnStyle">
             <div class="dash-panel">
               <header class="panel-head">
                 <div>
@@ -440,7 +440,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
@@ -475,6 +475,27 @@ const commentForm = ref({ contenu: '', type_commentaire: 'commentaire' })
 const validationForm = ref({ commentaire: '' })
 const reportForm = ref({ rapport: '' })
 const reports = ref([])
+const isNarrowTaskLayout = ref(false)
+
+const taskLayoutStyle = computed(() => ({
+  display: 'grid',
+  gridTemplateColumns: isNarrowTaskLayout.value ? '1fr' : 'minmax(0, 1fr) clamp(360px, 30vw, 420px)',
+  alignItems: 'start',
+  gap: '1.5rem',
+  width: '100%',
+  marginTop: '1rem',
+}))
+
+const taskPanelColumnStyle = {
+  minWidth: '0',
+  maxWidth: 'none',
+  width: '100%',
+}
+
+function updateTaskLayoutMode() {
+  if (typeof window === 'undefined') return
+  isNarrowTaskLayout.value = window.matchMedia('(max-width: 1100px)').matches
+}
 
 const commentaires = computed(() => {
   if (!tache.value?.commentaires) return []
@@ -805,7 +826,16 @@ async function handleDelete() {
   }
 }
 
-onMounted(() => loadTache())
+onMounted(() => {
+  updateTaskLayoutMode()
+  window.addEventListener('resize', updateTaskLayoutMode, { passive: true })
+  loadTache()
+})
+
+onBeforeUnmount(() => {
+  if (typeof window === 'undefined') return
+  window.removeEventListener('resize', updateTaskLayoutMode)
+})
 </script>
 
 <style scoped>
@@ -832,6 +862,7 @@ onMounted(() => loadTache())
 .task-show-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(360px, 420px);
+  grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 420px);
   align-items: start;
   gap: 1.5rem;
   width: 100%;
@@ -845,8 +876,8 @@ onMounted(() => loadTache())
 }
 
 .task-show-side {
-  min-width: 360px;
-  max-width: 420px;
+  min-width: 0;
+  max-width: none;
   justify-self: stretch;
 }
 
@@ -976,10 +1007,52 @@ onMounted(() => loadTache())
   border: 1px solid #e2e8f0;
   border-radius: 14px;
   background: #fff;
+  overflow-wrap: anywhere;
 }
 
 .task-history-item + .task-history-item {
   margin-top: .75rem;
+}
+
+:global(html.dark) .task-show-view .dash-panel {
+  background: linear-gradient(145deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .86)) !important;
+  border-color: rgba(125, 211, 252, .18) !important;
+  color: #e2e8f0 !important;
+}
+
+:global(html.dark) .task-show-view .panel-head {
+  border-color: rgba(125, 211, 252, .14) !important;
+}
+
+:global(html.dark) .task-show-view .panel-title,
+:global(html.dark) .task-show-view .task-detail-grid dd,
+:global(html.dark) .task-show-view .task-history-item p,
+:global(html.dark) .task-show-view .task-history-item strong {
+  color: #f1f5f9 !important;
+}
+
+:global(html.dark) .task-show-view .panel-sub,
+:global(html.dark) .task-show-view .task-detail-grid dt,
+:global(html.dark) .task-show-view .task-history-item small,
+:global(html.dark) .task-show-view .task-history-item .text-muted {
+  color: #a8b7cc !important;
+}
+
+:global(html.dark) .task-show-view .task-history-item,
+:global(html.dark) .task-show-view .task-inline-file {
+  background: rgba(15, 23, 42, .62) !important;
+  border-color: rgba(125, 211, 252, .16) !important;
+  color: #e2e8f0 !important;
+}
+
+:global(html.dark) .task-show-view .task-doc-item {
+  background: rgba(37, 99, 235, .18) !important;
+  border-color: rgba(96, 165, 250, .32) !important;
+  color: #bfdbfe !important;
+}
+
+:global(html.dark) .task-show-view .task-progress-bar {
+  background: rgba(15, 23, 42, .72) !important;
 }
 
 @media (max-width: 1100px) {

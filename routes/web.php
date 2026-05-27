@@ -13,6 +13,48 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\DeploymentController;
 use App\Http\Controllers\DocumentTravailController;
 
+$pwaManifestResponse = function () {
+    $manifestPath = public_path('manifest.json');
+    $manifest = is_file($manifestPath)
+        ? json_decode((string) file_get_contents($manifestPath), true)
+        : null;
+
+    if (! is_array($manifest)) {
+        $manifest = [
+            'name' => 'E-PNMLS',
+            'short_name' => 'E-PNMLS',
+            'start_url' => '/',
+            'scope' => '/',
+            'display' => 'standalone',
+            'background_color' => '#ffffff',
+            'theme_color' => '#0077B5',
+            'icons' => [
+                [
+                    'src' => '/pwa-192x192.png',
+                    'sizes' => '192x192',
+                    'type' => 'image/png',
+                ],
+                [
+                    'src' => '/pwa-512x512.png',
+                    'sizes' => '512x512',
+                    'type' => 'image/png',
+                ],
+            ],
+        ];
+    }
+
+    return response(
+        json_encode($manifest, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+        200,
+        [
+            'Content-Type' => 'application/manifest+json; charset=utf-8',
+            'Cache-Control' => 'no-cache, no-store, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]
+    );
+};
+
 // ── Build assets with correct MIME types (Hostinger fix) ─────
 Route::get('/build/assets/{file}', function (string $file) {
     $path = public_path("build/assets/{$file}");
@@ -62,6 +104,9 @@ Route::get('/build/{file}', function (string $file) {
 
     return response()->file($path, $headers);
 })->where('file', '[^/]+');
+
+Route::get('/pwa-manifest', $pwaManifestResponse)->name('pwa.manifest');
+Route::get('/manifest.json', $pwaManifestResponse);
 
 // Named login route — required by Laravel auth middleware for redirect
 Route::get('/login', function () {

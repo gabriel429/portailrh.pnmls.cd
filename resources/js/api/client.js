@@ -18,6 +18,11 @@ const client = axios.create({
     },
 })
 
+let csrfRefreshPromise = null
+let authRedirectInProgress = false
+let lastForbiddenToastAt = 0
+let lastForbiddenToastKey = ''
+
 function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
 }
@@ -39,6 +44,73 @@ function resolveFromRequestInterceptor(config, response) {
     })
 
     return config
+}
+
+function requestMethod(config) {
+    return (config?.method || 'get').toLowerCase()
+}
+
+function requestUrl(config) {
+    return String(config?.url || '')
+}
+
+function isBackgroundRequest(config) {
+    const url = requestUrl(config)
+
+    return Boolean(config?.silent || config?.skipForbiddenToast || config?.background)
+        || url.includes('/notifications/unread-count')
+        || url.includes('/sync/')
+        || url.includes('/user-experience/bootstrap')
+}
+
+function shouldShowForbiddenToast(error) {
+    const config = error.config || {}
+    if (isBackgroundRequest(config)) return false
+    if (config.showForbiddenToast === false) return false
+    if (config.showForbiddenToast === true) return true
+
+    const method = requestMethod(config)
+    if (['get', 'head', 'options'].includes(method)) return false
+
+    const key = `${method}:${requestUrl(config)}`
+    const now = Date.now()
+    if (key === lastForbiddenToastKey && now - lastForbiddenToastAt < 15000) {
+        return false
+    }
+
+    lastForbiddenToastKey = key
+    lastForbiddenToastAt = now
+    return true
+}
+
+function redirectToLoginOnce() {
+    const isLoginRoute = router.currentRoute.value?.name === 'login'
+    if (isLoginRoute || authRedirectInProgress) return
+
+    authRedirectInProgress = true
+    const auth = useAuthStore()
+    auth.clearUser()
+    router.replace({ name: 'login' }).finally(() => {
+        window.setTimeout(() => {
+            authRedirectInProgress = false
+        }, 1000)
+    })
+}
+
+async function refreshCsrfCookie() {
+    if (!csrfRefreshPromise) {
+        csrfRefreshPromise = axios.get('/sanctum/csrf-cookie', {
+            withCredentials: true,
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        }).finally(() => {
+            csrfRefreshPromise = null
+        })
+    }
+
+    return csrfRefreshPromise
 }
 
 // Initialisation du stockage offline
@@ -178,25 +250,29 @@ client.interceptors.response.use(
             }
         }
 
-        // Gestion des erreurs d'authentification
-        // Avoid double-redirect: the router guard already redirects unauthenticated users
-        const isLoginRoute = router.currentRoute.value?.name === 'login'
+        const status = error.response?.status
 
-        if (error.response?.status === 401 && !isLoginRoute) {
-            const auth = useAuthStore()
-            auth.clearUser()
-            router.replace({ name: 'login' })
+        if (status === 419 && !error.config?.__csrfRetried) {
+            try {
+                await refreshCsrfCookie()
+                error.config.__csrfRetried = true
+                return client(error.config)
+            } catch (csrfError) {
+                reportError('❌ Impossible de renouveler le jeton CSRF:', csrfError)
+            }
         }
 
-        if (error.response?.status === 403) {
+        if (status === 401) {
+            redirectToLoginOnce()
+        }
+
+        if (status === 403 && shouldShowForbiddenToast(error)) {
             const ui = useUiStore()
-            ui.addToast('❌ Accès refusé - permissions insuffisantes', 'danger', 5000)
+            ui.addToast(error.response?.data?.message || 'Accès refusé - permissions insuffisantes', 'danger', 5000)
         }
 
-        if (error.response?.status === 419 && !isLoginRoute) {
-            const auth = useAuthStore()
-            auth.clearUser()
-            router.replace({ name: 'login' })
+        if (status === 419) {
+            redirectToLoginOnce()
         }
 
         // FALLBACK CACHE EN CAS D'ERREUR RÉSEAU

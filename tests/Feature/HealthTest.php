@@ -15,4 +15,20 @@ class HealthTest extends TestCase
     {
         $this->getJson('/api')->assertOk();
     }
+
+    public function test_pwa_manifest_endpoint_is_available(): void
+    {
+        $this->get('/pwa-manifest')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/manifest+json; charset=utf-8')
+            ->assertJsonPath('name', 'E-PNMLS');
+    }
+
+    public function test_legacy_manifest_url_is_available(): void
+    {
+        $this->get('/manifest.json')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/manifest+json; charset=utf-8')
+            ->assertJsonPath('name', 'E-PNMLS');
+    }
 }

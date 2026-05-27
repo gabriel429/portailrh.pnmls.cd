@@ -11,7 +11,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-27-task-layout-v3'
+const BUILD_CACHE_VERSION = '2026-05-27-auth-guard-v7'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 const APP_SW_PATH = '/build/sw.js'
 

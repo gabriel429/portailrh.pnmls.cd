@@ -218,6 +218,7 @@ img {
     body .rh-modern.task-show-view .rh-shell .task-show-layout {
         display: grid !important;
         grid-template-columns: minmax(0, 1fr) minmax(360px, 420px) !important;
+        grid-template-columns: minmax(0, 1fr) clamp(360px, 30vw, 420px) !important;
         align-items: start !important;
         gap: 1.5rem !important;
         width: 100% !important;
@@ -234,8 +235,8 @@ img {
 
     body .rh-modern.task-show-view .rh-shell .task-show-side {
         justify-self: stretch !important;
-        min-width: 360px !important;
-        max-width: 420px !important;
+        min-width: 0 !important;
+        max-width: none !important;
     }
 
     body .rh-modern.task-show-view .rh-shell .task-show-main > .dash-panel,
@@ -254,6 +255,51 @@ img {
         min-width: 0 !important;
         max-width: none !important;
     }
+}
+
+body .rh-modern.task-show-view .task-history-item {
+    overflow-wrap: anywhere !important;
+}
+
+html.dark body .rh-modern.task-show-view .dash-panel {
+    background: linear-gradient(145deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .86)) !important;
+    border-color: rgba(125, 211, 252, .18) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark body .rh-modern.task-show-view .panel-head {
+    border-color: rgba(125, 211, 252, .14) !important;
+}
+
+html.dark body .rh-modern.task-show-view .panel-title,
+html.dark body .rh-modern.task-show-view .task-detail-grid dd,
+html.dark body .rh-modern.task-show-view .task-history-item p,
+html.dark body .rh-modern.task-show-view .task-history-item strong {
+    color: #f1f5f9 !important;
+}
+
+html.dark body .rh-modern.task-show-view .panel-sub,
+html.dark body .rh-modern.task-show-view .task-detail-grid dt,
+html.dark body .rh-modern.task-show-view .task-history-item small,
+html.dark body .rh-modern.task-show-view .task-history-item .text-muted {
+    color: #a8b7cc !important;
+}
+
+html.dark body .rh-modern.task-show-view .task-history-item,
+html.dark body .rh-modern.task-show-view .task-inline-file {
+    background: rgba(15, 23, 42, .62) !important;
+    border-color: rgba(125, 211, 252, .16) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark body .rh-modern.task-show-view .task-doc-item {
+    background: rgba(37, 99, 235, .18) !important;
+    border-color: rgba(96, 165, 250, .32) !important;
+    color: #bfdbfe !important;
+}
+
+html.dark body .rh-modern.task-show-view .task-progress-bar {
+    background: rgba(15, 23, 42, .72) !important;
 }
 
 @supports selector(:has(*)) {

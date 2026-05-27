@@ -11,7 +11,7 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('images/icons/pnmls-16.png') }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('images/icons/pnmls-180.png') }}">
-    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <link rel="manifest" href="{{ route('pwa.manifest') }}">
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#0077B5">
@@ -28,6 +28,8 @@
         $viteImports = [];
         $viteAsset = fn (string $path) => asset('public/build/' . ltrim($path, '/'));
         $dashboardCssFiles = [];
+        $rhModernCssPath = public_path('css/rh-modern.css');
+        $rhModernCssVersion = is_file($rhModernCssPath) ? filemtime($rhModernCssPath) : time();
         $manifestPath = public_path('build/manifest.json');
         $dashboardManifestEntries = [
             'resources/js/views/dashboard/DashboardView.vue',
@@ -77,7 +79,7 @@
     @foreach ($dashboardCssFiles as $dashboardCssFile => $dashboardCssVersion)
     <link rel="stylesheet" href="{{ $viteAsset($dashboardCssFile) }}?v={{ $dashboardCssVersion }}">
     @endforeach
-    <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}?v={{ $rhModernCssVersion }}">
 </head>
 <body>
     <div id="app"></div>

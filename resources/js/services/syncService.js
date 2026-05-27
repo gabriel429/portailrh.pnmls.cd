@@ -10,6 +10,10 @@ import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
 import { debugLog, reportError } from '@/utils/logger'
 
+function isAuthOrPermissionError(error) {
+    return [401, 403, 419].includes(error?.response?.status)
+}
+
 class SyncService {
     constructor() {
         this.isOnline = navigator.onLine
@@ -103,9 +107,13 @@ class SyncService {
 
                 for (const payload of bulkPayload) {
                     try {
-                        const response = await client.post('/pointages', payload)
+                        const response = await client.post('/pointages', payload, { silent: true, skipForbiddenToast: true })
                         syncedCount += payload.pointages.length
                     } catch (err) {
+                        if (isAuthOrPermissionError(err)) {
+                            throw err
+                        }
+
                         // Fallback : tenter un par un si le lot échoue
                         for (const pt of payload.pointages) {
                             try {
@@ -150,12 +158,20 @@ class SyncService {
 
             } catch (bulkError) {
                 reportError('❌ Erreur synchronisation bulk:', bulkError)
+                if (isAuthOrPermissionError(bulkError)) {
+                    this.stopAutoSync()
+                    return false
+                }
                 this.notifyUser('Erreur de synchronisation', 'danger')
                 return false
             }
 
         } catch (error) {
             reportError('❌ Erreur synchronisation globale:', error)
+            if (isAuthOrPermissionError(error)) {
+                this.stopAutoSync()
+                return false
+            }
             this.notifyUser('Erreur de synchronisation', 'danger')
             return false
 
@@ -224,7 +240,7 @@ class SyncService {
                 heure_sortie: heure_sortie || null,
                 observations: observations || null,
             }],
-        })
+        }, { silent: true, skipForbiddenToast: true })
 
         await offlineStorage.updatePointageStatus(tempId, 'synced')
 

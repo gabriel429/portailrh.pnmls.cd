@@ -14,11 +14,11 @@ export const useNotificationStore = defineStore('notification', {
             }
 
             try {
-                const { data } = await client.get('/notifications/unread-count')
+                const { data } = await client.get('/notifications/unread-count', { skipForbiddenToast: true })
                 this.count = data.count
                 this.recent = data.recent || []
             } catch (error) {
-                if ([401, 419].includes(error.response?.status)) {
+                if ([401, 403, 419].includes(error.response?.status)) {
                     this.stopPolling()
                     this.count = 0
                     this.recent = []

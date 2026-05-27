@@ -16,8 +16,8 @@ return [
     */
 
     'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
-        '%s%s',
-        'localhost,localhost:3000,localhost:5173,localhost:8000,127.0.0.1,127.0.0.1:8000,::1,deeppink-rhinoceros-934330.hostingersite.com',
+        '%s,%s',
+        'localhost,localhost:3000,localhost:5173,localhost:8000,127.0.0.1,127.0.0.1:8000,::1,e-pnmls.cd,www.e-pnmls.cd,portailrh.pnmls.cd,www.portailrh.pnmls.cd,deeppink-rhinoceros-934330.hostingersite.com',
         Sanctum::currentApplicationUrlWithPort(),
         // Sanctum::currentRequestHost(),
     ))),
