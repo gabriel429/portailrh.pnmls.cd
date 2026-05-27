@@ -831,7 +831,7 @@ onMounted(() => loadTache())
 
 .dash-panel dl.row {
   display: grid;
-  grid-template-columns: minmax(110px, .45fr) minmax(160px, 1fr) minmax(110px, .45fr) minmax(160px, 1fr);
+  grid-template-columns: minmax(135px, .48fr) minmax(180px, 1fr) minmax(135px, .48fr) minmax(180px, 1fr);
   column-gap: 1rem;
   row-gap: .7rem;
   margin-left: 0;
@@ -890,6 +890,14 @@ onMounted(() => loadTache())
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+.dash-panel > .p-3 {
+  padding: 1rem 1.1rem;
+}
+
+.dash-panel .panel-title {
+  margin: 0;
 }
 
 .task-progress-wrap {
@@ -961,7 +969,7 @@ onMounted(() => loadTache())
   }
 
   .dash-panel dl.row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(120px, .38fr) minmax(0, 1fr);
   }
 
   .dash-panel dl.row dt {
