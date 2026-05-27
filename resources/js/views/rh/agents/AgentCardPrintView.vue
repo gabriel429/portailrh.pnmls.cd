@@ -788,7 +788,7 @@ onBeforeUnmount(() => {
 }
 
 .verso-photo-bg {
-  filter: blur(.65mm) saturate(.95) contrast(1.06);
+  filter: blur(.38mm) saturate(.95) contrast(1.06);
   height: calc(100% + 3.2mm);
   inset: -1.6mm;
   object-fit: cover;

@@ -459,7 +459,7 @@ onMounted(load)
 }
 
 .verso-photo-bg {
-  filter: blur(2.5px) saturate(.95) contrast(1.06);
+  filter: blur(1.4px) saturate(.95) contrast(1.06);
   height: calc(100% + 14px);
   inset: -7px;
   object-fit: cover;
