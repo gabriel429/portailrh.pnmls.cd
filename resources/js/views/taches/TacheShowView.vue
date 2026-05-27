@@ -176,8 +176,8 @@
               </header>
               <div class="p-3">
                 <form @submit.prevent="handleUpdateStatut">
-                  <div class="row g-3">
-                    <div class="col-md-4">
+                  <div class="row g-3 status-update-grid">
+                    <div class="col-md-3 status-field">
                       <label for="statut" class="form-label fw-bold">Nouveau statut <span class="text-danger">*</span></label>
                       <select v-model="statutForm.statut" class="form-select" id="statut" required>
                         <option value="en_cours">En cours</option>
@@ -185,13 +185,25 @@
                         <option value="terminee">Soumettre pour validation</option>
                       </select>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3 status-field">
                       <label for="pourcentage" class="form-label fw-bold">Progression (%) <span class="text-danger">*</span></label>
                       <input v-model.number="statutForm.pourcentage" type="number" min="0" max="100" class="form-control" id="pourcentage" required>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6 status-document-field">
                       <label for="document_statut" class="form-label fw-bold">Document justificatif</label>
-                      <input id="document_statut" ref="statusDocumentInput" type="file" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" @change="handleStatusDocumentChange">
+                      <div class="status-file-picker">
+                        <input id="document_statut" ref="statusDocumentInput" type="file" class="status-file-native" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" @change="handleStatusDocumentChange">
+                        <label for="document_statut" class="status-file-button">
+                          <i class="fas fa-paperclip"></i>
+                          <span>Choisir un fichier</span>
+                        </label>
+                        <span class="status-file-name" :title="statusDocumentName || 'Aucun fichier choisi'">
+                          {{ statusDocumentName || 'Aucun fichier choisi' }}
+                        </span>
+                        <button v-if="statusDocumentName" type="button" class="status-file-clear" aria-label="Retirer le document" @click="removeStatusDocument">
+                          <i class="fas fa-times"></i>
+                        </button>
+                      </div>
                     </div>
                     <div class="col-12">
                       <label for="contenu_statut" class="form-label fw-bold">Commentaire <span class="text-danger">*</span></label>
@@ -201,12 +213,6 @@
                       <div class="alert alert-info py-2 mb-0 small">
                         <i class="fas fa-info-circle me-1"></i>
                         Le document est obligatoire si vous soumettez la tâche à validation ou si vous modifiez le pourcentage de progression.
-                      </div>
-                      <div v-if="statusDocumentName" class="task-inline-file mt-2">
-                        <span><i class="fas fa-file me-1"></i>{{ statusDocumentName }}</span>
-                        <button type="button" class="btn btn-sm btn-outline-danger" @click="removeStatusDocument">
-                          <i class="fas fa-times"></i>
-                        </button>
                       </div>
                     </div>
                     <div class="col-12">
@@ -931,6 +937,15 @@ onBeforeUnmount(() => {
   grid-column: span 4;
 }
 
+.dash-panel form .status-update-grid .status-field {
+  grid-column: span 3;
+}
+
+.dash-panel form .status-update-grid .status-document-field {
+  grid-column: span 6;
+  min-width: 0;
+}
+
 .dash-panel form .col-12,
 .edit-tache-panel .col-12 {
   grid-column: 1 / -1;
@@ -1014,6 +1029,81 @@ onBeforeUnmount(() => {
   margin-top: .75rem;
 }
 
+.status-file-picker {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .55rem;
+  width: 100%;
+  min-width: 0;
+  min-height: 46px;
+  padding: .3rem;
+  border: 1px solid rgba(125, 211, 252, .45);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, .72);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 8px 22px rgba(15, 35, 58, .05);
+}
+
+.status-file-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.status-file-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-height: 36px;
+  margin: 0;
+  padding: .45rem .75rem;
+  border: 1px solid rgba(96, 165, 250, .42);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+  color: #1d4ed8;
+  cursor: pointer;
+  font-size: .86rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.status-file-button:hover {
+  border-color: rgba(37, 99, 235, .58);
+  color: #1e40af;
+}
+
+.status-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #64748b;
+  font-size: .86rem;
+  font-weight: 700;
+}
+
+.status-file-clear {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(239, 68, 68, .26);
+  border-radius: 10px;
+  background: rgba(254, 242, 242, .92);
+  color: #dc2626;
+  flex-shrink: 0;
+}
+
+.status-file-clear:hover {
+  background: #fee2e2;
+  border-color: rgba(220, 38, 38, .42);
+}
+
 :global(html.dark) .task-show-view .dash-panel {
   background: linear-gradient(145deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .86)) !important;
   border-color: rgba(125, 211, 252, .18) !important;
@@ -1051,6 +1141,28 @@ onBeforeUnmount(() => {
   color: #bfdbfe !important;
 }
 
+:global(html.dark) .task-show-view .status-file-picker {
+  background: rgba(15, 23, 42, .62) !important;
+  border-color: rgba(125, 211, 252, .2) !important;
+  box-shadow: inset 0 1px 0 rgba(148, 163, 184, .1), 0 8px 22px rgba(0, 0, 0, .18) !important;
+}
+
+:global(html.dark) .task-show-view .status-file-button {
+  background: rgba(37, 99, 235, .2) !important;
+  border-color: rgba(96, 165, 250, .34) !important;
+  color: #dbeafe !important;
+}
+
+:global(html.dark) .task-show-view .status-file-name {
+  color: #a8b7cc !important;
+}
+
+:global(html.dark) .task-show-view .status-file-clear {
+  background: rgba(127, 29, 29, .3) !important;
+  border-color: rgba(248, 113, 113, .28) !important;
+  color: #fecaca !important;
+}
+
 :global(html.dark) .task-show-view .task-progress-bar {
   background: rgba(15, 23, 42, .72) !important;
 }
@@ -1084,6 +1196,8 @@ onBeforeUnmount(() => {
   }
 
   .dash-panel form .col-md-4,
+  .dash-panel form .status-update-grid .status-field,
+  .dash-panel form .status-update-grid .status-document-field,
   .edit-tache-panel .col-sm-6 {
     grid-column: 1 / -1;
   }
