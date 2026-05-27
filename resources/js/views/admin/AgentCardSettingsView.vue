@@ -144,6 +144,7 @@
           </article>
 
           <article class="identity-card verso" :style="cardStyle">
+            <img class="verso-photo-bg" src="/images/pnmls.jpeg" alt="" aria-hidden="true">
             <header>
               <div>
                 <strong>{{ form.subtitle }}</strong>
@@ -454,11 +455,19 @@ onMounted(load)
 }
 
 .identity-card.verso::before {
-  background: url('/images/pnmls.jpeg') center / cover no-repeat;
-  filter: blur(3px) saturate(.86) contrast(1.04);
+  content: none;
+}
+
+.verso-photo-bg {
+  filter: blur(2.5px) saturate(.95) contrast(1.06);
+  height: calc(100% + 14px);
   inset: -7px;
-  opacity: .42;
-  transform: scale(1.04);
+  object-fit: cover;
+  opacity: .58;
+  pointer-events: none;
+  position: absolute;
+  width: calc(100% + 14px);
+  z-index: 0;
 }
 
 .identity-card::after {
@@ -476,12 +485,13 @@ onMounted(load)
 
 .identity-card.verso::after {
   background:
-    radial-gradient(circle at 76% 70%, rgba(0, 119, 181, .18), transparent 116px),
-    linear-gradient(116deg, rgba(255, 255, 255, .9) 0 58%, rgba(235, 247, 255, .72) 58.2% 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(248, 252, 255, .9));
+    radial-gradient(circle at 77% 72%, rgba(0, 119, 181, .16), transparent 116px),
+    linear-gradient(116deg, rgba(255, 255, 255, .66) 0 56%, rgba(235, 247, 255, .46) 56.2% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(248, 252, 255, .68));
   clip-path: none;
   left: 0;
   width: 100%;
+  z-index: 1;
 }
 
 .card-watermark {
@@ -499,9 +509,9 @@ onMounted(load)
   z-index: 0;
 }
 
-.identity-card > *:not(.card-watermark) {
+.identity-card > *:not(.card-watermark, .verso-photo-bg) {
   position: relative;
-  z-index: 1;
+  z-index: 2;
 }
 
 .identity-card header {

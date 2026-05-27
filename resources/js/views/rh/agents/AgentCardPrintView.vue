@@ -156,6 +156,7 @@
           </article>
 
           <article class="identity-card verso" :class="printSideClass('back')" :style="cardStyle">
+            <img class="verso-photo-bg" src="/images/pnmls.jpeg" alt="" aria-hidden="true">
             <div class="card-bg"></div>
             <header class="id-header single">
               <div>
@@ -786,14 +787,15 @@ onBeforeUnmount(() => {
   background: #f8fcff;
 }
 
-.identity-card.verso::before {
-  background: url('/images/pnmls.jpeg') center / cover no-repeat;
-  content: "";
-  filter: blur(.9mm) saturate(.86) contrast(1.04);
-  inset: -1.8mm;
-  opacity: .42;
+.verso-photo-bg {
+  filter: blur(.65mm) saturate(.95) contrast(1.06);
+  height: calc(100% + 3.2mm);
+  inset: -1.6mm;
+  object-fit: cover;
+  opacity: .58;
+  pointer-events: none;
   position: absolute;
-  transform: scale(1.04);
+  width: calc(100% + 3.2mm);
   z-index: 0;
 }
 
@@ -808,9 +810,10 @@ onBeforeUnmount(() => {
 
 .identity-card.verso .card-bg {
   background:
-    radial-gradient(circle at 76% 70%, rgba(0, 119, 181, .18), transparent 24mm),
-    linear-gradient(116deg, rgba(255, 255, 255, .9) 0 58%, rgba(235, 247, 255, .72) 58.2% 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, .8), rgba(248, 252, 255, .9));
+    radial-gradient(circle at 77% 72%, rgba(0, 119, 181, .16), transparent 24mm),
+    linear-gradient(116deg, rgba(255, 255, 255, .66) 0 56%, rgba(235, 247, 255, .46) 56.2% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(248, 252, 255, .68));
+  z-index: 1;
 }
 
 .card-bg::after {
