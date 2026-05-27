@@ -669,6 +669,7 @@ const quickActions = [
   { action: 'onlineAgents',       label: 'Agents en ligne', desc: 'Actifs sur 30 minutes',   icon: 'fa-user-clock',      color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents',             label: 'Agents',          desc: 'Agents de la province',   icon: 'fa-users',           color: '#0d9488', bg: '#d1fae5' },
   { to: '/carnet-adresses',       label: "Carnet d'adresse", desc: 'Contacts par poste',      icon: 'fa-address-book',    color: '#2563eb', bg: '#dbeafe' },
+  { to: '/mailbox',               label: 'Mail',             desc: 'Boîte de réception',      icon: 'fa-envelope',        color: '#0284c7', bg: '#e0f2fe' },
   { to: '/plan-travail',          label: 'PTA CAF',         desc: 'Plan de travail annuel',  icon: 'fa-tasks',           color: '#d97706', bg: '#fef3c7' },
   { to: '/requests',              label: 'Demandes',        desc: 'Validation administrative', icon: 'fa-paper-plane',   color: '#059669', bg: '#d1fae5' },
   { to: '/signalements',          label: 'Signalements',    desc: 'Alertes province',         icon: 'fa-flag',            color: '#dc2626', bg: '#fee2e2' },

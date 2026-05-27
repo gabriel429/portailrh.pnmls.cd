@@ -396,9 +396,9 @@ const quickActions = [
   { to: '/renforcements', label: 'Formations', desc: 'Gérer les formations RC', icon: 'fa-chalkboard-teacher', color: '#059669', bg: '#d1fae5' },
   { to: '/renforcements/create', label: 'Planifier', desc: 'Nouvelle formation', icon: 'fa-plus-circle', color: '#0ea5e9', bg: '#e0f2fe' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
+  { to: '/mailbox', label: 'Mail', desc: 'Boîte de réception', icon: 'fa-envelope', color: '#0284c7', bg: '#e0f2fe' },
   { to: '/plan-travail', label: 'Plan travail', desc: 'Activités PTA RC', icon: 'fa-tasks', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/taches', label: 'Mes tâches', desc: 'Suivi de mes tâches', icon: 'fa-clipboard-list', color: '#0891b2', bg: '#cffafe' },
-  { to: '/messages', label: 'Messages', desc: 'Communication RH', icon: 'fa-envelope', color: '#be185d', bg: '#fce7f3' },
 ]
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────

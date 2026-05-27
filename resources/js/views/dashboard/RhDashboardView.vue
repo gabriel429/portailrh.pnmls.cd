@@ -1258,6 +1258,7 @@ const baseQuickActions = [
   { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents', label: 'Gestion des agents', desc: 'Consulter et gérer les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts des agents par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
+  { to: '/mailbox', label: 'Mail', desc: 'Boîte de réception', icon: 'fa-envelope', color: '#0284c7', bg: '#e0f2fe' },
   { to: '/rh/agents/create', label: 'Nouvel agent', desc: 'Créer une fiche agent', icon: 'fa-user-plus', color: '#059669', bg: '#d1fae5' },
   { to: '/rh/holidays/planning', label: 'Gestion des congés', desc: 'Planning et statuts des agents', icon: 'fa-calendar-alt', color: '#10b981', bg: '#ecfdf5' },
   { to: '/rh/pointages/daily', label: 'Pointages du jour', desc: 'Saisie des présences', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },

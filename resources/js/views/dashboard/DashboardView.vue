@@ -372,6 +372,7 @@ const quickActions = computed(() => [
   { to: '/signalements/create', label: 'Signalement', desc: 'Déclarer un incident', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
   { to: '/mon-planning-conges', label: 'Planning congés', desc: 'Congés de ma structure', icon: 'fa-calendar-alt', color: '#0d9488', bg: '#ccfbf1' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts des agents', icon: 'fa-address-book', color: '#0ea5e9', bg: '#e0f2fe' },
+  { to: '/mailbox', label: 'Mail', desc: 'Boîte de réception', icon: 'fa-envelope', color: '#0284c7', bg: '#e0f2fe' },
   { to: '/documents-travail', label: 'Documents de travail', desc: 'Consulter les documents', icon: 'fa-folder-open', color: '#0891b2', bg: '#cffafe' },
   { to: '/plan-travail', label: 'PTA', desc: 'Plan de travail annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/profile', label: 'Mon profil', desc: 'Voir mes infos', icon: 'fa-user-circle', color: '#7c3aed', bg: '#ede9fe' },
