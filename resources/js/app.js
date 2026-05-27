@@ -11,7 +11,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker disabled to prevent stale builds')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-27-dashboard-mail-v1'
+const BUILD_CACHE_VERSION = '2026-05-27-task-create-button-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 
 async function clearBuildCachesOnVersionChange() {

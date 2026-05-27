@@ -48,6 +48,7 @@ class TacheController extends ApiController
         $isSENOrSENA = $isSEN || $isSENA;
         $isSEP = $roles->isSepManager($user);
         $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
+        $canCreateTaches = (bool) $agent;
 
         // Personnel SEN (assistants, secrétaires) : accès aux tâches SEN
         $isSENStaff = false;
@@ -59,7 +60,7 @@ class TacheController extends ApiController
             ? Tache::query()->parAgent($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
-        $tachesCreeesQuery = (($isTaskManager || $isSENStaff) && $agent)
+        $tachesCreeesQuery = $agent
             ? Tache::query()->parCreateur($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
@@ -78,8 +79,8 @@ class TacheController extends ApiController
             $senResource = TacheResource::collection($senTaches)->resolve();
             return $this->success(
                 ['mes_taches' => $senResource, 'taches_creees' => []],
-                ['isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isSENScope' => true, 'isSENAScope' => $isSENA],
-                ['mesTaches' => $senResource, 'tachesCreees' => [], 'isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isSENScope' => true, 'isSENAScope' => $isSENA]
+                ['isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'canCreateTaches' => $canCreateTaches, 'isSENScope' => true, 'isSENAScope' => $isSENA],
+                ['mesTaches' => $senResource, 'tachesCreees' => [], 'isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'canCreateTaches' => $canCreateTaches, 'isSENScope' => true, 'isSENAScope' => $isSENA]
             );
         }
 
@@ -97,8 +98,8 @@ class TacheController extends ApiController
                 $deptResource = TacheResource::collection($deptTaches)->resolve();
                 return $this->success(
                     ['mes_taches' => $deptResource, 'taches_creees' => []],
-                    ['isDirecteur' => $isDirecteur, 'canManageTaches' => $isTaskManager, 'isDeptScope' => true],
-                    ['mesTaches' => $deptResource, 'tachesCreees' => [], 'isDirecteur' => $isDirecteur, 'canManageTaches' => $isTaskManager, 'isDeptScope' => true]
+                    ['isDirecteur' => $isDirecteur, 'canManageTaches' => $isTaskManager, 'canCreateTaches' => $canCreateTaches, 'isDeptScope' => true],
+                    ['mesTaches' => $deptResource, 'tachesCreees' => [], 'isDirecteur' => $isDirecteur, 'canManageTaches' => $isTaskManager, 'canCreateTaches' => $canCreateTaches, 'isDeptScope' => true]
                 );
             }
             // Pas de département → on retombe sur les tâches personnelles
@@ -115,8 +116,8 @@ class TacheController extends ApiController
                 $provinceResource = TacheResource::collection($provinceTaches)->resolve();
                 return $this->success(
                     ['mes_taches' => $provinceResource, 'taches_creees' => []],
-                    ['isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isProvinceScope' => true],
-                    ['mesTaches' => $provinceResource, 'tachesCreees' => [], 'isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'isProvinceScope' => true]
+                    ['isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'canCreateTaches' => $canCreateTaches, 'isProvinceScope' => true],
+                    ['mesTaches' => $provinceResource, 'tachesCreees' => [], 'isDirecteur' => false, 'canManageTaches' => $isTaskManager, 'canCreateTaches' => $canCreateTaches, 'isProvinceScope' => true]
                 );
             }
         }
@@ -138,6 +139,7 @@ class TacheController extends ApiController
                 'created_count' => $createdCount,
                 'is_directeur' => $isDirecteur,
                 'can_manage_taches' => $isTaskManager,
+                'can_create_taches' => $canCreateTaches,
             ], [], [
                 'assignedCount' => $assignedCount,
                 'newAssignedCount' => $newAssignedCount,
@@ -145,6 +147,7 @@ class TacheController extends ApiController
                 'createdCount' => $createdCount,
                 'isDirecteur' => $isDirecteur,
                 'canManageTaches' => $isTaskManager,
+                'canCreateTaches' => $canCreateTaches,
             ]);
         }
 
@@ -159,7 +162,7 @@ class TacheController extends ApiController
             : collect();
 
         $tachesCreees = collect();
-        if (($isTaskManager || $isSENStaff) && $agent) {
+        if ($agent) {
             $tachesCreees = (clone $tachesCreeesQuery)
                 ->with(['agent', 'validationResponsable', 'activitePlan', 'documents.agent'])
                 ->latest()
@@ -175,11 +178,13 @@ class TacheController extends ApiController
         ], [
             'isDirecteur' => $isDirecteur,
             'canManageTaches' => $isTaskManager,
+            'canCreateTaches' => $canCreateTaches,
         ], [
             'mesTaches' => $mesTachesResource,
             'tachesCreees' => $tachesCreeesResource,
             'isDirecteur' => $isDirecteur,
             'canManageTaches' => $isTaskManager,
+            'canCreateTaches' => $canCreateTaches,
         ]);
     }
 

@@ -7,9 +7,9 @@
             <h1 class="rh-title"><i class="fas fa-tasks me-2"></i>{{ pageTitle }}</h1>
             <p class="rh-sub">{{ pageSubtitle }}</p>
           </div>
-          <div v-if="canManageTaches" class="col-lg-4">
+          <div v-if="canCreateTaches" class="col-lg-4">
             <div class="hero-tools">
-              <template v-if="auth.isSENA">
+              <template v-if="canManageTaches && auth.isSENA">
                 <router-link v-if="!isSENScope" :to="{ name: 'taches.index', query: { scope: 'sen' } }" class="btn-rh alt">
                   <i class="fas fa-users me-1"></i> Tâches sous mon suivi
                 </router-link>
@@ -17,7 +17,7 @@
                   <i class="fas fa-arrow-left me-1"></i> Mes tâches
                 </router-link>
               </template>
-              <template v-else-if="auth.isSEP">
+              <template v-else-if="canManageTaches && auth.isSEP">
                 <router-link v-if="!isProvinceScope" :to="{ name: 'taches.index', query: { scope: 'province' } }" class="btn-rh alt">
                   <i class="fas fa-map-marker-alt me-1"></i> Tâches de la province
                 </router-link>
@@ -25,7 +25,7 @@
                   <i class="fas fa-arrow-left me-1"></i> Mes tâches
                 </router-link>
               </template>
-              <template v-else>
+              <template v-else-if="canManageTaches || tachesCreees.length || showAssignedByMe">
                 <router-link v-if="!showAssignedByMe" :to="{ name: 'taches.assigned-by-me' }" class="btn-rh alt">
                   <i class="fas fa-clipboard-list me-1"></i> Tâches assignées par moi
                 </router-link>
@@ -313,6 +313,7 @@ const mesTaches = ref([])
 const tachesCreees = ref([])
 const isDirecteur = ref(false)
 const canManageTaches = ref(false)
+const canCreateTaches = ref(false)
 const sourceFilter = ref('all')
 const statusFilter = ref(route.query.statut ?? 'all')
 const createModalOpen = ref(false)
@@ -448,6 +449,7 @@ async function loadTaches() {
       auth.isSEP ||
       auth.user?.role?.nom_role === 'SEL'
     )
+    canCreateTaches.value = Boolean(data.canCreateTaches || auth.agent?.id || auth.user?.agent?.id || canManageTaches.value)
   } catch {
     ui.addToast('Erreur lors du chargement des tâches.', 'danger')
   } finally {
