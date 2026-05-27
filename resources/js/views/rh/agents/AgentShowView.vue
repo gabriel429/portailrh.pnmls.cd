@@ -109,7 +109,7 @@
         </div>
       </div>
 
-      <div class="row">
+      <div class="agent-profile-layout row">
         <!-- Main column with tabs -->
         <div class="col-lg-8">
           <ul class="nav nav-tabs mb-3 no-print" role="tablist">
@@ -1346,6 +1346,21 @@ onMounted(() => {
     cursor: not-allowed;
 }
 
+.agent-profile-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
+    gap: 24px;
+    align-items: start;
+    margin: 0;
+}
+
+.agent-profile-layout > .col-lg-8,
+.agent-profile-layout > .col-lg-4 {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+}
+
 .tab-content .card,
 .col-lg-4 > .card {
     border-radius: 8px;
@@ -1374,9 +1389,16 @@ onMounted(() => {
 
 .tab-content .card-body .row {
     --bs-gutter-x: .75rem;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .75rem;
+    margin: 0 0 .75rem;
 }
 
 .tab-content .card-body .row > [class*="col-"] {
+    width: auto;
+    max-width: none;
+    margin: 0;
     background: #f8fafc;
     border: 1px solid rgba(226, 232, 240, .85);
     border-radius: 8px;
@@ -1474,6 +1496,9 @@ onMounted(() => {
     font-weight: 500;
 }
 .nav-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: .45rem;
     border-bottom: 0;
     background: rgba(255,255,255,.78);
@@ -1486,6 +1511,9 @@ onMounted(() => {
     margin-bottom: 0;
 }
 .nav-tabs .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: .32rem;
     border: 0;
     border-radius: 8px;
     color: #475569;
@@ -1605,6 +1633,13 @@ onMounted(() => {
         font-size: 0.75rem;
     }
     .agent-overview-grid {
+        grid-template-columns: 1fr;
+    }
+    .agent-profile-layout {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .tab-content .card-body .row {
         grid-template-columns: 1fr;
     }
     .nav-tabs .nav-link {
