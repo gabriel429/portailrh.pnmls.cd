@@ -788,11 +788,11 @@ onBeforeUnmount(() => {
 }
 
 .verso-photo-bg {
-  filter: blur(.38mm) saturate(.95) contrast(1.06);
+  filter: blur(.18mm) saturate(1) contrast(1.08);
   height: calc(100% + 3.2mm);
   inset: -1.6mm;
   object-fit: cover;
-  opacity: .58;
+  opacity: .74;
   pointer-events: none;
   position: absolute;
   width: calc(100% + 3.2mm);
@@ -810,9 +810,9 @@ onBeforeUnmount(() => {
 
 .identity-card.verso .card-bg {
   background:
-    radial-gradient(circle at 77% 72%, rgba(0, 119, 181, .16), transparent 24mm),
-    linear-gradient(116deg, rgba(255, 255, 255, .66) 0 56%, rgba(235, 247, 255, .46) 56.2% 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(248, 252, 255, .68));
+    radial-gradient(circle at 77% 72%, rgba(0, 119, 181, .12), transparent 24mm),
+    linear-gradient(116deg, rgba(255, 255, 255, .34) 0 56%, rgba(235, 247, 255, .22) 56.2% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .24), rgba(248, 252, 255, .38));
   z-index: 1;
 }
 

@@ -459,11 +459,11 @@ onMounted(load)
 }
 
 .verso-photo-bg {
-  filter: blur(1.4px) saturate(.95) contrast(1.06);
+  filter: blur(.7px) saturate(1) contrast(1.08);
   height: calc(100% + 14px);
   inset: -7px;
   object-fit: cover;
-  opacity: .58;
+  opacity: .74;
   pointer-events: none;
   position: absolute;
   width: calc(100% + 14px);
@@ -485,9 +485,9 @@ onMounted(load)
 
 .identity-card.verso::after {
   background:
-    radial-gradient(circle at 77% 72%, rgba(0, 119, 181, .16), transparent 116px),
-    linear-gradient(116deg, rgba(255, 255, 255, .66) 0 56%, rgba(235, 247, 255, .46) 56.2% 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, .5), rgba(248, 252, 255, .68));
+    radial-gradient(circle at 77% 72%, rgba(0, 119, 181, .12), transparent 116px),
+    linear-gradient(116deg, rgba(255, 255, 255, .34) 0 56%, rgba(235, 247, 255, .22) 56.2% 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, .24), rgba(248, 252, 255, .38));
   clip-path: none;
   left: 0;
   width: 100%;
