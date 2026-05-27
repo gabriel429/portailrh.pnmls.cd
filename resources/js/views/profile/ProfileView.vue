@@ -1,5 +1,5 @@
 <template>
-  <div class="container py-4">
+  <div class="profile-shell container py-4">
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
       <div class="spinner-border text-primary" role="status">
@@ -14,10 +14,10 @@
     </div>
 
     <!-- Profile Content -->
-    <div v-else-if="agent" class="row">
+    <div v-else-if="agent" class="profile-layout row">
 
       <!-- Left Sidebar -->
-      <div class="col-lg-4 mb-4">
+      <div class="profile-sidebar col-lg-4 mb-4">
 
         <!-- Main Profile Card -->
         <div class="profile-main-card">
@@ -141,7 +141,7 @@
       </div>
 
       <!-- Right Content Column -->
-      <div class="col-lg-8">
+      <div class="profile-content col-lg-8">
 
         <!-- Personal Info -->
         <div class="info-card">
@@ -820,15 +820,19 @@ onMounted(fetchProfile)
 </script>
 
 <style scoped>
-.container.py-4 {
+.profile-shell.container.py-4 {
   --profile-glass: rgba(255, 255, 255, .68);
   --profile-glass-strong: rgba(255, 255, 255, .84);
   --profile-glass-border: rgba(125, 211, 252, .30);
   --profile-glass-shadow: 0 18px 48px rgba(15, 35, 58, .13), inset 0 1px 0 rgba(255, 255, 255, .70);
   position: relative;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1.6rem 2rem;
 }
 
-.container.py-4::before {
+.profile-shell.container.py-4::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -838,6 +842,49 @@ onMounted(fetchProfile)
     radial-gradient(circle at 16% 10%, rgba(14, 165, 233, .16), transparent 30%),
     radial-gradient(circle at 88% 18%, rgba(15, 118, 110, .12), transparent 28%),
     linear-gradient(135deg, rgba(240, 249, 255, .70), rgba(236, 253, 245, .56));
+}
+
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 520px) minmax(0, 1fr);
+  gap: 1.35rem;
+  align-items: start;
+  margin: 0;
+}
+
+.profile-layout > .profile-sidebar,
+.profile-layout > .profile-content {
+  width: 100%;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+}
+
+.profile-content {
+  min-width: 0;
+}
+
+.profile-content .info-card .row,
+.sidebar-card-body .row {
+  display: grid;
+  gap: .8rem;
+  margin: 0;
+}
+
+.profile-content .info-card .row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sidebar-card-body .row {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-content .info-card .row > [class*="col-"],
+.sidebar-card-body .row > [class*="col-"] {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  margin: 0;
 }
 
 /* Cover & Avatar */
@@ -1142,6 +1189,17 @@ onMounted(fetchProfile)
 
 /* Responsive */
 @media (max-width: 768px) {
+  .profile-shell.container.py-4 {
+    padding: 1rem;
+  }
+  .profile-layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  .profile-content .info-card .row,
+  .sidebar-card-body .row {
+    grid-template-columns: 1fr;
+  }
   .profile-cover { height: 140px; }
   .profile-avatar-wrap { padding: 0 1rem; margin-top: -55px; }
   .profile-avatar { width: 110px; height: 110px; }
