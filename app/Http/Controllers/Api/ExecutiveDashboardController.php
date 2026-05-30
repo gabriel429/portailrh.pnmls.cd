@@ -1193,8 +1193,117 @@ class ExecutiveDashboardController extends ApiController
 
             // Trier par ordre alphabétique
             usort($items, fn($a, $b) => strcasecmp($a['nom'], $b['nom']));
+        } elseif ($code === 'SEL') {
+            // SEL : breakdown par localité (scoped pour RH Provincial)
+            $localiteQuery = Localite::query()->with('province:id,nom,code');
+            if ($userProvinceId) {
+                $localiteQuery->where('province_id', $userProvinceId);
+            }
+
+            $localites = $localiteQuery->withCount([
+                'agents as total' => fn($q) => $q->where('organe', $nom),
+                'agents as actifs' => fn($q) => $q->where('organe', $nom)->actifs(),
+                'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
+            ])->get();
+
+            foreach ($localites as $localite) {
+                if ($localite->total === 0) continue;
+
+                $localiteActifs = $localite->actifs ?: 1;
+
+                $todayPresent = Pointage::byDate($now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('localite_id', $localite->id))
+                    ->distinct('agent_id')->count('agent_id');
+
+                $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('localite_id', $localite->id))
+                    ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+                    ->groupBy('date_pointage')->get();
+                $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $localiteActifs) * 100, 1) : 0;
+
+                $ptaLocaliteQuery = ActivitePlan::parAnnee($currentYear)->where('localite_id', $localite->id);
+                $ptaLocaliteTotal = (clone $ptaLocaliteQuery)->count();
+                $ptaLocaliteTerminee = (clone $ptaLocaliteQuery)->terminee()->count();
+                $ptaLocaliteAvg = (clone $ptaLocaliteQuery)->avg('pourcentage') ?? 0;
+
+                $items[] = [
+                    'id' => $localite->id,
+                    'nom' => $localite->nom,
+                    'code' => $localite->code,
+                    'type' => $localite->type,
+                    'province_id' => $localite->province_id,
+                    'province' => $localite->province ? [
+                        'id' => $localite->province->id,
+                        'nom' => $localite->province->nom,
+                        'code' => $localite->province->code,
+                    ] : null,
+                    'effectifs' => ['total' => $localite->total, 'actifs' => $localite->actifs, 'suspendus' => $localite->suspendus],
+                    'presence' => [
+                        'today_present' => $todayPresent,
+                        'today_rate' => round(($todayPresent / $localiteActifs) * 100, 1),
+                        'monthly_rate' => $monthlyRate,
+                        'total_active' => $localite->actifs,
+                    ],
+                    'pta' => ['total' => $ptaLocaliteTotal, 'terminee' => $ptaLocaliteTerminee, 'avg' => round($ptaLocaliteAvg, 0)],
+                ];
+            }
+
+            $sansLocaliteAgents = Agent::where('organe', $nom)->whereNull('localite_id');
+            if ($userProvinceId) {
+                $sansLocaliteAgents->where('province_id', $userProvinceId);
+            }
+            $sansLocaliteTotal = (clone $sansLocaliteAgents)->count();
+            $sansLocaliteActifs = (clone $sansLocaliteAgents)->actifs()->count();
+            $sansLocaliteSuspendus = (clone $sansLocaliteAgents)->suspendu()->count();
+
+            if ($sansLocaliteTotal > 0) {
+                $sansLocaliteActifsCount = $sansLocaliteActifs ?: 1;
+
+                $todayPresentSL = Pointage::byDate($now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', function ($q) use ($nom, $userProvinceId) {
+                        $q->where('organe', $nom)->whereNull('localite_id');
+                        if ($userProvinceId) {
+                            $q->where('province_id', $userProvinceId);
+                        }
+                    })
+                    ->distinct('agent_id')->count('agent_id');
+
+                $monthlySL = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+                    ->whereNotNull('heure_entree')
+                    ->whereHas('agent', function ($q) use ($nom, $userProvinceId) {
+                        $q->where('organe', $nom)->whereNull('localite_id');
+                        if ($userProvinceId) {
+                            $q->where('province_id', $userProvinceId);
+                        }
+                    })
+                    ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+                    ->groupBy('date_pointage')->get();
+                $monthlyRateSL = $monthlySL->count() > 0 ? round(($monthlySL->avg('present') / $sansLocaliteActifsCount) * 100, 1) : 0;
+
+                $items[] = [
+                    'id' => 0,
+                    'nom' => 'Localité non renseignée',
+                    'code' => 'SEL-SANS-LOCALITE',
+                    'type' => null,
+                    'province_id' => $userProvinceId,
+                    'province' => null,
+                    'effectifs' => ['total' => $sansLocaliteTotal, 'actifs' => $sansLocaliteActifs, 'suspendus' => $sansLocaliteSuspendus],
+                    'presence' => [
+                        'today_present' => $todayPresentSL,
+                        'today_rate' => round(($todayPresentSL / $sansLocaliteActifsCount) * 100, 1),
+                        'monthly_rate' => $monthlyRateSL,
+                        'total_active' => $sansLocaliteActifs,
+                    ],
+                    'pta' => ['total' => 0, 'terminee' => 0, 'avg' => 0],
+                ];
+            }
+
+            usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total']);
         } else {
-            // SEN / SEL : breakdown par département (scoped pour RH Provincial)
+            // SEN : breakdown par département
             $deptQuery = Department::fonctionnel();
             if ($userProvinceId) {
                 $deptQuery->where('province_id', $userProvinceId);
@@ -1314,7 +1423,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         return $this->success([
             'organe' => $code,
             'nom' => $nom,
-            'type_items' => $code === 'SEP' ? 'provinces' : 'departements',
+            'type_items' => $code === 'SEP' ? 'provinces' : ($code === 'SEL' ? 'localites' : 'departements'),
             'summary' => compact('total', 'actifs', 'suspendus', 'anciens'),
             'items' => $items,
             'pta' => [
@@ -1459,6 +1568,147 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             'departments' => $departments,
             'agents' => $topAgents,
             'activites' => $activites,
+        ]);
+    }
+
+    /**
+     * Drill-down localité : détail complet d'une localité SEL.
+     */
+    public function localiteDetail(Request $request, string $id)
+    {
+        if (!is_numeric($id) || (int) $id < 0) {
+            return $this->error('ID localité invalide', 422);
+        }
+
+        $id = (int) $id;
+        $nom = 'Secrétariat Exécutif Local';
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $currentYear = $now->year;
+
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialUser($user);
+        $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
+
+        if ($id === 0) {
+            $localitePayload = [
+                'id' => 0,
+                'nom' => 'Localité non renseignée',
+                'code' => 'SEL-SANS-LOCALITE',
+                'type' => null,
+                'province_id' => $userProvinceId,
+                'province' => null,
+            ];
+
+            $agents = Agent::where('organe', $nom)->whereNull('localite_id');
+            if ($userProvinceId) {
+                $agents->where('province_id', $userProvinceId);
+            }
+
+            $ptaQuery = ActivitePlan::parAnnee($currentYear)
+                ->where('niveau_administratif', 'local')
+                ->whereNull('localite_id');
+            if ($userProvinceId) {
+                $ptaQuery->where('province_id', $userProvinceId);
+            }
+        } else {
+            $localite = Localite::with('province:id,nom,code')->find($id);
+            if (!$localite) {
+                return $this->error('Localité introuvable', 404);
+            }
+
+            if ($userProvinceId && (int) $localite->province_id !== $userProvinceId) {
+                return $this->error('Accès refusé pour cette localité.', 403);
+            }
+
+            $localitePayload = [
+                'id' => $localite->id,
+                'nom' => $localite->nom,
+                'code' => $localite->code,
+                'type' => $localite->type,
+                'province_id' => $localite->province_id,
+                'province' => $localite->province ? [
+                    'id' => $localite->province->id,
+                    'nom' => $localite->province->nom,
+                    'code' => $localite->province->code,
+                ] : null,
+            ];
+
+            $agents = Agent::where('organe', $nom)->where('localite_id', $id);
+            $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('localite_id', $id);
+        }
+
+        $total = (clone $agents)->count();
+        $actifs = (clone $agents)->actifs()->count();
+        $suspendus = (clone $agents)->suspendu()->count();
+        $anciens = (clone $agents)->anciens()->count();
+
+        $localiteActifs = $actifs ?: 1;
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', function ($q) use ($nom, $id, $userProvinceId) {
+                $q->where('organe', $nom);
+                $id === 0 ? $q->whereNull('localite_id') : $q->where('localite_id', $id);
+                if ($userProvinceId) {
+                    $q->where('province_id', $userProvinceId);
+                }
+            })
+            ->distinct('agent_id')->count('agent_id');
+
+        $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', function ($q) use ($nom, $id, $userProvinceId) {
+                $q->where('organe', $nom);
+                $id === 0 ? $q->whereNull('localite_id') : $q->where('localite_id', $id);
+                if ($userProvinceId) {
+                    $q->where('province_id', $userProvinceId);
+                }
+            })
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')->get();
+        $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $localiteActifs) * 100, 1) : 0;
+
+        $topAgents = $this->presenceAgents($agents, $now, 150);
+        $onlineCount = $topAgents->where('is_online', true)->count();
+
+        $ptaTotal = (clone $ptaQuery)->count();
+        $ptaTerminee = (clone $ptaQuery)->terminee()->count();
+        $ptaEnCours = (clone $ptaQuery)->enCours()->count();
+        $ptaAvg = (clone $ptaQuery)->avg('pourcentage') ?? 0;
+
+        $activites = (clone $ptaQuery)
+            ->orderByDesc('pourcentage')
+            ->limit(50)
+            ->get(['id', 'titre', 'categorie', 'statut', 'pourcentage', 'trimestre', 'date_debut', 'date_fin'])
+            ->map(fn($a) => [
+                'id' => $a->id,
+                'titre' => $a->titre,
+                'categorie' => $a->categorie,
+                'statut' => $a->statut,
+                'pourcentage' => $a->pourcentage ?? 0,
+                'trimestre' => $a->trimestre,
+                'date_debut' => $a->date_debut?->format('d/m/Y'),
+                'date_fin' => $a->date_fin?->format('d/m/Y'),
+            ]);
+
+        return $this->success([
+            'localite' => $localitePayload,
+            'effectifs' => array_merge(compact('total', 'actifs', 'suspendus', 'anciens'), ['online' => $onlineCount]),
+            'presence' => [
+                'today_present' => $todayPresent,
+                'today_rate' => round(($todayPresent / $localiteActifs) * 100, 1),
+                'monthly_rate' => $monthlyRate,
+                'total_active' => $actifs,
+            ],
+            'pta' => [
+                'total' => $ptaTotal,
+                'terminee' => $ptaTerminee,
+                'en_cours' => $ptaEnCours,
+                'avg' => round($ptaAvg, 0),
+            ],
+            'activites' => $activites,
+            'agents' => $topAgents,
         ]);
     }
 

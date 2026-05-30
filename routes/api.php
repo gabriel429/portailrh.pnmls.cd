@@ -101,6 +101,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/executive', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'index']);
     Route::get('/dashboard/executive/organe/{code}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'organeDetail']);
     Route::get('/dashboard/executive/province/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'provinceDetail']);
+    Route::get('/dashboard/executive/localite/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'localiteDetail']);
     Route::get('/dashboard/executive/department/{id}', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'departmentDetail']);
     Route::get('/dashboard/sep', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'sepIndex']);
     Route::get('/dashboard/caf', [\App\Http\Controllers\Api\ExecutiveDashboardController::class, 'cafIndex']);

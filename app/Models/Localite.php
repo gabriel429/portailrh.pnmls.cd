@@ -31,6 +31,11 @@ class Localite extends Model
         return $this->hasMany(Affectation::class);
     }
 
+    public function agents(): HasMany
+    {
+        return $this->hasMany(Agent::class);
+    }
+
     /** Secrétaire Exécutif Local actif de cette localité */
     public function sel()
     {

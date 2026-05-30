@@ -675,15 +675,15 @@
                         <i class="fas fa-map-marker-alt"></i> {{ drilldownProvince.province.nom }}
                       </div>
                       <div class="drill-header-title" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
-                        <i class="fas fa-building"></i> {{ drilldownDepartment.department.nom }}
+                        <i :class="drilldownDepartment.kind === 'localite' ? 'fas fa-map-pin' : 'fas fa-building'"></i> {{ drilldownDepartment.department.nom }}
                       </div>
                       <div class="drill-header-title" v-else>
                         <i class="fas fa-spinner fa-spin"></i> Chargement...
                       </div>
                       <div class="drill-header-sub" v-if="drilldownLevel === 'organe' && drilldownOrgane">
-                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownOrgane.summary.total }} agents · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
-                        <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
-                        <template v-else>Plan de travail {{ new Date().getFullYear() }} · {{ drilldownOrgane.items.length }} {{ drilldownOrgane.type_items }}</template>
+                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownOrgane.summary.total }} agents · {{ drilldownOrgane.items.length }} {{ drillItemTypeLabel(drilldownOrgane.type_items) }}</template>
+                        <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownOrgane.items.length }} {{ drillItemTypeLabel(drilldownOrgane.type_items) }}</template>
+                        <template v-else>Plan de travail {{ new Date().getFullYear() }} · {{ drilldownOrgane.items.length }} {{ drillItemTypeLabel(drilldownOrgane.type_items) }}</template>
                       </div>
                       <div class="drill-header-sub" v-else-if="drilldownLevel === 'province' && drilldownProvince">
                         {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
@@ -764,15 +764,16 @@
                       <div
                         v-for="item in drilldownOrgane.items" :key="item.id"
                         class="drill-item-card drill-item-clickable"
-                        @click="drilldownOrgane.type_items === 'provinces' ? openProvinceDrilldown(item.id) : openDepartmentDrilldown(item.id)"
+                        @click="openDrilldownItem(item)"
                       >
                         <div class="drill-item-head">
                           <div class="drill-item-badge" :style="{ background: drilldownColor }">
-                            <i :class="drilldownOrgane.type_items === 'provinces' ? 'fas fa-map-marker-alt' : 'fas fa-building'"></i>
+                            <i :class="drillItemIcon(drilldownOrgane.type_items)"></i>
                           </div>
                           <div class="drill-item-info">
                             <div class="drill-item-name">{{ item.nom }}</div>
                             <div class="drill-item-sub" v-if="item.ville_secretariat">{{ item.ville_secretariat }}</div>
+                            <div class="drill-item-sub" v-else-if="item.province?.nom">{{ item.province.nom }}</div>
                             <div class="drill-item-sub" v-else-if="item.code">{{ item.code }}</div>
                           </div>
                           <i class="fas fa-chevron-right drill-item-arrow"></i>
@@ -992,6 +993,9 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                            </div>
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
@@ -1020,6 +1024,9 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                            </div>
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
@@ -1088,13 +1095,16 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                            </div>
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
                       </div>
                       <div v-else class="drill-empty">
                         <i class="fas fa-inbox"></i>
-                        <p>Aucun agent dans ce département</p>
+                        <p>{{ drilldownDepartment.kind === 'localite' ? 'Aucun agent dans cette localité' : 'Aucun agent dans ce département' }}</p>
                       </div>
                     </template>
 
@@ -1128,13 +1138,16 @@
                           <div class="drill-prov-agent-info">
                             <div class="drill-prov-agent-name">{{ a.nom }}</div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                            </div>
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
                       </div>
                       <div v-else class="drill-empty">
                         <i class="fas fa-inbox"></i>
-                        <p>Aucun agent dans ce département</p>
+                        <p>{{ drilldownDepartment.kind === 'localite' ? 'Aucun agent dans cette localité' : 'Aucun agent dans ce département' }}</p>
                       </div>
                     </template>
 
@@ -1527,6 +1540,25 @@ const drilldownColor = computed(() => {
   return '#0077B5'
 })
 
+function drillItemTypeLabel(type) {
+  if (type === 'provinces') return 'provinces'
+  if (type === 'localites') return 'localités'
+  return 'départements'
+}
+
+function drillItemIcon(type) {
+  if (type === 'provinces') return 'fas fa-map-marker-alt'
+  if (type === 'localites') return 'fas fa-map-pin'
+  return 'fas fa-building'
+}
+
+function openDrilldownItem(item) {
+  const type = drilldownOrgane.value?.type_items
+  if (type === 'provinces') return openProvinceDrilldown(item.id)
+  if (type === 'localites') return openLocaliteDrilldown(item.id)
+  return openDepartmentDrilldown(item.id)
+}
+
 async function openOrganeDrilldown(code, section = 'effectifs') {
   // RH Provincial: redirect organe drill to province drill
   const isProvincial = d.value.scope?.is_provincial
@@ -1571,7 +1603,7 @@ async function openProvinceDrilldown(id, section = 'effectifs') {
 }
 
 async function openDepartmentDrilldown(id) {
-  if (!id) return
+  if (id === null || id === undefined || id === '') return
   drilldownLoading.value = true
   drilldownLevel.value = 'department'
   drilldownDepartment.value = null
@@ -1579,9 +1611,36 @@ async function openDepartmentDrilldown(id) {
   selectedAgent.value = null
   try {
     const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
-    drilldownDepartment.value = result.data ?? result
+    const payload = result.data ?? result
+    drilldownDepartment.value = { kind: 'department', ...payload }
   } catch (e) {
     console.error('Drill-down department error:', e)
+  } finally {
+    drilldownLoading.value = false
+  }
+}
+
+async function openLocaliteDrilldown(id) {
+  if (id === null || id === undefined || id === '') return
+  drilldownLoading.value = true
+  drilldownLevel.value = 'department'
+  drilldownDepartment.value = null
+  drillPresenceFilter.value = 'all'
+  selectedAgent.value = null
+  try {
+    const { data: result } = await client.get(`/dashboard/executive/localite/${id}`)
+    const payload = result.data ?? result
+    drilldownDepartment.value = {
+      kind: 'localite',
+      department: payload.localite,
+      effectifs: payload.effectifs,
+      presence: payload.presence,
+      pta: payload.pta,
+      activites: payload.activites,
+      agents: payload.agents,
+    }
+  } catch (e) {
+    console.error('Drill-down localite error:', e)
   } finally {
     drilldownLoading.value = false
   }
@@ -2200,6 +2259,8 @@ onMounted(async () => {
 .drill-prov-agent-info { flex: 1; min-width: 0; }
 .drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
 .drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
+.drill-prov-agent-localite { display: inline-flex; align-items: center; gap: .25rem; margin-top: .12rem; font-size: .63rem; font-weight: 700; color: #0f766e; }
+.drill-prov-agent-localite i { font-size: .6rem; }
 
 /* Agent clickable */
 .drill-agent-clickable { cursor: pointer; transition: all .15s ease; position: relative; }
