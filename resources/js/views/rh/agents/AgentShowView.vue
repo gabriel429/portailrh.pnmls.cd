@@ -83,7 +83,7 @@
         </div>
         <div class="agent-overview-card">
           <span class="agent-overview-label">Affectation</span>
-          <strong>{{ agent.departement?.nom || agent.province?.nom || 'Non renseignée' }}</strong>
+          <strong>{{ agent.localite?.nom || agent.departement?.nom || agent.province?.nom || 'Non renseignée' }}</strong>
           <small>{{ agent.organe || 'Organe non renseigné' }}</small>
         </div>
         <div class="agent-overview-card">
@@ -248,6 +248,10 @@
                     <div class="col-md-4 mb-3">
                       <label class="text-muted small">Province</label>
                       <p class="mb-0">{{ agent.province ? (agent.province.nom_province || agent.province.nom) : (isNational ? 'National' : 'N/A') }}</p>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                      <label class="text-muted small">Localité</label>
+                      <p class="mb-0">{{ agent.localite ? agent.localite.nom : 'N/A' }}</p>
                     </div>
                     <div class="col-md-4 mb-3">
                       <label class="text-muted small">Département</label>
@@ -912,6 +916,7 @@ function buildCurrentPostAffectation(sourceAgent) {
         fonction: { nom: currentPost },
         department: sourceAgent.departement || null,
         province: sourceAgent.province || null,
+        localite: sourceAgent.localite || null,
         remarque: 'Poste actuel de l’agent',
     }
 }

@@ -248,11 +248,20 @@
             <!-- Province (SEP/SEL) -->
             <div v-if="currentNiveau === 'SEP' || currentNiveau === 'SEL'" class="col-md-6">
               <label for="province_id" class="form-label"><span class="step-badge">2</span> Province</label>
-              <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="province_id" v-model="form.province_id">
+              <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="province_id" v-model="form.province_id" @change="syncLocalite">
                 <option value="">-- Sélectionner une province --</option>
                 <option v-for="p in options.provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom || ('Province ' + p.id) }}</option>
               </select>
               <div v-if="errors.province_id" class="invalid-feedback">{{ errors.province_id[0] }}</div>
+            </div>
+
+            <div v-if="currentNiveau === 'SEL'" class="col-md-6">
+              <label for="localite_id" class="form-label"><span class="step-badge">3</span> Localité</label>
+              <select class="form-select" :class="{ 'is-invalid': errors.localite_id }" id="localite_id" v-model="form.localite_id" :disabled="!form.province_id">
+                <option value="">-- Sélectionner une localité --</option>
+                <option v-for="l in filteredLocalites" :key="l.id" :value="l.id">{{ l.nom }}</option>
+              </select>
+              <div v-if="errors.localite_id" class="invalid-feedback">{{ errors.localite_id[0] }}</div>
             </div>
 
             <!-- Fonction -->
@@ -363,6 +372,7 @@ const form = reactive({
     departement_id: '',
     section_id: '',
     province_id: '',
+    localite_id: '',
     fonction: '',
     niveau_etudes: '',
     domaine_etudes: '',
@@ -374,6 +384,7 @@ const options = reactive({
     organeOptions: [],
     departments: [],
     provinces: [],
+    localites: [],
     grades: [],
     institutionCategories: [],
     sections: [],
@@ -410,6 +421,11 @@ const filteredSections = computed(() => {
     return options.sections.filter(
         s => s.type === 'section' && String(s.department_id) === String(form.departement_id)
     )
+})
+
+const filteredLocalites = computed(() => {
+    if (!form.province_id) return []
+    return options.localites.filter(l => String(l.province_id) === String(form.province_id))
 })
 
 // Filtered fonctions based on organe, type de rattachement, and section
@@ -459,6 +475,10 @@ function syncPanels() {
     }
     if (niveau !== 'SEP' && niveau !== 'SEL') {
         form.province_id = ''
+        form.localite_id = ''
+    }
+    if (niveau !== 'SEL') {
+        form.localite_id = ''
     }
     // Reset fonction if no longer visible
     if (form.fonction && !visibleFonctions.value.find(f => f.nom === form.fonction)) {
@@ -468,6 +488,10 @@ function syncPanels() {
 
 function syncSection() {
     form.section_id = ''
+}
+
+function syncLocalite() {
+    form.localite_id = ''
 }
 
 function filterFonctions() {
@@ -484,6 +508,7 @@ async function fetchOptions() {
         options.organeOptions = data.organeOptions || []
         options.departments = data.departments || []
         options.provinces = data.provinces || []
+        options.localites = data.localites || []
         options.grades = data.grades || []
         options.institutionCategories = data.institutionCategories || []
         options.sections = data.sections || []

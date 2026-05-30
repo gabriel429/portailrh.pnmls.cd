@@ -246,6 +246,9 @@
                       </td>
                       <td v-else>
                         <span class="province-label">{{ agent.province ? agent.province.nom : 'N/A' }}</span>
+                        <small v-if="agent.localite" class="d-block text-muted">
+                          <i class="fas fa-map-pin me-1"></i>{{ agent.localite.nom }}
+                        </small>
                       </td>
                       <td>
                         <code class="matricule-code">{{ agent.matricule_etat || 'N/A' }}</code>
@@ -429,7 +432,7 @@
             <div class="asm-profile-strip">
               <div class="asm-profile-card">
                 <span>Structure</span>
-                <strong>{{ selectedAgent.departement ? selectedAgent.departement.nom : (selectedAgent.province ? (selectedAgent.province.nom_province || selectedAgent.province.nom) : 'N/A') }}</strong>
+                <strong>{{ selectedAgent.localite ? selectedAgent.localite.nom : (selectedAgent.departement ? selectedAgent.departement.nom : (selectedAgent.province ? (selectedAgent.province.nom_province || selectedAgent.province.nom) : 'N/A')) }}</strong>
               </div>
               <div class="asm-profile-card">
                 <span>Contact pro</span>

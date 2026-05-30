@@ -10,6 +10,7 @@ use App\Models\Fonction;
 use App\Models\Grade;
 use App\Models\Institution;
 use App\Models\InstitutionCategorie;
+use App\Models\Localite;
 use App\Models\Organe;
 use App\Models\Permission;
 use App\Models\Province;
@@ -223,7 +224,7 @@ class AgentController extends ApiController
     public function index(Request $request): JsonResponse
     {
         $scope = $this->scopeService();
-        $query = Agent::with(['role', 'province', 'departement', 'grade', 'institution']);
+        $query = Agent::with(['role', 'province', 'localite', 'departement', 'grade', 'institution']);
 
         $scope->applyAgentScope($query, $request->user());
 
@@ -247,6 +248,7 @@ class AgentController extends ApiController
                   ->orWhere('annee_engagement_programme', 'like', $term)
                   ->orWhere('poste_actuel', 'like', $term)
                   ->orWhereHas('province', fn($q) => $q->where('nom', 'like', $term))
+                  ->orWhereHas('localite', fn($q) => $q->where('nom', 'like', $term))
                   ->orWhereHas('departement', fn($q) => $q->where('nom', 'like', $term))
                   ->orWhereHas('grade', fn($q) => $q->where('nom', 'like', $term))
                   ->orWhereHas('institution', fn($q) => $q->where('nom', 'like', $term));
@@ -417,6 +419,7 @@ class AgentController extends ApiController
             'poste_actuel' => 'nullable|string',
             'departement_id' => 'nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
+            'localite_id' => 'nullable|exists:localites,id',
             'date_embauche' => 'nullable|date',
             'photo' => 'nullable|image|max:2048',
         ]);
@@ -428,6 +431,7 @@ class AgentController extends ApiController
         if (str_contains($organe, 'national')) {
             $validated['province_id'] = null;
         }
+        $validated = $this->normalizeAgentLocalitePayload($validated);
 
         // Default date_naissance from year
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
@@ -471,7 +475,7 @@ class AgentController extends ApiController
         }
 
         $agent = Agent::create($validated);
-        $agent->load(['role', 'province', 'departement', 'grade', 'institution']);
+        $agent->load(['role', 'province', 'localite', 'departement', 'grade', 'institution']);
 
         $resource = AgentResource::make($agent);
 
@@ -489,9 +493,9 @@ class AgentController extends ApiController
         $this->authorizeAgentAccess(request(), $agent);
 
         $agent->load([
-            'role', 'province', 'departement', 'grade', 'institution',
+            'role', 'province', 'localite', 'departement', 'grade', 'institution',
             'documents', 'requests',
-            'affectations.fonction', 'affectations.department', 'affectations.province',
+            'affectations.fonction', 'affectations.department', 'affectations.province', 'affectations.localite',
             'messages.sender',
         ]);
 
@@ -564,9 +568,9 @@ class AgentController extends ApiController
         }
 
         $agent->load([
-            'role', 'province', 'departement', 'grade', 'institution',
+            'role', 'province', 'localite', 'departement', 'grade', 'institution',
             'documents',
-            'affectations.fonction', 'affectations.department', 'affectations.province',
+            'affectations.fonction', 'affectations.department', 'affectations.province', 'affectations.localite',
         ]);
 
         $directory = storage_path('app/tmp');
@@ -785,6 +789,7 @@ class AgentController extends ApiController
             'poste_actuel' => 'nullable|string',
             'departement_id' => 'nullable|exists:departments,id',
             'province_id' => 'nullable|exists:provinces,id',
+            'localite_id' => 'nullable|exists:localites,id',
             'date_embauche' => 'nullable|date',
             'statut' => 'required|in:actif,suspendu,ancien',
             'photo' => 'nullable|image|max:2048',
@@ -797,6 +802,7 @@ class AgentController extends ApiController
         if (str_contains($organe, 'national')) {
             $validated['province_id'] = null;
         }
+        $validated = $this->normalizeAgentLocalitePayload($validated);
 
         // Default date_naissance from year
         if (empty($validated['date_naissance']) && !empty($validated['annee_naissance'])) {
@@ -852,7 +858,7 @@ class AgentController extends ApiController
         }
 
         $agent->update($validated);
-        $agent->load(['role', 'province', 'departement', 'grade', 'institution']);
+        $agent->load(['role', 'province', 'localite', 'departement', 'grade', 'institution']);
 
         NotificationService::notifierAgent(
             $agent,
@@ -889,6 +895,45 @@ class AgentController extends ApiController
         ]);
     }
 
+    private function normalizeAgentLocalitePayload(array $validated): array
+    {
+        $organe = Str::lower(Str::ascii(trim((string) ($validated['organe'] ?? ''))));
+
+        if (str_contains($organe, 'national')) {
+            $validated['province_id'] = null;
+            $validated['localite_id'] = null;
+
+            return $validated;
+        }
+
+        if (!str_contains($organe, 'local')) {
+            $validated['localite_id'] = null;
+
+            return $validated;
+        }
+
+        if (empty($validated['localite_id'])) {
+            return $validated;
+        }
+
+        $localite = Localite::find($validated['localite_id']);
+        if (!$localite) {
+            throw ValidationException::withMessages([
+                'localite_id' => 'La localite selectionnee est introuvable.',
+            ]);
+        }
+
+        if (!empty($validated['province_id']) && (int) $validated['province_id'] !== (int) $localite->province_id) {
+            throw ValidationException::withMessages([
+                'localite_id' => 'La localite selectionnee ne correspond pas a la province choisie.',
+            ]);
+        }
+
+        $validated['province_id'] = $localite->province_id;
+
+        return $validated;
+    }
+
     /**
      * Export agents as CSV.
      */
@@ -905,7 +950,7 @@ class AgentController extends ApiController
             'SEL' => 'Secrétariat Exécutif Local',
         ];
 
-        $query = Agent::with(['province', 'departement', 'grade', 'institution']);
+        $query = Agent::with(['province', 'localite', 'departement', 'grade', 'institution']);
 
         $scope->applyAgentScope($query, $request->user());
 
@@ -1026,6 +1071,17 @@ class AgentController extends ApiController
         }
         $departments = $departmentsCollection;
         $provinces = $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get();
+        $localites = Schema::hasTable('localites')
+            ? Localite::query()
+                ->when($scope->isProvincialUser($user), function ($query) use ($provinces) {
+                    $provinceIds = $provinces->pluck('id')->filter()->values();
+                    $provinceIds->isNotEmpty()
+                        ? $query->whereIn('province_id', $provinceIds)
+                        : $query->whereRaw('1 = 0');
+                })
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code', 'province_id'])
+            : collect();
         $grades = Schema::hasTable('grades') ? Grade::orderBy('ordre')->get() : collect();
         $institutionCategories = Schema::hasTable('institution_categories')
             ? InstitutionCategorie::with('institutions')->orderBy('ordre')->get()
@@ -1055,6 +1111,7 @@ class AgentController extends ApiController
             'organeOptions' => $organeOptions,
             'departments' => $departments,
             'provinces' => $provinces,
+            'localites' => $localites,
             'grades' => $grades,
             'institutionCategories' => $institutionCategories,
             'sections' => $sections,

@@ -30,6 +30,7 @@ use App\Services\AgentPresenceService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class ExecutiveDashboardController extends ApiController
@@ -103,13 +104,23 @@ class ExecutiveDashboardController extends ApiController
 
     private function presenceAgents($query, Carbon $date, int $limit = 100)
     {
+        $agentColumns = ['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'email_prive', 'telephone', 'telephone_prive', 'telephone_professionnel', 'matricule_etat', 'grade_etat'];
+        if (Schema::hasColumn('agents', 'localite_id')) {
+            $agentColumns[] = 'localite_id';
+        }
+
         $agents = (clone $query)->actifs()
             ->with(['agentStatuses' => function ($q) {
                 $q->where('actuel', true)->orderByDesc('created_at');
+            }, 'localite:id,nom,province_id', 'affectations' => function ($q) {
+                $q->where('actif', true)
+                    ->with('localite:id,nom,province_id')
+                    ->orderByDesc('date_debut')
+                    ->orderByDesc('id');
             }])
             ->orderInstitutionally()
             ->limit($limit)
-            ->get(['id', 'nom', 'postnom', 'prenom', 'organe', 'fonction', 'poste_actuel', 'sexe', 'email', 'email_professionnel', 'email_prive', 'telephone', 'telephone_prive', 'telephone_professionnel', 'matricule_etat', 'grade_etat']);
+            ->get($agentColumns);
 
         $pointages = Pointage::byDate($date->toDateString())
             ->whereIn('agent_id', $agents->pluck('id'))
@@ -125,6 +136,7 @@ class ExecutiveDashboardController extends ApiController
             $pointage = $pointages->get($a->id);
             $isPresent = (bool) optional($pointage)->heure_entree;
             $online = $onlineMap[$a->id] ?? null;
+            $localite = $a->localite ?: $a->affectations->first()?->localite;
 
             return [
                 'id' => $a->id,
@@ -140,6 +152,12 @@ class ExecutiveDashboardController extends ApiController
                 'telephone_prive' => $a->telephone_prive,
                 'matricule' => $a->matricule_etat,
                 'grade' => $a->grade_etat,
+                'localite_id' => $localite?->id,
+                'localite' => $localite ? [
+                    'id' => $localite->id,
+                    'nom' => $localite->nom,
+                    'province_id' => $localite->province_id,
+                ] : null,
                 'is_online' => $online !== null,
                 'online_label' => $online['label'] ?? null,
                 'online_since' => $online['last_activity'] ?? null,

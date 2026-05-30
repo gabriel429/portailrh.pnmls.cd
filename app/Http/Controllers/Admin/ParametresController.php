@@ -1391,13 +1391,19 @@ class ParametresController extends Controller
         $organeName = Organe::where('code', $active->niveau_administratif)->value('nom')
             ?? ($defaultOrganes[$active->niveau_administratif] ?? $agent->organe);
 
-        $agent->forceFill([
+        $agentPayload = [
             'organe' => $organeName,
             'fonction' => $active->fonction?->nom,
             'poste_actuel' => $active->fonction?->nom,
             'departement_id' => $active->department_id,
             'province_id' => $active->province_id,
-        ])->save();
+        ];
+
+        if (Schema::hasColumn('agents', 'localite_id')) {
+            $agentPayload['localite_id'] = $active->localite_id;
+        }
+
+        $agent->forceFill($agentPayload)->save();
     }
 
     public function apiAffectationsDestroy(Affectation $affectation)

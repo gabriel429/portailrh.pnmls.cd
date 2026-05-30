@@ -46,12 +46,18 @@ class AgentResource extends JsonResource
             'grade_id' => $this->grade_id,
             'departement_id' => $this->departement_id,
             'province_id' => $this->province_id,
+            'localite_id' => $this->localite_id,
             'section_id' => $this->section_id,
             'created_at' => optional($this->created_at)->toIso8601String(),
             'updated_at' => optional($this->updated_at)->toIso8601String(),
             'province' => $this->whenLoaded('province', fn () => [
                 'id' => $this->province->id,
                 'nom' => $this->province->nom_province ?? $this->province->nom,
+            ]),
+            'localite' => $this->whenLoaded('localite', fn () => [
+                'id' => $this->localite->id,
+                'nom' => $this->localite->nom,
+                'province_id' => $this->localite->province_id,
             ]),
             'departement' => $this->whenLoaded('departement', fn () => [
                 'id' => $this->departement->id,
@@ -108,6 +114,11 @@ class AgentResource extends JsonResource
                 'province' => $affectation->relationLoaded('province') && $affectation->province ? [
                     'id' => $affectation->province->id,
                     'nom' => $affectation->province->nom_province ?? $affectation->province->nom,
+                ] : null,
+                'localite' => $affectation->relationLoaded('localite') && $affectation->localite ? [
+                    'id' => $affectation->localite->id,
+                    'nom' => $affectation->localite->nom,
+                    'province_id' => $affectation->localite->province_id,
                 ] : null,
             ])->values()),
         ];

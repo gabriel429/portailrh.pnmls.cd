@@ -280,11 +280,20 @@
                   <!-- Province (SEP/SEL) -->
                   <div v-if="currentNiveau === 'SEP' || currentNiveau === 'SEL'" class="col-md-6">
                     <label for="ed_province_id" class="form-label">Province</label>
-                    <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="ed_province_id" v-model="form.province_id">
+                    <select class="form-select" :class="{ 'is-invalid': errors.province_id }" id="ed_province_id" v-model="form.province_id" @change="syncLocalite">
                       <option value="">-- Sélectionner une province --</option>
                       <option v-for="p in formOptions.provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom || ('Province ' + p.id) }}</option>
                     </select>
                     <div v-if="errors.province_id" class="invalid-feedback">{{ errors.province_id[0] }}</div>
+                  </div>
+
+                  <div v-if="currentNiveau === 'SEL'" class="col-md-6">
+                    <label for="ed_localite_id" class="form-label">Localité</label>
+                    <select class="form-select" :class="{ 'is-invalid': errors.localite_id }" id="ed_localite_id" v-model="form.localite_id" :disabled="!form.province_id">
+                      <option value="">-- Sélectionner une localité --</option>
+                      <option v-for="l in filteredLocalites" :key="l.id" :value="l.id">{{ l.nom }}</option>
+                    </select>
+                    <div v-if="errors.localite_id" class="invalid-feedback">{{ errors.localite_id[0] }}</div>
                   </div>
 
                   <!-- Fonction -->
@@ -440,6 +449,7 @@ const form = reactive({
   departement_id: '',
   section_id: '',
   province_id: '',
+  localite_id: '',
   fonction: '',
   niveau_etudes: '',
   domaine_etudes: '',
@@ -452,6 +462,7 @@ const formOptions = reactive({
   organeOptions: [],
   departments: [],
   provinces: [],
+  localites: [],
   grades: [],
   institutionCategories: [],
   sections: [],
@@ -486,6 +497,11 @@ const filteredSections = computed(() => {
   return formOptions.sections.filter(
     s => s.type === 'section' && String(s.department_id) === String(form.departement_id)
   )
+})
+
+const filteredLocalites = computed(() => {
+  if (!form.province_id) return []
+  return formOptions.localites.filter(l => String(l.province_id) === String(form.province_id))
 })
 
 const visibleFonctions = computed(() => {
@@ -535,6 +551,10 @@ function syncPanels() {
   }
   if (niveau !== 'SEP' && niveau !== 'SEL') {
     form.province_id = ''
+    form.localite_id = ''
+  }
+  if (niveau !== 'SEL') {
+    form.localite_id = ''
   }
   if (form.fonction && !visibleFonctions.value.find(f => f.nom === form.fonction)) {
     form.fonction = ''
@@ -543,6 +563,10 @@ function syncPanels() {
 
 function syncSection() {
   form.section_id = ''
+}
+
+function syncLocalite() {
+  form.localite_id = ''
 }
 
 function filterFonctions() {
@@ -587,8 +611,12 @@ function populateForm(agentData) {
   // Province uniquement pour SEP/SEL, pas pour SEN
   if (niveau === 'SEP' || niveau === 'SEL') {
     form.province_id = agentData.province_id || agentData.province?.id || ''
+    form.localite_id = niveau === 'SEL'
+      ? (agentData.localite_id || agentData.localite?.id || '')
+      : ''
   } else {
     form.province_id = ''
+    form.localite_id = ''
   }
   if (niveau === 'SEN') {
     typeRattachement.value = form.departement_id ? 'departement' : 'service_rattache'
@@ -609,6 +637,7 @@ async function fetchData() {
     formOptions.organeOptions = optionsRes.data.organeOptions || []
     formOptions.departments = optionsRes.data.departments || []
     formOptions.provinces = optionsRes.data.provinces || []
+    formOptions.localites = optionsRes.data.localites || []
     formOptions.grades = optionsRes.data.grades || []
     formOptions.institutionCategories = optionsRes.data.institutionCategories || []
     formOptions.sections = optionsRes.data.sections || []

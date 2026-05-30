@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Affectation;
 use App\Models\Agent;
 use App\Models\Department;
+use App\Models\Localite;
 use App\Models\Pointage;
 use App\Models\Request as RequestModel;
 use App\Models\Signalement;
@@ -471,6 +472,14 @@ class UserDataScope
 
             if (!$department || (int) $department->province_id !== $provinceId) {
                 abort(403, 'Acces refuse pour ce departement.');
+            }
+        }
+
+        if (!empty($validated['localite_id'])) {
+            $localite = Localite::find($validated['localite_id']);
+
+            if (!$localite || (int) $localite->province_id !== $provinceId) {
+                abort(403, 'Acces refuse pour cette localite.');
             }
         }
 

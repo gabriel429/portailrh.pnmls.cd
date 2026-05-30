@@ -75,6 +75,7 @@ class Agent extends Authenticatable
         'annee_engagement_programme',
         'departement_id',
         'province_id',
+        'localite_id',
         'role_id',
         'grade_id',
         'institution_id',
@@ -117,6 +118,11 @@ class Agent extends Authenticatable
     public function province(): BelongsTo
     {
         return $this->belongsTo(Province::class);
+    }
+
+    public function localite(): BelongsTo
+    {
+        return $this->belongsTo(Localite::class);
     }
 
     public function departement(): BelongsTo

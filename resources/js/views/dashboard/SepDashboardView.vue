@@ -763,6 +763,9 @@
                         <div class="drill-prov-agent-info">
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                            <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                          </div>
                         </div>
                         <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
@@ -815,6 +818,9 @@
                         <div class="drill-prov-agent-info">
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                            <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                          </div>
                         </div>
                         <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
@@ -953,6 +959,9 @@
                         <div class="drill-prov-agent-info">
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                            <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                          </div>
                         </div>
                         <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
@@ -995,6 +1004,9 @@
                         <div class="drill-prov-agent-info">
                           <div class="drill-prov-agent-name">{{ a.nom }}</div>
                           <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                          <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                            <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                          </div>
                         </div>
                         <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
@@ -2056,6 +2068,8 @@ onMounted(async () => {
 }
 .drill-prov-agent-name { font-size: .78rem; font-weight: 600; color: #1e293b; }
 .drill-prov-agent-fn { font-size: .68rem; color: #94a3b8; }
+.drill-prov-agent-localite { display: inline-flex; align-items: center; gap: .25rem; margin-top: .15rem; font-size: .66rem; font-weight: 700; color: #0f766e; }
+.drill-prov-agent-localite i { font-size: .62rem; }
 
 /* ─── Modal contact agent ─── */
 .agent-contact-overlay {

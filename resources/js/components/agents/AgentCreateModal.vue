@@ -142,10 +142,19 @@
 
                   <div v-if="currentNiveau === 'SEP' || currentNiveau === 'SEL'" class="col-md-6">
                     <label class="form-label fw-medium">Province</label>
-                    <select class="form-select form-select-sm" v-model="form.province_id">
+                    <select class="form-select form-select-sm" v-model="form.province_id" @change="syncLocalite">
                       <option value="">-- Sélectionner --</option>
                       <option v-for="p in options.provinces" :key="p.id" :value="p.id">{{ p.nom_province || p.nom }}</option>
                     </select>
+                  </div>
+
+                  <div v-if="currentNiveau === 'SEL'" class="col-md-6">
+                    <label class="form-label fw-medium">Localité</label>
+                    <select class="form-select form-select-sm" :class="{ 'is-invalid': errors.localite_id }" v-model="form.localite_id" :disabled="!form.province_id">
+                      <option value="">-- Sélectionner --</option>
+                      <option v-for="l in filteredLocalites" :key="l.id" :value="l.id">{{ l.nom }}</option>
+                    </select>
+                    <div v-if="errors.localite_id" class="invalid-feedback">{{ errors.localite_id[0] }}</div>
                   </div>
 
                   <div class="col-md-6">
@@ -234,12 +243,12 @@ const typeRattachement = ref('')
 const form = reactive({
   nom: '', prenom: '', postnom: '', sexe: '', annee_naissance: null,
   date_naissance: '', lieu_naissance: '', email_professionnel: '',
-  telephone_professionnel: '', telephone_prive: '', organe: '', departement_id: '', province_id: '',
+  telephone_professionnel: '', telephone_prive: '', organe: '', departement_id: '', province_id: '', localite_id: '',
   fonction: '', niveau_etudes: '', annee_engagement_programme: null,
 })
 
 const options = reactive({
-  organeOptions: [], departments: [], provinces: [], fonctions: [], niveauxEtudes: [],
+  organeOptions: [], departments: [], provinces: [], localites: [], fonctions: [], niveauxEtudes: [],
 })
 
 const organeToNiveau = {
@@ -283,6 +292,11 @@ const visibleFonctions = computed(() => {
   })
 })
 
+const filteredLocalites = computed(() => {
+  if (!form.province_id) return []
+  return options.localites.filter(l => String(l.province_id) === String(form.province_id))
+})
+
 function handlePhotoChange(event) {
   photoFile.value = event.target.files[0] || null
 }
@@ -295,10 +309,18 @@ function syncPanels() {
   }
   if (niveau !== 'SEP' && niveau !== 'SEL') {
     form.province_id = ''
+    form.localite_id = ''
+  }
+  if (niveau !== 'SEL') {
+    form.localite_id = ''
   }
   if (form.fonction && !visibleFonctions.value.find(f => f.nom === form.fonction)) {
     form.fonction = ''
   }
+}
+
+function syncLocalite() {
+  form.localite_id = ''
 }
 
 async function fetchOptions() {
@@ -308,6 +330,7 @@ async function fetchOptions() {
     options.organeOptions = res.data.organeOptions || []
     options.departments = res.data.departments || []
     options.provinces = res.data.provinces || []
+    options.localites = res.data.localites || []
     options.fonctions = res.data.fonctions || []
     options.niveauxEtudes = res.data.niveauxEtudes || []
   } catch (err) {
