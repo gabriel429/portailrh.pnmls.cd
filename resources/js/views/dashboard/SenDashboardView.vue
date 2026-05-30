@@ -219,7 +219,14 @@
             </div>
           </div>
 
-          <div class="sen-organe-card" style="border-top: 4px solid #8b5cf6;">
+          <div
+            class="sen-organe-card sen-organe-clickable"
+            style="border-top: 4px solid #8b5cf6;"
+            role="button"
+            tabindex="0"
+            @click="openSexeDrilldown('all')"
+            @keydown.enter.prevent="openSexeDrilldown('all')"
+          >
             <div class="sen-organe-header">
               <div class="sen-organe-badge" style="background:#8b5cf6;">
                 <i class="fas fa-venus-mars" style="font-size:.72rem;"></i>
@@ -228,13 +235,26 @@
                 <div class="sen-organe-name">Répartition par sexe</div>
                 <div class="sen-organe-sub">Agents actifs</div>
               </div>
+              <i class="fas fa-chevron-right sen-drill-arrow"></i>
             </div>
             <div class="sen-organe-stats sen-sexe-stats">
-              <div class="sen-organe-stat">
+              <div
+                class="sen-organe-stat sen-organe-stat-clickable"
+                role="button"
+                tabindex="0"
+                @click.stop="openSexeDrilldown('M')"
+                @keydown.enter.stop.prevent="openSexeDrilldown('M')"
+              >
                 <div class="sen-organe-stat-val" style="color:#2563eb;">{{ sexeCounts.hommes }}</div>
                 <div class="sen-organe-stat-lbl">Hommes</div>
               </div>
-              <div class="sen-organe-stat">
+              <div
+                class="sen-organe-stat sen-organe-stat-clickable"
+                role="button"
+                tabindex="0"
+                @click.stop="openSexeDrilldown('F')"
+                @keydown.enter.stop.prevent="openSexeDrilldown('F')"
+              >
                 <div class="sen-organe-stat-val" style="color:#ec4899;">{{ sexeCounts.femmes }}</div>
                 <div class="sen-organe-stat-lbl">Femmes</div>
               </div>
@@ -703,7 +723,7 @@
                         <i class="fas fa-map-marker-alt"></i> {{ drilldownProvince.province.nom }}
                       </div>
                       <div class="drill-header-title" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
-                        <i :class="drilldownDepartment.kind === 'localite' ? 'fas fa-map-pin' : 'fas fa-building'"></i> {{ drilldownDepartment.department.nom }}
+                        <i :class="drilldownDepartment.kind === 'localite' ? 'fas fa-map-pin' : drilldownDepartment.kind === 'sexe' ? 'fas fa-venus-mars' : 'fas fa-building'"></i> {{ drilldownDepartment.department.nom }}
                       </div>
                       <div class="drill-header-title" v-else>
                         <i class="fas fa-spinner fa-spin"></i> Chargement...
@@ -717,7 +737,8 @@
                         {{ drilldownProvince.effectifs.total }} agents · {{ drilldownProvince.province.ville_secretariat || '' }}
                       </div>
                       <div class="drill-header-sub" v-else-if="drilldownLevel === 'department' && drilldownDepartment">
-                        <template v-if="drilldownSection === 'effectifs'">{{ drilldownDepartment.effectifs.total }} agents · {{ drilldownDepartment.department.code || '' }}</template>
+                        <template v-if="drilldownDepartment.kind === 'sexe'">{{ drilldownDepartment.effectifs.actifs }} agents actifs · {{ drilldownDepartment.department.code || '' }}</template>
+                        <template v-else-if="drilldownSection === 'effectifs'">{{ drilldownDepartment.effectifs.total }} agents · {{ drilldownDepartment.department.code || '' }}</template>
                         <template v-else-if="drilldownSection === 'presence'">Présence · {{ drilldownDepartment.effectifs.actifs }} agents actifs</template>
                         <template v-else>PTA {{ new Date().getFullYear() }} · {{ drilldownDepartment.pta?.total || 0 }} activités</template>
                       </div>
@@ -1143,25 +1164,45 @@
                     <!-- ─── Contenu EFFECTIFS ─── -->
                     <template v-if="drilldownSection === 'effectifs'">
                       <div class="drill-dept-grid">
-                        <div class="drill-prov-stat-card" style="border-color:#0077B5;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Agents</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#059669;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Actifs</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#d97706;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.suspendus ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Suspendus</div>
-                        </div>
-                        <div class="drill-prov-stat-card" style="border-color:#64748b;">
-                          <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.anciens ?? 0 }}</div>
-                          <div class="drill-prov-stat-lbl">Anciens</div>
-                        </div>
+                        <template v-if="drilldownDepartment.kind === 'sexe'">
+                          <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drilldownDepartment.sexe_filter === 'ALL' }" style="border-color:#8b5cf6;" role="button" tabindex="0" @click="openSexeDrilldown('all')" @keydown.enter.prevent="openSexeDrilldown('all')">
+                            <div class="drill-prov-stat-val">{{ (drilldownDepartment.by_sexe?.M ?? 0) + (drilldownDepartment.by_sexe?.F ?? 0) }}</div>
+                            <div class="drill-prov-stat-lbl">Total actifs</div>
+                          </div>
+                          <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drilldownDepartment.sexe_filter === 'M' }" style="border-color:#2563eb;" role="button" tabindex="0" @click="openSexeDrilldown('M')" @keydown.enter.prevent="openSexeDrilldown('M')">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.by_sexe?.M ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">Hommes</div>
+                          </div>
+                          <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drilldownDepartment.sexe_filter === 'F' }" style="border-color:#ec4899;" role="button" tabindex="0" @click="openSexeDrilldown('F')" @keydown.enter.prevent="openSexeDrilldown('F')">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.by_sexe?.F ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">Femmes</div>
+                          </div>
+                          <div class="drill-prov-stat-card" style="border-color:#059669;">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.online ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">En ligne</div>
+                          </div>
+                        </template>
+                        <template v-else>
+                          <div class="drill-prov-stat-card" style="border-color:#0077B5;">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.total ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">Agents</div>
+                          </div>
+                          <div class="drill-prov-stat-card" style="border-color:#059669;">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.actifs ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">Actifs</div>
+                          </div>
+                          <div class="drill-prov-stat-card" style="border-color:#d97706;">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.suspendus ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">Suspendus</div>
+                          </div>
+                          <div class="drill-prov-stat-card" style="border-color:#64748b;">
+                            <div class="drill-prov-stat-val">{{ drilldownDepartment.effectifs?.anciens ?? 0 }}</div>
+                            <div class="drill-prov-stat-lbl">Anciens</div>
+                          </div>
+                        </template>
                       </div>
                       <div v-if="drilldownDepartment.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
-                        <i class="fas fa-user"></i> Agents ({{ drilldownDepartment.agents.length }})
+                        <i class="fas fa-user"></i> {{ drilldownDepartment.kind === 'sexe' ? `${drilldownDepartment.label || 'Agents'} (${drilldownDepartment.agents.length})` : `Agents (${drilldownDepartment.agents.length})` }}
                       </div>
                       <div v-if="drilldownDepartment.agents?.length" class="drill-prov-agents-table">
                         <div v-for="a in drilldownDepartment.agents" :key="a.id" class="drill-prov-agent-row">
@@ -1189,7 +1230,7 @@
                       </div>
                       <div v-else class="drill-empty">
                         <i class="fas fa-inbox"></i>
-                        <p>{{ drilldownDepartment.kind === 'localite' ? 'Aucun agent dans cette localité' : 'Aucun agent dans ce département' }}</p>
+                        <p>{{ drilldownDepartment.kind === 'sexe' ? 'Aucun agent pour ce filtre' : drilldownDepartment.kind === 'localite' ? 'Aucun agent dans cette localité' : 'Aucun agent dans ce département' }}</p>
                       </div>
                     </template>
 
@@ -1919,6 +1960,36 @@ async function openLocaliteDrilldown(id) {
   }
 }
 
+async function openSexeDrilldown(sexe = 'all') {
+  const requestSeq = ++drillRequestSeq
+  const filter = String(sexe || 'all').toUpperCase()
+  drilldownOpen.value = true
+  drilldownLoading.value = true
+  drilldownLevel.value = 'department'
+  drilldownSection.value = 'effectifs'
+  drillPresenceFilter.value = 'all'
+  drilldownError.value = null
+  drilldownOrgane.value = null
+  drilldownProvince.value = null
+  drilldownDepartment.value = null
+
+  try {
+    const { data: result } = await client.get(`/dashboard/executive/sexe/${filter}`)
+    if (requestSeq !== drillRequestSeq) return
+    const payload = result.data ?? result
+    drilldownDepartment.value = {
+      kind: 'sexe',
+      ...payload,
+    }
+  } catch (e) {
+    if (requestSeq !== drillRequestSeq) return
+    drilldownDepartment.value = null
+    drilldownError.value = e.response?.data?.message || 'Impossible de charger la répartition par sexe.'
+  } finally {
+    if (requestSeq === drillRequestSeq) drilldownLoading.value = false
+  }
+}
+
 function closeDrilldown() {
   drillRequestSeq += 1
   drilldownOpen.value = false
@@ -1963,6 +2034,8 @@ function backToPrevious() {
 }
 
 const drilldownColor = computed(() => {
+  if (drilldownDepartment.value?.kind === 'sexe') return '#8b5cf6'
+
   const code = drilldownOrgane.value?.organe
   if (code === 'SEN') return '#0077B5'
   if (code === 'SEP') return '#0ea5e9'
@@ -2304,6 +2377,9 @@ onMounted(async () => {
 .sen-organe-sub { font-size: .68rem; color: #94a3b8; }
 .sen-organe-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: .5rem; margin-bottom: 1rem; }
 .sen-organe-stat { text-align: center; padding: .5rem .25rem; background: #f8fafc; border-radius: 10px; }
+.sen-organe-stat-clickable { cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.sen-organe-stat-clickable:hover,
+.sen-organe-stat-clickable:focus-visible { background: #eef6ff; transform: translateY(-1px); box-shadow: 0 6px 14px rgba(15, 23, 42, .08); outline: none; }
 .sen-organe-stat-val { font-size: 1.3rem; font-weight: 800; line-height: 1; }
 .sen-organe-stat-lbl { font-size: .6rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; letter-spacing: .3px; margin-top: .15rem; }
 .sen-organe-bar-wrap {}

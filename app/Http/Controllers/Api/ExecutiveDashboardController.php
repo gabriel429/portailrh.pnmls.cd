@@ -1442,6 +1442,104 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         ]);
     }
 
+    public function sexeDetail(Request $request, string $sexe)
+    {
+        $filter = strtoupper($sexe);
+        if (!in_array($filter, ['ALL', 'M', 'F'], true)) {
+            return $this->error('Filtre sexe invalide', 422);
+        }
+
+        $maleValues = ['M', 'Masculin', 'masculin', 'Homme', 'homme'];
+        $femaleValues = ['F', 'Feminin', 'Féminin', 'feminin', 'féminin', 'Femme', 'femme'];
+        $filterValues = $filter === 'M' ? $maleValues : ($filter === 'F' ? $femaleValues : null);
+
+        $scope = $this->scopeService();
+        $user = $request->user();
+        $isProvincial = $scope->isProvincialUser($user);
+        $userProvinceId = $isProvincial ? $scope->provinceId($user) : null;
+
+        $baseAgents = Agent::query();
+        if ($userProvinceId) {
+            $baseAgents->where('province_id', $userProvinceId);
+        }
+
+        $hommes = (clone $baseAgents)->actifs()->whereIn('sexe', $maleValues)->count();
+        $femmes = (clone $baseAgents)->actifs()->whereIn('sexe', $femaleValues)->count();
+
+        $agents = clone $baseAgents;
+        if ($filterValues !== null) {
+            $agents->whereIn('sexe', $filterValues);
+        }
+
+        $now = Carbon::now();
+        $startOfMonth = $now->copy()->startOfMonth();
+        $actifs = (clone $agents)->actifs()->count();
+        $total = $actifs;
+        $suspendus = 0;
+        $anciens = 0;
+        $activeBase = $actifs ?: 1;
+
+        $agentPresenceFilter = function ($q) use ($userProvinceId, $filterValues) {
+            $q->actifs();
+            if ($userProvinceId) {
+                $q->where('province_id', $userProvinceId);
+            }
+            if ($filterValues !== null) {
+                $q->whereIn('sexe', $filterValues);
+            }
+        };
+
+        $todayPresent = Pointage::byDate($now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', $agentPresenceFilter)
+            ->distinct('agent_id')
+            ->count('agent_id');
+
+        $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
+            ->whereNotNull('heure_entree')
+            ->whereHas('agent', $agentPresenceFilter)
+            ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
+            ->groupBy('date_pointage')
+            ->get();
+
+        $monthlyRate = $monthly->count() > 0
+            ? round(($monthly->avg('present') / $activeBase) * 100, 1)
+            : 0;
+
+        $topAgents = $this->presenceAgents($agents, $now, 500);
+        $onlineCount = $topAgents->where('is_online', true)->count();
+        $label = match ($filter) {
+            'M' => 'Hommes',
+            'F' => 'Femmes',
+            default => 'Répartition par sexe',
+        };
+
+        return $this->success([
+            'department' => [
+                'id' => 'sexe-' . strtolower($filter),
+                'nom' => $label,
+                'code' => $filter === 'ALL' ? 'H/F' : $filter,
+            ],
+            'kind' => 'sexe',
+            'sexe_filter' => $filter,
+            'label' => $label,
+            'by_sexe' => [
+                'M' => $hommes,
+                'F' => $femmes,
+            ],
+            'effectifs' => array_merge(compact('total', 'actifs', 'suspendus', 'anciens'), ['online' => $onlineCount]),
+            'presence' => [
+                'today_present' => $todayPresent,
+                'today_rate' => round(($todayPresent / $activeBase) * 100, 1),
+                'monthly_rate' => $monthlyRate,
+                'total_active' => $actifs,
+            ],
+            'pta' => ['total' => 0, 'terminee' => 0, 'en_cours' => 0, 'avg' => 0],
+            'activites' => [],
+            'agents' => $topAgents,
+        ]);
+    }
+
     /**
      * Drill-down province : détail complet d'une province
      */
