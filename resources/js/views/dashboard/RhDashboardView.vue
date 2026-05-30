@@ -1668,10 +1668,21 @@ function backToOrgane() {
 
 function backToPrevious() {
   if (drilldownLevel.value === 'department') {
-    drilldownLevel.value = 'province'
     drilldownDepartment.value = null
     drillPresenceFilter.value = 'all'
     selectedAgent.value = null
+
+    if (drilldownProvince.value) {
+      drilldownLevel.value = 'province'
+      return
+    }
+
+    if (drilldownOrgane.value) {
+      backToOrgane()
+      return
+    }
+
+    closeDrilldown()
   } else if (drilldownOrgane.value) {
     backToOrgane()
   } else {
