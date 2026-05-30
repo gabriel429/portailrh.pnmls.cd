@@ -76,14 +76,14 @@ class RhDashboardController extends ApiController
 
         $agentsByOrgane = [];
         $organes = [
-            'sen' => 'Secretariat Executif National',
-            'sep' => 'Secretariat Executif Provincial',
-            'sel' => 'Secretariat Executif Local',
+            'sen' => ['Secrétariat Exécutif National', 'Secretariat Executif National'],
+            'sep' => ['Secrétariat Exécutif Provincial', 'Secretariat Executif Provincial'],
+            'sel' => ['Secrétariat Exécutif Local', 'Secretariat Executif Local'],
         ];
-        foreach ($organes as $code => $nom) {
+        foreach ($organes as $code => $noms) {
             $agentsByOrgane[$code] = [
-                'total' => $this->agentQuery($request)->where('organe', $nom)->count(),
-                'actifs' => $this->agentQuery($request)->actifs()->where('organe', $nom)->count(),
+                'total' => $this->agentQuery($request)->whereIn('organe', $noms)->count(),
+                'actifs' => $this->agentQuery($request)->actifs()->whereIn('organe', $noms)->count(),
             ];
         }
 
