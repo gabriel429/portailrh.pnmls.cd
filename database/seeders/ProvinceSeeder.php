@@ -14,9 +14,34 @@ class ProvinceSeeder extends Seeder
     {
         $provinces = [
             [
-                'code' => 'KIN',
-                'nom' => 'Kinshasa',
-                'description' => 'Province de Kinshasa - Capitale',
+                'code' => 'BUE',
+                'nom' => 'Bas-Uele',
+                'description' => 'Province du Bas-Uele',
+            ],
+            [
+                'code' => 'EQU',
+                'nom' => 'Equateur',
+                'description' => 'Province de l Equateur',
+            ],
+            [
+                'code' => 'HAU',
+                'nom' => 'Haut-Katanga',
+                'description' => 'Province du Haut-Katanga',
+            ],
+            [
+                'code' => 'HLO',
+                'nom' => 'Haut-Lomami',
+                'description' => 'Province du Haut-Lomami',
+            ],
+            [
+                'code' => 'HUE',
+                'nom' => 'Haut-Uele',
+                'description' => 'Province du Haut-Uele',
+            ],
+            [
+                'code' => 'ITU',
+                'nom' => 'Ituri',
+                'description' => 'Province de l Ituri',
             ],
             [
                 'code' => 'KAS',
@@ -34,24 +59,49 @@ class ProvinceSeeder extends Seeder
                 'description' => 'Province du Kasai Oriental',
             ],
             [
+                'code' => 'KIN',
+                'nom' => 'Kinshasa',
+                'description' => 'Province de Kinshasa - Capitale',
+            ],
+            [
+                'code' => 'KOC',
+                'nom' => 'Kongo Central',
+                'description' => 'Province du Kongo Central',
+            ],
+            [
+                'code' => 'KWA',
+                'nom' => 'Kwango',
+                'description' => 'Province du Kwango',
+            ],
+            [
+                'code' => 'KWI',
+                'nom' => 'Kwilu',
+                'description' => 'Province du Kwilu',
+            ],
+            [
+                'code' => 'LOM',
+                'nom' => 'Lomami',
+                'description' => 'Province de Lomami',
+            ],
+            [
                 'code' => 'LOF',
                 'nom' => 'Lualaba',
                 'description' => 'Province de Lualaba',
             ],
             [
-                'code' => 'HAU',
-                'nom' => 'Haut-Katanga',
-                'description' => 'Province du Haut-Katanga',
+                'code' => 'MND',
+                'nom' => 'Mai-Ndombe',
+                'description' => 'Province du Mai-Ndombe',
             ],
             [
-                'code' => 'TAN',
-                'nom' => 'Tanganyika',
-                'description' => 'Province de Tanganyika',
+                'code' => 'MAN',
+                'nom' => 'Maniema',
+                'description' => 'Province de Maniema',
             ],
             [
-                'code' => 'SUD',
-                'nom' => 'Sud-Kivu',
-                'description' => 'Province du Sud-Kivu',
+                'code' => 'MON',
+                'nom' => 'Mongala',
+                'description' => 'Province de la Mongala',
             ],
             [
                 'code' => 'NOR',
@@ -59,14 +109,44 @@ class ProvinceSeeder extends Seeder
                 'description' => 'Province du Nord-Kivu',
             ],
             [
-                'code' => 'MAN',
-                'nom' => 'Maniema',
-                'description' => 'Province de Maniema',
+                'code' => 'NUB',
+                'nom' => 'Nord-Ubangi',
+                'description' => 'Province du Nord-Ubangi',
+            ],
+            [
+                'code' => 'SAN',
+                'nom' => 'Sankuru',
+                'description' => 'Province du Sankuru',
+            ],
+            [
+                'code' => 'SUD',
+                'nom' => 'Sud-Kivu',
+                'description' => 'Province du Sud-Kivu',
+            ],
+            [
+                'code' => 'SUB',
+                'nom' => 'Sud-Ubangi',
+                'description' => 'Province du Sud-Ubangi',
+            ],
+            [
+                'code' => 'TAN',
+                'nom' => 'Tanganyika',
+                'description' => 'Province de Tanganyika',
+            ],
+            [
+                'code' => 'TSH',
+                'nom' => 'Tshopo',
+                'description' => 'Province de la Tshopo',
+            ],
+            [
+                'code' => 'TUA',
+                'nom' => 'Tshuapa',
+                'description' => 'Province de la Tshuapa',
             ],
         ];
 
         foreach ($provinces as $province) {
-            Province::firstOrCreate(
+            Province::updateOrCreate(
                 ['code' => $province['code']],
                 $province
             );

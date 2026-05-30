@@ -269,6 +269,11 @@ class ParametresController extends Controller
         if ($request->search) {
             $q->where('nom', 'like', "%{$request->search}%");
         }
+
+        if ($request->boolean('all')) {
+            return response()->json(['data' => $q->get()]);
+        }
+
         return response()->json($q->paginate($request->per_page ?? 20));
     }
 

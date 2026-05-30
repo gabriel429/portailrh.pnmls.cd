@@ -133,8 +133,8 @@ const form = reactive({
 
 async function fetchProvinces() {
   try {
-    const { data } = await client.get('/admin/provinces')
-    provinces.value = data.data || data || []
+    const { data } = await client.get('/admin/provinces', { params: { all: true } })
+    provinces.value = Array.isArray(data) ? data : (data.data || [])
   } catch (e) {
     console.error('Erreur chargement provinces:', e)
   }

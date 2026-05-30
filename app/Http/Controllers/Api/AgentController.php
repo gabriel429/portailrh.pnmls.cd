@@ -1188,33 +1188,93 @@ class AgentController extends ApiController
                 'statut',
             ], ';');
 
-            fputcsv($handle, [
-                'A12345',
-                'Mukendi',
-                'Kabeya',
-                'Jean',
-                'M',
-                '1988',
-                '1988-06-15',
-                'Kinshasa',
-                'marie',
-                '3',
-                '0812345678',
-                '0998765432',
-                'Commune de la Gombe',
-                'jean@gmail.com',
-                'jean.mukendi@pnmls.cd',
-                'Secrétariat Exécutif National',
-                'Chef de division',
-                '',
-                'Administration',
-                'Directeur',
-                '',
-                'Licence',
-                'Gestion',
-                '2018',
-                'actif',
-            ], ';');
+            $examples = [
+                [
+                    'A12345',
+                    'Mukendi',
+                    'Kabeya',
+                    'Jean',
+                    'M',
+                    '1988',
+                    '1988-06-15',
+                    'Kinshasa',
+                    'marie',
+                    '3',
+                    '0812345678',
+                    '0998765432',
+                    'Commune de la Gombe',
+                    'jean@gmail.com',
+                    'jean.mukendi@pnmls.cd',
+                    'SEN',
+                    'Chef de division',
+                    '',
+                    'Administration',
+                    'Directeur',
+                    '',
+                    'Licence',
+                    'Gestion',
+                    '2018',
+                    'actif',
+                ],
+                [
+                    'B67890',
+                    'Ilunga',
+                    'Kalala',
+                    'Marie',
+                    'F',
+                    '1992',
+                    '1992-09-21',
+                    'Lubumbashi',
+                    'celibataire',
+                    '0',
+                    '0823456789',
+                    '',
+                    'Lubumbashi',
+                    'marie.ilunga@gmail.com',
+                    'marie.ilunga@pnmls.cd',
+                    'SEP',
+                    'Secrétaire Exécutif Provincial',
+                    'Haut-Katanga',
+                    '',
+                    'Chef de Division',
+                    '',
+                    'Master',
+                    'Santé publique',
+                    '2020',
+                    'actif',
+                ],
+                [
+                    '',
+                    'Kavira',
+                    'Mumbere',
+                    'Paul',
+                    'M',
+                    '1990',
+                    '',
+                    'Goma',
+                    'marie',
+                    '2',
+                    '0844567890',
+                    '0991234567',
+                    'Goma',
+                    '',
+                    'paul.kavira@pnmls.cd',
+                    'SEL',
+                    'Secrétaire Caissier',
+                    'Nord-Kivu',
+                    '',
+                    '',
+                    '',
+                    'Graduat',
+                    'Administration',
+                    '2022',
+                    'actif',
+                ],
+            ];
+
+            foreach ($examples as $example) {
+                fputcsv($handle, $example, ';');
+            }
 
             fclose($handle);
         };
@@ -1355,6 +1415,9 @@ class AgentController extends ApiController
         $fonctions = Fonction::query()->pluck('nom')->all();
         $departements = Department::query()->get(['id', 'nom']);
         $provinceColumns = ['id', 'nom'];
+        if (Schema::hasColumn('provinces', 'code')) {
+            $provinceColumns[] = 'code';
+        }
         if (Schema::hasColumn('provinces', 'nom_province')) {
             $provinceColumns[] = 'nom_province';
         }
@@ -1386,11 +1449,22 @@ class AgentController extends ApiController
         return [
             'fonctions' => collect($fonctions)->mapWithKeys(fn($nom) => [$this->normalizeImportHeader($nom) => $nom])->all(),
             'departements' => $departements->mapWithKeys(fn($department) => [$this->normalizeImportHeader($department->nom) => $department->id])->all(),
-            'provinces' => $provinces->mapWithKeys(function ($province) {
-                $keys = [$this->normalizeImportHeader($province->nom_province ?? $province->nom) => $province->id];
-                if (!empty($province->nom)) {
-                    $keys[$this->normalizeImportHeader($province->nom)] = $province->id;
+            'provinces' => $provinces->flatMap(function ($province) {
+                $labels = [
+                    $province->nom ?? null,
+                    $province->nom_province ?? null,
+                    $province->code ?? null,
+                    Province::normalizeName($province->nom ?? null),
+                    Province::normalizeName($province->nom_province ?? null),
+                ];
+
+                $keys = [];
+                foreach ($labels as $label) {
+                    if ($label !== null && trim((string) $label) !== '') {
+                        $keys[$this->normalizeImportHeader((string) $label)] = $province->id;
+                    }
                 }
+
                 return $keys;
             })->all(),
             'grades' => collect($grades)->mapWithKeys(function ($grade) {
@@ -1497,6 +1571,9 @@ class AgentController extends ApiController
             'organe' => 'organe',
             'fonction' => 'fonction',
             'province' => 'province',
+            'province_id' => 'province',
+            'province_nom' => 'province',
+            'nom_province' => 'province',
             'departement' => 'departement',
             'department' => 'departement',
             'grade' => 'grade',

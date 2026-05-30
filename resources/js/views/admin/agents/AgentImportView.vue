@@ -46,7 +46,7 @@
 
           <div class="alert alert-info mt-3 mb-0">
             <i class="fas fa-circle-info me-2"></i>
-            Les champs obligatoires sont: nom, prenom, sexe, lieu_naissance, organe, fonction, niveau_etudes et annee_engagement_programme.
+            Les champs obligatoires sont: nom, prenom, sexe, lieu_naissance, organe, fonction, niveau_etudes, annee_engagement_programme, et annee_naissance ou date_naissance.
           </div>
 
           <div class="import-actions">
@@ -157,7 +157,7 @@
             </div>
             <div class="rule-item">
               <strong>Province / département / grade</strong>
-              <span>Recherche par nom. Si la valeur n'existe pas, la ligne est rejetee.</span>
+              <span>Recherche par nom ou code. Les provinces sont harmonisees automatiquement: HAUT-KATANGA, Haut Katanga et Haut-Katanga pointent vers la meme province.</span>
             </div>
             <div class="rule-item">
               <strong>Dates</strong>
@@ -205,6 +205,8 @@ const optionalColumns = [
   'adresse',
   'email_prive',
   'email_professionnel',
+  'telephone_professionnel',
+  'telephone_prive',
   'province',
   'departement',
   'grade',
