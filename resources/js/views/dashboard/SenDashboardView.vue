@@ -218,6 +218,34 @@
               <div class="sen-organe-bar-label">{{ o.actifs }} actifs sur {{ data.agents?.actifs ?? 0 }}</div>
             </div>
           </div>
+
+          <div class="sen-organe-card" style="border-top: 4px solid #8b5cf6;">
+            <div class="sen-organe-header">
+              <div class="sen-organe-badge" style="background:#8b5cf6;">
+                <i class="fas fa-venus-mars" style="font-size:.72rem;"></i>
+              </div>
+              <div>
+                <div class="sen-organe-name">Répartition par sexe</div>
+                <div class="sen-organe-sub">Agents actifs</div>
+              </div>
+            </div>
+            <div class="sen-organe-stats sen-sexe-stats">
+              <div class="sen-organe-stat">
+                <div class="sen-organe-stat-val" style="color:#2563eb;">{{ sexeCounts.hommes }}</div>
+                <div class="sen-organe-stat-lbl">Hommes</div>
+              </div>
+              <div class="sen-organe-stat">
+                <div class="sen-organe-stat-val" style="color:#ec4899;">{{ sexeCounts.femmes }}</div>
+                <div class="sen-organe-stat-lbl">Femmes</div>
+              </div>
+            </div>
+            <div class="sen-sexe-bars">
+              <div class="sen-sexe-bar">
+                <div class="sen-sexe-fill" style="background:#2563eb;" :style="{ width: sexePct('M') + '%' }"></div>
+                <div class="sen-sexe-fill" style="background:#ec4899;" :style="{ width: sexePct('F') + '%' }"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -2065,6 +2093,22 @@ function orgPct(count) {
   return Math.round((count / total) * 100)
 }
 
+const sexeCounts = computed(() => {
+  const by = data.value.agents?.by_sexe || {}
+  const count = (...keys) => keys.reduce((sum, key) => sum + Number(by[key] ?? 0), 0)
+
+  return {
+    hommes: count('M', 'Masculin', 'masculin', 'Homme', 'homme'),
+    femmes: count('F', 'Feminin', 'Féminin', 'feminin', 'féminin', 'Femme', 'femme'),
+  }
+})
+
+function sexePct(sexe) {
+  const total = sexeCounts.value.hommes + sexeCounts.value.femmes || 1
+  const val = sexe === 'M' ? sexeCounts.value.hommes : sexeCounts.value.femmes
+  return Math.round((val / total) * 100)
+}
+
 // ─── PRESENCE par organe ───
 const presenceOrganes = computed(() => {
   const att = data.value.attendance?.by_organe || {}
@@ -2244,7 +2288,7 @@ onMounted(async () => {
 .sen-metric-bar-fill { height: 100%; border-radius: 4px; transition: width .8s ease; min-width: 3px; }
 
 /* ═══════════ ORGANE CARDS (agents) ═══════════ */
-.sen-organe-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; }
+.sen-organe-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
 .sen-organe-card {
   background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
   padding: 1.3rem; transition: all .25s;
@@ -2266,6 +2310,10 @@ onMounted(async () => {
 .sen-organe-bar-bg { height: 6px; background: #f1f5f9; border-radius: 6px; overflow: hidden; }
 .sen-organe-bar-fill { height: 100%; border-radius: 6px; transition: width .8s ease; min-width: 2px; }
 .sen-organe-bar-label { font-size: .62rem; color: #94a3b8; margin-top: .25rem; }
+.sen-sexe-stats { grid-template-columns: repeat(2, 1fr); }
+.sen-sexe-bars { margin-top: .6rem; }
+.sen-sexe-bar { display: flex; height: 8px; border-radius: 8px; overflow: hidden; background: #f1f5f9; }
+.sen-sexe-fill { height: 100%; transition: width .8s ease; }
 
 /* ═══════════ PRESENCE PAR ORGANE ═══════════ */
 .sen-presence-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem; }
@@ -2576,7 +2624,7 @@ onMounted(async () => {
 @media (max-width: 991.98px) {
   .sen-metrics { grid-template-columns: repeat(2, 1fr); }
   .sen-actions { grid-template-columns: repeat(2, 1fr); }
-  .sen-organe-grid { grid-template-columns: 1fr; }
+  .sen-organe-grid { grid-template-columns: repeat(2, 1fr); }
   .sen-presence-grid { grid-template-columns: repeat(2, 1fr); }
   .sen-plan-organe-grid { grid-template-columns: 1fr; }
   .sen-recent-grid { grid-template-columns: 1fr; }
@@ -2612,6 +2660,7 @@ onMounted(async () => {
   .sen-action-arrow { display: none; }
   .sen-metrics { grid-template-columns: repeat(2, 1fr); }
   .sen-presence-grid { grid-template-columns: 1fr; }
+  .sen-organe-grid { grid-template-columns: 1fr; }
   .sen-organe-stats { grid-template-columns: repeat(2, 1fr); }
   .sen-affectations-row { grid-template-columns: 1fr; }
   .sen-audit-row { grid-template-columns: 1fr; }

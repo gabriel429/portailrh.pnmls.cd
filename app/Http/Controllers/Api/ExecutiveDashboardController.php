@@ -211,6 +211,11 @@ class ExecutiveDashboardController extends ApiController
             ];
         }
 
+        $agentsBySexe = Agent::actifs()
+            ->select('sexe', DB::raw('COUNT(*) as total'))
+            ->groupBy('sexe')
+            ->pluck('total', 'sexe');
+
         // ─── DEMANDES ───
         $requestsTotal = RequestModel::count();
         $requestsPending = RequestModel::enAttente()->count();
@@ -645,6 +650,7 @@ class ExecutiveDashboardController extends ApiController
                 'online' => count($onlineAgentMap),
                 'sans_affectation' => $agentsSansAffectation,
                 'by_organe' => $agentsByOrgane,
+                'by_sexe' => $agentsBySexe,
                 'by_grade' => $gradesDistribution,
                 'by_province' => $agentsByProvince,
                 'by_section' => $agentsBySection,
