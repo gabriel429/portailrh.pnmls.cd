@@ -11,7 +11,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-05-28-pwa-harmony-v1'
+const BUILD_CACHE_VERSION = '2026-05-30-provinces-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 const APP_SW_PATH = '/build/sw.js'
 
