@@ -35,7 +35,7 @@ class RoleMiddleware
             $hasRole = RoleNames::matches('Assistant RH', $roles);
         }
 
-        if (!$hasRole && $request->is('api/pointages*') && app(UserDataScope::class)->isLocalUser($user)) {
+        if (!$hasRole && $this->allowsLocalScopedAccess($request, $user)) {
             $hasRole = true;
         }
 
@@ -47,5 +47,26 @@ class RoleMiddleware
         }
 
         return $next($request);
+    }
+
+    private function allowsLocalScopedAccess(Request $request, $user): bool
+    {
+        if (!app(UserDataScope::class)->isLocalUser($user)) {
+            return false;
+        }
+
+        if ($request->is('api/pointages*') || $request->is('api/v1/pointages*')) {
+            return true;
+        }
+
+        if ($request->isMethod('GET') || $request->isMethod('HEAD')) {
+            return $request->is('api/agents*')
+                || $request->is('api/v1/agents*')
+                || $request->is('api/signalements*')
+                || $request->is('api/v1/signalements*');
+        }
+
+        return $request->is('api/signalements*')
+            || $request->is('api/v1/signalements*');
     }
 }

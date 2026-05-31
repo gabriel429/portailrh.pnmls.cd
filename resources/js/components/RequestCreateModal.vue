@@ -14,13 +14,22 @@
                 <i class="fas fa-users me-1 text-muted"></i>
                 Sélectionner l'agent <span class="text-danger">*</span>
               </label>
-              <select v-model="form.agent_id" class="form-select form-select-sm" :class="{ 'is-invalid': errors.agent_id }">
-                <option value="">-- Choisir un agent --</option>
+              <select
+                v-model="form.agent_id"
+                class="form-select form-select-sm"
+                :class="{ 'is-invalid': errors.agent_id }"
+                :disabled="agentsLoading"
+              >
+                <option value="">{{ agentsLoading ? 'Chargement des agents...' : '-- Choisir un agent --' }}</option>
                 <option v-for="a in agents" :key="a.id" :value="a.id">
                   {{ a.prenom }} {{ a.nom }} ({{ a.matricule_etat || 'N/A' }})
                 </option>
               </select>
               <div v-if="errors.agent_id" class="invalid-feedback d-block">{{ errors.agent_id[0] }}</div>
+              <div v-else-if="agentsLoadError" class="text-danger small mt-1">{{ agentsLoadError }}</div>
+              <div v-else-if="!agentsLoading && agents.length === 0" class="text-muted small mt-1">
+                Aucun agent actif trouvé dans votre périmètre.
+              </div>
             </div>
 
             <!-- Agent connecté (non-RH) -->
@@ -203,6 +212,8 @@ const form = ref({
 })
 
 const agents = ref([])
+const agentsLoading = ref(false)
+const agentsLoadError = ref('')
 
 // Liste des agents disponibles comme intérimaire (exclure l'agent courant)
 const agentsInterimaires = computed(() => {
@@ -257,7 +268,7 @@ function close() {
 
 function resetForm() {
   form.value = {
-    agent_id: currentAgent.value?.id || '',
+    agent_id: isRH.value ? '' : (currentAgent.value?.id || ''),
     type: '',
     date_debut: '',
     date_fin: '',
@@ -267,11 +278,18 @@ function resetForm() {
     interim_assure_par: '',
   }
   errors.value = {}
+  agentsLoadError.value = ''
   removeFile()
 }
 
 async function handleSubmit() {
   errors.value = {}
+
+  if (isRH.value && !form.value.agent_id) {
+    errors.value = { agent_id: ['Sélectionnez un agent.'] }
+    return
+  }
+
   submitting.value = true
 
   try {
@@ -319,26 +337,50 @@ function shouldUsePersonalHolidayRoute() {
   return String(selectedAgentId || '') === String(currentAgent.value?.id || '')
 }
 
+function flattenAgentsResponse(payload) {
+  const raw = payload?.data ?? payload
+
+  if (!isRH.value && Array.isArray(raw?.groups)) {
+    return raw.groups.flatMap(g => g.agents || [])
+  }
+
+  if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
+    return raw.flatMap(g => g.agents || [])
+  }
+
+  return Array.isArray(raw) ? raw : []
+}
+
+async function loadAgents() {
+  agentsLoading.value = true
+  agentsLoadError.value = ''
+
+  try {
+    const endpoint = isRH.value ? '/agents' : '/address-book'
+    const { data } = await client.get(endpoint, isRH.value ? { params: { actifs: 1 } } : {})
+    agents.value = flattenAgentsResponse(data)
+
+    if (isRH.value) {
+      const currentId = String(currentAgent.value?.id || '')
+      const current = agents.value.find(a => String(a.id) === currentId)
+      form.value.agent_id = current?.id || agents.value[0]?.id || ''
+    }
+  } catch (err) {
+    agents.value = []
+    if (isRH.value) form.value.agent_id = ''
+    agentsLoadError.value = err.response?.status === 403
+      ? 'Votre profil local n’est pas encore autorisé à charger la liste des agents.'
+      : 'Impossible de charger les agents pour le moment.'
+    ui.addToast(agentsLoadError.value, 'danger')
+  } finally {
+    agentsLoading.value = false
+  }
+}
+
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     resetForm()
-    if (agents.value.length === 0) {
-      try {
-        const endpoint = isRH.value ? '/agents' : '/address-book'
-        const { data } = await client.get(endpoint, isRH.value ? { params: { actifs: 1 } } : {})
-        const raw = data.data ?? data
-
-        if (!isRH.value && Array.isArray(raw?.groups)) {
-          agents.value = raw.groups.flatMap(g => g.agents || [])
-        } else if (Array.isArray(raw) && raw.length > 0 && raw[0]?.agents) {
-          agents.value = raw.flatMap(g => g.agents)
-        } else {
-          agents.value = Array.isArray(raw) ? raw : []
-        }
-      } catch {
-        // Silently fail
-      }
-    }
+    await loadAgents()
   }
 })
 </script>
