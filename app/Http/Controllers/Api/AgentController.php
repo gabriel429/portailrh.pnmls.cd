@@ -1056,7 +1056,7 @@ class AgentController extends ApiController
     {
         $scope = $this->scopeService();
         $user = request()->user();
-        $organeOptions = Schema::hasTable('organes') ? Organe::where('actif', true)->orderBy('nom')->pluck('nom') : collect();
+        $organeOptions = Schema::hasTable('organes') ? Organe::where('actif', true)->orderInstitutionally()->pluck('nom') : collect();
         $departmentsCollection = $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom']);
         // Ajouter l'option SEN (rattachement direct) si des agents actifs SEN sans département existent
         $hasSenDirect = Agent::actifs()
@@ -1104,7 +1104,7 @@ class AgentController extends ApiController
                 ->orderBy('nom')
                 ->get()
             : collect();
-        $fonctions = Schema::hasTable('fonctions') ? Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom')->get() : collect();
+        $fonctions = Schema::hasTable('fonctions') ? Fonction::orderInstitutionally()->get() : collect();
         $niveauxEtudes = Agent::NIVEAUX_ETUDES;
 
         return response()->json([

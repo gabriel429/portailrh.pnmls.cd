@@ -39,9 +39,7 @@ class JobDescriptionController extends ApiController
     public function options(): JsonResponse
     {
         $fonctions = Fonction::withCount('jobDescriptions')
-            ->orderBy('niveau_administratif')
-            ->orderBy('type_poste')
-            ->orderBy('nom')
+            ->orderInstitutionally()
             ->get()
             ->map(fn (Fonction $fonction) => [
                 'id' => $fonction->id,

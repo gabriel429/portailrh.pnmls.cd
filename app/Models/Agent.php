@@ -256,12 +256,13 @@ class Agent extends Authenticatable
 
     public function scopeOrderInstitutionally($query)
     {
-        $roleExpression = "LOWER(CONCAT_WS(' ', COALESCE(poste_actuel, ''), COALESCE(fonction, '')))";
-        $structureExpression = "LOWER(COALESCE(organe, ''))";
+        $roleExpression = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(CONCAT_WS(' ', COALESCE(poste_actuel, ''), COALESCE(fonction, '')), 'é', 'e'), 'è', 'e'), 'ê', 'e'), 'É', 'e'))";
+        $structureExpression = "LOWER(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(organe, ''), 'é', 'e'), 'è', 'e'), 'ê', 'e'), 'É', 'e'))";
 
         return $query
             ->orderByRaw("
                 CASE
+                    WHEN {$roleExpression} LIKE '%secretaire executif national%' AND {$roleExpression} NOT LIKE '%adjoint%' THEN 0
                     WHEN {$structureExpression} LIKE '%national%' THEN 1
                     WHEN {$structureExpression} LIKE '%provincial%' THEN 2
                     WHEN {$structureExpression} LIKE '%local%' THEN 3
@@ -270,12 +271,13 @@ class Agent extends Authenticatable
             ")
             ->orderByRaw("
                 CASE
-                    WHEN {$roleExpression} LIKE '%secr%taire ex%cutif%' THEN 1
+                    WHEN {$roleExpression} LIKE '%secretaire executif national%' AND {$roleExpression} NOT LIKE '%adjoint%' THEN 0
+                    WHEN {$roleExpression} LIKE '%secretaire executif%' THEN 1
                     WHEN {$roleExpression} LIKE '%directeur%' THEN 2
                     WHEN {$roleExpression} LIKE '%chef%section%' THEN 3
                     WHEN {$roleExpression} LIKE '%chef%cellule%' THEN 4
                     WHEN {$roleExpression} LIKE '%assistant%' THEN 5
-                    WHEN {$roleExpression} LIKE '%secr%taire%' THEN 5
+                    WHEN {$roleExpression} LIKE '%secretaire%' THEN 5
                     ELSE 6
                 END
             ")

@@ -134,7 +134,7 @@ class ParametresController extends Controller
     {
         $organes = [];
         if (Schema::hasTable('organes')) {
-            $organes = Organe::where('actif', true)->get();
+            $organes = Organe::where('actif', true)->orderInstitutionally()->get();
         }
 
         $stats = [
@@ -254,8 +254,7 @@ class ParametresController extends Controller
             $query->where('niveau_administratif', $organeCode)
                   ->orWhere('niveau_administratif', 'TOUS');
         })
-        ->orderBy('type_poste')
-        ->orderBy('nom')
+        ->orderInstitutionally()
         ->get();
 
         return response()->json($fonctions);
@@ -507,7 +506,7 @@ class ParametresController extends Controller
 
     public function apiFonctionsIndex(Request $request)
     {
-        $q = Fonction::orderBy('niveau_administratif')->orderBy('type_poste')->orderBy('nom');
+        $q = Fonction::orderInstitutionally();
         if ($request->search) {
             $q->where('nom', 'like', "%{$request->search}%");
         }
@@ -735,7 +734,7 @@ class ParametresController extends Controller
         if (!Schema::hasTable('organes')) {
             return response()->json(['data' => []]);
         }
-        $organes = Organe::orderBy('code')->get();
+        $organes = Organe::orderInstitutionally()->get();
         return response()->json(['data' => $organes]);
     }
 
@@ -1173,13 +1172,13 @@ class ParametresController extends Controller
 
         return response()->json([
             'agents' => $agents,
-            'fonctions' => Schema::hasTable('fonctions') ? Fonction::orderBy('nom')->get(['id', 'nom', 'niveau_administratif', 'type_poste']) : [],
+            'fonctions' => Schema::hasTable('fonctions') ? Fonction::orderInstitutionally()->get(['id', 'nom', 'niveau_administratif', 'type_poste']) : [],
             'departments' => Schema::hasTable('departments') ? $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom', 'code']) : [],
             'sections' => Schema::hasTable('sections') ? Section::orderBy('nom')->get(['id', 'nom', 'code', 'department_id', 'type']) : [],
             'cellules' => Schema::hasTable('cellules') ? Cellule::orderBy('nom')->get(['id', 'nom', 'code', 'section_id']) : [],
             'provinces' => Schema::hasTable('provinces') ? $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get(['id', 'nom', 'code']) : [],
             'localites' => Schema::hasTable('localites') ? Localite::orderBy('nom')->get(['id', 'nom', 'code', 'province_id']) : [],
-            'organes' => Schema::hasTable('organes') ? Organe::where('actif', true)->orderBy('code')->get(['id', 'code', 'nom', 'sigle']) : [],
+            'organes' => Schema::hasTable('organes') ? Organe::where('actif', true)->orderInstitutionally()->get(['id', 'code', 'nom', 'sigle']) : [],
         ]);
     }
 
