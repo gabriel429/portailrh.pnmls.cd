@@ -24,6 +24,7 @@ use App\Services\UserDataScope;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -863,9 +864,11 @@ class ParametresController extends Controller
             'password' => 'required|string|min:6|confirmed',
         ]);
         $agent = Agent::findOrFail($validated['agent_id']);
-        $email = $agent->email ?: strtolower(str_replace(' ', '.', trim($agent->prenom ?? 'agent') . '.' . trim($agent->nom ?? $agent->id))) . '@pnmls.cd';
+        $email = $this->resolveAgentAccountEmail($agent);
+        $this->ensureNewUserEmailAvailable($email);
+
         $user = User::create([
-            'name' => trim(($agent->prenom ?? '') . ' ' . ($agent->nom ?? '')),
+            'name' => $this->resolveAgentAccountName($agent),
             'email' => $email,
             'password' => bcrypt($validated['password']),
             'agent_id' => $agent->id,
@@ -876,6 +879,60 @@ class ParametresController extends Controller
         $agent->save();
         $this->recordAudit('CREATE', 'users', $user->id, null, $user->toArray());
         return response()->json($user->load(['agent', 'role']), 201);
+    }
+
+    private function resolveAgentAccountName(Agent $agent): string
+    {
+        $name = trim(collect([$agent->prenom, $agent->nom, $agent->postnom])
+            ->filter(fn ($part) => filled($part))
+            ->implode(' '));
+
+        return $name !== '' ? $name : 'Agent ' . $agent->id;
+    }
+
+    private function resolveAgentAccountEmail(Agent $agent): string
+    {
+        foreach ([$agent->email_professionnel, $agent->email, $agent->email_prive] as $candidate) {
+            $email = strtolower(trim((string) $candidate));
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+
+        return $this->generateUniqueAgentEmail($agent);
+    }
+
+    private function generateUniqueAgentEmail(Agent $agent): string
+    {
+        $base = Str::slug(Str::ascii($this->resolveAgentAccountName($agent)), '.');
+        $base = $base !== '' ? $base : 'agent.' . $agent->id;
+        $candidate = $base . '@pnmls.cd';
+
+        if (!User::where('email', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        $candidate = $base . '.' . $agent->id . '@pnmls.cd';
+        if (!User::where('email', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        $suffix = 2;
+        do {
+            $candidate = $base . '.' . $agent->id . '.' . $suffix . '@pnmls.cd';
+            $suffix++;
+        } while (User::where('email', $candidate)->exists());
+
+        return $candidate;
+    }
+
+    private function ensureNewUserEmailAvailable(string $email): void
+    {
+        if (User::where('email', $email)->exists()) {
+            throw ValidationException::withMessages([
+                'agent_id' => ['Cet agent a un e-mail professionnel déjà utilisé par un autre compte utilisateur.'],
+            ]);
+        }
     }
 
     public function apiUtilisateursUpdate(Request $request, User $user)

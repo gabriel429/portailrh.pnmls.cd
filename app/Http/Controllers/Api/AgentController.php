@@ -15,6 +15,7 @@ use App\Models\Organe;
 use App\Models\Permission;
 use App\Models\Province;
 use App\Models\Section;
+use App\Models\User;
 use App\Services\SpreadsheetImportReader;
 use App\Services\NotificationService;
 use App\Services\RoleService;
@@ -849,6 +850,13 @@ class AgentController extends ApiController
                 ?? $agent->email;
         }
 
+        if ($agent->user) {
+            $accountEmail = $this->resolveAgentAccountEmailFromPayload($validated, $agent);
+            if ($accountEmail) {
+                $this->ensureUserEmailAvailable($accountEmail, $agent->user->id);
+            }
+        }
+
         // Handle photo upload
         if ($request->hasFile('photo')) {
             $file = $request->file('photo');
@@ -858,6 +866,8 @@ class AgentController extends ApiController
         }
 
         $agent->update($validated);
+        $agent->refresh()->load('user');
+        $this->syncLinkedUserIdentity($agent);
         $agent->load(['role', 'province', 'localite', 'departement', 'grade', 'institution']);
 
         NotificationService::notifierAgent(
@@ -875,6 +885,82 @@ class AgentController extends ApiController
             'message' => 'Agent modifié avec succès',
             'agent' => $resource->resolve(),
         ]);
+    }
+
+    private function syncLinkedUserIdentity(Agent $agent): void
+    {
+        $user = $agent->user;
+        if (!$user) {
+            return;
+        }
+
+        $updates = [];
+        $name = $this->resolveAgentAccountName($agent);
+        if ($name !== '' && $user->name !== $name) {
+            $updates['name'] = $name;
+        }
+
+        $email = $this->resolveAgentAccountEmail($agent);
+        if ($email && $user->email !== $email) {
+            $this->ensureUserEmailAvailable($email, $user->id);
+            $updates['email'] = $email;
+        }
+
+        if ($updates !== []) {
+            $user->forceFill($updates)->save();
+        }
+    }
+
+    private function resolveAgentAccountName(Agent $agent): string
+    {
+        return trim(collect([$agent->prenom, $agent->nom, $agent->postnom])
+            ->filter(fn ($part) => filled($part))
+            ->implode(' '));
+    }
+
+    private function resolveAgentAccountEmail(Agent $agent): ?string
+    {
+        return $this->firstValidEmail([
+            $agent->email_professionnel,
+            $agent->email,
+            $agent->email_prive,
+        ]);
+    }
+
+    private function resolveAgentAccountEmailFromPayload(array $payload, Agent $agent): ?string
+    {
+        return $this->firstValidEmail([
+            $payload['email_professionnel'] ?? null,
+            $payload['email'] ?? null,
+            $payload['email_prive'] ?? null,
+            $agent->email,
+        ]);
+    }
+
+    private function firstValidEmail(array $candidates): ?string
+    {
+        foreach ($candidates as $candidate) {
+            $email = strtolower(trim((string) $candidate));
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                return $email;
+            }
+        }
+
+        return null;
+    }
+
+    private function ensureUserEmailAvailable(string $email, ?int $ignoreUserId = null): void
+    {
+        $query = User::where('email', $email);
+        if ($ignoreUserId) {
+            $query->where('id', '!=', $ignoreUserId);
+        }
+
+        if ($query->exists()) {
+            throw ValidationException::withMessages([
+                'email_professionnel' => ['Cet e-mail professionnel est déjà utilisé par un autre compte utilisateur.'],
+            ]);
+        }
     }
 
     /**
