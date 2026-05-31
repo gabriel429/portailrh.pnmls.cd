@@ -1796,7 +1796,9 @@ onBeforeUnmount(() => {
 .mailbox-main {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
   background: #fff;
 }
 
@@ -1887,12 +1889,15 @@ onBeforeUnmount(() => {
   grid-template-columns: minmax(300px, 390px) minmax(0, 1fr);
   min-height: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .mailbox-list-pane {
   display: flex;
   min-width: 0;
+  min-height: 0;
   flex-direction: column;
+  overflow: hidden;
   border-right: 1px solid #e0edf2;
   background: #f8fbfc;
 }
@@ -2044,7 +2049,11 @@ onBeforeUnmount(() => {
 }
 
 .mailbox-reader {
+  display: flex;
   min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: auto;
   background: #fff;
 }
 
@@ -2777,7 +2786,10 @@ onBeforeUnmount(() => {
 
   .outlook-shell {
     grid-template-columns: 280px minmax(0, 1fr);
-    min-height: calc(100dvh - 132px);
+    height: calc(100dvh - 132px);
+    min-height: 0;
+    max-height: calc(100dvh - 132px);
+    overflow: hidden;
     background: rgba(255, 255, 255, .92);
   }
 
@@ -2895,6 +2907,8 @@ onBeforeUnmount(() => {
   .mailbox-content {
     grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
     gap: 0;
+    min-height: 0;
+    overflow: hidden;
     background: #f4f8fb;
   }
 
@@ -2935,11 +2949,9 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-reader {
-    display: flex;
     min-height: 0;
     margin: 12px;
     overflow: auto;
-    flex-direction: column;
     border: 1px solid rgba(203, 213, 225, .72);
     border-radius: 16px;
     background: #fff;
@@ -3596,10 +3608,22 @@ onBeforeUnmount(() => {
     display: none;
   }
 
+  .mailbox-main.mailbox-main-reading {
+    height: calc(100dvh - 64px);
+    min-height: 0;
+    padding-bottom: 0;
+    overflow: hidden;
+  }
+
   .mailbox-content {
     display: block;
     flex: 1;
     min-height: calc(100dvh - 150px);
+  }
+
+  .mailbox-main-reading .mailbox-content {
+    min-height: 0;
+    overflow: hidden;
   }
 
   .mailbox-list-pane {
@@ -3711,6 +3735,12 @@ onBeforeUnmount(() => {
     background: #fff;
   }
 
+  .mailbox-main-reading .mailbox-reader {
+    height: 100%;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
   .mailbox-reader-head {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -3788,6 +3818,10 @@ onBeforeUnmount(() => {
     color: #111827;
     font-size: 0.96rem;
     line-height: 1.65;
+  }
+
+  .mailbox-main-reading .mailbox-reader-body {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
 
   .mailbox-mobile-compose-fab {
