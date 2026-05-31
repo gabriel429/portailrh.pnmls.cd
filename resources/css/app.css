@@ -5456,6 +5456,47 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
     }
 }
 
+@media (min-width: 1200px) and (max-width: 1440px) {
+    body :where(.dash-standard-page .dash-hero) {
+        grid-template-columns: minmax(220px, 1fr) minmax(580px, 690px) !important;
+        column-gap: .9rem !important;
+    }
+
+    body :where(.dash-standard-page .dash-hero-profile) {
+        min-width: 0 !important;
+    }
+
+    body :where(.dash-standard-page .dash-hero-stats) {
+        display: grid !important;
+        grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+        width: 100% !important;
+        max-width: 690px !important;
+        flex-wrap: nowrap !important;
+        gap: .45rem !important;
+    }
+
+    body :where(.dash-standard-page .dash-hero-stat-link) {
+        min-width: 0 !important;
+        min-height: 48px !important;
+        padding: .48rem .58rem !important;
+        gap: .4rem !important;
+    }
+
+    body :where(.dash-standard-page .dash-hero-stat-icon) {
+        width: 27px !important;
+        height: 27px !important;
+        flex: 0 0 27px !important;
+        border-radius: 8px !important;
+        font-size: .74rem !important;
+    }
+
+    body :where(.dash-standard-page .dash-hero-stat-lbl) {
+        font-size: .52rem !important;
+        line-height: 1.08 !important;
+        white-space: normal !important;
+    }
+}
+
 @media (max-width: 767.98px) {
     body :where(.main-content) {
         padding-left: .65rem;
