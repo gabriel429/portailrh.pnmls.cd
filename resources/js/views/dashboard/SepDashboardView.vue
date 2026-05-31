@@ -2133,7 +2133,7 @@ onMounted(async () => {
 
 /* ─── Modal contact agent ─── */
 .agent-contact-overlay {
-  position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 9999;
+  position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 12050;
   display: flex; align-items: center; justify-content: center; padding: 1rem;
   backdrop-filter: blur(4px);
 }
