@@ -363,17 +363,33 @@
 
             <template v-else-if="selectedMessage">
               <header class="mailbox-reader-head">
-                <div>
+                <div class="mailbox-reader-main">
                   <button type="button" class="mailbox-reader-back" @click="resetSelection">
                     <i class="fas fa-arrow-left"></i>
                     Messages
                   </button>
                   <h2>{{ selectedMessage.subject }}</h2>
-                  <div class="mailbox-reader-meta">
-                    <span class="mailbox-reader-meta-line">
+                  <div class="mailbox-reader-meta mailbox-reader-meta-compact">
+                    <span class="mailbox-reader-meta-line compact">
                       <b>De</b>
                       <span>{{ selectedMessage.from }}</span>
                     </span>
+                    <span class="mailbox-reader-meta-line compact">
+                      <b>A</b>
+                      <span>{{ compactAddressLine(selectedMessage.to_addresses, selectedMessage.to) || '-' }}</span>
+                    </span>
+                    <button
+                      v-if="hasRecipientDetails(selectedMessage)"
+                      type="button"
+                      class="mailbox-recipient-toggle"
+                      @click="recipientDetailsOpen = !recipientDetailsOpen"
+                    >
+                      {{ recipientDetailsOpen ? 'Masquer les détails' : 'Détails' }}
+                      <i class="fas" :class="recipientDetailsOpen ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                    </button>
+                    <time class="mailbox-reader-date">{{ formatDate(selectedMessage.date) }}</time>
+                  </div>
+                  <div v-if="recipientDetailsOpen" class="mailbox-recipient-details">
                     <span class="mailbox-reader-meta-line">
                       <b>A</b>
                       <span>{{ addressLine(selectedMessage.to_addresses, selectedMessage.to) || '-' }}</span>
@@ -386,7 +402,6 @@
                       <b>CCI</b>
                       <span>{{ addressLine(selectedMessage.bcc_addresses, selectedMessage.bcc) }}</span>
                     </span>
-                    <time>{{ formatDate(selectedMessage.date) }}</time>
                   </div>
                 </div>
                 <div class="mailbox-reader-actions">
@@ -693,6 +708,7 @@ const selectedUid = ref(null)
 const selectedMessage = ref(null)
 const selectedLoading = ref(false)
 const isMobileMailbox = ref(false)
+const recipientDetailsOpen = ref(false)
 let searchTimer = null
 let mobileMediaQuery = null
 
@@ -1004,6 +1020,7 @@ async function loadMessages(page = 1) {
 async function selectMessage(message) {
   selectedUid.value = message.uid
   selectedLoading.value = true
+  recipientDetailsOpen.value = false
 
   try {
     const { data } = await client.get(`/mailbox/messages/${message.uid}`, {
@@ -1352,6 +1369,7 @@ function resetSelection() {
   selectedUid.value = null
   selectedMessage.value = null
   targetFolder.value = ''
+  recipientDetailsOpen.value = false
 }
 
 function openMobileMenu() {
@@ -1433,14 +1451,33 @@ function extractEmail(value) {
 }
 
 function addressLine(addresses, fallback = '') {
+  return addressItems(addresses, fallback).join(', ')
+}
+
+function addressItems(addresses, fallback = '') {
   if (Array.isArray(addresses) && addresses.length) {
     return addresses
       .map(address => address.label || address.email || '')
       .filter(Boolean)
-      .join(', ')
   }
 
-  return fallback || ''
+  return fallback
+    ? fallback.split(/,\s*/).map(item => item.trim()).filter(Boolean)
+    : []
+}
+
+function compactAddressLine(addresses, fallback = '', limit = 1) {
+  const items = addressItems(addresses, fallback)
+  if (items.length <= limit) return items.join(', ')
+  return `${items.slice(0, limit).join(', ')} +${items.length - limit}`
+}
+
+function hasRecipientDetails(message) {
+  if (!message) return false
+
+  return addressItems(message.to_addresses, message.to).length > 1
+    || addressItems(message.cc_addresses, message.cc).length > 0
+    || addressItems(message.bcc_addresses, message.bcc).length > 0
 }
 
 function senderInitial(value) {
@@ -2027,6 +2064,11 @@ onBeforeUnmount(() => {
   font-weight: 900;
 }
 
+.mailbox-reader-main {
+  min-width: 0;
+  flex: 1;
+}
+
 .mailbox-reader-meta {
   display: flex;
   flex-wrap: wrap;
@@ -2035,11 +2077,20 @@ onBeforeUnmount(() => {
   font-size: 0.86rem;
 }
 
+.mailbox-reader-meta-compact {
+  align-items: center;
+  max-width: 100%;
+}
+
 .mailbox-reader-meta-line {
   display: inline-flex;
   min-width: 0;
   max-width: 100%;
   gap: 6px;
+}
+
+.mailbox-reader-meta-line.compact {
+  max-width: min(100%, 360px);
 }
 
 .mailbox-reader-meta-line b {
@@ -2054,6 +2105,50 @@ onBeforeUnmount(() => {
 .mailbox-reader-meta-line span {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.mailbox-reader-meta-line.compact span,
+.mailbox-reader-date {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mailbox-reader-date {
+  color: #64748b;
+}
+
+.mailbox-recipient-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid #dbe7ef;
+  border-radius: 999px;
+  color: #0f5f76;
+  background: #f8fafc;
+  font-size: .78rem;
+  font-weight: 900;
+}
+
+.mailbox-recipient-toggle:hover {
+  border-color: #8fd3e8;
+  background: #eef9fc;
+}
+
+.mailbox-recipient-details {
+  display: grid;
+  gap: 7px;
+  max-height: 140px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid #dbe7ef;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .82rem;
 }
 
 .mailbox-reader-actions {
