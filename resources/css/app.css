@@ -5112,6 +5112,350 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
     min-width: max-content;
 }
 
+/* Medium desktop density: compact laptops and tablets, without changing phone or large desktop layouts. */
+@media (min-width: 768px) and (max-width: 1440px), (min-width: 768px) and (max-height: 820px) {
+    html {
+        font-size: 14.5px;
+    }
+
+    body {
+        line-height: 1.45;
+    }
+
+    body :where(.main-content) {
+        padding-top: .72rem;
+    }
+
+    body :where(.container, .container-fluid, .rh-modern, .dept-dashboard, .rh-dashboard, .caf-dashboard, .sena-dashboard, .sen-dashboard, .sep-dashboard, .rc-dashboard) {
+        padding-left: .75rem !important;
+        padding-right: .75rem !important;
+    }
+
+    .navbar-main {
+        padding: .34rem 0 !important;
+    }
+
+    .navbar-main .container-fluid {
+        min-height: 44px;
+        gap: .45rem;
+    }
+
+    .navbar-main .navbar-brand {
+        gap: .45rem;
+        font-size: .88rem;
+    }
+
+    .navbar-main .navbar-brand img {
+        width: 32px;
+        height: 32px;
+        padding: 3px;
+        border-radius: 10px;
+    }
+
+    .navbar-main .navbar-brand .brand-title {
+        font-size: .82rem;
+    }
+
+    .navbar-main .navbar-brand .brand-sub {
+        font-size: .48rem;
+    }
+
+    .navbar-main .nav-link {
+        min-height: 30px;
+        padding: .34rem .58rem !important;
+        gap: .3rem;
+        border-radius: 10px;
+        font-size: .69rem;
+    }
+
+    .navbar-main .nav-link .nav-icon {
+        width: 14px;
+        font-size: .72rem;
+    }
+
+    .navbar-main .nav-badge {
+        top: 2px;
+        right: 4px;
+        width: 16px;
+        height: 16px;
+        font-size: .56rem;
+    }
+
+    .navbar-main .nav-badge-stack .nav-badge {
+        min-width: 18px;
+        height: 16px;
+        padding: 0 5px;
+        font-size: .56rem;
+    }
+
+    .nav-user-btn,
+    .nav-notif-btn,
+    .help-toggle-btn,
+    .dark-toggle-btn {
+        min-height: 32px !important;
+        padding: .32rem .58rem !important;
+        border-radius: 14px !important;
+        font-size: .72rem !important;
+    }
+
+    .nav-user-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: .62rem;
+    }
+
+    body :where(
+        .dash-hero,
+        .sen-hero,
+        .sep-hero,
+        .rh-hero,
+        .caf-hero,
+        .dept-hero,
+        .sena-hero,
+        .page-hero,
+        .doc-hero,
+        .dt-hero,
+        .notif-hero,
+        .agents-hero,
+        .req-hero,
+        .pt-hero,
+        .fl-hero,
+        .fv-hero,
+        .communique-hero,
+        .affectation-hero,
+        .agent-form-hero,
+        .upload-hero
+    ) {
+        min-height: 0 !important;
+        padding: .95rem 1.1rem !important;
+        border-radius: 14px !important;
+        margin-bottom: 1rem !important;
+    }
+
+    body :where(.sen-hero-inner, .sep-hero-inner, .rh-hero-inner, .caf-hero-inner, .dept-hero-inner, .sena-hero-inner, .dash-hero, .req-hero-body, .pt-hero-body, .doc-hero-content, .notif-hero) {
+        gap: .85rem !important;
+    }
+
+    body :where(.dash-hero-avatar, .sen-hero-avatar, .sep-hero-avatar, .rh-hero-badge, .caf-hero-avatar, .dept-hero-avatar, .sena-hero-avatar) {
+        width: 52px !important;
+        height: 52px !important;
+        flex: 0 0 52px !important;
+        border-radius: 14px !important;
+        font-size: 1rem !important;
+    }
+
+    body :where(.dash-hero-text h2, .sen-hero-name, .sep-hero-name, .rh-hero-name, .caf-hero-name, .dept-hero-name, .sena-hero-name, .rh-title, .hero-title, .req-hero-text h2, .pt-hero-text h2, .doc-hero h2, .dt-hero h2, .notif-hero h2) {
+        font-size: clamp(1rem, 1.15vw, 1.22rem) !important;
+        line-height: 1.18 !important;
+        letter-spacing: 0 !important;
+    }
+
+    body :where(.sen-hero-greeting, .sep-hero-greeting, .rh-hero-greeting, .caf-hero-greeting, .dept-hero-greeting, .sena-hero-greeting, .dash-hero-greeting) {
+        font-size: .66rem !important;
+    }
+
+    body :where(.sen-hero-fonction, .sep-hero-fonction, .rh-hero-agent-fonction-block, .caf-hero-fonction, .dept-hero-fonction, .sena-hero-fonction, .sen-hero-role, .sep-hero-role, .rh-hero-role, .caf-hero-role, .dept-hero-role-pill, .sena-hero-role-pill, .sen-hero-date, .sep-hero-date, .rh-hero-date, .caf-hero-date, .dept-hero-date, .sena-hero-date, .rh-sub, .req-hero-text p, .pt-hero-text p, .doc-hero p, .notif-hero p) {
+        font-size: .72rem !important;
+        line-height: 1.22 !important;
+    }
+
+    body :where(.sen-hero-kpis, .sep-hero-kpis, .rh-hero-kpis, .caf-hero-kpis, .dept-hero-kpis, .sena-hero-kpis, .dash-hero-stats) {
+        gap: .55rem !important;
+        max-width: min(100%, 620px) !important;
+    }
+
+    body :where(.sen-kpi, .sep-kpi, .rh-kpi, .caf-kpi-pill, .dept-kpi-pill, .sena-kpi-pill, .dash-hero-stat-link) {
+        min-height: 48px !important;
+        padding: .55rem .7rem !important;
+        border-radius: 12px !important;
+        gap: .5rem !important;
+    }
+
+    body :where(.sen-kpi-icon, .sep-kpi-icon, .rh-kpi-icon, .caf-kpi-pill-icon, .dept-kpi-pill-icon, .sena-kpi-pill-icon, .dash-stat-icon) {
+        width: 30px !important;
+        height: 30px !important;
+        flex: 0 0 30px !important;
+        border-radius: 9px !important;
+        font-size: .82rem !important;
+    }
+
+    body :where(.sen-kpi-val, .sep-kpi-val, .rh-kpi-val, .caf-kpi-pill-val, .dept-kpi-pill-val, .sena-kpi-pill-val, .dash-hero-stat-val, .dash-stat-val) {
+        font-size: 1.05rem !important;
+        line-height: 1.05 !important;
+    }
+
+    body :where(.sen-kpi-lbl, .sep-kpi-lbl, .rh-kpi-lbl, .caf-kpi-pill-lbl, .dept-kpi-pill-lbl, .sena-kpi-pill-lbl, .dash-hero-stat-lbl, .dash-stat-lbl) {
+        font-size: .56rem !important;
+        line-height: 1.08 !important;
+    }
+
+    body :where(.sen-section, .sep-section, .rh-section, .caf-section, .dept-section, .sena-section, .rc-section, .dash-panel, .card, .data-card, .rh-card, .stat-card, .info-card, .section-card, .panel) {
+        border-radius: 12px !important;
+    }
+
+    body :where(.card-header, .panel-head, .sen-section-head, .sep-section-head, .rh-section-head, .caf-section-head, .dept-section-head, .sena-section-head, .rc-section-head) {
+        padding: .72rem .9rem !important;
+    }
+
+    body :where(.card-body, .dash-panel, .rh-section, .caf-section, .dept-section, .sen-section, .sep-section, .sena-section, .rc-section) {
+        padding: .9rem !important;
+    }
+
+    body :where(.sen-section-title, .sep-section-title, .rh-section-title, .caf-section-title, .dept-section-title, .sena-section-title, .rc-section-title, .dash-section-title, .card-header, .panel-title) {
+        font-size: .92rem !important;
+        line-height: 1.18 !important;
+    }
+
+    body :where(.sen-section-sub, .sep-section-sub, .rh-section-sub, .caf-section-sub, .dept-section-sub, .sena-section-sub, .rc-section-sub) {
+        font-size: .7rem !important;
+        line-height: 1.2 !important;
+    }
+
+    body :where(.sen-actions, .sep-actions, .rh-actions, .caf-actions, .dept-actions, .dash-action-grid, .rc-actions) {
+        gap: .65rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    body :where(.sen-action, .sep-action, .rh-action, .caf-action, .dept-action, .dash-action-card, .rc-action) {
+        min-height: 72px !important;
+        padding: .72rem .78rem !important;
+        gap: .6rem !important;
+        border-radius: 12px !important;
+    }
+
+    body :where(.sen-action-icon, .sep-action-icon, .rh-action-icon, .caf-action-icon, .dept-action-icon, .dash-action-icon, .rc-action-icon) {
+        width: 34px !important;
+        height: 34px !important;
+        flex: 0 0 34px !important;
+        border-radius: 10px !important;
+        font-size: .86rem !important;
+    }
+
+    body :where(.sen-action-label, .sep-action-label, .rh-action-label, .caf-action-label, .dept-action-label, .dash-action-name, .rc-action-label) {
+        font-size: .76rem !important;
+        line-height: 1.14 !important;
+    }
+
+    body :where(.sen-action-desc, .sep-action-desc, .rh-action-desc, .caf-action-desc, .dept-action-desc, .dash-action-desc, .rc-action-desc) {
+        font-size: .64rem !important;
+        line-height: 1.14 !important;
+    }
+
+    body :where(.sen-metrics, .sep-metrics, .rh-metrics, .caf-metrics, .dept-metrics, .dash-stat-grid) {
+        grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)) !important;
+        gap: .65rem !important;
+        margin-bottom: 1rem !important;
+    }
+
+    body :where(.sen-metric, .sep-metric, .rh-metric, .caf-metric, .dept-metric, .dash-stat-card) {
+        min-height: 98px !important;
+        padding: .78rem .72rem !important;
+        border-radius: 12px !important;
+    }
+
+    body :where(.sen-metric-icon, .sep-metric-icon, .rh-metric-icon, .caf-metric-icon, .dept-metric-icon) {
+        width: 30px !important;
+        height: 30px !important;
+        border-radius: 9px !important;
+        font-size: .82rem !important;
+    }
+
+    body :where(.sen-metric-val, .sep-metric-val, .rh-metric-val, .caf-metric-val, .dept-metric-val) {
+        font-size: 1.32rem !important;
+    }
+
+    body :where(.sen-metric-lbl, .sep-metric-lbl, .rh-metric-lbl, .caf-metric-lbl, .dept-metric-lbl) {
+        font-size: .64rem !important;
+    }
+
+    body :where(.btn, .btn-rh, .hero-btn, .req-hero-btn, .pt-hero-btn, .dash-action-btn, .doc-action-btn, .dept-btn, .action-btn) {
+        min-height: 32px !important;
+        padding: .36rem .72rem !important;
+        border-radius: 10px !important;
+        font-size: .76rem !important;
+        line-height: 1.12 !important;
+    }
+
+    body :where(.form-control, .form-select, input, select, textarea) {
+        font-size: .82rem !important;
+    }
+
+    body :where(.form-control, .form-select, input:not([type="checkbox"]):not([type="radio"]), select) {
+        min-height: 34px !important;
+        border-radius: 10px !important;
+    }
+
+    body :where(.table th, .table td, .data-table th, .data-table td, .rh-table th, .rh-table td, .dept-table th, .dept-table td) {
+        padding: .48rem .55rem !important;
+        font-size: .76rem !important;
+        line-height: 1.2 !important;
+    }
+
+    body :where(.table thead th, .data-table thead th, .rh-table thead th, .dept-table thead th) {
+        font-size: .66rem !important;
+    }
+
+    body :where(.badge, .status-badge, .hero-status-badge) {
+        padding: .18rem .48rem !important;
+        font-size: .62rem !important;
+        border-radius: 999px !important;
+    }
+
+    body :where(.modal-dialog) {
+        max-width: min(920px, calc(100vw - 2rem)) !important;
+        margin: .9rem auto !important;
+    }
+
+    body :where(.modal-header, .modal-footer) {
+        padding: .85rem 1rem !important;
+    }
+
+    body :where(.modal-body) {
+        padding: 1rem !important;
+    }
+
+    body :where(.modal-title) {
+        font-size: .98rem !important;
+    }
+
+    body :where(.empty-state) {
+        padding: 2.5rem 1.2rem !important;
+    }
+
+    body :where(.empty-state i) {
+        font-size: 2.2rem !important;
+    }
+
+    body :where(.empty-state h5) {
+        font-size: .95rem !important;
+    }
+
+    body :where(.empty-state p) {
+        font-size: .78rem !important;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1366px), (min-width: 768px) and (max-height: 720px) {
+    html {
+        font-size: 14px;
+    }
+
+    body :where(.dash-hero, .sen-hero, .sep-hero, .rh-hero, .caf-hero, .dept-hero, .sena-hero, .page-hero, .doc-hero, .dt-hero, .notif-hero, .agents-hero, .req-hero, .pt-hero) {
+        padding: .82rem .95rem !important;
+        margin-bottom: .82rem !important;
+    }
+
+    body :where(.navbar-main .nav-link) {
+        min-height: 28px;
+        padding: .3rem .5rem !important;
+        font-size: .66rem;
+    }
+
+    body :where(.card-body, .dash-panel, .rh-section, .caf-section, .dept-section, .sen-section, .sep-section, .sena-section, .rc-section) {
+        padding: .78rem !important;
+    }
+}
+
 @media (max-width: 767.98px) {
     body :where(.main-content) {
         padding-left: .65rem;
