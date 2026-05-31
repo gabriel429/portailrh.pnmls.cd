@@ -2153,13 +2153,18 @@ onBeforeUnmount(() => {
 <style scoped>
 .mailbox-page {
   min-height: calc(100vh - 88px);
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
   padding: 14px;
   color: #172033;
   background: #eef6fa;
+  overflow: hidden;
 }
 
 .outlook-shell,
 .mailbox-settings {
+  width: 100%;
   max-width: 1440px;
   margin: 0 auto;
   border: 1px solid #cfe1e8;
@@ -2388,6 +2393,7 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  min-width: 0;
   padding: 14px 16px;
   border-bottom: 1px solid #e0edf2;
   background: #fff;
@@ -2407,13 +2413,14 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   flex: 1;
+  min-width: 0;
   max-width: 580px;
 }
 
 .mailbox-search-field {
   position: relative;
   flex: 1;
-  min-width: 180px;
+  min-width: 0;
 }
 
 .mailbox-search-field > i {
@@ -2480,6 +2487,8 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 8px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
   padding: 10px 12px;
   border-bottom: 1px solid #e0edf2;
   background: #f8fbfc;
@@ -2978,6 +2987,7 @@ onBeforeUnmount(() => {
   color: #1f2937;
   font-size: 0.94rem;
   line-height: 1.65;
+  overflow: auto;
   overflow-wrap: anywhere;
 }
 
@@ -3609,8 +3619,9 @@ onBeforeUnmount(() => {
 
 @media (min-width: 861px) {
   .mailbox-page {
-    min-height: calc(100dvh - 88px);
-    padding: clamp(18px, 2vw, 28px);
+    height: 100%;
+    min-height: 0;
+    padding: clamp(10px, 1.2vw, 18px);
     background:
       radial-gradient(circle at 16% 0%, rgba(14, 165, 233, .12), transparent 32%),
       radial-gradient(circle at 88% 10%, rgba(20, 184, 166, .1), transparent 28%),
@@ -3627,11 +3638,16 @@ onBeforeUnmount(() => {
 
   .outlook-shell {
     grid-template-columns: 280px minmax(0, 1fr);
-    height: calc(100dvh - 132px);
+    height: 100%;
     min-height: 0;
-    max-height: calc(100dvh - 132px);
+    max-height: none;
     overflow: hidden;
     background: rgba(255, 255, 255, .92);
+  }
+
+  .mailbox-settings {
+    max-height: 100%;
+    overflow: auto;
   }
 
   .mailbox-sidebar {
@@ -3713,6 +3729,10 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-topbar h1 {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     font-size: 1.34rem;
     letter-spacing: 0;
   }
@@ -3792,7 +3812,7 @@ onBeforeUnmount(() => {
   .mailbox-reader {
     min-height: 0;
     margin: 12px;
-    overflow: auto;
+    overflow: hidden;
     border: 1px solid rgba(203, 213, 225, .72);
     border-radius: 16px;
     background: #fff;
@@ -3836,7 +3856,7 @@ onBeforeUnmount(() => {
 
   .mailbox-reader-body {
     flex: 1;
-    min-height: 360px;
+    min-height: 0;
     max-width: 1040px;
     padding: 28px 32px 38px;
     color: #1e293b;
@@ -3865,13 +3885,13 @@ onBeforeUnmount(() => {
 
 @media (min-width: 861px) and (max-height: 720px) {
   .mailbox-page {
-    min-height: calc(100dvh - 70px);
+    min-height: 0;
     padding: 4px 8px 8px;
   }
 
   .outlook-shell {
-    height: calc(100dvh - 76px);
-    max-height: calc(100dvh - 76px);
+    height: 100%;
+    max-height: none;
     border-radius: 10px;
   }
 
@@ -4126,6 +4146,7 @@ onBeforeUnmount(() => {
 @media (max-width: 860px) {
   .mailbox-page {
     padding: 10px;
+    overflow: visible;
   }
 
   .outlook-shell {
@@ -4519,6 +4540,7 @@ onBeforeUnmount(() => {
     margin-inline: calc(var(--bs-gutter-x, 1.5rem) * -0.5);
     padding: 0;
     background: #fff;
+    overflow: visible;
   }
 
   .outlook-shell,

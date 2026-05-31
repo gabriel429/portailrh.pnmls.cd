@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div :class="{ 'app-shell-immersive': isImmersiveRoute }">
     <nav v-if="auth.isAuthenticated" class="navbar navbar-expand-lg navbar-main">
       <div class="container-fluid px-3">
         <router-link class="navbar-brand" :to="{ name: 'dashboard' }">
@@ -628,7 +628,34 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 }
 
 .main-content.immersive-content {
-  min-height: calc(100dvh - 72px);
+  min-height: 0;
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.app-shell-immersive {
+  display: flex;
+  min-height: 100dvh;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-shell-immersive .navbar-main {
+  flex: 0 0 auto;
+}
+
+.app-shell-immersive .main-content.immersive-content {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 860px) {
+  .app-shell-immersive {
+    overflow: visible;
+  }
+
+  .app-shell-immersive .main-content.immersive-content {
+    overflow: visible;
+  }
 }
 
 .help-toggle-btn {
