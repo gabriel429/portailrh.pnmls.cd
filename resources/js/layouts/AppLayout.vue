@@ -147,7 +147,7 @@
                 <span class="nav-link-label">Admin</span>
               </a>
               <ul class="dropdown-menu dropdown-menu-end">
-                <template v-if="auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant">
+                <template v-if="showFullRhAdminMenu">
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
                       <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion des agents
@@ -204,8 +204,15 @@
                     </router-link>
                   </li>
                 </template>
+                <template v-if="showLocalRhAdminMenu">
+                  <li>
+                    <router-link class="dropdown-item" :to="{ name: 'rh.pointages.index' }">
+                      <span class="dd-icon dd-icon-purple"><i class="fas fa-clock"></i></span> Pointages
+                    </router-link>
+                  </li>
+                </template>
                 <template v-if="auth.isAdminNT">
-                  <li v-if="auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant"><hr class="dropdown-divider"></li>
+                  <li v-if="showAdminNtDivider"><hr class="dropdown-divider"></li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
                       <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Gestion des agents
@@ -408,6 +415,10 @@ const isMobileNavOpen = ref(false)
 const profilePhotoIndex = ref(0)
 const taskNewCount = ref(0)
 const taskInProgressCount = ref(0)
+
+const showFullRhAdminMenu = computed(() => auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant)
+const showLocalRhAdminMenu = computed(() => (auth.isRhLocal || auth.isSEL) && !showFullRhAdminMenu.value)
+const showAdminNtDivider = computed(() => showFullRhAdminMenu.value || showLocalRhAdminMenu.value)
 
 function closeMobileNav() {
   isMobileNavOpen.value = false

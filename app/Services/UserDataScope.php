@@ -176,22 +176,7 @@ class UserDataScope
 
     public function localiteId(?User $user): ?int
     {
-        $agent = $user?->agent;
-        if (!$agent) {
-            return null;
-        }
-
-        $localiteId = $agent->localite_id;
-        if (!$localiteId) {
-            $localiteId = $agent->affectations()
-                ->where('actif', true)
-                ->whereNotNull('localite_id')
-                ->orderByDesc('date_debut')
-                ->orderByDesc('id')
-                ->value('localite_id');
-        }
-
-        return $localiteId ? (int) $localiteId : null;
+        return $this->agentLocaliteId($user?->agent);
     }
 
     public function applyAgentScope($query, ?User $user, string $table = 'agents')
@@ -361,8 +346,29 @@ class UserDataScope
             return $query;
         }
 
-        if (!$this->isProvincialUser($user)) {
+        if ($this->isAssistantRh($user)) {
             return $query;
+        }
+
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
+            if (!$localiteId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas('agent', function ($agentQuery) use ($localiteId) {
+                $agentQuery
+                    ->where('localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope
+                            ->where('actif', true)
+                            ->where('localite_id', $localiteId);
+                    });
+            });
+        }
+
+        if (!$this->isProvincialUser($user)) {
+            return $query->whereRaw('1 = 0');
         }
 
         $provinceId = $this->provinceId($user);
@@ -426,6 +432,15 @@ class UserDataScope
 
         if ($this->isAssistantRh($user)) {
             return true;
+        }
+
+        if ($this->isLocalUser($user)) {
+            $userLocaliteId = $this->localiteId($user);
+            $agentLocaliteId = $this->agentLocaliteId($agent);
+
+            return $userLocaliteId !== null
+                && $agentLocaliteId !== null
+                && $agentLocaliteId === $userLocaliteId;
         }
 
         if ($this->isProvincialUser($user)) {
@@ -492,10 +507,6 @@ class UserDataScope
 
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
-        }
-
-        if (!$this->isProvincialUser($user)) {
-            return false;
         }
 
         return $this->canAccessAgent($user, $agent, false);
@@ -609,6 +620,22 @@ class UserDataScope
     private function isAncienAgent(?Agent $agent): bool
     {
         return strtolower((string) ($agent?->statut ?? '')) === 'ancien';
+    }
+
+    private function agentLocaliteId(?Agent $agent): ?int
+    {
+        if (!$agent) {
+            return null;
+        }
+
+        $localiteId = $agent->localite_id ?: $agent->affectations()
+            ->where('actif', true)
+            ->whereNotNull('localite_id')
+            ->orderByDesc('date_debut')
+            ->orderByDesc('id')
+            ->value('localite_id');
+
+        return $localiteId ? (int) $localiteId : null;
     }
 
     private function applyAgentLocalScope($query, ?Agent $agent, string $table = 'agents')
