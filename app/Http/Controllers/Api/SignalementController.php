@@ -156,6 +156,7 @@ class SignalementController extends ApiController
             !$this->scopeService()->hasGlobalAdminAccess($user)
             && !$this->scopeService()->isAssistantRh($user)
             && !$this->scopeService()->isProvincialUser($user)
+            && !$this->scopeService()->isLocalUser($user)
         ) {
             $agentId = $user?->agent?->id;
             $query->where('id', $agentId ?: 0);
@@ -163,7 +164,7 @@ class SignalementController extends ApiController
             $this->scopeService()->applyAgentScope($query, $user);
         }
 
-        $agents = $query->get(['id', 'nom', 'prenom'])
+        $agents = $query->get(['id', 'nom', 'prenom', 'id_agent', 'matricule_etat'])
             ->map(fn($a) => [
                 'id' => $a->id,
                 'nom' => $a->nom,

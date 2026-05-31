@@ -53,7 +53,7 @@
               <div v-if="errors.agent_id" class="invalid-feedback d-block">{{ errors.agent_id[0] }}</div>
               <div class="form-text">
                 <i class="fas fa-info-circle me-1"></i>
-                En tant qu'administrateur RH, vous pouvez créer une demande au nom d'un autre agent.
+                En tant que responsable habilité, vous pouvez créer une demande au nom d'un agent de votre périmètre.
               </div>
             </div>
 

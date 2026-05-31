@@ -101,8 +101,8 @@ class RequestController extends ApiController
     public function store(Request $request): JsonResponse
     {
         $user = $request->user();
-        $isRH = $user->hasAdminAccess();
         $scope = $this->scopeService();
+        $canSelectAgent = $this->canCreateForScopedAgent($user, $scope);
 
         $rules = [
             'type' => ['required', 'string', Rule::in(['conge', 'absence', 'permission'])],
@@ -113,8 +113,8 @@ class RequestController extends ApiController
             'lettre_demande' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ];
 
-        // RH can select any agent; regular users submit for themselves
-        if ($isRH) {
+        // Scoped managers can create for any agent they are allowed to access.
+        if ($canSelectAgent) {
             $rules['agent_id'] = 'required|exists:agents,id';
         }
 
@@ -122,8 +122,8 @@ class RequestController extends ApiController
             'type.in' => 'Ce type de demande n\'est plus disponible.',
         ]);
 
-        // If not RH, force agent_id to current user's agent
-        if (!$isRH) {
+        // Regular users submit for themselves; scoped managers submit for a selected agent.
+        if (!$canSelectAgent) {
             $agent = $user->agent;
             if (!$agent) {
                 return response()->json([
@@ -375,6 +375,17 @@ class RequestController extends ApiController
         return $this->success(null, [], [
             'message' => 'Demande supprimée avec succès.',
         ]);
+    }
+
+    private function canCreateForScopedAgent($user, ?UserDataScope $scope = null): bool
+    {
+        $scope ??= $this->scopeService();
+
+        return $scope->hasGlobalAdminAccess($user)
+            || $scope->isAssistantRh($user)
+            || $scope->isProvincialUser($user)
+            || $scope->isLocalUser($user)
+            || (bool) $user?->hasAdminAccess();
     }
 
     /**

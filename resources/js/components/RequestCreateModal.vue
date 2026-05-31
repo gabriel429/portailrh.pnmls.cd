@@ -8,7 +8,7 @@
         </div>
         <div class="rcm-body">
           <form @submit.prevent="handleSubmit" enctype="multipart/form-data">
-            <!-- Agent (RH only) -->
+            <!-- Agent (gestionnaire habilité) -->
             <div v-if="isRH" class="mb-3">
               <label class="rcm-label">
                 <i class="fas fa-users me-1 text-muted"></i>
@@ -275,7 +275,7 @@ async function handleSubmit() {
   submitting.value = true
 
   try {
-    if (form.value.type === 'conge') {
+    if (form.value.type === 'conge' && shouldUsePersonalHolidayRoute()) {
       // Demande de congé → route dédiée /my-holiday
       const fd = new FormData()
       fd.append('type_conge', form.value.type_conge)
@@ -286,7 +286,7 @@ async function handleSubmit() {
       if (selectedFile.value) fd.append('lettre_demande', selectedFile.value)
       await client.post('/my-holiday', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
     } else {
-      // Autres types → route requests standard
+      // Demandes administratives → route requests standard
       const formData = new FormData()
       formData.append('type', form.value.type)
       formData.append('description', form.value.description)
@@ -312,6 +312,11 @@ async function handleSubmit() {
   } finally {
     submitting.value = false
   }
+}
+
+function shouldUsePersonalHolidayRoute() {
+  const selectedAgentId = form.value.agent_id || currentAgent.value?.id
+  return String(selectedAgentId || '') === String(currentAgent.value?.id || '')
 }
 
 watch(() => props.show, async (newVal) => {

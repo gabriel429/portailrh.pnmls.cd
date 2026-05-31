@@ -206,6 +206,16 @@
                 </template>
                 <template v-if="showLocalRhAdminMenu">
                   <li>
+                    <router-link class="dropdown-item" :to="{ name: 'requests.index' }">
+                      <span class="dd-icon dd-icon-orange"><i class="fas fa-paper-plane"></i></span> Demandes
+                    </router-link>
+                  </li>
+                  <li>
+                    <router-link class="dropdown-item" :to="{ name: 'signalements.index' }">
+                      <span class="dd-icon dd-icon-red"><i class="fas fa-flag"></i></span> Signalements
+                    </router-link>
+                  </li>
+                  <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.pointages.index' }">
                       <span class="dd-icon dd-icon-purple"><i class="fas fa-clock"></i></span> Pointages
                     </router-link>

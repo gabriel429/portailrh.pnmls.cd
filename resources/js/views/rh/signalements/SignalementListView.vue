@@ -190,7 +190,19 @@
             <div class="scm-form-grid">
               <div class="scm-field">
                 <label class="scm-label">Agent</label>
-                <div class="scm-agent-info">
+                <select
+                  v-if="canSelectSignalementAgent"
+                  v-model="createForm.agent_id"
+                  class="scm-input"
+                  :class="{ 'is-invalid': createErrors.agent_id }"
+                  required
+                >
+                  <option value="">Sélectionner un agent</option>
+                  <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
+                    ({{ ag.matricule_etat || 'N/A' }}) {{ ag.prenom }} {{ ag.nom }}
+                  </option>
+                </select>
+                <div v-else class="scm-agent-info">
                   <i class="fas fa-user-circle me-1"></i>
                   {{ auth.agent?.prenom }} {{ auth.agent?.nom }}
                   <small class="text-muted ms-1">({{ auth.agent?.matricule_etat || 'N/A' }})</small>
@@ -249,7 +261,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
-import { list, remove, create } from '@/api/signalements'
+import { list, remove, create, getAgents } from '@/api/signalements'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import SignalementEditModal from '@/components/signalements/SignalementEditModal.vue'
@@ -380,6 +392,8 @@ onMounted(() => loadSignalements())
 const showCreateModal = ref(false)
 const createSubmitting = ref(false)
 const createErrors = ref({})
+const createAgents = ref([])
+const canSelectSignalementAgent = computed(() => auth.hasAdminAccess)
 const severiteOptions = [
     { value: 'basse', label: 'Basse', icon: 'fas fa-arrow-down', cls: 'sev-basse' },
     { value: 'moyenne', label: 'Moyenne', icon: 'fas fa-minus', cls: 'sev-moyenne' },
@@ -387,13 +401,22 @@ const severiteOptions = [
 ]
 
 function defaultCreateForm() {
-    return { type: '', description: '', observations: '', severite: '' }
+    return {
+        agent_id: auth.agent?.id || '',
+        type: '',
+        description: '',
+        observations: '',
+        severite: '',
+    }
 }
 const createForm = ref(defaultCreateForm())
 
 async function openCreateModal() {
     createForm.value = defaultCreateForm()
     createErrors.value = {}
+    if (canSelectSignalementAgent.value && createAgents.value.length === 0) {
+        await loadCreateAgents()
+    }
     showCreateModal.value = true
 }
 
@@ -403,7 +426,11 @@ async function handleCreate() {
     createErrors.value = {}
     createSubmitting.value = true
     try {
-        await create({ ...createForm.value, agent_id: auth.agent?.id })
+        const payload = { ...createForm.value }
+        if (!canSelectSignalementAgent.value) {
+            payload.agent_id = auth.agent?.id
+        }
+        await create(payload)
         ui.addToast('Signalement créé avec succès.', 'success')
         closeCreateModal()
         await loadSignalements(meta.value.current_page)
@@ -415,6 +442,18 @@ async function handleCreate() {
         }
     } finally {
         createSubmitting.value = false
+    }
+}
+
+async function loadCreateAgents() {
+    try {
+        const { data } = await getAgents()
+        createAgents.value = data.data ?? data ?? []
+        if (!createForm.value.agent_id && createAgents.value.length > 0) {
+            createForm.value.agent_id = auth.agent?.id || createAgents.value[0].id
+        }
+    } catch {
+        ui.addToast('Erreur lors du chargement des agents.', 'danger')
     }
 }
 </script>

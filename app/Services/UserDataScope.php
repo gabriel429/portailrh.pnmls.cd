@@ -276,6 +276,24 @@ class UserDataScope
             return $query;
         }
 
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
+
+            if (!$localiteId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas('agent', function ($agentQuery) use ($localiteId) {
+                $agentQuery
+                    ->where('localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope
+                            ->where('actif', true)
+                            ->where('localite_id', $localiteId);
+                    });
+            });
+        }
+
         if ($this->isProvincialUser($user)) {
             $provinceId = $this->provinceId($user);
 
@@ -318,22 +336,40 @@ class UserDataScope
             return $query;
         }
 
-        if (!$this->isProvincialUser($user)) {
-            $agentId = $user?->agent?->id;
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
 
-            return $agentId
-                ? $query->where('agent_id', $agentId)
-                : $query->whereRaw('1 = 0');
+            if (!$localiteId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas('agent', function ($agentQuery) use ($localiteId) {
+                $agentQuery
+                    ->where('localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope
+                            ->where('actif', true)
+                            ->where('localite_id', $localiteId);
+                    });
+            });
         }
 
-        $provinceId = $this->provinceId($user);
-        if (!$provinceId) {
-            return $query->whereRaw('1 = 0');
+        if ($this->isProvincialUser($user)) {
+            $provinceId = $this->provinceId($user);
+            if (!$provinceId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas('agent', function ($agentQuery) use ($provinceId) {
+                $agentQuery->where('province_id', $provinceId);
+            });
         }
 
-        return $query->whereHas('agent', function ($agentQuery) use ($provinceId) {
-            $agentQuery->where('province_id', $provinceId);
-        });
+        $agentId = $user?->agent?->id;
+
+        return $agentId
+            ? $query->where('agent_id', $agentId)
+            : $query->whereRaw('1 = 0');
     }
 
     public function applyPointageScope($query, ?User $user)
@@ -464,6 +500,10 @@ class UserDataScope
             return true;
         }
 
+        if ($this->isLocalUser($user)) {
+            return $this->canAccessAgent($user, $agent, false);
+        }
+
         if ($this->isProvincialUser($user)) {
             return $this->canAccessAgent($user, $agent, false);
         }
@@ -490,11 +530,15 @@ class UserDataScope
             return true;
         }
 
-        if (!$this->isProvincialUser($user)) {
-            return $allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $signalement->agent_id;
+        if ($this->isLocalUser($user)) {
+            return $this->canAccessAgent($user, $agent, false);
         }
 
-        return $this->canAccessAgent($user, $agent, false);
+        if ($this->isProvincialUser($user)) {
+            return $this->canAccessAgent($user, $agent, false);
+        }
+
+        return $allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $signalement->agent_id;
     }
 
     public function canAccessPointage(?User $user, Pointage $pointage): bool
