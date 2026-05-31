@@ -70,19 +70,26 @@
                     :key="agent.id"
                     type="button"
                     class="agent-option"
-                    :class="{ active: String(form.agent_id) === String(agent.id) }"
+                    :class="{
+                      active: String(form.agent_id) === String(agent.id),
+                      unavailable: agentHasUser(agent),
+                    }"
+                    :disabled="agentHasUser(agent)"
                     @click="selectAgent(agent)"
                   >
                     <div class="agent-avatar">{{ agentInitials(agent) }}</div>
                     <div class="agent-option-info">
-                      <strong>{{ agentName(agent) }}</strong>
+                      <div class="agent-option-title">
+                        <strong>{{ agentName(agent) }}</strong>
+                        <span v-if="agentHasUser(agent)" class="agent-status-badge">Compte déjà créé</span>
+                      </div>
                       <span>{{ agentMeta(agent) }}</span>
                     </div>
                     <i v-if="String(form.agent_id) === String(agent.id)" class="fas fa-check-circle"></i>
                   </button>
                 </template>
                 <div v-if="!loadingAgents && agents.length === 0" class="agent-results-state">
-                  Aucun agent sans compte utilisateur ne correspond à cette recherche.
+                  Aucun agent ne correspond à cette recherche.
                 </div>
               </div>
             </div>
@@ -270,6 +277,10 @@ function clearAgentSearch() {
 }
 
 function selectAgent(agent) {
+  if (agentHasUser(agent)) {
+    return
+  }
+
   selectedAgent.value = agent
   form.value.agent_id = agent.id
   const nextErrors = { ...validationErrors.value }
@@ -292,9 +303,17 @@ function agentInitials(agent) {
   return `${first}${second}`.toUpperCase()
 }
 
+function agentHasUser(agent) {
+  return Boolean(agent.has_user || agent.user || Number(agent.user_count || 0) > 0 || agent.existing_user_id)
+}
+
 function agentMeta(agent) {
   const structure = agent.localite?.nom || agent.province?.nom || agent.departement?.nom || agent.organe
-  return [agent.matricule_etat, agent.fonction || agent.poste_actuel, structure].filter(Boolean).join(' · ')
+  const account = agentHasUser(agent)
+    ? `Compte: ${agent.existing_user_email || agent.user?.email || 'déjà créé'}`
+    : null
+
+  return [agent.matricule_etat, agent.fonction || agent.poste_actuel, structure, account].filter(Boolean).join(' · ')
 }
 
 onMounted(() => {
@@ -382,6 +401,31 @@ onMounted(() => {
   font-size: .9rem;
 }
 
+.agent-option-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 0;
+}
+
+.agent-option-title strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-status-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #c2410c;
+  font-size: .66rem;
+  font-weight: 800;
+  padding: .12rem .45rem;
+  text-transform: uppercase;
+}
+
 .selected-agent-info span,
 .agent-option-info span {
   display: block;
@@ -430,6 +474,19 @@ onMounted(() => {
   transform: translateY(-1px);
 }
 
+.agent-option.unavailable {
+  cursor: not-allowed;
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  opacity: .86;
+}
+
+.agent-option.unavailable:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  transform: none;
+}
+
 .agent-option > i {
   color: #059669;
   flex-shrink: 0;
@@ -453,6 +510,12 @@ onMounted(() => {
 
   .selected-agent-card {
     flex-wrap: wrap;
+  }
+
+  .agent-option-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .25rem;
   }
 }
 </style>

@@ -786,10 +786,9 @@ class ParametresController extends Controller
     public function apiUtilisateursIndex(Request $request)
     {
         $q = User::with(['agent', 'role'])->where('is_super_admin', false)->orderByDesc('id');
-        if ($request->search) {
-            $q->where('name', 'like', "%{$request->search}%")
-              ->orWhere('email', 'like', "%{$request->search}%");
-        }
+
+        $this->applyUtilisateurSearch($q, $request->search);
+
         return response()->json($q->paginate($request->per_page ?? 15));
     }
 
@@ -797,13 +796,33 @@ class ParametresController extends Controller
     {
         $agentSearch = trim((string) $request->query('agent_search', ''));
         $agentLimit = max(10, min((int) $request->query('agent_limit', 50), 100));
-        $agentsWithoutUser = Agent::query()
-            ->whereDoesntHave('user')
+        $agents = Agent::query()
+            ->select([
+                'id',
+                'nom',
+                'postnom',
+                'prenom',
+                'matricule_etat',
+                'fonction',
+                'poste_actuel',
+                'organe',
+                'email',
+                'email_prive',
+                'email_professionnel',
+                'province_id',
+                'localite_id',
+                'departement_id',
+            ])
+            ->withCount('user')
             ->with([
                 'province:id,nom,code',
                 'localite:id,nom,province_id',
                 'departement:id,nom,code',
+                'user:id,agent_id,email,name',
             ])
+            ->when($agentSearch === '', function ($query) {
+                $query->whereDoesntHave('user');
+            })
             ->when($agentSearch !== '', function ($query) use ($agentSearch) {
                 $term = '%' . $agentSearch . '%';
 
@@ -820,32 +839,49 @@ class ParametresController extends Controller
                         ->orWhere('email_professionnel', 'like', $term);
                 });
             })
+            ->orderBy('user_count')
             ->orderInstitutionally()
             ->limit($agentLimit)
-            ->get([
-                'id',
-                'nom',
-                'postnom',
-                'prenom',
-                'matricule_etat',
-                'fonction',
-                'poste_actuel',
-                'organe',
-                'email',
-                'email_prive',
-                'email_professionnel',
-                'province_id',
-                'localite_id',
-                'departement_id',
-            ]);
+            ->get()
+            ->map(function (Agent $agent) {
+                $agent->setAttribute('has_user', $agent->user_count > 0);
+                $agent->setAttribute('existing_user_id', $agent->user?->id);
+                $agent->setAttribute('existing_user_email', $agent->user?->email);
+                $agent->setAttribute('existing_user_name', $agent->user?->name);
+
+                return $agent;
+            });
         $roles = Role::orderBy('nom_role')->get(['id', 'nom_role']);
 
         return response()->json([
-            'agents' => $agentsWithoutUser,
+            'agents' => $agents,
             'roles' => $roles,
             'agent_search' => $agentSearch,
             'agent_limit' => $agentLimit,
         ]);
+    }
+
+    private function applyUtilisateurSearch($query, mixed $search): void
+    {
+        $search = trim((string) $search);
+        if ($search === '') {
+            return;
+        }
+
+        $term = '%' . $search . '%';
+        $query->where(function ($q) use ($term) {
+            $q->where('name', 'like', $term)
+                ->orWhere('email', 'like', $term)
+                ->orWhereHas('agent', function ($agentQuery) use ($term) {
+                    $agentQuery->where('nom', 'like', $term)
+                        ->orWhere('postnom', 'like', $term)
+                        ->orWhere('prenom', 'like', $term)
+                        ->orWhere('matricule_etat', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('email_prive', 'like', $term)
+                        ->orWhere('email_professionnel', 'like', $term);
+                });
+        });
     }
 
     public function apiUtilisateursShow(User $user)
@@ -976,13 +1012,9 @@ class ParametresController extends Controller
     public function apiSuperAdminUtilisateurs(Request $request)
     {
         $q = User::with(['agent', 'role'])->where('is_super_admin', false)->orderByDesc('id');
-        if ($request->search) {
-            $search = $request->search;
-            $q->where(function ($query) use ($search) {
-                $query->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
-            });
-        }
+
+        $this->applyUtilisateurSearch($q, $request->search);
+
         if ($request->frozen === 'true') {
             $q->where('is_frozen', true);
         }
