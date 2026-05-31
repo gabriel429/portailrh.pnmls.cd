@@ -635,6 +635,7 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 
 .app-shell-immersive {
   display: flex;
+  height: 100dvh;
   min-height: 100dvh;
   flex-direction: column;
   overflow: hidden;
@@ -646,10 +647,13 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 
 .app-shell-immersive .main-content.immersive-content {
   flex: 1 1 auto;
+  height: 0;
+  min-width: 0;
 }
 
 @media (max-width: 860px) {
   .app-shell-immersive {
+    height: auto;
     overflow: visible;
   }
 

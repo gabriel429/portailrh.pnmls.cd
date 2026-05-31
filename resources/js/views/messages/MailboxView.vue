@@ -2154,6 +2154,8 @@ onBeforeUnmount(() => {
 .mailbox-page {
   min-height: calc(100vh - 88px);
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 100%;
   padding: 14px;
@@ -2166,6 +2168,7 @@ onBeforeUnmount(() => {
 .mailbox-settings {
   width: 100%;
   max-width: 1440px;
+  min-width: 0;
   margin: 0 auto;
   border: 1px solid #cfe1e8;
   border-radius: 8px;
@@ -2177,6 +2180,7 @@ onBeforeUnmount(() => {
   display: grid;
   grid-template-columns: 250px minmax(0, 1fr);
   min-height: calc(100vh - 116px);
+  min-width: 0;
   overflow: hidden;
 }
 
@@ -2620,7 +2624,10 @@ onBeforeUnmount(() => {
 
 .mailbox-message-list {
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .mailbox-message-item {
@@ -2982,13 +2989,17 @@ onBeforeUnmount(() => {
 }
 
 .mailbox-reader-body {
+  flex: 1 1 auto;
   min-height: 420px;
   padding: 20px;
   color: #1f2937;
   font-size: 0.94rem;
   line-height: 1.65;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   overflow-wrap: anywhere;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .mailbox-body-block {
@@ -3637,8 +3648,9 @@ onBeforeUnmount(() => {
   }
 
   .outlook-shell {
+    flex: 1 1 auto;
     grid-template-columns: 280px minmax(0, 1fr);
-    height: 100%;
+    height: auto;
     min-height: 0;
     max-height: none;
     overflow: hidden;
@@ -3646,8 +3658,10 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-settings {
+    flex: 1 1 auto;
     max-height: 100%;
     overflow: auto;
+    scrollbar-gutter: stable;
   }
 
   .mailbox-sidebar {
@@ -3890,7 +3904,7 @@ onBeforeUnmount(() => {
   }
 
   .outlook-shell {
-    height: 100%;
+    height: auto;
     max-height: none;
     border-radius: 10px;
   }
