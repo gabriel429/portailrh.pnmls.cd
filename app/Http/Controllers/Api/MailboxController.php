@@ -91,13 +91,14 @@ class MailboxController extends ApiController
         $perPage = min(max((int) $request->query('per_page', config('mailbox.per_page', 15)), 5), 50);
         $page = max((int) $request->query('page', 1), 1);
         $search = trim((string) $request->query('search', ''));
+        $searchScope = (string) $request->query('search_scope', 'all');
         $filter = (string) $request->query('filter', '');
         $folder = $this->mailboxFromRequest($request);
 
         $stream = $this->openCredentialConnection($credential, $folder);
 
         try {
-            $uids = $this->searchMessageUids($stream, $search, $filter);
+            $uids = $this->searchMessageUids($stream, $search, $filter, $searchScope);
             rsort($uids, SORT_NUMERIC);
 
             $total = count($uids);
@@ -118,6 +119,7 @@ class MailboxController extends ApiController
                 'unread_count' => $unreadCount,
                 'folder' => $folder,
                 'filter' => $filter,
+                'search_scope' => $searchScope,
             ]);
         } finally {
             imap_close($stream);
@@ -646,7 +648,7 @@ class MailboxController extends ApiController
         return $name;
     }
 
-    private function searchMessageUids($stream, string $search, string $filter = ''): array
+    private function searchMessageUids($stream, string $search, string $filter = '', string $searchScope = 'all'): array
     {
         $criteria = match ($filter) {
             'unread' => 'UNSEEN',
@@ -656,7 +658,15 @@ class MailboxController extends ApiController
         };
 
         if ($search !== '') {
-            $criteria = trim(($criteria === 'ALL' ? '' : $criteria) . ' TEXT "' . str_replace(['\\', '"'], ['\\\\', '\"'], $search) . '"');
+            $term = str_replace(['\\', '"'], ['\\\\', '\"'], $search);
+            $searchCriteria = match ($searchScope) {
+                'subject' => 'SUBJECT "' . $term . '"',
+                'from' => 'FROM "' . $term . '"',
+                'recipient' => 'OR TO "' . $term . '" CC "' . $term . '"',
+                default => 'TEXT "' . $term . '"',
+            };
+
+            $criteria = trim(($criteria === 'ALL' ? '' : $criteria) . ' ' . $searchCriteria);
         }
 
         $uids = imap_search($stream, $criteria, SE_UID, 'UTF-8');

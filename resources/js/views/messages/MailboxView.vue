@@ -104,7 +104,7 @@
             </div>
 
             <nav class="mailbox-mobile-menu-nav" aria-label="Navigation messagerie mobile">
-              <div class="mailbox-mobile-nav-title">Favoris</div>
+              <div class="mailbox-mobile-nav-title">Essentiel</div>
               <button type="button" class="mailbox-folder-btn" :class="{ active: isInboxActive }" @click="openInbox">
                 <i class="fas fa-inbox"></i>
                 <span>Boite de reception</span>
@@ -119,15 +119,9 @@
                 <i class="fas fa-star"></i>
                 <span>Avec etoile</span>
               </button>
-              <router-link :to="{ name: 'mail.history' }" class="mailbox-folder-btn" @click="closeMobileMenu">
-                <i class="fas fa-paper-plane"></i>
-                <span>Historique envoyes</span>
-              </router-link>
-
-              <div class="mailbox-mobile-nav-title">Dossiers</div>
               <button
-                v-for="folder in visibleFolders"
-                :key="`mobile-${folder.name}`"
+                v-for="folder in essentialFolders"
+                :key="`mobile-essential-${folder.name}`"
                 type="button"
                 class="mailbox-folder-btn"
                 :class="{ active: activeFilter === '' && activeFolder === folder.name }"
@@ -137,6 +131,31 @@
                 <span>{{ folder.label }}</span>
                 <b v-if="folder.unread">{{ folder.unread }}</b>
               </button>
+
+              <template v-if="secondaryFolders.length">
+                <div class="mailbox-mobile-nav-title">Autres dossiers</div>
+                <button
+                  v-for="folder in visibleSecondaryFolders"
+                  :key="`mobile-secondary-${folder.name}`"
+                  type="button"
+                  class="mailbox-folder-btn"
+                  :class="{ active: activeFilter === '' && activeFolder === folder.name }"
+                  @click="openFolder(folder)"
+                >
+                  <i class="fas" :class="folderIcon(folder.type)"></i>
+                  <span>{{ folder.label }}</span>
+                  <b v-if="folder.unread">{{ folder.unread }}</b>
+                </button>
+                <button
+                  v-if="secondaryFolders.length > 5"
+                  type="button"
+                  class="mailbox-folder-btn mailbox-folder-more"
+                  @click="sidebarFoldersExpanded = !sidebarFoldersExpanded"
+                >
+                  <i class="fas" :class="sidebarFoldersExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+                  <span>{{ sidebarFoldersExpanded ? 'Reduire' : `Afficher ${secondaryFolders.length - 5} autres` }}</span>
+                </button>
+              </template>
             </nav>
           </div>
         </aside>
@@ -157,7 +176,7 @@
         </button>
 
         <nav class="mailbox-folder-nav" aria-label="Navigation messagerie">
-          <div class="mailbox-nav-title">Favoris</div>
+          <div class="mailbox-nav-title">Essentiel</div>
           <button type="button" class="mailbox-folder-btn" :class="{ active: isInboxActive }" @click="openInbox">
             <i class="fas fa-inbox"></i>
             <span>Boite de reception</span>
@@ -172,15 +191,9 @@
             <i class="fas fa-star"></i>
             <span>Avec etoile</span>
           </button>
-          <router-link :to="{ name: 'mail.history' }" class="mailbox-folder-btn">
-            <i class="fas fa-paper-plane"></i>
-            <span>Historique envoyes</span>
-          </router-link>
-
-          <div class="mailbox-nav-title">Dossiers</div>
           <button
-            v-for="folder in visibleFolders"
-            :key="folder.name"
+            v-for="folder in essentialFolders"
+            :key="`essential-${folder.name}`"
             type="button"
             class="mailbox-folder-btn"
             :class="{ active: activeFilter === '' && activeFolder === folder.name }"
@@ -190,6 +203,31 @@
             <span>{{ folder.label }}</span>
             <b v-if="folder.unread">{{ folder.unread }}</b>
           </button>
+
+          <template v-if="secondaryFolders.length">
+            <div class="mailbox-nav-title">Autres dossiers</div>
+            <button
+              v-for="folder in visibleSecondaryFolders"
+              :key="`secondary-${folder.name}`"
+              type="button"
+              class="mailbox-folder-btn"
+              :class="{ active: activeFilter === '' && activeFolder === folder.name }"
+              @click="openFolder(folder)"
+            >
+              <i class="fas" :class="folderIcon(folder.type)"></i>
+              <span>{{ folder.label }}</span>
+              <b v-if="folder.unread">{{ folder.unread }}</b>
+            </button>
+            <button
+              v-if="secondaryFolders.length > 5"
+              type="button"
+              class="mailbox-folder-btn mailbox-folder-more"
+              @click="sidebarFoldersExpanded = !sidebarFoldersExpanded"
+            >
+              <i class="fas" :class="sidebarFoldersExpanded ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+              <span>{{ sidebarFoldersExpanded ? 'Reduire' : `Afficher ${secondaryFolders.length - 5} autres` }}</span>
+            </button>
+          </template>
         </nav>
 
         <div class="mailbox-side-card">
@@ -230,14 +268,26 @@
         </div>
 
         <div v-if="mobileSearchOpen" class="mailbox-mobile-search">
-          <i class="fas fa-search"></i>
-          <input
-            ref="mobileSearchInput"
-            v-model.trim="search"
-            type="search"
-            placeholder="Rechercher dans les mails..."
-            @input="onSearch"
-          >
+          <div class="mailbox-search-field">
+            <i class="fas fa-search"></i>
+            <input
+              ref="mobileSearchInput"
+              v-model.trim="search"
+              type="search"
+              placeholder="Rechercher dans les mails..."
+              @input="onSearch"
+              @keydown.enter.prevent="submitSearch"
+            >
+            <button v-if="search" type="button" title="Effacer" @click="clearSearch">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <select v-model="searchScope" class="mailbox-search-scope" @change="submitSearch">
+            <option value="all">Tout</option>
+            <option value="subject">Objet</option>
+            <option value="from">Expediteur</option>
+            <option value="recipient">Destinataire</option>
+          </select>
         </div>
 
         <header class="mailbox-topbar">
@@ -246,13 +296,25 @@
             <h1>{{ activeTitle }}</h1>
           </div>
           <div class="mailbox-search">
-            <i class="fas fa-search"></i>
-            <input
-              v-model.trim="search"
-              type="search"
-              placeholder="Rechercher dans les mails..."
-              @input="onSearch"
-            >
+            <div class="mailbox-search-field">
+              <i class="fas fa-search"></i>
+              <input
+                v-model.trim="search"
+                type="search"
+                placeholder="Rechercher dans les mails..."
+                @input="onSearch"
+                @keydown.enter.prevent="submitSearch"
+              >
+              <button v-if="search" type="button" title="Effacer" @click="clearSearch">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+            <select v-model="searchScope" class="mailbox-search-scope" @change="submitSearch">
+              <option value="all">Tout</option>
+              <option value="subject">Objet</option>
+              <option value="from">Expediteur</option>
+              <option value="recipient">Destinataire</option>
+            </select>
           </div>
         </header>
 
@@ -261,32 +323,37 @@
             <i class="fas fa-plus"></i>
             Nouveau
           </button>
+          <div class="mailbox-selection-status" :class="{ active: selectedBulkCount }">
+            <i class="fas" :class="selectedBulkCount ? 'fa-square-check' : 'fa-envelope-open-text'"></i>
+            <span>{{ selectedBulkCount ? `${selectedBulkCount} selectionne(s)` : activeTitle }}</span>
+            <button v-if="selectedBulkCount" type="button" @click="clearBulkSelection">Annuler</button>
+          </div>
           <button type="button" class="mailbox-command" @click="loadMessages(meta.current_page || 1)">
             <i class="fas fa-rotate-right"></i>
             Actualiser
           </button>
-          <button type="button" class="mailbox-command" :disabled="!selectedMessage" @click="toggleRead(selectedMessage)">
-            <i class="fas" :class="selectedMessage?.unread ? 'fa-envelope-open' : 'fa-envelope'"></i>
-            {{ selectedMessage?.unread ? 'Marquer lu' : 'Non lu' }}
+          <button type="button" class="mailbox-command" :disabled="bulkProcessing || !hasActionTarget" @click="toggleReadAction">
+            <i class="fas" :class="actionMessages.some(message => message.unread) ? 'fa-envelope-open' : 'fa-envelope'"></i>
+            {{ readActionLabel }}
           </button>
-          <button type="button" class="mailbox-command" :disabled="!selectedMessage" @click="toggleFlag(selectedMessage)">
+          <button type="button" class="mailbox-command" :disabled="bulkProcessing || !hasActionTarget" @click="toggleFlagAction">
             <i class="fas fa-star"></i>
-            {{ selectedMessage?.flagged ? 'Retirer etoile' : 'Etoile' }}
+            {{ flagActionLabel }}
           </button>
-          <button type="button" class="mailbox-command" :disabled="!selectedMessage || !archiveFolder" @click="archiveSelected">
+          <button type="button" class="mailbox-command" :disabled="bulkProcessing || !hasActionTarget || !archiveFolder" @click="archiveSelected">
             <i class="fas fa-box-archive"></i>
             Archiver
           </button>
-          <button type="button" class="mailbox-command danger" :disabled="!selectedMessage" @click="deleteMessage(selectedMessage.uid)">
+          <button type="button" class="mailbox-command danger" :disabled="bulkProcessing || !hasActionTarget" @click="deleteActionTargets">
             <i class="fas fa-trash"></i>
             Supprimer
           </button>
           <div class="mailbox-move">
-            <select v-model="targetFolder" :disabled="!selectedMessage || !moveTargets.length">
+            <select v-model="targetFolder" :disabled="bulkProcessing || !hasActionTarget || !moveTargets.length">
               <option value="">Deplacer vers...</option>
               <option v-for="folder in moveTargets" :key="folder.name" :value="folder.name">{{ folder.label }}</option>
             </select>
-            <button type="button" class="mailbox-command" :disabled="!selectedMessage || !targetFolder" @click="moveSelectedTo(targetFolder)">
+            <button type="button" class="mailbox-command" :disabled="bulkProcessing || !hasActionTarget || !targetFolder" @click="moveSelectedTo(targetFolder)">
               <i class="fas fa-folder-tree"></i>
             </button>
           </div>
@@ -303,7 +370,18 @@
         <div class="mailbox-content" :class="{ 'mailbox-content-reading': isMobileMailbox && selectedUid }">
           <section class="mailbox-list-pane">
             <div class="mailbox-list-head">
-              <strong>{{ meta.total || 0 }} message(s)</strong>
+              <div class="mailbox-list-head-main">
+                <button
+                  type="button"
+                  class="mailbox-select-toggle"
+                  :class="{ active: allPageSelected || somePageSelected }"
+                  :title="allPageSelected ? 'Tout deselectionner' : 'Selectionner la page'"
+                  @click="togglePageSelection"
+                >
+                  <i class="fas" :class="allPageSelected ? 'fa-square-check' : (somePageSelected ? 'fa-square-minus' : 'fa-square')"></i>
+                </button>
+                <strong>{{ meta.total || 0 }} message(s)</strong>
+              </div>
               <span>{{ meta.unread_count || 0 }} non lu(s)</span>
             </div>
 
@@ -319,14 +397,26 @@
             </div>
 
             <div v-else class="mailbox-message-list">
-              <button
+              <article
                 v-for="message in messages"
                 :key="message.uid"
-                type="button"
                 class="mailbox-message-item"
-                :class="{ active: selectedUid === message.uid, unread: message.unread }"
+                :class="{ active: selectedUid === message.uid, unread: message.unread, selected: isBulkSelected(message.uid) }"
+                role="button"
+                tabindex="0"
                 @click="selectMessage(message)"
+                @keydown.enter.prevent="selectMessage(message)"
+                @keydown.space.prevent="selectMessage(message)"
               >
+                <button
+                  type="button"
+                  class="mailbox-message-check"
+                  :class="{ active: isBulkSelected(message.uid) }"
+                  :title="isBulkSelected(message.uid) ? 'Retirer de la selection' : 'Selectionner ce mail'"
+                  @click.stop="toggleMessageSelection(message)"
+                >
+                  <i class="fas" :class="isBulkSelected(message.uid) ? 'fa-square-check' : 'fa-square'"></i>
+                </button>
                 <span class="mailbox-avatar">{{ senderInitial(message.from) }}</span>
                 <span class="mailbox-message-content">
                   <span class="mailbox-message-top">
@@ -341,7 +431,7 @@
                     {{ formatSize(message.size) }}
                   </span>
                 </span>
-              </button>
+              </article>
             </div>
 
             <nav v-if="meta.last_page > 1" class="mailbox-pagination" aria-label="Pagination mails">
@@ -422,11 +512,11 @@
                   <i class="fas fa-star"></i>
                   {{ selectedMessage.flagged ? 'Retirer l etoile' : 'Marquer avec etoile' }}
                 </button>
-                <button type="button" :disabled="!archiveFolder" @click="archiveSelected">
+                <button type="button" :disabled="!archiveFolder || bulkProcessing" @click="archiveMessage(selectedMessage)">
                   <i class="fas fa-box-archive"></i>
                   Archiver
                 </button>
-                <button type="button" class="danger" @click="deleteMessage(selectedMessage.uid)">
+                <button type="button" class="danger" :disabled="bulkProcessing" @click="deleteMessage(selectedMessage.uid)">
                   <i class="fas fa-trash"></i>
                   Supprimer
                 </button>
@@ -704,11 +794,15 @@ const meta = ref({ total: 0, current_page: 1, last_page: 1, per_page: 15, unread
 const loadingMessages = ref(false)
 const messagesError = ref('')
 const search = ref('')
+const searchScope = ref('all')
 const selectedUid = ref(null)
 const selectedMessage = ref(null)
+const selectedBulkUids = ref([])
 const selectedLoading = ref(false)
+const bulkProcessing = ref(false)
 const isMobileMailbox = ref(false)
 const recipientDetailsOpen = ref(false)
+const sidebarFoldersExpanded = ref(false)
 let searchTimer = null
 let mobileMediaQuery = null
 
@@ -742,8 +836,15 @@ const inboxFolder = computed(() => folders.value.find(folder => folder.type === 
 const archiveFolder = computed(() => folders.value.find(folder => folder.type === 'archive'))
 const trashFolder = computed(() => folders.value.find(folder => folder.type === 'trash'))
 const activeFolderMeta = computed(() => folders.value.find(folder => folder.name === activeFolder.value))
-const visibleFolders = computed(() => folders.value.length ? folders.value : [{ name: 'INBOX', label: 'Boite de reception', type: 'inbox', unread: 0 }])
 const moveTargets = computed(() => folders.value.filter(folder => folder.name !== activeFolder.value))
+const essentialFolderTypes = ['sent', 'drafts', 'archive', 'junk', 'trash']
+const essentialFolders = computed(() => essentialFolderTypes
+  .map(type => folders.value.find(folder => folder.type === type))
+  .filter(Boolean))
+const secondaryFolders = computed(() => folders.value.filter(folder => !['inbox', ...essentialFolderTypes].includes(folder.type)))
+const visibleSecondaryFolders = computed(() => (
+  sidebarFoldersExpanded.value ? secondaryFolders.value : secondaryFolders.value.slice(0, 5)
+))
 const isInboxActive = computed(() => activeFilter.value === '' && activeFolder.value === inboxFolder.value?.name)
 const activeTitle = computed(() => {
   if (activeFilter.value === 'unread') return 'Messages non lus'
@@ -751,6 +852,20 @@ const activeTitle = computed(() => {
   return activeFolderMeta.value?.label || 'Boite mail'
 })
 const activeSubtitle = computed(() => activeFilter.value ? 'Vue rapide' : 'Dossier')
+const selectedBulkSet = computed(() => new Set(selectedBulkUids.value))
+const selectedBulkMessages = computed(() => messages.value.filter(message => selectedBulkSet.value.has(message.uid)))
+const selectedBulkCount = computed(() => selectedBulkUids.value.length)
+const pageSelectableMessages = computed(() => messages.value)
+const allPageSelected = computed(() => pageSelectableMessages.value.length > 0
+  && pageSelectableMessages.value.every(message => selectedBulkSet.value.has(message.uid)))
+const somePageSelected = computed(() => selectedBulkCount.value > 0 && !allPageSelected.value)
+const actionMessages = computed(() => {
+  if (selectedBulkMessages.value.length) return selectedBulkMessages.value
+  return selectedMessage.value ? [selectedMessage.value] : []
+})
+const hasActionTarget = computed(() => actionMessages.value.length > 0)
+const readActionLabel = computed(() => actionMessages.value.some(message => message.unread) ? 'Marquer lu' : 'Non lu')
+const flagActionLabel = computed(() => actionMessages.value.some(message => !message.flagged) ? 'Etoile' : 'Retirer etoile')
 const contactOptions = computed(() => {
   const contacts = []
   const seen = new Set()
@@ -953,6 +1068,7 @@ function openInbox() {
   activeFilter.value = ''
   closeMobileMenu()
   resetSelection()
+  clearBulkSelection()
   loadMessages(1)
 }
 
@@ -961,6 +1077,7 @@ function openFolder(folder) {
   activeFilter.value = ''
   closeMobileMenu()
   resetSelection()
+  clearBulkSelection()
   loadMessages(1)
 }
 
@@ -969,6 +1086,7 @@ function openFilter(filter) {
   activeFilter.value = filter
   closeMobileMenu()
   resetSelection()
+  clearBulkSelection()
   loadMessages(1)
 }
 
@@ -986,11 +1104,13 @@ async function loadMessages(page = 1) {
         folder: activeFolder.value,
         filter: activeFilter.value || undefined,
         search: search.value || undefined,
+        search_scope: search.value ? searchScope.value : undefined,
       },
     })
 
     messages.value = data.data || []
     meta.value = { ...meta.value, ...(data.meta || {}) }
+    syncBulkSelection()
 
     if (messages.value.length && !isMobileMailbox.value) {
       const currentStillVisible = messages.value.some(message => message.uid === selectedUid.value)
@@ -1042,32 +1162,54 @@ async function selectMessage(message) {
   }
 }
 
-async function toggleRead(message) {
+async function setReadState(message, seen) {
   if (!message) return
-  const nextSeen = !!message.unread
+  const wasUnread = !!message.unread
   try {
     const { data } = await client.post(`/mailbox/messages/${message.uid}/read`, {
-      seen: nextSeen,
+      seen,
       source_folder: activeFolder.value,
     })
     patchMessage(message.uid, data.data)
     if (selectedMessage.value?.uid === message.uid) {
       selectedMessage.value = { ...selectedMessage.value, ...data.data }
     }
-    const unreadDelta = nextSeen ? -1 : 1
-    meta.value.unread_count = Math.max((meta.value.unread_count || 0) + unreadDelta, 0)
-    adjustFolderUnread(activeFolder.value, unreadDelta)
+    const unreadDelta = seen && wasUnread ? -1 : (!seen && !wasUnread ? 1 : 0)
+    if (unreadDelta) {
+      meta.value.unread_count = Math.max((meta.value.unread_count || 0) + unreadDelta, 0)
+      adjustFolderUnread(activeFolder.value, unreadDelta)
+    }
   } catch (error) {
     messagesError.value = firstError(error) || 'Action impossible.'
   }
 }
 
-async function toggleFlag(message) {
+function toggleRead(message) {
+  return setReadState(message, !!message?.unread)
+}
+
+async function toggleReadAction() {
+  const targets = actionMessages.value
+  if (!targets.length || bulkProcessing.value) return
+
+  const shouldMarkSeen = targets.some(message => message.unread)
+  bulkProcessing.value = true
+  messagesError.value = ''
+
+  try {
+    for (const message of targets) {
+      await setReadState(message, shouldMarkSeen)
+    }
+  } finally {
+    bulkProcessing.value = false
+  }
+}
+
+async function setFlagState(message, flagged) {
   if (!message) return
-  const nextFlagged = !message.flagged
   try {
     const { data } = await client.post(`/mailbox/messages/${message.uid}/flag`, {
-      flagged: nextFlagged,
+      flagged,
       source_folder: activeFolder.value,
     })
     patchMessage(message.uid, data.data)
@@ -1076,22 +1218,55 @@ async function toggleFlag(message) {
     }
   } catch (error) {
     messagesError.value = firstError(error) || 'Action impossible.'
+  }
+}
+
+function toggleFlag(message) {
+  return setFlagState(message, !message?.flagged)
+}
+
+async function toggleFlagAction() {
+  const targets = actionMessages.value
+  if (!targets.length || bulkProcessing.value) return
+
+  const shouldFlag = targets.some(message => !message.flagged)
+  bulkProcessing.value = true
+  messagesError.value = ''
+
+  try {
+    for (const message of targets) {
+      await setFlagState(message, shouldFlag)
+    }
+  } finally {
+    bulkProcessing.value = false
   }
 }
 
 async function moveSelectedTo(folderName) {
-  if (!selectedMessage.value || !folderName) return
+  return moveMessagesTo(folderName, actionMessages.value)
+}
 
+async function moveMessagesTo(folderName, targets) {
+  const selectedTargets = targets.filter(Boolean)
+  if (!selectedTargets.length || !folderName || bulkProcessing.value) return
+
+  bulkProcessing.value = true
+  messagesError.value = ''
   try {
-    await client.post(`/mailbox/messages/${selectedMessage.value.uid}/move`, {
-      folder: folderName,
-      source_folder: activeFolder.value,
-    })
+    for (const message of selectedTargets) {
+      await client.post(`/mailbox/messages/${message.uid}/move`, {
+        folder: folderName,
+        source_folder: activeFolder.value,
+      })
+    }
     targetFolder.value = ''
+    clearBulkSelection()
     await loadFolders()
-    await loadMessages(messages.value.length > 1 ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
+    await loadMessages(messages.value.length > selectedTargets.length ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
   } catch (error) {
     messagesError.value = firstError(error) || 'Deplacement impossible.'
+  } finally {
+    bulkProcessing.value = false
   }
 }
 
@@ -1101,22 +1276,50 @@ function archiveSelected() {
   }
 }
 
+function archiveMessage(message) {
+  if (archiveFolder.value && message) {
+    moveMessagesTo(archiveFolder.value.name, [message])
+  }
+}
+
 async function deleteMessage(uid) {
-  if (!uid || !window.confirm('Supprimer ce mail ?')) return
+  const message = messageByUid(uid)
+  if (message) {
+    await deleteMessages([message])
+  }
+}
+
+async function deleteActionTargets() {
+  await deleteMessages(actionMessages.value)
+}
+
+async function deleteMessages(targets) {
+  const selectedTargets = targets.filter(Boolean)
+  if (!selectedTargets.length || bulkProcessing.value) return
+
+  const label = selectedTargets.length > 1 ? `${selectedTargets.length} mails` : 'ce mail'
+  if (!window.confirm(`Supprimer ${label} ?`)) return
 
   if (trashFolder.value && activeFolder.value !== trashFolder.value.name) {
-    await moveSelectedTo(trashFolder.value.name)
+    await moveMessagesTo(trashFolder.value.name, selectedTargets)
     return
   }
 
+  bulkProcessing.value = true
+  messagesError.value = ''
   try {
-    await client.delete(`/mailbox/messages/${uid}`, {
-      params: { folder: activeFolder.value },
-    })
+    for (const message of selectedTargets) {
+      await client.delete(`/mailbox/messages/${message.uid}`, {
+        params: { folder: activeFolder.value },
+      })
+    }
+    clearBulkSelection()
     await loadFolders()
-    await loadMessages(messages.value.length > 1 ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
+    await loadMessages(messages.value.length > selectedTargets.length ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
   } catch (error) {
     messagesError.value = firstError(error) || 'Suppression impossible.'
+  } finally {
+    bulkProcessing.value = false
   }
 }
 
@@ -1372,6 +1575,40 @@ function resetSelection() {
   recipientDetailsOpen.value = false
 }
 
+function messageByUid(uid) {
+  return messages.value.find(message => message.uid === uid)
+    || (selectedMessage.value?.uid === uid ? selectedMessage.value : null)
+}
+
+function isBulkSelected(uid) {
+  return selectedBulkSet.value.has(uid)
+}
+
+function toggleMessageSelection(message) {
+  if (!message?.uid) return
+
+  selectedBulkUids.value = isBulkSelected(message.uid)
+    ? selectedBulkUids.value.filter(uid => uid !== message.uid)
+    : [...selectedBulkUids.value, message.uid]
+}
+
+function togglePageSelection() {
+  if (!pageSelectableMessages.value.length) return
+
+  selectedBulkUids.value = allPageSelected.value
+    ? []
+    : pageSelectableMessages.value.map(message => message.uid)
+}
+
+function clearBulkSelection() {
+  selectedBulkUids.value = []
+}
+
+function syncBulkSelection() {
+  const visibleUids = new Set(messages.value.map(message => message.uid))
+  selectedBulkUids.value = selectedBulkUids.value.filter(uid => visibleUids.has(uid))
+}
+
 function openMobileMenu() {
   mobileMenuOpen.value = true
 }
@@ -1409,7 +1646,22 @@ function adjustFolderUnread(folderName, delta) {
 
 function onSearch() {
   window.clearTimeout(searchTimer)
+  resetSelection()
+  clearBulkSelection()
   searchTimer = window.setTimeout(() => loadMessages(1), 400)
+}
+
+function submitSearch() {
+  window.clearTimeout(searchTimer)
+  resetSelection()
+  clearBulkSelection()
+  loadMessages(1)
+}
+
+function clearSearch() {
+  if (!search.value) return
+  search.value = ''
+  submitSearch()
 }
 
 function firstError(error) {
@@ -1779,6 +2031,11 @@ onBeforeUnmount(() => {
   text-align: center;
 }
 
+.mailbox-folder-more {
+  color: #0f5f76;
+  background: #f1f8fb;
+}
+
 .mailbox-side-card {
   margin-top: auto;
   padding: 12px;
@@ -1822,12 +2079,20 @@ onBeforeUnmount(() => {
 }
 
 .mailbox-search {
-  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: 1;
-  max-width: 440px;
+  max-width: 580px;
 }
 
-.mailbox-search i {
+.mailbox-search-field {
+  position: relative;
+  flex: 1;
+  min-width: 180px;
+}
+
+.mailbox-search-field > i {
   position: absolute;
   top: 50%;
   left: 13px;
@@ -1851,7 +2116,38 @@ onBeforeUnmount(() => {
 
 .mailbox-search input {
   min-height: 40px;
-  padding: 0 14px 0 40px;
+  padding: 0 40px 0 40px;
+}
+
+.mailbox-search-field button {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  color: #64748b;
+  background: transparent;
+  transform: translateY(-50%);
+}
+
+.mailbox-search-field button:hover {
+  color: #0f5f76;
+  background: #e7f3f7;
+}
+
+.mailbox-search-scope {
+  width: 132px;
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #cfe1e8;
+  border-radius: 8px;
+  color: #0f5f76;
+  background: #fff;
+  font-weight: 800;
 }
 
 .mailbox-commandbar {
@@ -1868,6 +2164,40 @@ onBeforeUnmount(() => {
   min-height: 34px;
   padding: 0 11px;
   font-size: 0.84rem;
+}
+
+.mailbox-selection-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  max-width: 240px;
+  padding: 0 10px;
+  border: 1px solid #d7e8ee;
+  border-radius: 8px;
+  color: #64748b;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.mailbox-selection-status span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mailbox-selection-status.active {
+  color: #075985;
+  border-color: #93d6ea;
+  background: #edfaff;
+}
+
+.mailbox-selection-status button {
+  border: 0;
+  color: #0f5f76;
+  background: transparent;
+  font-weight: 900;
 }
 
 .mailbox-move {
@@ -1904,6 +2234,7 @@ onBeforeUnmount(() => {
 
 .mailbox-list-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
@@ -1912,8 +2243,45 @@ onBeforeUnmount(() => {
   font-size: 0.82rem;
 }
 
+.mailbox-list-head-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .mailbox-list-head strong {
   color: #102a43;
+}
+
+.mailbox-select-toggle,
+.mailbox-message-check {
+  display: grid;
+  place-items: center;
+  border: 0;
+  color: #94a3b8;
+  background: transparent;
+}
+
+.mailbox-select-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+}
+
+.mailbox-message-check {
+  align-self: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+}
+
+.mailbox-select-toggle.active,
+.mailbox-message-check.active,
+.mailbox-select-toggle:hover,
+.mailbox-message-check:hover {
+  color: #0877b7;
+  background: #e9f7fb;
 }
 
 .mailbox-message-list {
@@ -1924,7 +2292,7 @@ onBeforeUnmount(() => {
 .mailbox-message-item {
   position: relative;
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-columns: 30px 42px minmax(0, 1fr);
   gap: 10px;
   width: 100%;
   padding: 13px 12px;
@@ -1954,6 +2322,10 @@ onBeforeUnmount(() => {
 .mailbox-message-item:hover,
 .mailbox-message-item.active {
   background: #e9f7fb;
+}
+
+.mailbox-message-item.selected {
+  background: #edfaff;
 }
 
 .mailbox-message-item.active {
@@ -2336,6 +2708,7 @@ onBeforeUnmount(() => {
 .mailbox-compose-form input:focus,
 .mailbox-compose-form textarea:focus,
 .mailbox-search input:focus,
+.mailbox-search-scope:focus,
 .mailbox-move select:focus {
   border-color: #0786b1;
   box-shadow: 0 0 0 3px rgba(7, 134, 177, 0.12);
@@ -2877,7 +3250,7 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-search {
-    max-width: min(440px, 42vw);
+    max-width: min(580px, 48vw);
   }
 
   .mailbox-search input {
@@ -3275,7 +3648,7 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-message-item {
-    grid-template-columns: 38px minmax(0, 1fr);
+    grid-template-columns: 30px 38px minmax(0, 1fr);
     gap: 9px;
     min-height: 76px;
     padding: 11px 10px;
@@ -3588,6 +3961,15 @@ onBeforeUnmount(() => {
     background: #fff;
   }
 
+  .mailbox-mobile-search .mailbox-search-field {
+    min-width: 0;
+  }
+
+  .mailbox-mobile-search .mailbox-search-scope {
+    flex: 0 0 124px;
+    min-height: 42px;
+  }
+
   .mailbox-mobile-search i {
     color: #0877b7;
   }
@@ -3641,8 +4023,8 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-message-item {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
+    grid-template-columns: 34px minmax(0, 1fr);
+    gap: 8px;
     min-height: 0;
     padding: 14px 22px;
     border-bottom: 0;
