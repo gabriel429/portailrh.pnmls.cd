@@ -206,6 +206,11 @@
                 </template>
                 <template v-if="showLocalRhAdminMenu">
                   <li>
+                    <router-link class="dropdown-item" :to="{ name: 'rh.agents.index' }">
+                      <span class="dd-icon dd-icon-blue"><i class="fas fa-users"></i></span> Agents locaux
+                    </router-link>
+                  </li>
+                  <li>
                     <router-link class="dropdown-item" :to="{ name: 'requests.index' }">
                       <span class="dd-icon dd-icon-orange"><i class="fas fa-paper-plane"></i></span> Demandes
                     </router-link>

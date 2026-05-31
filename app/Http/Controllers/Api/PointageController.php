@@ -571,7 +571,10 @@ class PointageController extends ApiController
 
         if ($departmentId === null || $departmentId === '') {
             $userOrgane = strtolower((string) ($request->user()?->agent?->organe ?? ''));
-            $isTerritorialStructure = str_contains($userOrgane, 'provincial') || str_contains($userOrgane, 'local');
+            $isTerritorialStructure = $scope->isProvincialUser($request->user())
+                || $scope->isLocalUser($request->user())
+                || str_contains($userOrgane, 'provincial')
+                || str_contains($userOrgane, 'local');
 
             if ($isTerritorialStructure) {
                 $agentsQuery = Agent::actifs()->orderInstitutionally();
