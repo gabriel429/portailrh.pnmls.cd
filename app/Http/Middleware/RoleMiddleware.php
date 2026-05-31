@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Services\RoleService;
+use App\Services\UserDataScope;
 use App\Support\RoleNames;
 use Closure;
 use Illuminate\Http\Request;
@@ -32,6 +33,10 @@ class RoleMiddleware
         $hasRole = RoleNames::matches($user->role?->nom_role, $roles);
         if (!$hasRole && app(RoleService::class)->isAssistantRh($user)) {
             $hasRole = RoleNames::matches('Assistant RH', $roles);
+        }
+
+        if (!$hasRole && $request->is('api/pointages*') && app(UserDataScope::class)->isLocalUser($user)) {
+            $hasRole = true;
         }
 
         if (!$hasRole) {

@@ -303,8 +303,14 @@ const selectedAgents = computed(() =>
 )
 
 const hasUnsavedChanges = computed(() => selectedAgents.value.length > 0)
-const currentOrgane = computed(() => String(auth.user?.agent?.organe || '').toLowerCase())
-const isTerritorialPointage = computed(() => currentOrgane.value.includes('provincial') || currentOrgane.value.includes('local'))
+const currentOrgane = computed(() => String(auth.agent?.organe || auth.user?.agent?.organe || '').toLowerCase())
+const isTerritorialPointage = computed(() =>
+  auth.isRhLocal
+  || auth.isSEL
+  || auth.isSEP
+  || currentOrgane.value.includes('provincial')
+  || currentOrgane.value.includes('local')
+)
 const requiresDepartmentSelection = computed(() => !isTerritorialPointage.value)
 
 const pageSubtitle = computed(() => {
@@ -345,6 +351,11 @@ function initNetworkListener() {
 
 // Récupération départements
 async function fetchDepartments() {
+  if (!requiresDepartmentSelection.value) {
+    departments.value = []
+    return
+  }
+
   try {
     const result = await client.getDepartments()
     departments.value = result || []

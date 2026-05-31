@@ -41,14 +41,14 @@
             <label for="filter-date-fin" class="form-label">Date fin</label>
             <input type="date" id="filter-date-fin" v-model="filters.date_fin" class="form-control">
           </div>
-          <div class="col-md-3">
+          <div v-if="requiresDepartmentSelection" class="col-md-3">
             <label for="filter-department" class="form-label">Département</label>
             <select id="filter-department" v-model="filters.department_id" class="form-select">
               <option value="">Tous</option>
               <option v-for="dept in departments" :key="dept.id" :value="dept.id">{{ dept.nom }}</option>
             </select>
           </div>
-          <div class="col-md-3">
+          <div v-if="requiresDepartmentSelection" class="col-md-3">
             <label for="filter-organe" class="form-label">Organe</label>
             <select id="filter-organe" v-model="filters.organe" class="form-select">
               <option value="">Tous les organes</option>
@@ -165,7 +165,7 @@
         <div class="pcm-header">
           <div>
             <h4 class="pcm-title"><i class="fas fa-clipboard-check me-2"></i>Saisie des pointages</h4>
-            <p class="pcm-sub">Saisie groupée par département. Sélectionnez un département puis chargez les agents.</p>
+            <p class="pcm-sub">{{ createModalSubtitle }}</p>
           </div>
           <button class="pcm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
         </div>
@@ -174,14 +174,14 @@
           <!-- Step 1: Select department + date -->
           <div class="pcm-step1">
             <div class="pcm-form-row">
-              <div class="pcm-field pcm-grow">
+              <div v-if="requiresDepartmentSelection" class="pcm-field pcm-grow">
                 <label class="pcm-label">Département / Service <span class="text-danger">*</span></label>
                 <select v-model="cm_department" class="pcm-select">
                   <option value="">-- Sélectionner --</option>
                   <option v-for="d in departments" :key="d.id" :value="d.id">{{ d.nom }}</option>
                 </select>
               </div>
-              <div class="pcm-field">
+              <div class="pcm-field" :class="{ 'pcm-grow': !requiresDepartmentSelection }">
                 <label class="pcm-label">Date <span class="text-danger">*</span></label>
                 <input type="date" v-model="cm_date" class="pcm-input">
               </div>
@@ -204,7 +204,7 @@
           <div v-else-if="cm_agentsLoaded && cm_agents.length > 0">
             <div class="pcm-info-bar">
               <i class="fas fa-info-circle me-1"></i>
-              <strong>{{ cm_deptName }}</strong> — {{ cm_agents.length }} agent(s)
+              <strong>{{ cm_scopeName }}</strong> — {{ cm_agents.length }} agent(s)
               <span v-if="cm_recordedCount > 0" class="pcm-badge-ok ms-2">{{ cm_recordedCount }} deja pointe(s)</span>
             </div>
 
@@ -255,13 +255,13 @@
           <!-- No agents -->
           <div v-else-if="cm_agentsLoaded && cm_agents.length === 0" class="pcm-empty">
             <i class="fas fa-users-slash fa-2x mb-2"></i>
-            <p>Aucun agent actif dans ce département</p>
+            <p>{{ noCreateAgentText }}</p>
           </div>
 
           <!-- Initial state -->
           <div v-else-if="!cm_loadingAgents" class="pcm-empty">
             <i class="fas fa-building fa-2x mb-2"></i>
-            <p>Sélectionnez un département et une date, puis cliquez sur « Charger ».</p>
+            <p>{{ createInitialText }}</p>
           </div>
         </div>
 
@@ -281,6 +281,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 import * as pointagesApi from '@/api/pointages'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -289,6 +290,7 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const router = useRouter()
 const ui = useUiStore()
+const auth = useAuthStore()
 
 const loading = ref(true)
 const pointages = ref([])
@@ -301,6 +303,28 @@ const filters = reactive({
     department_id: '',
     organe: '',
 })
+
+const currentOrgane = computed(() => String(auth.agent?.organe || auth.user?.agent?.organe || '').toLowerCase())
+const isTerritorialPointage = computed(() =>
+    auth.isRhLocal
+    || auth.isSEL
+    || auth.isSEP
+    || currentOrgane.value.includes('provincial')
+    || currentOrgane.value.includes('local')
+)
+const requiresDepartmentSelection = computed(() => !isTerritorialPointage.value)
+const createModalSubtitle = computed(() => requiresDepartmentSelection.value
+    ? 'Saisie groupée par département. Sélectionnez un département puis chargez les agents.'
+    : 'Saisie groupée des agents de votre localité. Sélectionnez la date puis chargez les agents.'
+)
+const createInitialText = computed(() => requiresDepartmentSelection.value
+    ? 'Sélectionnez un département et une date, puis cliquez sur « Charger ».'
+    : 'Sélectionnez une date, puis cliquez sur « Charger » pour afficher les agents de votre localité.'
+)
+const noCreateAgentText = computed(() => requiresDepartmentSelection.value
+    ? 'Aucun agent actif dans ce département'
+    : 'Aucun agent actif trouvé dans votre localité'
+)
 
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
@@ -366,6 +390,11 @@ async function fetchPointages(page = 1) {
 }
 
 async function fetchDepartments() {
+    if (!requiresDepartmentSelection.value) {
+        departments.value = []
+        return
+    }
+
     try {
         const { data } = await client.get('/agents/form-options')
         departments.value = data.departments || []
@@ -430,6 +459,7 @@ const cm_deptName = computed(() => {
     const d = departments.value.find(x => x.id == cm_department.value)
     return d ? d.nom : ''
 })
+const cm_scopeName = computed(() => requiresDepartmentSelection.value ? cm_deptName.value : 'Votre localité')
 const cm_recordedCount = computed(() => cm_agents.value.filter(a => a.pointage_existant).length)
 
 function openCreateModal() {
@@ -461,13 +491,16 @@ function cm_clearAll() {
 }
 
 async function cm_loadAgents() {
-    if (cm_department.value === '') { ui.addToast('Sélectionnez un département.', 'warning'); return }
+    if (requiresDepartmentSelection.value && cm_department.value === '') { ui.addToast('Sélectionnez un département.', 'warning'); return }
     if (!cm_date.value) { ui.addToast('Sélectionnez une date.', 'warning'); return }
     cm_loadingAgents.value = true
     cm_agentsLoaded.value = false
     cm_errors.value = []
     try {
-        const { data } = await pointagesApi.agentsByDepartment({ department_id: cm_department.value, date: cm_date.value })
+        const { data } = await pointagesApi.agentsByDepartment({
+            department_id: requiresDepartmentSelection.value ? cm_department.value : '',
+            date: cm_date.value,
+        })
       const agentsData = data.data || data.agents || []
       cm_agents.value = agentsData.map(a => ({
             ...a,
