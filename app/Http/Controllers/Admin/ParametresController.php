@@ -792,11 +792,59 @@ class ParametresController extends Controller
         return response()->json($q->paginate($request->per_page ?? 15));
     }
 
-    public function apiUtilisateursFormData()
+    public function apiUtilisateursFormData(Request $request)
     {
-        $agentsWithoutUser = Agent::whereDoesntHave('user')->orderInstitutionally()->get(['id', 'nom', 'postnom', 'prenom']);
+        $agentSearch = trim((string) $request->query('agent_search', ''));
+        $agentLimit = max(10, min((int) $request->query('agent_limit', 50), 100));
+        $agentsWithoutUser = Agent::query()
+            ->whereDoesntHave('user')
+            ->with([
+                'province:id,nom,code',
+                'localite:id,nom,province_id',
+                'departement:id,nom,code',
+            ])
+            ->when($agentSearch !== '', function ($query) use ($agentSearch) {
+                $term = '%' . $agentSearch . '%';
+
+                $query->where(function ($q) use ($term) {
+                    $q->where('nom', 'like', $term)
+                        ->orWhere('postnom', 'like', $term)
+                        ->orWhere('prenom', 'like', $term)
+                        ->orWhere('matricule_etat', 'like', $term)
+                        ->orWhere('fonction', 'like', $term)
+                        ->orWhere('poste_actuel', 'like', $term)
+                        ->orWhere('organe', 'like', $term)
+                        ->orWhere('email', 'like', $term)
+                        ->orWhere('email_prive', 'like', $term)
+                        ->orWhere('email_professionnel', 'like', $term);
+                });
+            })
+            ->orderInstitutionally()
+            ->limit($agentLimit)
+            ->get([
+                'id',
+                'nom',
+                'postnom',
+                'prenom',
+                'matricule_etat',
+                'fonction',
+                'poste_actuel',
+                'organe',
+                'email',
+                'email_prive',
+                'email_professionnel',
+                'province_id',
+                'localite_id',
+                'departement_id',
+            ]);
         $roles = Role::orderBy('nom_role')->get(['id', 'nom_role']);
-        return response()->json(['agents' => $agentsWithoutUser, 'roles' => $roles]);
+
+        return response()->json([
+            'agents' => $agentsWithoutUser,
+            'roles' => $roles,
+            'agent_search' => $agentSearch,
+            'agent_limit' => $agentLimit,
+        ]);
     }
 
     public function apiUtilisateursShow(User $user)
