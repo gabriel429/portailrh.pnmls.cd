@@ -2067,8 +2067,13 @@ html.dark .drill-stat-clickable.active { background: #1e3a5f !important; }
 .dept-hero-inner {
   padding: .95rem 1.25rem;
   gap: 1rem;
+  flex-wrap: nowrap;
 }
-.dept-hero-left { gap: .85rem; }
+.dept-hero-left {
+  gap: .85rem;
+  flex: 0 1 44%;
+  max-width: 520px;
+}
 .dept-hero-avatar {
   width: 48px;
   height: 48px;
@@ -2090,9 +2095,14 @@ h1.dept-hero-name {
   display: none;
 }
 .dept-hero-kpis {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(84px, 1fr));
+  align-items: stretch;
+  flex: 1 1 auto;
+  min-width: 0;
   border-radius: 10px;
   padding: .48rem .65rem;
-  gap: 0;
+  gap: .45rem;
   background: rgba(255,255,255,.12);
   border: 1px solid rgba(255,255,255,.16);
 }
@@ -2100,6 +2110,7 @@ h1.dept-hero-name {
   gap: .45rem;
   padding: 0 .65rem;
   min-width: 0;
+  min-height: 48px;
   border-radius: 8px;
   background: transparent;
   box-shadow: none;
@@ -2119,8 +2130,7 @@ h1.dept-hero-name {
 }
 .dept-kpi-pill-arrow { display: none; }
 .kpi-divider {
-  height: 28px;
-  margin: 0 .1rem;
+  display: none;
 }
 .dept-section { margin-bottom: 1rem; }
 .dept-section-head {
@@ -2158,6 +2168,7 @@ h1.dept-hero-name {
 
 @media (max-width: 1300px) {
   .dept-hero-inner {
+    flex-direction: column;
     align-items: stretch;
   }
 
