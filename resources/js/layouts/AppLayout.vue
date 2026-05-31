@@ -397,13 +397,19 @@
 
     <div v-if="auth.isAuthenticated" class="watermark-logo"></div>
 
-    <div class="container-fluid main-content" :class="{ 'guest-content': !auth.isAuthenticated }">
+    <div
+      class="container-fluid main-content"
+      :class="{
+        'guest-content': !auth.isAuthenticated,
+        'immersive-content': isImmersiveRoute,
+      }"
+    >
       <AppToast />
       <UserExperienceHub v-if="auth.isAuthenticated" />
       <slot />
     </div>
 
-    <footer v-if="auth.isAuthenticated" class="footer mt-5">
+    <footer v-if="auth.isAuthenticated && !isImmersiveRoute" class="footer mt-5">
       <p class="mb-0">&copy; 2026 E-PNMLS — Programme National Multisectoriel de Lutte contre le Sida</p>
     </footer>
   </div>
@@ -434,6 +440,7 @@ const taskInProgressCount = ref(0)
 const showFullRhAdminMenu = computed(() => auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant)
 const showLocalRhAdminMenu = computed(() => (auth.isRhLocal || auth.isSEL) && !showFullRhAdminMenu.value)
 const showAdminNtDivider = computed(() => showFullRhAdminMenu.value || showLocalRhAdminMenu.value)
+const isImmersiveRoute = computed(() => String(route.path || '').startsWith('/mailbox'))
 
 function closeMobileNav() {
   isMobileNavOpen.value = false
@@ -618,6 +625,10 @@ watch(() => auth.isAuthenticated, (isAuthenticated) => {
 .main-content.guest-content {
   min-height: 100dvh;
   padding: 0 !important;
+}
+
+.main-content.immersive-content {
+  min-height: calc(100dvh - 72px);
 }
 
 .help-toggle-btn {

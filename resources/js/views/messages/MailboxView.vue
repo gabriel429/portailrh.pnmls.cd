@@ -3865,31 +3865,67 @@ onBeforeUnmount(() => {
 
 @media (min-width: 861px) and (max-height: 720px) {
   .mailbox-page {
-    min-height: calc(100dvh - 64px);
-    padding: 8px 12px;
+    min-height: calc(100dvh - 70px);
+    padding: 4px 8px 8px;
   }
 
   .outlook-shell {
-    height: calc(100dvh - 82px);
-    max-height: calc(100dvh - 82px);
-    border-radius: 12px;
+    height: calc(100dvh - 76px);
+    max-height: calc(100dvh - 76px);
+    border-radius: 10px;
+  }
+
+  .outlook-shell {
+    grid-template-columns: 228px minmax(0, 1fr);
   }
 
   .mailbox-sidebar {
-    gap: 10px;
-    padding: 12px;
+    gap: 8px;
+    padding: 10px;
   }
 
   .mailbox-account {
-    padding: 8px;
+    grid-template-columns: 38px minmax(0, 1fr);
+    padding: 7px 8px;
+  }
+
+  .mailbox-account-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: .86rem;
+  }
+
+  .mailbox-account span,
+  .mailbox-nav-title {
+    font-size: .66rem;
+  }
+
+  .mailbox-account strong {
+    font-size: .78rem;
   }
 
   .mailbox-compose-btn {
-    min-height: 38px;
+    min-height: 36px;
+    font-size: .82rem;
   }
 
   .mailbox-folder-btn {
-    min-height: 36px;
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: .82rem;
+  }
+
+  .mailbox-folder-btn i {
+    width: 24px;
+    height: 24px;
+    border-radius: 8px;
+    font-size: .82rem;
+  }
+
+  .mailbox-folder-btn b {
+    min-width: 20px;
+    padding: 1px 6px;
+    font-size: .66rem;
   }
 
   .mailbox-side-card {
@@ -3897,31 +3933,65 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-topbar {
-    min-height: 58px;
-    padding: 10px 16px;
+    min-height: 52px;
+    padding: 8px 14px;
   }
 
   .mailbox-topbar h1 {
-    font-size: 1.12rem;
+    font-size: 1rem;
+  }
+
+  .mailbox-kicker {
+    font-size: .66rem;
+  }
+
+  .mailbox-search {
+    max-width: min(500px, 46vw);
   }
 
   .mailbox-search input,
   .mailbox-search-scope {
-    min-height: 36px;
+    min-height: 34px;
+    font-size: .8rem;
+  }
+
+  .mailbox-search-scope {
+    width: 108px;
   }
 
   .mailbox-commandbar {
+    gap: 6px;
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding: 8px 12px;
-    scrollbar-width: thin;
+    padding: 6px 10px;
+    scrollbar-width: none;
+  }
+
+  .mailbox-commandbar::-webkit-scrollbar {
+    display: none;
   }
 
   .mailbox-command,
   .mailbox-move select,
   .mailbox-icon-btn {
     flex: 0 0 auto;
-    min-height: 34px;
+    min-height: 32px;
+    border-radius: 9px;
+    font-size: .76rem;
+  }
+
+  .mailbox-command {
+    padding: 0 8px;
+  }
+
+  .mailbox-command.primary {
+    font-size: .8rem;
+  }
+
+  .mailbox-command.settings,
+  .mailbox-icon-btn {
+    width: 34px;
+    padding: 0;
   }
 
   .mailbox-command.settings {
@@ -3933,30 +4003,95 @@ onBeforeUnmount(() => {
     flex: 0 0 auto;
   }
 
+  .mailbox-selection-status {
+    max-width: 170px;
+    min-height: 32px;
+    font-size: .74rem;
+  }
+
+  .mailbox-move select {
+    min-width: 138px;
+    max-width: 150px;
+    padding: 0 8px;
+  }
+
+  .mailbox-content {
+    grid-template-columns: minmax(300px, 420px) minmax(0, 1fr);
+  }
+
+  .mailbox-list-head {
+    padding: 8px 12px;
+    font-size: .76rem;
+  }
+
+  .mailbox-message-list {
+    gap: 6px;
+    padding: 8px;
+  }
+
+  .mailbox-message-item {
+    grid-template-columns: 28px 38px minmax(0, 1fr);
+    gap: 8px;
+    min-height: 70px;
+    padding: 9px 10px;
+    border-radius: 12px;
+  }
+
+  .mailbox-avatar {
+    width: 38px;
+    height: 38px;
+    font-size: .88rem;
+  }
+
+  .mailbox-message-top strong {
+    font-size: .82rem;
+  }
+
+  .mailbox-message-top time,
+  .mailbox-message-meta {
+    font-size: .72rem;
+  }
+
+  .mailbox-subject {
+    font-size: .82rem;
+  }
+
   .mailbox-reader {
-    margin: 8px;
+    margin: 6px;
     border-radius: 12px;
   }
 
   .mailbox-reader-head {
     gap: 10px;
-    padding: 14px 18px 12px;
+    padding: 12px 16px 10px;
   }
 
   .mailbox-reader-head h2 {
     margin-bottom: 6px;
-    font-size: 1.06rem;
-    line-height: 1.3;
+    font-size: .98rem;
+    line-height: 1.28;
   }
 
   .mailbox-reader-meta {
     line-height: 1.45;
+    font-size: .76rem;
+  }
+
+  .mailbox-reader-actions {
+    gap: 6px;
+  }
+
+  .mailbox-reader-actions .mailbox-icon-btn {
+    width: 34px;
+    min-height: 34px;
+    font-size: .82rem;
   }
 
   .mailbox-reader-tools {
+    gap: 6px;
     flex-wrap: nowrap;
     overflow-x: auto;
-    padding: 8px 18px;
+    padding: 6px 16px;
     scrollbar-width: none;
   }
 
@@ -3966,14 +4101,25 @@ onBeforeUnmount(() => {
 
   .mailbox-reader-tools button {
     flex: 0 0 auto;
-    min-height: 32px;
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: .74rem;
+  }
+
+  .mailbox-reader-attachments {
+    padding: 8px 16px;
   }
 
   .mailbox-reader-body {
     min-height: 0;
-    padding: 18px 22px 26px;
-    font-size: .94rem;
-    line-height: 1.62;
+    padding: 14px 18px 22px;
+    font-size: .88rem;
+    line-height: 1.58;
+  }
+
+  .mailbox-body-quote {
+    padding: 10px 12px;
+    font-size: .86em;
   }
 }
 
