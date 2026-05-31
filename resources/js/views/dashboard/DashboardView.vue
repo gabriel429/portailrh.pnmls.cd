@@ -1,7 +1,9 @@
 <template>
   <SenDashboardView v-if="auth.isSEN" />
   <SenaDashboardView v-else-if="auth.isSENA" />
+  <SepDashboardView v-else-if="auth.isSEL" mode="local" endpoint="/dashboard/sel" />
   <SepDashboardView v-else-if="auth.isSEP" />
+  <CafDashboardView v-else-if="auth.isRhLocal" mode="local" endpoint="/dashboard/rh-local" />
   <RhDashboardView v-else-if="auth.isRH || auth.isRhOperationalAssistant" />
   <DepartementDashboardView v-else-if="auth.isDepartement" />
   <RenforcementDashboardView v-else-if="auth.isChefSectionRenforcement" />

@@ -11,6 +11,7 @@ use App\Models\Request as RequestModel;
 use App\Models\Signalement;
 use App\Models\User;
 use App\Services\RoleService;
+use Illuminate\Support\Str;
 
 class UserDataScope
 {
@@ -114,6 +115,52 @@ class UserDataScope
         return str_contains($organe, 'provincial');
     }
 
+    private function normalizeText(?string $value): string
+    {
+        $value = Str::ascii((string) $value);
+        $value = strtolower(trim($value));
+
+        return preg_replace('/\s+/', ' ', $value) ?? '';
+    }
+
+    private function profileText(?User $user): string
+    {
+        $agent = $user?->agent;
+
+        return trim(implode(' ', array_filter([
+            $this->normalizeText($user?->role?->nom_role),
+            $this->normalizeText($agent?->fonction),
+            $this->normalizeText($agent?->poste_actuel),
+            $this->normalizeText($agent?->departement?->code),
+            $this->normalizeText($agent?->departement?->nom),
+        ])));
+    }
+
+    public function isLocalUser(?User $user): bool
+    {
+        if (!$user || !$user->agent) {
+            return false;
+        }
+
+        $role = $this->normalizeText($user->role?->nom_role);
+        if (in_array($role, ['sel', 'rh local', 'aaf local', 'assistant administratif et financier'], true)) {
+            return true;
+        }
+
+        $organe = $this->normalizeText($user->agent?->organe);
+        if (!str_contains($organe, 'local')) {
+            return false;
+        }
+
+        $profile = $this->profileText($user);
+
+        return str_contains($profile, 'secretaire executif local')
+            || str_contains($profile, 'rh local')
+            || str_contains($profile, 'assistant administratif et financier')
+            || str_contains($profile, 'aaf local')
+            || str_contains($profile, '(sel)');
+    }
+
     /** Vrai si l'utilisateur doit être scopé à sa propre province (RH Provincial OU SEP). */
     public function isProvincialUser(?User $user): bool
     {
@@ -127,6 +174,26 @@ class UserDataScope
         return $provinceId ? (int) $provinceId : null;
     }
 
+    public function localiteId(?User $user): ?int
+    {
+        $agent = $user?->agent;
+        if (!$agent) {
+            return null;
+        }
+
+        $localiteId = $agent->localite_id;
+        if (!$localiteId) {
+            $localiteId = $agent->affectations()
+                ->where('actif', true)
+                ->whereNotNull('localite_id')
+                ->orderByDesc('date_debut')
+                ->orderByDesc('id')
+                ->value('localite_id');
+        }
+
+        return $localiteId ? (int) $localiteId : null;
+    }
+
     public function applyAgentScope($query, ?User $user, string $table = 'agents')
     {
         $this->excludeAncienAgents($query, $table);
@@ -135,10 +202,20 @@ class UserDataScope
             return $query;
         }
 
-        // Les assistants RH doivent pouvoir consulter les dossiers agents pour
-        // les opérations déléguées: pointage, documents, suivi administratif.
-        if ($this->isAssistantRh($user)) {
-            return $query;
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
+            if (!$localiteId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where(function ($localScope) use ($table, $localiteId) {
+                $localScope->where($table . '.localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope
+                            ->where('actif', true)
+                            ->where('localite_id', $localiteId);
+                    });
+            });
         }
 
         if ($this->isProvincialUser($user)) {
@@ -148,6 +225,12 @@ class UserDataScope
             }
 
             return $query->where($table . '.province_id', $provinceId);
+        }
+
+        // Les assistants RH doivent pouvoir consulter les dossiers agents pour
+        // les opérations déléguées: pointage, documents, suivi administratif.
+        if ($this->isAssistantRh($user)) {
+            return $query;
         }
 
         return $query->whereHas('departement', function ($dq) {
@@ -534,6 +617,28 @@ class UserDataScope
             return $query->whereRaw('1 = 0');
         }
 
+        $organe = trim((string) $agent->organe);
+        $normalizedOrgane = $this->normalizeText($organe);
+        if (str_contains($normalizedOrgane, 'local')) {
+            $localiteId = $agent->localite_id ?: $agent->affectations()
+                ->where('actif', true)
+                ->whereNotNull('localite_id')
+                ->orderByDesc('date_debut')
+                ->orderByDesc('id')
+                ->value('localite_id');
+
+            if ($localiteId) {
+                return $query->where(function ($localScope) use ($table, $localiteId) {
+                    $localScope->where($table . '.localite_id', $localiteId)
+                        ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                            $affectationScope
+                                ->where('actif', true)
+                                ->where('localite_id', $localiteId);
+                        });
+                });
+            }
+        }
+
         if ($agent->province_id) {
             return $query->where($table . '.province_id', $agent->province_id);
         }
@@ -542,7 +647,6 @@ class UserDataScope
             return $query->where($table . '.departement_id', $agent->departement_id);
         }
 
-        $organe = trim((string) $agent->organe);
         if ($organe !== '') {
             return $query->where($table . '.organe', $organe);
         }
@@ -552,6 +656,30 @@ class UserDataScope
 
     private function agentsShareLocalScope(Agent $ownerAgent, Agent $candidateAgent): bool
     {
+        $ownerOrgane = trim((string) $ownerAgent->organe);
+        $ownerNormalizedOrgane = $this->normalizeText($ownerOrgane);
+        if (str_contains($ownerNormalizedOrgane, 'local')) {
+            $ownerLocaliteId = $ownerAgent->localite_id ?: $ownerAgent->affectations()
+                ->where('actif', true)
+                ->whereNotNull('localite_id')
+                ->orderByDesc('date_debut')
+                ->orderByDesc('id')
+                ->value('localite_id');
+
+            if (!$ownerLocaliteId) {
+                return false;
+            }
+
+            $candidateLocaliteId = $candidateAgent->localite_id ?: $candidateAgent->affectations()
+                ->where('actif', true)
+                ->whereNotNull('localite_id')
+                ->orderByDesc('date_debut')
+                ->orderByDesc('id')
+                ->value('localite_id');
+
+            return (int) $candidateLocaliteId === (int) $ownerLocaliteId;
+        }
+
         if ($ownerAgent->province_id) {
             return (int) $candidateAgent->province_id === (int) $ownerAgent->province_id;
         }
@@ -560,7 +688,6 @@ class UserDataScope
             return (int) $candidateAgent->departement_id === (int) $ownerAgent->departement_id;
         }
 
-        $ownerOrgane = trim((string) $ownerAgent->organe);
         if ($ownerOrgane !== '') {
             return trim((string) $candidateAgent->organe) === $ownerOrgane;
         }

@@ -19,9 +19,9 @@
             </div>
             <div class="sep-hero-role">
               <i class="fas fa-map-marker-alt me-1"></i>
-              Secrétariat Exécutif Provincial
-              <span v-if="data.province?.nom" class="sep-hero-province-badge">
-                {{ data.province.nom }}
+              {{ dashboardRoleLabel }}
+              <span v-if="scopeName" class="sep-hero-province-badge">
+                {{ scopeName }}
               </span>
             </div>
             <div class="sep-hero-date">
@@ -36,7 +36,7 @@
               <div class="sep-kpi-val">{{ data.agents?.actifs ?? '-' }}</div>
               <div class="sep-kpi-lbl">Agents actifs</div>
             </div>
-            <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
+            <i class="fas fa-search-plus sep-kpi-drill-icon" :title="drillTitle"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="router.push({ path: '/taches', hash: '#agenda' })">
@@ -54,7 +54,7 @@
               <div class="sep-kpi-val">{{ data.attendance?.today_rate ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="sep-kpi-lbl">Présence</div>
             </div>
-            <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
+            <i class="fas fa-search-plus sep-kpi-drill-icon" :title="drillTitle"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="router.push('/requests')">
@@ -72,28 +72,28 @@
               <div class="sep-kpi-val">{{ data.plan_travail?.avg_completion ?? 0 }}<span class="kpi-unit">%</span></div>
               <div class="sep-kpi-lbl">Plan annuel</div>
             </div>
-            <i class="fas fa-search-plus sep-kpi-drill-icon" title="Voir détail province"></i>
+            <i class="fas fa-search-plus sep-kpi-drill-icon" :title="drillTitle"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <LoadingSpinner v-if="loading" message="Chargement du tableau de bord provincial..." />
+    <LoadingSpinner v-if="loading" :message="loadingMessage" />
 
     <div v-else-if="loadError" class="alert alert-warning mx-3">
       <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
     </div>
 
     <template v-else>
-      <!-- ═══ PROVINCE INFO ═══ -->
-      <div class="sep-section" v-if="data.province">
+      <!-- ═══ STRUCTURE INFO ═══ -->
+      <div class="sep-section" v-if="scopeEntity">
         <div class="sep-province-card">
           <div class="sep-province-icon">
-            <i class="fas fa-city"></i>
+            <i class="fas" :class="isLocalDashboard ? 'fa-map-pin' : 'fa-city'"></i>
           </div>
           <div class="sep-province-info">
-            <div class="sep-province-name">{{ data.province.nom }}</div>
-            <div class="sep-province-details">
+            <div class="sep-province-name">{{ scopeName }}</div>
+            <div v-if="!isLocalDashboard" class="sep-province-details">
               <span v-if="data.province.nom_gouverneur">
                 <i class="fas fa-user-tie me-1"></i>Gouverneur : {{ data.province.nom_gouverneur }}
               </span>
@@ -102,6 +102,17 @@
               </span>
               <span v-if="data.province.ville_secretariat">
                 <i class="fas fa-map-pin me-1"></i>{{ data.province.ville_secretariat }}
+              </span>
+            </div>
+            <div v-else class="sep-province-details">
+              <span v-if="data.localite?.type">
+                <i class="fas fa-tag me-1"></i>{{ localiteTypeLabel }}
+              </span>
+              <span v-if="data.localite?.province?.nom" class="sep-province-sep">
+                <i class="fas fa-map-marked-alt me-1"></i>{{ data.localite.province.nom }}
+              </span>
+              <span v-if="data.localite?.code">
+                <i class="fas fa-hashtag me-1"></i>{{ data.localite.code }}
               </span>
             </div>
           </div>
@@ -116,7 +127,7 @@
           </div>
           <div>
             <h3 class="sep-section-title">Actions rapides</h3>
-            <p class="sep-section-sub">Accès direct aux modules provinciaux</p>
+            <p class="sep-section-sub">Accès direct aux modules {{ scopeLabelPlural }}</p>
           </div>
         </div>
         <div class="sep-actions">
@@ -150,7 +161,7 @@
           </div>
           <div>
             <h3 class="sep-section-title">Indicateurs clés</h3>
-            <p class="sep-section-sub">Vue d'ensemble de la province</p>
+            <p class="sep-section-sub">Vue d'ensemble de {{ scopeLabelSentence }}</p>
           </div>
         </div>
         <div class="sep-metrics">
@@ -182,7 +193,7 @@
             <i class="fas fa-user-check"></i>
           </div>
           <div>
-            <h3 class="sep-section-title">Présence dans la province</h3>
+            <h3 class="sep-section-title">Présence dans {{ scopeLabelSentence }}</h3>
             <p class="sep-section-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }} présents aujourd'hui ({{ data.attendance?.today_rate ?? 0 }}%)</p>
           </div>
         </div>
@@ -190,7 +201,7 @@
           <!-- Global -->
           <div class="sep-presence-card sep-presence-global">
             <div class="sep-presence-card-head">
-              <i class="fas fa-globe-africa"></i> Province entière
+              <i class="fas fa-globe-africa"></i> {{ isLocalDashboard ? 'Localité entière' : 'Province entière' }}
             </div>
             <div class="sep-presence-big">{{ data.attendance?.today_rate ?? 0 }}%</div>
             <div class="sep-presence-sub">{{ data.attendance?.today_present ?? 0 }} / {{ data.attendance?.total_active_agents ?? 0 }}</div>
@@ -209,7 +220,7 @@
               <div class="sep-presence-fill" style="background:linear-gradient(90deg,#0ea5e9,#38bdf8);" :style="{ width: (data.attendance?.monthly_avg_rate ?? 0) + '%' }"></div>
             </div>
           </div>
-          <!-- Par organe dans la province -->
+          <!-- Par organe dans la structure -->
           <div v-for="o in presenceOrganes" :key="o.code" class="sep-presence-card sep-organe-clickable" @click="openProvDrilldown('presence')">
             <div class="sep-presence-card-head" :style="{ color: o.color }">
               <i class="fas" :class="o.icon"></i> {{ o.label }}
@@ -235,14 +246,14 @@
         </div>
       </div>
 
-      <!-- ═══ PLAN DE TRAVAIL SEP ═══ -->
+      <!-- ═══ PLAN DE TRAVAIL ═══ -->
       <div class="sep-section">
         <div class="sep-section-head">
           <div class="sep-section-icon" style="background:#fef3c7;color:#d97706;">
             <i class="fas fa-tasks"></i>
           </div>
           <div>
-            <h3 class="sep-section-title">Plan de travail {{ currentYear }} — niveau SEP</h3>
+            <h3 class="sep-section-title">Plan de travail {{ currentYear }} — niveau {{ planLevelLabel }}</h3>
             <p class="sep-section-sub">{{ data.plan_travail?.terminee ?? 0 }} / {{ data.plan_travail?.total ?? 0 }} activités terminées ({{ data.plan_travail?.avg_completion ?? 0 }}% avancement)</p>
           </div>
         </div>
@@ -296,7 +307,7 @@
           </div>
           <div>
             <h3 class="sep-section-title">Activités récentes</h3>
-            <p class="sep-section-sub">Dernières mises à jour provinciales</p>
+            <p class="sep-section-sub">Dernières mises à jour {{ isLocalDashboard ? 'locales' : 'provinciales' }}</p>
           </div>
         </div>
         <div class="sep-recent-grid">
@@ -512,7 +523,7 @@
           </div>
           <div>
             <h3 class="sep-section-title">Gestion des tâches</h3>
-            <p class="sep-section-sub">{{ data.taches?.total ?? 0 }} tâches dans la province</p>
+            <p class="sep-section-sub">{{ data.taches?.total ?? 0 }} tâches dans {{ scopeLabelSentence }}</p>
           </div>
         </div>
         <div class="sep-task-grid">
@@ -560,8 +571,8 @@
             <i class="fas fa-clipboard-list"></i>
           </div>
           <div>
-            <h3 class="sep-section-title">Tâches récentes — province</h3>
-            <p class="sep-section-sub">Dernières mises à jour des tâches dans la province</p>
+            <h3 class="sep-section-title">Tâches récentes — {{ isLocalDashboard ? 'localité' : 'province' }}</h3>
+            <p class="sep-section-sub">Dernières mises à jour des tâches dans {{ scopeLabelSentence }}</p>
           </div>
           <router-link :to="provinceTaskUrl()" class="sep-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
         </div>
@@ -617,12 +628,12 @@
           </div>
           <div>
             <h3 class="sep-section-title">Performance des agents</h3>
-            <p class="sep-section-sub">Réalisation des tâches dans la province</p>
+            <p class="sep-section-sub">Réalisation des tâches dans {{ scopeLabelSentence }}</p>
           </div>
         </div>
         <div v-if="!(data.agent_performance?.length)" class="sep-recent-empty" style="padding:2rem;">
           <div class="sep-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-users" style="color:#059669;"></i></div>
-          <span>Aucun agent actif dans la province</span>
+          <span>Aucun agent actif dans {{ scopeLabelSentence }}</span>
         </div>
         <div v-else class="sep-table-wrap">
           <table class="sep-perf-table">
@@ -772,7 +783,7 @@
                     </div>
                     <div v-else class="drill-empty">
                       <i class="fas fa-inbox"></i>
-                      <p>Aucun agent dans cette province</p>
+                      <p>Aucun agent dans {{ isLocalDashboard ? 'cette localité' : 'cette province' }}</p>
                     </div>
                   </template>
 
@@ -880,7 +891,7 @@
                         </div>
                       </div>
                     </template>
-                    <div v-else class="drill-empty"><i class="fas fa-inbox"></i><p>Aucune activité PTA dans cette province</p></div>
+                    <div v-else class="drill-empty"><i class="fas fa-inbox"></i><p>Aucune activité PTA dans {{ isLocalDashboard ? 'cette localité' : 'cette province' }}</p></div>
                   </template>
                 </template>
               </div>
@@ -1071,9 +1082,9 @@
         <div class="sep-footer-inner">
           <div class="sep-footer-left">
             <i class="fas fa-map-marked-alt"></i>
-            <span>Tableau de bord SEP</span>
+            <span>Tableau de bord {{ planLevelLabel }}</span>
           </div>
-          <div class="sep-footer-badge">Province · {{ data.province?.code ?? '' }}</div>
+          <div class="sep-footer-badge">{{ isLocalDashboard ? 'Localité' : 'Province' }} · {{ scopeEntity?.code ?? '' }}</div>
           <div>Mis à jour à {{ currentTime }}</div>
         </div>
       </div>
@@ -1133,6 +1144,26 @@ const loading = ref(true)
 const loadError = ref(null)
 const data = ref({})
 const currentYear = new Date().getFullYear()
+const props = defineProps({
+  mode: { type: String, default: 'province' },
+  endpoint: { type: String, default: '/dashboard/sep' },
+})
+
+const isLocalDashboard = computed(() => props.mode === 'local')
+const dashboardEndpoint = computed(() => props.endpoint || '/dashboard/sep')
+const dashboardRoleLabel = computed(() => isLocalDashboard.value ? 'Secrétariat Exécutif Local' : 'Secrétariat Exécutif Provincial')
+const planLevelLabel = computed(() => isLocalDashboard.value ? 'SEL' : 'SEP')
+const scopeEntity = computed(() => isLocalDashboard.value ? data.value.localite : data.value.province)
+const scopeName = computed(() => scopeEntity.value?.nom || '')
+const scopeLabelSentence = computed(() => isLocalDashboard.value ? 'la localité' : 'la province')
+const scopeLabelPlural = computed(() => isLocalDashboard.value ? 'locaux' : 'provinciaux')
+const loadingMessage = computed(() => isLocalDashboard.value ? 'Chargement du tableau de bord local...' : 'Chargement du tableau de bord provincial...')
+const drillTitle = computed(() => isLocalDashboard.value ? 'Voir détail localité' : 'Voir détail province')
+const localiteTypeLabel = computed(() => {
+  const type = data.value.localite?.type
+  if (!type) return ''
+  return type.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase())
+})
 
 // ─── CONTACT AGENT ───
 const selectedAgent = ref(null)
@@ -1239,20 +1270,39 @@ const provDrillData = ref(null)
 const provDrillSection = ref('effectifs')
 
 async function openProvDrilldown(section = 'effectifs') {
-  const provinceId = data.value.province?.id
-  if (!provinceId) return
+  const structureId = isLocalDashboard.value ? data.value.localite?.id : data.value.province?.id
+  if (!structureId) return
   provDrillOpen.value = true
   provDrillLoading.value = true
   provDrillData.value = null
   provDrillSection.value = section
   drillPresenceFilter.value = 'all'
   try {
-    const { data: result } = await client.get(`/dashboard/executive/province/${provinceId}`)
-    provDrillData.value = result.data ?? result
+    const url = isLocalDashboard.value
+      ? `/dashboard/executive/localite/${structureId}`
+      : `/dashboard/executive/province/${structureId}`
+    const { data: result } = await client.get(url)
+    const payload = result.data ?? result
+    provDrillData.value = isLocalDashboard.value ? normalizeLocaliteDrilldown(payload) : payload
   } catch (e) {
     provDrillData.value = null
   } finally {
     provDrillLoading.value = false
+  }
+}
+
+function normalizeLocaliteDrilldown(payload) {
+  return {
+    province: {
+      ...(payload.localite || {}),
+      ville_secretariat: payload.localite?.province?.nom || '',
+      nom_secretariat_executif: payload.localite?.type || '',
+    },
+    effectifs: payload.effectifs || {},
+    presence: payload.presence || {},
+    pta: payload.pta || {},
+    activites: payload.activites || [],
+    agents: payload.agents || [],
   }
 }
 
@@ -1288,17 +1338,20 @@ function presenceFilterTitle(total = 0) {
 }
 
 // ─── QUICK ACTIONS ───
-const quickActions = [
-  { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
-  { to: '/rh/agents', label: 'Gestion agents', desc: 'Agents de la province', icon: 'fa-users', color: '#0ea5e9', bg: '#e0f2fe' },
-  { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
-  { to: '/mailbox', label: 'Mail', desc: 'Boîte de réception', icon: 'fa-envelope', color: '#0284c7', bg: '#e0f2fe' },
-  { to: '/plan-travail', label: 'PTA provincial', desc: 'Suivi plan annuel SEP', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
-  { to: '/requests', label: 'Demandes', desc: 'Validation provinciale', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
-  { to: '/signalements', label: 'Signalements', desc: 'Alertes province', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
-  { to: '/rh/pointages/monthly', label: 'Pointages', desc: 'Présence province', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
-  { to: '/rh/communiques', label: 'Communiqués', desc: 'Informations officielles', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
-]
+const quickActions = computed(() => {
+  const scopeDesc = isLocalDashboard.value ? 'localité' : 'province'
+  return [
+    { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
+    { to: '/rh/agents', label: 'Gestion agents', desc: `Agents de la ${scopeDesc}`, icon: 'fa-users', color: '#0ea5e9', bg: '#e0f2fe' },
+    { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
+    { to: '/mailbox', label: 'Mail', desc: 'Boîte de réception', icon: 'fa-envelope', color: '#0284c7', bg: '#e0f2fe' },
+    { to: '/plan-travail', label: isLocalDashboard.value ? 'PTA local' : 'PTA provincial', desc: `Suivi plan annuel ${planLevelLabel.value}`, icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
+    { to: '/requests', label: 'Demandes', desc: isLocalDashboard.value ? 'Validation locale' : 'Validation provinciale', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
+    { to: '/signalements', label: 'Signalements', desc: isLocalDashboard.value ? 'Alertes locales' : 'Alertes province', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
+    { to: '/rh/pointages/monthly', label: 'Pointages', desc: isLocalDashboard.value ? 'Présence locale' : 'Présence province', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
+    { to: '/rh/communiques', label: 'Communiqués', desc: 'Informations officielles', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
+  ]
+})
 
 const onlineAgents = computed(() => data.value.online_agents || [])
 
@@ -1345,13 +1398,20 @@ const metrics = computed(() => [
 
 // ─── PRÉSENCE PAR ORGANE ───
 function provinceTaskUrl(statut = null) {
-  const params = new URLSearchParams({ scope: 'province' })
+  const params = new URLSearchParams({ scope: isLocalDashboard.value ? 'localite' : 'province' })
+  if (isLocalDashboard.value && data.value.localite?.id) params.set('localite_id', data.value.localite.id)
   if (statut) params.set('statut', statut)
   return `/taches?${params.toString()}`
 }
 
 const presenceOrganes = computed(() => {
   const att = data.value.attendance?.by_organe || {}
+  if (isLocalDashboard.value) {
+    return [
+      { code: 'SEL', label: 'SEL (Local)', icon: 'fa-map-pin', color: '#0d9488', today_present: att.sel?.today_present ?? 0, today_rate: att.sel?.today_rate ?? 0, monthly_rate: att.sel?.monthly_avg_rate ?? 0, total_active: att.sel?.total_active_agents ?? 0 },
+    ]
+  }
+
   return [
     { code: 'SEP', label: 'SEP (Provincial)', icon: 'fa-map-marked-alt', color: '#0ea5e9', today_present: att.sep?.today_present ?? 0, today_rate: att.sep?.today_rate ?? 0, monthly_rate: att.sep?.monthly_avg_rate ?? 0, total_active: att.sep?.total_active_agents ?? 0 },
     { code: 'SEL', label: 'SEL (Local)', icon: 'fa-map-pin', color: '#0d9488', today_present: att.sel?.today_present ?? 0, today_rate: att.sel?.today_rate ?? 0, monthly_rate: att.sel?.monthly_avg_rate ?? 0, total_active: att.sel?.total_active_agents ?? 0 },
@@ -1430,10 +1490,10 @@ function sepPerfClass(pct) {
 
 onMounted(async () => {
   try {
-    const { data: result } = await client.get('/dashboard/sep')
+    const { data: result } = await client.get(dashboardEndpoint.value)
     data.value = result
   } catch (e) {
-    loadError.value = e.response?.data?.message || 'Impossible de charger le tableau de bord provincial.'
+    loadError.value = e.response?.data?.message || (isLocalDashboard.value ? 'Impossible de charger le tableau de bord local.' : 'Impossible de charger le tableau de bord provincial.')
   } finally {
     loading.value = false
   }

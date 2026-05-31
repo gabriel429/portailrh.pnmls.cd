@@ -18,9 +18,9 @@
             </div>
             <div class="caf-hero-role">
               <i class="fas fa-landmark me-1"></i>
-              Cellule Administrative et Financière
-              <span v-if="data.province?.nom" class="caf-hero-province-badge">
-                {{ data.province.nom }}
+              {{ dashboardRoleLabel }}
+              <span v-if="scopeName" class="caf-hero-province-badge">
+                {{ scopeName }}
               </span>
             </div>
             <div class="caf-hero-date">
@@ -77,20 +77,20 @@
       </div>
     </div>
 
-    <LoadingSpinner v-if="loading" message="Chargement du tableau de bord CAF..." />
+    <LoadingSpinner v-if="loading" :message="loadingMessage" />
 
     <div v-else-if="loadError" class="alert alert-warning mx-3">
       <i class="fas fa-exclamation-triangle me-2"></i>{{ loadError }}
     </div>
 
     <template v-else>
-      <!-- ═══ PROVINCE INFO ═══ -->
-      <div class="caf-section" v-if="data.province">
+      <!-- ═══ STRUCTURE INFO ═══ -->
+      <div class="caf-section" v-if="scopeEntity">
         <div class="caf-province-card">
-          <div class="caf-province-icon"><i class="fas fa-landmark"></i></div>
+          <div class="caf-province-icon"><i class="fas" :class="isLocalDashboard ? 'fa-map-pin' : 'fa-landmark'"></i></div>
           <div class="caf-province-info">
-            <div class="caf-province-name">{{ data.province.nom }}</div>
-            <div class="caf-province-details">
+            <div class="caf-province-name">{{ scopeName }}</div>
+            <div v-if="!isLocalDashboard" class="caf-province-details">
               <span v-if="data.province.nom_gouverneur">
                 <i class="fas fa-user-tie me-1"></i>Gouverneur : {{ data.province.nom_gouverneur }}
               </span>
@@ -99,6 +99,17 @@
               </span>
               <span v-if="data.province.ville_secretariat">
                 <i class="fas fa-map-pin me-1"></i>{{ data.province.ville_secretariat }}
+              </span>
+            </div>
+            <div v-else class="caf-province-details">
+              <span v-if="data.localite?.type">
+                <i class="fas fa-tag me-1"></i>{{ localiteTypeLabel }}
+              </span>
+              <span v-if="data.localite?.province?.nom" class="caf-province-sep">
+                <i class="fas fa-map-marked-alt me-1"></i>{{ data.localite.province.nom }}
+              </span>
+              <span v-if="data.localite?.code">
+                <i class="fas fa-hashtag me-1"></i>{{ data.localite.code }}
               </span>
             </div>
           </div>
@@ -113,7 +124,7 @@
           </div>
           <div>
             <h3 class="caf-section-title">Actions rapides</h3>
-            <p class="caf-section-sub">Accès direct aux modules administratifs et financiers</p>
+            <p class="caf-section-sub">Accès direct aux modules {{ actionScopeLabel }}</p>
           </div>
         </div>
         <div class="caf-actions">
@@ -147,7 +158,7 @@
           </div>
           <div>
             <h3 class="caf-section-title">Indicateurs clés</h3>
-            <p class="caf-section-sub">Vue d'ensemble — {{ data.province?.nom }}</p>
+            <p class="caf-section-sub">Vue d'ensemble — {{ scopeName }}</p>
           </div>
         </div>
         <div class="caf-metrics">
@@ -196,14 +207,14 @@
         </div>
       </div>
 
-      <!-- ═══ PLAN DE TRAVAIL CAF ═══ -->
+      <!-- ═══ PLAN DE TRAVAIL ═══ -->
       <div class="caf-section">
         <div class="caf-section-head">
           <div class="caf-section-icon" style="background:#fef3c7;color:#d97706;">
             <i class="fas fa-bullseye"></i>
           </div>
           <div>
-            <h3 class="caf-section-title">Plan de Travail CAF {{ currentYear }}</h3>
+            <h3 class="caf-section-title">Plan de Travail {{ planLevelLabel }} {{ currentYear }}</h3>
             <p class="caf-section-sub">{{ data.plan_travail?.total ?? 0 }} activités planifiées</p>
           </div>
           <router-link to="/plan-travail" class="caf-section-link">Tout voir <i class="fas fa-arrow-right"></i></router-link>
@@ -565,6 +576,24 @@ const loading = ref(true)
 const loadError = ref(null)
 const data = ref({})
 const currentYear = new Date().getFullYear()
+const props = defineProps({
+  mode: { type: String, default: 'province' },
+  endpoint: { type: String, default: '/dashboard/caf' },
+})
+
+const isLocalDashboard = computed(() => props.mode === 'local')
+const dashboardEndpoint = computed(() => props.endpoint || '/dashboard/caf')
+const dashboardRoleLabel = computed(() => isLocalDashboard.value ? 'RH Local' : 'Cellule Administrative et Financière')
+const planLevelLabel = computed(() => isLocalDashboard.value ? 'SEL' : 'CAF')
+const scopeEntity = computed(() => isLocalDashboard.value ? data.value.localite : data.value.province)
+const scopeName = computed(() => scopeEntity.value?.nom || '')
+const loadingMessage = computed(() => isLocalDashboard.value ? 'Chargement du tableau de bord RH local...' : 'Chargement du tableau de bord CAF...')
+const actionScopeLabel = computed(() => isLocalDashboard.value ? 'RH locaux' : 'administratifs et financiers')
+const localiteTypeLabel = computed(() => {
+  const type = data.value.localite?.type
+  if (!type) return ''
+  return type.replaceAll('_', ' ').replace(/\b\w/g, letter => letter.toUpperCase())
+})
 
 // ─── IDENTITÉ ────────────────────────────────────────────────────────────────
 const photoIndex = ref(0)
@@ -643,19 +672,38 @@ const provDrillData = ref(null)
 const provDrillSection = ref('effectifs')
 
 async function openProvDrilldown(section = 'effectifs') {
-  const provinceId = data.value.province?.id
-  if (!provinceId) return
+  const structureId = isLocalDashboard.value ? data.value.localite?.id : data.value.province?.id
+  if (!structureId) return
   provDrillOpen.value = true
   provDrillLoading.value = true
   provDrillData.value = null
   provDrillSection.value = section
   try {
-    const { data: result } = await client.get(`/dashboard/executive/province/${provinceId}`)
-    provDrillData.value = result.data ?? result
+    const url = isLocalDashboard.value
+      ? `/dashboard/executive/localite/${structureId}`
+      : `/dashboard/executive/province/${structureId}`
+    const { data: result } = await client.get(url)
+    const payload = result.data ?? result
+    provDrillData.value = isLocalDashboard.value ? normalizeLocaliteDrilldown(payload) : payload
   } catch {
     provDrillData.value = null
   } finally {
     provDrillLoading.value = false
+  }
+}
+
+function normalizeLocaliteDrilldown(payload) {
+  return {
+    province: {
+      ...(payload.localite || {}),
+      ville_secretariat: payload.localite?.province?.nom || '',
+      nom_secretariat_executif: payload.localite?.type || '',
+    },
+    effectifs: payload.effectifs || {},
+    presence: payload.presence || {},
+    pta: payload.pta || {},
+    activites: payload.activites || [],
+    agents: payload.agents || [],
   }
 }
 function closeProvDrilldown() {
@@ -665,17 +713,20 @@ function closeProvDrilldown() {
 }
 
 // ─── QUICK ACTIONS ────────────────────────────────────────────────────────────
-const quickActions = [
-  { action: 'onlineAgents',       label: 'Agents en ligne', desc: 'Actifs sur 30 minutes',   icon: 'fa-user-clock',      color: '#16a34a', bg: '#dcfce7' },
-  { to: '/rh/agents',             label: 'Agents',          desc: 'Agents de la province',   icon: 'fa-users',           color: '#0d9488', bg: '#d1fae5' },
-  { to: '/carnet-adresses',       label: "Carnet d'adresse", desc: 'Contacts par poste',      icon: 'fa-address-book',    color: '#2563eb', bg: '#dbeafe' },
-  { to: '/mailbox',               label: 'Mail',             desc: 'Boîte de réception',      icon: 'fa-envelope',        color: '#0284c7', bg: '#e0f2fe' },
-  { to: '/plan-travail',          label: 'PTA CAF',         desc: 'Plan de travail annuel',  icon: 'fa-tasks',           color: '#d97706', bg: '#fef3c7' },
-  { to: '/requests',              label: 'Demandes',        desc: 'Validation administrative', icon: 'fa-paper-plane',   color: '#059669', bg: '#d1fae5' },
-  { to: '/signalements',          label: 'Signalements',    desc: 'Alertes province',         icon: 'fa-flag',            color: '#dc2626', bg: '#fee2e2' },
-  { to: '/rh/pointages/monthly',  label: 'Pointages',       desc: 'Présence province',        icon: 'fa-clock',           color: '#7c3aed', bg: '#ede9fe' },
-  { to: '/rh/communiques',        label: 'Communiqués',     desc: 'Informations officielles', icon: 'fa-bullhorn',        color: '#0891b2', bg: '#cffafe' },
-]
+const quickActions = computed(() => {
+  const scopeDesc = isLocalDashboard.value ? 'localité' : 'province'
+  return [
+    { action: 'onlineAgents',       label: 'Agents en ligne', desc: 'Actifs sur 30 minutes',   icon: 'fa-user-clock',      color: '#16a34a', bg: '#dcfce7' },
+    { to: '/rh/agents',             label: 'Agents',          desc: `Agents de la ${scopeDesc}`, icon: 'fa-users',           color: '#0d9488', bg: '#d1fae5' },
+    { to: '/carnet-adresses',       label: "Carnet d'adresse", desc: 'Contacts par poste',      icon: 'fa-address-book',    color: '#2563eb', bg: '#dbeafe' },
+    { to: '/mailbox',               label: 'Mail',             desc: 'Boîte de réception',      icon: 'fa-envelope',        color: '#0284c7', bg: '#e0f2fe' },
+    { to: '/plan-travail',          label: isLocalDashboard.value ? 'PTA local' : 'PTA CAF', desc: 'Plan de travail annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
+    { to: '/requests',              label: 'Demandes',        desc: isLocalDashboard.value ? 'Validation locale' : 'Validation administrative', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
+    { to: '/signalements',          label: 'Signalements',    desc: isLocalDashboard.value ? 'Alertes locales' : 'Alertes province', icon: 'fa-flag', color: '#dc2626', bg: '#fee2e2' },
+    { to: '/rh/pointages/monthly',  label: 'Pointages',       desc: isLocalDashboard.value ? 'Présence locale' : 'Présence province', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
+    { to: '/rh/communiques',        label: 'Communiqués',     desc: 'Informations officielles', icon: 'fa-bullhorn',        color: '#0891b2', bg: '#cffafe' },
+  ]
+})
 
 const onlineAgents = computed(() => data.value.online_agents || [])
 
@@ -717,6 +768,12 @@ const metrics = computed(() => [
 // ─── PRÉSENCE PAR ORGANE ──────────────────────────────────────────────────────
 const presenceOrganes = computed(() => {
   const att = data.value.attendance?.by_organe || {}
+  if (isLocalDashboard.value) {
+    return [
+      { code: 'SEL', label: 'SEL (Local)', icon: 'fa-map-pin', color: '#0d9488', today_present: att.sel?.today_present ?? 0, today_rate: att.sel?.today_rate ?? 0, monthly_rate: att.sel?.monthly_avg_rate ?? 0, total_active: att.sel?.total_active_agents ?? 0 },
+    ]
+  }
+
   return [
     { code: 'SEP', label: 'SEP (Provincial)', icon: 'fa-map-marked-alt', color: '#0ea5e9', today_present: att.sep?.today_present ?? 0, today_rate: att.sep?.today_rate ?? 0, monthly_rate: att.sep?.monthly_avg_rate ?? 0, total_active: att.sep?.total_active_agents ?? 0 },
     { code: 'SEL', label: 'SEL (Local)',       icon: 'fa-map-pin',        color: '#0d9488', today_present: att.sel?.today_present ?? 0, today_rate: att.sel?.today_rate ?? 0, monthly_rate: att.sel?.monthly_avg_rate ?? 0, total_active: att.sel?.total_active_agents ?? 0 },
@@ -747,10 +804,10 @@ async function loadData() {
   loading.value = true
   loadError.value = null
   try {
-    const res = await client.get('/dashboard/caf')
+    const res = await client.get(dashboardEndpoint.value)
     data.value = res.data?.data ?? res.data ?? {}
   } catch (err) {
-    loadError.value = err?.response?.data?.message ?? 'Impossible de charger le tableau de bord CAF.'
+    loadError.value = err?.response?.data?.message ?? (isLocalDashboard.value ? 'Impossible de charger le tableau de bord RH local.' : 'Impossible de charger le tableau de bord CAF.')
   } finally {
     loading.value = false
   }

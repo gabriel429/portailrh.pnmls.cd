@@ -144,6 +144,39 @@ export const useAuthStore = defineStore('auth', {
 
             return organe.includes('provincial')
         },
+        isSEL(state) {
+            const role = normalizedRole(state)
+            if (role === 'sel') return true
+
+            const organe = normalizedOrgane(state)
+            const profile = normalizedAgentProfile(state)
+
+            return organe.includes('local')
+                && (
+                    profile.includes('secretaire executif local')
+                    || profile.includes('(sel)')
+                )
+        },
+        isRhLocal(state) {
+            const role = normalizedRole(state)
+            if ([
+                'rh local',
+                'aaf local',
+                'assistant administratif et financier',
+            ].includes(role)) {
+                return true
+            }
+
+            const organe = normalizedOrgane(state)
+            const profile = normalizedAgentProfile(state)
+
+            return organe.includes('local')
+                && (
+                    profile.includes('rh local')
+                    || profile.includes('assistant administratif et financier')
+                    || profile.includes('aaf local')
+                )
+        },
         isProvincialOperationalAssistant() {
             return this.isSEP && normalizedRole(this.$state) === 'secom'
         },
@@ -248,7 +281,7 @@ export const useAuthStore = defineStore('auth', {
         },
         hasAdminAccess(state) {
             if (state.user?.is_super_admin) return true
-            return this.isRH || this.isAdminNT || this.isSEN || this.isSEP || this.isRhOperationalAssistant
+            return this.isRH || this.isAdminNT || this.isSEN || this.isSEP || this.isSEL || this.isRhLocal || this.isRhOperationalAssistant
         },
         permissions(state) {
             return state.user?.permissions || []
