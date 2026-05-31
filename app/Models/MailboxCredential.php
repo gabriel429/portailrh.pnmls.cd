@@ -18,6 +18,7 @@ class MailboxCredential extends Model
         'smtp_host',
         'smtp_port',
         'smtp_encryption',
+        'signature',
         'last_connected_at',
     ];
 

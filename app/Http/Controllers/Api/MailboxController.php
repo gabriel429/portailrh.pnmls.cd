@@ -37,6 +37,7 @@ class MailboxController extends ApiController
             'imap_host' => ['required', 'string', 'max:255'],
             'imap_port' => ['required', 'integer', 'between:1,65535'],
             'imap_encryption' => ['required', 'string', 'in:ssl,tls,none'],
+            'signature' => ['nullable', 'string', 'max:5000'],
         ], [
             'password.required' => 'Le mot de passe de la boite mail est requis.',
         ]);
@@ -68,6 +69,9 @@ class MailboxController extends ApiController
             'smtp_host' => config('mailbox.smtp.host'),
             'smtp_port' => config('mailbox.smtp.port'),
             'smtp_encryption' => config('mailbox.smtp.encryption'),
+            'signature' => $this->normalizeSignature(
+                $validated['signature'] ?? $this->defaultSignatureFor($user, mb_strtolower($validated['email'] ?? $validated['username'])),
+            ),
             'last_connected_at' => now(),
         ];
 
@@ -315,6 +319,12 @@ class MailboxController extends ApiController
         $cc = collect($validated['cc'] ?? [])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->diff($to)->values();
         $bcc = collect($validated['bcc'] ?? [])->map(fn ($email) => mb_strtolower(trim($email)))->unique()->diff($to)->diff($cc)->values();
         $attachments = collect($request->file('attachments', []))->filter()->values();
+        $senderName = $this->senderDisplayName($request->user());
+        $mailBody = $this->bodyWithSignature(
+            (string) $validated['body'],
+            $credential->signature ?: $this->defaultSignatureFor($request->user(), $credential->email),
+        );
+        $htmlBody = $this->mailHtmlBody($mailBody);
 
         config([
             'mail.mailers.mailbox' => [
@@ -331,9 +341,9 @@ class MailboxController extends ApiController
         ]);
 
         try {
-            Mail::mailer('mailbox')->raw($validated['body'], function ($message) use ($credential, $validated, $to, $cc, $bcc, $attachments) {
+            Mail::mailer('mailbox')->html($htmlBody, function ($message) use ($credential, $validated, $to, $cc, $bcc, $attachments, $senderName) {
                 $message
-                    ->from($credential->email, config('app.name', 'E-PNMLS'))
+                    ->from($credential->email, $senderName)
                     ->to($to->all())
                     ->subject($validated['subject']);
 
@@ -367,7 +377,7 @@ class MailboxController extends ApiController
                 'recipient_name' => $recipientEmail,
                 'recipient_email' => mb_strtolower($recipientEmail),
                 'subject' => $validated['subject'],
-                'body' => $validated['body'],
+                'body' => $mailBody,
                 'attachment_name' => $this->attachmentHistoryLabel($attachments),
                 'sent_at' => now(),
             ]);
@@ -424,11 +434,16 @@ class MailboxController extends ApiController
     private function settingsPayload(User $user, ?MailboxCredential $credential): array
     {
         $defaultEmail = $this->defaultEmailFor($user);
+        $accountEmail = $credential?->email ?: $defaultEmail;
+        $defaultSignature = $this->defaultSignatureFor($user, $accountEmail);
 
         return [
             'has_credentials' => (bool) $credential,
-            'account_email' => $credential?->email ?: $defaultEmail,
+            'account_email' => $accountEmail,
             'username' => $credential?->imap_username ?: $defaultEmail,
+            'sender_name' => $this->senderDisplayName($user),
+            'signature' => $credential?->signature ?: $defaultSignature,
+            'default_signature' => $defaultSignature,
             'imap' => [
                 'host' => $credential?->imap_host ?: config('mailbox.imap.host'),
                 'port' => $credential?->imap_port ?: config('mailbox.imap.port'),
@@ -436,6 +451,229 @@ class MailboxController extends ApiController
             ],
             'last_connected_at' => $credential?->last_connected_at?->toIso8601String(),
         ];
+    }
+
+    private function senderDisplayName(User $user): string
+    {
+        $user->loadMissing('agent');
+        $agent = $user->agent;
+
+        $agentName = trim(collect([
+            $agent?->prenom,
+            $agent?->nom,
+            $agent?->postnom,
+        ])->filter(fn ($part) => filled($part))->join(' '));
+
+        if ($agentName !== '') {
+            return mb_strimwidth($agentName, 0, 120, '...');
+        }
+
+        $userName = trim((string) $user->name);
+
+        if ($userName !== '') {
+            return mb_strimwidth($userName, 0, 120, '...');
+        }
+
+        return config('app.name', 'E-PNMLS');
+    }
+
+    private function defaultSignatureFor(User $user, ?string $accountEmail = null): string
+    {
+        $user->loadMissing(['agent', 'role']);
+        $agent = $user->agent;
+        $name = $this->senderDisplayName($user);
+        $function = trim((string) ($agent?->fonction ?: $agent?->poste_actuel ?: $user->role?->nom_role));
+        $workEmail = collect([
+            $accountEmail,
+            $agent?->email_professionnel,
+            $user->email,
+        ])->map(fn ($email) => mb_strtolower(trim((string) $email)))
+            ->first(fn ($email) => $email !== '');
+        $privateEmail = collect([
+            $agent?->email_prive,
+            $agent?->email,
+            $user->email,
+        ])->map(fn ($email) => mb_strtolower(trim((string) $email)))
+            ->first(fn ($email) => $email !== '' && $email !== $workEmail);
+        $phones = collect([
+            $agent?->telephone_professionnel,
+            $agent?->telephone,
+            $agent?->telephone_prive,
+        ])->map(fn ($phone) => trim((string) $phone))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $this->normalizeSignature(implode("\n", array_filter([
+            'Cordialement,',
+            '',
+            $name,
+            $function,
+            $workEmail ? 'Email professionnel : '.$workEmail : null,
+            $privateEmail ? 'Email personnel : '.$privateEmail : null,
+            $phones->isNotEmpty() ? 'Telephone : '.$phones->join(' / ') : null,
+        ], fn ($line) => $line !== null)));
+    }
+
+    private function normalizeSignature(?string $signature): string
+    {
+        $signature = str_replace(["\r\n", "\r"], "\n", (string) $signature);
+        $signature = preg_replace('/\A-- ?\n/', '', trim($signature)) ?? trim($signature);
+        $signature = preg_replace("/\n{3,}/", "\n\n", $signature) ?? $signature;
+
+        return trim($signature);
+    }
+
+    private function bodyWithSignature(string $body, ?string $signature): string
+    {
+        $body = trim(str_replace(["\r\n", "\r"], "\n", $body));
+        $signature = $this->normalizeSignature($signature);
+
+        if ($signature === '' || preg_match('/(?:^|\n)-- ?\n/', $body)) {
+            return $body;
+        }
+
+        return trim($body."\n\n-- \n".$signature);
+    }
+
+    private function mailHtmlBody(string $body): string
+    {
+        [$message, $signature] = $this->splitOutgoingSignature($body);
+        $contentHtml = $this->plainTextToHtml($message);
+        $signatureHtml = $this->signatureHtml($signature);
+
+        if ($contentHtml === '') {
+            $contentHtml = '<div style="min-height:18px"></div>';
+        }
+
+        return '<!doctype html><html><body style="margin:0;padding:0;background:#ffffff;">'
+            . '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1f2937;padding:4px 0;">'
+            . $contentHtml
+            . $signatureHtml
+            . '</div></body></html>';
+    }
+
+    private function splitOutgoingSignature(string $body): array
+    {
+        $body = str_replace(["\r\n", "\r"], "\n", $body);
+
+        if (preg_match('/(?:^|\n)-- ?\n/', $body, $match, PREG_OFFSET_CAPTURE)) {
+            $start = $match[0][1];
+            $delimiterLength = strlen($match[0][0]);
+
+            return [
+                trim(substr($body, 0, $start)),
+                $this->normalizeSignature(substr($body, $start + $delimiterLength)),
+            ];
+        }
+
+        return [trim($body), ''];
+    }
+
+    private function plainTextToHtml(string $text): string
+    {
+        $text = trim(str_replace(["\r\n", "\r"], "\n", $text));
+
+        if ($text === '') {
+            return '';
+        }
+
+        $blocks = preg_split("/\n{2,}/", $text) ?: [];
+
+        return collect($blocks)
+            ->map(function (string $block) {
+                $lines = array_map(fn ($line) => $this->linkifiedText($line), explode("\n", trim($block)));
+
+                return '<p style="margin:0 0 12px;">'.implode('<br>', $lines).'</p>';
+            })
+            ->join('');
+    }
+
+    private function signatureHtml(string $signature): string
+    {
+        $lines = collect(explode("\n", $this->normalizeSignature($signature)))
+            ->map(fn ($line) => trim($line))
+            ->filter(fn ($line) => $line !== '')
+            ->values();
+
+        if ($lines->isEmpty()) {
+            return '';
+        }
+
+        $greeting = null;
+        $first = mb_strtolower($lines->first());
+
+        if (str_starts_with($first, 'cordialement') || str_starts_with($first, 'bien a vous')) {
+            $greeting = $lines->shift();
+        }
+
+        $name = $lines->shift();
+        $role = $lines->isNotEmpty() && ! $this->isSignatureContactLine($lines->first())
+            ? $lines->shift()
+            : null;
+
+        $html = '<div style="margin-top:24px;padding-top:14px;border-top:1px solid #dbe8ef;max-width:560px;">';
+
+        if ($greeting) {
+            $html .= '<div style="margin-bottom:10px;color:#475569;">'.$this->linkifiedText($greeting).'</div>';
+        }
+
+        if ($name) {
+            $html .= '<div style="font-size:15px;font-weight:700;color:#075985;">'.$this->linkifiedText($name).'</div>';
+        }
+
+        if ($role) {
+            $html .= '<div style="margin-top:2px;color:#334155;font-weight:600;">'.$this->linkifiedText($role).'</div>';
+        }
+
+        foreach ($lines as $line) {
+            $html .= '<div style="margin-top:3px;color:#64748b;font-size:13px;">'.$this->linkifiedText($line).'</div>';
+        }
+
+        return $html.'</div>';
+    }
+
+    private function isSignatureContactLine(string $line): bool
+    {
+        $line = mb_strtolower($line);
+
+        return str_contains($line, '@')
+            || str_contains($line, 'email')
+            || str_contains($line, 'mail')
+            || str_contains($line, 'tel')
+            || str_contains($line, 'phone');
+    }
+
+    private function linkifiedText(string $text): string
+    {
+        $pattern = '/https?:\/\/[^\s<>()]+|www\.[^\s<>()]+|[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i';
+
+        if (! preg_match_all($pattern, $text, $matches, PREG_OFFSET_CAPTURE)) {
+            return e($text);
+        }
+
+        $html = '';
+        $offset = 0;
+
+        foreach ($matches[0] as [$match, $position]) {
+            $html .= e(substr($text, $offset, $position - $offset));
+            $tail = '';
+            $value = $match;
+
+            while ($value !== '' && preg_match('/[.,;:]$/', $value)) {
+                $tail = substr($value, -1).$tail;
+                $value = substr($value, 0, -1);
+            }
+
+            $href = str_contains($value, '@')
+                ? 'mailto:'.$value
+                : (str_starts_with(mb_strtolower($value), 'www.') ? 'https://'.$value : $value);
+
+            $html .= '<a href="'.e($href).'" style="color:#0369a1;text-decoration:none;border-bottom:1px solid rgba(3,105,161,.28);">'.e($value).'</a>'.e($tail);
+            $offset = $position + strlen($match);
+        }
+
+        return $html.e(substr($text, $offset));
     }
 
     private function defaultEmailFor(User $user): string

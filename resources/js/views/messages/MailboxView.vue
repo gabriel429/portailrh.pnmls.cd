@@ -59,6 +59,28 @@
           </select>
         </label>
 
+        <div class="mailbox-settings-signature">
+          <label>
+            <span>Signature automatique</span>
+            <textarea v-model="settingsForm.signature" rows="8" maxlength="5000"></textarea>
+          </label>
+          <aside class="mailbox-signature-preview">
+            <div class="mailbox-signature-preview-head">
+              <span>Apercu</span>
+              <button type="button" @click="resetSignatureFromDefault">
+                <i class="fas fa-wand-magic-sparkles"></i>
+                Regenerer
+              </button>
+            </div>
+            <div class="mailbox-signature-card">
+              <div v-if="signaturePreview.greeting" class="mailbox-signature-greeting">{{ signaturePreview.greeting }}</div>
+              <div class="mailbox-signature-name">{{ signaturePreview.name }}</div>
+              <div v-if="signaturePreview.role" class="mailbox-signature-role">{{ signaturePreview.role }}</div>
+              <div v-for="line in signaturePreview.details" :key="line" class="mailbox-signature-detail">{{ line }}</div>
+            </div>
+          </aside>
+        </div>
+
         <div v-if="settingsError" class="mailbox-alert mailbox-alert-danger">
           <i class="fas fa-triangle-exclamation"></i>
           {{ settingsError }}
@@ -719,7 +741,7 @@
           </label>
           <label class="mailbox-compose-body">
             <span>Message</span>
-            <textarea v-model.trim="composeForm.body" rows="12" required></textarea>
+            <textarea v-model="composeForm.body" rows="12" required></textarea>
           </label>
 
           <div class="mailbox-attachments">
@@ -825,6 +847,7 @@ const settingsForm = reactive({
   imap_host: 'camulus.o2switch.net',
   imap_port: 993,
   imap_encryption: 'ssl',
+  signature: '',
 })
 
 const composeForm = reactive({
@@ -879,6 +902,7 @@ const hasActionTarget = computed(() => actionMessages.value.length > 0)
 const readActionLabel = computed(() => actionMessages.value.some(message => message.unread) ? 'Marquer lu' : 'Non lu')
 const flagActionLabel = computed(() => actionMessages.value.some(message => !message.flagged) ? 'Etoile' : 'Retirer etoile')
 const readerBodyBlocks = computed(() => formatMailBody(selectedMessage.value?.body || ''))
+const signaturePreview = computed(() => parseSignaturePreview(settingsForm.signature))
 const contactOptions = computed(() => {
   const contacts = []
   const seen = new Set()
@@ -997,6 +1021,7 @@ function hydrateSettingsForm(payload) {
   settingsForm.imap_host = payload?.imap?.host || 'camulus.o2switch.net'
   settingsForm.imap_port = payload?.imap?.port || 993
   settingsForm.imap_encryption = payload?.imap?.encryption || 'ssl'
+  settingsForm.signature = payload?.signature || payload?.default_signature || ''
 }
 
 async function loadSettings() {
@@ -1031,6 +1056,7 @@ async function saveMailboxSettings() {
       imap_host: settingsForm.imap_host,
       imap_port: settingsForm.imap_port,
       imap_encryption: settingsForm.imap_encryption,
+      signature: normalizeSignatureText(settingsForm.signature),
     }
 
     if (settingsForm.password) {
@@ -1050,6 +1076,57 @@ async function saveMailboxSettings() {
   } finally {
     savingSettings.value = false
   }
+}
+
+function resetSignatureFromDefault() {
+  settingsForm.signature = settings.value?.default_signature || ''
+}
+
+function normalizeSignatureText(value) {
+  return String(value || '')
+    .replace(/\r\n?/g, '\n')
+    .replace(/^-- ?\n/, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
+function parseSignaturePreview(value) {
+  const lines = normalizeSignatureText(value)
+    .split('\n')
+    .map(line => line.trim())
+    .filter(Boolean)
+
+  let greeting = ''
+
+  if (/^(cordialement|bien a vous)/i.test(lines[0] || '')) {
+    greeting = lines.shift()
+  }
+
+  const name = lines.shift() || settings.value?.sender_name || 'E-PNMLS'
+  const role = lines.length && !isSignatureContactLine(lines[0]) ? lines.shift() : ''
+
+  return {
+    greeting,
+    name,
+    role,
+    details: lines,
+  }
+}
+
+function isSignatureContactLine(line) {
+  const value = normalizeText(line)
+
+  return value.includes('@')
+    || value.includes('email')
+    || value.includes('mail')
+    || value.includes('tel')
+    || value.includes('phone')
+}
+
+function composeSignatureBlock() {
+  const signature = normalizeSignatureText(settings.value?.signature || settingsForm.signature)
+
+  return signature ? `\n\n-- \n${signature}` : ''
 }
 
 async function loadFolders() {
@@ -1376,6 +1453,9 @@ async function sendMail() {
 function openComposer() {
   closeMobileMenu()
   composeError.value = ''
+  if (!composerOpen.value && !composeForm.body) {
+    composeForm.body = composeSignatureBlock()
+  }
   composerOpen.value = true
   window.setTimeout(() => focusRecipient('to'), 80)
 }
@@ -1385,7 +1465,7 @@ function resetComposeForm() {
   composeForm.cc = []
   composeForm.bcc = []
   composeForm.subject = ''
-  composeForm.body = ''
+  composeForm.body = composeSignatureBlock()
   composeForm.attachments = []
 
   if (attachmentInput.value) {
@@ -1409,7 +1489,7 @@ function replyToSelected() {
   composeForm.subject = selectedMessage.value.subject?.startsWith('Re:')
     ? selectedMessage.value.subject
     : `Re: ${selectedMessage.value.subject || ''}`.trim()
-  composeForm.body = `\n\n--- Message original ---\n${selectedMessage.value.body || ''}`
+  composeForm.body = `${composeSignatureBlock()}\n\n--- Message original ---\n${selectedMessage.value.body || ''}`
   openComposer()
 }
 
@@ -1419,7 +1499,7 @@ function forwardSelected() {
   composeForm.subject = selectedMessage.value.subject?.startsWith('Tr:')
     ? selectedMessage.value.subject
     : `Tr: ${selectedMessage.value.subject || ''}`.trim()
-  composeForm.body = `\n\n--- Message transfere ---\nDe: ${selectedMessage.value.from}\nDate: ${formatDate(selectedMessage.value.date)}\n\n${selectedMessage.value.body || ''}`
+  composeForm.body = `${composeSignatureBlock()}\n\n--- Message transfere ---\nDe: ${selectedMessage.value.from}\nDate: ${formatDate(selectedMessage.value.date)}\n\n${selectedMessage.value.body || ''}`
   openComposer()
 }
 
@@ -2329,6 +2409,7 @@ onBeforeUnmount(() => {
 .mailbox-search input,
 .mailbox-settings-form input,
 .mailbox-settings-form select,
+.mailbox-settings-form textarea,
 .mailbox-compose-form input,
 .mailbox-compose-form textarea,
 .mailbox-move select {
@@ -2970,9 +3051,16 @@ onBeforeUnmount(() => {
 
 .mailbox-settings-form input,
 .mailbox-settings-form select,
+.mailbox-settings-form textarea,
 .mailbox-compose-form input {
   min-height: 42px;
   padding: 0 12px;
+}
+
+.mailbox-settings-form textarea {
+  min-height: 178px;
+  padding: 12px;
+  resize: vertical;
 }
 
 .mailbox-compose-form textarea {
@@ -2983,6 +3071,7 @@ onBeforeUnmount(() => {
 
 .mailbox-settings-form input:focus,
 .mailbox-settings-form select:focus,
+.mailbox-settings-form textarea:focus,
 .mailbox-compose-form input:focus,
 .mailbox-compose-form textarea:focus,
 .mailbox-search input:focus,
@@ -2995,6 +3084,89 @@ onBeforeUnmount(() => {
 .mailbox-settings-actions,
 .mailbox-alert {
   grid-column: 1 / -1;
+}
+
+.mailbox-settings-signature {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr);
+  gap: 14px;
+  align-items: stretch;
+}
+
+.mailbox-signature-preview {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #d7e8ee;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fbfdfe 0%, #f3f9fb 100%);
+}
+
+.mailbox-signature-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #64748b;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.mailbox-signature-preview-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #b8d7e2;
+  border-radius: 8px;
+  color: #0f5f76;
+  background: #fff;
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: none;
+}
+
+.mailbox-signature-card {
+  align-self: stretch;
+  padding: 14px 16px;
+  border-left: 3px solid #0ea5e9;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  box-shadow: 0 12px 28px rgba(15, 95, 118, .08);
+}
+
+.mailbox-signature-greeting {
+  margin-bottom: 10px;
+  color: #64748b;
+  font-size: .88rem;
+  font-weight: 700;
+}
+
+.mailbox-signature-name {
+  color: #075985;
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.mailbox-signature-role {
+  margin-top: 3px;
+  color: #102a43;
+  font-size: .88rem;
+  font-weight: 800;
+}
+
+.mailbox-signature-detail {
+  margin-top: 4px;
+  color: #64748b;
+  font-size: .82rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
 
 .mailbox-alert {
@@ -3759,6 +3931,10 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-settings-form {
+    grid-template-columns: 1fr;
+  }
+
+  .mailbox-settings-signature {
     grid-template-columns: 1fr;
   }
 
