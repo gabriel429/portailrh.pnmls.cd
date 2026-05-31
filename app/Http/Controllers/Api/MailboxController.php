@@ -1060,10 +1060,33 @@ class MailboxController extends ApiController
 
     private function htmlToText(string $html): string
     {
+        $html = preg_replace_callback('/<a\b[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)<\/a>/is', function (array $matches) {
+            $label = trim(html_entity_decode(strip_tags($matches[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $href = trim(html_entity_decode($matches[1], ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+            if ($href === '') {
+                return $label;
+            }
+
+            if ($label === '' || $this->normalizeUrlForDisplay($label) === $this->normalizeUrlForDisplay($href)) {
+                return $href;
+            }
+
+            return $label . ' (' . $href . ')';
+        }, $html) ?? $html;
         $html = preg_replace('/<(br|p|div|li|tr|h[1-6])\b[^>]*>/i', "\n", $html) ?? $html;
         $html = preg_replace('/<style\b[^>]*>.*?<\/style>/is', '', $html) ?? $html;
         $html = preg_replace('/<script\b[^>]*>.*?<\/script>/is', '', $html) ?? $html;
 
         return trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+    }
+
+    private function normalizeUrlForDisplay(string $value): string
+    {
+        $value = mb_strtolower(trim($value));
+        $value = preg_replace('/^https?:\/\//', '', $value) ?? $value;
+        $value = preg_replace('/^www\./', '', $value) ?? $value;
+
+        return rtrim($value, '/');
     }
 }

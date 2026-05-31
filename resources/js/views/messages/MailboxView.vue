@@ -545,7 +545,19 @@
                 </div>
               </div>
 
-              <div class="mailbox-reader-body">{{ selectedMessage.body || 'Aucun contenu lisible.' }}</div>
+              <div class="mailbox-reader-body">
+                <template v-if="readerBodyBlocks.length">
+                  <section
+                    v-for="(block, index) in readerBodyBlocks"
+                    :key="`mail-body-${index}`"
+                    class="mailbox-body-block"
+                    :class="`mailbox-body-${block.type}`"
+                  >
+                    <div v-for="(line, lineIndex) in block.lines" :key="`mail-body-${index}-${lineIndex}`" v-html="line"></div>
+                  </section>
+                </template>
+                <p v-else class="mailbox-body-empty">Aucun contenu lisible.</p>
+              </div>
             </template>
 
             <div v-else class="mailbox-reader-empty">
@@ -866,6 +878,7 @@ const actionMessages = computed(() => {
 const hasActionTarget = computed(() => actionMessages.value.length > 0)
 const readActionLabel = computed(() => actionMessages.value.some(message => message.unread) ? 'Marquer lu' : 'Non lu')
 const flagActionLabel = computed(() => actionMessages.value.some(message => !message.flagged) ? 'Etoile' : 'Retirer etoile')
+const readerBodyBlocks = computed(() => formatMailBody(selectedMessage.value?.body || ''))
 const contactOptions = computed(() => {
   const contacts = []
   const seen = new Set()
@@ -1694,6 +1707,219 @@ function normalizeText(value) {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
+}
+
+function formatMailBody(value) {
+  const lines = normalizeMailText(value)
+    .split('\n')
+    .map(line => line.trimEnd())
+
+  const meaningfulLines = lines.filter(line => line.trim() !== '')
+  if (!meaningfulLines.length) return []
+
+  const { contentLines, signatureLines } = splitMailSignature(lines)
+  const blocks = buildMailBodyBlocks(contentLines)
+
+  if (signatureLines.length) {
+    blocks.push({
+      type: 'signature',
+      lines: signatureLines.map(line => renderMailLine(stripQuoteMarks(line))).filter(Boolean),
+    })
+  }
+
+  return blocks
+}
+
+function normalizeMailText(value) {
+  return (value || '')
+    .toString()
+    .replace(/\r\n?/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n{4,}/g, '\n\n\n')
+    .trim()
+}
+
+function splitMailSignature(lines) {
+  const delimiterIndex = lines.findIndex(line => /^--\s*$/.test(line.trim()))
+  if (delimiterIndex >= 0) {
+    return {
+      contentLines: lines.slice(0, delimiterIndex),
+      signatureLines: trimMailLines(lines.slice(delimiterIndex + 1)),
+    }
+  }
+
+  const signatureStart = findSignatureStart(lines)
+  if (signatureStart >= 0) {
+    return {
+      contentLines: lines.slice(0, signatureStart),
+      signatureLines: trimMailLines(lines.slice(signatureStart)),
+    }
+  }
+
+  return { contentLines: lines, signatureLines: [] }
+}
+
+function findSignatureStart(lines) {
+  const start = Math.max(0, lines.length - 14)
+
+  for (let index = lines.length - 1; index >= start; index -= 1) {
+    const line = normalizeText(lines[index]).replace(/[,.!;:\s]+$/g, '')
+    if (!line) continue
+
+    if (/^(cordialement|bien cordialement|sincerement|respectueusement|salutations|bien a vous|best regards|kind regards|regards|thanks|merci)$/.test(line)) {
+      return index
+    }
+
+    if (/^sent from my /.test(line)) {
+      return index
+    }
+  }
+
+  return -1
+}
+
+function trimMailLines(lines) {
+  const copy = [...lines]
+  while (copy.length && copy[0].trim() === '') copy.shift()
+  while (copy.length && copy[copy.length - 1].trim() === '') copy.pop()
+  return copy
+}
+
+function buildMailBodyBlocks(lines) {
+  const blocks = []
+  let buffer = []
+  let currentType = 'paragraph'
+
+  const flush = () => {
+    const cleaned = trimMailLines(buffer).map(line => stripQuoteMarks(line)).filter(line => line.trim() !== '')
+    if (!cleaned.length) {
+      buffer = []
+      return
+    }
+
+    const renderedLines = currentType === 'paragraph' && !looksLikeList(cleaned)
+      ? [renderMailLine(joinMailParagraph(cleaned))]
+      : cleaned.map(line => renderMailLine(line))
+
+    blocks.push({ type: currentType, lines: renderedLines.filter(Boolean) })
+    buffer = []
+  }
+
+  for (const line of lines) {
+    if (line.trim() === '') {
+      flush()
+      currentType = 'paragraph'
+      continue
+    }
+
+    const type = classifyMailLine(line)
+    if (buffer.length && type !== currentType) {
+      flush()
+    }
+
+    currentType = type
+    buffer.push(line)
+  }
+
+  flush()
+
+  return blocks
+}
+
+function classifyMailLine(line) {
+  const trimmed = line.trim()
+
+  if (/^>/.test(trimmed)) return 'quote'
+  if (/^[-_]{2,}\s*(message original|original message|forwarded message|message transfere|message transferé|message transféré)\s*[-_]{2,}$/i.test(trimmed)) return 'quote'
+  if (/^(le .+ a écrit\s*:|on .+ wrote\s*:)/i.test(trimmed)) return 'quote'
+  if (/^(de|from|envoye|envoyé|sent|a|to|cc|objet|subject)\s*:/i.test(trimmed)) return 'quote'
+
+  return 'paragraph'
+}
+
+function stripQuoteMarks(line) {
+  return line.replace(/^\s*>+\s?/, '')
+}
+
+function looksLikeList(lines) {
+  return lines.some(line => /^\s*(?:[-*]|\d+[.)])\s+/.test(line))
+}
+
+function joinMailParagraph(lines) {
+  return lines
+    .map(line => line.trim())
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
+}
+
+function renderMailLine(value) {
+  const text = value.trim()
+  if (!text) return ''
+
+  const pattern = /((?:https?:\/\/|www\.)[^\s<]+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi
+  let output = ''
+  let lastIndex = 0
+
+  text.replace(pattern, (match, _token, offset) => {
+    output += escapeHtml(text.slice(lastIndex, offset))
+
+    const { token, trailing } = splitTrailingPunctuation(match)
+    const href = safeMailHref(token)
+
+    if (href) {
+      output += `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">${escapeHtml(token)}</a>`
+    } else {
+      output += escapeHtml(token)
+    }
+
+    output += escapeHtml(trailing)
+    lastIndex = offset + match.length
+    return match
+  })
+
+  output += escapeHtml(text.slice(lastIndex))
+
+  return output
+}
+
+function splitTrailingPunctuation(value) {
+  let token = value
+  let trailing = ''
+
+  while (/[),.;:!?]$/.test(token)) {
+    trailing = token.slice(-1) + trailing
+    token = token.slice(0, -1)
+  }
+
+  return { token, trailing }
+}
+
+function safeMailHref(value) {
+  const token = value.trim()
+  if (!token) return ''
+
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(token)) {
+    return `mailto:${token}`
+  }
+
+  const url = token.startsWith('www.') ? `https://${token}` : token
+
+  try {
+    const parsed = new URL(url)
+    return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : ''
+  } catch (_) {
+    return ''
+  }
+}
+
+function escapeHtml(value) {
+  return (value || '').toString()
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 function extractEmail(value) {
@@ -2653,8 +2879,60 @@ onBeforeUnmount(() => {
   color: #1f2937;
   font-size: 0.94rem;
   line-height: 1.65;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.mailbox-body-block {
+  max-width: 980px;
+  margin: 0 0 14px;
+}
+
+.mailbox-body-block:last-child {
+  margin-bottom: 0;
+}
+
+.mailbox-body-block > div + div {
+  margin-top: 4px;
+}
+
+.mailbox-body-paragraph {
+  color: #1f2937;
+}
+
+.mailbox-body-quote {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-left: 3px solid #bfd7e3;
+  border-radius: 0 8px 8px 0;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 0.9em;
+}
+
+.mailbox-body-signature {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid #dbe8ef;
+  color: #64748b;
+  font-size: 0.92em;
+}
+
+.mailbox-body-empty {
+  margin: 0;
+  color: #64748b;
+  font-weight: 800;
+}
+
+.mailbox-reader-body :deep(a) {
+  color: #0369a1;
+  font-weight: 800;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(3, 105, 161, 0.28);
+}
+
+.mailbox-reader-body :deep(a:hover) {
+  color: #0f5f76;
+  border-bottom-color: currentColor;
 }
 
 .mailbox-settings {
