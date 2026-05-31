@@ -26,6 +26,7 @@ use App\Http\Controllers\Api\UserExperienceController;
 use App\Http\Controllers\Api\JobDescriptionController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\DataQualityController;
 use App\Http\Controllers\Api\SyncController;
 use App\Http\Controllers\Api\MyHolidayPlanningController;
 use App\Http\Controllers\RH\HolidayPlanningController;
@@ -424,6 +425,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // SuperAdmin routes (audit logs + user management)
     Route::middleware('super.admin')->prefix('superadmin')->group(function () {
+        Route::get('diagnostics', [DataQualityController::class, 'index']);
+
         Route::get('audit-logs', [AuditLogController::class, 'index']);
         Route::get('audit-logs/tables', [AuditLogController::class, 'tables']);
         Route::get('audit-logs/users', [AuditLogController::class, 'users']);

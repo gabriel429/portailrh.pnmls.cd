@@ -146,6 +146,7 @@ const navItems = computed(() => {
         items.push({ action: 'documents-travail-popup', icon: 'fas fa-folder-open', label: 'Gestion des documents' })
     }
     if (auth.isSuperAdmin) {
+        items.push({ route: 'admin.diagnostics', icon: 'fas fa-stethoscope', label: 'Diagnostic données' })
         items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Déploiement' })
         items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })
     }

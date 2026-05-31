@@ -436,6 +436,12 @@ const routes = [
                 meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' },
             },
             {
+                path: 'diagnostics',
+                name: 'admin.diagnostics',
+                component: () => import('@/views/admin/DiagnosticView.vue'),
+                meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' },
+            },
+            {
                 path: 'agents/import',
                 name: 'admin.agents.import',
                 component: () => import('@/views/admin/agents/AgentImportView.vue'),
@@ -540,7 +546,7 @@ router.beforeEach(async (to) => {
         return { name: 'login', query: { redirect: to.fullPath } }
     }
 
-    if (to.meta.roles) {
+    if (to.meta.roles && !auth.isSuperAdmin) {
         const userRole = auth.role?.toLowerCase()
         const allowed = to.meta.roles.map(r => r.toLowerCase())
         const semanticallyAllowed = (allowed.includes('sep') && auth.isSEP)

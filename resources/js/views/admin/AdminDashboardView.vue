@@ -202,6 +202,7 @@ const baseQuickLinks = [
   { to: '/admin/cellules', label: 'Cellules', icon: 'fa-th', color: '#6366f1' },
   { to: '/admin/localites', label: 'Localites', icon: 'fa-map-pin', color: '#0d9488' },
   { to: '/admin/categories-documents', label: 'Categories Docs', icon: 'fa-tags', color: '#f59e0b' },
+  { to: '/admin/diagnostics', label: 'Diagnostic données', icon: 'fa-stethoscope', color: '#dc2626' },
   { to: '/admin/deployment', label: 'Déploiement', icon: 'fa-rocket', color: '#0077B5' },
   { to: '/admin/logs', label: 'Logs systeme', icon: 'fa-file-alt', color: '#64748b' },
 ]
