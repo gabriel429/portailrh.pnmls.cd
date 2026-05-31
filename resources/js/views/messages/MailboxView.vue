@@ -530,15 +530,33 @@
               </header>
 
               <div class="mailbox-reader-tools">
-                <button type="button" @click="toggleFlag(selectedMessage)">
+                <button
+                  type="button"
+                  :title="selectedMessage.flagged ? 'Retirer l etoile' : 'Marquer avec etoile'"
+                  :aria-label="selectedMessage.flagged ? 'Retirer l etoile' : 'Marquer avec etoile'"
+                  @click="toggleFlag(selectedMessage)"
+                >
                   <i class="fas fa-star"></i>
                   {{ selectedMessage.flagged ? 'Retirer l etoile' : 'Marquer avec etoile' }}
                 </button>
-                <button type="button" :disabled="!archiveFolder || bulkProcessing" @click="archiveMessage(selectedMessage)">
+                <button
+                  type="button"
+                  title="Archiver"
+                  aria-label="Archiver"
+                  :disabled="!archiveFolder || bulkProcessing"
+                  @click="archiveMessage(selectedMessage)"
+                >
                   <i class="fas fa-box-archive"></i>
                   Archiver
                 </button>
-                <button type="button" class="danger" :disabled="bulkProcessing" @click="deleteMessage(selectedMessage.uid)">
+                <button
+                  type="button"
+                  class="danger"
+                  title="Supprimer"
+                  aria-label="Supprimer"
+                  :disabled="bulkProcessing"
+                  @click="deleteMessage(selectedMessage.uid)"
+                >
                   <i class="fas fa-trash"></i>
                   Supprimer
                 </button>
@@ -3845,6 +3863,120 @@ onBeforeUnmount(() => {
   }
 }
 
+@media (min-width: 861px) and (max-height: 720px) {
+  .mailbox-page {
+    min-height: calc(100dvh - 64px);
+    padding: 8px 12px;
+  }
+
+  .outlook-shell {
+    height: calc(100dvh - 82px);
+    max-height: calc(100dvh - 82px);
+    border-radius: 12px;
+  }
+
+  .mailbox-sidebar {
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .mailbox-account {
+    padding: 8px;
+  }
+
+  .mailbox-compose-btn {
+    min-height: 38px;
+  }
+
+  .mailbox-folder-btn {
+    min-height: 36px;
+  }
+
+  .mailbox-side-card {
+    display: none;
+  }
+
+  .mailbox-topbar {
+    min-height: 58px;
+    padding: 10px 16px;
+  }
+
+  .mailbox-topbar h1 {
+    font-size: 1.12rem;
+  }
+
+  .mailbox-search input,
+  .mailbox-search-scope {
+    min-height: 36px;
+  }
+
+  .mailbox-commandbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px 12px;
+    scrollbar-width: thin;
+  }
+
+  .mailbox-command,
+  .mailbox-move select,
+  .mailbox-icon-btn {
+    flex: 0 0 auto;
+    min-height: 34px;
+  }
+
+  .mailbox-command.settings {
+    margin-left: 0;
+  }
+
+  .mailbox-selection-status,
+  .mailbox-move {
+    flex: 0 0 auto;
+  }
+
+  .mailbox-reader {
+    margin: 8px;
+    border-radius: 12px;
+  }
+
+  .mailbox-reader-head {
+    gap: 10px;
+    padding: 14px 18px 12px;
+  }
+
+  .mailbox-reader-head h2 {
+    margin-bottom: 6px;
+    font-size: 1.06rem;
+    line-height: 1.3;
+  }
+
+  .mailbox-reader-meta {
+    line-height: 1.45;
+  }
+
+  .mailbox-reader-tools {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px 18px;
+    scrollbar-width: none;
+  }
+
+  .mailbox-reader-tools::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mailbox-reader-tools button {
+    flex: 0 0 auto;
+    min-height: 32px;
+  }
+
+  .mailbox-reader-body {
+    min-height: 0;
+    padding: 18px 22px 26px;
+    font-size: .94rem;
+    line-height: 1.62;
+  }
+}
+
 @media (max-width: 860px) {
   .mailbox-page {
     padding: 10px;
@@ -4623,9 +4755,10 @@ onBeforeUnmount(() => {
 
   .mailbox-reader-tools {
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: 10px;
+    min-height: 54px;
     overflow-x: auto;
-    padding: 10px 16px;
+    padding: 9px 16px;
     background: #f8fafc;
     -webkit-overflow-scrolling: touch;
   }
@@ -4636,8 +4769,18 @@ onBeforeUnmount(() => {
 
   .mailbox-reader-tools button {
     flex: 0 0 auto;
-    border-radius: 999px;
+    justify-content: center;
+    width: 42px;
+    min-width: 42px;
+    min-height: 38px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 0;
     white-space: nowrap;
+  }
+
+  .mailbox-reader-tools button i {
+    font-size: .98rem;
   }
 
   .mailbox-reader-attachments {
