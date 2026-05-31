@@ -192,7 +192,15 @@
           </div>
         </div>
         <div class="caf-presence-cards">
-          <div v-for="o in presenceOrganes" :key="o.code" class="caf-presence-card">
+          <div
+            v-for="o in presenceOrganes"
+            :key="o.code"
+            class="caf-presence-card caf-clickable"
+            role="button"
+            tabindex="0"
+            @click="openPresenceOrganeDrilldown(o.code)"
+            @keydown.enter.prevent="openPresenceOrganeDrilldown(o.code)"
+          >
             <div class="caf-presence-icon" :style="{ color: o.color }">
               <i class="fas" :class="o.icon"></i>
             </div>
@@ -389,21 +397,66 @@
               <!-- Présence -->
               <template v-else-if="deptDrillSection === 'presence'">
                 <div class="drill-dept-grid">
-                  <div class="drill-prov-stat-card" style="border-color:#059669;">
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#059669;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                     <div class="drill-prov-stat-val">{{ deptDrillData.presence?.today_rate ?? 0 }}%</div>
                     <div class="drill-prov-stat-lbl">Aujourd'hui</div>
                   </div>
-                  <div class="drill-prov-stat-card" style="border-color:#0d9488;">
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#0d9488;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                     <div class="drill-prov-stat-val">{{ deptDrillData.presence?.monthly_rate ?? 0 }}%</div>
                     <div class="drill-prov-stat-lbl">Ce mois</div>
                   </div>
-                  <div class="drill-prov-stat-card" style="border-color:#0ea5e9;">
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" style="border-color:#0ea5e9;" role="button" tabindex="0" @click="setDrillPresenceFilter('present')" @keydown.enter.prevent="setDrillPresenceFilter('present')">
                     <div class="drill-prov-stat-val">{{ deptDrillData.presence?.today_present ?? 0 }}</div>
                     <div class="drill-prov-stat-lbl">Présents</div>
                   </div>
-                  <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
-                    <div class="drill-prov-stat-val">{{ deptDrillData.effectifs?.actifs ?? 0 }}</div>
-                    <div class="drill-prov-stat-lbl">Attendus</div>
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" style="border-color:#7c3aed;" role="button" tabindex="0" @click="setDrillPresenceFilter('absent')" @keydown.enter.prevent="setDrillPresenceFilter('absent')">
+                    <div class="drill-prov-stat-val">{{ Math.max((deptDrillData.presence?.total_active ?? deptDrillData.effectifs?.actifs ?? 0) - (deptDrillData.presence?.today_present ?? 0), 0) }}</div>
+                    <div class="drill-prov-stat-lbl">Absents</div>
+                  </div>
+                </div>
+                <div v-if="deptDrillData.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                  <i class="fas fa-user-check me-1"></i>{{ presenceFilterTitle(filteredPresenceAgents(deptDrillData.agents).length) }}
+                </div>
+                <div v-if="deptDrillData.agents?.length" class="drill-prov-agents-table">
+                  <div v-for="a in filteredPresenceAgents(deptDrillData.agents)" :key="a.id" class="drill-prov-agent-row">
+                    <div class="drill-prov-agent-avatar"
+                      :style="{ background: (a.sexe||'').toLowerCase() === 'f' ? '#fce7f3' : '#dbeafe', color: (a.sexe||'').toLowerCase() === 'f' ? '#be185d' : '#1d4ed8' }">
+                      <i :class="(a.sexe||'').toLowerCase() === 'f' ? 'fas fa-female' : 'fas fa-male'"></i>
+                    </div>
+                    <div class="drill-prov-agent-info">
+                      <div class="drill-prov-agent-name">
+                        {{ a.nom }}
+                        <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                          <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                        </span>
+                      </div>
+                      <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                      <div class="drill-presence-times">
+                        <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
+                          <i class="fas fa-sign-in-alt"></i>
+                          <strong>Arrivée</strong>
+                          {{ presenceTime(a.heure_entree) }}
+                        </span>
+                        <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
+                          <i class="fas fa-sign-out-alt"></i>
+                          <strong>Départ</strong>
+                          {{ presenceTime(a.heure_sortie) }}
+                        </span>
+                      </div>
+                      <div class="drill-prov-agent-meta">
+                        <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                        <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
+                        <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                      </div>
+                      <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                        <i class="fas fa-comment-alt"></i>
+                        <span>{{ a.absence_observation }}</span>
+                      </div>
+                      <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                        <i class="fas fa-comment-alt"></i>
+                        <span>{{ a.pointage_observation }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </template>
@@ -507,21 +560,73 @@
               <!-- Présence province -->
               <template v-else-if="provDrillSection === 'presence'">
                 <div class="drill-dept-grid">
-                  <div class="drill-prov-stat-card" style="border-color:#059669;">
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#059669;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                     <div class="drill-prov-stat-val">{{ provDrillData.presence?.today_rate ?? 0 }}%</div>
                     <div class="drill-prov-stat-lbl">Aujourd'hui</div>
                   </div>
-                  <div class="drill-prov-stat-card" style="border-color:#0d9488;">
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'all' }" style="border-color:#0d9488;" role="button" tabindex="0" @click="setDrillPresenceFilter('all')" @keydown.enter.prevent="setDrillPresenceFilter('all')">
                     <div class="drill-prov-stat-val">{{ provDrillData.presence?.monthly_avg_rate ?? 0 }}%</div>
                     <div class="drill-prov-stat-lbl">Ce mois</div>
                   </div>
-                  <div class="drill-prov-stat-card" style="border-color:#0ea5e9;">
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'present' }" style="border-color:#0ea5e9;" role="button" tabindex="0" @click="setDrillPresenceFilter('present')" @keydown.enter.prevent="setDrillPresenceFilter('present')">
                     <div class="drill-prov-stat-val">{{ provDrillData.presence?.today_present ?? 0 }}</div>
                     <div class="drill-prov-stat-lbl">Présents</div>
                   </div>
-                  <div class="drill-prov-stat-card" style="border-color:#7c3aed;">
-                    <div class="drill-prov-stat-val">{{ provDrillData.effectifs?.actifs ?? 0 }}</div>
-                    <div class="drill-prov-stat-lbl">Attendus</div>
+                  <div class="drill-prov-stat-card drill-stat-clickable" :class="{ active: drillPresenceFilter === 'absent' }" style="border-color:#7c3aed;" role="button" tabindex="0" @click="setDrillPresenceFilter('absent')" @keydown.enter.prevent="setDrillPresenceFilter('absent')">
+                    <div class="drill-prov-stat-val">{{ Math.max((provDrillData.presence?.total_active ?? provDrillData.effectifs?.actifs ?? 0) - (provDrillData.presence?.today_present ?? 0), 0) }}</div>
+                    <div class="drill-prov-stat-lbl">Absents</div>
+                  </div>
+                </div>
+                <div v-if="provDrillData.departments?.length" class="caf-dept-chips" style="margin-bottom:12px;">
+                  <button v-for="dept in provDrillData.departments" :key="dept.id" class="caf-dept-chip"
+                    @click="openDeptDrilldown(dept.id, 'presence', provDrillOrgane)">
+                    {{ dept.code || dept.nom }}
+                    <i class="fas fa-chevron-right" style="font-size:.6em;margin-left:4px;"></i>
+                  </button>
+                </div>
+                <div v-if="provDrillData.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
+                  <i class="fas fa-user-check me-1"></i>{{ presenceFilterTitle(filteredPresenceAgents(provDrillData.agents).length) }}
+                </div>
+                <div v-if="provDrillData.agents?.length" class="drill-prov-agents-table">
+                  <div v-for="a in filteredPresenceAgents(provDrillData.agents)" :key="a.id" class="drill-prov-agent-row">
+                    <div class="drill-prov-agent-avatar"
+                      :style="{ background: (a.sexe||'').toLowerCase() === 'f' ? '#fce7f3' : '#dbeafe', color: (a.sexe||'').toLowerCase() === 'f' ? '#be185d' : '#1d4ed8' }">
+                      <i :class="(a.sexe||'').toLowerCase() === 'f' ? 'fas fa-female' : 'fas fa-male'"></i>
+                    </div>
+                    <div class="drill-prov-agent-info">
+                      <div class="drill-prov-agent-name">
+                        {{ a.nom }}
+                        <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                          <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                        </span>
+                      </div>
+                      <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                      <div class="drill-presence-times">
+                        <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
+                          <i class="fas fa-sign-in-alt"></i>
+                          <strong>Arrivée</strong>
+                          {{ presenceTime(a.heure_entree) }}
+                        </span>
+                        <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
+                          <i class="fas fa-sign-out-alt"></i>
+                          <strong>Départ</strong>
+                          {{ presenceTime(a.heure_sortie) }}
+                        </span>
+                      </div>
+                      <div class="drill-prov-agent-meta">
+                        <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                        <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
+                        <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                      </div>
+                      <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                        <i class="fas fa-comment-alt"></i>
+                        <span>{{ a.absence_observation }}</span>
+                      </div>
+                      <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                        <i class="fas fa-comment-alt"></i>
+                        <span>{{ a.pointage_observation }}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </template>
@@ -642,16 +747,21 @@ const deptDrillOpen = ref(false)
 const deptDrillLoading = ref(false)
 const deptDrillData = ref(null)
 const deptDrillSection = ref('effectifs')
+const drillPresenceFilter = ref('all')
+const deptDrillOrgane = ref(null)
 
-async function openDeptDrilldown(id, section = 'effectifs') {
+async function openDeptDrilldown(id, section = 'effectifs', organeCode = null) {
   if (!id) return
   provDrillOpen.value = false
   deptDrillOpen.value = true
   deptDrillLoading.value = true
   deptDrillData.value = null
   deptDrillSection.value = section
+  deptDrillOrgane.value = organeCode
+  drillPresenceFilter.value = 'all'
   try {
-    const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
+    const params = organeCode ? { organe: organeCode } : {}
+    const { data: result } = await client.get(`/dashboard/executive/department/${id}`, { params })
     deptDrillData.value = result.data ?? result
   } catch {
     deptDrillData.value = null
@@ -663,6 +773,8 @@ function closeDeptDrilldown() {
   deptDrillOpen.value = false
   deptDrillData.value = null
   deptDrillSection.value = 'effectifs'
+  deptDrillOrgane.value = null
+  drillPresenceFilter.value = 'all'
 }
 
 // ─── DRILL-DOWN PROVINCE ──────────────────────────────────────────────────────
@@ -670,19 +782,23 @@ const provDrillOpen = ref(false)
 const provDrillLoading = ref(false)
 const provDrillData = ref(null)
 const provDrillSection = ref('effectifs')
+const provDrillOrgane = ref(null)
 
-async function openProvDrilldown(section = 'effectifs') {
+async function openProvDrilldown(section = 'effectifs', organeCode = null) {
   const structureId = isLocalDashboard.value ? data.value.localite?.id : data.value.province?.id
   if (!structureId) return
   provDrillOpen.value = true
   provDrillLoading.value = true
   provDrillData.value = null
   provDrillSection.value = section
+  provDrillOrgane.value = organeCode
+  drillPresenceFilter.value = 'all'
   try {
     const url = isLocalDashboard.value
       ? `/dashboard/executive/localite/${structureId}`
       : `/dashboard/executive/province/${structureId}`
-    const { data: result } = await client.get(url)
+    const params = organeCode ? { organe: organeCode } : {}
+    const { data: result } = await client.get(url, { params })
     const payload = result.data ?? result
     provDrillData.value = isLocalDashboard.value ? normalizeLocaliteDrilldown(payload) : payload
   } catch {
@@ -702,6 +818,7 @@ function normalizeLocaliteDrilldown(payload) {
     effectifs: payload.effectifs || {},
     presence: payload.presence || {},
     pta: payload.pta || {},
+    departments: payload.departments || [],
     activites: payload.activites || [],
     agents: payload.agents || [],
   }
@@ -710,6 +827,66 @@ function closeProvDrilldown() {
   provDrillOpen.value = false
   provDrillData.value = null
   provDrillSection.value = 'effectifs'
+  provDrillOrgane.value = null
+  drillPresenceFilter.value = 'all'
+}
+
+function openPresenceOrganeDrilldown(organeCode) {
+  openProvDrilldown('presence', organeCode)
+}
+
+function setDrillPresenceFilter(filter = 'all') {
+  drillPresenceFilter.value = filter
+}
+
+function presenceStatusLabel(agent) {
+  const labels = {
+    present: 'Présent',
+    absent: 'Absent',
+    en_conge: 'En congé',
+    en_mission: 'En mission',
+    en_formation: 'En formation',
+    suspendu: 'Suspendu',
+  }
+
+  return agent?.presence_label || labels[agent?.presence_status] || 'Absent'
+}
+
+function presenceStatusIcon(agent) {
+  const icons = {
+    present: 'fas fa-check-circle',
+    absent: 'fas fa-user-times',
+    en_conge: 'fas fa-calendar-minus',
+    en_mission: 'fas fa-route',
+    en_formation: 'fas fa-graduation-cap',
+    suspendu: 'fas fa-ban',
+  }
+
+  return icons[agent?.presence_status] || 'fas fa-user-times'
+}
+
+function presenceTime(value) {
+  return value || 'Non renseignée'
+}
+
+function filteredPresenceAgents(agents = []) {
+  if (!Array.isArray(agents)) return []
+  if (drillPresenceFilter.value === 'present') {
+    return agents.filter(agent => agent?.presence_status === 'present')
+  }
+  if (drillPresenceFilter.value === 'absent') {
+    return agents.filter(agent => agent?.presence_status !== 'present')
+  }
+  return agents
+}
+
+function presenceFilterTitle(total = 0) {
+  const labels = {
+    all: 'Agents actifs',
+    present: 'Agents présents',
+    absent: 'Agents absents',
+  }
+  return `${labels[drillPresenceFilter.value] || labels.all} (${total})`
 }
 
 // ─── QUICK ACTIONS ────────────────────────────────────────────────────────────
@@ -966,15 +1143,35 @@ onMounted(loadData)
 .drill-section-tab.active { background: #0d9488; color: #fff; border-color: #0d9488; }
 .drill-dept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; margin-bottom: 1rem; }
 .drill-prov-stat-card { background: #fff; border-radius: 12px; border-left: 3px solid; padding: .8rem 1rem; text-align: center; }
+.drill-stat-clickable { cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
+.drill-stat-clickable:hover,
+.drill-stat-clickable.active { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(15, 23, 42, .08); background: #f8fafc; }
 .drill-prov-stat-val { font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1; }
 .drill-prov-stat-lbl { font-size: .65rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: .2rem; }
 .drill-prov-section-title { display: flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 700; color: #475569; margin-bottom: .5rem; }
 .drill-prov-agents-table { display: flex; flex-direction: column; gap: .4rem; }
-.drill-prov-agent-row { display: flex; align-items: center; gap: .6rem; padding: .5rem .6rem; border-radius: 8px; background: #fff; border: 1px solid #f1f5f9; }
+.drill-prov-agent-row { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem .65rem; border-radius: 8px; background: #fff; border: 1px solid #f1f5f9; }
 .drill-prov-agent-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
 .drill-prov-agent-info { flex: 1; min-width: 0; }
-.drill-prov-agent-name { font-size: .82rem; font-weight: 600; color: #1e293b; }
+.drill-prov-agent-name { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; font-size: .82rem; font-weight: 600; color: #1e293b; }
 .drill-prov-agent-fn { font-size: .68rem; color: #94a3b8; }
+.drill-presence-badge { display: inline-flex; align-items: center; gap: .2rem; padding: .12rem .35rem; border-radius: 999px; border: 1px solid transparent; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
+.drill-presence-present { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+.drill-presence-absent { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.drill-presence-en_conge { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+.drill-presence-en_mission { background: #fef3c7; color: #a16207; border-color: #fde68a; }
+.drill-presence-en_formation { background: #ede9fe; color: #6d28d9; border-color: #ddd6fe; }
+.drill-presence-suspendu { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
+.drill-presence-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-top: .45rem; }
+.drill-presence-time { display: flex; align-items: center; gap: .25rem; min-width: 0; padding: .35rem .45rem; border-radius: 8px; background: #f0f9ff; border: 1px solid #bae6fd; color: #0f172a; font-size: .68rem; font-weight: 700; }
+.drill-presence-time i { color: #0ea5e9; font-size: .65rem; flex-shrink: 0; }
+.drill-presence-time strong { color: #64748b; font-size: .58rem; text-transform: uppercase; }
+.drill-presence-time.muted { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+.drill-presence-time.muted i { color: #cbd5e1; }
+.drill-prov-agent-meta { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .4rem; font-size: .65rem; color: #64748b; }
+.drill-prov-agent-meta span { display: inline-flex; align-items: center; gap: .22rem; }
+.drill-prov-agent-meta i { color: #94a3b8; }
+.drill-prov-agent-note { display: inline-flex; align-items: center; gap: .28rem; margin-top: .35rem; padding: .28rem .45rem; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: .66rem; font-weight: 600; }
 .caf-dept-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
 .caf-dept-chip { padding: .3rem .7rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; font-size: .75rem; font-weight: 600; color: #475569; cursor: pointer; transition: all .2s; }
 .caf-dept-chip:hover { background: #d1fae5; border-color: #0d9488; color: #0d9488; }

@@ -696,6 +696,22 @@
                         {{ isDrillPresent(ag) ? 'Pointé aujourd’hui' : 'Non pointé aujourd’hui' }}
                       </span>
                     </div>
+                    <div class="drill-presence-times">
+                      <span :class="{ muted: !ag.heure_entree }">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <strong>Arrivée</strong>
+                        {{ presenceTime(ag.heure_entree) }}
+                      </span>
+                      <span :class="{ muted: !ag.heure_sortie }">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <strong>Départ</strong>
+                        {{ presenceTime(ag.heure_sortie) }}
+                      </span>
+                    </div>
+                    <div v-if="ag.pointage_observation" class="drill-pointage-note">
+                      <i class="fas fa-comment-alt"></i>
+                      {{ ag.pointage_observation }}
+                    </div>
                   </div>
                   <div class="drill-agent-meta">
                     <div class="drill-presence-bar-wrap">
@@ -1082,6 +1098,9 @@ function isDrillPresent(ag) {
   if (!ag) return false
   if (ag.presence_status) return ag.presence_status === 'present'
   return Number(ag.jours_presents || 0) > 0
+}
+function presenceTime(value) {
+  return value || 'Non renseignée'
 }
 function statutLabel(s) {
   return {
@@ -1962,6 +1981,21 @@ button.drill-stat-card { font: inherit; cursor: pointer; }
 .drill-presence-note { margin-top: .22rem; font-size: .7rem; font-weight: 700; }
 .presence-present { color: #059669; }
 .presence-absent { color: #d97706; }
+.drill-presence-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-top: .45rem; }
+.drill-presence-times span {
+  min-width: 0; display: flex; align-items: center; gap: .3rem;
+  padding: .35rem .45rem; border-radius: 8px; border: 1px solid #bae6fd;
+  background: #f0f9ff; color: #0c4a6e; font-size: .66rem; font-weight: 800;
+}
+.drill-presence-times i { color: #0ea5e9; font-size: .65rem; flex-shrink: 0; }
+.drill-presence-times strong { color: #64748b; font-size: .58rem; text-transform: uppercase; }
+.drill-presence-times span.muted { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+.drill-presence-times span.muted i { color: #cbd5e1; }
+.drill-pointage-note {
+  display: flex; align-items: center; gap: .3rem; margin-top: .4rem;
+  padding: .25rem .4rem; border-radius: 7px; border: 1px solid #fed7aa;
+  background: #fff7ed; color: #7c2d12; font-size: .62rem; font-weight: 700;
+}
 .drill-presence-bar-wrap { display: flex; align-items: center; gap: .42rem; }
 .drill-presence-bar { width: 72px; height: 7px; border-radius: 999px; background: #e2e8f0; overflow: hidden; }
 .drill-presence-bar-fill { height: 100%; border-radius: 999px; transition: width .4s; }

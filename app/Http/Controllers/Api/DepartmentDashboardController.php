@@ -262,11 +262,10 @@ class DepartmentDashboardController extends ApiController
             ->groupBy('agent_id')
             ->pluck('jours_presents', 'agent_id');
 
-        $todayPresentAgents = Pointage::byDate($now->toDateString())
+        $todayPointages = Pointage::byDate($now->toDateString())
             ->whereIn('agent_id', $agentIds)
-            ->whereNotNull('heure_entree')
-            ->pluck('agent_id')
-            ->flip();
+            ->get(['agent_id', 'heure_entree', 'heure_sortie', 'observations'])
+            ->keyBy('agent_id');
 
         $joursOuvrables = max(
             Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
@@ -297,7 +296,7 @@ class DepartmentDashboardController extends ApiController
             ])
             ->orderInstitutionally()
             ->get(['id', 'nom', 'prenom', 'photo', 'fonction', 'poste_actuel', 'statut'])
-            ->map(function ($agent) use ($monthlyPresence, $todayPresentAgents, $joursOuvrables, $statuts, $congesActifs, $onlineAgentMap, $now) {
+            ->map(function ($agent) use ($monthlyPresence, $todayPointages, $joursOuvrables, $statuts, $congesActifs, $onlineAgentMap, $now) {
                 $taches     = $agent->tachesAssignees;
                 $total      = $taches->count();
                 $done       = $taches->where('statut', 'terminee')->count();
@@ -309,6 +308,7 @@ class DepartmentDashboardController extends ApiController
 
                 $joursPresents = $monthlyPresence[$agent->id] ?? 0;
                 $tauxPresence  = round(($joursPresents / $joursOuvrables) * 100, 1);
+                $pointage = $todayPointages->get($agent->id);
 
                 $statutActuel = $statuts[$agent->id]?->statut ?? null;
                 if (!$statutActuel) {
@@ -325,7 +325,11 @@ class DepartmentDashboardController extends ApiController
                     'is_online'       => isset($onlineAgentMap[$agent->id]),
                     'online_label'     => $onlineAgentMap[$agent->id]['label'] ?? null,
                     'online_since'     => $onlineAgentMap[$agent->id]['last_activity'] ?? null,
-                    'presence_status' => isset($todayPresentAgents[$agent->id]) ? 'present' : 'absent',
+                    'presence_status' => $pointage?->heure_entree ? 'present' : 'absent',
+                    'presence_label'  => $pointage?->heure_entree ? 'Présent' : 'Absent',
+                    'heure_entree'    => optional($pointage?->heure_entree)->format('H:i'),
+                    'heure_sortie'    => optional($pointage?->heure_sortie)->format('H:i'),
+                    'pointage_observation' => $pointage?->observations,
                     'taches_total'    => $total,
                     'taches_done'     => $done,
                     'taches_en_cours' => $inProgress,

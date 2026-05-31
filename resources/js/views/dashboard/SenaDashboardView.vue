@@ -486,7 +486,23 @@
                     <div class="sena-drill-row-sub">{{ a.fonction || 'Fonction non renseignée' }}</div>
                     <div class="sena-drill-presence-note" :class="isSenaPresent(a) ? 'present' : 'absent'">
                       <i class="fas" :class="isSenaPresent(a) ? 'fa-check-circle' : 'fa-clock'"></i>
-                      {{ isSenaPresent(a) ? `Pointé ${a.heure_entree || ''}` : 'Non pointé aujourd’hui' }}
+                      {{ isSenaPresent(a) ? 'Pointé aujourd’hui' : 'Non pointé aujourd’hui' }}
+                    </div>
+                    <div class="sena-drill-presence-times">
+                      <span :class="{ muted: !a.heure_entree }">
+                        <i class="fas fa-sign-in-alt"></i>
+                        <strong>Arrivée</strong>
+                        {{ presenceTime(a.heure_entree) }}
+                      </span>
+                      <span :class="{ muted: !a.heure_sortie }">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <strong>Départ</strong>
+                        {{ presenceTime(a.heure_sortie) }}
+                      </span>
+                    </div>
+                    <div v-if="a.pointage_observation" class="sena-drill-pointage-note">
+                      <i class="fas fa-comment-alt"></i>
+                      {{ a.pointage_observation }}
                     </div>
                   </div>
                   <div class="sena-drill-agent-meta">
@@ -658,6 +674,9 @@ function setSenaPresenceFilter(filter = 'all') {
 }
 function isSenaPresent(agent) {
   return agent?.presence_status === 'present'
+}
+function presenceTime(value) {
+  return value || 'Non renseignée'
 }
 function senaPresenceFilterTitle(total = 0) {
   const labels = {
@@ -1031,6 +1050,21 @@ button.sena-drill-stat-card { font: inherit; cursor: pointer; }
 .sena-drill-presence-note { margin-top: .22rem; font-size: .7rem; font-weight: 800; }
 .sena-drill-presence-note.present { color: #059669; }
 .sena-drill-presence-note.absent { color: #d97706; }
+.sena-drill-presence-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-top: .45rem; }
+.sena-drill-presence-times span {
+  min-width: 0; display: flex; align-items: center; gap: .3rem;
+  padding: .35rem .45rem; border-radius: 8px; border: 1px solid #bae6fd;
+  background: #f0f9ff; color: #0c4a6e; font-size: .66rem; font-weight: 800;
+}
+.sena-drill-presence-times i { color: #0ea5e9; font-size: .65rem; flex-shrink: 0; }
+.sena-drill-presence-times strong { color: #64748b; font-size: .58rem; text-transform: uppercase; }
+.sena-drill-presence-times span.muted { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+.sena-drill-presence-times span.muted i { color: #cbd5e1; }
+.sena-drill-pointage-note {
+  display: flex; align-items: center; gap: .3rem; margin-top: .4rem;
+  padding: .25rem .4rem; border-radius: 7px; border: 1px solid #fed7aa;
+  background: #fff7ed; color: #7c2d12; font-size: .62rem; font-weight: 700;
+}
 .sena-drill-agent-meta { display: flex; flex-direction: column; align-items: flex-end; gap: .12rem; color: #475569; font-weight: 800; font-size: .76rem; }
 .sena-drill-agent-meta small { color: #94a3b8; font-weight: 700; }
 .sena-drill-activity { align-items: flex-start; }

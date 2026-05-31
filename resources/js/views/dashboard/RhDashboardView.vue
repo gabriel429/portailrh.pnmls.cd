@@ -1022,10 +1022,39 @@
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
                           <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-name">
+                              {{ a.nom }}
+                              <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                              </span>
+                            </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
-                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                            <div class="drill-presence-times">
+                              <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <strong>Arrivée</strong>
+                                {{ presenceTime(a.heure_entree) }}
+                              </span>
+                              <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <strong>Départ</strong>
+                                {{ presenceTime(a.heure_sortie) }}
+                              </span>
+                            </div>
+                            <div class="drill-prov-agent-meta">
+                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                              <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
+                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                            </div>
+                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.pointage_observation }}</span>
                             </div>
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
@@ -1136,10 +1165,39 @@
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
                           <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-name">
+                              {{ a.nom }}
+                              <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                              </span>
+                            </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
-                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                            <div class="drill-presence-times">
+                              <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <strong>Arrivée</strong>
+                                {{ presenceTime(a.heure_entree) }}
+                              </span>
+                              <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <strong>Départ</strong>
+                                {{ presenceTime(a.heure_sortie) }}
+                              </span>
+                            </div>
+                            <div class="drill-prov-agent-meta">
+                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                              <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
+                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                            </div>
+                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.pointage_observation }}</span>
                             </div>
                           </div>
                           <i class="fas fa-address-card drill-agent-contact-icon"></i>
@@ -1692,6 +1750,36 @@ function backToPrevious() {
 
 function setDrillPresenceFilter(filter = 'all') {
   drillPresenceFilter.value = filter
+}
+
+function presenceStatusLabel(agent) {
+  const labels = {
+    present: 'Présent',
+    absent: 'Absent',
+    en_conge: 'En congé',
+    en_mission: 'En mission',
+    en_formation: 'En formation',
+    suspendu: 'Suspendu',
+  }
+
+  return agent?.presence_label || labels[agent?.presence_status] || 'Absent'
+}
+
+function presenceStatusIcon(agent) {
+  const icons = {
+    present: 'fas fa-check-circle',
+    absent: 'fas fa-user-times',
+    en_conge: 'fas fa-calendar-minus',
+    en_mission: 'fas fa-route',
+    en_formation: 'fas fa-graduation-cap',
+    suspendu: 'fas fa-ban',
+  }
+
+  return icons[agent?.presence_status] || 'fas fa-user-times'
+}
+
+function presenceTime(value) {
+  return value || 'Non renseignée'
 }
 
 function filteredPresenceAgents(agents = []) {
@@ -2260,7 +2348,7 @@ onMounted(async () => {
 .drill-prov-dept-count small { color: #94a3b8; font-weight: 500; }
 .drill-prov-agents-table { display: flex; flex-direction: column; gap: .35rem; }
 .drill-prov-agent-row {
-  display: flex; align-items: center; gap: .6rem;
+  display: flex; align-items: flex-start; gap: .6rem;
   padding: .5rem .7rem; background: #fff; border-radius: 10px; border: 1px solid #f1f5f9;
 }
 .drill-prov-agent-avatar {
@@ -2272,11 +2360,43 @@ onMounted(async () => {
 .drill-prov-agent-fn { font-size: .65rem; color: #94a3b8; }
 .drill-prov-agent-localite { display: inline-flex; align-items: center; gap: .25rem; margin-top: .12rem; font-size: .63rem; font-weight: 700; color: #0f766e; }
 .drill-prov-agent-localite i { font-size: .6rem; }
+.drill-presence-badge {
+  display: inline-flex; align-items: center; gap: .25rem; margin-left: .45rem;
+  padding: .12rem .45rem; border-radius: 999px; border: 1px solid transparent;
+  font-size: .58rem; font-weight: 800; white-space: nowrap; vertical-align: middle;
+}
+.drill-presence-present { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+.drill-presence-absent { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+.drill-presence-en_conge { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+.drill-presence-en_mission { background: #fef3c7; color: #a16207; border-color: #fde68a; }
+.drill-presence-en_formation { background: #ede9fe; color: #6d28d9; border-color: #ddd6fe; }
+.drill-presence-suspendu { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
+.drill-presence-times {
+  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .4rem; margin-top: .45rem;
+}
+.drill-presence-time {
+  min-width: 0; display: flex; align-items: center; gap: .3rem;
+  padding: .35rem .45rem; border-radius: 8px; border: 1px solid #bae6fd;
+  background: #f0f9ff; color: #0c4a6e; font-size: .66rem; font-weight: 700;
+}
+.drill-presence-time i { color: #0ea5e9; font-size: .65rem; flex-shrink: 0; }
+.drill-presence-time strong { color: #64748b; font-size: .58rem; text-transform: uppercase; }
+.drill-presence-time.muted { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+.drill-presence-time.muted i { color: #cbd5e1; }
+.drill-prov-agent-meta { display: flex; flex-wrap: wrap; gap: .3rem .5rem; margin-top: .4rem; }
+.drill-prov-agent-meta span { display: inline-flex; align-items: center; gap: .22rem; font-size: .62rem; color: #64748b; }
+.drill-prov-agent-meta i { font-size: .58rem; opacity: .7; }
+.drill-prov-agent-note {
+  display: flex; align-items: center; gap: .3rem; margin-top: .4rem;
+  padding: .25rem .4rem; border-radius: 7px; border: 1px solid #fed7aa;
+  background: #fff7ed; color: #7c2d12; font-size: .62rem;
+}
 
 /* Agent clickable */
 .drill-agent-clickable { cursor: pointer; transition: all .15s ease; position: relative; }
 .drill-agent-clickable:hover { background: #f8fafc; border-color: #e2e8f0; transform: translateX(2px); }
-.drill-agent-contact-icon { color: #cbd5e1; font-size: .72rem; transition: color .15s; flex-shrink: 0; }
+.drill-agent-contact-icon { color: #cbd5e1; font-size: .72rem; margin-top: .35rem; transition: color .15s; flex-shrink: 0; }
 .drill-agent-clickable:hover .drill-agent-contact-icon { color: #0077B5; }
 
 /* Contact popup overlay */

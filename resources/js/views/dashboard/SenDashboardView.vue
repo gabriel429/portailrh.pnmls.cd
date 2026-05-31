@@ -1267,9 +1267,16 @@
                             <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
                           </div>
                           <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                            <div class="drill-prov-agent-name">
+                              {{ a.nom }}
+                              <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                              </span>
+                            </div>
                             <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
                             <div class="drill-prov-agent-meta">
+                              <span v-if="a.heure_entree"><i class="fas fa-sign-in-alt"></i> Entrée {{ a.heure_entree }}</span>
+                              <span v-if="a.heure_sortie"><i class="fas fa-sign-out-alt"></i> Sortie {{ a.heure_sortie }}</span>
                               <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
                               <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
                               <span v-if="a.grade"><i class="fas fa-layer-group"></i> {{ a.grade }}</span>
@@ -1280,6 +1287,10 @@
                             <div v-if="a.absence_observation" class="drill-prov-agent-note">
                               <i class="fas fa-comment-alt"></i>
                               <span>{{ a.absence_observation }}</span>
+                            </div>
+                            <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                              <i class="fas fa-comment-alt"></i>
+                              <span>{{ a.pointage_observation }}</span>
                             </div>
                             <button type="button" class="drill-prov-agent-link" @click.stop="openAgentContactPopup(a)">Voir fiche</button>
                           </div>
