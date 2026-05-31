@@ -56,7 +56,7 @@
         </button>
       </div>
 
-      <div class="dash-panel mt-2">
+      <div id="agenda" class="dash-panel mt-2">
         <header class="panel-head">
           <div>
             <h3 class="panel-title">
@@ -65,21 +65,130 @@
             </h3>
             <p class="panel-sub">{{ panelSubtitle }}</p>
           </div>
-          <div class="task-filters">
-            <label for="source-filter" class="task-filter-label">Source</label>
-            <select id="source-filter" v-model="sourceFilter" class="form-select form-select-sm task-filter-select">
-              <option value="all">Toutes</option>
-              <option value="direction">Direction</option>
-              <option value="sen">SEN</option>
-              <option value="sep">SEP</option>
-              <option value="secom">SECOM</option>
-              <option value="sel">SEL</option>
-              <option value="aaf_local">AAF / RH local</option>
-              <option value="autre">Autre</option>
-            </select>
+          <div class="task-panel-tools">
+            <div class="task-view-toggle" role="group" aria-label="Mode d'affichage">
+              <button type="button" :class="{ active: taskViewMode === 'list' }" @click="setTaskViewMode('list')">
+                <i class="fas fa-list"></i>
+                Liste
+              </button>
+              <button type="button" :class="{ active: taskViewMode === 'calendar' }" @click="setTaskViewMode('calendar')">
+                <i class="fas fa-calendar-alt"></i>
+                Calendrier
+              </button>
+            </div>
+            <div class="task-filters">
+              <label for="source-filter" class="task-filter-label">Source</label>
+              <select id="source-filter" v-model="sourceFilter" class="form-select form-select-sm task-filter-select">
+                <option value="all">Toutes</option>
+                <option value="direction">Direction</option>
+                <option value="sen">SEN</option>
+                <option value="sep">SEP</option>
+                <option value="secom">SECOM</option>
+                <option value="sel">SEL</option>
+                <option value="aaf_local">AAF / RH local</option>
+                <option value="autre">Autre</option>
+              </select>
+            </div>
           </div>
         </header>
-        <div class="table-responsive">
+        <div v-if="taskViewMode === 'calendar'" class="task-calendar-view" :aria-busy="loading">
+          <div class="task-calendar-toolbar">
+            <div>
+              <span class="task-calendar-eyebrow">Agenda des échéances</span>
+              <h4>{{ calendarMonthLabel }}</h4>
+            </div>
+            <div class="task-calendar-actions">
+              <button type="button" @click="moveCalendar(-1)" title="Mois précédent">
+                <i class="fas fa-chevron-left"></i>
+              </button>
+              <button type="button" class="task-calendar-today" @click="goToCurrentMonth">Aujourd'hui</button>
+              <button type="button" @click="moveCalendar(1)" title="Mois suivant">
+                <i class="fas fa-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="task-calendar-summary">
+            <span><b>{{ filteredTaches.length }}</b> tâche(s)</span>
+            <span><b>{{ calendarTasksInMonth.length }}</b> ce mois</span>
+            <span><b>{{ calendarOverdueCount }}</b> en retard</span>
+            <span><b>{{ calendarWithoutDeadlineCount }}</b> sans échéance</span>
+          </div>
+
+          <div v-if="loading" class="task-calendar-loading">
+            <LoadingSpinner message="Chargement du calendrier..." />
+          </div>
+
+          <div v-else class="task-calendar-layout">
+            <section class="task-calendar-board" aria-label="Calendrier des tâches">
+              <div class="task-calendar-weekdays">
+                <span v-for="day in calendarWeekdays" :key="day">{{ day }}</span>
+              </div>
+              <div class="task-calendar-grid">
+                <button
+                  v-for="day in calendarDays"
+                  :key="day.dateKey"
+                  type="button"
+                  class="task-calendar-day"
+                  :class="{
+                    muted: !day.inMonth,
+                    today: day.isToday,
+                    selected: calendarSelectedDate === day.dateKey,
+                    busy: day.tasks.length,
+                  }"
+                  @click="selectCalendarDate(day.dateKey)"
+                >
+                  <span class="task-calendar-date">{{ day.label }}</span>
+                  <span v-if="day.tasks.length" class="task-calendar-count">{{ day.tasks.length }}</span>
+                  <span
+                    v-for="task in day.tasks.slice(0, 3)"
+                    :key="task.id"
+                    class="task-calendar-event"
+                    :class="[calendarPriorityClass(task), { overdue: isOverdue(task) }]"
+                  >
+                    {{ task.titre }}
+                  </span>
+                  <span v-if="day.tasks.length > 3" class="task-calendar-more">
+                    +{{ day.tasks.length - 3 }} autre(s)
+                  </span>
+                </button>
+              </div>
+            </section>
+
+            <aside class="task-calendar-detail">
+              <div class="task-calendar-detail-head">
+                <span>Détail</span>
+                <strong>{{ selectedCalendarDateLabel }}</strong>
+              </div>
+              <div v-if="selectedCalendarTasks.length" class="task-calendar-detail-list">
+                <router-link
+                  v-for="task in selectedCalendarTasks"
+                  :key="task.id"
+                  :to="{ name: 'taches.show', params: { id: task.id } }"
+                  class="task-calendar-detail-item"
+                >
+                  <span class="task-calendar-dot" :class="calendarPriorityClass(task)"></span>
+                  <span>
+                    <strong>{{ task.titre }}</strong>
+                    <small>
+                      {{ statutLabel(task.statut) }}
+                      <template v-if="task.agent || task.createur">
+                        · {{ (showAssignedByMe || isDeptScope || isSENScope || isProvinceScope) ? (task.agent?.nom_complet ?? '-') : (task.createur?.nom_complet ?? '-') }}
+                      </template>
+                    </small>
+                  </span>
+                  <i class="fas fa-arrow-right"></i>
+                </router-link>
+              </div>
+              <div v-else class="task-calendar-empty">
+                <i class="fas fa-calendar-check"></i>
+                <span>Aucune tâche prévue ce jour.</span>
+              </div>
+            </aside>
+          </div>
+        </div>
+
+        <div v-else class="table-responsive">
           <table class="table table-hover mb-0" :aria-busy="loading">
             <thead>
               <tr>
@@ -323,6 +432,9 @@ const normalizeStatusFilter = (value) => {
   return validStatusFilters.includes(filter) ? filter : 'all'
 }
 const statusFilter = ref(normalizeStatusFilter(route.query.statut))
+const taskViewMode = ref(route.hash === '#agenda' ? 'calendar' : 'list')
+const calendarCursor = ref(startOfMonth(new Date()))
+const calendarSelectedDate = ref(toDateKey(new Date()))
 const createModalOpen = ref(false)
 const loadingCreateData = ref(false)
 const submittingCreate = ref(false)
@@ -355,6 +467,10 @@ watch(() => route.query.statut, (val) => {
   if (statusFilter.value !== nextFilter) {
     statusFilter.value = nextFilter
   }
+})
+
+watch(() => route.hash, (hash) => {
+  if (hash === '#agenda') taskViewMode.value = 'calendar'
 })
 
 watch(() => [route.name, route.query.scope], () => {
@@ -391,6 +507,59 @@ const filteredTaches = computed(() => {
     items = items.filter((t) => t.statut === statusFilter.value)
   }
   return items
+})
+
+const calendarWeekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
+const calendarMonthLabel = computed(() => calendarCursor.value.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }))
+const calendarTasksByDate = computed(() => {
+  const grouped = {}
+  filteredTaches.value.forEach((task) => {
+    const key = taskDateKey(task)
+    if (!key) return
+    if (!grouped[key]) grouped[key] = []
+    grouped[key].push(task)
+  })
+
+  Object.values(grouped).forEach((items) => {
+    items.sort((a, b) => priorityWeight(b.priorite) - priorityWeight(a.priorite))
+  })
+
+  return grouped
+})
+const calendarDays = computed(() => {
+  const monthStart = startOfMonth(calendarCursor.value)
+  const gridStart = new Date(monthStart)
+  gridStart.setDate(monthStart.getDate() - ((monthStart.getDay() + 6) % 7))
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(gridStart)
+    date.setDate(gridStart.getDate() + index)
+    const dateKey = toDateKey(date)
+
+    return {
+      date,
+      dateKey,
+      label: date.getDate(),
+      inMonth: date.getMonth() === calendarCursor.value.getMonth(),
+      isToday: dateKey === toDateKey(new Date()),
+      tasks: calendarTasksByDate.value[dateKey] || [],
+    }
+  })
+})
+const calendarTasksInMonth = computed(() => {
+  const month = calendarCursor.value.getMonth()
+  const year = calendarCursor.value.getFullYear()
+  return filteredTaches.value.filter((task) => {
+    const date = parseTaskDate(task.date_echeance)
+    return date && date.getMonth() === month && date.getFullYear() === year
+  })
+})
+const calendarOverdueCount = computed(() => filteredTaches.value.filter((task) => isOverdue(task)).length)
+const calendarWithoutDeadlineCount = computed(() => filteredTaches.value.filter((task) => !task.date_echeance).length)
+const selectedCalendarTasks = computed(() => calendarTasksByDate.value[calendarSelectedDate.value] || [])
+const selectedCalendarDateLabel = computed(() => {
+  const date = parseDateKey(calendarSelectedDate.value)
+  return date ? date.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }) : ''
 })
 
 const pageTitle = computed(() => {
@@ -594,6 +763,73 @@ function removeCreateQuery() {
 
 function setStatusFilter(filter) {
   statusFilter.value = normalizeStatusFilter(filter)
+}
+
+function setTaskViewMode(mode) {
+  taskViewMode.value = mode === 'calendar' ? 'calendar' : 'list'
+}
+
+function moveCalendar(offset) {
+  calendarCursor.value = addMonths(calendarCursor.value, offset)
+  calendarSelectedDate.value = toDateKey(calendarCursor.value)
+}
+
+function goToCurrentMonth() {
+  const today = new Date()
+  calendarCursor.value = startOfMonth(today)
+  calendarSelectedDate.value = toDateKey(today)
+}
+
+function selectCalendarDate(dateKey) {
+  calendarSelectedDate.value = dateKey
+  const date = parseDateKey(dateKey)
+  if (date && date.getMonth() !== calendarCursor.value.getMonth()) {
+    calendarCursor.value = startOfMonth(date)
+  }
+}
+
+function startOfMonth(date) {
+  return new Date(date.getFullYear(), date.getMonth(), 1)
+}
+
+function addMonths(date, amount) {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1)
+}
+
+function parseTaskDate(dateStr) {
+  if (!dateStr) return null
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const [year, month, day] = dateStr.substring(0, 10).split('-').map(Number)
+    return new Date(year, month - 1, day)
+  }
+  const date = new Date(dateStr)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+function parseDateKey(dateKey) {
+  if (!dateKey) return null
+  const [year, month, day] = dateKey.split('-').map(Number)
+  return new Date(year, month - 1, day)
+}
+
+function toDateKey(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+function taskDateKey(task) {
+  const date = parseTaskDate(task.date_echeance)
+  return date ? toDateKey(date) : ''
+}
+
+function priorityWeight(priority) {
+  return { urgente: 4, haute: 3, normale: 2, faible: 1 }[priority] || 0
+}
+
+function calendarPriorityClass(task) {
+  return `priority-${task.priorite || 'normale'}`
 }
 
 function formatFileSize(size) {
@@ -859,6 +1095,382 @@ watch(statusFilter, (val) => {
   vertical-align: middle;
 }
 
+.task-panel-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .75rem;
+  flex-wrap: wrap;
+}
+
+.task-view-toggle {
+  display: inline-flex;
+  gap: .25rem;
+  padding: .25rem;
+  border: 1px solid #dbe7ef;
+  border-radius: 999px;
+  background: #f8fafc;
+}
+
+.task-view-toggle button {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 34px;
+  padding: 0 .85rem;
+  border: 0;
+  border-radius: 999px;
+  color: #475569;
+  background: transparent;
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.task-view-toggle button.active {
+  color: #fff;
+  background: linear-gradient(135deg, #0277b5, #0f766e);
+  box-shadow: 0 8px 18px rgba(2, 119, 181, .22);
+}
+
+.task-calendar-view {
+  padding: 1.15rem;
+  border-top: 1px solid rgba(226, 232, 240, .78);
+  background:
+    linear-gradient(135deg, rgba(248, 250, 252, .92), rgba(240, 253, 250, .78));
+}
+
+.task-calendar-toolbar,
+.task-calendar-summary,
+.task-calendar-actions,
+.task-calendar-detail-head {
+  display: flex;
+  align-items: center;
+}
+
+.task-calendar-toolbar {
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .8rem;
+}
+
+.task-calendar-eyebrow {
+  display: block;
+  color: #0f766e;
+  font-size: .72rem;
+  font-weight: 900;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.task-calendar-toolbar h4 {
+  margin: .15rem 0 0;
+  color: #0f172a;
+  font-size: 1.2rem;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.task-calendar-actions {
+  gap: .4rem;
+}
+
+.task-calendar-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
+  border: 1px solid #dbe7ef;
+  border-radius: 11px;
+  color: #0f5f76;
+  background: #fff;
+  font-weight: 900;
+}
+
+.task-calendar-actions button:hover {
+  border-color: #8fd3e8;
+  background: #eef9fc;
+}
+
+.task-calendar-actions .task-calendar-today {
+  padding: 0 .9rem;
+}
+
+.task-calendar-summary {
+  gap: .6rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.task-calendar-summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  min-height: 32px;
+  padding: 0 .75rem;
+  border: 1px solid #dbe7ef;
+  border-radius: 999px;
+  color: #475569;
+  background: rgba(255, 255, 255, .84);
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.task-calendar-summary b {
+  color: #0f172a;
+}
+
+.task-calendar-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.task-calendar-board,
+.task-calendar-detail {
+  border: 1px solid rgba(203, 213, 225, .72);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, .06);
+}
+
+.task-calendar-board {
+  overflow: hidden;
+}
+
+.task-calendar-weekdays,
+.task-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.task-calendar-weekdays {
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.task-calendar-weekdays span {
+  padding: .72rem .5rem;
+  color: #64748b;
+  font-size: .72rem;
+  font-weight: 900;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.task-calendar-day {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .32rem;
+  min-height: 116px;
+  padding: .65rem;
+  border: 0;
+  border-right: 1px solid #eef2f7;
+  border-bottom: 1px solid #eef2f7;
+  background: #fff;
+  text-align: left;
+}
+
+.task-calendar-day:nth-child(7n) {
+  border-right: 0;
+}
+
+.task-calendar-day:hover,
+.task-calendar-day.selected {
+  background: #f0f9ff;
+  box-shadow: inset 0 0 0 2px rgba(2, 119, 181, .24);
+}
+
+.task-calendar-day.muted {
+  background: #f8fafc;
+  color: #94a3b8;
+}
+
+.task-calendar-day.today .task-calendar-date {
+  color: #fff;
+  background: #0277b5;
+}
+
+.task-calendar-day.busy::after {
+  content: '';
+  position: absolute;
+  top: .7rem;
+  right: .7rem;
+  width: .46rem;
+  height: .46rem;
+  border-radius: 999px;
+  background: #0f766e;
+}
+
+.task-calendar-date {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 10px;
+  color: #334155;
+  font-weight: 900;
+}
+
+.task-calendar-count {
+  position: absolute;
+  top: .55rem;
+  right: 1.45rem;
+  min-width: 20px;
+  padding: .05rem .35rem;
+  border-radius: 999px;
+  color: #075985;
+  background: #e0f2fe;
+  font-size: .68rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.task-calendar-event,
+.task-calendar-more {
+  display: block;
+  overflow: hidden;
+  max-width: 100%;
+  border-radius: 8px;
+  padding: .22rem .45rem;
+  color: #334155;
+  background: #f1f5f9;
+  font-size: .72rem;
+  font-weight: 800;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-calendar-event.priority-urgente,
+.task-calendar-dot.priority-urgente {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.task-calendar-event.priority-haute,
+.task-calendar-dot.priority-haute {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.task-calendar-event.priority-normale,
+.task-calendar-dot.priority-normale {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.task-calendar-event.priority-faible,
+.task-calendar-dot.priority-faible {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.task-calendar-event.overdue {
+  box-shadow: inset 3px 0 0 #ef4444;
+}
+
+.task-calendar-more {
+  color: #64748b;
+  background: transparent;
+  padding-left: 0;
+}
+
+.task-calendar-detail {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  padding: 1rem;
+}
+
+.task-calendar-detail-head {
+  justify-content: space-between;
+  gap: .75rem;
+  margin-bottom: .9rem;
+  padding-bottom: .75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.task-calendar-detail-head span {
+  color: #64748b;
+  font-size: .72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.task-calendar-detail-head strong {
+  color: #0f172a;
+  font-size: .9rem;
+  text-align: right;
+  text-transform: capitalize;
+}
+
+.task-calendar-detail-list {
+  display: grid;
+  gap: .65rem;
+}
+
+.task-calendar-detail-item {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) 16px;
+  gap: .65rem;
+  align-items: center;
+  padding: .72rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  color: inherit;
+  background: #f8fafc;
+  text-decoration: none;
+}
+
+.task-calendar-detail-item:hover {
+  border-color: #8fd3e8;
+  background: #eef9fc;
+}
+
+.task-calendar-detail-item strong,
+.task-calendar-detail-item small {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-calendar-detail-item strong {
+  color: #0f172a;
+  font-size: .86rem;
+}
+
+.task-calendar-detail-item small {
+  margin-top: .1rem;
+  color: #64748b;
+  font-size: .72rem;
+}
+
+.task-calendar-dot {
+  width: 10px;
+  height: 34px;
+  border-radius: 999px;
+}
+
+.task-calendar-empty,
+.task-calendar-loading {
+  display: grid;
+  place-items: center;
+  gap: .65rem;
+  min-height: 220px;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.task-calendar-empty i {
+  font-size: 1.8rem;
+}
+
 @media (max-width: 767.98px) {
   .taches-modern {
     padding: 1rem .75rem 1.5rem;
@@ -901,6 +1513,37 @@ watch(statusFilter, (val) => {
   .task-filters {
     width: 100%;
     justify-content: center;
+  }
+
+  .task-panel-tools {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .task-calendar-view {
+    padding: .85rem;
+  }
+
+  .task-calendar-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .task-calendar-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .task-calendar-grid,
+  .task-calendar-weekdays {
+    min-width: 680px;
+  }
+
+  .task-calendar-board {
+    overflow-x: auto;
+  }
+
+  .task-calendar-day {
+    min-height: 104px;
   }
 
   .table {

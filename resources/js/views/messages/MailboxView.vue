@@ -2662,13 +2662,248 @@ onBeforeUnmount(() => {
   padding: 0 16px;
 }
 
-@media (max-width: 1040px) {
+@media (min-width: 861px) {
+  .mailbox-page {
+    min-height: calc(100dvh - 88px);
+    padding: clamp(18px, 2vw, 28px);
+    background:
+      radial-gradient(circle at 16% 0%, rgba(14, 165, 233, .12), transparent 32%),
+      radial-gradient(circle at 88% 10%, rgba(20, 184, 166, .1), transparent 28%),
+      linear-gradient(180deg, #eef8fc 0%, #f8fbfd 100%);
+  }
+
+  .outlook-shell,
+  .mailbox-settings {
+    max-width: none;
+    border-color: rgba(148, 163, 184, .32);
+    border-radius: 18px;
+    box-shadow: 0 24px 60px rgba(15, 76, 92, .16);
+  }
+
   .outlook-shell {
-    grid-template-columns: 220px minmax(0, 1fr);
+    grid-template-columns: 280px minmax(0, 1fr);
+    min-height: calc(100dvh - 132px);
+    background: rgba(255, 255, 255, .92);
+  }
+
+  .mailbox-sidebar {
+    gap: 16px;
+    padding: 16px;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.96), rgba(240,249,252,.96));
+    border-right-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-account,
+  .mailbox-side-card {
+    border: 1px solid rgba(203, 213, 225, .72);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .88);
+    box-shadow: 0 10px 24px rgba(15, 76, 92, .08);
+  }
+
+  .mailbox-account {
+    padding: 12px;
+  }
+
+  .mailbox-account-avatar,
+  .mailbox-avatar {
+    border-radius: 12px;
+    background: linear-gradient(135deg, #dff7ff, #d9fbe8);
+  }
+
+  .mailbox-compose-btn {
+    min-height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #04769a, #0f8b7f);
+    box-shadow: 0 14px 30px rgba(4, 118, 154, .22);
+  }
+
+  .mailbox-folder-nav {
+    gap: 5px;
+  }
+
+  .mailbox-folder-btn {
+    min-height: 42px;
+    padding: 0 10px;
+    border-radius: 12px;
+    font-weight: 750;
+  }
+
+  .mailbox-folder-btn i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    color: #0f6f88;
+    background: rgba(224, 242, 254, .72);
+  }
+
+  .mailbox-folder-btn:hover,
+  .mailbox-folder-btn.active {
+    border-color: rgba(125, 211, 252, .78);
+    background: #fff;
+    box-shadow: 0 10px 22px rgba(14, 116, 144, .1);
+  }
+
+  .mailbox-folder-btn.active i {
+    color: #fff;
+    background: #0877b7;
+  }
+
+  .mailbox-main {
+    background: #f8fbfd;
+  }
+
+  .mailbox-topbar {
+    min-height: 82px;
+    padding: 18px 22px;
+    background: rgba(255, 255, 255, .94);
+    border-bottom-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-topbar h1 {
+    font-size: 1.34rem;
+    letter-spacing: 0;
+  }
+
+  .mailbox-search {
+    max-width: min(440px, 42vw);
+  }
+
+  .mailbox-search input {
+    min-height: 44px;
+    border-radius: 12px;
+    background: #f8fafc;
+  }
+
+  .mailbox-commandbar {
+    gap: 9px;
+    padding: 12px 18px;
+    background: rgba(248, 251, 253, .96);
+    border-bottom-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-command,
+  .mailbox-move select,
+  .mailbox-icon-btn {
+    min-height: 38px;
+    border-radius: 11px;
+  }
+
+  .mailbox-command.settings {
+    margin-left: auto;
   }
 
   .mailbox-content {
-    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    grid-template-columns: minmax(340px, 430px) minmax(0, 1fr);
+    gap: 0;
+    background: #f4f8fb;
+  }
+
+  .mailbox-list-pane {
+    background: #f7fbfd;
+    border-right-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-list-head {
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, .82);
+    border-bottom-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-message-list {
+    display: grid;
+    gap: 8px;
+    padding: 10px;
+  }
+
+  .mailbox-message-item {
+    border: 1px solid rgba(203, 213, 225, .72);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .88);
+    box-shadow: 0 8px 18px rgba(15, 76, 92, .045);
+  }
+
+  .mailbox-message-item.unread {
+    background: #fff;
+    border-color: rgba(14, 165, 233, .38);
+  }
+
+  .mailbox-message-item:hover,
+  .mailbox-message-item.active {
+    border-color: rgba(14, 165, 233, .58);
+    background: #fff;
+    box-shadow: 0 14px 28px rgba(14, 116, 144, .12);
+  }
+
+  .mailbox-reader {
+    display: flex;
+    min-height: 0;
+    margin: 12px;
+    overflow: auto;
+    flex-direction: column;
+    border: 1px solid rgba(203, 213, 225, .72);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 14px 32px rgba(15, 76, 92, .07);
+  }
+
+  .mailbox-reader-head {
+    padding: 22px 26px 18px;
+    border-bottom-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-reader-head h2 {
+    max-width: 960px;
+    font-size: clamp(1.2rem, 1.6vw, 1.55rem);
+    line-height: 1.38;
+  }
+
+  .mailbox-reader-meta {
+    max-width: 980px;
+    line-height: 1.7;
+  }
+
+  .mailbox-reader-actions .mailbox-icon-btn {
+    background: #eef8fd;
+  }
+
+  .mailbox-reader-tools {
+    padding: 12px 26px;
+    background: #fbfdfe;
+    border-bottom-color: rgba(203, 213, 225, .72);
+  }
+
+  .mailbox-reader-tools button {
+    min-height: 36px;
+    border-radius: 999px;
+  }
+
+  .mailbox-reader-attachments {
+    padding: 14px 26px;
+  }
+
+  .mailbox-reader-body {
+    flex: 1;
+    min-height: 360px;
+    max-width: 1040px;
+    padding: 28px 32px 38px;
+    color: #1e293b;
+    font-size: .98rem;
+    line-height: 1.76;
+  }
+}
+
+@media (max-width: 1040px) {
+  .outlook-shell {
+    grid-template-columns: 238px minmax(0, 1fr);
+  }
+
+  .mailbox-content {
+    grid-template-columns: minmax(300px, 370px) minmax(0, 1fr);
   }
 
   .mailbox-compose-drawer {
