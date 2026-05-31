@@ -9,6 +9,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -829,14 +830,14 @@ class MailboxController extends ApiController
 
     private function specialFolderType(string $name): string
     {
-        $normalized = mb_strtolower($name);
+        $normalized = mb_strtolower(Str::ascii($name));
 
         return match (true) {
             $normalized === 'inbox' || str_ends_with($normalized, '.inbox') || str_ends_with($normalized, '/inbox') => 'inbox',
             str_contains($normalized, 'sent') || str_contains($normalized, 'envoy') => 'sent',
             str_contains($normalized, 'draft') || str_contains($normalized, 'brouillon') => 'drafts',
             str_contains($normalized, 'archive') => 'archive',
-            str_contains($normalized, 'junk') || str_contains($normalized, 'spam') || str_contains($normalized, 'indesirable') => 'junk',
+            str_contains($normalized, 'junk') || str_contains($normalized, 'spam') || str_contains($normalized, 'indesirable') || str_contains($normalized, 'courrier indesirable') => 'junk',
             str_contains($normalized, 'trash') || str_contains($normalized, 'deleted') || str_contains($normalized, 'corbeille') => 'trash',
             default => 'folder',
         };
@@ -863,7 +864,7 @@ class MailboxController extends ApiController
                 'sent' => 'Envoyes',
                 'drafts' => 'Brouillons',
                 'archive' => 'Archives',
-                'junk' => 'Indesirables',
+                'junk' => 'Spam',
                 'trash' => 'Corbeille',
             ][$type];
         }
