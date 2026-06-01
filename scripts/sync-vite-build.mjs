@@ -68,6 +68,15 @@ function patchHtaccess(buildDir) {
         }
     }
 
+    patched = patched.replace(
+        '# For direct manifest.json access\nRewriteCond %{REQUEST_URI} ^/build/manifest\\.json$\nRewriteRule ^manifest\\.json$ serve-asset.php?file=../manifest.json [L,QSA]',
+        '# For direct manifest.json access, let existing files pass through.\n'
+        + '# Only use the PHP fallback if the manifest is missing from the build root.\n'
+        + 'RewriteCond %{REQUEST_FILENAME} !-f\n'
+        + 'RewriteCond %{REQUEST_URI} ^/(public/)?build/manifest\\.json$\n'
+        + 'RewriteRule ^manifest\\.json$ serve-asset.php?file=manifest.json [L,QSA]',
+    );
+
     if (patched !== content) {
         writeFileSync(file, patched);
     }
@@ -126,9 +135,19 @@ if (!file_exists($assetPath) || !is_file($assetPath)) {
     let patched = content;
 
     const marker = "$assetPath = __DIR__ . '/assets/' . $requestedFile;";
+    const rootAssetBlock = String.raw`// Map to physical file in assets directory, with an explicit allowlist for
+// build-root files needed by Workbox during service-worker install.
+$rootBuildFiles = ['manifest.json', 'manifest.webmanifest', 'registerSW.js', 'sw.js'];
+$assetPath = in_array($requestedFile, $rootBuildFiles, true)
+    ? __DIR__ . '/' . $requestedFile
+    : __DIR__ . '/assets/' . $requestedFile;`;
 
     if (!patched.includes('$manifestPath = __DIR__ . \'/manifest.json\';')) {
         patched = patched.replace(marker, `${marker}\n$servedFallbackAsset = false;\n\n${fallbackBlock}`);
+    }
+
+    if (!patched.includes('$rootBuildFiles = [')) {
+        patched = patched.replace(marker, rootAssetBlock);
     }
 
     const staleAssetBlock = String.raw`

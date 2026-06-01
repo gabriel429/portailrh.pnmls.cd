@@ -63,9 +63,11 @@ RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_URI} ^/build/assets/.+\.(woff2|woff|ttf)$
 RewriteRule ^assets/(.+\.(woff2|woff|ttf))$ serve-asset.php?file=$1 [L,QSA]
 
-# For direct manifest.json access
-RewriteCond %{REQUEST_URI} ^/build/manifest\.json$
-RewriteRule ^manifest\.json$ serve-asset.php?file=../manifest.json [L,QSA]
+# For direct manifest.json access, let existing files pass through.
+# Only use the PHP fallback if the manifest is missing from the build root.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_URI} ^/(public/)?build/manifest\.json$
+RewriteRule ^manifest\.json$ serve-asset.php?file=manifest.json [L,QSA]
 
 # Security: Block direct access to PHP files (except our serve-asset.php)
 <FilesMatch "\.php$">
