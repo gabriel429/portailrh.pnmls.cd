@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\MailboxCredential;
+use App\Models\MailboxSentMessage;
 use App\Models\SentMailHistory;
 use App\Models\User;
 use Carbon\Carbon;
@@ -20,6 +21,9 @@ use Throwable;
 
 class MailboxController extends ApiController
 {
+    private const LOCAL_SENT_FOLDER = '__local_sent';
+    private const LOCAL_SENT_UID_PREFIX = 'local-sent-';
+
     public function settings(Request $request): JsonResponse
     {
         $credential = MailboxCredential::query()
@@ -102,22 +106,48 @@ class MailboxController extends ApiController
         $searchScope = (string) $request->query('search_scope', 'all');
         $filter = (string) $request->query('filter', '');
         $folder = $this->mailboxFromRequest($request);
+        $offset = ($page - 1) * $perPage;
+
+        if ($folder === self::LOCAL_SENT_FOLDER) {
+            return $this->localSentMessagesResponse($credential, $search, $filter, $searchScope, $page, $perPage, $offset, $folder);
+        }
 
         $stream = $this->openCredentialConnection($credential, $folder);
 
         try {
+            $isSentFolder = $this->isSentFolder($stream, $credential, $folder);
+            $localSentQuery = $isSentFolder
+                ? $this->localPendingSentMessagesQuery($credential, $search, $filter, $searchScope)
+                : null;
+            $localSentTotal = $localSentQuery ? (clone $localSentQuery)->count() : 0;
+            $localMessages = collect();
+
+            if ($localSentQuery && $offset < $localSentTotal) {
+                $localMessages = (clone $localSentQuery)
+                    ->skip($offset)
+                    ->take($perPage)
+                    ->get()
+                    ->map(fn (MailboxSentMessage $message) => $this->localSentMessagePayload($message));
+            }
+
             $uids = $this->searchMessageUids($stream, $search, $filter, $searchScope);
             rsort($uids, SORT_NUMERIC);
 
-            $total = count($uids);
-            $slice = array_slice($uids, ($page - 1) * $perPage, $perPage);
-            $messages = collect($slice)
-                ->map(fn (int $uid) => $this->overviewPayload($stream, $uid))
-                ->filter()
+            $imapTotal = count($uids);
+            $imapOffset = max($offset - $localSentTotal, 0);
+            $imapLimit = max($perPage - $localMessages->count(), 0);
+            $slice = $imapLimit > 0 ? array_slice($uids, $imapOffset, $imapLimit) : [];
+            $messages = $localMessages
+                ->concat(
+                    collect($slice)
+                        ->map(fn (int $uid) => $this->overviewPayload($stream, $uid))
+                        ->filter()
+                )
                 ->values()
                 ->all();
 
             $unreadCount = count(imap_search($stream, 'UNSEEN', SE_UID) ?: []);
+            $total = $imapTotal + $localSentTotal;
 
             return $this->success($messages, [
                 'total' => $total,
@@ -146,24 +176,29 @@ class MailboxController extends ApiController
         }
     }
 
-    public function show(Request $request, int $uid): JsonResponse
+    public function show(Request $request, string $uid): JsonResponse
     {
+        if ($localMessage = $this->localSentMessageFromUid($request, $uid)) {
+            return $this->success($this->localSentMessagePayload($localMessage, true));
+        }
+
         $credential = $this->requireCredential($request);
         $folder = $this->mailboxFromRequest($request);
         $stream = $this->openCredentialConnection($credential, $folder);
+        $messageUid = (int) $uid;
 
         try {
-            $overview = $this->overviewPayload($stream, $uid);
+            $overview = $this->overviewPayload($stream, $messageUid);
             if (!$overview) {
                 return response()->json(['message' => 'Message introuvable.'], 404);
             }
 
-            $structure = @imap_fetchstructure($stream, $uid, FT_UID);
-            $body = $this->messageBody($stream, $uid, $structure);
-            $headers = $this->headerPayload($stream, $uid);
+            $structure = @imap_fetchstructure($stream, $messageUid, FT_UID);
+            $body = $this->messageBody($stream, $messageUid, $structure);
+            $headers = $this->headerPayload($stream, $messageUid);
             $attachments = $structure ? $this->attachmentPayloads($structure) : [];
 
-            imap_setflag_full($stream, (string) $uid, '\\Seen', ST_UID);
+            imap_setflag_full($stream, (string) $messageUid, '\\Seen', ST_UID);
 
             return $this->success(array_merge($overview, $headers, [
                 'seen' => true,
@@ -374,6 +409,22 @@ class MailboxController extends ApiController
             ]);
         }
 
+        $sentAt = now();
+        $localSentMessage = MailboxSentMessage::create([
+            'user_id' => $request->user()->id,
+            'account_email' => mb_strtolower($credential->email),
+            'sender_name' => $senderName,
+            'to' => $to->all(),
+            'cc' => $cc->all(),
+            'bcc' => $bcc->all(),
+            'subject' => $validated['subject'],
+            'body' => $mailBody,
+            'html_body' => $htmlBody,
+            'attachments' => $this->sentAttachmentPayloads($attachments),
+            'sent_at' => $sentAt,
+            'imap_synced' => false,
+        ]);
+
         $sentSync = $this->syncSentMessage(
             $credential,
             $senderName,
@@ -386,6 +437,13 @@ class MailboxController extends ApiController
             $attachments,
         );
 
+        $localSentMessage->forceFill([
+            'imap_synced' => (bool) ($sentSync['synced'] ?? false),
+            'imap_folder' => $sentSync['folder'] ?? null,
+            'imap_sync_error' => $sentSync['error'] ?? null,
+            'imap_synced_at' => ($sentSync['synced'] ?? false) ? now() : null,
+        ])->save();
+
         foreach ($to->merge($cc)->merge($bcc)->unique()->values() as $recipientEmail) {
             SentMailHistory::create([
                 'sender_id' => $request->user()->id,
@@ -395,7 +453,7 @@ class MailboxController extends ApiController
                 'subject' => $validated['subject'],
                 'body' => $mailBody,
                 'attachment_name' => $this->attachmentHistoryLabel($attachments),
-                'sent_at' => now(),
+                'sent_at' => $sentAt,
             ]);
         }
 
@@ -406,6 +464,7 @@ class MailboxController extends ApiController
             'attachments' => $attachments->count(),
             'sent_synced' => (bool) ($sentSync['synced'] ?? false),
             'sent_folder' => $sentSync['folder'] ?? null,
+            'local_sent_uid' => $this->localSentUid($localSentMessage),
         ], [], [
             'message' => 'Mail envoye avec succes.',
         ], 201);
@@ -426,6 +485,7 @@ class MailboxController extends ApiController
             return [
                 'synced' => false,
                 'folder' => null,
+                'error' => 'Le module IMAP PHP ne permet pas la copie dans Envoyes.',
             ];
         }
 
@@ -449,6 +509,7 @@ class MailboxController extends ApiController
             return [
                 'synced' => false,
                 'folder' => null,
+                'error' => $exception->getMessage(),
             ];
         }
 
@@ -475,12 +536,14 @@ class MailboxController extends ApiController
                 return [
                     'synced' => false,
                     'folder' => $folder,
+                    'error' => $error,
                 ];
             }
 
             return [
                 'synced' => true,
                 'folder' => $folder,
+                'error' => null,
             ];
         } finally {
             imap_close($stream);
@@ -533,16 +596,200 @@ class MailboxController extends ApiController
             ->all();
     }
 
+    private function localSentMessagesResponse(
+        MailboxCredential $credential,
+        string $search,
+        string $filter,
+        string $searchScope,
+        int $page,
+        int $perPage,
+        int $offset,
+        string $folder,
+    ): JsonResponse {
+        $query = $this->localPendingSentMessagesQuery($credential, $search, $filter, $searchScope);
+        $total = (clone $query)->count();
+        $messages = (clone $query)
+            ->skip($offset)
+            ->take($perPage)
+            ->get()
+            ->map(fn (MailboxSentMessage $message) => $this->localSentMessagePayload($message))
+            ->values()
+            ->all();
+
+        return $this->success($messages, [
+            'total' => $total,
+            'per_page' => $perPage,
+            'current_page' => $page,
+            'last_page' => max((int) ceil($total / $perPage), 1),
+            'unread_count' => 0,
+            'folder' => $folder,
+            'filter' => $filter,
+            'search_scope' => $searchScope,
+        ]);
+    }
+
+    private function localPendingSentMessagesQuery(
+        MailboxCredential $credential,
+        string $search = '',
+        string $filter = '',
+        string $searchScope = 'all',
+    ) {
+        $query = MailboxSentMessage::query()
+            ->where('user_id', $credential->user_id)
+            ->where('imap_synced', false)
+            ->where(function ($query) use ($credential) {
+                $query->whereNull('account_email')
+                    ->orWhere('account_email', mb_strtolower($credential->email));
+            })
+            ->orderByDesc('sent_at')
+            ->orderByDesc('id');
+
+        if (in_array($filter, ['unread', 'flagged'], true)) {
+            $query->whereRaw('1 = 0');
+        }
+
+        if ($search !== '') {
+            $term = '%' . str_replace(['%', '_'], ['\%', '\_'], $search) . '%';
+
+            $query->where(function ($query) use ($term, $searchScope) {
+                if ($searchScope === 'subject') {
+                    $query->where('subject', 'like', $term);
+                    return;
+                }
+
+                if ($searchScope === 'recipient') {
+                    $query->where('to', 'like', $term)
+                        ->orWhere('cc', 'like', $term)
+                        ->orWhere('bcc', 'like', $term);
+                    return;
+                }
+
+                $query->where('subject', 'like', $term)
+                    ->orWhere('body', 'like', $term)
+                    ->orWhere('to', 'like', $term)
+                    ->orWhere('cc', 'like', $term)
+                    ->orWhere('bcc', 'like', $term);
+            });
+        }
+
+        return $query;
+    }
+
+    private function localSentMessageFromUid(Request $request, string $uid): ?MailboxSentMessage
+    {
+        if (!str_starts_with($uid, self::LOCAL_SENT_UID_PREFIX)) {
+            return null;
+        }
+
+        $id = (int) substr($uid, strlen(self::LOCAL_SENT_UID_PREFIX));
+        if ($id < 1) {
+            return null;
+        }
+
+        return MailboxSentMessage::query()
+            ->where('user_id', $request->user()->id)
+            ->whereKey($id)
+            ->first();
+    }
+
+    private function localSentMessagePayload(MailboxSentMessage $message, bool $includeBody = false): array
+    {
+        $to = $this->localAddressPayloads($message->to ?? []);
+        $cc = $this->localAddressPayloads($message->cc ?? []);
+        $bcc = $this->localAddressPayloads($message->bcc ?? []);
+        $from = trim(($message->sender_name ?: '') . ' <' . ($message->account_email ?: '') . '>');
+
+        $payload = [
+            'uid' => $this->localSentUid($message),
+            'message_id' => 'local-sent-' . $message->id,
+            'subject' => $message->subject ?: '(Sans objet)',
+            'from' => $from !== '<>' ? $from : ($message->account_email ?: ''),
+            'to' => $this->formatAddressList($to),
+            'cc' => $this->formatAddressList($cc),
+            'bcc' => $this->formatAddressList($bcc),
+            'date' => $message->sent_at?->toIso8601String(),
+            'size' => strlen((string) $message->body),
+            'seen' => true,
+            'unread' => false,
+            'answered' => false,
+            'flagged' => false,
+            'has_attachments' => false,
+            'local_copy' => true,
+            'sent_sync_pending' => ! $message->imap_synced,
+            'sent_sync_error' => $message->imap_sync_error,
+        ];
+
+        if ($includeBody) {
+            $payload = array_merge($payload, [
+                'body' => $message->body,
+                'attachments' => [],
+                'to_addresses' => $to,
+                'cc_addresses' => $cc,
+                'bcc_addresses' => $bcc,
+                'from_addresses' => $message->account_email ? [[
+                    'name' => $message->sender_name ?: '',
+                    'email' => $message->account_email,
+                    'label' => $payload['from'],
+                ]] : [],
+                'reply_to_addresses' => [],
+            ]);
+        }
+
+        return $payload;
+    }
+
+    private function localSentUid(MailboxSentMessage $message): string
+    {
+        return self::LOCAL_SENT_UID_PREFIX . $message->id;
+    }
+
+    private function localAddressPayloads(array $emails): array
+    {
+        return collect($emails)
+            ->map(fn ($email) => mb_strtolower(trim((string) $email)))
+            ->filter(fn ($email) => $email !== '' && str_contains($email, '@'))
+            ->unique()
+            ->map(fn ($email) => [
+                'name' => '',
+                'email' => $email,
+                'label' => $email,
+            ])
+            ->values()
+            ->all();
+    }
+
+    private function sentAttachmentPayloads($attachments): array
+    {
+        return collect($attachments)
+            ->map(fn ($attachment) => [
+                'name' => $attachment->getClientOriginalName(),
+                'mime' => $attachment->getMimeType(),
+                'size' => $attachment->getSize(),
+            ])
+            ->values()
+            ->all();
+    }
+
     private function sentFolderName($stream, MailboxCredential $credential): string
     {
         $sentFolder = collect($this->folderPayloads($stream, $credential))
-            ->first(fn (array $folder) => $folder['type'] === 'sent');
+            ->first(fn (array $folder) => $folder['type'] === 'sent' && $folder['name'] !== self::LOCAL_SENT_FOLDER);
 
         if ($sentFolder) {
             return $sentFolder['name'];
         }
 
         return $this->createSentFolder($stream, $credential);
+    }
+
+    private function isSentFolder($stream, MailboxCredential $credential, string $folder): bool
+    {
+        if ($folder === self::LOCAL_SENT_FOLDER || $this->specialFolderType($this->decodeFolderName($folder)) === 'sent') {
+            return true;
+        }
+
+        return collect($this->folderPayloads($stream, $credential))
+            ->contains(fn (array $item) => $item['name'] === $folder && $item['type'] === 'sent');
     }
 
     private function createSentFolder($stream, MailboxCredential $credential): string
@@ -1045,6 +1292,23 @@ class MailboxController extends ApiController
                 'total' => 0,
                 'unread' => 0,
             ]);
+        }
+
+        $pendingLocalSentCount = $this->localPendingSentMessagesQuery($credential)->count();
+        $sentIndex = collect($folders)->search(fn (array $folder) => $folder['type'] === 'sent');
+
+        if ($sentIndex === false) {
+            $folders[] = [
+                'name' => self::LOCAL_SENT_FOLDER,
+                'label' => 'Envoyes',
+                'type' => 'sent',
+                'total' => $pendingLocalSentCount,
+                'unread' => 0,
+                'local_copy' => true,
+            ];
+        } elseif ($pendingLocalSentCount > 0) {
+            $folders[$sentIndex]['total'] = (int) ($folders[$sentIndex]['total'] ?? 0) + $pendingLocalSentCount;
+            $folders[$sentIndex]['local_pending'] = $pendingLocalSentCount;
         }
 
         return collect($folders)

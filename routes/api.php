@@ -203,7 +203,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('mailbox/messages/{uid}/attachments/{part}', [MailboxController::class, 'downloadAttachment'])
         ->whereNumber('uid')
         ->where('part', '[0-9.]+');
-    Route::get('mailbox/messages/{uid}', [MailboxController::class, 'show'])->whereNumber('uid');
+    Route::get('mailbox/messages/{uid}', [MailboxController::class, 'show']);
     Route::post('mailbox/messages/{uid}/read', [MailboxController::class, 'markRead'])->whereNumber('uid');
     Route::post('mailbox/messages/{uid}/flag', [MailboxController::class, 'flag'])->whereNumber('uid');
     Route::post('mailbox/messages/{uid}/move', [MailboxController::class, 'move'])->whereNumber('uid');

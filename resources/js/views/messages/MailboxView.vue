@@ -423,7 +423,7 @@
                 v-for="message in messages"
                 :key="message.uid"
                 class="mailbox-message-item"
-                :class="{ active: selectedUid === message.uid, unread: message.unread, selected: isBulkSelected(message.uid) }"
+                :class="{ active: selectedUid === message.uid, unread: message.unread, selected: isBulkSelected(message.uid), local: message.local_copy }"
                 role="button"
                 tabindex="0"
                 @click="selectMessage(message)"
@@ -434,6 +434,7 @@
                   type="button"
                   class="mailbox-message-check"
                   :class="{ active: isBulkSelected(message.uid) }"
+                  :disabled="message.local_copy"
                   :title="isBulkSelected(message.uid) ? 'Retirer de la selection' : 'Selectionner ce mail'"
                   @click.stop="toggleMessageSelection(message)"
                 >
@@ -450,6 +451,7 @@
                     <i v-if="message.flagged" class="fas fa-star"></i>
                     <i v-if="message.answered" class="fas fa-reply"></i>
                     <i v-if="message.has_attachments" class="fas fa-paperclip"></i>
+                    <i v-if="message.local_copy" class="fas fa-clock"></i>
                     {{ formatSize(message.size) }}
                   </span>
                 </span>
@@ -523,13 +525,18 @@
                   <button type="button" class="mailbox-icon-btn" title="Transferer" @click="forwardSelected">
                     <i class="fas fa-share"></i>
                   </button>
-                  <button type="button" class="mailbox-icon-btn" title="Lu / non lu" @click="toggleRead(selectedMessage)">
+                  <button v-if="!selectedMessage.local_copy" type="button" class="mailbox-icon-btn" title="Lu / non lu" @click="toggleRead(selectedMessage)">
                     <i class="fas" :class="selectedMessage.unread ? 'fa-envelope-open' : 'fa-envelope'"></i>
                   </button>
                 </div>
               </header>
 
-              <div class="mailbox-reader-tools">
+              <div v-if="selectedMessage.local_copy" class="mailbox-alert mailbox-alert-warning mailbox-local-copy-note">
+                <i class="fas fa-clock"></i>
+                Copie locale conservee. Le mail reste visible ici meme si la copie IMAP dans Envoyes a echoue.
+              </div>
+
+              <div v-if="!selectedMessage.local_copy" class="mailbox-reader-tools">
                 <button
                   type="button"
                   :title="selectedMessage.flagged ? 'Retirer l etoile' : 'Marquer avec etoile'"
@@ -906,15 +913,15 @@ const activeTitle = computed(() => {
 })
 const activeSubtitle = computed(() => activeFilter.value ? 'Vue rapide' : 'Dossier')
 const selectedBulkSet = computed(() => new Set(selectedBulkUids.value))
-const selectedBulkMessages = computed(() => messages.value.filter(message => selectedBulkSet.value.has(message.uid)))
+const selectedBulkMessages = computed(() => messages.value.filter(message => selectedBulkSet.value.has(message.uid) && !isLocalMessage(message)))
 const selectedBulkCount = computed(() => selectedBulkUids.value.length)
-const pageSelectableMessages = computed(() => messages.value)
+const pageSelectableMessages = computed(() => messages.value.filter(message => !isLocalMessage(message)))
 const allPageSelected = computed(() => pageSelectableMessages.value.length > 0
   && pageSelectableMessages.value.every(message => selectedBulkSet.value.has(message.uid)))
 const somePageSelected = computed(() => selectedBulkCount.value > 0 && !allPageSelected.value)
 const actionMessages = computed(() => {
   if (selectedBulkMessages.value.length) return selectedBulkMessages.value
-  return selectedMessage.value ? [selectedMessage.value] : []
+  return selectedMessage.value && !isLocalMessage(selectedMessage.value) ? [selectedMessage.value] : []
 })
 const hasActionTarget = computed(() => actionMessages.value.length > 0)
 const readActionLabel = computed(() => actionMessages.value.some(message => message.unread) ? 'Marquer lu' : 'Non lu')
@@ -1705,8 +1712,12 @@ function isBulkSelected(uid) {
   return selectedBulkSet.value.has(uid)
 }
 
+function isLocalMessage(message) {
+  return !!message?.local_copy
+}
+
 function toggleMessageSelection(message) {
-  if (!message?.uid) return
+  if (!message?.uid || isLocalMessage(message)) return
 
   selectedBulkUids.value = isBulkSelected(message.uid)
     ? selectedBulkUids.value.filter(uid => uid !== message.uid)
@@ -1726,7 +1737,7 @@ function clearBulkSelection() {
 }
 
 function syncBulkSelection() {
-  const visibleUids = new Set(messages.value.map(message => message.uid))
+  const visibleUids = new Set(pageSelectableMessages.value.map(message => message.uid))
   selectedBulkUids.value = selectedBulkUids.value.filter(uid => visibleUids.has(uid))
 }
 
@@ -2649,6 +2660,11 @@ onBeforeUnmount(() => {
   background: #e9f7fb;
 }
 
+.mailbox-message-check:disabled {
+  cursor: default;
+  opacity: .38;
+}
+
 .mailbox-message-list {
   min-height: 0;
   overflow-x: hidden;
@@ -2694,6 +2710,10 @@ onBeforeUnmount(() => {
 
 .mailbox-message-item.selected {
   background: #edfaff;
+}
+
+.mailbox-message-item.local {
+  background: #fffaf0;
 }
 
 .mailbox-message-item.active {
@@ -3248,6 +3268,16 @@ onBeforeUnmount(() => {
   color: #9f1239;
   background: #fff1f2;
   border: 1px solid #fecdd3;
+}
+
+.mailbox-alert-warning {
+  color: #8a5a0a;
+  background: #fff8e6;
+  border: 1px solid #fde68a;
+}
+
+.mailbox-local-copy-note {
+  margin: 10px 18px 0;
 }
 
 .mailbox-alert-inline {
