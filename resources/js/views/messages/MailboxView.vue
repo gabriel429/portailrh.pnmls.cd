@@ -1217,7 +1217,9 @@ async function loadMessages(page = 1) {
     })
 
     messages.value = data.data || []
-    meta.value = { ...meta.value, ...(data.meta || {}) }
+    const responseMeta = data.meta || {}
+    meta.value = { ...meta.value, ...responseMeta }
+    syncActiveFolderCounts(responseMeta)
     syncBulkSelection()
 
     if (messages.value.length && !isMobileMailbox.value) {
@@ -1455,11 +1457,19 @@ async function sendMail() {
     payload.append('body', composeForm.body)
     composeForm.attachments.forEach(file => payload.append('attachments[]', file))
 
-    await client.post('/mailbox/send', payload)
+    const { data } = await client.post('/mailbox/send', payload)
+    const sentSync = data?.data || {}
 
     resetComposeForm()
     composerOpen.value = false
     await loadFolders()
+    if (sentSync.sent_folder && activeFolder.value === sentSync.sent_folder) {
+      await loadMessages(1)
+    }
+    messagesError.value = ''
+    if (sentSync.sent_synced === false) {
+      messagesError.value = 'Mail envoye, mais la copie dans Envoyes n a pas pu etre synchronisee.'
+    }
     await loadContacts()
   } catch (error) {
     composeError.value = firstError(error) || 'Envoi impossible.'
@@ -1740,6 +1750,23 @@ function patchMessage(uid, patch) {
   messages.value = messages.value.map(message => (
     message.uid === uid ? { ...message, ...patch } : message
   ))
+}
+
+function syncActiveFolderCounts(responseMeta = {}) {
+  if (search.value || activeFilter.value) return
+
+  const folderName = responseMeta.folder || activeFolder.value
+  if (!folderName) return
+
+  folders.value = folders.value.map(folder => {
+    if (folder.name !== folderName) return folder
+
+    return {
+      ...folder,
+      total: Number(responseMeta.total ?? folder.total ?? 0),
+      unread: Math.max(Number(responseMeta.unread_count ?? folder.unread ?? 0), 0),
+    }
+  })
 }
 
 function adjustFolderUnread(folderName, delta) {

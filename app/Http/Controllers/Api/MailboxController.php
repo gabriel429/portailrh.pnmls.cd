@@ -10,9 +10,12 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\Mime\Address;
+use Symfony\Component\Mime\Email;
 use Throwable;
 
 class MailboxController extends ApiController
@@ -371,6 +374,18 @@ class MailboxController extends ApiController
             ]);
         }
 
+        $sentSync = $this->syncSentMessage(
+            $credential,
+            $senderName,
+            $to,
+            $cc,
+            $bcc,
+            $validated['subject'],
+            $mailBody,
+            $htmlBody,
+            $attachments,
+        );
+
         foreach ($to->merge($cc)->merge($bcc)->unique()->values() as $recipientEmail) {
             SentMailHistory::create([
                 'sender_id' => $request->user()->id,
@@ -389,9 +404,206 @@ class MailboxController extends ApiController
             'cc' => $cc->count(),
             'bcc' => $bcc->count(),
             'attachments' => $attachments->count(),
+            'sent_synced' => (bool) ($sentSync['synced'] ?? false),
+            'sent_folder' => $sentSync['folder'] ?? null,
         ], [], [
             'message' => 'Mail envoye avec succes.',
         ], 201);
+    }
+
+    private function syncSentMessage(
+        MailboxCredential $credential,
+        string $senderName,
+        iterable $to,
+        iterable $cc,
+        iterable $bcc,
+        string $subject,
+        string $textBody,
+        string $htmlBody,
+        iterable $attachments,
+    ): array {
+        if (!function_exists('imap_append')) {
+            return [
+                'synced' => false,
+                'folder' => null,
+            ];
+        }
+
+        try {
+            $rawMessage = $this->rawSentMessage(
+                $credential,
+                $senderName,
+                $to,
+                $cc,
+                $bcc,
+                $subject,
+                $textBody,
+                $htmlBody,
+                $attachments,
+            );
+
+            $stream = $this->openCredentialConnection($credential);
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return [
+                'synced' => false,
+                'folder' => null,
+            ];
+        }
+
+        try {
+            $folder = $this->sentFolderName($stream, $credential);
+            imap_errors();
+            imap_alerts();
+
+            if (!@imap_append(
+                $stream,
+                $this->mailboxRoot($credential).$folder,
+                $this->normalizeMessageForImapAppend($rawMessage),
+                '\\Seen',
+            )) {
+                $error = Arr::first(imap_errors() ?: []) ?: 'Copie IMAP du mail envoye impossible.';
+
+                Log::warning('Mailbox sent message sync failed.', [
+                    'credential_id' => $credential->id,
+                    'user_id' => $credential->user_id,
+                    'folder' => $folder,
+                    'error' => $error,
+                ]);
+
+                return [
+                    'synced' => false,
+                    'folder' => $folder,
+                ];
+            }
+
+            return [
+                'synced' => true,
+                'folder' => $folder,
+            ];
+        } finally {
+            imap_close($stream);
+        }
+    }
+
+    private function rawSentMessage(
+        MailboxCredential $credential,
+        string $senderName,
+        iterable $to,
+        iterable $cc,
+        iterable $bcc,
+        string $subject,
+        string $textBody,
+        string $htmlBody,
+        iterable $attachments,
+    ): string {
+        $email = (new Email())
+            ->from(new Address($credential->email, $senderName))
+            ->to(...$this->mailAddresses($to))
+            ->subject($subject)
+            ->text($textBody)
+            ->html($htmlBody);
+
+        $ccAddresses = $this->mailAddresses($cc);
+        if ($ccAddresses !== []) {
+            $email->cc(...$ccAddresses);
+        }
+
+        $bccAddresses = $this->mailAddresses($bcc);
+        if ($bccAddresses !== []) {
+            $email->bcc(...$bccAddresses);
+        }
+
+        foreach ($attachments as $attachment) {
+            $email->attachFromPath(
+                $attachment->getRealPath(),
+                $attachment->getClientOriginalName(),
+                $attachment->getMimeType(),
+            );
+        }
+
+        return $email->toString();
+    }
+
+    private function mailAddresses(iterable $emails): array
+    {
+        return collect($emails)
+            ->map(fn ($email) => new Address((string) $email))
+            ->all();
+    }
+
+    private function sentFolderName($stream, MailboxCredential $credential): string
+    {
+        $sentFolder = collect($this->folderPayloads($stream, $credential))
+            ->first(fn (array $folder) => $folder['type'] === 'sent');
+
+        if ($sentFolder) {
+            return $sentFolder['name'];
+        }
+
+        return $this->createSentFolder($stream, $credential);
+    }
+
+    private function createSentFolder($stream, MailboxCredential $credential): string
+    {
+        foreach ($this->sentFolderCandidates($stream, $credential) as $folder) {
+            if ($this->mailboxFolderExists($stream, $credential, $folder)) {
+                return $folder;
+            }
+        }
+
+        foreach ($this->sentFolderCandidates($stream, $credential) as $folder) {
+            imap_errors();
+            imap_alerts();
+
+            if (@imap_createmailbox($stream, $this->mailboxRoot($credential).$folder)) {
+                return $folder;
+            }
+        }
+
+        return 'Sent';
+    }
+
+    private function sentFolderCandidates($stream, MailboxCredential $credential): array
+    {
+        $delimiter = $this->mailboxDelimiter($stream, $credential);
+
+        return array_values(array_unique([
+            'Sent',
+            'Sent Items',
+            'Envoyes',
+            'INBOX'.$delimiter.'Sent',
+            'INBOX'.$delimiter.'Sent Items',
+            'INBOX'.$delimiter.'Envoyes',
+        ]));
+    }
+
+    private function mailboxDelimiter($stream, MailboxCredential $credential): string
+    {
+        $root = $this->mailboxRoot($credential);
+        $mailboxes = @imap_getmailboxes($stream, $root, '*') ?: [];
+
+        foreach ($mailboxes as $mailbox) {
+            $delimiter = (string) ($mailbox->delimiter ?? '');
+            if ($delimiter !== '') {
+                return $delimiter;
+            }
+        }
+
+        return '.';
+    }
+
+    private function mailboxFolderExists($stream, MailboxCredential $credential, string $folder): bool
+    {
+        return (bool) @imap_status($stream, $this->mailboxRoot($credential).$folder, SA_MESSAGES);
+    }
+
+    private function normalizeMessageForImapAppend(string $message): string
+    {
+        $message = str_replace(["\r\n", "\r"], "\n", rtrim($message, "\r\n"));
+
+        return str_replace("\n", "\r\n", $message)."\r\n";
     }
 
     private function attachmentHistoryLabel($attachments): ?string
