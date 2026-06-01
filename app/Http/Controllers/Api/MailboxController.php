@@ -674,20 +674,34 @@ class MailboxController extends ApiController
         $agentName = trim(collect([
             $agent?->prenom,
             $agent?->nom,
-            $agent?->postnom,
-        ])->filter(fn ($part) => filled($part))->join(' '));
+        ])->map(fn ($part) => $this->formatPersonNamePart($part))
+            ->filter()
+            ->join(' '));
 
         if ($agentName !== '') {
             return mb_strimwidth($agentName, 0, 120, '...');
         }
 
-        $userName = trim((string) $user->name);
+        $userName = $this->formatPersonNamePart($user->name);
 
         if ($userName !== '') {
             return mb_strimwidth($userName, 0, 120, '...');
         }
 
         return config('app.name', 'E-PNMLS');
+    }
+
+    private function formatPersonNamePart(?string $value): string
+    {
+        $name = trim(preg_replace('/\s+/', ' ', (string) $value) ?? '');
+
+        if ($name === '') {
+            return '';
+        }
+
+        return preg_replace_callback('/\p{L}[\p{L}\p{M}]*/u', function (array $matches): string {
+            return mb_convert_case(mb_strtolower($matches[0], 'UTF-8'), MB_CASE_TITLE, 'UTF-8');
+        }, $name) ?? $name;
     }
 
     private function defaultSignatureFor(User $user, ?string $accountEmail = null): string
