@@ -580,9 +580,9 @@ watch(profilePhotoCandidates, () => {
   profilePhotoIndex.value = 0
 }, { immediate: true })
 
-watch(() => auth.isAuthenticated, (isAuthenticated) => {
+watch([() => auth.isAuthenticated, isImmersiveRoute], ([isAuthenticated, isImmersive]) => {
   if (isAuthenticated) {
-    notifStore.startPolling()
+    notifStore.startPolling({ paused: isImmersive })
     loadTaskSummary()
     return
   }
