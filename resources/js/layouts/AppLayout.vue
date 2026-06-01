@@ -658,6 +658,8 @@ watch([() => auth.isAuthenticated, isImmersiveRoute], ([isAuthenticated, isImmer
   }
 
   .app-shell-immersive .main-content.immersive-content {
+    width: 100%;
+    padding: 0 !important;
     overflow: visible;
   }
 }

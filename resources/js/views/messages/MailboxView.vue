@@ -4608,7 +4608,9 @@ onBeforeUnmount(() => {
 @media (max-width: 860px) {
   .mailbox-page {
     min-height: calc(100dvh - 64px);
-    margin-inline: calc(var(--bs-gutter-x, 1.5rem) * -0.5);
+    width: 100%;
+    max-width: 100%;
+    margin-inline: 0;
     padding: 0;
     background: #fff;
     overflow: visible;
@@ -4624,6 +4626,7 @@ onBeforeUnmount(() => {
 
   .outlook-shell {
     display: block;
+    width: 100%;
     min-height: calc(100dvh - 64px);
     overflow: visible;
     background: #fff;
@@ -4636,6 +4639,7 @@ onBeforeUnmount(() => {
   }
 
   .mailbox-main {
+    width: 100%;
     min-height: calc(100dvh - 64px);
     padding-bottom: 82px;
     overflow: visible;
