@@ -191,33 +191,18 @@
           </div>
 
           <!-- Statut validation -->
-          <div class="validation-status mt-3">
+          <div class="planning-meta mt-3">
             <span class="badge" :class="planning.valide ? 'bg-success' : 'bg-warning'">
               <i class="fas me-1" :class="planning.valide ? 'fa-check-circle' : 'fa-clock'"></i>
               {{ planning.valide ? 'Planning validé' : 'Planning en attente de validation' }}
             </span>
-          </div>
-
-          <!-- Périodes de fermeture -->
-          <div v-if="fermetures.length" class="dash-panel mt-3">
-            <header class="panel-head">
-              <div>
-                <h3 class="panel-title">
-                  <i class="fas fa-door-closed me-2 text-danger"></i>Périodes de fermeture
-                </h3>
-              </div>
-            </header>
-            <div class="p-3">
-              <div class="row g-2">
-                <div v-for="(p, i) in fermetures" :key="i" class="col-sm-6 col-md-4">
-                  <div class="fermeture-card">
-                    <strong>{{ p.nom || 'Fermeture' }}</strong>
-                    <div class="small text-muted">
-                      {{ formatDate(p.start) }} — {{ formatDate(p.end) }}
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div v-if="fermetures.length" class="blocked-dates">
+              <span class="blocked-dates-label">
+                <i class="fas fa-ban me-1"></i>Dates bloquées
+              </span>
+              <span v-for="(p, i) in fermetures" :key="i" class="blocked-date-chip">
+                {{ fermetureLabel(p) }}
+              </span>
             </div>
           </div>
         </template>
@@ -305,7 +290,11 @@ const years = computed(() => {
 const fermetures = computed(() => {
   if (!planning.value?.periods_fermeture) return []
   const raw = planning.value.periods_fermeture
-  return typeof raw === 'string' ? JSON.parse(raw) : raw
+  try {
+    return typeof raw === 'string' ? JSON.parse(raw) : raw
+  } catch {
+    return []
+  }
 })
 
 const tauxColor = computed(() => {
@@ -357,6 +346,14 @@ function formatDate(dateStr) {
 function formatDateShort(dateStr) {
   if (!dateStr) return ''
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
+}
+
+function fermetureLabel(periode) {
+  if (!periode) return ''
+  const start = formatDateShort(periode.start)
+  const end = formatDateShort(periode.end)
+  const range = start === end ? start : `${start} - ${end}`
+  return periode.nom ? `${periode.nom}: ${range}` : range
 }
 
 function typeCongeLabel(type) {
@@ -584,19 +581,45 @@ onMounted(() => loadPlanning())
   font-size: 1.5rem;
 }
 
-/* ── Validation badge ── */
-.validation-status {
+/* ── Planning meta ── */
+.planning-meta {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  gap: .55rem;
 }
 
-/* ── Fermeture cards ── */
-.fermeture-card {
-  border: 1px solid #f8bbd0;
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
-  text-align: center;
-  background: #fce4ec;
+.blocked-dates {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .35rem;
+  min-width: 0;
+}
+
+.blocked-dates-label,
+.blocked-date-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border-radius: 999px;
+  font-size: .76rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.blocked-dates-label {
+  padding: .25rem .55rem;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.blocked-date-chip {
+  padding: .25rem .5rem;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
 }
 
 /* ── Mobile responsive ── */
@@ -632,7 +655,8 @@ onMounted(() => loadPlanning())
   .table { font-size: 0.82rem; }
   .table th, .table td { padding: 0.5rem 0.4rem; }
 
-  .fermeture-card { padding: 0.5rem; font-size: 0.85rem; }
+  .planning-meta { align-items: flex-start; }
+  .blocked-dates { width: 100%; }
 }
 
 @media (max-width: 575.98px) {
