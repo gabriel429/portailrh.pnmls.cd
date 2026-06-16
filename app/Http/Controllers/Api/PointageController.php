@@ -27,9 +27,14 @@ class PointageController extends ApiController
      */
     public function index(Request $request): JsonResponse
     {
+        $scope = $this->scopeService();
+        if ($this->shouldUseAttendanceList($request)) {
+            return $this->attendanceIndex($request, $scope);
+        }
+
         $query = Pointage::with(['agent']);
 
-        $this->scopeService()->applyPointageScope($query, $request->user());
+        $scope->applyPointageScope($query, $request->user());
 
         // Filter by specific date
         if ($request->filled('date')) {
@@ -84,6 +89,173 @@ class PointageController extends ApiController
             'from' => $pointages->firstItem(),
             'to' => $pointages->lastItem(),
         ]);
+    }
+
+    private function shouldUseAttendanceList(Request $request): bool
+    {
+        return $request->filled('date')
+            || $request->filled('date_debut')
+            || $request->filled('date_fin');
+    }
+
+    private function attendanceIndex(Request $request, UserDataScope $scope): JsonResponse
+    {
+        [$dateDebut, $dateFin] = $this->resolveAttendanceDateRange($request);
+
+        $agents = $this->attendanceAgentQuery($request, $scope)->get();
+        $agentIds = $agents->pluck('id')->all();
+
+        $pointages = $agentIds === []
+            ? collect()
+            : Pointage::query()
+                ->whereBetween('date_pointage', [$dateDebut->toDateString(), $dateFin->toDateString()])
+                ->whereIn('agent_id', $agentIds)
+                ->get();
+
+        $pointagesByKey = $pointages->keyBy(function (Pointage $pointage) {
+            return $pointage->date_pointage->format('Y-m-d') . '|' . $pointage->agent_id;
+        });
+        $pointageDates = $pointages->groupBy(fn(Pointage $pointage) => $pointage->date_pointage->format('Y-m-d'));
+
+        $rows = $this->buildAttendanceIndexRows($agents, $agentIds, $pointagesByKey, $pointageDates, $dateDebut, $dateFin);
+
+        $page = max(1, (int) $request->input('page', 1));
+        $perPage = max(1, min(100, (int) $request->input('per_page', 15)));
+        $total = count($rows);
+        $lastPage = max(1, (int) ceil($total / $perPage));
+        $page = min($page, $lastPage);
+        $offset = ($page - 1) * $perPage;
+        $data = array_slice($rows, $offset, $perPage);
+
+        $from = $total > 0 ? $offset + 1 : null;
+        $to = $total > 0 ? min($offset + $perPage, $total) : null;
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
+                'from' => $from,
+                'to' => $to,
+            ],
+            'current_page' => $page,
+            'last_page' => $lastPage,
+            'per_page' => $perPage,
+            'total' => $total,
+            'from' => $from,
+            'to' => $to,
+        ]);
+    }
+
+    private function resolveAttendanceDateRange(Request $request): array
+    {
+        $startInput = $request->query('date')
+            ?: $request->query('date_debut')
+            ?: $request->query('date_fin')
+            ?: now()->toDateString();
+        $endInput = $request->query('date')
+            ?: $request->query('date_fin')
+            ?: $request->query('date_debut')
+            ?: $startInput;
+
+        $dateDebut = Carbon::parse($startInput)->startOfDay();
+        $dateFin = Carbon::parse($endInput)->startOfDay();
+
+        if ($dateFin->lt($dateDebut)) {
+            [$dateDebut, $dateFin] = [$dateFin, $dateDebut];
+        }
+
+        return [$dateDebut, $dateFin];
+    }
+
+    private function buildAttendanceIndexRows($agents, array $agentIds, $pointagesByKey, $pointageDates, Carbon $dateDebut, Carbon $dateFin): array
+    {
+        $rows = [];
+        $current = $dateFin->copy();
+
+        while ($current >= $dateDebut) {
+            $day = $current->toDateString();
+            $isWeekday = $current->isWeekday();
+            $dayPointages = $pointageDates->get($day, collect());
+
+            if (!$isWeekday && $dayPointages->isEmpty()) {
+                $current->subDay();
+                continue;
+            }
+
+            $absenceMap = $isWeekday ? $this->justifiedAbsencesForAgents($agentIds, $current) : [];
+            $agentsForDay = $isWeekday
+                ? $agents
+                : $agents->filter(fn(Agent $agent) => $dayPointages->contains('agent_id', $agent->id));
+
+            foreach ($agentsForDay as $agent) {
+                $pointage = $pointagesByKey->get($day . '|' . $agent->id);
+                $hasPresence = $pointage && $this->pointageHasPresence($pointage);
+                $absence = $absenceMap[$agent->id] ?? null;
+
+                if (!$isWeekday) {
+                    $status = $hasPresence ? 'present_weekend' : 'weekend';
+                    $label = $hasPresence ? 'Présent (week-end)' : 'Hors jour ouvrable';
+                    $reason = 'Week-end non comptabilisé';
+                } elseif ($hasPresence) {
+                    $status = 'present';
+                    $label = 'Présent';
+                    $reason = $pointage?->observations ?: null;
+                } elseif ($absence) {
+                    $status = 'justified';
+                    $label = 'Absence justifiée';
+                    $reason = $this->absenceExportText($absence);
+                } else {
+                    $status = 'absent';
+                    $label = 'Absent non justifié';
+                    $reason = $pointage?->observations ?: 'Aucun pointage enregistré';
+                }
+
+                $rows[] = [
+                    'id' => $pointage?->id ?? 'attendance-' . $day . '-' . $agent->id,
+                    'row_key' => ($pointage?->id ? 'pointage-' . $pointage->id : 'attendance-' . $day . '-' . $agent->id),
+                    'agent_id' => $agent->id,
+                    'date_pointage' => $day,
+                    'heure_entree' => $pointage ? $this->formatPointageTime($pointage->heure_entree) : null,
+                    'heure_sortie' => $pointage ? $this->formatPointageTime($pointage->heure_sortie) : null,
+                    'heures_travaillees' => $hasPresence ? $this->pointageHours($pointage) : null,
+                    'observations' => $pointage?->observations,
+                    'is_virtual' => $pointage === null,
+                    'can_manage' => $pointage !== null,
+                    'attendance_status' => $status,
+                    'status_label' => $label,
+                    'status_reason' => $reason,
+                    'absence_justifiee' => $absence !== null,
+                    'absence_justifiee_label' => $absence['label'] ?? null,
+                    'absence_justifiee_type' => $absence['type'] ?? null,
+                    'agent' => $this->agentListPayload($agent),
+                    'created_at' => optional($pointage?->created_at)?->toIso8601String(),
+                    'updated_at' => optional($pointage?->updated_at)?->toIso8601String(),
+                ];
+            }
+
+            $current->subDay();
+        }
+
+        return $rows;
+    }
+
+    private function agentListPayload(Agent $agent): array
+    {
+        return [
+            'id' => $agent->id,
+            'id_agent' => $agent->id_agent,
+            'nom' => $agent->nom,
+            'postnom' => $agent->postnom,
+            'prenom' => $agent->prenom,
+            'matricule_etat' => $agent->matricule_etat,
+            'organe' => $agent->organe,
+            'poste_actuel' => $agent->poste_actuel,
+            'fonction' => $agent->fonction,
+            'structure' => $this->agentStructureLabel($agent),
+        ];
     }
 
     /**
@@ -145,7 +317,8 @@ class PointageController extends ApiController
             if ($heureEntree && $heureSortie) {
                 $entree = Carbon::createFromFormat('H:i', $heureEntree);
                 $sortie = Carbon::createFromFormat('H:i', $heureSortie);
-                $heures = round($sortie->diffInMinutes($entree) / 60, 1);
+                $minutes = $entree->diffInMinutes($sortie, false);
+                $heures = $minutes > 0 ? round($minutes / 60, 1) : 0;
             }
 
             if ($existing) {
@@ -234,7 +407,8 @@ class PointageController extends ApiController
         if (!empty($validated['heure_entree']) && !empty($validated['heure_sortie'])) {
             $entree = Carbon::createFromFormat('H:i', $validated['heure_entree']);
             $sortie = Carbon::createFromFormat('H:i', $validated['heure_sortie']);
-            $validated['heures_travaillees'] = round($sortie->diffInMinutes($entree) / 60, 1);
+            $minutes = $entree->diffInMinutes($sortie, false);
+            $validated['heures_travaillees'] = $minutes > 0 ? round($minutes / 60, 1) : 0;
         }
 
         $pointage->update($validated);
@@ -848,7 +1022,7 @@ class PointageController extends ApiController
                     $reason,
                     $pointage ? $this->formatPointageTime($pointage->heure_entree) : '-',
                     $pointage ? $this->formatPointageTime($pointage->heure_sortie) : '-',
-                    $hasPresence ? ($pointage->heures_travaillees ?? 0) : '',
+                    $hasPresence ? ($this->pointageHours($pointage) ?? 0) : '',
                     $pointage?->observations ?: '-',
                 ];
                 $dataStyles[] = $style;
@@ -935,7 +1109,7 @@ class PointageController extends ApiController
 
                 if ($hasPresence) {
                     $present++;
-                    $totalHours += (float) ($pointage->heures_travaillees ?? 0);
+                    $totalHours += (float) ($this->pointageHours($pointage) ?? 0);
                     continue;
                 }
 
@@ -1032,6 +1206,25 @@ class PointageController extends ApiController
     {
         return $this->isActualTime($this->formatPointageTime($pointage->heure_entree))
             || $this->isActualTime($this->formatPointageTime($pointage->heure_sortie));
+    }
+
+    private function pointageHours(Pointage $pointage): ?float
+    {
+        $stored = $pointage->heures_travaillees;
+        if ($stored !== null && (float) $stored >= 0) {
+            return round((float) $stored, 1);
+        }
+
+        $entree = $this->formatPointageTime($pointage->heure_entree);
+        $sortie = $this->formatPointageTime($pointage->heure_sortie);
+        if (!$this->isActualTime($entree) || !$this->isActualTime($sortie)) {
+            return null;
+        }
+
+        $minutes = Carbon::createFromFormat('H:i', $entree)
+            ->diffInMinutes(Carbon::createFromFormat('H:i', $sortie), false);
+
+        return $minutes > 0 ? round($minutes / 60, 1) : 0;
     }
 
     private function isActualTime(string $time): bool

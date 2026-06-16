@@ -81,31 +81,46 @@
                   <th>Agent</th>
                   <th>Matricule</th>
                   <th>Date</th>
-                  <th>Entree</th>
+                  <th>Statut</th>
+                  <th>Motif</th>
+                  <th>Entrée</th>
                   <th>Sortie</th>
                   <th>Heures</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="pointage in pointages" :key="pointage.id">
-                  <td><strong>{{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</strong></td>
+                <tr v-for="pointage in pointages" :key="pointage.row_key || pointage.id" :class="attendanceRowClass(pointage)">
+                  <td>
+                    <strong>{{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</strong>
+                    <div v-if="pointage.agent?.structure && pointage.agent.structure !== '-'" class="attendance-sub">
+                      {{ pointage.agent.structure }}
+                    </div>
+                  </td>
                   <td>{{ pointage.agent?.matricule_etat || 'N/A' }}</td>
                   <td>{{ formatDate(pointage.date_pointage) }}</td>
                   <td>
-                    <span v-if="pointage.heure_entree" class="status-chip st-ok">{{ formatTime(pointage.heure_entree) }}</span>
+                    <span class="attendance-badge" :class="attendanceBadgeClass(pointage)">
+                      {{ attendanceLabel(pointage) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="attendance-reason">{{ attendanceReason(pointage) }}</span>
+                  </td>
+                  <td>
+                    <span v-if="hasActualTime(pointage.heure_entree)" class="status-chip st-ok">{{ formatTime(pointage.heure_entree) }}</span>
                     <span v-else class="status-chip st-neutral">-</span>
                   </td>
                   <td>
-                    <span v-if="pointage.heure_sortie" class="status-chip st-mid">{{ formatTime(pointage.heure_sortie) }}</span>
+                    <span v-if="hasActualTime(pointage.heure_sortie)" class="status-chip st-mid">{{ formatTime(pointage.heure_sortie) }}</span>
                     <span v-else class="status-chip st-neutral">-</span>
                   </td>
                   <td>
-                    <strong v-if="pointage.heures_travaillees">{{ pointage.heures_travaillees }}h</strong>
+                    <strong v-if="pointage.heures_travaillees !== null && pointage.heures_travaillees !== undefined">{{ pointage.heures_travaillees }}h</strong>
                     <span v-else class="text-muted">-</span>
                   </td>
                   <td>
-                    <div class="btn-group btn-group-sm" role="group">
+                    <div v-if="canManagePointage(pointage)" class="btn-group btn-group-sm" role="group">
                       <router-link :to="{ name: 'rh.pointages.show', params: { id: pointage.id } }" class="btn btn-outline-primary" title="Details">
                         <i class="fas fa-eye"></i>
                       </router-link>
@@ -116,6 +131,7 @@
                         <i class="fas fa-trash"></i>
                       </button>
                     </div>
+                    <span v-else class="attendance-action-note">{{ pointage.absence_justifiee ? 'Justifié' : 'Aucun pointage' }}</span>
                   </td>
                 </tr>
               </tbody>
@@ -124,7 +140,7 @@
 
           <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
             <div class="text-muted small">
-              Affichage {{ meta.from || 0 }} a {{ meta.to || 0 }} sur {{ meta.total || 0 }} pointages
+              Affichage {{ meta.from || 0 }} à {{ meta.to || 0 }} sur {{ meta.total || 0 }} présence(s) / absence(s)
             </div>
             <Pagination
               :current-page="meta.current_page"
@@ -138,8 +154,8 @@
 
         <div v-else class="text-center py-5">
           <i class="fas fa-clock fa-4x text-muted mb-3 d-block"></i>
-          <h5 class="text-muted">Aucun pointage</h5>
-          <p class="text-muted">Il n'y a aucun pointage enregistre.</p>
+          <h5 class="text-muted">Aucune présence</h5>
+          <p class="text-muted">Aucune présence ou absence trouvée pour ce filtre.</p>
           <a href="/rh/pointages/create" class="btn btn-primary mt-2">
             <i class="fas fa-plus me-2"></i>Créer un pointage
           </a>
@@ -306,7 +322,7 @@ const meta = ref({})
 const departments = ref([])
 
 const filters = reactive({
-    date_debut: '',
+    date_debut: todayInputDate(),
     date_fin: '',
     department_id: '',
     organe: '',
@@ -356,8 +372,14 @@ const paginationPages = computed(() => {
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'
-    const d = new Date(dateStr)
+    const d = new Date(`${dateStr}T00:00:00`)
     return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
+function todayInputDate() {
+    const now = new Date()
+    const local = new Date(now.getTime() - now.getTimezoneOffset() * 60000)
+    return local.toISOString().slice(0, 10)
 }
 
 function formatTime(timeStr) {
@@ -372,6 +394,48 @@ function formatTime(timeStr) {
     return timeStr.substring(0, 5)
 }
 
+function hasActualTime(timeStr) {
+    const value = formatTime(timeStr)
+    return value !== '-' && value !== '00:00'
+}
+
+function attendanceLabel(pointage) {
+    if (pointage.status_label) return pointage.status_label
+    return hasActualTime(pointage.heure_entree) || hasActualTime(pointage.heure_sortie)
+        ? 'Présent'
+        : 'Absent non justifié'
+}
+
+function attendanceReason(pointage) {
+    if (pointage.status_reason) return pointage.status_reason
+    if (pointage.observations) return pointage.observations
+    return pointage.absence_justifiee_label || '-'
+}
+
+function attendanceBadgeClass(pointage) {
+    const status = pointage.attendance_status || ''
+    if (status.includes('present')) return 'attendance-present'
+    if (status === 'justified') return 'attendance-justified'
+    if (status === 'absent') return 'attendance-absent'
+    if (status === 'weekend') return 'attendance-weekend'
+    return hasActualTime(pointage.heure_entree) || hasActualTime(pointage.heure_sortie)
+        ? 'attendance-present'
+        : 'attendance-absent'
+}
+
+function attendanceRowClass(pointage) {
+    return {
+        'attendance-row-present': attendanceBadgeClass(pointage) === 'attendance-present',
+        'attendance-row-justified': attendanceBadgeClass(pointage) === 'attendance-justified',
+        'attendance-row-absent': attendanceBadgeClass(pointage) === 'attendance-absent',
+        'attendance-row-weekend': attendanceBadgeClass(pointage) === 'attendance-weekend',
+    }
+}
+
+function canManagePointage(pointage) {
+    return pointage.can_manage !== false && !pointage.is_virtual && pointage.id && !String(pointage.id).startsWith('attendance-')
+}
+
 async function fetchPointages(page = 1) {
     loading.value = true
     try {
@@ -382,7 +446,7 @@ async function fetchPointages(page = 1) {
         if (filters.organe) params.organe = filters.organe
 
         const { data } = await pointagesApi.list(params)
-        pointages.value = data.data
+        pointages.value = data.data || []
         meta.value = {
             current_page: data.current_page,
             last_page: data.last_page,
@@ -416,7 +480,7 @@ function applyFilters() {
 }
 
 function resetFilters() {
-    filters.date_debut = ''
+    filters.date_debut = todayInputDate()
     filters.date_fin = ''
     filters.department_id = ''
     filters.organe = ''
@@ -556,6 +620,85 @@ async function cm_submit() {
 </script>
 
 <style scoped>
+.attendance-sub {
+  margin-top: .15rem;
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 600;
+}
+
+.attendance-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 86px;
+  padding: .18rem .5rem;
+  border-radius: 999px;
+  font-size: .68rem;
+  font-weight: 800;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.attendance-present {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.attendance-justified {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.attendance-absent {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.attendance-weekend {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.attendance-reason {
+  display: inline-block;
+  max-width: 340px;
+  color: #475569;
+  font-size: .76rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.attendance-action-note {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92px;
+  padding: .28rem .55rem;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.attendance-row-present {
+  background: rgba(220, 252, 231, .34);
+}
+
+.attendance-row-justified {
+  background: rgba(224, 242, 254, .42);
+}
+
+.attendance-row-absent {
+  background: rgba(254, 226, 226, .44);
+}
+
+.attendance-row-weekend {
+  background: rgba(241, 245, 249, .7);
+}
+
 /* ── Create Pointage Modal (pcm-*) ── */
 .pcm-overlay {
   position: fixed; inset: 0; z-index: 9999;
@@ -698,10 +841,12 @@ async function cm_submit() {
 /* ── Existing responsive ── */
 @media (max-width: 767.98px) {
     .rh-table th:nth-child(2), .rh-table td:nth-child(2),
-    .rh-table th:nth-child(4), .rh-table td:nth-child(4),
-    .rh-table th:nth-child(5), .rh-table td:nth-child(5) { display: none; }
+    .rh-table th:nth-child(5), .rh-table td:nth-child(5),
+    .rh-table th:nth-child(6), .rh-table td:nth-child(6),
+    .rh-table th:nth-child(7), .rh-table td:nth-child(7) { display: none; }
     .rh-table th, .rh-table td { padding: .4rem .3rem; font-size: .76rem; }
     .rh-table th { font-size: .65rem; }
+    .attendance-badge { min-width: 74px; font-size: .62rem; padding: .15rem .4rem; }
     .btn-group-sm .btn { padding: .2rem .35rem; font-size: .68rem; }
     .rh-list-card .row.g-3 > [class*="col-md"] { flex: 0 0 100%; max-width: 100%; }
     .d-flex.gap-2.mb-3 .btn { font-size: .78rem; padding: .3rem .55rem; }
@@ -716,7 +861,7 @@ async function cm_submit() {
 }
 
 @media (max-width: 575.98px) {
-    .rh-table th:nth-child(6), .rh-table td:nth-child(6) { display: none; }
+    .rh-table th:nth-child(8), .rh-table td:nth-child(8) { display: none; }
     .rh-table th, .rh-table td { padding: .35rem .25rem; font-size: .72rem; }
     .rh-table th { font-size: .62rem; }
     .btn-group-sm .btn { padding: .18rem .3rem; font-size: .65rem; }
