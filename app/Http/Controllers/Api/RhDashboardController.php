@@ -110,13 +110,15 @@ class RhDashboardController extends ApiController
             ->get(['id', 'agent_id', 'type', 'statut', 'created_at']);
 
         // ─── PRESENCE ───
-        $totalActiveAgents = $agentsActifs ?: 1;
+        $totalActiveAgents = $agentsActifs;
+        $activeAgentsDenominator = max($agentsActifs, 1);
 
         $todayPresent = $this->scopeByAgent(
             Pointage::byDate($now->toDateString())->whereNotNull('heure_entree'),
             $provinceId
         )->distinct('agent_id')->count('agent_id');
-        $todayRate = round(($todayPresent / $totalActiveAgents) * 100, 1);
+        $todayAbsent = max($agentsActifs - $todayPresent, 0);
+        $todayRate = round(($todayPresent / $activeAgentsDenominator) * 100, 1);
 
         // Presence des 7 derniers jours
         $weekAgo = $now->copy()->subDays(6);
@@ -130,7 +132,7 @@ class RhDashboardController extends ApiController
             ->map(fn($p) => [
                 'date' => $p->date_pointage,
                 'present' => $p->present,
-                'rate' => round(($p->present / $totalActiveAgents) * 100, 1),
+                'rate' => round(($p->present / $activeAgentsDenominator) * 100, 1),
             ]);
 
         $avgMonthlyRate = 0;
@@ -141,7 +143,7 @@ class RhDashboardController extends ApiController
             ->groupBy('date_pointage')
             ->get();
         if ($monthlyPointages->count() > 0) {
-            $avgMonthlyRate = round(($monthlyPointages->avg('present') / $totalActiveAgents) * 100, 1);
+            $avgMonthlyRate = round(($monthlyPointages->avg('present') / $activeAgentsDenominator) * 100, 1);
         }
 
         // ─── DOCUMENTS ───
@@ -182,7 +184,13 @@ class RhDashboardController extends ApiController
             ->get(['id', 'titre', 'urgence', 'created_at']);
 
         // ─── STATUTS AGENTS ───
-        $statusBase = fn() => $this->scopeByAgent(AgentStatus::actuel(), $provinceId);
+        $today = $now->copy()->startOfDay();
+        $statusBase = fn() => $this->scopeByAgent(
+            AgentStatus::query()
+                ->where('actuel', true)
+                ->activeBetween($today, $today),
+            $provinceId
+        );
         $agentStatusCounts = $statusBase()
             ->select('statut', DB::raw('COUNT(*) as total'))
             ->groupBy('statut')
@@ -192,7 +200,12 @@ class RhDashboardController extends ApiController
         $agentStatusDetails = [];
         $statusTypes = ['en_conge', 'en_mission', 'suspendu', 'en_formation'];
         foreach ($statusTypes as $statut) {
-            $agents = $this->scopeByAgent(AgentStatus::actuel(), $provinceId)
+            $agents = $this->scopeByAgent(
+                    AgentStatus::query()
+                        ->where('actuel', true)
+                        ->activeBetween($today, $today),
+                    $provinceId
+                )
                 ->byStatut($statut)
                 ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
                 ->orderBy('date_debut', 'desc')
@@ -229,6 +242,45 @@ class RhDashboardController extends ApiController
         $holidaysPending = $holBase()->pending()->count();
         $holidaysApproved = $holBase()->approved()->count();
         $holidaysActiveToday = $holBase()->active($now)->count();
+
+        $activeHolidayAgents = $holBase()->active($now)
+            ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
+            ->orderBy('date_debut', 'desc')
+            ->get(['id', 'agent_id', 'date_debut', 'date_fin', 'motif', 'type_conge', 'nombre_jours'])
+            ->map(function ($holiday) use ($onlineAgentMap) {
+                $online = $onlineAgentMap[$holiday->agent_id] ?? null;
+                $typeLabel = $holiday->getTypeCongeLabel();
+                $motif = trim((string) ($holiday->motif ?: $typeLabel));
+                if ($holiday->nombre_jours) {
+                    $motif .= ' · ' . $holiday->nombre_jours . ' jour(s)';
+                }
+
+                return [
+                    'id' => 'holiday_' . $holiday->id,
+                    'agent_id' => $holiday->agent_id,
+                    'nom' => $holiday->agent?->nom,
+                    'prenom' => $holiday->agent?->prenom,
+                    'id_agent' => $holiday->agent?->id_agent,
+                    'matricule_etat' => $holiday->agent?->matricule_etat,
+                    'organe' => $holiday->agent?->organe,
+                    'poste' => $holiday->agent?->poste_actuel,
+                    'sexe' => $holiday->agent?->sexe,
+                    'is_online' => $online !== null,
+                    'online_label' => $online['label'] ?? null,
+                    'online_since' => $online['last_activity'] ?? null,
+                    'date_debut' => $holiday->date_debut,
+                    'date_fin' => $holiday->date_fin,
+                    'motif' => $motif,
+                    'source' => 'holiday',
+                ];
+            });
+
+        $agentStatusDetails['en_conge'] = ($agentStatusDetails['en_conge'] ?? collect())
+            ->concat($activeHolidayAgents)
+            ->unique('agent_id')
+            ->values();
+        $agentStatusCounts['en_conge'] = $agentStatusDetails['en_conge']->count();
+        $holidaysActiveToday = $agentStatusCounts['en_conge'];
 
         // Prochains retours de congé (7 prochains jours)
         $next7Days = $now->copy()->addDays(7);
@@ -425,6 +477,7 @@ class RhDashboardController extends ApiController
             ],
             'attendance' => [
                 'today_present' => $todayPresent,
+                'today_absent' => $todayAbsent,
                 'today_rate' => $todayRate,
                 'monthly_avg_rate' => $avgMonthlyRate,
                 'total_active_agents' => $totalActiveAgents,

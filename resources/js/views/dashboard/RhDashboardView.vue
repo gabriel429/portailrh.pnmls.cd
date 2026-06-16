@@ -352,7 +352,7 @@
           </div>
           <div>
             <h3 class="rh-section-title">Présence</h3>
-            <p class="rh-section-sub">{{ d.attendance?.today_present ?? 0 }} / {{ d.attendance?.total_active_agents ?? 0 }} présents aujourd'hui ({{ d.attendance?.today_rate ?? 0 }}%)</p>
+            <p class="rh-section-sub">{{ d.attendance?.today_present ?? 0 }} / {{ d.attendance?.total_active_agents ?? 0 }} présents aujourd'hui · {{ todayAbsent }} absent{{ todayAbsent > 1 ? 's' : '' }} ({{ d.attendance?.today_rate ?? 0 }}%)</p>
           </div>
         </div>
         <div class="rh-presence-row">
@@ -364,6 +364,10 @@
               <div class="rh-presence-item">
                 <span>Présents</span>
                 <span class="fw-bold">{{ d.attendance?.today_present ?? 0 }}</span>
+              </div>
+              <div class="rh-presence-item">
+                <span>Absents</span>
+                <span class="fw-bold text-amber">{{ todayAbsent }}</span>
               </div>
               <div class="rh-presence-item">
                 <span>Effectif actif</span>
@@ -1456,6 +1460,12 @@ const presenceColor = computed(() => {
   if (rate >= 80) return 'text-green'
   if (rate >= 50) return 'text-amber'
   return 'text-red'
+})
+
+const todayAbsent = computed(() => {
+  const total = d.value.attendance?.total_active_agents ?? 0
+  const present = d.value.attendance?.today_present ?? 0
+  return d.value.attendance?.today_absent ?? Math.max(total - present, 0)
 })
 
 const weeklyData = computed(() => {

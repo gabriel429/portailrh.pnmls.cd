@@ -161,7 +161,7 @@ class Holiday extends Model
 
     public function scopeActive($query, ?Carbon $date = null)
     {
-        $date = $date ?: Carbon::today();
+        $date = ($date ?: Carbon::today())->copy()->startOfDay();
         return $query->where('statut_demande', 'approuve')
                      ->where('date_debut', '<=', $date)
                      ->where('date_fin', '>=', $date);

@@ -596,9 +596,13 @@ class ExecutiveDashboardController extends ApiController
             $agentColumns[] = 'localite_id';
         }
 
+        $today = $date->copy()->startOfDay();
+
         $agents = (clone $query)->actifs()
-            ->with(['agentStatuses' => function ($q) {
-                $q->where('actuel', true)->orderByDesc('created_at');
+            ->with(['agentStatuses' => function ($q) use ($today) {
+                $q->where('actuel', true)
+                    ->activeBetween($today, $today)
+                    ->orderByDesc('created_at');
             }, 'localite:id,nom,province_id', 'affectations' => function ($q) {
                 $q->where('actif', true)
                     ->with('localite:id,nom,province_id')
@@ -614,10 +618,16 @@ class ExecutiveDashboardController extends ApiController
             ->get()
             ->keyBy('agent_id');
 
+        $activeHolidays = Holiday::active($today)
+            ->whereIn('agent_id', $agents->pluck('id'))
+            ->get(['id', 'agent_id', 'date_debut', 'date_fin', 'motif', 'type_conge'])
+            ->keyBy('agent_id');
+
         $onlineMap = app(AgentPresenceService::class)->onlineMap($agents->pluck('id')->all());
 
-        return $agents->map(function ($a) use ($onlineMap, $pointages) {
+        return $agents->map(function ($a) use ($onlineMap, $pointages, $activeHolidays) {
             $currentStatus = $a->agentStatuses->first();
+            $activeHoliday = $activeHolidays->get($a->id);
             $absenceStatuses = ['en_conge', 'en_mission', 'suspendu', 'en_formation'];
             $isAbsenceStatus = in_array(optional($currentStatus)->statut, $absenceStatuses, true);
             $pointage = $pointages->get($a->id);
@@ -625,6 +635,31 @@ class ExecutiveDashboardController extends ApiController
             $online = $onlineMap[$a->id] ?? null;
             $localite = $a->localite ?: $a->affectations->first()?->localite;
             $structureCode = $this->structureCodeFromOrgane($a->organe);
+            $presenceStatus = 'absent';
+            $presenceLabel = 'Absent';
+            $absenceStatut = null;
+            $absenceObservation = null;
+            $absenceDebut = null;
+            $absenceFin = null;
+
+            if ($isPresent) {
+                $presenceStatus = 'present';
+                $presenceLabel = 'Présent';
+            } elseif ($activeHoliday) {
+                $presenceStatus = 'en_conge';
+                $presenceLabel = 'En congé';
+                $absenceStatut = 'en_conge';
+                $absenceObservation = $activeHoliday->motif ?: $activeHoliday->getTypeCongeLabel();
+                $absenceDebut = optional($activeHoliday->date_debut)?->format('d/m/Y');
+                $absenceFin = optional($activeHoliday->date_fin)?->format('d/m/Y');
+            } elseif ($isAbsenceStatus) {
+                $presenceStatus = $currentStatus->statut;
+                $presenceLabel = $currentStatus->statut_label;
+                $absenceStatut = $currentStatus->statut;
+                $absenceObservation = $currentStatus->commentaire ?: $currentStatus->motif;
+                $absenceDebut = optional($currentStatus->date_debut)?->format('d/m/Y');
+                $absenceFin = optional($currentStatus->date_fin)?->format('d/m/Y');
+            }
 
             return [
                 'id' => $a->id,
@@ -651,15 +686,15 @@ class ExecutiveDashboardController extends ApiController
                 'is_online' => $online !== null,
                 'online_label' => $online['label'] ?? null,
                 'online_since' => $online['last_activity'] ?? null,
-                'presence_status' => $isPresent ? 'present' : ($isAbsenceStatus ? $currentStatus->statut : 'absent'),
-                'presence_label' => $isPresent ? 'Présent' : ($isAbsenceStatus ? $currentStatus->statut_label : 'Absent'),
+                'presence_status' => $presenceStatus,
+                'presence_label' => $presenceLabel,
                 'heure_entree' => optional($pointage?->heure_entree)->format('H:i'),
                 'heure_sortie' => optional($pointage?->heure_sortie)->format('H:i'),
                 'pointage_observation' => $pointage?->observations,
-                'absence_statut' => $isAbsenceStatus ? $currentStatus->statut : null,
-                'absence_observation' => $isAbsenceStatus ? ($currentStatus->commentaire ?: $currentStatus->motif) : null,
-                'absence_debut' => $isAbsenceStatus ? optional($currentStatus->date_debut)?->format('d/m/Y') : null,
-                'absence_fin' => $isAbsenceStatus ? optional($currentStatus->date_fin)?->format('d/m/Y') : null,
+                'absence_statut' => $absenceStatut,
+                'absence_observation' => $absenceObservation,
+                'absence_debut' => $absenceDebut,
+                'absence_fin' => $absenceFin,
             ];
         });
     }
