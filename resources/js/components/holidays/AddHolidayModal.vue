@@ -1,5 +1,5 @@
 <template>
-  <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
+  <div class="modal fade show d-block holiday-add-modal" tabindex="-1" style="background-color: rgba(0,0,0,0.5)">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header bg-primary text-white">
@@ -14,7 +14,7 @@
 
         <div class="modal-body">
           <!-- Sélecteurs : National = Département obligatoire, Provincial = auto-chargement -->
-          <div class="row g-3 mb-4" v-if="!isProvincial">
+          <div class="row g-3 mb-4 holiday-selector-row" v-if="!isProvincial">
             <div class="col-md-5">
               <label class="form-label fw-bold">Département / Service <span class="text-danger">*</span></label>
               <select class="form-select" v-model="selectedDepartment" :disabled="loadingAgents">
@@ -47,7 +47,7 @@
             </div>
           </div>
           <!-- Provincial : planning lié uniquement -->
-          <div class="row g-3 mb-4" v-if="isProvincial && plannings.length > 0">
+          <div class="row g-3 mb-4 holiday-selector-row" v-if="isProvincial && plannings.length > 0">
             <div class="col-md-6">
               <label class="form-label fw-bold">Planning lié</label>
               <select class="form-select" v-model="selectedPlanningId">
@@ -347,3 +347,95 @@ async function submitBatch() {
   }
 }
 </script>
+
+<style scoped>
+.holiday-add-modal {
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.modal-dialog {
+  width: min(1180px, calc(100vw - 2.5rem));
+  max-width: min(1180px, calc(100vw - 2.5rem));
+  margin: 0 auto;
+}
+
+.modal-content {
+  max-height: calc(100dvh - 2.5rem);
+  overflow: hidden;
+  border-radius: 18px;
+}
+
+.modal-header {
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.modal-title {
+  line-height: 1.2;
+}
+
+.modal-body {
+  overflow-y: auto;
+}
+
+.holiday-selector-row {
+  align-items: end;
+}
+
+.holiday-selector-row .btn {
+  min-height: 38px;
+  white-space: normal;
+}
+
+.table-responsive {
+  border: 1px solid #d9e9f7;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+
+.table-responsive > .table {
+  width: 100%;
+  min-width: 1080px;
+  margin-bottom: 0;
+}
+
+.table th,
+.table td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.table td:nth-child(2),
+.table th:nth-child(2),
+.table td:nth-child(3),
+.table th:nth-child(3),
+.table td:nth-child(8),
+.table th:nth-child(8) {
+  white-space: normal;
+}
+
+@media (max-width: 767.98px) {
+  .holiday-add-modal {
+    padding: 0.5rem;
+  }
+
+  .modal-dialog {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .modal-content {
+    max-height: calc(100dvh - 1rem);
+    border-radius: 14px;
+  }
+
+  .modal-footer {
+    gap: 0.5rem;
+  }
+
+  .modal-footer .btn {
+    flex: 1 1 160px;
+  }
+}
+</style>

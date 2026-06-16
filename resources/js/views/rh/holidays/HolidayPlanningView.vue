@@ -1,5 +1,5 @@
 <template>
-  <div class="rh-modern">
+  <div class="rh-modern holiday-planning-page">
     <!-- Header -->
     <div class="rh-list-shell">
       <section class="rh-hero">
@@ -105,7 +105,7 @@
       </div>
 
       <!-- Statistiques -->
-      <div v-if="stats" class="row g-3 mb-4">
+      <div v-if="stats" class="holiday-stat-grid">
         <div class="col-md-3">
           <div class="stat-card">
             <div class="stat-icon bg-primary">
@@ -170,7 +170,7 @@
               </h4>
               <small class="text-muted d-block mt-1">{{ plannings.data?.length }} planning(s) créé(s)</small>
             </div>
-            <div class="table-responsive">
+            <div class="table-responsive holiday-table-wrap">
               <table class="table table-hover">
                 <thead>
                   <tr class="text-muted small">
@@ -272,7 +272,7 @@
               </h4>
               <small class="text-muted d-block mt-1">{{ holidays.data?.length }} congé(s) planifié(s)</small>
             </div>
-            <div class="table-responsive">
+            <div class="table-responsive holiday-table-wrap">
               <table class="table table-hover">
                 <thead>
                   <tr class="text-muted small">
@@ -634,7 +634,48 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.rh-modern { margin-top: 1rem; }
+.rh-modern {
+  margin-top: 1rem;
+}
+
+.holiday-planning-page {
+  --holiday-line: #d9e9f7;
+  --holiday-ink: #102235;
+  --holiday-muted: #64748b;
+}
+
+.holiday-planning-page .rh-list-shell {
+  width: min(100%, 1360px);
+}
+
+.holiday-planning-page .rh-hero {
+  border-radius: 18px;
+}
+
+.holiday-planning-page .rh-hero .row {
+  row-gap: 1rem;
+}
+
+.holiday-planning-page .hero-tools {
+  justify-content: flex-end;
+  gap: 0.65rem;
+}
+
+.holiday-planning-page .btn-rh {
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.94), rgba(15, 118, 110, 0.92));
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.holiday-planning-page .btn-rh.alt {
+  background: rgba(255, 255, 255, 0.16);
+}
 
 .rh-filters-card {
   background: white;
@@ -665,6 +706,21 @@ onMounted(() => {
   margin-left: 0.5rem;
 }
 
+.holiday-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.holiday-stat-grid > [class*="col-"] {
+  width: auto;
+  max-width: none;
+  padding: 0;
+  margin: 0;
+  flex: none;
+}
+
 .stat-card {
   background: white;
   border-radius: 12px;
@@ -673,6 +729,7 @@ onMounted(() => {
   align-items: center;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   border: 1px solid #e9ecef;
+  min-height: 112px;
 }
 
 .stat-icon {
@@ -696,6 +753,48 @@ onMounted(() => {
   margin: 0.25rem 0 0;
   font-size: 0.85rem;
   opacity: 0.8;
+}
+
+.rh-list-card {
+  overflow: hidden;
+  padding: 1.25rem;
+}
+
+.holiday-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--holiday-line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.holiday-table-wrap > .table {
+  width: 100%;
+  min-width: 960px;
+  margin-bottom: 0;
+}
+
+.holiday-table-wrap th,
+.holiday-table-wrap td {
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.holiday-table-wrap td:first-child,
+.holiday-table-wrap th:first-child {
+  white-space: normal;
+  min-width: 220px;
+}
+
+.holiday-table-wrap td:last-child,
+.holiday-table-wrap th:last-child {
+  text-align: center;
+}
+
+.holiday-table-wrap .btn-group {
+  display: inline-flex;
+  flex-wrap: nowrap;
 }
 
 .section-header {
@@ -724,5 +823,37 @@ onMounted(() => {
 .empty-state h5 {
   color: #6c757d;
   margin-bottom: 0.5rem;
+}
+
+@media (max-width: 991.98px) {
+  .holiday-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .holiday-planning-page .hero-tools {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .rh-filters-card,
+  .rh-list-card {
+    padding: 1rem;
+  }
+
+  .holiday-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .holiday-planning-page .hero-tools {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .holiday-planning-page .btn-rh {
+    width: 100%;
+    white-space: normal;
+  }
 }
 </style>

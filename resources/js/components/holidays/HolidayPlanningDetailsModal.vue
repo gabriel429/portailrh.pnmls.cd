@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="show"
-    class="modal fade show"
+    class="modal fade show holiday-planning-details-modal"
     style="display: block; background: rgba(0,0,0,0.5); z-index: 2000 !important;"
     @click="handleBackdropClick"
   >
-    <div class="modal-dialog modal-xl" style="z-index: 2001 !important;" @click.stop>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable" style="z-index: 2001 !important;" @click.stop>
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -593,7 +593,18 @@ watch(() => props.show, (newValue) => {
 }
 
 .modal-dialog {
-  max-width: 1000px;
+  width: min(1120px, calc(100vw - 2rem));
+  max-width: min(1120px, calc(100vw - 2rem));
+  margin: 1.25rem auto;
+}
+
+.modal-content {
+  max-height: calc(100dvh - 2.5rem);
+  overflow: hidden;
+}
+
+.modal-body {
+  overflow-y: auto;
 }
 
 .progress {
@@ -607,6 +618,12 @@ watch(() => props.show, (newValue) => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .modal-dialog {
+    width: calc(100% - 1rem);
+    max-width: calc(100% - 1rem);
+    margin: 0.5rem;
+  }
+
   .card-header {
     flex-direction: column;
     gap: 1rem;

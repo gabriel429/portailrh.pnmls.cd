@@ -1,11 +1,11 @@
 <template>
   <div
     v-if="show"
-    class="modal fade show"
+    class="modal fade show holiday-planning-modal"
     style="display: block; background: rgba(0,0,0,0.5); z-index: 2000 !important;"
     @click="handleBackdropClick"
   >
-    <div class="modal-dialog modal-lg" style="z-index: 2001 !important;" @click.stop>
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" style="z-index: 2001 !important;" @click.stop>
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">
@@ -514,7 +514,18 @@ watch(() => props.show, (newValue) => {
 }
 
 .modal-dialog {
-  max-width: 800px;
+  width: min(860px, calc(100vw - 2rem));
+  max-width: min(860px, calc(100vw - 2rem));
+  margin: 1.25rem auto;
+}
+
+.modal-content {
+  max-height: calc(100dvh - 2.5rem);
+  overflow: hidden;
+}
+
+.modal-body {
+  overflow-y: auto;
 }
 
 .form-label.small {
@@ -541,6 +552,7 @@ watch(() => props.show, (newValue) => {
 @media (max-width: 768px) {
   .modal-dialog {
     margin: 0.5rem;
+    width: calc(100% - 1rem);
     max-width: calc(100% - 1rem);
   }
 
