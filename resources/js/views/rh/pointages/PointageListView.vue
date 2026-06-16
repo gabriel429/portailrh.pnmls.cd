@@ -9,7 +9,7 @@
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
-              <button class="btn-rh main" @click="openCreateModal">
+              <button type="button" class="btn-rh main" @click="openCreateModal">
                 <i class="fas fa-plus me-1"></i> Nouveau pointage
               </button>
             </div>
@@ -140,7 +140,7 @@
           <i class="fas fa-clock fa-4x text-muted mb-3 d-block"></i>
           <h5 class="text-muted">Aucun pointage</h5>
           <p class="text-muted">Il n'y a aucun pointage enregistre.</p>
-          <button class="btn btn-primary mt-2" @click="openCreateModal">
+          <button type="button" class="btn btn-primary mt-2" @click="openCreateModal">
             <i class="fas fa-plus me-2"></i>Créer un pointage
           </button>
         </div>
