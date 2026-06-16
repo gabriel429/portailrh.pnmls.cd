@@ -24,11 +24,32 @@ class RoleNames
     {
         $role = self::normalize($role);
 
+        if (preg_match('/\brh\s+provincial(e)?\b/', $role) === 1
+            || preg_match('/\bressources?\s+humaines?\s+provincial(e)?\b/', $role) === 1
+        ) {
+            return 'rh provincial';
+        }
+
+        if (preg_match('/\brh\s+national(e)?\b/', $role) === 1
+            || preg_match('/\bressources?\s+humaines?\s+national(e)?\b/', $role) === 1
+        ) {
+            return 'rh national';
+        }
+
         return match ($role) {
+            'rh',
+            'responsable rh',
+            'section rh',
             'ressource humaine',
             'ressources humaines',
             'section ressource humaine',
             'section ressources humaines' => 'section ressources humaines',
+            'chef section rh',
+            'chef de section rh',
+            'chef section ressource humaine',
+            'chef section ressources humaines',
+            'chef de section ressource humaine',
+            'chef de section ressources humaines' => 'chef section rh',
             default => $role,
         };
     }
