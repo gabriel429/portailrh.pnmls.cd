@@ -207,7 +207,7 @@ class RhDashboardController extends ApiController
                     $provinceId
                 )
                 ->byStatut($statut)
-                ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
+                ->with(['agent:id,nom,prenom,matricule_etat,organe,sexe,poste_actuel'])
                 ->orderBy('date_debut', 'desc')
                 ->get()
                 ->map(function ($s) use ($onlineAgentMap) {
@@ -218,7 +218,6 @@ class RhDashboardController extends ApiController
                         'agent_id' => $s->agent_id,
                         'nom' => $s->agent?->nom,
                         'prenom' => $s->agent?->prenom,
-                        'id_agent' => $s->agent?->id_agent,
                         'matricule_etat' => $s->agent?->matricule_etat,
                         'organe' => $s->agent?->organe,
                         'poste' => $s->agent?->poste_actuel,
@@ -244,7 +243,7 @@ class RhDashboardController extends ApiController
         $holidaysActiveToday = $holBase()->active($now)->count();
 
         $activeHolidayAgents = $holBase()->active($now)
-            ->with(['agent:id,nom,prenom,id_agent,matricule_etat,organe,sexe,poste_actuel'])
+            ->with(['agent:id,nom,prenom,matricule_etat,organe,sexe,poste_actuel'])
             ->orderBy('date_debut', 'desc')
             ->get(['id', 'agent_id', 'date_debut', 'date_fin', 'motif', 'type_conge', 'nombre_jours'])
             ->map(function ($holiday) use ($onlineAgentMap) {
@@ -260,7 +259,6 @@ class RhDashboardController extends ApiController
                     'agent_id' => $holiday->agent_id,
                     'nom' => $holiday->agent?->nom,
                     'prenom' => $holiday->agent?->prenom,
-                    'id_agent' => $holiday->agent?->id_agent,
                     'matricule_etat' => $holiday->agent?->matricule_etat,
                     'organe' => $holiday->agent?->organe,
                     'poste' => $holiday->agent?->poste_actuel,
