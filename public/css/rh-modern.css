@@ -692,3 +692,242 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
     .profile-sheet { grid-template-columns: 1fr; }
     .dum-cat-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Holiday planning page: keep critical layout outside lazy-loaded route CSS. */
+.holiday-planning-page .rh-list-shell {
+    width: min(100%, 1360px) !important;
+    max-width: 1360px !important;
+}
+
+.holiday-planning-page .rh-hero {
+    border-radius: 18px !important;
+}
+
+.holiday-planning-page .rh-hero .row {
+    row-gap: 1rem !important;
+}
+
+.holiday-planning-page .hero-tools {
+    justify-content: flex-end !important;
+    gap: .65rem !important;
+}
+
+.holiday-planning-page .btn-rh {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 38px !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+    border: 1px solid rgba(125, 211, 252, .45) !important;
+    background: linear-gradient(135deg, rgba(14, 165, 233, .94), rgba(15, 118, 110, .92)) !important;
+    color: #fff !important;
+}
+
+.holiday-planning-page .btn-rh.alt {
+    background: rgba(255, 255, 255, .16) !important;
+}
+
+.holiday-planning-page .rh-filters-card {
+    background: #fff !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 12px !important;
+    margin-bottom: 1.5rem !important;
+    padding: 1.5rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .08) !important;
+}
+
+.holiday-planning-page .holiday-stat-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    margin: 0 0 1.5rem !important;
+    width: 100% !important;
+}
+
+.holiday-planning-page .holiday-stat-grid > [class*="col-"] {
+    width: auto !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: none !important;
+}
+
+.holiday-planning-page .stat-card {
+    background: #fff !important;
+    border: 1px solid #e9ecef !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    min-height: 112px !important;
+    padding: 1.5rem !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .08) !important;
+}
+
+.holiday-planning-page .stat-icon {
+    width: 60px !important;
+    height: 60px !important;
+    flex: 0 0 60px !important;
+    border-radius: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: #fff !important;
+    margin-right: 1rem !important;
+    font-size: 1.5rem !important;
+}
+
+.holiday-planning-page .stat-content h3 {
+    margin: 0 !important;
+    font-size: 1.75rem !important;
+    font-weight: 800 !important;
+    color: #102235 !important;
+}
+
+.holiday-planning-page .stat-content p {
+    margin: .25rem 0 0 !important;
+    font-size: .85rem !important;
+    color: #334155 !important;
+}
+
+.holiday-planning-page .rh-list-card {
+    padding: 1.25rem !important;
+    overflow: hidden !important;
+}
+
+.holiday-planning-page .holiday-table-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    border: 1px solid #d9e9f7 !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+}
+
+.holiday-planning-page .holiday-table-wrap > .table {
+    width: 100% !important;
+    min-width: 960px !important;
+    margin-bottom: 0 !important;
+}
+
+.holiday-planning-page .holiday-table-wrap th,
+.holiday-planning-page .holiday-table-wrap td {
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+}
+
+.holiday-planning-page .holiday-table-wrap td:first-child,
+.holiday-planning-page .holiday-table-wrap th:first-child {
+    white-space: normal !important;
+    min-width: 220px !important;
+}
+
+.holiday-planning-page .holiday-table-wrap td:last-child,
+.holiday-planning-page .holiday-table-wrap th:last-child {
+    text-align: center !important;
+}
+
+.holiday-planning-page .holiday-table-wrap .btn-group {
+    display: inline-flex !important;
+    flex-wrap: nowrap !important;
+}
+
+.holiday-planning-modal .modal-dialog,
+.holiday-planning-details-modal .modal-dialog,
+.holiday-add-modal .modal-dialog {
+    margin: 1.25rem auto !important;
+}
+
+.holiday-planning-modal .modal-content,
+.holiday-planning-details-modal .modal-content,
+.holiday-add-modal .modal-content {
+    max-height: calc(100dvh - 2.5rem) !important;
+    overflow: hidden !important;
+}
+
+.holiday-planning-modal .modal-body,
+.holiday-planning-details-modal .modal-body,
+.holiday-add-modal .modal-body {
+    overflow-y: auto !important;
+}
+
+.holiday-planning-modal .modal-dialog {
+    width: min(860px, calc(100vw - 2rem)) !important;
+    max-width: min(860px, calc(100vw - 2rem)) !important;
+}
+
+.holiday-planning-details-modal .modal-dialog {
+    width: min(1120px, calc(100vw - 2rem)) !important;
+    max-width: min(1120px, calc(100vw - 2rem)) !important;
+}
+
+.holiday-add-modal {
+    overflow-y: auto !important;
+    padding: 1.25rem !important;
+}
+
+.holiday-add-modal .modal-dialog {
+    width: min(1180px, calc(100vw - 2.5rem)) !important;
+    max-width: min(1180px, calc(100vw - 2.5rem)) !important;
+    margin: 0 auto !important;
+}
+
+.holiday-add-modal .table-responsive {
+    border: 1px solid #d9e9f7 !important;
+    border-radius: 12px !important;
+    overflow-x: auto !important;
+}
+
+.holiday-add-modal .table-responsive > .table {
+    width: 100% !important;
+    min-width: 1080px !important;
+    margin-bottom: 0 !important;
+}
+
+@media (max-width: 991.98px) {
+    .holiday-planning-page .holiday-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+
+    .holiday-planning-page .hero-tools {
+        justify-content: flex-start !important;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .holiday-planning-page .rh-filters-card,
+    .holiday-planning-page .rh-list-card {
+        padding: 1rem !important;
+    }
+
+    .holiday-planning-page .holiday-stat-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .holiday-planning-page .hero-tools {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+    }
+
+    .holiday-planning-page .btn-rh {
+        width: 100% !important;
+        white-space: normal !important;
+    }
+
+    .holiday-planning-modal .modal-dialog,
+    .holiday-planning-details-modal .modal-dialog {
+        width: calc(100% - 1rem) !important;
+        max-width: calc(100% - 1rem) !important;
+        margin: .5rem !important;
+    }
+
+    .holiday-add-modal {
+        padding: .5rem !important;
+    }
+
+    .holiday-add-modal .modal-dialog {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+}
