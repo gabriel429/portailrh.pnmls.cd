@@ -263,6 +263,81 @@
             />
           </div>
 
+          <!-- Droits de congés par agent -->
+          <div v-if="agents.length > 0" class="mb-5">
+            <div class="section-header quota-section-header mb-3">
+              <div>
+                <h4 class="mb-0">
+                  <i class="fas fa-user-edit me-2 text-primary"></i>
+                  Droits de congés par agent
+                </h4>
+                <small class="text-muted d-block mt-1">{{ filteredAgents.length }} agent(s)</small>
+              </div>
+              <div class="quota-search">
+                <i class="fas fa-search"></i>
+                <input
+                  v-model="agentSearch"
+                  type="search"
+                  class="form-control form-control-sm"
+                  placeholder="Rechercher un agent"
+                >
+              </div>
+            </div>
+            <div class="table-responsive holiday-table-wrap quota-table-wrap">
+              <table class="table table-hover">
+                <thead>
+                  <tr class="text-muted small">
+                    <th>Agent</th>
+                    <th>Fonction</th>
+                    <th>Jours autorisés</th>
+                    <th>Jours utilisés</th>
+                    <th>Jours restants</th>
+                    <th>Source</th>
+                    <th v-if="canEditAgentEntitlements">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="agent in visibleAgents" :key="agent.id">
+                    <td>
+                      <div class="fw-medium">{{ agent.nom_complet || '-' }}</div>
+                    </td>
+                    <td class="small text-muted">{{ agent.fonction || '-' }}</td>
+                    <td class="text-center">
+                      <span class="badge bg-info">{{ agent.holiday_entitlement?.jours_autorises || 0 }}j</span>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-warning">{{ agent.holiday_entitlement?.jours_utilises || 0 }}j</span>
+                    </td>
+                    <td class="text-center">
+                      <span
+                        class="badge"
+                        :class="(agent.holiday_entitlement?.jours_restants || 0) >= 0 ? 'bg-success' : 'bg-danger'"
+                      >
+                        {{ agent.holiday_entitlement?.jours_restants || 0 }}j
+                      </span>
+                    </td>
+                    <td>
+                      <span class="badge" :class="quotaSourceClass(agent.holiday_entitlement?.source)">
+                        {{ agent.holiday_entitlement?.source_label || 'Défaut' }}
+                      </span>
+                    </td>
+                    <td v-if="canEditAgentEntitlements">
+                      <button
+                        type="button"
+                        class="btn btn-outline-primary btn-sm"
+                        title="Modifier les jours autorisés"
+                        :disabled="quotaSavingAgentId === agent.id"
+                        @click="openQuotaModal(agent)"
+                      >
+                        <i class="fas fa-pen"></i>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Tableau des Congés Individuels -->
           <div v-if="holidays.data?.length > 0">
             <div class="section-header mb-3">
@@ -383,6 +458,67 @@
       @close="showAddHolidayModal = false"
       @created="onHolidayCreated"
     />
+
+    <!-- Modal modification quota agent -->
+    <div
+      v-if="quotaEdit.show"
+      class="modal fade show d-block holiday-quota-modal"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-user-clock me-2"></i>
+              Jours de congés
+            </h5>
+            <button type="button" class="btn-close" @click="closeQuotaModal"></button>
+          </div>
+          <form @submit.prevent="saveAgentEntitlement">
+            <div class="modal-body">
+              <div class="quota-agent-name">{{ quotaEdit.agent?.nom_complet }}</div>
+              <div class="row g-3 align-items-end">
+                <div class="col-sm-6">
+                  <label class="form-label">Année</label>
+                  <input class="form-control" :value="filters.year" disabled>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Jours autorisés</label>
+                  <input
+                    v-model.number="quotaEdit.jours_autorises"
+                    type="number"
+                    min="0"
+                    max="120"
+                    class="form-control"
+                    required
+                  >
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Note</label>
+                  <textarea
+                    v-model="quotaEdit.notes"
+                    class="form-control"
+                    rows="3"
+                    maxlength="1000"
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" @click="closeQuotaModal">
+                Annuler
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="quotaSavingAgentId === quotaEdit.agent?.id">
+                <span v-if="quotaSavingAgentId === quotaEdit.agent?.id" class="spinner-border spinner-border-sm me-2"></span>
+                Enregistrer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -415,6 +551,14 @@ const scopeInfo = ref({ is_provincial: false, province_id: null, province_nom: n
 const viewMode = ref('list')
 const calendarKey = ref(0)
 const statsKey = ref(0)
+const agentSearch = ref('')
+const quotaSavingAgentId = ref(null)
+const quotaEdit = ref({
+  show: false,
+  agent: null,
+  jours_autorises: 30,
+  notes: ''
+})
 
 // Modales
 const showCreateModal = ref(false)
@@ -437,6 +581,26 @@ const availableYears = computed(() => {
 const canValidate = computed(() => {
   return auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
 })
+
+const canEditAgentEntitlements = computed(() => {
+  return auth.hasRole(['RH National', 'RH Provincial'])
+})
+
+const filteredAgents = computed(() => {
+  const query = agentSearch.value.trim().toLowerCase()
+  if (!query) return agents.value
+
+  return agents.value.filter(agent => {
+    return [
+      agent.nom_complet,
+      agent.fonction,
+      agent.holiday_entitlement?.planning_nom,
+      agent.holiday_entitlement?.source_label
+    ].some(value => String(value || '').toLowerCase().includes(query))
+  })
+})
+
+const visibleAgents = computed(() => filteredAgents.value.slice(0, 80))
 
 // Méthodes
 async function loadDepartments() {
@@ -491,6 +655,57 @@ function changePage(page) {
 function viewPlanning(planning) {
   selectedPlanning.value = planning
   showDetailsModal.value = true
+}
+
+function openQuotaModal(agent) {
+  quotaEdit.value = {
+    show: true,
+    agent,
+    jours_autorises: agent.holiday_entitlement?.jours_autorises ?? 30,
+    notes: agent.holiday_entitlement?.notes ?? ''
+  }
+}
+
+function closeQuotaModal() {
+  if (quotaSavingAgentId.value) return
+  quotaEdit.value = {
+    show: false,
+    agent: null,
+    jours_autorises: 30,
+    notes: ''
+  }
+}
+
+async function saveAgentEntitlement() {
+  const agent = quotaEdit.value.agent
+  if (!agent) return
+
+  quotaSavingAgentId.value = agent.id
+  try {
+    const response = await client.put(`/agents/${agent.id}/holidays/entitlement`, {
+      annee: filters.value.year,
+      jours_autorises: quotaEdit.value.jours_autorises,
+      notes: quotaEdit.value.notes
+    })
+
+    const updatedAgent = response.data.agent
+    if (updatedAgent) {
+      const index = agents.value.findIndex(item => item.id === updatedAgent.id)
+      if (index !== -1) {
+        agents.value.splice(index, 1, updatedAgent)
+      }
+    }
+
+    ui.addToast('Jours de congés mis à jour', 'success')
+    quotaSavingAgentId.value = null
+    closeQuotaModal()
+    loadPlannings()
+  } catch (error) {
+    console.error('Erreur mise à jour quota agent:', error)
+    ui.addToast(error.response?.data?.message || 'Erreur lors de la mise à jour', 'danger')
+  } finally {
+    quotaSavingAgentId.value = null
+  }
 }
 
 function editPlanning(planning) {
@@ -602,6 +817,15 @@ function statutClass(statut) {
     'retour': 'bg-info'
   }
   return classes[statut] || 'bg-secondary'
+}
+
+function quotaSourceClass(source) {
+  const classes = {
+    individual: 'bg-primary',
+    planning: 'bg-secondary',
+    default: 'bg-light text-dark'
+  }
+  return classes[source] || 'bg-light text-dark'
 }
 
 async function deletePlanning(planning) {
@@ -807,6 +1031,56 @@ onMounted(() => {
   color: #2c3e50;
 }
 
+.quota-section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.quota-search {
+  position: relative;
+  width: min(100%, 320px);
+}
+
+.quota-search i {
+  position: absolute;
+  left: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.quota-search .form-control {
+  padding-left: 2rem;
+}
+
+.quota-table-wrap > .table {
+  min-width: 920px;
+}
+
+.holiday-quota-modal {
+  background: rgba(15, 23, 42, .58);
+}
+
+.holiday-quota-modal .modal-dialog {
+  width: min(540px, calc(100vw - 2rem));
+  max-width: min(540px, calc(100vw - 2rem));
+}
+
+.holiday-quota-modal .modal-content {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .26);
+}
+
+.quota-agent-name {
+  color: #0f172a;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
@@ -832,6 +1106,15 @@ onMounted(() => {
 
   .holiday-planning-page .hero-tools {
     justify-content: flex-start;
+  }
+
+  .quota-section-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .quota-search {
+    width: 100%;
   }
 }
 

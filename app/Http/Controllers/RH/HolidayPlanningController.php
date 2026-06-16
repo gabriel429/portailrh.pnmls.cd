@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\Agent;
 use App\Models\Province;
+use App\Services\HolidayEntitlementService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -18,6 +19,11 @@ class HolidayPlanningController extends Controller
     private function scopeService(): UserDataScope
     {
         return app(UserDataScope::class);
+    }
+
+    private function entitlementService(): HolidayEntitlementService
+    {
+        return app(HolidayEntitlementService::class);
     }
 
     /**
@@ -107,17 +113,13 @@ class HolidayPlanningController extends Controller
             ->paginate(20);
 
         // Liste des agents pour le formulaire d'ajout de congé (scoped)
-        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id')
+        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id', 'departement_id')
             ->where('statut', 'actif')
             ->orderInstitutionally();
         if ($provinceId) {
             $agentsQuery->where('province_id', $provinceId);
         }
-        $agents = $agentsQuery->get()->map(fn($a) => [
-            'id' => $a->id,
-            'nom_complet' => trim(($a->nom ?? '') . ' ' . ($a->postnom ?? '') . ' ' . ($a->prenom ?? '')),
-            'fonction' => $a->fonction,
-        ]);
+        $agents = $this->entitlementService()->enrichAgents($agentsQuery->get(), (int) $year);
 
         // Liste des provinces (toutes pour RH National, filtrée pour RH Provincial)
         $provincesQuery = Province::orderBy('nom');

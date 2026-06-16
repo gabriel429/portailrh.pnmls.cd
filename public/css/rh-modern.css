@@ -832,6 +832,57 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
     flex-wrap: nowrap !important;
 }
 
+.holiday-planning-page .quota-section-header {
+    display: flex !important;
+    align-items: flex-end !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+}
+
+.holiday-planning-page .quota-search {
+    position: relative !important;
+    width: min(100%, 320px) !important;
+}
+
+.holiday-planning-page .quota-search i {
+    position: absolute !important;
+    left: .75rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #64748b !important;
+    pointer-events: none !important;
+}
+
+.holiday-planning-page .quota-search .form-control {
+    padding-left: 2rem !important;
+}
+
+.holiday-planning-page .quota-table-wrap > .table {
+    min-width: 920px !important;
+}
+
+.holiday-quota-modal {
+    background: rgba(15, 23, 42, .58) !important;
+}
+
+.holiday-quota-modal .modal-dialog {
+    width: min(540px, calc(100vw - 2rem)) !important;
+    max-width: min(540px, calc(100vw - 2rem)) !important;
+    margin: 1.25rem auto !important;
+}
+
+.holiday-quota-modal .modal-content {
+    border: 0 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 24px 60px rgba(15, 23, 42, .26) !important;
+}
+
+.holiday-quota-modal .quota-agent-name {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    margin-bottom: 1rem !important;
+}
+
 .holiday-planning-modal .modal-dialog,
 .holiday-planning-details-modal .modal-dialog,
 .holiday-add-modal .modal-dialog {
@@ -891,6 +942,15 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
 
     .holiday-planning-page .hero-tools {
         justify-content: flex-start !important;
+    }
+
+    .holiday-planning-page .quota-section-header {
+        align-items: stretch !important;
+        flex-direction: column !important;
+    }
+
+    .holiday-planning-page .quota-search {
+        width: 100% !important;
     }
 }
 

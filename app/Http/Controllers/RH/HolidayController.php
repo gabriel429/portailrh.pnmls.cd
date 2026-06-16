@@ -8,8 +8,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Holiday;
 use App\Models\HolidayPlanning;
 use App\Models\Agent;
+use App\Models\AgentHolidayEntitlement;
 use App\Models\AgentStatus;
 use App\Models\Department;
+use App\Services\HolidayEntitlementService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -18,6 +20,11 @@ use Illuminate\Support\Facades\Storage;
 
 class HolidayController extends Controller
 {
+    private function entitlementService(): HolidayEntitlementService
+    {
+        return app(HolidayEntitlementService::class);
+    }
+
     /**
      * Liste des congés avec filtres
      */
@@ -249,12 +256,13 @@ class HolidayController extends Controller
             $planning = HolidayPlanning::find($validated['holiday_planning_id']);
         }
 
-        // Vérifier le quota du planning (uniquement pour congé annuel)
-        if (isset($planning) && $planning && ($validated['type_conge'] ?? '') === 'annuel') {
-            $joursRestants = $planning->jours_conge_totaux - $planning->jours_utilises;
-            if ($nombreJours > $joursRestants) {
+        // Vérifier le quota individuel (uniquement pour congé annuel)
+        if (($validated['type_conge'] ?? '') === 'annuel') {
+            $quota = $this->entitlementService()->quotaForAgent($agent, (int) $dateDébut->year);
+            if ($nombreJours > $quota['jours_restants']) {
+                $joursDisponibles = max(0, (int) $quota['jours_restants']);
                 return response()->json([
-                    'message' => "Quota insuffisant : {$joursRestants} jour(s) disponible(s) sur {$planning->jours_conge_totaux} dans le planning '{$planning->nom_structure}'. Demande : {$nombreJours} jour(s)."
+                    'message' => "Quota individuel insuffisant : {$joursDisponibles} jour(s) disponible(s) sur {$quota['jours_autorises']} pour cet agent. Demande : {$nombreJours} jour(s)."
                 ], 422);
             }
         }
@@ -372,11 +380,12 @@ class HolidayController extends Controller
                 $entryPlanning = $entryPlanningId ? HolidayPlanning::find($entryPlanningId) : null;
             }
 
-            // Vérifier le quota (congé annuel uniquement)
-            if ($entryPlanning && ($entry['type_conge'] ?? '') === 'annuel') {
-                $joursRestants = $entryPlanning->jours_conge_totaux - $entryPlanning->jours_utilises;
-                if ($entryNbJours > $joursRestants) {
-                    $errors[] = "Quota insuffisant pour {$entryNom} : {$joursRestants} jour(s) disponible(s), demande {$entryNbJours} jour(s).";
+            // Vérifier le quota individuel (congé annuel uniquement)
+            if (($entry['type_conge'] ?? '') === 'annuel') {
+                $quota = $this->entitlementService()->quotaForAgent($entryAgent, (int) $dateDébut->year);
+                if ($entryNbJours > $quota['jours_restants']) {
+                    $joursDisponibles = max(0, (int) $quota['jours_restants']);
+                    $errors[] = "Quota individuel insuffisant pour {$entryNom} : {$joursDisponibles} jour(s) disponible(s) sur {$quota['jours_autorises']}, demande {$entryNbJours} jour(s).";
                     continue;
                 }
             }
@@ -468,13 +477,13 @@ class HolidayController extends Controller
             ], 403);
         }
 
-        // Re-vérification du quota à l'approbation (C3)
-        if ($holiday->type_conge === 'annuel' && $holiday->holidayPlanning) {
-            $planning = $holiday->holidayPlanning;
-            $joursRestants = $planning->jours_conge_totaux - $planning->jours_utilises;
-            if ($holiday->nombre_jours > $joursRestants) {
+        // Re-vérification du quota individuel à l'approbation (C3)
+        if ($holiday->type_conge === 'annuel') {
+            $quota = $this->entitlementService()->quotaForAgent($holiday->agent, (int) $holiday->date_debut->year);
+            if ($holiday->nombre_jours > $quota['jours_restants']) {
+                $joursDisponibles = max(0, (int) $quota['jours_restants']);
                 return response()->json([
-                    'message' => "Quota dépassé : {$joursRestants} jour(s) disponible(s) sur {$planning->jours_conge_totaux}. Congé demandé : {$holiday->nombre_jours} jour(s)."
+                    'message' => "Quota individuel dépassé : {$joursDisponibles} jour(s) disponible(s) sur {$quota['jours_autorises']}. Congé demandé : {$holiday->nombre_jours} jour(s)."
                 ], 422);
             }
         }
@@ -664,20 +673,28 @@ class HolidayController extends Controller
     {
         $year = $request->get('year', date('Y'));
 
+        if (!app(UserDataScope::class)->canAccessAgent($request->user(), $agent, false)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas consulter les congés de cet agent.'
+            ], 403);
+        }
+
         $joursUtilises = $agent->holidays()->forYear($year)->approved()->sum('nombre_jours');
 
-        // Quota dynamique via le planning de l'agent (M7)
-        $planning = $this->resolvePlanning($agent, (int) $year);
-        $quotaAnnuel = $planning ? $planning->jours_conge_totaux : 30;
-        $joursRestants = $quotaAnnuel - $joursUtilises;
+        $quota = $this->entitlementService()->quotaForAgent($agent, (int) $year);
 
         $stats = [
             'total_conges' => $agent->holidays()->forYear($year)->count(),
             'jours_total' => $joursUtilises,
             'conges_approuves' => $agent->holidays()->forYear($year)->approved()->count(),
             'conges_en_attente' => $agent->holidays()->forYear($year)->pending()->count(),
-            'quota_annuel' => $quotaAnnuel,
-            'jours_restants' => $joursRestants,
+            'quota_annuel' => $quota['jours_autorises'],
+            'jours_annuels_utilises' => $quota['jours_utilises'],
+            'jours_annuels_en_attente' => $quota['jours_en_attente'],
+            'jours_restants' => $quota['jours_restants'],
+            'quota_source' => $quota['source'],
+            'quota_source_label' => $quota['source_label'],
+            'quota_notes' => $quota['notes'],
             'par_type' => $agent->holidays()
                 ->forYear($year)
                 ->approved()
@@ -688,6 +705,53 @@ class HolidayController extends Controller
         ];
 
         return response()->json($stats);
+    }
+
+    /**
+     * Mise à jour du quota annuel individuel d'un agent.
+     */
+    public function updateAgentEntitlement(Agent $agent, Request $request)
+    {
+        $currentAgent = $request->user()?->agent;
+
+        if (!$currentAgent || !$currentAgent->hasRole(['RH National', 'RH Provincial'])) {
+            return response()->json([
+                'message' => 'Seuls les RH National et RH Provincial peuvent modifier les jours de congés individuels.'
+            ], 403);
+        }
+
+        if (!app(UserDataScope::class)->canAccessAgent($request->user(), $agent, false)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas modifier les jours de congés de cet agent.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'annee' => 'required|integer|min:2020|max:2035',
+            'jours_autorises' => 'required|integer|min:0|max:120',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $entitlement = AgentHolidayEntitlement::firstOrNew([
+            'agent_id' => $agent->id,
+            'annee' => (int) $validated['annee'],
+        ]);
+
+        if (!$entitlement->exists) {
+            $entitlement->created_by = $currentAgent->id;
+        }
+
+        $entitlement->jours_autorises = (int) $validated['jours_autorises'];
+        $entitlement->notes = $validated['notes'] ?? null;
+        $entitlement->updated_by = $currentAgent->id;
+        $entitlement->save();
+
+        return response()->json([
+            'message' => 'Jours de congés mis à jour avec succès',
+            'agent' => $this->entitlementService()
+                ->enrichAgents(collect([$agent->fresh()]), (int) $validated['annee'])
+                ->first(),
+        ]);
     }
 
     /**
@@ -793,12 +857,13 @@ class HolidayController extends Controller
             $validated['holiday_planning_id'] = $planning->id;
         }
 
-        // Vérification quota (annuel uniquement)
-        if ($planning && $validated['type_conge'] === 'annuel') {
-            $joursRestants = $planning->jours_conge_totaux - $planning->jours_utilises;
-            if ($nombreJours > $joursRestants) {
+        // Vérification quota individuel (annuel uniquement)
+        if ($validated['type_conge'] === 'annuel') {
+            $quota = $this->entitlementService()->quotaForAgent($agent, (int) $dateDébut->year);
+            if ($nombreJours > $quota['jours_restants']) {
+                $joursDisponibles = max(0, (int) $quota['jours_restants']);
                 return response()->json([
-                    'message' => "Quota insuffisant : {$joursRestants} jour(s) disponible(s) sur {$planning->jours_conge_totaux}. Demande : {$nombreJours} jour(s)."
+                    'message' => "Quota individuel insuffisant : {$joursDisponibles} jour(s) disponible(s) sur {$quota['jours_autorises']}. Demande : {$nombreJours} jour(s)."
                 ], 422);
             }
         }
@@ -838,24 +903,6 @@ class HolidayController extends Controller
      */
     private function resolvePlanning(Agent $agent, int $year): ?HolidayPlanning
     {
-        if ($agent->province_id) {
-            return HolidayPlanning::where('annee', $year)
-                ->where('type_structure', 'sep')
-                ->where('structure_id', $agent->province_id)
-                ->first();
-        }
-
-        if ($agent->departement_id) {
-            return HolidayPlanning::where('annee', $year)
-                ->where('type_structure', 'department')
-                ->where('structure_id', $agent->departement_id)
-                ->first();
-        }
-
-        // Fallback : planning SEN national
-        return HolidayPlanning::where('annee', $year)
-            ->where('type_structure', 'sen')
-            ->where('structure_id', 1)
-            ->first();
+        return $this->entitlementService()->resolvePlanning($agent, $year);
     }
 }

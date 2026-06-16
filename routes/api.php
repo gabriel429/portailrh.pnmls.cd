@@ -301,6 +301,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
             // Utilitaires Planning
             Route::get('agents/{agent}/holidays/stats', [HolidayController::class, 'agentStats']);
+            Route::put('agents/{agent}/holidays/entitlement', [HolidayController::class, 'updateAgentEntitlement']);
             Route::get('agents/{agent}/statuses/history', [AgentStatusController::class, 'history']);
             Route::get('agents/{agent}/availability', [HolidayController::class, 'checkAvailability']);
         });

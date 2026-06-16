@@ -212,6 +212,11 @@ class Agent extends Authenticatable
         return $this->hasMany(Holiday::class);
     }
 
+    public function holidayEntitlements(): HasMany
+    {
+        return $this->hasMany(AgentHolidayEntitlement::class);
+    }
+
     public function agentStatuses(): HasMany
     {
         return $this->hasMany(AgentStatus::class);
