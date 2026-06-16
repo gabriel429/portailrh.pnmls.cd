@@ -206,6 +206,7 @@
               <i class="fas fa-info-circle me-1"></i>
               <strong>{{ cm_scopeName }}</strong> — {{ cm_agents.length }} agent(s)
               <span v-if="cm_recordedCount > 0" class="pcm-badge-ok ms-2">{{ cm_recordedCount }} deja pointe(s)</span>
+              <span v-if="cm_absenceCount > 0" class="pcm-badge-absence ms-2">{{ cm_absenceCount }} en absence justifiée</span>
             </div>
 
             <!-- Errors -->
@@ -226,16 +227,23 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="a in cm_agents" :key="a.id" :class="{ 'pcm-row-ok': a.pointage_existant }">
+                  <tr
+                    v-for="a in cm_agents"
+                    :key="a.id"
+                    :class="{ 'pcm-row-ok': a.pointage_existant && !a.absence_justifiee, 'pcm-row-absence': a.absence_justifiee }"
+                  >
                     <td>
                       <div class="pcm-agent-name">{{ a.prenom }} {{ a.nom }}
-                        <span v-if="a.pointage_existant" class="pcm-badge-ok" style="font-size:.55rem;"><i class="fas fa-check"></i></span>
+                        <span v-if="a.pointage_existant && !a.absence_justifiee" class="pcm-badge-ok" style="font-size:.55rem;"><i class="fas fa-check"></i></span>
+                      </div>
+                      <div v-if="a.absence_justifiee" class="pcm-agent-absence">
+                        <i class="fas fa-ban me-1"></i>{{ a.absence_justifiee_label || 'Absence justifiée' }}
                       </div>
                     </td>
-                    <td><input type="time" v-model="a.heure_entree" class="pcm-time-input"></td>
-                    <td><input type="time" v-model="a.heure_sortie" class="pcm-time-input"></td>
+                    <td><input type="time" v-model="a.heure_entree" class="pcm-time-input" :disabled="a.absence_justifiee"></td>
+                    <td><input type="time" v-model="a.heure_sortie" class="pcm-time-input" :disabled="a.absence_justifiee"></td>
                     <td class="text-muted">{{ cm_calcHours(a) }}</td>
-                    <td><input type="text" v-model="a.observations" class="pcm-obs-input" placeholder="..."></td>
+                    <td><input type="text" v-model="a.observations" class="pcm-obs-input" placeholder="..." :disabled="a.absence_justifiee"></td>
                   </tr>
                 </tbody>
               </table>
@@ -461,6 +469,7 @@ const cm_deptName = computed(() => {
 })
 const cm_scopeName = computed(() => requiresDepartmentSelection.value ? cm_deptName.value : 'Votre localité')
 const cm_recordedCount = computed(() => cm_agents.value.filter(a => a.pointage_existant).length)
+const cm_absenceCount = computed(() => cm_agents.value.filter(a => a.absence_justifiee).length)
 
 function openCreateModal() {
     cm_department.value = ''
@@ -473,6 +482,7 @@ function openCreateModal() {
 function closeCreateModal() { showCreateModal.value = false }
 
 function cm_calcHours(a) {
+    if (a.absence_justifiee) return '-'
     if (!a.heure_entree || !a.heure_sortie) return '-'
     const e = new Date(`2000-01-01T${a.heure_entree}`)
     const s = new Date(`2000-01-01T${a.heure_sortie}`)
@@ -482,12 +492,17 @@ function cm_calcHours(a) {
 
 function cm_fillAll() {
     cm_agents.value.forEach(a => {
+        if (a.absence_justifiee) return
         if (!a.heure_entree) a.heure_entree = '08:00'
         if (!a.heure_sortie) a.heure_sortie = '16:00'
     })
 }
 function cm_clearAll() {
-    cm_agents.value.forEach(a => { a.heure_entree = ''; a.heure_sortie = ''; a.observations = '' })
+    cm_agents.value.forEach(a => {
+        a.heure_entree = ''
+        a.heure_sortie = ''
+        a.observations = a.absence_justifiee ? (a.absence_justifiee_label || 'Absence justifiée') : ''
+    })
 }
 
 async function cm_loadAgents() {
@@ -504,9 +519,9 @@ async function cm_loadAgents() {
       const agentsData = data.data || data.agents || []
       cm_agents.value = agentsData.map(a => ({
             ...a,
-            heure_entree: a.pointage_existant?.heure_entree || '',
-            heure_sortie: a.pointage_existant?.heure_sortie || '',
-            observations: a.pointage_existant?.observations || '',
+            heure_entree: a.absence_justifiee ? '' : (a.pointage_existant?.heure_entree || ''),
+            heure_sortie: a.absence_justifiee ? '' : (a.pointage_existant?.heure_sortie || ''),
+            observations: a.absence_justifiee ? (a.absence_justifiee_label || 'Absence justifiée') : (a.pointage_existant?.observations || ''),
         }))
         cm_agentsLoaded.value = true
     } catch {
@@ -519,7 +534,7 @@ async function cm_loadAgents() {
 async function cm_submit() {
     cm_errors.value = []
     const pointagesData = cm_agents.value
-        .filter(a => a.heure_entree || a.heure_sortie)
+        .filter(a => !a.absence_justifiee && (a.heure_entree || a.heure_sortie))
         .map(a => ({ agent_id: a.id, heure_entree: a.heure_entree || null, heure_sortie: a.heure_sortie || null, observations: a.observations || null }))
     if (pointagesData.length === 0) { ui.addToast('Saisissez au moins une heure.', 'warning'); return }
     cm_submitting.value = true
@@ -607,6 +622,10 @@ async function cm_submit() {
   display: inline-block; padding: 1px 6px; border-radius: 8px;
   font-size: .65rem; font-weight: 700; background: #dcfce7; color: #166534;
 }
+.pcm-badge-absence {
+  display: inline-block; padding: 1px 6px; border-radius: 8px;
+  font-size: .65rem; font-weight: 700; background: #fee2e2; color: #991b1b;
+}
 
 /* Errors */
 .pcm-errors {
@@ -625,12 +644,18 @@ async function cm_submit() {
 }
 .pcm-table td { padding: .4rem .5rem; border-bottom: 1px solid #f1f5f9; }
 .pcm-row-ok { background: #f0fdf4; }
+.pcm-row-absence { background: #fff7f7; color: #7f1d1d; }
 .pcm-agent-name { font-weight: 600; font-size: .8rem; white-space: nowrap; }
+.pcm-agent-absence { margin-top: .15rem; font-size: .66rem; font-weight: 700; color: #b91c1c; }
 .pcm-time-input {
   border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .3rem .5rem;
   font-size: .8rem; width: 100%; transition: border-color .2s;
 }
 .pcm-time-input:focus { outline: none; border-color: #0077B5; }
+.pcm-time-input:disabled,
+.pcm-obs-input:disabled {
+  background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e5e7eb;
+}
 .pcm-obs-input {
   border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .3rem .5rem;
   font-size: .78rem; width: 100%; transition: border-color .2s;
