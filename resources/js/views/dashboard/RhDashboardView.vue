@@ -984,22 +984,29 @@
                         </div>
                       </div>
 
-                      <div v-if="drilldownProvince.agents.length" class="drill-prov-section-title"><i class="fas fa-user"></i> Agents ({{ drilldownProvince.agents.length }})</div>
-                      <div class="drill-prov-agents-table">
-                        <div v-for="a in drilldownProvince.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
-                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
-                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                      <template v-if="provinceEffectifAgentGroups.length">
+                        <div v-for="group in provinceEffectifAgentGroups" :key="group.code" class="drill-structure-group">
+                          <div class="drill-prov-section-title">
+                            <i class="fas" :class="group.code === 'SEL' ? 'fa-map-pin' : 'fa-map-marked-alt'"></i>
+                            {{ group.label }} ({{ group.agents.length }})
                           </div>
-                          <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">{{ a.nom }}</div>
-                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                            <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
-                              <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                          <div class="drill-prov-agents-table">
+                            <div v-for="a in group.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
+                              <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                                <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                              </div>
+                              <div class="drill-prov-agent-info">
+                                <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                                <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                                <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                                  <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                                </div>
+                              </div>
+                              <i class="fas fa-address-card drill-agent-contact-icon"></i>
                             </div>
                           </div>
-                          <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
-                      </div>
+                      </template>
                     </template>
 
                     <template v-else-if="drilldownSection === 'presence'">
@@ -1013,53 +1020,58 @@
                         </div>
                       </div>
 
-                      <div v-if="drilldownProvince.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
-                        <i class="fas fa-user"></i> {{ presenceFilterTitle(filteredPresenceAgents(drilldownProvince.agents).length) }}
-                      </div>
-                      <div v-if="drilldownProvince.agents?.length" class="drill-prov-agents-table">
-                        <div v-for="a in filteredPresenceAgents(drilldownProvince.agents)" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
-                          <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
-                            <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                      <template v-if="provincePresenceAgentGroups.length">
+                        <div v-for="group in provincePresenceAgentGroups" :key="group.code" class="drill-structure-group">
+                          <div class="drill-prov-section-title" style="margin-top:16px;">
+                            <i class="fas" :class="group.code === 'SEL' ? 'fa-map-pin' : 'fa-user-check'"></i>
+                            {{ presenceFilterTitle(group.agents.length) }} · {{ group.label }}
                           </div>
-                          <div class="drill-prov-agent-info">
-                            <div class="drill-prov-agent-name">
-                              {{ a.nom }}
-                              <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
-                                <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
-                              </span>
-                            </div>
-                            <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                            <div class="drill-presence-times">
-                              <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
-                                <i class="fas fa-sign-in-alt"></i>
-                                <strong>Arrivée</strong>
-                                {{ presenceTime(a.heure_entree) }}
-                              </span>
-                              <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
-                                <i class="fas fa-sign-out-alt"></i>
-                                <strong>Départ</strong>
-                                {{ presenceTime(a.heure_sortie) }}
-                              </span>
-                            </div>
-                            <div class="drill-prov-agent-meta">
-                              <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
-                              <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
-                              <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
-                              <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
-                              <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
-                            </div>
-                            <div v-if="a.absence_observation" class="drill-prov-agent-note">
-                              <i class="fas fa-comment-alt"></i>
-                              <span>{{ a.absence_observation }}</span>
-                            </div>
-                            <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
-                              <i class="fas fa-comment-alt"></i>
-                              <span>{{ a.pointage_observation }}</span>
+                          <div class="drill-prov-agents-table">
+                            <div v-for="a in group.agents" :key="a.id" class="drill-prov-agent-row drill-agent-clickable" @click="selectedAgent = selectedAgent?.id === a.id ? null : a">
+                              <div class="drill-prov-agent-avatar" :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                                <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                              </div>
+                              <div class="drill-prov-agent-info">
+                                <div class="drill-prov-agent-name">
+                                  {{ a.nom }}
+                                  <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                    <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                                  </span>
+                                </div>
+                                <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                                <div class="drill-presence-times">
+                                  <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                    <strong>Arrivée</strong>
+                                    {{ presenceTime(a.heure_entree) }}
+                                  </span>
+                                  <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <strong>Départ</strong>
+                                    {{ presenceTime(a.heure_sortie) }}
+                                  </span>
+                                </div>
+                                <div class="drill-prov-agent-meta">
+                                  <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                                  <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
+                                  <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                                  <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                                  <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                                </div>
+                                <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                                  <i class="fas fa-comment-alt"></i>
+                                  <span>{{ a.absence_observation }}</span>
+                                </div>
+                                <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                                  <i class="fas fa-comment-alt"></i>
+                                  <span>{{ a.pointage_observation }}</span>
+                                </div>
+                              </div>
+                              <i class="fas fa-address-card drill-agent-contact-icon"></i>
                             </div>
                           </div>
-                          <i class="fas fa-address-card drill-agent-contact-icon"></i>
                         </div>
-                      </div>
+                      </template>
                       <div v-else class="drill-empty">
                         <i class="fas fa-inbox"></i>
                         <p>Aucun agent dans cette province</p>
@@ -1590,6 +1602,74 @@ const drilldownLevel = ref('organe')
 const drilldownSection = ref('effectifs')
 const drillPresenceFilter = ref('all')
 const selectedAgent = ref(null)
+const provinceDrillOrgane = ref(null)
+
+const structureOrder = ['SEP', 'SEL', 'SEN', 'AUTRE']
+
+function agentStructureCode(agent) {
+  const explicit = (agent?.structure_code || '').toString().toUpperCase()
+  if (explicit) return explicit
+
+  const organe = (agent?.organe || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  if (organe.includes('local')) return 'SEL'
+  if (organe.includes('provincial')) return 'SEP'
+  if (organe.includes('national')) return 'SEN'
+  return 'AUTRE'
+}
+
+function agentStructureLabel(code) {
+  return {
+    SEP: 'Secrétariat Exécutif Provincial',
+    SEL: 'Secrétariats Exécutifs Locaux',
+    SEN: 'Secrétariat Exécutif National',
+    AUTRE: 'Autres agents',
+  }[code] || 'Autres agents'
+}
+
+function sortStructureGroups(groups) {
+  return groups.sort((a, b) => {
+    const ai = structureOrder.indexOf(a.code)
+    const bi = structureOrder.indexOf(b.code)
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+  })
+}
+
+function groupAgentsByStructure(agents = []) {
+  if (!Array.isArray(agents)) return []
+
+  const grouped = new Map()
+  agents.forEach((agent) => {
+    const code = agentStructureCode(agent)
+    if (!grouped.has(code)) {
+      grouped.set(code, { code, label: agent?.structure_label || agentStructureLabel(code), agents: [] })
+    }
+    grouped.get(code).agents.push(agent)
+  })
+
+  return sortStructureGroups([...grouped.values()].filter(group => group.agents.length))
+}
+
+function structureGroupsFromPayload(payload, agents = null) {
+  const rawGroups = payload?.agent_groups
+  if (rawGroups && typeof rawGroups === 'object') {
+    return sortStructureGroups(
+      Object.values(rawGroups)
+        .map(group => ({
+          code: (group.code || '').toString().toUpperCase() || 'AUTRE',
+          label: group.label || agentStructureLabel((group.code || '').toString().toUpperCase()),
+          agents: Array.isArray(group.agents) ? group.agents : [],
+        }))
+        .filter(group => group.agents.length)
+    )
+  }
+
+  return groupAgentsByStructure(agents ?? payload?.agents ?? [])
+}
+
+const provinceEffectifAgentGroups = computed(() => structureGroupsFromPayload(drilldownProvince.value))
+const provincePresenceAgentGroups = computed(() => structureGroupsFromPayload(drilldownProvince.value)
+  .map(group => ({ ...group, agents: filteredPresenceAgents(group.agents) }))
+  .filter(group => group.agents.length))
 
 const drilldownColor = computed(() => {
   const code = drilldownOrgane.value?.organe || ''
@@ -1612,7 +1692,7 @@ function drillItemIcon(type) {
 
 function openDrilldownItem(item) {
   const type = drilldownOrgane.value?.type_items
-  if (type === 'provinces') return openProvinceDrilldown(item.id)
+  if (type === 'provinces') return openProvinceDrilldown(item.id, drilldownSection.value, drilldownOrgane.value?.organe)
   if (type === 'localites') return openLocaliteDrilldown(item.id)
   return openDepartmentDrilldown(item.id)
 }
@@ -1622,7 +1702,8 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   const isProvincial = d.value.scope?.is_provincial
   const provId = d.value.scope?.province_id
   if (isProvincial && provId) {
-    return openProvinceDrilldown(provId, section)
+    const organe = ['SEP', 'SEL'].includes(code) ? code : null
+    return openProvinceDrilldown(provId, section, organe)
   }
   drilldownOpen.value = true
   drilldownLoading.value = true
@@ -1642,16 +1723,18 @@ async function openOrganeDrilldown(code, section = 'effectifs') {
   }
 }
 
-async function openProvinceDrilldown(id, section = 'effectifs') {
+async function openProvinceDrilldown(id, section = 'effectifs', organe = null) {
   drilldownOpen.value = true
   drilldownLoading.value = true
   drilldownLevel.value = 'province'
   drilldownSection.value = section
   drillPresenceFilter.value = 'all'
   drilldownProvince.value = null
+  provinceDrillOrgane.value = organe
   selectedAgent.value = null
   try {
-    const { data: result } = await client.get(`/dashboard/executive/province/${id}`)
+    const params = organe ? { organe } : undefined
+    const { data: result } = await client.get(`/dashboard/executive/province/${id}`, { params })
     drilldownProvince.value = result.data ?? result
   } catch (e) {
     console.error('Drill-down province error:', e)
@@ -1668,7 +1751,8 @@ async function openDepartmentDrilldown(id) {
   drillPresenceFilter.value = 'all'
   selectedAgent.value = null
   try {
-    const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
+    const params = provinceDrillOrgane.value ? { organe: provinceDrillOrgane.value } : undefined
+    const { data: result } = await client.get(`/dashboard/executive/department/${id}`, { params })
     const payload = result.data ?? result
     drilldownDepartment.value = { kind: 'department', ...payload }
   } catch (e) {
@@ -1713,6 +1797,7 @@ function closeDrilldown() {
   drilldownLevel.value = 'organe'
   drillPresenceFilter.value = 'all'
   selectedAgent.value = null
+  provinceDrillOrgane.value = null
 }
 
 function backToOrgane() {
@@ -1722,6 +1807,7 @@ function backToOrgane() {
   drilldownDepartment.value = null
   drillPresenceFilter.value = 'all'
   selectedAgent.value = null
+  provinceDrillOrgane.value = null
 }
 
 function backToPrevious() {
@@ -2331,6 +2417,14 @@ onMounted(async () => {
   margin: 1.2rem 0 .6rem; padding-bottom: .3rem; border-bottom: 1px solid #e5e7eb;
 }
 .drill-prov-section-title i { font-size: .72rem; color: #94a3b8; }
+.drill-structure-group {
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+}
+.drill-structure-group + .drill-structure-group {
+  margin-top: 1rem;
+}
 .drill-prov-organe-row { display: flex; gap: .5rem; margin-bottom: .5rem; }
 .drill-prov-organe-chip {
   display: flex; align-items: center; gap: .5rem;

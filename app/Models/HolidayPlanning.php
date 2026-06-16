@@ -40,6 +40,12 @@ class HolidayPlanning extends Model
         'validated_at' => 'datetime'
     ];
 
+    protected $appends = [
+        'jours_restants',
+        'pourcentage_utilisation',
+        'type_structure_label'
+    ];
+
     // Relations
     public function createdBy(): BelongsTo
     {

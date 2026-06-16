@@ -161,27 +161,130 @@
             <div class="spinner-border text-primary" role="status"></div>
           </div>
 
-          <div v-else-if="holidays.data?.length === 0" class="empty-state">
-            <div class="empty-icon">
-              <i class="fas fa-calendar-times fa-3x"></i>
+          <!-- Tableau des Plannings de Structures -->
+          <div v-else-if="plannings.data?.length > 0" class="mb-5">
+            <div class="section-header mb-3">
+              <h4 class="mb-0">
+                <i class="fas fa-calendar-check me-2 text-primary"></i>
+                Plannings de Structures
+              </h4>
+              <small class="text-muted d-block mt-1">{{ plannings.data?.length }} planning(s) créé(s)</small>
             </div>
-            <h5>Aucun congé trouvé</h5>
-            <p class="text-muted">Aucun congé planifié pour cette période</p>
-          </div>
-
-          <div v-else>
             <div class="table-responsive">
               <table class="table table-hover">
                 <thead>
-                  <tr>
-                    <th>Noms</th>
+                  <tr class="text-muted small">
+                    <th>Structure</th>
+                    <th>Type</th>
+                    <th>Année</th>
+                    <th>Jours autorisés</th>
+                    <th>Jours utilisés</th>
+                    <th>Jours restants</th>
+                    <th>Taux</th>
+                    <th>Statut</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="planning in plannings.data" :key="planning.id">
+                    <td>
+                      <div class="fw-medium">{{ planning.nom_structure }}</div>
+                      <small class="text-muted">ID: {{ planning.id }}</small>
+                    </td>
+                    <td>
+                      <span class="badge bg-light text-dark">{{ planning.type_structure_label }}</span>
+                    </td>
+                    <td class="text-center fw-medium">{{ planning.annee }}</td>
+                    <td class="text-center">
+                      <span class="badge bg-info">{{ planning.jours_conge_totaux }}j</span>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge bg-warning">{{ planning.jours_utilises }}j</span>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge" :class="planning.jours_restants > 0 ? 'bg-success' : 'bg-danger'">
+                        {{ planning.jours_restants }}j
+                      </span>
+                    </td>
+                    <td class="text-center">
+                      <div class="progress" style="height: 20px; width: 80px; margin: 0 auto;">
+                        <div
+                          class="progress-bar"
+                          :class="planning.pourcentage_utilisation > 80 ? 'bg-danger' : planning.pourcentage_utilisation > 50 ? 'bg-warning' : 'bg-success'"
+                          :style="{ width: Math.min(planning.pourcentage_utilisation, 100) + '%' }"
+                        >
+                          <small class="fw-bold">{{ planning.pourcentage_utilisation }}%</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span class="badge" :class="planning.valide ? 'bg-success' : 'bg-warning'">
+                        {{ planning.valide ? 'Validé' : 'En attente' }}
+                      </span>
+                    </td>
+                    <td>
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button
+                          type="button"
+                          class="btn btn-outline-primary"
+                          title="Consulter et modifier"
+                          @click="viewPlanning(planning)"
+                        >
+                          <i class="fas fa-eye"></i>
+                        </button>
+                        <button
+                          v-if="!planning.valide && canValidate"
+                          type="button"
+                          class="btn btn-outline-success"
+                          title="Valider le planning"
+                          @click="validatePlanning(planning)"
+                        >
+                          <i class="fas fa-check"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline-danger"
+                          title="Supprimer"
+                          @click="deletePlanning(planning)"
+                        >
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <!-- Pagination Plannings -->
+            <Pagination
+              v-if="plannings.last_page > 1"
+              :pagination="plannings"
+              @page-changed="changePage"
+            />
+          </div>
+
+          <!-- Tableau des Congés Individuels -->
+          <div v-if="holidays.data?.length > 0">
+            <div class="section-header mb-3">
+              <h4 class="mb-0">
+                <i class="fas fa-users me-2 text-primary"></i>
+                Congés Individuels Planifiés
+              </h4>
+              <small class="text-muted d-block mt-1">{{ holidays.data?.length }} congé(s) planifié(s)</small>
+            </div>
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead>
+                  <tr class="text-muted small">
+                    <th>Agent</th>
                     <th>Fonction</th>
-                    <th>Date de début</th>
-                    <th>Date de fin</th>
-                    <th>Date de reprise</th>
+                    <th>Type</th>
+                    <th>Début</th>
+                    <th>Fin</th>
                     <th>Durée</th>
-                    <th>Observation</th>
+                    <th>Statut</th>
                     <th>Intérim assuré par</th>
+                    <th>Observation</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -189,26 +292,47 @@
                     <td>
                       <div class="fw-medium">{{ holiday.agent?.nom_complet || holiday.agent?.nom || '-' }}</div>
                     </td>
-                    <td>{{ holiday.agent?.fonction || '-' }}</td>
+                    <td class="small text-muted">{{ holiday.agent?.fonction || '-' }}</td>
+                    <td>
+                      <span class="badge" :class="typeCongeClass(holiday.type_conge)">
+                        {{ typeCongeLabel(holiday.type_conge) }}
+                      </span>
+                    </td>
                     <td>{{ formatDate(holiday.date_debut) }}</td>
                     <td>{{ formatDate(holiday.date_fin) }}</td>
-                    <td>{{ formatDate(holiday.date_retour_prevu) }}</td>
                     <td>
-                      <span class="badge bg-info">{{ holiday.nombre_jours }} j</span>
+                      <span class="badge bg-info">{{ holiday.nombre_jours }}j</span>
                     </td>
-                    <td>{{ holiday.observation || holiday.motif || '-' }}</td>
+                    <td>
+                      <span class="badge" :class="statutClass(holiday.statut_demande)">
+                        {{ statutLabel(holiday.statut_demande) }}
+                      </span>
+                    </td>
                     <td>{{ holiday.interim_par?.nom_complet || holiday.interim_par?.nom || '-' }}</td>
+                    <td class="small text-muted">{{ holiday.observation || holiday.motif || '-' }}</td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <!-- Pagination -->
+            <!-- Pagination Congés -->
             <Pagination
               v-if="holidays.last_page > 1"
               :pagination="holidays"
               @page-changed="changePage"
             />
+          </div>
+
+          <!-- État vide -->
+          <div v-else-if="plannings.data?.length === 0" class="empty-state">
+            <div class="empty-icon">
+              <i class="fas fa-calendar-times fa-3x"></i>
+            </div>
+            <h5>Aucun planning créé</h5>
+            <p class="text-muted mb-3">Créez un planning pour commencer à gérer les congés</p>
+            <button @click="showCreateModal = true" class="btn btn-primary">
+              <i class="fas fa-plus me-1"></i> Créer un planning
+            </button>
           </div>
         </div>
 
@@ -434,6 +558,65 @@ function formatDate(dateStr) {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function typeCongeLabel(type) {
+  const labels = {
+    'annuel': 'Annuel',
+    'maladie': 'Maladie',
+    'maternite': 'Maternité',
+    'paternite': 'Paternité',
+    'urgence': 'Urgence',
+    'special': 'Spécial'
+  }
+  return labels[type] || type
+}
+
+function typeCongeClass(type) {
+  const classes = {
+    'annuel': 'bg-primary',
+    'maladie': 'bg-danger',
+    'maternite': 'bg-success',
+    'paternite': 'bg-info',
+    'urgence': 'bg-warning text-dark',
+    'special': 'bg-secondary'
+  }
+  return classes[type] || 'bg-secondary'
+}
+
+function statutLabel(statut) {
+  const labels = {
+    'en_attente': 'En attente',
+    'approuve': 'Approuvé',
+    'refuse': 'Refusé',
+    'annule': 'Annulé',
+    'retour': 'Retour'
+  }
+  return labels[statut] || statut
+}
+
+function statutClass(statut) {
+  const classes = {
+    'en_attente': 'bg-warning text-dark',
+    'approuve': 'bg-success',
+    'refuse': 'bg-danger',
+    'annule': 'bg-secondary',
+    'retour': 'bg-info'
+  }
+  return classes[statut] || 'bg-secondary'
+}
+
+async function deletePlanning(planning) {
+  if (!confirm(`Êtes-vous sûr de vouloir supprimer le planning de ${planning.nom_structure} ?`)) return
+
+  try {
+    await client.delete(`/holiday-plannings/${planning.id}`)
+    ui.addToast('Planning supprimé avec succès', 'success')
+    loadPlannings()
+  } catch (error) {
+    console.error('Erreur suppression:', error)
+    ui.addToast('Erreur lors de la suppression', 'danger')
+  }
+}
+
 // Watchers
 watch(() => viewMode.value, (newMode) => {
   if (newMode === 'calendar') {
@@ -499,27 +682,38 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 1rem;
   color: white;
+  margin-right: 1rem;
   font-size: 1.5rem;
 }
 
 .stat-content h3 {
   margin: 0;
   font-size: 1.75rem;
-  font-weight: 700;
-  color: #333;
 }
 
 .stat-content p {
-  margin: 0;
-  color: #666;
-  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.section-header {
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.section-header h4 {
+  font-weight: 600;
+  color: #2c3e50;
 }
 
 .empty-state {
   text-align: center;
-  padding: 4rem 2rem;
+  padding: 3rem 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 2px dashed #dee2e6;
 }
 
 .empty-icon {
@@ -527,50 +721,8 @@ onMounted(() => {
   margin-bottom: 1rem;
 }
 
-.btn-rh {
-  background: linear-gradient(135deg, #0077B5, #005a87);
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.btn-rh:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-.btn-rh.alt {
-  background: #6c757d;
-}
-
-.progress {
-  margin-bottom: 4px;
-}
-
-/* ── Mobile responsive ── */
-@media (max-width: 767.98px) {
-  .stat-card { padding: 1rem; }
-  .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; margin-right: .75rem; }
-  .stat-content h3 { font-size: 1.3rem; }
-  .stat-content p { font-size: 0.8rem; }
-  .rh-filters-card { padding: 1rem; }
-  .table { font-size: 0.82rem; }
-  .table th, .table td { padding: 0.5rem 0.4rem; white-space: nowrap; }
-  /* Masquer Année, Jours Totaux, Taux sur mobile */
-  .table th:nth-child(3), .table td:nth-child(3),
-  .table th:nth-child(4), .table td:nth-child(4),
-  .table th:nth-child(6), .table td:nth-child(6) { display: none; }
-  .btn-rh { padding: 0.4rem 0.75rem; font-size: 0.85rem; }
-}
-
-@media (max-width: 575.98px) {
-  .table { font-size: 0.78rem; }
-  .table th, .table td { padding: 0.35rem 0.3rem; }
-  .stat-card { padding: 0.75rem; }
-  .stat-icon { width: 34px; height: 34px; font-size: 0.95rem; }
-  .stat-content h3 { font-size: 1.1rem; }
+.empty-state h5 {
+  color: #6c757d;
+  margin-bottom: 0.5rem;
 }
 </style>

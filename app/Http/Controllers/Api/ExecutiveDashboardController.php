@@ -50,6 +50,35 @@ class ExecutiveDashboardController extends ApiController
         ][strtoupper((string) $code)] ?? null;
     }
 
+    private function structureCodeFromOrgane(?string $organe): string
+    {
+        $normalized = $this->normalizedText($organe);
+
+        if (str_contains($normalized, 'local')) {
+            return 'SEL';
+        }
+
+        if (str_contains($normalized, 'provincial')) {
+            return 'SEP';
+        }
+
+        if (str_contains($normalized, 'national')) {
+            return 'SEN';
+        }
+
+        return 'AUTRE';
+    }
+
+    private function structureLabelFromCode(string $code): string
+    {
+        return match (strtoupper($code)) {
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariats Exécutifs Locaux',
+            default => 'Autres agents',
+        };
+    }
+
     private function normalizedRoleName($user): string
     {
         return strtolower(trim((string) ($user->role?->nom_role ?? '')));
@@ -74,6 +103,40 @@ class ExecutiveDashboardController extends ApiController
             $this->normalizedText($agent?->departement?->code),
             $this->normalizedText($agent?->departement?->nom),
         ])));
+    }
+
+    private function agentPerformanceRecord(Agent $agent, Carbon $now): array
+    {
+        $q = Tache::where('agent_id', $agent->id);
+        $total = (clone $q)->count();
+        $done = (clone $q)->where('statut', 'terminee')->count();
+        $overdue = (clone $q)->where('statut', '!=', 'terminee')
+            ->whereNotNull('date_echeance')
+            ->where('date_echeance', '<', $now->toDateString())
+            ->count();
+        $avgPct = round((clone $q)->avg('pourcentage') ?? 0, 0);
+        $structureCode = $this->structureCodeFromOrgane($agent->organe);
+
+        return [
+            'id' => $agent->id,
+            'nom' => $agent->nom,
+            'prenom' => $agent->prenom,
+            'poste_actuel' => $agent->poste_actuel,
+            'fonction' => $agent->fonction,
+            'organe' => $agent->organe,
+            'structure_code' => $structureCode,
+            'structure_label' => $this->structureLabelFromCode($structureCode),
+            'localite_id' => $agent->localite_id,
+            'localite' => $agent->relationLoaded('localite') && $agent->localite ? [
+                'id' => $agent->localite->id,
+                'nom' => $agent->localite->nom,
+            ] : null,
+            'dept_code' => $agent->departement?->code ?? ($structureCode === 'SEL' ? 'Local' : 'Province'),
+            'taches_total' => $total,
+            'taches_done' => $done,
+            'taches_overdue' => $overdue,
+            'avg_completion' => $avgPct,
+        ];
     }
 
     private function isCafDashboardUser($user): bool
@@ -561,11 +624,14 @@ class ExecutiveDashboardController extends ApiController
             $isPresent = (bool) optional($pointage)->heure_entree;
             $online = $onlineMap[$a->id] ?? null;
             $localite = $a->localite ?: $a->affectations->first()?->localite;
+            $structureCode = $this->structureCodeFromOrgane($a->organe);
 
             return [
                 'id' => $a->id,
                 'nom' => trim($a->prenom . ' ' . $a->nom),
                 'organe' => $a->organe,
+                'structure_code' => $structureCode,
+                'structure_label' => $this->structureLabelFromCode($structureCode),
                 'fonction' => $a->fonction ?? $a->poste_actuel ?? '-',
                 'sexe' => $a->sexe,
                 'email' => $a->email_professionnel ?: $a->email_prive ?: $a->email ?: null,
@@ -1363,31 +1429,10 @@ class ExecutiveDashboardController extends ApiController
         // ─── PERFORMANCE DES AGENTS (province) ──────────────────────────────────
         $agentPerformance = Agent::where('province_id', $provinceId)
             ->actifs()
-            ->with('departement:id,code')
+            ->with(['departement:id,code', 'localite:id,nom'])
             ->orderInstitutionally()
-            ->get(['id', 'nom', 'prenom', 'poste_actuel', 'fonction', 'organe', 'departement_id'])
-            ->map(function ($agent) use ($now) {
-                $q       = Tache::where('agent_id', $agent->id);
-                $total   = (clone $q)->count();
-                $done    = (clone $q)->where('statut', 'terminee')->count();
-                $overdue = (clone $q)->where('statut', '!=', 'terminee')
-                    ->whereNotNull('date_echeance')
-                    ->where('date_echeance', '<', $now->toDateString())
-                    ->count();
-                $avgPct  = round((clone $q)->avg('pourcentage') ?? 0, 0);
-                return [
-                    'id'             => $agent->id,
-                    'nom'            => $agent->nom,
-                    'prenom'         => $agent->prenom,
-                    'poste_actuel'   => $agent->poste_actuel,
-                    'fonction'       => $agent->fonction,
-                    'dept_code'      => $agent->departement?->code ?? 'Province',
-                    'taches_total'   => $total,
-                    'taches_done'    => $done,
-                    'taches_overdue' => $overdue,
-                    'avg_completion' => $avgPct,
-                ];
-            })
+            ->get(['id', 'nom', 'prenom', 'poste_actuel', 'fonction', 'organe', 'departement_id', 'localite_id'])
+            ->map(fn ($agent) => $this->agentPerformanceRecord($agent, $now))
             ->sortByDesc('avg_completion')
             ->values();
 
@@ -2021,6 +2066,12 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
 
         // PTA dans cette province
         $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('province_id', $id);
+        if ($organeFilter) {
+            $ptaLevel = strtoupper((string) $request->query('organe'));
+            if (in_array($ptaLevel, ['SEN', 'SEP', 'SEL'], true)) {
+                $ptaQuery = $ptaQuery->parNiveau($ptaLevel);
+            }
+        }
         $ptaTotal = (clone $ptaQuery)->count();
         $ptaTerminee = (clone $ptaQuery)->terminee()->count();
         $ptaEnCours = (clone $ptaQuery)->enCours()->count();
@@ -2030,10 +2081,12 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         $departments = Department::fonctionnel()
             ->where('province_id', $id)
             ->withCount([
-                'agents as total_agents' => fn($q) => $q,
-                'agents as actifs_agents' => fn($q) => $q->actifs(),
+                'agents as total_agents' => fn($q) => $q->when($organeFilter, fn($sub) => $sub->where('organe', $organeFilter)),
+                'agents as actifs_agents' => fn($q) => $q->actifs()->when($organeFilter, fn($sub) => $sub->where('organe', $organeFilter)),
             ])
             ->get(['id', 'nom', 'code'])
+            ->filter(fn($d) => $d->total_agents > 0)
+            ->values()
             ->map(fn($d) => [
                 'id' => $d->id,
                 'nom' => $d->nom,
@@ -2049,11 +2102,33 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
         }
         $topAgents = $this->presenceAgents($agentListQuery, $now, 150);
         $onlineCount = $topAgents->where('is_online', true)->count();
-        $onlineCount = $topAgents->where('is_online', true)->count();
+
+        $agentGroups = [];
+        foreach ($organes as $oCode => $oNom) {
+            if ($organeFilter && $organeFilter !== $oNom) {
+                continue;
+            }
+
+            $groupQuery = Agent::where('province_id', $id)->where('organe', $oNom);
+            $groupTotal = (clone $groupQuery)->count();
+            $groupActifs = (clone $groupQuery)->actifs()->count();
+
+            if ($groupTotal === 0) {
+                continue;
+            }
+
+            $structureCode = strtoupper($oCode);
+            $agentGroups[$oCode] = [
+                'code' => $structureCode,
+                'label' => $this->structureLabelFromCode($structureCode),
+                'total' => $groupTotal,
+                'actifs' => $groupActifs,
+                'agents' => $this->presenceAgents($groupQuery, $now, 150),
+            ];
+        }
 
         // Activités PTA de cette province
-        $activites = ActivitePlan::parAnnee($currentYear)
-            ->where('province_id', $id)
+        $activites = (clone $ptaQuery)
             ->orderByDesc('pourcentage')
             ->limit(50)
             ->get(['id', 'titre', 'categorie', 'statut', 'pourcentage', 'trimestre', 'date_debut', 'date_fin'])
@@ -2095,6 +2170,7 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             ],
             'departments' => $departments,
             'agents' => $topAgents,
+            'agent_groups' => $agentGroups,
             'activites' => $activites,
         ]);
     }

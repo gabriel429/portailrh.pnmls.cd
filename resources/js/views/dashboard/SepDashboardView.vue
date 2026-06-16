@@ -221,7 +221,7 @@
             </div>
           </div>
           <!-- Par organe dans la structure -->
-          <div v-for="o in presenceOrganes" :key="o.code" class="sep-presence-card sep-organe-clickable" @click="openProvDrilldown('presence')">
+          <div v-for="o in presenceOrganes" :key="o.code" class="sep-presence-card sep-organe-clickable" @click="openProvDrilldown('presence', o.code)">
             <div class="sep-presence-card-head" :style="{ color: o.color }">
               <i class="fas" :class="o.icon"></i> {{ o.label }}
               <i class="fas fa-chevron-right sep-drill-arrow" style="margin-left:auto;"></i>
@@ -635,49 +635,60 @@
           <div class="sep-empty-icon-wrap" style="background:#d1fae5;"><i class="fas fa-users" style="color:#059669;"></i></div>
           <span>Aucun agent actif dans {{ scopeLabelSentence }}</span>
         </div>
-        <div v-else class="sep-table-wrap">
-          <table class="sep-perf-table">
-            <thead>
-              <tr>
-                <th>Agent</th>
-                <th class="text-center">Total tâches</th>
-                <th class="text-center">Terminées</th>
-                <th>Réalisation</th>
-                <th class="text-center">En retard</th>
-                <th class="text-center">Niveau</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="ag in data.agent_performance" :key="ag.id" class="sep-perf-row">
-                <td>
-                  <div class="sep-dept-cell">
-                    <div class="sep-agent-avatar">{{ (ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '') }}</div>
-                    <div>
-                      <div class="sep-dept-cell-name">{{ ag.prenom }} {{ ag.nom }}</div>
-                      <div class="sep-dept-cell-code">{{ agentPosteLabel(ag) || ag.dept_code }}</div>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-center"><span class="sep-badge-neutral">{{ ag.taches_total }}</span></td>
-                <td class="text-center"><span class="sep-badge-ok">{{ ag.taches_done }}</span></td>
-                <td>
-                  <div class="sep-prog-cell">
-                    <div class="sep-prog-track">
-                      <div class="sep-prog-fill" :style="{ width: ag.avg_completion + '%', background: sepProgressColor(ag.avg_completion) }"></div>
-                    </div>
-                    <span class="sep-prog-pct">{{ ag.avg_completion }}%</span>
-                  </div>
-                </td>
-                <td class="text-center">
-                  <span v-if="ag.taches_overdue > 0" class="sep-badge-danger">{{ ag.taches_overdue }}</span>
-                  <span v-else class="sep-badge-ok"><i class="fas fa-check"></i></span>
-                </td>
-                <td class="text-center">
-                  <span class="sep-perf-badge" :class="sepPerfClass(ag.avg_completion)">{{ sepPerfLabel(ag.avg_completion) }}</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div v-else class="sep-structure-groups">
+          <div v-for="group in agentPerformanceGroups" :key="group.code" class="sep-structure-group">
+            <div class="sep-structure-head">
+              <div>
+                <div class="sep-structure-title">{{ group.label }}</div>
+                <div class="sep-structure-sub">{{ groupSubtitle(group) }}</div>
+              </div>
+              <span class="sep-structure-count">{{ group.agents.length }} agent{{ group.agents.length > 1 ? 's' : '' }}</span>
+            </div>
+            <div class="sep-table-wrap">
+              <table class="sep-perf-table">
+                <thead>
+                  <tr>
+                    <th>Agent</th>
+                    <th class="text-center">Total tâches</th>
+                    <th class="text-center">Terminées</th>
+                    <th>Réalisation</th>
+                    <th class="text-center">En retard</th>
+                    <th class="text-center">Niveau</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="ag in group.agents" :key="ag.id" class="sep-perf-row">
+                    <td>
+                      <div class="sep-dept-cell">
+                        <div class="sep-agent-avatar">{{ (ag.prenom?.[0] ?? '') + (ag.nom?.[0] ?? '') }}</div>
+                        <div>
+                          <div class="sep-dept-cell-name">{{ ag.prenom }} {{ ag.nom }}</div>
+                          <div class="sep-dept-cell-code">{{ agentPosteLabel(ag) || ag.dept_code }}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td class="text-center"><span class="sep-badge-neutral">{{ ag.taches_total }}</span></td>
+                    <td class="text-center"><span class="sep-badge-ok">{{ ag.taches_done }}</span></td>
+                    <td>
+                      <div class="sep-prog-cell">
+                        <div class="sep-prog-track">
+                          <div class="sep-prog-fill" :style="{ width: ag.avg_completion + '%', background: sepProgressColor(ag.avg_completion) }"></div>
+                        </div>
+                        <span class="sep-prog-pct">{{ ag.avg_completion }}%</span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span v-if="ag.taches_overdue > 0" class="sep-badge-danger">{{ ag.taches_overdue }}</span>
+                      <span v-else class="sep-badge-ok"><i class="fas fa-check"></i></span>
+                    </td>
+                    <td class="text-center">
+                      <span class="sep-perf-badge" :class="sepPerfClass(ag.avg_completion)">{{ sepPerfLabel(ag.avg_completion) }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -762,25 +773,30 @@
                         <i class="fas fa-chevron-right" style="font-size:.6em;margin-left:4px;"></i>
                       </button>
                     </div>
-                    <div v-if="provDrillData.agents?.length" class="drill-prov-section-title">
-                      <i class="fas fa-user"></i> Agents actifs ({{ provDrillData.agents.length }})
-                    </div>
-                    <div v-if="provDrillData.agents?.length" class="drill-prov-agents-table">
-                      <div v-for="a in provDrillData.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
-                        <div class="drill-prov-agent-avatar"
-                          :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
-                          <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                    <template v-if="provinceEffectifAgentGroups.length">
+                      <div v-for="group in provinceEffectifAgentGroups" :key="group.code" class="drill-structure-group">
+                        <div class="drill-prov-section-title">
+                          <i class="fas" :class="group.code === 'SEL' ? 'fa-map-pin' : 'fa-map-marked-alt'"></i>
+                          {{ group.label }} ({{ group.agents.length }})
                         </div>
-                        <div class="drill-prov-agent-info">
-                          <div class="drill-prov-agent-name">{{ a.nom }}</div>
-                          <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                          <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
-                            <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                        <div class="drill-prov-agents-table">
+                          <div v-for="a in group.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
+                            <div class="drill-prov-agent-avatar"
+                              :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                              <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                            </div>
+                            <div class="drill-prov-agent-info">
+                              <div class="drill-prov-agent-name">{{ a.nom }}</div>
+                              <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                              <div v-if="a.localite?.nom" class="drill-prov-agent-localite">
+                                <i class="fas fa-map-pin"></i> {{ a.localite.nom }}
+                              </div>
+                            </div>
+                            <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                           </div>
                         </div>
-                        <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
-                    </div>
+                    </template>
                     <div v-else class="drill-empty">
                       <i class="fas fa-inbox"></i>
                       <p>Aucun agent dans {{ isLocalDashboard ? 'cette localité' : 'cette province' }}</p>
@@ -817,54 +833,59 @@
                         <i class="fas fa-chevron-right" style="font-size:.6em;margin-left:4px;"></i>
                       </button>
                     </div>
-                    <div v-if="provDrillData.agents?.length" class="drill-prov-section-title" style="margin-top:16px;">
-                      <i class="fas fa-user-check"></i> {{ presenceFilterTitle(filteredPresenceAgents(provDrillData.agents).length) }}
-                    </div>
-                    <div v-if="provDrillData.agents?.length" class="drill-prov-agents-table">
-                      <div v-for="a in filteredPresenceAgents(provDrillData.agents)" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
-                        <div class="drill-prov-agent-avatar"
-                          :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
-                          <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                    <template v-if="provincePresenceAgentGroups.length">
+                      <div v-for="group in provincePresenceAgentGroups" :key="group.code" class="drill-structure-group">
+                        <div class="drill-prov-section-title" style="margin-top:16px;">
+                          <i class="fas" :class="group.code === 'SEL' ? 'fa-map-pin' : 'fa-user-check'"></i>
+                          {{ presenceFilterTitle(group.agents.length) }} · {{ group.label }}
                         </div>
-                        <div class="drill-prov-agent-info">
-                          <div class="drill-prov-agent-name">
-                            {{ a.nom }}
-                            <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
-                              <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
-                            </span>
-                          </div>
-                          <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
-                          <div class="drill-presence-times">
-                            <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
-                              <i class="fas fa-sign-in-alt"></i>
-                              <strong>Arrivée</strong>
-                              {{ presenceTime(a.heure_entree) }}
-                            </span>
-                            <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
-                              <i class="fas fa-sign-out-alt"></i>
-                              <strong>Départ</strong>
-                              {{ presenceTime(a.heure_sortie) }}
-                            </span>
-                          </div>
-                          <div class="drill-prov-agent-meta">
-                            <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
-                            <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
-                            <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
-                            <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
-                            <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
-                          </div>
-                          <div v-if="a.absence_observation" class="drill-prov-agent-note">
-                            <i class="fas fa-comment-alt"></i>
-                            <span>{{ a.absence_observation }}</span>
-                          </div>
-                          <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
-                            <i class="fas fa-comment-alt"></i>
-                            <span>{{ a.pointage_observation }}</span>
+                        <div class="drill-prov-agents-table">
+                          <div v-for="a in group.agents" :key="a.id" class="drill-prov-agent-row drill-prov-agent-clickable" @click="selectedAgent = a">
+                            <div class="drill-prov-agent-avatar"
+                              :style="{ background: a.sexe === 'F' ? '#fce7f3' : '#dbeafe', color: a.sexe === 'F' ? '#be185d' : '#1d4ed8' }">
+                              <i :class="a.sexe === 'F' ? 'fas fa-female' : 'fas fa-male'"></i>
+                            </div>
+                            <div class="drill-prov-agent-info">
+                              <div class="drill-prov-agent-name">
+                                {{ a.nom }}
+                                <span class="drill-presence-badge" :class="'drill-presence-' + (a.presence_status || 'absent')">
+                                  <i :class="presenceStatusIcon(a)"></i> {{ presenceStatusLabel(a) }}
+                                </span>
+                              </div>
+                              <div class="drill-prov-agent-fn">{{ a.fonction }}</div>
+                              <div class="drill-presence-times">
+                                <span class="drill-presence-time" :class="{ muted: !a.heure_entree }">
+                                  <i class="fas fa-sign-in-alt"></i>
+                                  <strong>Arrivée</strong>
+                                  {{ presenceTime(a.heure_entree) }}
+                                </span>
+                                <span class="drill-presence-time" :class="{ muted: !a.heure_sortie }">
+                                  <i class="fas fa-sign-out-alt"></i>
+                                  <strong>Départ</strong>
+                                  {{ presenceTime(a.heure_sortie) }}
+                                </span>
+                              </div>
+                              <div class="drill-prov-agent-meta">
+                                <span v-if="a.organe"><i class="fas fa-sitemap"></i> {{ a.organe }}</span>
+                                <span v-if="a.localite?.nom"><i class="fas fa-map-pin"></i> {{ a.localite.nom }}</span>
+                                <span v-if="a.matricule"><i class="fas fa-id-badge"></i> {{ a.matricule }}</span>
+                                <span v-if="a.email"><i class="fas fa-envelope"></i> {{ a.email }}</span>
+                                <span v-if="a.telephone"><i class="fas fa-phone"></i> {{ a.telephone }}</span>
+                              </div>
+                              <div v-if="a.absence_observation" class="drill-prov-agent-note">
+                                <i class="fas fa-comment-alt"></i>
+                                <span>{{ a.absence_observation }}</span>
+                              </div>
+                              <div v-else-if="a.pointage_observation" class="drill-prov-agent-note">
+                                <i class="fas fa-comment-alt"></i>
+                                <span>{{ a.pointage_observation }}</span>
+                              </div>
+                            </div>
+                            <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                           </div>
                         </div>
-                        <i class="fas fa-address-card drill-agent-contact-icon" title="Voir contact"></i>
                       </div>
-                    </div>
+                    </template>
                   </template>
 
                   <!-- ─── PTA ─── -->
@@ -1305,7 +1326,8 @@ async function openDeptDrilldown(id, section = 'effectifs') {
   deptDrillSection.value = section
   drillPresenceFilter.value = 'all'
   try {
-    const { data: result } = await client.get(`/dashboard/executive/department/${id}`)
+    const params = provDrillOrgane.value ? { organe: provDrillOrgane.value } : undefined
+    const { data: result } = await client.get(`/dashboard/executive/department/${id}`, { params })
     deptDrillData.value = result.data ?? result
   } catch (e) {
     deptDrillData.value = null
@@ -1326,20 +1348,97 @@ const provDrillOpen = ref(false)
 const provDrillLoading = ref(false)
 const provDrillData = ref(null)
 const provDrillSection = ref('effectifs')
+const provDrillOrgane = ref(null)
 
-async function openProvDrilldown(section = 'effectifs') {
+const structureOrder = ['SEP', 'SEL', 'SEN', 'AUTRE']
+
+function agentStructureCode(agent) {
+  const explicit = (agent?.structure_code || '').toString().toUpperCase()
+  if (explicit) return explicit
+
+  const organe = (agent?.organe || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  if (organe.includes('local')) return 'SEL'
+  if (organe.includes('provincial')) return 'SEP'
+  if (organe.includes('national')) return 'SEN'
+  return 'AUTRE'
+}
+
+function agentStructureLabel(code) {
+  return {
+    SEP: 'Secrétariat Exécutif Provincial',
+    SEL: 'Secrétariats Exécutifs Locaux',
+    SEN: 'Secrétariat Exécutif National',
+    AUTRE: 'Autres agents',
+  }[code] || 'Autres agents'
+}
+
+function groupSubtitle(group) {
+  if (group.code === 'SEL') return 'Gestion locale, séparée du secrétariat provincial'
+  if (group.code === 'SEP') return 'Équipe provinciale uniquement'
+  return group.label
+}
+
+function sortStructureGroups(groups) {
+  return groups.sort((a, b) => {
+    const ai = structureOrder.indexOf(a.code)
+    const bi = structureOrder.indexOf(b.code)
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+  })
+}
+
+function groupAgentsByStructure(agents = []) {
+  if (!Array.isArray(agents)) return []
+
+  const grouped = new Map()
+  agents.forEach((agent) => {
+    const code = agentStructureCode(agent)
+    if (!grouped.has(code)) {
+      grouped.set(code, { code, label: agent?.structure_label || agentStructureLabel(code), agents: [] })
+    }
+    grouped.get(code).agents.push(agent)
+  })
+
+  return sortStructureGroups([...grouped.values()].filter(group => group.agents.length))
+}
+
+function structureGroupsFromPayload(payload, agents = null) {
+  const rawGroups = payload?.agent_groups
+  if (rawGroups && typeof rawGroups === 'object') {
+    return sortStructureGroups(
+      Object.values(rawGroups)
+        .map(group => ({
+          code: (group.code || '').toString().toUpperCase() || 'AUTRE',
+          label: group.label || agentStructureLabel((group.code || '').toString().toUpperCase()),
+          agents: Array.isArray(group.agents) ? group.agents : [],
+        }))
+        .filter(group => group.agents.length)
+    )
+  }
+
+  return groupAgentsByStructure(agents ?? payload?.agents ?? [])
+}
+
+const agentPerformanceGroups = computed(() => groupAgentsByStructure(data.value.agent_performance || []))
+const provinceEffectifAgentGroups = computed(() => structureGroupsFromPayload(provDrillData.value))
+const provincePresenceAgentGroups = computed(() => structureGroupsFromPayload(provDrillData.value)
+  .map(group => ({ ...group, agents: filteredPresenceAgents(group.agents) }))
+  .filter(group => group.agents.length))
+
+async function openProvDrilldown(section = 'effectifs', organe = null) {
   const structureId = isLocalDashboard.value ? data.value.localite?.id : data.value.province?.id
   if (!structureId) return
   provDrillOpen.value = true
   provDrillLoading.value = true
   provDrillData.value = null
   provDrillSection.value = section
+  provDrillOrgane.value = organe
   drillPresenceFilter.value = 'all'
   try {
     const url = isLocalDashboard.value
       ? `/dashboard/executive/localite/${structureId}`
       : `/dashboard/executive/province/${structureId}`
-    const { data: result } = await client.get(url)
+    const params = !isLocalDashboard.value && organe ? { organe } : undefined
+    const { data: result } = await client.get(url, { params })
     const payload = result.data ?? result
     provDrillData.value = isLocalDashboard.value ? normalizeLocaliteDrilldown(payload) : payload
   } catch (e) {
@@ -1368,6 +1467,7 @@ function closeProvDrilldown() {
   provDrillOpen.value = false
   provDrillData.value = null
   provDrillSection.value = 'effectifs'
+  provDrillOrgane.value = null
   drillPresenceFilter.value = 'all'
 }
 
@@ -2013,6 +2113,48 @@ onMounted(async () => {
 .sep-agenda-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #334155; font-weight: 600; }
 
 /* ═══════════ PERFORMANCE DÉPARTEMENTS ═══════════ */
+.sep-structure-groups,
+.drill-structure-group {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+.sep-structure-group + .sep-structure-group,
+.drill-structure-group + .drill-structure-group {
+  margin-top: 1rem;
+}
+.sep-structure-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .8rem 1rem;
+  border: 1px solid #bae6fd;
+  border-left: 4px solid #0ea5e9;
+  border-radius: 12px;
+  background: #f0f9ff;
+}
+.sep-structure-title {
+  font-size: .9rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+.sep-structure-sub {
+  margin-top: .12rem;
+  font-size: .7rem;
+  font-weight: 700;
+  color: #64748b;
+}
+.sep-structure-count {
+  flex-shrink: 0;
+  padding: .25rem .6rem;
+  border-radius: 999px;
+  background: #fff;
+  color: #0369a1;
+  font-size: .72rem;
+  font-weight: 900;
+  border: 1px solid #bae6fd;
+}
 .sep-table-wrap { overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; }
 .sep-perf-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
 .sep-perf-table thead tr { background: #f8fafc; }
