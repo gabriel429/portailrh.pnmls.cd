@@ -252,8 +252,14 @@ class HolidayController extends Controller
             ], 422);
         }
 
+        $nombreJours = Holiday::calculateWorkingDays($dateDébut, $dateFin);
+        if ($nombreJours <= 0) {
+            return response()->json([
+                'message' => 'La période choisie doit contenir au moins un jour ouvrable.'
+            ], 422);
+        }
+
         // Résoudre automatiquement le planning si non fourni (pour type annuel)
-        $nombreJours = $dateDébut->diffInDays($dateFin) + 1;
         if (empty($validated['holiday_planning_id'])) {
             $planning = $this->resolvePlanning($agent, $dateDébut->year);
             if ($planning) {
@@ -289,8 +295,8 @@ class HolidayController extends Controller
         $validated['demande_par'] = auth()->user()->agent->id;
         $validated['statut_demande'] = 'en_attente';
 
-        // Calculer le nombre de jours
-        $validated['nombre_jours'] = $dateDébut->diffInDays($dateFin) + 1;
+        // Calculer le nombre de jours ouvrables
+        $validated['nombre_jours'] = $nombreJours;
         $validated['date_retour_prevu'] = $dateFin->copy()->addDay();
 
         $holiday = Holiday::create($validated);
@@ -375,8 +381,13 @@ class HolidayController extends Controller
                 continue;
             }
 
+            $entryNbJours = Holiday::calculateWorkingDays($dateDébut, $dateFin);
+            if ($entryNbJours <= 0) {
+                $errors[] = "Période invalide pour {$entryNom} : choisissez au moins un jour ouvrable";
+                continue;
+            }
+
             // Résoudre le planning pour cet agent
-            $entryNbJours = $dateDébut->diffInDays($dateFin) + 1;
             $entryPlanningId = $request->holiday_planning_id ?? null;
             if (!$entryPlanningId && $entryAgent) {
                 $entryPlanning = $this->resolvePlanning($entryAgent, $dateDébut->year);
@@ -712,7 +723,13 @@ class HolidayController extends Controller
         }
 
         $newType = $validated['type_conge'] ?? $holiday->type_conge;
-        $newDays = $dateDébut->diffInDays($dateFin) + 1;
+        $newDays = Holiday::calculateWorkingDays($dateDébut, $dateFin);
+        if ($newDays <= 0) {
+            return response()->json([
+                'message' => 'La période choisie doit contenir au moins un jour ouvrable.'
+            ], 422);
+        }
+
         $oldApprovedAnnualDays = $holiday->statut_demande === 'approuve'
             && $holiday->type_conge === 'annuel'
             && (int) $holiday->date_debut->year === (int) $dateDébut->year
@@ -955,8 +972,14 @@ class HolidayController extends Controller
             }
         }
 
+        $nombreJours = Holiday::calculateWorkingDays($dateDébut, $dateFin);
+        if ($nombreJours <= 0) {
+            return response()->json([
+                'message' => 'La période choisie doit contenir au moins un jour ouvrable.'
+            ], 422);
+        }
+
         // Auto-résolution du planning
-        $nombreJours = $dateDébut->diffInDays($dateFin) + 1;
         $planning = $this->resolvePlanning($agent, $dateDébut->year);
         if ($planning) {
             $validated['holiday_planning_id'] = $planning->id;

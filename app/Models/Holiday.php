@@ -135,7 +135,7 @@ class Holiday extends Model
     public function getDureeReelleAttribute(): ?int
     {
         if (!$this->date_retour_effectif) return null;
-        return $this->date_debut->diffInDays($this->date_retour_effectif) + 1;
+        return self::calculateWorkingDays($this->date_debut, $this->date_retour_effectif);
     }
 
     // Scopes
@@ -289,7 +289,10 @@ class Holiday extends Model
 
         static::updating(function ($holiday) {
             if ($holiday->isDirty(['date_debut', 'date_fin'])) {
-                $holiday->nombre_jours = $holiday->date_debut->diffInDays($holiday->date_fin) + 1;
+                $holiday->nombre_jours = self::calculateWorkingDays(
+                    $holiday->date_debut,
+                    $holiday->date_fin
+                );
                 $holiday->date_retour_prevu = $holiday->date_fin->copy()->addDay();
             }
         });
