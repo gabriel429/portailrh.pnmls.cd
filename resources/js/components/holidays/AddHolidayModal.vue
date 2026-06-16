@@ -108,7 +108,7 @@
                       v-for="agent in agents"
                       :key="agent.id"
                       :class="{
-                        'table-success': agent.selected && agent.date_debut && agent.date_fin,
+                        'table-success': agent.selected && agentDuree(agent) > 0,
                         'table-warning': agent.conge_existant?.length > 0
                       }"
                     >
@@ -125,6 +125,7 @@
                       </td>
                       <td class="text-center">
                         <span v-if="agentDuree(agent) > 0" class="badge bg-info">{{ agentDuree(agent) }}</span>
+                        <span v-else-if="agent.selected && agent.date_debut && agent.date_fin" class="badge bg-danger">0</span>
                         <span v-else class="text-muted">-</span>
                       </td>
                       <td>
@@ -265,13 +266,28 @@ async function loadAgents() {
   }
 }
 
-// Calculer la durée pour un agent
+function parseDateInput(value) {
+  if (!value) return null
+  const [year, month, day] = String(value).slice(0, 10).split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+// Calculer la durée ouvrable pour un agent
 function agentDuree(agent) {
-  if (!agent.date_debut || !agent.date_fin) return 0
-  const s = new Date(agent.date_debut)
-  const e = new Date(agent.date_fin)
-  if (e < s) return 0
-  return Math.ceil((e - s) / (1000 * 60 * 60 * 24)) + 1
+  const start = parseDateInput(agent.date_debut)
+  const end = parseDateInput(agent.date_fin)
+  if (!start || !end || end < start) return 0
+
+  let days = 0
+  const current = new Date(start)
+  while (current <= end) {
+    const day = current.getDay()
+    if (day !== 0 && day !== 6) days++
+    current.setDate(current.getDate() + 1)
+  }
+
+  return days
 }
 
 // Options intérim : tous les agents du même département sauf l'agent lui-même
@@ -294,7 +310,7 @@ function applyDefaultType() {
 const selectedCount = computed(() => agents.value.filter(a => a.selected).length)
 
 const readyCount = computed(() =>
-  agents.value.filter(a => a.selected && a.date_debut && a.date_fin).length
+  agents.value.filter(a => a.selected && agentDuree(a) > 0).length
 )
 
 const agentsWithExisting = computed(() =>
@@ -304,7 +320,7 @@ const agentsWithExisting = computed(() =>
 // Soumission en lot
 async function submitBatch() {
   const entries = agents.value
-    .filter(a => a.selected && a.date_debut && a.date_fin)
+    .filter(a => a.selected && agentDuree(a) > 0)
     .map(a => ({
       agent_id: a.id,
       date_debut: a.date_debut,
@@ -314,7 +330,10 @@ async function submitBatch() {
       interim_assure_par: a.interim_par || null,
     }))
 
-  if (entries.length === 0) return
+  if (entries.length === 0) {
+    globalError.value = 'Choisissez au moins une période contenant un jour ouvrable.'
+    return
+  }
 
   submitting.value = true
   globalError.value = ''

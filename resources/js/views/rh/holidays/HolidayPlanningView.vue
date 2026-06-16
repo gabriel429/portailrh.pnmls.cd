@@ -457,6 +457,21 @@
                   <label class="form-label">Fin</label>
                   <input v-model="holidayEdit.form.date_fin" type="date" class="form-control" required>
                 </div>
+                <div class="col-12">
+                  <div
+                    class="holiday-workdays-preview"
+                    :class="{ 'is-invalid': holidayEditInvalidPeriod }"
+                  >
+                    <span>
+                      <i class="fas fa-business-time me-1"></i>
+                      Jours ouvrables
+                    </span>
+                    <strong>{{ holidayEditWorkingDays }}j</strong>
+                  </div>
+                  <small v-if="holidayEditInvalidPeriod" class="text-danger">
+                    Choisissez une période contenant au moins un jour ouvrable.
+                  </small>
+                </div>
                 <div class="col-sm-6">
                   <label class="form-label">Type</label>
                   <select v-model="holidayEdit.form.type_conge" class="form-select" required>
@@ -487,7 +502,7 @@
               <button type="button" class="btn btn-outline-secondary" @click="closeHolidayEditor">
                 Fermer
               </button>
-              <button type="submit" class="btn btn-primary" :disabled="holidayEdit.saving">
+              <button type="submit" class="btn btn-primary" :disabled="holidayEdit.saving || holidayEditInvalidPeriod">
                 <span v-if="holidayEdit.saving" class="spinner-border spinner-border-sm me-2"></span>
                 Enregistrer
               </button>
@@ -606,7 +621,41 @@ const canValidate = computed(() => {
   return auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
 })
 
+const holidayEditWorkingDays = computed(() => {
+  return workingDaysBetween(holidayEdit.value.form.date_debut, holidayEdit.value.form.date_fin)
+})
+
+const holidayEditInvalidPeriod = computed(() => {
+  return holidayEdit.value.show
+    && holidayEdit.value.form.date_debut
+    && holidayEdit.value.form.date_fin
+    && holidayEditWorkingDays.value <= 0
+})
+
 // Méthodes
+function parseDateInput(value) {
+  if (!value) return null
+  const [year, month, day] = String(value).slice(0, 10).split('-').map(Number)
+  if (!year || !month || !day) return null
+  return new Date(year, month - 1, day)
+}
+
+function workingDaysBetween(startValue, endValue) {
+  const start = parseDateInput(startValue)
+  const end = parseDateInput(endValue)
+  if (!start || !end || end < start) return 0
+
+  let days = 0
+  const current = new Date(start)
+  while (current <= end) {
+    const day = current.getDay()
+    if (day !== 0 && day !== 6) days++
+    current.setDate(current.getDate() + 1)
+  }
+
+  return days
+}
+
 async function loadDepartments() {
   try {
     const response = await client.get('/departments')
@@ -717,6 +766,10 @@ function closeHolidayEditor() {
 async function saveHolidayEdit() {
   const holiday = holidayEdit.value.holiday
   if (!holiday) return
+  if (holidayEditInvalidPeriod.value) {
+    ui.addToast('La période choisie doit contenir au moins un jour ouvrable.', 'warning')
+    return
+  }
 
   holidayEdit.value.saving = true
   try {
@@ -1167,6 +1220,25 @@ onMounted(() => {
   color: #0f172a;
   font-weight: 700;
   margin-bottom: 1rem;
+}
+
+.holiday-workdays-preview {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .7rem .9rem;
+  border: 1px solid #b8e4f7;
+  border-radius: 10px;
+  background: #f0f9ff;
+  color: #075985;
+  font-weight: 700;
+}
+
+.holiday-workdays-preview.is-invalid {
+  border-color: #fecaca;
+  background: #fff1f2;
+  color: #b91c1c;
 }
 
 .empty-state {
