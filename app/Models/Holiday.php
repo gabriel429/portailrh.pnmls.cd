@@ -256,6 +256,17 @@ class Holiday extends Model
         return $days;
     }
 
+    public static function nextWorkingDayAfter(Carbon $date): Carbon
+    {
+        $next = $date->copy()->addDay();
+
+        while (!$next->isWeekday()) {
+            $next->addDay();
+        }
+
+        return $next;
+    }
+
     public static function hasConflict(int $agentId, Carbon $start, Carbon $end, ?int $excludeId = null): bool
     {
         $query = self::where('agent_id', $agentId)
@@ -283,7 +294,7 @@ class Holiday extends Model
             }
 
             if (!$holiday->date_retour_prevu) {
-                $holiday->date_retour_prevu = $holiday->date_fin->copy()->addDay();
+                $holiday->date_retour_prevu = self::nextWorkingDayAfter($holiday->date_fin);
             }
         });
 
@@ -293,7 +304,7 @@ class Holiday extends Model
                     $holiday->date_debut,
                     $holiday->date_fin
                 );
-                $holiday->date_retour_prevu = $holiday->date_fin->copy()->addDay();
+                $holiday->date_retour_prevu = self::nextWorkingDayAfter($holiday->date_fin);
             }
         });
     }

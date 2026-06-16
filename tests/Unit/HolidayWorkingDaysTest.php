@@ -27,4 +27,11 @@ class HolidayWorkingDaysTest extends TestCase
 
         $this->assertSame(0, $days);
     }
+
+    public function test_expected_return_skips_weekends(): void
+    {
+        $returnDate = Holiday::nextWorkingDayAfter(Carbon::parse('2026-06-19'));
+
+        $this->assertSame('2026-06-22', $returnDate->toDateString());
+    }
 }

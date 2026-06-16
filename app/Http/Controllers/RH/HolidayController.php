@@ -297,7 +297,7 @@ class HolidayController extends Controller
 
         // Calculer le nombre de jours ouvrables
         $validated['nombre_jours'] = $nombreJours;
-        $validated['date_retour_prevu'] = $dateFin->copy()->addDay();
+        $validated['date_retour_prevu'] = Holiday::nextWorkingDayAfter($dateFin);
 
         $holiday = Holiday::create($validated);
 
@@ -413,7 +413,7 @@ class HolidayController extends Controller
                 'date_debut' => $dateDébut,
                 'date_fin' => $dateFin,
                 'nombre_jours' => $entryNbJours,
-                'date_retour_prevu' => $dateFin->copy()->addDay(),
+                'date_retour_prevu' => Holiday::nextWorkingDayAfter($dateFin),
                 'type_conge' => $entry['type_conge'],
                 'motif' => $entry['observation'] ?? 'Congé planifié par RH',
                 'observation' => $entry['observation'] ?? null,
@@ -753,7 +753,7 @@ class HolidayController extends Controller
 
         if (isset($validated['date_debut']) || isset($validated['date_fin'])) {
             $validated['nombre_jours'] = $newDays;
-            $validated['date_retour_prevu'] = $dateFin->copy()->addDay();
+            $validated['date_retour_prevu'] = Holiday::nextWorkingDayAfter($dateFin);
             $validated['date_retour_effectif'] = null;
         }
 
@@ -1010,7 +1010,7 @@ class HolidayController extends Controller
 
         $validated['agent_id']          = $agent->id;
         $validated['nombre_jours']       = $nombreJours;
-        $validated['date_retour_prevu']  = $dateFin->copy()->addDay()->format('Y-m-d');
+        $validated['date_retour_prevu']  = Holiday::nextWorkingDayAfter($dateFin)->format('Y-m-d');
         $validated['statut_demande']     = 'en_attente';
         $validated['demande_par']        = $agent->id;
 
