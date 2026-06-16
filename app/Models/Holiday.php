@@ -289,10 +289,7 @@ class Holiday extends Model
 
         static::updating(function ($holiday) {
             if ($holiday->isDirty(['date_debut', 'date_fin'])) {
-                $holiday->nombre_jours = self::calculateWorkingDays(
-                    $holiday->date_debut,
-                    $holiday->date_fin
-                );
+                $holiday->nombre_jours = $holiday->date_debut->diffInDays($holiday->date_fin) + 1;
                 $holiday->date_retour_prevu = $holiday->date_fin->copy()->addDay();
             }
         });

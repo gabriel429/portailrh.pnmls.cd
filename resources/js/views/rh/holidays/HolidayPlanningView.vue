@@ -360,6 +360,7 @@
                     <th>Statut</th>
                     <th>Intérim assuré par</th>
                     <th>Observation</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -385,6 +386,46 @@
                     </td>
                     <td>{{ holiday.interim_par?.nom_complet || holiday.interim_par?.nom || '-' }}</td>
                     <td class="small text-muted">{{ holiday.observation || holiday.motif || '-' }}</td>
+                    <td>
+                      <div class="btn-group btn-group-sm holiday-action-group">
+                        <button
+                          type="button"
+                          class="btn btn-outline-primary"
+                          title="Modifier"
+                          :disabled="!canManageHoliday(holiday)"
+                          @click="openHolidayEditor(holiday, 'edit')"
+                        >
+                          <i class="fas fa-pen"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline-info"
+                          title="Reporter"
+                          :disabled="!canManageHoliday(holiday)"
+                          @click="openHolidayEditor(holiday, 'report')"
+                        >
+                          <i class="fas fa-calendar-plus"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline-success"
+                          title="Retour effectif"
+                          :disabled="holiday.statut_demande !== 'approuve' || !canManageHoliday(holiday)"
+                          @click="openReturnModal(holiday)"
+                        >
+                          <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-outline-danger"
+                          title="Annuler"
+                          :disabled="holiday.statut_demande === 'annule' || !canManageHoliday(holiday)"
+                          @click="cancelHoliday(holiday)"
+                        >
+                          <i class="fas fa-ban"></i>
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -416,6 +457,7 @@
           v-else-if="viewMode === 'calendar'"
           :filters="filters"
           :key="calendarKey"
+          @holiday-selected="openHolidayFromCalendar"
         />
 
         <!-- Vue Statistiques -->
@@ -458,6 +500,113 @@
       @close="showAddHolidayModal = false"
       @created="onHolidayCreated"
     />
+
+    <!-- Modal modification/report congé individuel -->
+    <div
+      v-if="holidayEdit.show"
+      class="modal fade show d-block holiday-edit-modal"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-calendar-alt me-2"></i>
+              {{ holidayEdit.mode === 'report' ? 'Reporter le congé' : 'Modifier le congé' }}
+            </h5>
+            <button type="button" class="btn-close" @click="closeHolidayEditor"></button>
+          </div>
+          <form @submit.prevent="saveHolidayEdit">
+            <div class="modal-body">
+              <div class="holiday-edit-agent">
+                {{ holidayEdit.holiday?.agent?.nom_complet || holidayEdit.holiday?.agent?.nom || '-' }}
+              </div>
+              <div class="row g-3">
+                <div class="col-sm-6">
+                  <label class="form-label">Début</label>
+                  <input v-model="holidayEdit.form.date_debut" type="date" class="form-control" required>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Fin</label>
+                  <input v-model="holidayEdit.form.date_fin" type="date" class="form-control" required>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Type</label>
+                  <select v-model="holidayEdit.form.type_conge" class="form-select" required>
+                    <option value="annuel">Annuel</option>
+                    <option value="maladie">Maladie</option>
+                    <option value="maternite">Maternité</option>
+                    <option value="paternite">Paternité</option>
+                    <option value="urgence">Urgence</option>
+                    <option value="special">Spécial</option>
+                  </select>
+                </div>
+                <div class="col-sm-6">
+                  <label class="form-label">Intérim</label>
+                  <select v-model="holidayEdit.form.interim_assure_par" class="form-select">
+                    <option value="">Aucun</option>
+                    <option v-for="agent in agents" :key="agent.id" :value="agent.id">
+                      {{ agent.nom_complet }}
+                    </option>
+                  </select>
+                </div>
+                <div class="col-12">
+                  <label class="form-label">Observation</label>
+                  <textarea v-model="holidayEdit.form.observation" class="form-control" rows="3" maxlength="1000"></textarea>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" @click="closeHolidayEditor">
+                Fermer
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="holidayEdit.saving">
+                <span v-if="holidayEdit.saving" class="spinner-border spinner-border-sm me-2"></span>
+                Enregistrer
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal retour congé -->
+    <div
+      v-if="returnEdit.show"
+      class="modal fade show d-block holiday-edit-modal"
+      tabindex="-1"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="fas fa-sign-out-alt me-2"></i>
+              Retour effectif
+            </h5>
+            <button type="button" class="btn-close" @click="closeReturnModal"></button>
+          </div>
+          <form @submit.prevent="saveHolidayReturn">
+            <div class="modal-body">
+              <div class="holiday-edit-agent">{{ returnEdit.holiday?.agent?.nom_complet || '-' }}</div>
+              <label class="form-label">Date de retour</label>
+              <input v-model="returnEdit.date_retour" type="date" class="form-control" required>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" @click="closeReturnModal">
+                Annuler
+              </button>
+              <button type="submit" class="btn btn-success" :disabled="returnEdit.saving">
+                Valider
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
     <!-- Modal modification quota agent -->
     <div
@@ -559,6 +708,25 @@ const quotaEdit = ref({
   jours_autorises: 30,
   notes: ''
 })
+const holidayEdit = ref({
+  show: false,
+  mode: 'edit',
+  saving: false,
+  holiday: null,
+  form: {
+    date_debut: '',
+    date_fin: '',
+    type_conge: 'annuel',
+    observation: '',
+    interim_assure_par: ''
+  }
+})
+const returnEdit = ref({
+  show: false,
+  saving: false,
+  holiday: null,
+  date_retour: ''
+})
 
 // Modales
 const showCreateModal = ref(false)
@@ -655,6 +823,151 @@ function changePage(page) {
 function viewPlanning(planning) {
   selectedPlanning.value = planning
   showDetailsModal.value = true
+}
+
+function canManageHoliday(holiday) {
+  return auth.hasRole(['RH National', 'RH Provincial']) && ['en_attente', 'approuve'].includes(holiday?.statut_demande)
+}
+
+async function openHolidayFromCalendar(event) {
+  try {
+    const response = await client.get(`/holidays/${event.id}`)
+    openHolidayEditor(response.data, 'edit')
+  } catch (error) {
+    console.error('Erreur chargement congé:', error)
+    ui.addToast('Impossible de charger ce congé', 'danger')
+  }
+}
+
+function openHolidayEditor(holiday, mode = 'edit') {
+  if (!canManageHoliday(holiday)) {
+    ui.addToast('Vous ne pouvez pas modifier ce congé', 'warning')
+    return
+  }
+
+  holidayEdit.value = {
+    show: true,
+    mode,
+    saving: false,
+    holiday,
+    form: {
+      date_debut: toDateInput(holiday.date_debut),
+      date_fin: toDateInput(holiday.date_fin),
+      type_conge: holiday.type_conge || 'annuel',
+      observation: holiday.observation || holiday.motif || '',
+      interim_assure_par: holiday.interim_assure_par || holiday.interim_par?.id || ''
+    }
+  }
+}
+
+function closeHolidayEditor() {
+  if (holidayEdit.value.saving) return
+  holidayEdit.value = {
+    show: false,
+    mode: 'edit',
+    saving: false,
+    holiday: null,
+    form: {
+      date_debut: '',
+      date_fin: '',
+      type_conge: 'annuel',
+      observation: '',
+      interim_assure_par: ''
+    }
+  }
+}
+
+async function saveHolidayEdit() {
+  const holiday = holidayEdit.value.holiday
+  if (!holiday) return
+
+  holidayEdit.value.saving = true
+  try {
+    const payload = {
+      ...holidayEdit.value.form,
+      motif: holidayEdit.value.form.observation || 'Congé modifié par RH'
+    }
+
+    if (!payload.interim_assure_par) {
+      payload.interim_assure_par = null
+    }
+
+    await client.put(`/holidays/${holiday.id}`, payload)
+    ui.addToast(holidayEdit.value.mode === 'report' ? 'Congé reporté avec succès' : 'Congé modifié avec succès', 'success')
+    holidayEdit.value.saving = false
+    closeHolidayEditor()
+    refreshHolidayViews()
+  } catch (error) {
+    console.error('Erreur modification congé:', error)
+    ui.addToast(error.response?.data?.message || 'Erreur lors de la modification du congé', 'danger')
+  } finally {
+    holidayEdit.value.saving = false
+  }
+}
+
+function openReturnModal(holiday) {
+  if (holiday?.statut_demande !== 'approuve' || !canManageHoliday(holiday)) return
+  returnEdit.value = {
+    show: true,
+    saving: false,
+    holiday,
+    date_retour: toDateInput(new Date())
+  }
+}
+
+function closeReturnModal() {
+  if (returnEdit.value.saving) return
+  returnEdit.value = {
+    show: false,
+    saving: false,
+    holiday: null,
+    date_retour: ''
+  }
+}
+
+async function saveHolidayReturn() {
+  const holiday = returnEdit.value.holiday
+  if (!holiday) return
+
+  returnEdit.value.saving = true
+  try {
+    await client.post(`/holidays/${holiday.id}/mark-returned`, {
+      date_retour: returnEdit.value.date_retour
+    })
+    ui.addToast('Retour enregistré', 'success')
+    returnEdit.value.saving = false
+    closeReturnModal()
+    refreshHolidayViews()
+  } catch (error) {
+    console.error('Erreur retour congé:', error)
+    ui.addToast(error.response?.data?.message || 'Erreur lors du retour', 'danger')
+  } finally {
+    returnEdit.value.saving = false
+  }
+}
+
+async function cancelHoliday(holiday) {
+  if (!canManageHoliday(holiday)) {
+    ui.addToast('Vous ne pouvez pas annuler ce congé', 'warning')
+    return
+  }
+
+  if (!holiday || !confirm(`Annuler le congé de ${holiday.agent?.nom_complet || holiday.agent?.nom || 'cet agent'} ?`)) return
+
+  try {
+    await client.post(`/holidays/${holiday.id}/cancel`)
+    ui.addToast('Congé annulé', 'success')
+    refreshHolidayViews()
+  } catch (error) {
+    console.error('Erreur annulation congé:', error)
+    ui.addToast(error.response?.data?.message || 'Erreur lors de l\'annulation', 'danger')
+  }
+}
+
+function refreshHolidayViews() {
+  loadPlannings()
+  calendarKey.value++
+  statsKey.value++
 }
 
 function openQuotaModal(agent) {
@@ -769,8 +1082,20 @@ function onHolidayCreated() {
 
 function formatDate(dateStr) {
   if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+  const value = toDateInput(dateStr)
+  const [year, month, day] = value.split('-')
+  return `${day}/${month}/${year}`
+}
+
+function toDateInput(value) {
+  if (!value) return ''
+  if (value instanceof Date) {
+    const year = value.getFullYear()
+    const month = String(value.getMonth() + 1).padStart(2, '0')
+    const day = String(value.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+  return String(value).slice(0, 10)
 }
 
 function typeCongeLabel(type) {
@@ -1021,6 +1346,15 @@ onMounted(() => {
   flex-wrap: nowrap;
 }
 
+.holiday-action-group .btn {
+  width: 34px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
 .section-header {
   padding-bottom: 1rem;
   border-bottom: 2px solid #e9ecef;
@@ -1062,6 +1396,33 @@ onMounted(() => {
 
 .holiday-quota-modal {
   background: rgba(15, 23, 42, .58);
+}
+
+.holiday-edit-modal {
+  background: rgba(15, 23, 42, .58);
+}
+
+.holiday-edit-modal .modal-dialog {
+  width: min(760px, calc(100vw - 2rem));
+  max-width: min(760px, calc(100vw - 2rem));
+  margin: 1.25rem auto;
+}
+
+.holiday-edit-modal .modal-sm {
+  width: min(420px, calc(100vw - 2rem));
+  max-width: min(420px, calc(100vw - 2rem));
+}
+
+.holiday-edit-modal .modal-content {
+  border: 0;
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .26);
+}
+
+.holiday-edit-agent {
+  color: #0f172a;
+  font-weight: 700;
+  margin-bottom: 1rem;
 }
 
 .holiday-quota-modal .modal-dialog {

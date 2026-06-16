@@ -102,14 +102,21 @@ class HolidayController extends Controller
     /**
      * Détails d'un congé
      */
-    public function show(Holiday $holiday)
+    public function show(Request $request, Holiday $holiday)
     {
+        if (!app(UserDataScope::class)->canAccessAgent($request->user(), $holiday->agent, true)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas consulter ce congé.'
+            ], 403);
+        }
+
         $holiday->load([
             'agent.departement',
             'holidayPlanning',
             'demandePar',
             'approuvePar',
-            'refusePar'
+            'refusePar',
+            'interimPar'
         ]);
 
         return response()->json($holiday);
@@ -553,6 +560,13 @@ class HolidayController extends Controller
     public function cancel(Holiday $holiday)
     {
         $user = auth()->user()->agent;
+        $scope = app(UserDataScope::class);
+
+        if (!$user || !$scope->canAccessAgent(request()->user(), $holiday->agent, false)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas annuler ce congé.'
+            ], 403);
+        }
 
         // Seul le demandeur ou un RH peut annuler
         if ($holiday->demande_par !== $user->id &&
@@ -584,6 +598,27 @@ class HolidayController extends Controller
      */
     public function markReturned(Request $request, Holiday $holiday)
     {
+        $user = auth()->user()->agent;
+        $scope = app(UserDataScope::class);
+
+        if (!$user || !$scope->canAccessAgent($request->user(), $holiday->agent, false)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas enregistrer le retour de cet agent.'
+            ], 403);
+        }
+
+        if (!$user->hasRole(['RH National', 'RH Provincial']) && $holiday->demande_par !== $user->id) {
+            return response()->json([
+                'message' => 'Permissions insuffisantes pour enregistrer ce retour.'
+            ], 403);
+        }
+
+        if ($holiday->statut_demande !== 'approuve') {
+            return response()->json([
+                'message' => 'Seuls les congés approuvés peuvent être marqués comme retournés.'
+            ], 422);
+        }
+
         $validated = $request->validate([
             'date_retour' => 'nullable|date|after_or_equal:' . $holiday->date_debut->toDateString()
         ]);
@@ -613,40 +648,101 @@ class HolidayController extends Controller
      */
     public function update(Request $request, Holiday $holiday)
     {
-        if ($holiday->statut_demande !== 'en_attente') {
+        if (!in_array($holiday->statut_demande, ['en_attente', 'approuve'], true)) {
             return response()->json([
-                'message' => 'Seuls les congés en attente peuvent être modifiés'
+                'message' => 'Seuls les congés en attente ou approuvés peuvent être modifiés'
             ], 422);
         }
 
         $user = auth()->user()->agent;
+        $scope = app(UserDataScope::class);
+        $isRh = $user && $user->hasRole(['RH National', 'RH Provincial']);
 
-        // Seul le demandeur ou un RH peut modifier
-        if ($holiday->demande_par !== $user->id &&
-            !$user->hasRole(['RH National', 'RH Provincial'])) {
+        if (!$user || !$scope->canAccessAgent($request->user(), $holiday->agent, false)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas modifier ce congé.'
+            ], 403);
+        }
+
+        // Un congé approuvé/en cours ne peut être modifié que par RH.
+        if (!$isRh && ($holiday->statut_demande !== 'en_attente' || $holiday->demande_par !== $user->id)) {
             return response()->json([
                 'message' => 'Permissions insuffisantes pour modifier ce congé'
             ], 403);
         }
 
         $validated = $request->validate([
-            'date_debut' => 'sometimes|date|after_or_equal:today',
-            'date_fin' => 'sometimes|date|after_or_equal:date_debut',
+            'date_debut' => 'sometimes|date',
+            'date_fin' => 'sometimes|date',
             'type_conge' => 'sometimes|in:annuel,maladie,maternite,paternite,urgence,special',
-            'motif' => 'sometimes|string|max:1000',
+            'motif' => 'nullable|string|max:1000',
+            'observation' => 'nullable|string|max:1000',
+            'interim_assure_par' => 'nullable|exists:agents,id',
             'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048'
         ]);
 
+        $dateDébut = Carbon::parse($validated['date_debut'] ?? $holiday->date_debut);
+        $dateFin = Carbon::parse($validated['date_fin'] ?? $holiday->date_fin);
+
+        if ($dateFin->lt($dateDébut)) {
+            return response()->json([
+                'message' => 'La date de fin doit être postérieure ou égale à la date de début.'
+            ], 422);
+        }
+
         // Vérifier les conflits si les dates changent
         if (isset($validated['date_debut']) || isset($validated['date_fin'])) {
-            $dateDébut = Carbon::parse($validated['date_debut'] ?? $holiday->date_debut);
-            $dateFin = Carbon::parse($validated['date_fin'] ?? $holiday->date_fin);
-
             if (Holiday::hasConflict($holiday->agent_id, $dateDébut, $dateFin, $holiday->id)) {
                 return response()->json([
                     'message' => 'Conflit de dates : l\'agent a déjà un congé approuvé sur cette période'
                 ], 422);
             }
+        }
+
+        if (!empty($validated['interim_assure_par'])) {
+            $interim = Agent::find($validated['interim_assure_par']);
+            if (!$scope->canUseAgentAsInterim($request->user(), $interim, $holiday->agent)) {
+                return response()->json([
+                    'message' => 'L\'intérimaire doit être un agent actif de votre périmètre autorisé.',
+                    'errors' => [
+                        'interim_assure_par' => ['Choisissez un intérimaire autorisé pour ce congé.'],
+                    ],
+                ], 422);
+            }
+        }
+
+        $newType = $validated['type_conge'] ?? $holiday->type_conge;
+        $newDays = $dateDébut->diffInDays($dateFin) + 1;
+        $oldApprovedAnnualDays = $holiday->statut_demande === 'approuve'
+            && $holiday->type_conge === 'annuel'
+            && (int) $holiday->date_debut->year === (int) $dateDébut->year
+            ? $holiday->nombre_jours
+            : 0;
+
+        if ($newType === 'annuel') {
+            $quota = $this->entitlementService()->quotaForAgent($holiday->agent, (int) $dateDébut->year);
+            $availableDays = $quota['jours_restants'] + $oldApprovedAnnualDays;
+
+            if ($newDays > $availableDays) {
+                return response()->json([
+                    'message' => "Quota individuel insuffisant : " . max(0, (int) $availableDays) . " jour(s) disponible(s) sur {$quota['jours_autorises']}. Congé demandé : {$newDays} jour(s)."
+                ], 422);
+            }
+        }
+
+        $oldPlanningId = $holiday->holiday_planning_id;
+        $oldDays = $holiday->nombre_jours;
+        $wasApproved = $holiday->statut_demande === 'approuve';
+
+        if (isset($validated['date_debut']) || isset($validated['date_fin'])) {
+            $validated['nombre_jours'] = $newDays;
+            $validated['date_retour_prevu'] = $dateFin->copy()->addDay();
+            $validated['date_retour_effectif'] = null;
+        }
+
+        if (isset($validated['date_debut']) || isset($validated['date_fin']) || isset($validated['type_conge'])) {
+            $planning = $this->resolvePlanning($holiday->agent, (int) $dateDébut->year);
+            $validated['holiday_planning_id'] = $planning?->id;
         }
 
         // Gérer le document médical
@@ -659,10 +755,19 @@ class HolidayController extends Controller
         }
 
         $holiday->update($validated);
+        $holiday->refresh();
+
+        if ($wasApproved && $oldPlanningId) {
+            HolidayPlanning::find($oldPlanningId)?->decrementJoursUtilises($oldDays);
+        }
+
+        if ($holiday->statut_demande === 'approuve' && $holiday->holiday_planning_id) {
+            $holiday->holidayPlanning?->incrementJoursUtilises($holiday->nombre_jours);
+        }
 
         return response()->json([
             'message' => 'Congé mis à jour avec succès',
-            'holiday' => $holiday->fresh()
+            'holiday' => $holiday->fresh(['agent', 'interimPar', 'holidayPlanning'])
         ]);
     }
 

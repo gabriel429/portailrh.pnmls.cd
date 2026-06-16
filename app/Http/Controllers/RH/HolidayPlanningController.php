@@ -196,7 +196,7 @@ class HolidayPlanningController extends Controller
             : Carbon::create($year, 12, 31)->endOfYear();
 
         $query = Holiday::with(['agent', 'holidayPlanning'])
-            ->approved()
+            ->whereIn('statut_demande', ['approuve', 'en_attente'])
             ->between($start, $end);
 
         // Province scoping via agent
@@ -218,12 +218,23 @@ class HolidayPlanningController extends Controller
                 'id' => $holiday->id,
                 'title' => $holiday->agent->nom_complet,
                 'start' => $holiday->date_debut->toDateString(),
-                'end' => $holiday->date_fin->addDay()->toDateString(),
+                'end' => $holiday->date_fin->toDateString(),
                 'color' => $holiday->type_conge === 'maladie' ? '#dc3545' :
                           ($holiday->type_conge === 'urgence' ? '#ffc107' : '#007bff'),
+                'agent' => $holiday->agent->nom_complet,
+                'agent_id' => $holiday->agent_id,
+                'type_conge' => $holiday->type_conge,
+                'type_label' => $holiday->getTypeCongeLabel(),
+                'statut_demande' => $holiday->statut_demande,
+                'statut_label' => $holiday->getStatutDemandeLabel(),
+                'jours' => $holiday->nombre_jours,
+                'structure' => $holiday->holidayPlanning->nom_structure ?? '',
                 'extendedProps' => [
                     'agent' => $holiday->agent->nom_complet,
-                    'type' => $holiday->type_conge_label,
+                    'type' => $holiday->type_conge,
+                    'type_label' => $holiday->getTypeCongeLabel(),
+                    'statut' => $holiday->statut_demande,
+                    'statut_label' => $holiday->getStatutDemandeLabel(),
                     'jours' => $holiday->nombre_jours,
                     'structure' => $holiday->holidayPlanning->nom_structure ?? ''
                 ]
@@ -412,6 +423,63 @@ class HolidayPlanningController extends Controller
             ];
         });
 
+        $holidayStatsQuery = Holiday::query()
+            ->whereYear('date_debut', $year);
+
+        if ($provinceId) {
+            $holidayStatsQuery->whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
+        }
+
+        $byType = (clone $holidayStatsQuery)
+            ->selectRaw('type_conge, COUNT(*) as total, COALESCE(SUM(nombre_jours), 0) as jours')
+            ->groupBy('type_conge')
+            ->orderByDesc('jours')
+            ->get()
+            ->map(fn($item) => [
+                'type' => $item->type_conge,
+                'label' => Holiday::TYPES_CONGE[$item->type_conge] ?? $item->type_conge,
+                'total' => (int) $item->total,
+                'jours' => (int) $item->jours,
+            ]);
+
+        $byStatus = (clone $holidayStatsQuery)
+            ->selectRaw('statut_demande, COUNT(*) as total, COALESCE(SUM(nombre_jours), 0) as jours')
+            ->groupBy('statut_demande')
+            ->get()
+            ->map(fn($item) => [
+                'statut' => $item->statut_demande,
+                'label' => Holiday::STATUTS_DEMANDE[$item->statut_demande] ?? $item->statut_demande,
+                'total' => (int) $item->total,
+                'jours' => (int) $item->jours,
+            ]);
+
+        $monthly = (clone $holidayStatsQuery)
+            ->whereIn('statut_demande', ['approuve', 'en_attente'])
+            ->selectRaw('MONTH(date_debut) as month, COUNT(*) as total, COALESCE(SUM(nombre_jours), 0) as jours')
+            ->groupBy(DB::raw('MONTH(date_debut)'))
+            ->orderBy('month')
+            ->get()
+            ->map(fn($item) => [
+                'month' => (int) $item->month,
+                'total' => (int) $item->total,
+                'jours' => (int) $item->jours,
+            ]);
+
+        $topAgents = (clone $holidayStatsQuery)
+            ->where('statut_demande', 'approuve')
+            ->with('agent')
+            ->selectRaw('agent_id, COUNT(*) as total, COALESCE(SUM(nombre_jours), 0) as jours')
+            ->groupBy('agent_id')
+            ->orderByDesc('jours')
+            ->limit(8)
+            ->get()
+            ->map(fn($item) => [
+                'agent_id' => $item->agent_id,
+                'agent' => $item->agent?->nom_complet ?? 'Agent #' . $item->agent_id,
+                'total' => (int) $item->total,
+                'jours' => (int) $item->jours,
+            ]);
+
         return response()->json([
             'year' => $year,
             'statistiques' => $grouped,
@@ -421,7 +489,13 @@ class HolidayPlanningController extends Controller
                 'total_jours_utilises' => $stats->sum('jours_utilises'),
                 'total_conges' => $stats->sum('total_conges'),
                 'taux_utilisation_global' => $stats->avg('taux_utilisation')
-            ]
+            ],
+            'holidays_summary' => [
+                'by_type' => $byType,
+                'by_status' => $byStatus,
+                'monthly' => $monthly,
+                'top_agents' => $topAgents,
+            ],
         ]);
     }
 

@@ -1,192 +1,154 @@
 <template>
   <div class="holiday-calendar">
-    <!-- En-tête calendrier -->
-    <div class="calendar-header">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div>
-          <h5 class="mb-0">Calendrier des congés - {{ currentYear }}</h5>
-          <small class="text-muted">
-            {{ totalEvents }} congé(s) programmé(s)
-          </small>
-        </div>
-        <div class="btn-group">
-          <button
-            class="btn btn-sm btn-outline-primary"
-            @click="previousMonth"
-            :disabled="loading"
-          >
-            <i class="fas fa-chevron-left"></i>
-          </button>
-          <button
-            class="btn btn-sm btn-outline-primary"
-            @click="todayView"
-            :disabled="loading"
-          >
-            Aujourd'hui
-          </button>
-          <button
-            class="btn btn-sm btn-outline-primary"
-            @click="nextMonth"
-            :disabled="loading"
-          >
-            <i class="fas fa-chevron-right"></i>
-          </button>
+    <div class="calendar-topbar">
+      <div>
+        <h5 class="mb-1">{{ monthLabel }}</h5>
+        <div class="calendar-subtitle">
+          {{ monthEvents.length }} congé(s), {{ monthDays }} jour(s)
         </div>
       </div>
-
-      <!-- Légende -->
-      <div class="calendar-legend">
-        <span class="legend-item">
-          <span class="legend-color bg-primary"></span>
-          Congé annuel
-        </span>
-        <span class="legend-item">
-          <span class="legend-color bg-danger"></span>
-          Congé maladie
-        </span>
-        <span class="legend-item">
-          <span class="legend-color bg-warning"></span>
-          Congé d'urgence
-        </span>
-        <span class="legend-item">
-          <span class="legend-color bg-info"></span>
-          Formation
-        </span>
-        <span class="legend-item">
-          <span class="legend-color bg-success"></span>
-          Autres
-        </span>
+      <div class="calendar-actions">
+        <button class="icon-btn" type="button" title="Mois précédent" :disabled="loading" @click="previousMonth">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <button class="today-btn" type="button" :disabled="loading" @click="todayView">
+          Aujourd'hui
+        </button>
+        <button class="icon-btn" type="button" title="Mois suivant" :disabled="loading" @click="nextMonth">
+          <i class="fas fa-chevron-right"></i>
+        </button>
       </div>
     </div>
 
-    <!-- Calendrier -->
-    <div v-if="loading" class="text-center py-4">
+    <div class="calendar-toolbar">
+      <div class="calendar-search">
+        <i class="fas fa-search"></i>
+        <input v-model="search" type="search" class="form-control" placeholder="Agent, structure">
+      </div>
+      <select v-model="typeFilter" class="form-select">
+        <option value="">Tous les types</option>
+        <option value="annuel">Annuel</option>
+        <option value="maladie">Maladie</option>
+        <option value="maternite">Maternité</option>
+        <option value="paternite">Paternité</option>
+        <option value="urgence">Urgence</option>
+        <option value="special">Spécial</option>
+      </select>
+    </div>
+
+    <div class="calendar-metrics">
+      <div class="metric">
+        <span>{{ activeTodayCount }}</span>
+        <small>En cours</small>
+      </div>
+      <div class="metric">
+        <span>{{ pendingCount }}</span>
+        <small>En attente</small>
+      </div>
+      <div class="metric">
+        <span>{{ annualDays }}</span>
+        <small>Jours annuels</small>
+      </div>
+    </div>
+
+    <div v-if="loading" class="calendar-loading">
       <div class="spinner-border text-primary" role="status"></div>
-      <p class="mt-2 text-muted">Chargement du calendrier...</p>
     </div>
 
-    <div v-else class="calendar-grid">
-      <!-- En-têtes jours -->
-      <div class="calendar-weekdays">
-        <div
-          v-for="day in weekdays"
-          :key="day"
-          class="calendar-weekday"
-        >
-          {{ day }}
+    <div v-else class="calendar-workspace">
+      <div class="calendar-board">
+        <div class="calendar-weekdays">
+          <div v-for="day in weekdays" :key="day" class="calendar-weekday">{{ day }}</div>
         </div>
-      </div>
 
-      <!-- Grille du calendrier -->
-      <div class="calendar-days">
-        <div
-          v-for="date in calendarDates"
-          :key="date.key"
-          class="calendar-day"
-          :class="{
-            'other-month': date.isOtherMonth,
-            'today': date.isToday,
-            'has-events': date.events.length > 0
-          }"
-        >
-          <div class="day-number">{{ date.day }}</div>
+        <div class="calendar-days">
+          <button
+            v-for="date in calendarDates"
+            :key="date.key"
+            type="button"
+            class="calendar-day"
+            :class="{
+              'other-month': date.isOtherMonth,
+              today: date.isToday,
+              selected: selectedDate?.key === date.key,
+              busy: date.events.length > 0
+            }"
+            @click="selectDay(date)"
+          >
+            <span class="day-number">{{ date.day }}</span>
+            <span v-if="date.events.length" class="day-count">{{ date.events.length }}</span>
 
-          <!-- Événements du jour -->
-          <div class="day-events">
-            <div
-              v-for="event in date.events.slice(0, 3)"
-              :key="event.id"
-              class="calendar-event"
-              :class="getEventClass(event)"
-              :title="getEventTooltip(event)"
-              @click="showEventDetails(event)"
-            >
-              <div class="event-title">{{ event.agent }}</div>
-              <div v-if="event.jours > 1" class="event-duration">
-                {{ event.jours }}j
-              </div>
-            </div>
-
-            <!-- Plus d'événements -->
-            <div
-              v-if="date.events.length > 3"
-              class="more-events"
-              @click="showDayDetails(date)"
-            >
-              +{{ date.events.length - 3 }} autres
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Modal détails jour -->
-    <div
-      v-if="showDayModal"
-      class="modal fade show"
-      style="display: block; background: rgba(0,0,0,0.5); z-index: 2000 !important;"
-      @click="closeDayModal"
-    >
-      <div class="modal-dialog" style="z-index: 2001 !important;" @click.stop>
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">
-              Congés du {{ selectedDate?.format('DD/MM/YYYY') }}
-            </h5>
-            <button
-              type="button"
-              class="btn-close"
-              @click="closeDayModal"
-            ></button>
-          </div>
-          <div class="modal-body">
-            <div v-if="selectedDate?.events.length === 0" class="text-center text-muted py-3">
-              Aucun congé ce jour
-            </div>
-            <div v-else>
-              <div
-                v-for="event in selectedDate?.events"
+            <span class="day-events">
+              <span
+                v-for="event in date.events.slice(0, 3)"
                 :key="event.id"
-                class="holiday-item mb-3 p-3 border rounded"
+                class="calendar-event"
+                :class="[typeClass(event.type_conge), statusClass(event.statut_demande)]"
+                @click.stop="selectHoliday(event)"
               >
-                <div class="d-flex justify-content-between align-items-start">
-                  <div>
-                    <h6 class="mb-1">{{ event.agent }}</h6>
-                    <span
-                      class="badge"
-                      :class="getStatusBadgeClass(event.type)"
-                    >
-                      {{ event.type }}
-                    </span>
-                    <div class="text-muted mt-1">
-                      <small>
-                        <i class="fas fa-calendar me-1"></i>
-                        {{ event.start }} → {{ event.end }}
-                        ({{ event.jours }} jours)
-                      </small>
-                    </div>
-                    <div v-if="event.structure" class="text-muted">
-                      <small>
-                        <i class="fas fa-building me-1"></i>
-                        {{ event.structure }}
-                      </small>
-                    </div>
-                  </div>
-                  <div class="event-color" :class="getEventClass(event)"></div>
-                </div>
-              </div>
-            </div>
-          </div>
+                <span>{{ event.agent }}</span>
+              </span>
+              <span v-if="date.events.length > 3" class="more-events">+{{ date.events.length - 3 }}</span>
+            </span>
+          </button>
         </div>
       </div>
+
+      <aside class="day-panel">
+        <div class="day-panel-header">
+          <div>
+            <div class="panel-label">Sélection</div>
+            <h6>{{ selectedDayLabel }}</h6>
+          </div>
+          <span class="badge bg-primary">{{ selectedDayEvents.length }}</span>
+        </div>
+
+        <div v-if="selectedDayEvents.length === 0" class="empty-day">
+          Aucun congé ce jour
+        </div>
+
+        <div v-else class="day-holiday-list">
+          <article v-for="event in selectedDayEvents" :key="event.id" class="day-holiday">
+            <div class="holiday-line">
+              <span class="type-dot" :class="typeClass(event.type_conge)"></span>
+              <div>
+                <strong>{{ event.agent }}</strong>
+                <small>{{ event.type_label }} · {{ event.jours }}j</small>
+              </div>
+            </div>
+            <div class="holiday-dates">
+              {{ formatDate(event.start) }} → {{ formatDate(event.end) }}
+            </div>
+            <div class="holiday-footer">
+              <span class="badge" :class="statusBadgeClass(event.statut_demande)">
+                {{ event.statut_label }}
+              </span>
+              <button type="button" class="btn btn-sm btn-outline-primary" @click="selectHoliday(event)">
+                Modifier
+              </button>
+            </div>
+          </article>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-         isSameMonth, isToday, addMonths, subMonths, parseISO } from 'date-fns'
+import { computed, onMounted, ref, watch } from 'vue'
+import {
+  addMonths,
+  endOfMonth,
+  endOfWeek,
+  eachDayOfInterval,
+  format,
+  isSameMonth,
+  isToday,
+  parseISO,
+  startOfMonth,
+  startOfWeek,
+  subMonths
+} from 'date-fns'
 import { fr } from 'date-fns/locale'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
@@ -198,39 +160,63 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['holiday-selected'])
 const ui = useUiStore()
 
-// État
 const loading = ref(false)
 const currentDate = ref(new Date())
 const events = ref([])
-const showDayModal = ref(false)
+const search = ref('')
+const typeFilter = ref('')
 const selectedDate = ref(null)
 
 const weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
-// Computed
-const currentYear = computed(() => currentDate.value.getFullYear())
+const monthLabel = computed(() => {
+  return format(currentDate.value, 'MMMM yyyy', { locale: fr })
+    .replace(/^\w/, c => c.toUpperCase())
+})
 
 const monthStart = computed(() => startOfMonth(currentDate.value))
 const monthEnd = computed(() => endOfMonth(currentDate.value))
-
 const calendarStart = computed(() => startOfWeek(monthStart.value, { weekStartsOn: 1 }))
 const calendarEnd = computed(() => endOfWeek(monthEnd.value, { weekStartsOn: 1 }))
 
-const calendarDates = computed(() => {
-  const dates = eachDayOfInterval({ start: calendarStart.value, end: calendarEnd.value })
+const filteredEvents = computed(() => {
+  const query = search.value.trim().toLowerCase()
 
-  return dates.map(date => {
-    const dateStr = format(date, 'yyyy-MM-dd')
-    const dayEvents = events.value.filter(event => {
-      const eventStart = parseISO(event.start)
-      const eventEnd = parseISO(event.end)
-      return date >= eventStart && date <= eventEnd
-    })
+  return events.value.filter(event => {
+    const matchesType = !typeFilter.value || event.type_conge === typeFilter.value
+    const matchesSearch = !query || [
+      event.agent,
+      event.structure,
+      event.type_label,
+      event.statut_label
+    ].some(value => String(value || '').toLowerCase().includes(query))
+
+    return matchesType && matchesSearch
+  })
+})
+
+const monthEvents = computed(() => {
+  return filteredEvents.value.filter(event => rangesOverlap(parseISO(event.start), parseISO(event.end), monthStart.value, monthEnd.value))
+})
+
+const monthDays = computed(() => monthEvents.value.reduce((total, event) => total + (Number(event.jours) || 0), 0))
+const pendingCount = computed(() => monthEvents.value.filter(event => event.statut_demande === 'en_attente').length)
+const annualDays = computed(() => monthEvents.value.filter(event => event.type_conge === 'annuel').reduce((total, event) => total + (Number(event.jours) || 0), 0))
+const activeTodayCount = computed(() => {
+  const today = new Date()
+  return filteredEvents.value.filter(event => event.statut_demande === 'approuve' && dateInRange(today, parseISO(event.start), parseISO(event.end))).length
+})
+
+const calendarDates = computed(() => {
+  return eachDayOfInterval({ start: calendarStart.value, end: calendarEnd.value }).map(date => {
+    const key = format(date, 'yyyy-MM-dd')
+    const dayEvents = filteredEvents.value.filter(event => dateInRange(date, parseISO(event.start), parseISO(event.end)))
 
     return {
-      key: dateStr,
+      key,
       date,
       day: date.getDate(),
       isOtherMonth: !isSameMonth(date, currentDate.value),
@@ -240,20 +226,32 @@ const calendarDates = computed(() => {
   })
 })
 
-const totalEvents = computed(() => events.value.length)
+const selectedDayEvents = computed(() => selectedDate.value?.events || [])
+const selectedDayLabel = computed(() => selectedDate.value ? format(selectedDate.value.date, 'dd MMMM yyyy', { locale: fr }) : 'Aucun jour')
 
-// Méthodes
+function rangesOverlap(startA, endA, startB, endB) {
+  return startA <= endB && endA >= startB
+}
+
+function dateInRange(date, start, end) {
+  const current = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+  const normalizedStart = new Date(start.getFullYear(), start.getMonth(), start.getDate())
+  const normalizedEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate())
+  return current >= normalizedStart && current <= normalizedEnd
+}
+
 async function loadCalendarData() {
   loading.value = true
   try {
     const params = {
+      ...props.filters,
       year: currentDate.value.getFullYear(),
-      month: currentDate.value.getMonth() + 1,
-      ...props.filters
+      month: currentDate.value.getMonth() + 1
     }
 
     const response = await client.get('/holiday-plannings/calendar', { params })
     events.value = response.data.events || []
+    selectedDate.value = calendarDates.value.find(day => day.isToday) || calendarDates.value.find(day => day.events.length > 0) || calendarDates.value[0]
   } catch (error) {
     console.error('Erreur chargement calendrier:', error)
     ui.addToast('Erreur lors du chargement du calendrier', 'danger')
@@ -277,51 +275,53 @@ function todayView() {
   loadCalendarData()
 }
 
-function getEventClass(event) {
-  const typeClasses = {
-    'maladie': 'event-maladie',
-    'urgence': 'event-urgence',
-    'formation': 'event-formation',
-    'annuel': 'event-annuel'
-  }
-  return typeClasses[event.extendedProps?.type] || 'event-other'
-}
-
-function getEventTooltip(event) {
-  return `${event.agent}\n${event.extendedProps?.type}\n${event.extendedProps?.jours} jour(s)\n${event.extendedProps?.structure || ''}`
-}
-
-function getStatusBadgeClass(type) {
-  const classes = {
-    'maladie': 'bg-danger',
-    'urgence': 'bg-warning',
-    'formation': 'bg-info',
-    'annuel': 'bg-primary'
-  }
-  return classes[type] || 'bg-secondary'
-}
-
-function showEventDetails(event) {
-  // Rediriger vers les détails du congé
-  // router.push({ name: 'rh.holidays.show', params: { id: event.id } })
-}
-
-function showDayDetails(date) {
+function selectDay(date) {
   selectedDate.value = date
-  showDayModal.value = true
 }
 
-function closeDayModal() {
-  showDayModal.value = false
-  selectedDate.value = null
+function selectHoliday(event) {
+  emit('holiday-selected', event)
 }
 
-// Watchers
-watch(() => props.filters, () => {
-  loadCalendarData()
-}, { deep: true })
+function typeClass(type) {
+  return {
+    annuel: 'type-annuel',
+    maladie: 'type-maladie',
+    maternite: 'type-maternite',
+    paternite: 'type-paternite',
+    urgence: 'type-urgence',
+    special: 'type-special'
+  }[type] || 'type-special'
+}
 
-// Initialisation
+function statusClass(status) {
+  return status === 'en_attente' ? 'is-pending' : ''
+}
+
+function statusBadgeClass(status) {
+  return {
+    approuve: 'bg-success',
+    en_attente: 'bg-warning text-dark',
+    refuse: 'bg-danger',
+    annule: 'bg-secondary'
+  }[status] || 'bg-secondary'
+}
+
+function formatDate(value) {
+  if (!value) return '-'
+  return format(parseISO(value), 'dd/MM/yyyy')
+}
+
+watch(() => props.filters, () => loadCalendarData(), { deep: true })
+
+watch([search, typeFilter], () => {
+  const selectedKey = selectedDate.value?.key
+  selectedDate.value = calendarDates.value.find(day => day.key === selectedKey)
+    || calendarDates.value.find(day => day.events.length > 0)
+    || calendarDates.value[0]
+    || null
+})
+
 onMounted(() => {
   loadCalendarData()
 })
@@ -329,203 +329,314 @@ onMounted(() => {
 
 <style scoped>
 .holiday-calendar {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  background: #fff;
+  border: 1px solid #d9e9f7;
+  border-radius: 14px;
+  padding: 1rem;
 }
 
-.calendar-header {
-  border-bottom: 1px solid #e9ecef;
-  padding-bottom: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.calendar-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.legend-item {
+.calendar-topbar,
+.calendar-toolbar,
+.calendar-metrics {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
+.calendar-subtitle,
+.panel-label {
+  color: #64748b;
+  font-size: .85rem;
 }
 
-.calendar-grid {
-  overflow: hidden;
+.calendar-actions {
+  display: inline-flex;
+  gap: .35rem;
 }
 
-.calendar-weekdays {
+.icon-btn,
+.today-btn {
+  min-height: 36px;
+  border: 1px solid #b8dff6;
+  border-radius: 8px;
+  background: #fff;
+  color: #0369a1;
+  padding: 0 .75rem;
+}
+
+.calendar-toolbar {
+  justify-content: flex-start;
+}
+
+.calendar-search {
+  position: relative;
+  flex: 1;
+  min-width: 220px;
+}
+
+.calendar-search i {
+  position: absolute;
+  left: .75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #64748b;
+}
+
+.calendar-search .form-control {
+  padding-left: 2rem;
+}
+
+.calendar-toolbar .form-select {
+  width: 190px;
+}
+
+.calendar-metrics {
+  justify-content: flex-start;
+}
+
+.metric {
+  min-width: 118px;
+  border: 1px solid #e2edf6;
+  border-radius: 10px;
+  padding: .75rem;
+  background: #f8fbfd;
+}
+
+.metric span {
+  display: block;
+  color: #0f172a;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.metric small {
+  color: #64748b;
+}
+
+.calendar-loading {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #e9ecef;
+  min-height: 360px;
+  place-items: center;
+}
+
+.calendar-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 1rem;
+}
+
+.calendar-board {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d9e9f7;
+  border-radius: 12px;
+}
+
+.calendar-weekdays,
+.calendar-days {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .calendar-weekday {
-  background: #f8f9fa;
-  padding: 0.75rem;
+  background: #f0f7fc;
+  color: #31516f;
+  font-size: .75rem;
+  font-weight: 700;
+  padding: .7rem .5rem;
   text-align: center;
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #495057;
-}
-
-.calendar-days {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1px;
-  background: #e9ecef;
 }
 
 .calendar-day {
-  background: white;
-  min-height: 120px;
-  padding: 0.5rem;
-  position: relative;
-  border: 1px solid transparent;
-  transition: all 0.2s;
+  min-height: 118px;
+  border: 0;
+  border-top: 1px solid #e3eef7;
+  border-right: 1px solid #e3eef7;
+  background: #fff;
+  padding: .5rem;
+  text-align: left;
+  transition: background .15s ease, box-shadow .15s ease;
 }
 
-.calendar-day:hover {
-  background: #f8f9fa;
+.calendar-day:nth-child(7n) {
+  border-right: 0;
 }
 
-.calendar-day.today {
-  background: #e3f2fd;
-  border-color: #2196f3;
+.calendar-day:hover,
+.calendar-day.selected {
+  background: #eef8ff;
+  box-shadow: inset 0 0 0 2px #7dd3fc;
 }
 
 .calendar-day.other-month {
-  background: #fafafa;
-  color: #999;
+  background: #fbfdff;
+  color: #94a3b8;
 }
 
-.calendar-day.has-events {
-  background: #fff3cd;
+.calendar-day.today .day-number {
+  background: #0284c7;
+  color: #fff;
 }
 
 .day-number {
-  font-weight: 600;
-  margin-bottom: 0.25rem;
-  font-size: 0.875rem;
+  display: inline-grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  font-weight: 800;
+}
+
+.day-count {
+  float: right;
+  min-width: 22px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-size: .72rem;
+  font-weight: 700;
+  text-align: center;
 }
 
 .day-events {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+  display: grid;
+  gap: .25rem;
+  margin-top: .45rem;
 }
 
 .calendar-event {
-  padding: 2px 4px;
-  border-radius: 3px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 20px;
-}
-
-.calendar-event:hover {
-  transform: scale(1.02);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.event-annuel {
-  background: #bbdefb;
-  color: #1976d2;
-}
-
-.event-maladie {
-  background: #ffcdd2;
-  color: #d32f2f;
-}
-
-.event-urgence {
-  background: #fff3c4;
-  color: #f57c00;
-}
-
-.event-formation {
-  background: #b3e5fc;
-  color: #0288d1;
-}
-
-.event-other {
-  background: #c8e6c9;
-  color: #388e3c;
-}
-
-.event-title {
-  flex: 1;
-  white-space: nowrap;
+  display: block;
   overflow: hidden;
+  border-radius: 6px;
+  padding: .25rem .45rem;
+  color: #0f172a;
+  font-size: .72rem;
+  font-weight: 700;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.event-duration {
-  font-size: 0.65rem;
-  opacity: 0.8;
+.calendar-event.is-pending {
+  border: 1px dashed rgba(15, 23, 42, .35);
 }
 
 .more-events {
-  font-size: 0.7rem;
-  color: #666;
-  cursor: pointer;
-  padding: 1px 4px;
-  text-align: center;
-  background: #e9ecef;
-  border-radius: 2px;
+  color: #0369a1;
+  font-size: .72rem;
+  font-weight: 700;
 }
 
-.more-events:hover {
-  background: #dee2e6;
+.day-panel {
+  border: 1px solid #d9e9f7;
+  border-radius: 12px;
+  background: #f8fbfd;
+  min-width: 0;
+  padding: 1rem;
 }
 
-.holiday-item {
-  background: #f8f9fa;
+.day-panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.event-color {
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
+.day-panel-header h6 {
+  margin: 0;
+  color: #0f172a;
+  font-weight: 800;
 }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .calendar-day {
-    min-height: 80px;
-    padding: 0.25rem;
+.empty-day {
+  display: grid;
+  min-height: 160px;
+  place-items: center;
+  color: #64748b;
+}
+
+.day-holiday-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.day-holiday {
+  border: 1px solid #e2edf6;
+  border-radius: 10px;
+  background: #fff;
+  padding: .75rem;
+}
+
+.holiday-line {
+  display: flex;
+  gap: .65rem;
+  align-items: flex-start;
+}
+
+.holiday-line strong,
+.holiday-line small {
+  display: block;
+}
+
+.holiday-line small,
+.holiday-dates {
+  color: #64748b;
+  font-size: .8rem;
+}
+
+.type-dot {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border-radius: 50%;
+  margin-top: .3rem;
+}
+
+.holiday-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  margin-top: .75rem;
+}
+
+.type-annuel { background: #bfdbfe; }
+.type-maladie { background: #fecaca; }
+.type-maternite { background: #bbf7d0; }
+.type-paternite { background: #bae6fd; }
+.type-urgence { background: #fde68a; }
+.type-special { background: #ddd6fe; }
+
+@media (max-width: 991.98px) {
+  .calendar-workspace {
+    grid-template-columns: 1fr;
   }
 
-  .day-number {
-    font-size: 0.75rem;
+  .day-panel {
+    order: -1;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .calendar-topbar,
+  .calendar-toolbar,
+  .calendar-metrics {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .calendar-toolbar .form-select {
+    width: 100%;
+  }
+
+  .calendar-day {
+    min-height: 92px;
+    padding: .35rem;
   }
 
   .calendar-event {
-    font-size: 0.65rem;
-    min-height: 16px;
-  }
-
-  .calendar-legend {
-    gap: 0.5rem;
-  }
-
-  .legend-item {
-    font-size: 0.75rem;
+    font-size: .65rem;
   }
 }
 </style>
