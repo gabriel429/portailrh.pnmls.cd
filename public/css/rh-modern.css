@@ -841,57 +841,6 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
     padding: 0 !important;
 }
 
-.holiday-planning-page .quota-section-header {
-    display: flex !important;
-    align-items: flex-end !important;
-    justify-content: space-between !important;
-    gap: 1rem !important;
-}
-
-.holiday-planning-page .quota-search {
-    position: relative !important;
-    width: min(100%, 320px) !important;
-}
-
-.holiday-planning-page .quota-search i {
-    position: absolute !important;
-    left: .75rem !important;
-    top: 50% !important;
-    transform: translateY(-50%) !important;
-    color: #64748b !important;
-    pointer-events: none !important;
-}
-
-.holiday-planning-page .quota-search .form-control {
-    padding-left: 2rem !important;
-}
-
-.holiday-planning-page .quota-table-wrap > .table {
-    min-width: 920px !important;
-}
-
-.holiday-quota-modal {
-    background: rgba(15, 23, 42, .58) !important;
-}
-
-.holiday-quota-modal .modal-dialog {
-    width: min(540px, calc(100vw - 2rem)) !important;
-    max-width: min(540px, calc(100vw - 2rem)) !important;
-    margin: 1.25rem auto !important;
-}
-
-.holiday-quota-modal .modal-content {
-    border: 0 !important;
-    border-radius: 16px !important;
-    box-shadow: 0 24px 60px rgba(15, 23, 42, .26) !important;
-}
-
-.holiday-quota-modal .quota-agent-name {
-    color: #0f172a !important;
-    font-weight: 700 !important;
-    margin-bottom: 1rem !important;
-}
-
 .holiday-edit-modal {
     background: rgba(15, 23, 42, .58) !important;
 }
@@ -921,6 +870,230 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
     color: #0f172a !important;
     font-weight: 700 !important;
     margin-bottom: 1rem !important;
+}
+
+.holiday-planning-page .holiday-calendar,
+.holiday-planning-page .holiday-statistics {
+    background: #fff !important;
+    border: 1px solid #d9e9f7 !important;
+    border-radius: 14px !important;
+    padding: 1rem !important;
+    box-shadow: 0 14px 36px rgba(15, 23, 42, .08) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+}
+
+.holiday-planning-page .calendar-topbar,
+.holiday-planning-page .calendar-toolbar,
+.holiday-planning-page .calendar-metrics,
+.holiday-planning-page .stats-top,
+.holiday-planning-page .structures-toolbar {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+    margin-bottom: 1rem !important;
+}
+
+.holiday-planning-page .calendar-actions,
+.holiday-planning-page .stats-tabs {
+    display: inline-flex !important;
+    gap: .35rem !important;
+}
+
+.holiday-planning-page .icon-btn,
+.holiday-planning-page .today-btn,
+.holiday-planning-page .stats-tabs button {
+    min-height: 36px !important;
+    border: 1px solid #b8dff6 !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #0369a1 !important;
+    font-weight: 700 !important;
+    padding: 0 .8rem !important;
+}
+
+.holiday-planning-page .stats-tabs button.active {
+    background: #0284c7 !important;
+    color: #fff !important;
+}
+
+.holiday-planning-page .calendar-search,
+.holiday-planning-page .structure-search {
+    position: relative !important;
+    flex: 1 1 240px !important;
+}
+
+.holiday-planning-page .calendar-search i,
+.holiday-planning-page .structure-search i {
+    position: absolute !important;
+    left: .75rem !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: #64748b !important;
+    pointer-events: none !important;
+}
+
+.holiday-planning-page .calendar-search .form-control,
+.holiday-planning-page .structure-search .form-control {
+    padding-left: 2rem !important;
+}
+
+.holiday-planning-page .calendar-metrics,
+.holiday-planning-page .kpi-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: .85rem !important;
+}
+
+.holiday-planning-page .kpi-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    margin-bottom: 1rem !important;
+}
+
+.holiday-planning-page .metric,
+.holiday-planning-page .kpi-tile {
+    border: 1px solid #e2edf6 !important;
+    border-radius: 12px !important;
+    background: #f8fbfd !important;
+    padding: 1rem !important;
+}
+
+.holiday-planning-page .metric span,
+.holiday-planning-page .kpi-tile strong {
+    display: block !important;
+    color: #0f172a !important;
+    font-size: 1.3rem !important;
+    font-weight: 900 !important;
+}
+
+.holiday-planning-page .metric small,
+.holiday-planning-page .kpi-tile span {
+    color: #64748b !important;
+    font-size: .84rem !important;
+}
+
+.holiday-planning-page .calendar-workspace,
+.holiday-planning-page .stats-layout,
+.holiday-planning-page .trends-grid {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) 320px !important;
+    gap: 1rem !important;
+}
+
+.holiday-planning-page .stats-layout,
+.holiday-planning-page .trends-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.holiday-planning-page .calendar-board,
+.holiday-planning-page .day-panel,
+.holiday-planning-page .stats-panel {
+    border: 1px solid #d9e9f7 !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    overflow: hidden !important;
+}
+
+.holiday-planning-page .day-panel,
+.holiday-planning-page .stats-panel {
+    padding: 1rem !important;
+    overflow: visible !important;
+}
+
+.holiday-planning-page .calendar-weekdays,
+.holiday-planning-page .calendar-days {
+    display: grid !important;
+    grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+}
+
+.holiday-planning-page .calendar-weekday {
+    background: #f0f7fc !important;
+    color: #31516f !important;
+    font-size: .75rem !important;
+    font-weight: 800 !important;
+    padding: .7rem .5rem !important;
+    text-align: center !important;
+}
+
+.holiday-planning-page .calendar-day {
+    min-height: 118px !important;
+    border: 0 !important;
+    border-top: 1px solid #e3eef7 !important;
+    border-right: 1px solid #e3eef7 !important;
+    background: #fff !important;
+    padding: .5rem !important;
+    text-align: left !important;
+}
+
+.holiday-planning-page .calendar-day.selected,
+.holiday-planning-page .calendar-day:hover {
+    background: #eef8ff !important;
+    box-shadow: inset 0 0 0 2px #7dd3fc !important;
+}
+
+.holiday-planning-page .day-events {
+    display: grid !important;
+    gap: .25rem !important;
+    margin-top: .45rem !important;
+}
+
+.holiday-planning-page .calendar-event {
+    display: block !important;
+    overflow: hidden !important;
+    border-radius: 6px !important;
+    padding: .25rem .45rem !important;
+    color: #0f172a !important;
+    font-size: .72rem !important;
+    font-weight: 800 !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+.holiday-planning-page .type-annuel { background: #bfdbfe !important; }
+.holiday-planning-page .type-maladie { background: #fecaca !important; }
+.holiday-planning-page .type-maternite { background: #bbf7d0 !important; }
+.holiday-planning-page .type-paternite { background: #bae6fd !important; }
+.holiday-planning-page .type-urgence { background: #fde68a !important; }
+.holiday-planning-page .type-special { background: #ddd6fe !important; }
+
+.holiday-planning-page .panel-heading,
+.holiday-planning-page .utilization-panel,
+.holiday-planning-page .agent-row,
+.holiday-planning-page .type-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 1rem !important;
+}
+
+.holiday-planning-page .status-row {
+    display: grid !important;
+    grid-template-columns: minmax(120px, 1fr) 40px 48px minmax(80px, 1fr) !important;
+    align-items: center !important;
+    gap: .6rem !important;
+}
+
+.holiday-planning-page .mini-track,
+.holiday-planning-page .type-meter,
+.holiday-planning-page .rate-track {
+    overflow: hidden !important;
+    border-radius: 999px !important;
+    background: #e2e8f0 !important;
+    min-height: 8px !important;
+}
+
+.holiday-planning-page .mini-track span,
+.holiday-planning-page .type-meter span,
+.holiday-planning-page .rate-track span {
+    display: block !important;
+    height: 100% !important;
+    border-radius: inherit !important;
+}
+
+.holiday-planning-page .chart-box {
+    height: 320px !important;
+    position: relative !important;
 }
 
 .holiday-planning-modal .modal-dialog,
@@ -984,13 +1157,19 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
         justify-content: flex-start !important;
     }
 
-    .holiday-planning-page .quota-section-header {
-        align-items: stretch !important;
-        flex-direction: column !important;
+    .holiday-planning-page .calendar-workspace,
+    .holiday-planning-page .stats-layout,
+    .holiday-planning-page .trends-grid,
+    .holiday-planning-page .kpi-grid {
+        grid-template-columns: 1fr !important;
     }
 
-    .holiday-planning-page .quota-search {
-        width: 100% !important;
+    .holiday-planning-page .calendar-topbar,
+    .holiday-planning-page .calendar-toolbar,
+    .holiday-planning-page .stats-top,
+    .holiday-planning-page .structures-toolbar {
+        align-items: stretch !important;
+        flex-direction: column !important;
     }
 }
 
