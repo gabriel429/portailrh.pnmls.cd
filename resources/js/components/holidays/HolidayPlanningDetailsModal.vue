@@ -487,11 +487,27 @@ function handleBackdropClick() {
   }
 }
 
+// Charger les détails du planning
+async function loadPlanningDetails() {
+  loading.value = true
+  try {
+    const response = await client.get(`/holiday-plannings/${props.planning.id}`)
+    // Les données sont mises à jour et utilisées directement dans le template
+    Object.assign(props.planning, response.data.planning)
+  } catch (error) {
+    console.error('Erreur chargement détails planning:', error)
+    ui.addToast('Erreur lors du chargement des détails', 'danger')
+  } finally {
+    loading.value = false
+  }
+}
+
 // Watchers
 watch(() => props.show, (newValue) => {
   if (newValue) {
     editMode.value = false
     errors.value = {}
+    loadPlanningDetails()
   }
 })
 </script>

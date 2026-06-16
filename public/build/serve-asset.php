@@ -19,6 +19,7 @@ if (strpos($requestedFile, '..') !== false || strpos($requestedFile, '/') === 0)
     exit('Invalid file path');
 }
 
+// Map to physical file in assets directory
 // Map to physical file in assets directory, with an explicit allowlist for
 // build-root files needed by Workbox during service-worker install.
 $rootBuildFiles = ['manifest.json', 'manifest.webmanifest', 'registerSW.js', 'sw.js'];
