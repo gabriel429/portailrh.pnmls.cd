@@ -298,6 +298,14 @@ export const useAuthStore = defineStore('auth', {
                 return codes.some(c => this.permissions.includes(c))
             }
         },
+        hasRole() {
+            return (roles) => {
+                if (this.isSuperAdmin) return true
+                const rolesArray = Array.isArray(roles) ? roles : [roles]
+                const userRole = normalizedRole(this.$state)
+                return rolesArray.some(r => normalizeText(r) === userRole)
+            }
+        },
     },
     actions: {
         cachedUser() {

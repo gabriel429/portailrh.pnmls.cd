@@ -435,7 +435,7 @@ const availableYears = computed(() => {
 })
 
 const canValidate = computed(() => {
-  return auth.user?.agent?.hasRole(['RH National', 'SEN'])
+  return auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
 })
 
 // Méthodes

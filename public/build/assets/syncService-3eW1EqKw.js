@@ -1,0 +1,1 @@
+import{t as e}from"./syncService-B3Ncor-G.js";export{e as default};

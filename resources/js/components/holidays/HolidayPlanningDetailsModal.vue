@@ -363,12 +363,12 @@ const editForm = ref({
 // Computed
 const canEdit = computed(() => {
   if (!auth.user?.agent) return false
-  return !props.planning?.valide || auth.user.agent.hasRole(['RH National', 'SEN'])
+  return !props.planning?.valide || auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
 })
 
 const canValidate = computed(() => {
   if (!auth.user?.agent) return false
-  return auth.user.agent.hasRole(['RH National', 'SEN'])
+  return auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
 })
 
 // Méthodes
