@@ -196,14 +196,22 @@
               <i class="fas me-1" :class="planning.valide ? 'fa-check-circle' : 'fa-clock'"></i>
               {{ planning.valide ? 'Planning validé' : 'Planning en attente de validation' }}
             </span>
-            <div v-if="fermetures.length" class="blocked-dates">
-              <span class="blocked-dates-label">
-                <i class="fas fa-ban me-1"></i>Dates bloquées
-              </span>
-              <span v-for="(p, i) in fermetures" :key="i" class="blocked-date-chip">
-                {{ fermetureLabel(p) }}
-              </span>
-            </div>
+            <details v-if="fermetures.length" class="holiday-closures">
+              <summary>
+                <span>
+                  <i class="fas fa-calendar-day me-1"></i>
+                  Jours fériés
+                </span>
+                <strong>{{ fermetures.length }}</strong>
+                <i class="fas fa-chevron-down closure-chevron"></i>
+              </summary>
+              <div class="holiday-closures-list">
+                <div v-for="(p, i) in fermetures" :key="i" class="holiday-closure-item">
+                  <span class="closure-date">{{ fermetureDateLabel(p) }}</span>
+                  <span v-if="p.nom" class="closure-name">{{ p.nom }}</span>
+                </div>
+              </div>
+            </details>
           </div>
         </template>
 
@@ -348,12 +356,11 @@ function formatDateShort(dateStr) {
   return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })
 }
 
-function fermetureLabel(periode) {
+function fermetureDateLabel(periode) {
   if (!periode) return ''
   const start = formatDateShort(periode.start)
   const end = formatDateShort(periode.end)
-  const range = start === end ? start : `${start} - ${end}`
-  return periode.nom ? `${periode.nom}: ${range}` : range
+  return start === end ? start : `${start} - ${end}`
 }
 
 function typeCongeLabel(type) {
@@ -589,37 +596,97 @@ onMounted(() => loadPlanning())
   gap: .55rem;
 }
 
-.blocked-dates {
-  display: inline-flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: .35rem;
-  min-width: 0;
+.holiday-closures {
+  position: relative;
 }
 
-.blocked-dates-label,
-.blocked-date-chip {
+.holiday-closures summary {
   display: inline-flex;
   align-items: center;
-  min-height: 24px;
+  gap: .45rem;
+  min-height: 28px;
+  padding: .28rem .6rem;
+  border: 1px solid #bae6fd;
   border-radius: 999px;
-  font-size: .76rem;
+  background: #f0f9ff;
+  color: #075985;
+  font-size: .78rem;
   font-weight: 800;
   line-height: 1;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
 }
 
-.blocked-dates-label {
-  padding: .25rem .55rem;
-  border: 1px solid #fed7aa;
-  background: #fff7ed;
-  color: #9a3412;
+.holiday-closures summary::-webkit-details-marker {
+  display: none;
 }
 
-.blocked-date-chip {
-  padding: .25rem .5rem;
+.holiday-closures summary strong {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 .35rem;
+  border-radius: 999px;
+  background: #0284c7;
+  color: #fff;
+  font-size: .72rem;
+}
+
+.closure-chevron {
+  font-size: .68rem;
+  transition: transform .18s ease;
+}
+
+.holiday-closures[open] .closure-chevron {
+  transform: rotate(180deg);
+}
+
+.holiday-closures-list {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + .45rem);
+  left: 0;
+  width: min(520px, calc(100vw - 2rem));
+  max-height: 240px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .5rem;
+  padding: .75rem;
+  border: 1px solid #bae6fd;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 18px 36px rgba(15, 23, 42, .16);
+}
+
+.holiday-closure-item {
+  min-width: 0;
+  padding: .55rem .65rem;
   border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #f8fafc, #f0f9ff);
+}
+
+.closure-date {
+  display: block;
+  color: #0f172a;
+  font-size: .82rem;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.closure-name {
+  display: block;
+  margin-top: .2rem;
+  overflow: hidden;
+  color: #64748b;
+  font-size: .74rem;
+  font-weight: 700;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Mobile responsive ── */
@@ -656,7 +723,13 @@ onMounted(() => loadPlanning())
   .table th, .table td { padding: 0.5rem 0.4rem; }
 
   .planning-meta { align-items: flex-start; }
-  .blocked-dates { width: 100%; }
+  .holiday-closures { width: 100%; }
+  .holiday-closures-list {
+    position: static;
+    width: 100%;
+    grid-template-columns: 1fr;
+    margin-top: .55rem;
+  }
 }
 
 @media (max-width: 575.98px) {
