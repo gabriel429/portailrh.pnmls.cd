@@ -662,7 +662,8 @@ function viewPlanning(planning) {
 }
 
 function canManageHoliday(holiday) {
-  return auth.hasRole(['RH National', 'RH Provincial']) && ['en_attente', 'approuve'].includes(holiday?.statut_demande)
+  const canManage = auth.canManageRhAdminModules || auth.hasRole(['RH National', 'RH Provincial'])
+  return canManage && ['en_attente', 'approuve'].includes(holiday?.statut_demande)
 }
 
 async function openHolidayFromCalendar(event) {

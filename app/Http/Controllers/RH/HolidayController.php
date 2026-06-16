@@ -570,7 +570,7 @@ class HolidayController extends Controller
 
         // Seul le demandeur ou un RH peut annuler
         if ($holiday->demande_par !== $user->id &&
-            !$user->hasRole(['RH National', 'RH Provincial'])) {
+            !$this->canManageHolidayRequests($user, request()->user())) {
             return response()->json([
                 'message' => 'Permissions insuffisantes pour annuler ce congé'
             ], 403);
@@ -607,7 +607,7 @@ class HolidayController extends Controller
             ], 403);
         }
 
-        if (!$user->hasRole(['RH National', 'RH Provincial']) && $holiday->demande_par !== $user->id) {
+        if (!$this->canManageHolidayRequests($user, $request->user()) && $holiday->demande_par !== $user->id) {
             return response()->json([
                 'message' => 'Permissions insuffisantes pour enregistrer ce retour.'
             ], 403);
@@ -656,7 +656,7 @@ class HolidayController extends Controller
 
         $user = auth()->user()->agent;
         $scope = app(UserDataScope::class);
-        $isRh = $user && $user->hasRole(['RH National', 'RH Provincial']);
+        $isRh = $this->canManageHolidayRequests($user, $request->user());
 
         if (!$user || !$scope->canAccessAgent($request->user(), $holiday->agent, false)) {
             return response()->json([
@@ -1006,6 +1006,29 @@ class HolidayController extends Controller
      * - Agent national    → planning du département
      * - Autres           → planning SEN national (structure_id = 1)
      */
+    private function canManageHolidayRequests(?Agent $agent, $user = null): bool
+    {
+        if (!$agent) {
+            return false;
+        }
+
+        $scope = app(UserDataScope::class);
+
+        if ($scope->hasGlobalAdminAccess($user)) {
+            return true;
+        }
+
+        return $agent->hasRole([
+            'Section ressources humaines',
+            'Chef Section RH',
+            'Chef de Section RH',
+            'Chef Section Ressources Humaines',
+            'RH National',
+            'RH Provincial',
+            'SEN',
+        ]);
+    }
+
     private function resolvePlanning(Agent $agent, int $year): ?HolidayPlanning
     {
         return $this->entitlementService()->resolvePlanning($agent, $year);
