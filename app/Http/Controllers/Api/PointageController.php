@@ -620,23 +620,25 @@ class PointageController extends ApiController
     public function exportDaily(Request $request)
     {
         $scope = $this->scopeService();
-        $dateDébut = $request->query('date_debut', now()->startOfMonth()->format('Y-m-d'));
-        $dateFin = $request->query('date_fin', now()->format('Y-m-d'));
-        $agent_id = $request->query('agent_id');
+        $dateDebut = Carbon::parse($request->query('date_debut', now()->startOfMonth()->format('Y-m-d')))->startOfDay();
+        $dateFin = Carbon::parse($request->query('date_fin', now()->format('Y-m-d')))->startOfDay();
 
-        $query = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDébut, $dateFin]);
-
-        $scope->applyPointageScope($query, $request->user());
-
-        if ($agent_id) {
-            $query->where('agent_id', $agent_id);
+        if ($dateFin->lt($dateDebut)) {
+            [$dateDebut, $dateFin] = [$dateFin, $dateDebut];
         }
 
-        $pointages = $query->orderBy('date_pointage', 'desc')->get();
-        $pointagesByDate = $pointages->groupBy(function ($item) {
-            return $item->date_pointage->format('Y-m-d');
+        $agents = $this->attendanceAgentQuery($request, $scope)->get();
+        $agentIds = $agents->pluck('id')->all();
+
+        $pointages = Pointage::query()
+            ->whereBetween('date_pointage', [$dateDebut->toDateString(), $dateFin->toDateString()])
+            ->whereIn('agent_id', $agentIds)
+            ->get();
+
+        $pointagesByKey = $pointages->keyBy(function (Pointage $pointage) {
+            return $pointage->date_pointage->format('Y-m-d') . '|' . $pointage->agent_id;
         });
+        $pointageDates = $pointages->groupBy(fn(Pointage $pointage) => $pointage->date_pointage->format('Y-m-d'));
 
         $filename = 'pointages_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
 
@@ -645,25 +647,10 @@ class PointageController extends ApiController
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function () use ($pointagesByDate) {
-            $rows = [];
-            $rows[] = ['Date', 'Agent', 'Matricule', 'Entree', 'Sortie', 'Heures Travaillees', 'Statut'];
+        $callback = function () use ($agents, $agentIds, $pointagesByKey, $pointageDates, $dateDebut, $dateFin) {
+            [$rows, $options] = $this->buildDailyAttendanceExport($agents, $agentIds, $pointagesByKey, $pointageDates, $dateDebut, $dateFin);
 
-            foreach ($pointagesByDate as $date => $dayPointages) {
-                foreach ($dayPointages as $pointage) {
-                    $rows[] = [
-                        $pointage->date_pointage->format('d/m/Y'),
-                        $pointage->agent->prenom . ' ' . $pointage->agent->nom,
-                        $pointage->agent->matricule_etat ?? 'N/A',
-                        $pointage->heure_entree ?? '-',
-                        $pointage->heure_sortie ?? '-',
-                        $pointage->heures_travaillees ?? 0,
-                        $pointage->heure_entree ? 'Present' : 'Absent',
-                    ];
-                }
-            }
-
-            $this->writeRealExcelFile($rows, 'Pointages');
+            $this->writeRealExcelFile($rows, 'Presences', $options);
         };
 
         return response()->stream($callback, 200, $headers);
@@ -678,65 +665,22 @@ class PointageController extends ApiController
         $month = $request->query('month', now()->format('Y-m'));
         [$year, $monthNum] = explode('-', $month);
 
-        $dateDébut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
-        $dateFin = $dateDébut->copy()->endOfMonth();
+        $dateDebut = Carbon::createFromDate($year, $monthNum, 1)->startOfMonth();
+        $dateFin = $dateDebut->copy()->endOfMonth();
 
-        $query = Pointage::with(['agent'])
-            ->whereBetween('date_pointage', [$dateDébut, $dateFin]);
+        $agents = $this->attendanceAgentQuery($request, $scope)->get();
+        $agentIds = $agents->pluck('id')->all();
 
-        $scope->applyPointageScope($query, $request->user());
+        $pointages = Pointage::query()
+            ->whereBetween('date_pointage', [$dateDebut->toDateString(), $dateFin->toDateString()])
+            ->whereIn('agent_id', $agentIds)
+            ->get();
 
-        if ($request->filled('organe')) {
-            $query->whereHas('agent', fn($q) => $q->where('organe', $request->query('organe')));
-        }
-        if ($request->filled('department_id')) {
-            $query->whereHas('agent', fn($q) => $q->where('departement_id', $request->query('department_id')));
-        }
-        if ($request->filled('province_id')) {
-            $query->whereHas('agent', fn($q) => $q->where('province_id', $request->query('province_id')));
-        }
-
-        $pointages = $query->orderBy('date_pointage', 'desc')->get();
-
-        $pointagesByAgent = $pointages->groupBy('agent_id');
-
-        $agentStats = $pointagesByAgent->map(function ($agentPointages) use ($dateDébut, $dateFin) {
-            $workingDays = 0;
-            $presentDays = 0;
-            $absentDays = 0;
-            $totalHours = 0;
-
-            $current = $dateDébut->copy();
-            while ($current <= $dateFin) {
-                if ($current->isWeekday()) {
-                    $workingDays++;
-                }
-                $current->addDay();
-            }
-
-            foreach ($agentPointages as $pointage) {
-                if ($pointage->heure_entree) {
-                    $presentDays++;
-                } else {
-                    $absentDays++;
-                }
-                $totalHours += $pointage->heures_travaillees ?? 0;
-            }
-
-            return [
-                'agent' => $agentPointages->first()->agent,
-                'working_days' => $workingDays,
-                'recorded' => count($agentPointages),
-                'present' => $presentDays,
-                'absent' => $absentDays,
-                'total_hours' => $totalHours,
-                'attendance_rate' => $workingDays > 0 ? round(($presentDays / $workingDays) * 100, 2) : 0,
-            ];
+        $pointagesByKey = $pointages->keyBy(function (Pointage $pointage) {
+            return $pointage->date_pointage->format('Y-m-d') . '|' . $pointage->agent_id;
         });
 
-        $agentStats = $agentStats->sortBy(function ($stat) {
-            return $stat['agent']->nom . ' ' . $stat['agent']->prenom;
-        });
+        $agentStats = $this->buildMonthlyAttendanceStats($agents, $agentIds, $pointagesByKey, $dateDebut, $dateFin);
 
         $filename = 'rapport_mensuel_' . $month . '_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
 
@@ -745,43 +689,439 @@ class PointageController extends ApiController
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ];
 
-        $callback = function () use ($agentStats, $dateDébut, $dateFin) {
+        $callback = function () use ($agentStats, $dateDebut, $dateFin) {
             $rows = [];
-            $rows[] = ['RAPPORT MENSUEL DE POINTAGES'];
-            $rows[] = ['Periode: ' . $dateDébut->format('d/m/Y') . ' - ' . $dateFin->format('d/m/Y')];
+            $rowStyles = [];
+            $rows[] = ['RAPPORT MENSUEL DES PRESENCES'];
+            $rowStyles[0] = 1;
+            $rows[] = ['Periode', $dateDebut->format('d/m/Y') . ' - ' . $dateFin->format('d/m/Y'), 'Jours ouvrables', $agentStats['working_days']];
+            $rowStyles[1] = 2;
+            $rows[] = [
+                'Resume',
+                'Agents',
+                $agentStats['agents_count'],
+                'Presences',
+                $agentStats['totals']['present'],
+                'Absences justifiees',
+                $agentStats['totals']['justified_absences'],
+                'Absents',
+                $agentStats['totals']['unjustified_absences'],
+            ];
+            $rowStyles[2] = 2;
+            $rows[] = ['Note', 'Les samedis et dimanches ne sont pas comptabilises comme absences.'];
+            $rowStyles[3] = 8;
             $rows[] = [];
-            $rows[] = ['Agent', 'Matricule', 'Jours Travail', 'Jours Enregistres', 'Presents', 'Absents', 'Heures Travaillees', 'Taux Assiduite (%)'];
+            $rows[] = ['Agent', 'Matricule', 'Structure', 'Organe', 'Jours ouvrables', 'Presences', 'Absences justifiees', 'Absents', 'Heures', 'Taux presence (%)', 'Raisons principales'];
+            $headerRow = count($rows) - 1;
+            $rowStyles[$headerRow] = 3;
 
-            foreach ($agentStats as $stat) {
+            foreach ($agentStats['rows'] as $stat) {
                 $rows[] = [
-                    $stat['agent']->prenom . ' ' . $stat['agent']->nom,
-                    $stat['agent']->matricule_etat ?? 'N/A',
+                    $this->agentFullName($stat['agent']),
+                    $stat['agent']->matricule_etat ?: 'N/A',
+                    $this->agentStructureLabel($stat['agent']),
+                    $stat['agent']->organe ?: '-',
                     $stat['working_days'],
-                    $stat['recorded'],
                     $stat['present'],
-                    $stat['absent'],
+                    $stat['justified_absences'],
+                    $stat['unjustified_absences'],
                     $stat['total_hours'],
                     $stat['attendance_rate'],
+                    $stat['reasons'] ?: '-',
                 ];
+                $rowStyles[count($rows) - 1] = $stat['unjustified_absences'] > 0 ? 6 : ($stat['justified_absences'] > 0 ? 5 : 4);
             }
 
             $rows[] = [];
-            $rows[] = ['RESUME'];
-            $rows[] = ['Total Agents', $agentStats->count()];
-            $rows[] = ['Total Presents', $agentStats->sum('present')];
-            $rows[] = ['Total Absents', $agentStats->sum('absent')];
-            $rows[] = ['Taux Moyen (%)', round($agentStats->avg('attendance_rate'), 2)];
+            $rows[] = ['RESUME FINAL'];
+            $rowStyles[count($rows) - 1] = 2;
+            $rows[] = ['Total agents', $agentStats['agents_count']];
+            $rows[] = ['Total presences', $agentStats['totals']['present']];
+            $rows[] = ['Total absences justifiees', $agentStats['totals']['justified_absences']];
+            $rows[] = ['Total absents non justifies', $agentStats['totals']['unjustified_absences']];
+            $rows[] = ['Taux moyen de presence (%)', $agentStats['average_attendance_rate']];
 
-            $this->writeRealExcelFile($rows, 'Rapport Mensuel');
+            $this->writeRealExcelFile($rows, 'Rapport Mensuel', [
+                'row_styles' => $rowStyles,
+                'column_widths' => [28, 16, 28, 28, 16, 14, 20, 14, 12, 18, 48],
+                'freeze_row' => $headerRow + 2,
+                'auto_filter' => [
+                    'start_row' => $headerRow + 1,
+                    'end_row' => max($headerRow + 1, $headerRow + count($agentStats['rows']) + 1),
+                    'end_col' => 11,
+                ],
+            ]);
         };
 
         return response()->stream($callback, 200, $headers);
     }
 
+    private function attendanceAgentQuery(Request $request, UserDataScope $scope)
+    {
+        $query = Agent::actifs()
+            ->with(['departement:id,nom', 'province:id,nom', 'localite:id,nom'])
+            ->orderInstitutionally();
+
+        $scope->applyAgentScope($query, $request->user());
+
+        if ($request->filled('agent_id')) {
+            $query->whereKey($request->query('agent_id'));
+        }
+        if ($request->filled('organe')) {
+            $query->where('organe', $request->query('organe'));
+        }
+        if ($request->filled('department_id')) {
+            $query->where('departement_id', $request->query('department_id'));
+        }
+        if ($request->filled('province_id')) {
+            $query->where('province_id', $request->query('province_id'));
+        }
+        if ($request->filled('localite_id')) {
+            $query->where('localite_id', $request->query('localite_id'));
+        }
+
+        return $query;
+    }
+
+    private function buildDailyAttendanceExport($agents, array $agentIds, $pointagesByKey, $pointageDates, Carbon $dateDebut, Carbon $dateFin): array
+    {
+        $dataRows = [];
+        $dataStyles = [];
+        $stats = [
+            'present' => 0,
+            'justified_absences' => 0,
+            'unjustified_absences' => 0,
+            'weekend_records' => 0,
+        ];
+
+        $current = $dateDebut->copy();
+        while ($current <= $dateFin) {
+            $day = $current->toDateString();
+            $isWeekday = $current->isWeekday();
+            $dayPointages = $pointageDates->get($day, collect());
+
+            if (!$isWeekday && $dayPointages->isEmpty()) {
+                $current->addDay();
+                continue;
+            }
+
+            $absenceMap = $isWeekday ? $this->justifiedAbsencesForAgents($agentIds, $current) : [];
+            $agentsForDay = $isWeekday
+                ? $agents
+                : $agents->filter(fn(Agent $agent) => $dayPointages->contains('agent_id', $agent->id));
+
+            foreach ($agentsForDay as $agent) {
+                $pointage = $pointagesByKey->get($day . '|' . $agent->id);
+                $hasPresence = $pointage && $this->pointageHasPresence($pointage);
+                $absence = $absenceMap[$agent->id] ?? null;
+
+                if (!$isWeekday) {
+                    $status = $hasPresence ? 'Present (week-end)' : 'Hors jour ouvrable';
+                    $reason = 'Week-end non comptabilise';
+                    $style = 8;
+                    $stats['weekend_records']++;
+                } elseif ($hasPresence) {
+                    $status = 'Present';
+                    $reason = $pointage?->observations ?: '-';
+                    $style = 4;
+                    $stats['present']++;
+                } elseif ($absence) {
+                    $status = 'Absence justifiee';
+                    $reason = $this->absenceExportText($absence);
+                    $style = 5;
+                    $stats['justified_absences']++;
+                } else {
+                    $status = 'Absent non justifie';
+                    $reason = $pointage?->observations ?: 'Aucun pointage enregistre';
+                    $style = 6;
+                    $stats['unjustified_absences']++;
+                }
+
+                $dataRows[] = [
+                    $current->format('d/m/Y'),
+                    $this->frenchDayName($current),
+                    $this->agentFullName($agent),
+                    $agent->matricule_etat ?: 'N/A',
+                    $this->agentStructureLabel($agent),
+                    $agent->organe ?: '-',
+                    $status,
+                    $reason,
+                    $pointage ? $this->formatPointageTime($pointage->heure_entree) : '-',
+                    $pointage ? $this->formatPointageTime($pointage->heure_sortie) : '-',
+                    $hasPresence ? ($pointage->heures_travaillees ?? 0) : '',
+                    $pointage?->observations ?: '-',
+                ];
+                $dataStyles[] = $style;
+            }
+
+            $current->addDay();
+        }
+
+        $rows = [];
+        $rowStyles = [];
+        $rows[] = ['EXPORT DES PRESENCES'];
+        $rowStyles[0] = 1;
+        $rows[] = [
+            'Periode',
+            $dateDebut->format('d/m/Y') . ' - ' . $dateFin->format('d/m/Y'),
+            'Jours ouvrables',
+            count($this->workingDates($dateDebut, $dateFin)),
+            'Agents',
+            $agents->count(),
+        ];
+        $rowStyles[1] = 2;
+        $rows[] = [
+            'Resume',
+            'Presents',
+            $stats['present'],
+            'Absences justifiees',
+            $stats['justified_absences'],
+            'Absents',
+            $stats['unjustified_absences'],
+            'Pointages week-end',
+            $stats['weekend_records'],
+        ];
+        $rowStyles[2] = 2;
+        $rows[] = ['Note', 'Les samedis et dimanches ne sont pas comptabilises comme absences. Les lignes week-end apparaissent seulement si un pointage existe.'];
+        $rowStyles[3] = 8;
+        $rows[] = [];
+        $rows[] = ['Date', 'Jour', 'Agent', 'Matricule', 'Structure', 'Organe', 'Statut', 'Raison / motif', 'Arrivee', 'Sortie', 'Heures', 'Observations'];
+        $headerRow = count($rows) - 1;
+        $rowStyles[$headerRow] = 3;
+
+        foreach ($dataRows as $index => $dataRow) {
+            $rows[] = $dataRow;
+            $rowStyles[count($rows) - 1] = $dataStyles[$index] ?? 7;
+        }
+
+        return [$rows, [
+            'row_styles' => $rowStyles,
+            'column_widths' => [14, 14, 30, 16, 32, 28, 22, 52, 12, 12, 10, 38],
+            'freeze_row' => $headerRow + 2,
+            'auto_filter' => [
+                'start_row' => $headerRow + 1,
+                'end_row' => max($headerRow + 1, count($rows)),
+                'end_col' => 12,
+            ],
+        ]];
+    }
+
+    private function buildMonthlyAttendanceStats($agents, array $agentIds, $pointagesByKey, Carbon $dateDebut, Carbon $dateFin): array
+    {
+        $workingDates = $this->workingDates($dateDebut, $dateFin);
+        $absenceMaps = [];
+        foreach ($workingDates as $date) {
+            $absenceMaps[$date->toDateString()] = $this->justifiedAbsencesForAgents($agentIds, $date);
+        }
+
+        $rows = [];
+        $totals = [
+            'present' => 0,
+            'justified_absences' => 0,
+            'unjustified_absences' => 0,
+        ];
+
+        foreach ($agents as $agent) {
+            $present = 0;
+            $justified = 0;
+            $unjustified = 0;
+            $totalHours = 0;
+            $reasonCounts = [];
+
+            foreach ($workingDates as $date) {
+                $day = $date->toDateString();
+                $pointage = $pointagesByKey->get($day . '|' . $agent->id);
+                $hasPresence = $pointage && $this->pointageHasPresence($pointage);
+
+                if ($hasPresence) {
+                    $present++;
+                    $totalHours += (float) ($pointage->heures_travaillees ?? 0);
+                    continue;
+                }
+
+                $absence = $absenceMaps[$day][$agent->id] ?? null;
+                if ($absence) {
+                    $justified++;
+                    $label = $this->absenceExportText($absence, false);
+                    $reasonCounts[$label] = ($reasonCounts[$label] ?? 0) + 1;
+                    continue;
+                }
+
+                $unjustified++;
+                $label = $pointage?->observations ? 'Absent - ' . $pointage->observations : 'Absent non justifie';
+                $reasonCounts[$label] = ($reasonCounts[$label] ?? 0) + 1;
+            }
+
+            $workingDays = count($workingDates);
+            $rows[] = [
+                'agent' => $agent,
+                'working_days' => $workingDays,
+                'present' => $present,
+                'justified_absences' => $justified,
+                'unjustified_absences' => $unjustified,
+                'total_hours' => round($totalHours, 1),
+                'attendance_rate' => $workingDays > 0 ? round(($present / $workingDays) * 100, 2) : 0,
+                'reasons' => $this->formatReasonCounts($reasonCounts),
+            ];
+
+            $totals['present'] += $present;
+            $totals['justified_absences'] += $justified;
+            $totals['unjustified_absences'] += $unjustified;
+        }
+
+        $average = count($rows) > 0
+            ? round(array_sum(array_column($rows, 'attendance_rate')) / count($rows), 2)
+            : 0;
+
+        return [
+            'rows' => $rows,
+            'working_days' => count($workingDates),
+            'agents_count' => $agents->count(),
+            'totals' => $totals,
+            'average_attendance_rate' => $average,
+        ];
+    }
+
+    private function workingDates(Carbon $dateDebut, Carbon $dateFin): array
+    {
+        $dates = [];
+        $current = $dateDebut->copy();
+        while ($current <= $dateFin) {
+            if ($current->isWeekday()) {
+                $dates[] = $current->copy();
+            }
+            $current->addDay();
+        }
+
+        return $dates;
+    }
+
+    private function frenchDayName(Carbon $date): string
+    {
+        return [
+            1 => 'Lundi',
+            2 => 'Mardi',
+            3 => 'Mercredi',
+            4 => 'Jeudi',
+            5 => 'Vendredi',
+            6 => 'Samedi',
+            7 => 'Dimanche',
+        ][$date->isoWeekday()] ?? '';
+    }
+
+    private function agentFullName(Agent $agent): string
+    {
+        $parts = array_filter([$agent->prenom, $agent->nom, $agent->postnom]);
+
+        return trim(implode(' ', $parts)) ?: 'Agent #' . $agent->id;
+    }
+
+    private function agentStructureLabel(Agent $agent): string
+    {
+        $parts = array_filter([
+            $agent->departement?->nom,
+            $agent->province?->nom,
+            $agent->localite?->nom,
+        ]);
+        $parts = array_values(array_unique($parts));
+
+        return $parts ? implode(' / ', $parts) : '-';
+    }
+
+    private function pointageHasPresence(Pointage $pointage): bool
+    {
+        return $this->isActualTime($this->formatPointageTime($pointage->heure_entree))
+            || $this->isActualTime($this->formatPointageTime($pointage->heure_sortie));
+    }
+
+    private function isActualTime(string $time): bool
+    {
+        return $time !== '-' && $time !== '00:00';
+    }
+
+    private function formatPointageTime($time): string
+    {
+        if (!$time) {
+            return '-';
+        }
+
+        if ($time instanceof \DateTimeInterface) {
+            return Carbon::parse($time)->format('H:i');
+        }
+
+        $value = trim((string) $time);
+        if ($value === '') {
+            return '-';
+        }
+
+        if (preg_match('/^\d{2}:\d{2}/', $value)) {
+            return substr($value, 0, 5);
+        }
+
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Throwable) {
+            return substr($value, 0, 5) ?: '-';
+        }
+    }
+
+    private function absenceExportText(array $absence, bool $withPeriod = true): string
+    {
+        $parts = array_filter([
+            $absence['label'] ?? 'Absence justifiee',
+            $absence['reason'] ?? null,
+            $withPeriod ? ($absence['period'] ?? null) : null,
+        ], fn($value) => trim((string) $value) !== '');
+
+        return implode(' - ', array_values(array_unique($parts))) ?: 'Absence justifiee';
+    }
+
+    private function formatReasonCounts(array $reasonCounts): string
+    {
+        if ($reasonCounts === []) {
+            return '';
+        }
+
+        $parts = [];
+        foreach ($reasonCounts as $reason => $count) {
+            $parts[] = $reason . ' (' . $count . 'j)';
+        }
+
+        return implode('; ', $parts);
+    }
+
+    private function firstFilled(...$values): ?string
+    {
+        foreach ($values as $value) {
+            $value = trim((string) ($value ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function absencePeriodText($dateDebut, $dateFin): ?string
+    {
+        if (!$dateDebut && !$dateFin) {
+            return null;
+        }
+
+        $start = $dateDebut ? Carbon::parse($dateDebut)->format('d/m/Y') : null;
+        $end = $dateFin ? Carbon::parse($dateFin)->format('d/m/Y') : null;
+
+        if ($start && $end && $start !== $end) {
+            return 'du ' . $start . ' au ' . $end;
+        }
+
+        return $start ? 'le ' . $start : "jusqu'au " . $end;
+    }
+
     /**
      * Write real Excel file (.xlsx) using ZipArchive.
      */
-    private function writeRealExcelFile($rows, $sheetName)
+    private function writeRealExcelFile($rows, $sheetName, array $options = [])
     {
         $tmpFile = tempnam(sys_get_temp_dir(), 'excel_');
         $zip = new \ZipArchive();
@@ -817,30 +1157,45 @@ class PointageController extends ApiController
         $workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <sheets>
-<sheet name="' . htmlspecialchars($sheetName) . '" sheetId="1" r:id="rId1"/>
+<sheet name="' . htmlspecialchars($sheetName, ENT_XML1 | ENT_COMPAT, 'UTF-8') . '" sheetId="1" r:id="rId1"/>
 </sheets>
 </workbook>';
         $zip->addFromString('xl/workbook.xml', $workbook);
 
         $styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
-<fonts count="2">
-<font><sz val="11"/><color theme="1"/><name val="Calibri"/><family val="2"/></font>
+<fonts count="3">
+<font><sz val="11"/><color rgb="FF1F2937"/><name val="Calibri"/><family val="2"/></font>
 <font><bold val="1"/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/><family val="2"/></font>
+<font><bold val="1"/><sz val="11"/><color rgb="FF0F172A"/><name val="Calibri"/><family val="2"/></font>
 </fonts>
-<fills count="2">
+<fills count="8">
 <fill><patternFill patternType="none"/></fill>
 <fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF0F2F55"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FF087EA4"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE5F7EC"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFF3D6"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFFFE1E1"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFEAF6FB"/><bgColor indexed="64"/></patternFill></fill>
 </fills>
-<borders count="1">
+<borders count="2">
 <border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color rgb="FFB7DFF2"/></left><right style="thin"><color rgb="FFB7DFF2"/></right><top style="thin"><color rgb="FFB7DFF2"/></top><bottom style="thin"><color rgb="FFB7DFF2"/></bottom><diagonal/></border>
 </borders>
 <cellStyleXfs count="1">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0"/>
 </cellStyleXfs>
-<cellXfs count="2">
+<cellXfs count="9">
 <xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
-<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyFill="1"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="2" fillId="7" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="1" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="5" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="6" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="7" borderId="1" xfId="0" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
 </cellXfs>
 <cellStyles count="1">
 <cellStyle name="Normal" xfId="0" builtinId="0"/>
@@ -871,27 +1226,57 @@ class PointageController extends ApiController
 </a:theme>';
         $zip->addFromString('xl/theme/theme1.xml', $theme);
 
+        $sheetViews = '';
+        if (!empty($options['freeze_row']) && (int) $options['freeze_row'] > 1) {
+            $freezeRow = (int) $options['freeze_row'];
+            $ySplit = $freezeRow - 1;
+            $sheetViews = '<sheetViews><sheetView workbookViewId="0"><pane ySplit="' . $ySplit . '" topLeftCell="A' . $freezeRow . '" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft"/></sheetView></sheetViews>';
+        }
+
+        $cols = '';
+        if (!empty($options['column_widths']) && is_array($options['column_widths'])) {
+            $cols = '<cols>';
+            foreach (array_values($options['column_widths']) as $index => $width) {
+                $column = $index + 1;
+                $cols .= '<col min="' . $column . '" max="' . $column . '" width="' . max(8, (float) $width) . '" customWidth="1"/>';
+            }
+            $cols .= '</cols>';
+        }
+
         $sheet = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' . $sheetViews . $cols . '
 <sheetData>';
 
+        $rowStyles = $options['row_styles'] ?? [];
         foreach ($rows as $rowIndex => $rowData) {
             $sheet .= '<row r="' . ($rowIndex + 1) . '">';
+            $rowStyle = $rowStyles[$rowIndex] ?? (($rowIndex === 0 && !empty($rowData[0])) ? 1 : 7);
             foreach ($rowData as $colIndex => $cellValue) {
                 $col = $this->getColumnLetter($colIndex + 1);
                 $cellRef = $col . ($rowIndex + 1);
-                $cellStyle = ($rowIndex === 0 && !empty($rowData[0])) ? ' s="1"' : '';
+                $cellStyle = ' s="' . (int) $rowStyle . '"';
 
-                if (is_numeric($cellValue)) {
+                if (is_int($cellValue) || is_float($cellValue)) {
                     $sheet .= '<c r="' . $cellRef . '" t="n"' . $cellStyle . '><v>' . $cellValue . '</v></c>';
                 } else {
-                    $sheet .= '<c r="' . $cellRef . '" t="inlineStr"' . $cellStyle . '><is><t>' . htmlspecialchars(strval($cellValue)) . '</t></is></c>';
+                    $text = preg_replace('/[^\P{C}\t\n\r]/u', '', strval($cellValue));
+                    $text = $text === null ? strval($cellValue) : $text;
+                    $sheet .= '<c r="' . $cellRef . '" t="inlineStr"' . $cellStyle . '><is><t>' . htmlspecialchars($text, ENT_XML1 | ENT_COMPAT, 'UTF-8') . '</t></is></c>';
                 }
             }
             $sheet .= '</row>';
         }
 
-        $sheet .= '</sheetData></worksheet>';
+        $sheet .= '</sheetData>';
+
+        if (!empty($options['auto_filter']) && is_array($options['auto_filter'])) {
+            $startRow = (int) ($options['auto_filter']['start_row'] ?? 1);
+            $endRow = (int) ($options['auto_filter']['end_row'] ?? count($rows));
+            $endCol = $this->getColumnLetter((int) ($options['auto_filter']['end_col'] ?? max(1, count($rows[0] ?? []))));
+            $sheet .= '<autoFilter ref="A' . $startRow . ':' . $endCol . max($startRow, $endRow) . '"/>';
+        }
+
+        $sheet .= '</worksheet>';
         $zip->addFromString('xl/worksheets/sheet1.xml', $sheet);
 
         $core = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -945,38 +1330,44 @@ class PointageController extends ApiController
             ->where('statut_demande', 'approuve')
             ->whereDate('date_debut', '<=', $day)
             ->whereDate('date_fin', '>=', $day)
-            ->get(['agent_id', 'type_conge'])
+            ->get(['agent_id', 'type_conge', 'motif', 'observation', 'date_debut', 'date_fin'])
             ->each(function (Holiday $holiday) use (&$absences) {
                 $absences[$holiday->agent_id] = [
                     'type' => 'holiday',
                     'label' => $holiday->getTypeCongeLabel() ?: 'Congé approuvé',
+                    'reason' => $this->firstFilled($holiday->motif, $holiday->observation),
+                    'period' => $this->absencePeriodText($holiday->date_debut, $holiday->date_fin),
+                    'source' => 'Congé RH',
                 ];
             });
 
         AgentStatus::query()
             ->whereIn('agent_id', $agentIds)
-            ->where('statut', 'en_conge')
+            ->whereIn('statut', ['en_conge', 'en_mission', 'en_formation', 'suspendu'])
             ->whereDate('date_debut', '<=', $day)
             ->where(function ($query) use ($day) {
                 $query->whereNull('date_fin')->orWhereDate('date_fin', '>=', $day);
             })
-            ->get(['agent_id', 'statut'])
+            ->get(['agent_id', 'statut', 'motif', 'commentaire', 'date_debut', 'date_fin'])
             ->each(function (AgentStatus $status) use (&$absences) {
                 $absences[$status->agent_id] ??= [
                     'type' => 'agent_status',
-                    'label' => 'Congé actif',
+                    'label' => $status->statut_label ?: 'Absence justifiée',
+                    'reason' => $this->firstFilled($status->motif, $status->commentaire),
+                    'period' => $this->absencePeriodText($status->date_debut, $status->date_fin),
+                    'source' => 'Statut agent',
                 ];
             });
 
         RequestModel::query()
             ->whereIn('agent_id', $agentIds)
             ->whereIn('type', ['absence', 'conge', 'permission'])
-            ->where('statut', 'approuvé')
+            ->whereIn('statut', ['approuvé', 'approuve', 'approuvée', 'approuvee'])
             ->whereDate('date_debut', '<=', $day)
             ->where(function ($query) use ($day) {
                 $query->whereNull('date_fin')->orWhereDate('date_fin', '>=', $day);
             })
-            ->get(['agent_id', 'type'])
+            ->get(['agent_id', 'type', 'description', 'motivation', 'remarques', 'date_debut', 'date_fin'])
             ->each(function (RequestModel $request) use (&$absences) {
                 $label = match ($request->type) {
                     'conge' => 'Demande de congé approuvée',
@@ -986,6 +1377,9 @@ class PointageController extends ApiController
                 $absences[$request->agent_id] ??= [
                     'type' => 'request',
                     'label' => $label,
+                    'reason' => $this->firstFilled($request->description, $request->motivation, $request->remarques),
+                    'period' => $this->absencePeriodText($request->date_debut, $request->date_fin),
+                    'source' => 'Demande RH',
                 ];
             });
 
