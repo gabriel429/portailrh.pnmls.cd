@@ -210,6 +210,8 @@ class TacheController extends ApiController
         $isSENOrSENA = $isSEN || $isSENA;
         $isSEP = $roles->isSepManager($user);
         $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
+        // ✅ AJUSTEMENT RH PROVINCIAL : Le CAF/DAF provincial a les mêmes droits que le SEP
+        $isCAFProvincial = $roles->hasDirecteurOrDafRole($user) && $agent->province_id !== null;
 
         if ($isSEN) {
             $senOrgane         = 'Secrétariat Exécutif National';
@@ -242,6 +244,23 @@ class TacheController extends ApiController
                 ->get(['id', 'titre', 'annee', 'trimestre', 'niveau_administratif'])
                 ->map(fn($a) => ['id' => $a->id, 'titre' => $a->titre, 'annee' => $a->annee, 'trimestre' => $a->trimestre, 'niveau_administratif' => $a->niveau_administratif]);
         } elseif ($isSEP) {
+            if (!$agent || !$agent->province_id) {
+                return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
+            }
+
+            $agentsDisponibles = Agent::actifs()
+                ->where('province_id', $agent->province_id)
+                ->where('id', '!=', $agent->id)
+                ->orderInstitutionally()
+                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
+                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
+                ->get()
+                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
+
+            $activitesPta = $this->resolveProvinceActivitesPta($agent->province_id);
+        // ✅ AJUSTEMENT RH PROVINCIAL : Le CAF/DAF provincial peut aussi attribuer
+        // des tâches à tous les agents de sa province (comme le SEP)
+        } elseif ($isCAFProvincial) {
             if (!$agent || !$agent->province_id) {
                 return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
             }
@@ -416,6 +435,8 @@ class TacheController extends ApiController
         $isSENOrSENA = $isSEN || $isSENA;
         $isSEP = $roles->isSepManager($user);
         $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
+        // ✅ AJUSTEMENT RH PROVINCIAL : Le CAF/DAF provincial a les mêmes droits que le SEP
+        $isCAFProvincial = $roles->hasDirecteurOrDafRole($user) && $agent->province_id !== null;
 
         foreach ($targetAgentIds as $targetAgentId) {
             $targetAgent = $targetAgents->get($targetAgentId);
@@ -444,6 +465,15 @@ class TacheController extends ApiController
                 return response()->json(['message' => 'Vous ne pouvez gérer que les attachés du SEN, les directeurs de département et les SEP.'], 403);
             }
         } elseif ($isSEP) {
+            if (!$agent || !$agent->province_id) {
+                return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
+            }
+            if ((int) $firstTargetAgent->province_id !== (int) $agent->province_id) {
+                return response()->json(['message' => 'Vous ne pouvez assigner des tâches qu\'aux agents de votre province.'], 403);
+            }
+        // ✅ AJUSTEMENT RH PROVINCIAL : Le CAF/DAF peut aussi assigner
+        // des tâches à tous les agents de sa province
+        } elseif ($isCAFProvincial) {
             if (!$agent || !$agent->province_id) {
                 return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
             }
@@ -1244,6 +1274,16 @@ class TacheController extends ApiController
         }
 
         if ($roles->isSepManager($user)) {
+            // ✅ AJUSTEMENT RH PROVINCIAL : Le SEP et le CAF peuvent attribuer
+            // une tâche à n'importe quel agent de leur province,
+            // y compris le Secrétaire Exécutif Local (SEL)
+            return $creatorAgent->province_id
+                && (int) $targetAgent->province_id === (int) $creatorAgent->province_id;
+        }
+
+        // ✅ AJUSTEMENT RH PROVINCIAL : Le CAF peut aussi assigner
+        // à n'importe quel agent de la province
+        if ($roles->hasDirecteurOrDafRole($user)) {
             return $creatorAgent->province_id
                 && (int) $targetAgent->province_id === (int) $creatorAgent->province_id;
         }

@@ -936,6 +936,12 @@ class PointageController extends ApiController
             ->with(['departement:id,nom', 'province:id,nom', 'localite:id,nom'])
             ->orderInstitutionally();
 
+        // ✅ AJUSTEMENT RH PROVINCIAL : Exclure les agents SEL (Secrétariat Exécutif Local)
+        // Les agents SEL sont gérés localement et ne doivent pas apparaître dans les pointages provinciaux
+        if ($scope->isProvincialUser($request->user())) {
+            $query->where('organe', '!=', 'Secrétariat Exécutif Local');
+        }
+
         $scope->applyAgentScope($query, $request->user());
 
         if ($request->filled('agent_id')) {

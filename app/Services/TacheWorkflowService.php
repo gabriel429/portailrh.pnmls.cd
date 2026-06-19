@@ -20,7 +20,7 @@ class TacheWorkflowService
             return 'sen';
         }
 
-        if (app(RoleService::class)->isSepManager($user) || str_contains($organe, 'provincial')) {
+        if (app(RoleService::class)->isSepManager($user) || str_contains($organe, 'provincial') || $user->hasRole('CAF') || $user->hasRole('DAF')) {
             return 'province';
         }
 
@@ -334,8 +334,23 @@ class TacheWorkflowService
         }
 
         if ($level === 'province') {
+            // ✅ AJUSTEMENT RH PROVINCIAL : Le validateur final doit être :
+            // - Le Secrétaire Exécutif Provincial (SEP) OU
+            // - Le Chef de l'Administration et des Finances (CAF/DAF)
+            // Aucun autre profil ne doit être proposé comme validateur final
             return (int) $candidate->province_id === (int) $targetAgent->province_id
-                && $role === 'sep';
+                && (
+                    $role === 'sep'
+                    || $role === 'caf'
+                    || $role === 'daf'
+                    || str_contains($profile, 'chef') && str_contains($poste, 'administration') && str_contains($poste, 'finances')
+                    || str_contains($profile, 'directeur administratif et financier')
+                    || str_contains($profile, 'daf')
+                    || str_contains($profile, 'caf')
+                    || str_contains($organe, 'cellule administrative et financiere')
+                    || str_contains($poste, 'caf')
+                    || str_contains($fonction, 'caf')
+                );
         }
 
         if ($level === 'local') {
