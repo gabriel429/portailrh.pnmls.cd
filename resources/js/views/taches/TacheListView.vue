@@ -456,7 +456,7 @@ const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
 const createPageSubtitle = computed(() => {
   if (createScopeFlags.value.isLocalScope) return 'Assigner une tâche à un agent local de votre ressort.'
-  if (createScopeFlags.value.isProvinceScope) return 'Assigner une tâche à n’importe quel agent du système et organiser son suivi.'
+  if (createScopeFlags.value.isProvinceScope) return 'Assigner une tâche à un agent de la province ou au SEL rattaché.'
   if (createScopeFlags.value.isSENAScope) return 'Assigner une tâche uniquement aux attachés du SEN, aux directeurs de département et aux SEP suivis par le Secrétariat de direction.'
   if (createScopeFlags.value.isSENScope) return 'Assigner une tâche à un agent du Secrétariat exécutif national.'
   return 'Assigner une tâche à un agent de votre département.'
@@ -1705,21 +1705,24 @@ watch(statusFilter, (val) => {
   inset: 0;
   z-index: 1060;
   display: grid;
-  place-items: center;
-  padding: 1rem;
-  background: rgba(15, 23, 42, .48);
-  backdrop-filter: blur(8px);
+  place-items: start center;
+  padding: 1.25rem;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, .52);
+  backdrop-filter: blur(6px);
 }
 
 .task-modal-dialog {
   position: relative;
-  width: min(940px, calc(100vw - 2rem));
-  max-height: calc(100dvh - 2rem);
-  overflow: auto;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, .98);
-  border: 1px solid rgba(226, 232, 240, .95);
-  box-shadow: 0 28px 70px rgba(15, 23, 42, .28);
+  width: min(980px, 100%);
+  max-height: calc(100dvh - 2.5rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 10px;
+  background: #ffffff;
+  border: 1px solid #dbe4ef;
+  box-shadow: 0 24px 56px rgba(15, 23, 42, .22);
 }
 
 .task-modal-close {
@@ -1729,9 +1732,9 @@ watch(statusFilter, (val) => {
   z-index: 2;
   width: 36px;
   height: 36px;
-  border: 1px solid rgba(148, 163, 184, .35);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, .9);
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+  background: #fff;
   color: #475569;
   display: inline-flex;
   align-items: center;
@@ -1746,50 +1749,82 @@ watch(statusFilter, (val) => {
 .task-modal-header {
   display: flex;
   align-items: flex-start;
-  gap: .85rem;
-  padding: 1.35rem 1.5rem 1rem;
-  color: #fff;
-  background:
-    radial-gradient(ellipse at 90% 0%, rgba(255,255,255,.12) 0%, transparent 56%),
-    linear-gradient(135deg, #0a1628 0%, #0f2847 34%, #0c4a6e 66%, #0077B5 100%);
+  gap: .9rem;
+  padding: 1.1rem 1.35rem;
+  color: #0f172a;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .task-modal-icon {
-  width: 44px;
-  height: 44px;
-  flex: 0 0 44px;
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  border-radius: 8px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, .16);
-  border: 1px solid rgba(255, 255, 255, .22);
+  background: #e0f2fe;
+  border: 1px solid #bae6fd;
+  color: #0369a1;
 }
 
 .task-modal-header h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
 .task-modal-header p {
-  margin: .2rem 2.4rem 0 0;
-  color: rgba(255, 255, 255, .78);
+  margin: .25rem 2.4rem 0 0;
+  color: #64748b;
   font-size: .86rem;
 }
 
 .task-create-form {
-  padding: 1.2rem 1.5rem 1.35rem;
+  padding: 1.25rem 1.35rem 1.35rem;
+  overflow-y: auto;
 }
 
 .task-form-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: .95rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.1rem;
+  align-items: start;
+}
+
+.task-form-grid > div {
+  min-width: 0;
+}
+
+.task-create-form .form-label {
+  display: block;
+  margin-bottom: .35rem;
+  color: #334155;
+  font-size: .86rem;
+}
+
+.task-create-form .form-control,
+.task-create-form .form-select {
+  min-height: 42px;
+  border-color: #cbd5e1;
+  border-radius: 8px;
+  color: #0f172a;
+}
+
+.task-create-form textarea.form-control {
+  min-height: 104px;
+  resize: vertical;
+}
+
+.task-create-form select[multiple] {
+  min-height: 142px;
+  padding-top: .55rem;
+  padding-bottom: .55rem;
 }
 
 .task-form-wide {
-  grid-column: span 2;
+  grid-column: 1 / -1;
 }
 
 .task-form-full {
@@ -1803,6 +1838,7 @@ watch(statusFilter, (val) => {
   margin-top: 1.15rem;
   padding-top: 1rem;
   border-top: 1px solid #e2e8f0;
+  background: #fff;
 }
 
 .task-file-list {

@@ -14,6 +14,7 @@ use App\Services\NotificationService;
 use App\Services\RoleService;
 use App\Services\TacheWorkflowService;
 use App\Services\UserDataScope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -247,7 +248,7 @@ class TacheController extends ApiController
                 return response()->json(['message' => 'Vous devez être affecté à une province pour créer des tâches.'], 422);
             }
 
-            $agentsDisponibles = Agent::actifs()
+            $agentsDisponibles = $this->provinceAssignableAgentsQuery((int) $agent->province_id)
                 ->with('role')
                 ->orderInstitutionally()
                 ->get()
@@ -1241,11 +1242,11 @@ class TacheController extends ApiController
         }
 
         if ($roles->isSepManager($user)) {
-            return true;
+            return $this->isProvincialAssignableAgent($creatorAgent, $targetAgent);
         }
 
         if ($roles->isProvincialCafManager($user)) {
-            return true;
+            return $this->isProvincialAssignableAgent($creatorAgent, $targetAgent);
         }
 
         if ($workflow->isSelManager($user) || $workflow->isLocalSupport($user)) {
@@ -1260,6 +1261,90 @@ class TacheController extends ApiController
         }
 
         return (int) $targetAgent->id === (int) $creatorAgent->id;
+    }
+
+    protected function provinceAssignableAgentsQuery(int $provinceId): Builder
+    {
+        return Agent::actifs()
+            ->where('province_id', $provinceId)
+            ->where(function (Builder $query) {
+                $query
+                    ->where(function (Builder $provincial) {
+                        $provincial
+                            ->whereNull('localite_id')
+                            ->where(function (Builder $organe) {
+                                $organe->whereNull('organe')
+                                    ->orWhereRaw('LOWER(organe) NOT LIKE ?', ['%local%']);
+                            })
+                            ->where(function (Builder $organe) {
+                                $organe->whereNull('organe')
+                                    ->orWhereRaw('LOWER(organe) NOT LIKE ?', ['%national%']);
+                            });
+                    })
+                    ->orWhere(function (Builder $localSecretary) {
+                        $localSecretary
+                            ->where(function (Builder $organe) {
+                                $organe->whereNotNull('localite_id')
+                                    ->orWhereRaw('LOWER(organe) LIKE ?', ['%local%']);
+                            })
+                            ->where(function (Builder $profile) {
+                                $profile
+                                    ->whereHas('role', fn(Builder $role) => $role->whereRaw('LOWER(nom_role) = ?', ['sel']))
+                                    ->orWhereRaw('LOWER(fonction) LIKE ?', ['%secr%cutif local%'])
+                                    ->orWhereRaw('LOWER(poste_actuel) LIKE ?', ['%secr%cutif local%'])
+                                    ->orWhereRaw('LOWER(fonction) LIKE ?', ['%(sel)%'])
+                                    ->orWhereRaw('LOWER(poste_actuel) LIKE ?', ['%(sel)%']);
+                            });
+                    });
+            });
+    }
+
+    protected function isProvincialAssignableAgent(Agent $creatorAgent, Agent $targetAgent): bool
+    {
+        if (!$creatorAgent->province_id || !$targetAgent->province_id) {
+            return false;
+        }
+
+        if ((int) $targetAgent->province_id !== (int) $creatorAgent->province_id) {
+            return false;
+        }
+
+        return $this->isProvincialLevelAgent($targetAgent)
+            || $this->isLocalSecretaryAgent($targetAgent);
+    }
+
+    protected function isProvincialLevelAgent(Agent $agent): bool
+    {
+        if ($agent->localite_id) {
+            return false;
+        }
+
+        $organe = $this->normalizeProfileText($agent->organe);
+
+        return !str_contains($organe, 'local')
+            && !str_contains($organe, 'national');
+    }
+
+    protected function isLocalSecretaryAgent(Agent $agent): bool
+    {
+        $organe = $this->normalizeProfileText($agent->organe);
+        $profile = trim(implode(' ', array_filter([
+            $this->normalizeProfileText($agent->role?->nom_role),
+            $this->normalizeProfileText($agent->fonction),
+            $this->normalizeProfileText($agent->poste_actuel),
+        ])));
+
+        return ($agent->localite_id || str_contains($organe, 'local'))
+            && (
+                $profile === 'sel'
+                || str_contains($profile, 'secretaire executif local')
+                || str_contains($profile, '(sel)')
+            );
+    }
+
+    protected function normalizeProfileText(?string $value): string
+    {
+        return strtolower(trim(Str::ascii((string) $value)));
     }
 
     protected function tacheStatutLabel(?string $statut): string
