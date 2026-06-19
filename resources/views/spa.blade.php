@@ -31,14 +31,18 @@
         $viteEntry = null;
         $viteImports = [];
         $viteAsset = fn (string $path) => asset('public/build/' . ltrim($path, '/'));
-        $dashboardCssFiles = [];
+        $pageCssFiles = [];
         $rhModernCssPath = public_path('css/rh-modern.css');
         $rhModernCssVersion = is_file($rhModernCssPath) ? filemtime($rhModernCssPath) : time();
         $manifestPath = public_path('build/manifest.json');
-        $dashboardManifestEntries = [
+        $pageManifestEntries = [
             'resources/js/views/dashboard/DashboardView.vue',
             'resources/js/views/dashboard/RhDashboardView.vue',
         ];
+
+        if (request()->is('taches*')) {
+            $pageManifestEntries[] = 'resources/js/views/taches/TacheListView.vue';
+        }
 
         if (! app()->isLocal() && is_file($manifestPath)) {
             $decodedManifest = json_decode((string) file_get_contents($manifestPath), true);
@@ -54,11 +58,11 @@
             }
 
             if ($manifest !== []) {
-                foreach ($dashboardManifestEntries as $entry) {
+                foreach ($pageManifestEntries as $entry) {
                     foreach (($manifest[$entry]['css'] ?? []) as $cssFile) {
-                        $dashboardCssPath = public_path('build/' . ltrim($cssFile, '/'));
-                        $dashboardCssFiles[$cssFile] = is_file($dashboardCssPath)
-                            ? filemtime($dashboardCssPath)
+                        $pageCssPath = public_path('build/' . ltrim($cssFile, '/'));
+                        $pageCssFiles[$cssFile] = is_file($pageCssPath)
+                            ? filemtime($pageCssPath)
                             : time();
                     }
                 }
@@ -80,8 +84,8 @@
     @endforeach
     <script type="module" src="{{ $viteAsset($viteEntry['file']) }}"></script>
     @endif
-    @foreach ($dashboardCssFiles as $dashboardCssFile => $dashboardCssVersion)
-    <link rel="stylesheet" href="{{ $viteAsset($dashboardCssFile) }}?v={{ $dashboardCssVersion }}">
+    @foreach ($pageCssFiles as $pageCssFile => $pageCssVersion)
+    <link rel="stylesheet" href="{{ $viteAsset($pageCssFile) }}?v={{ $pageCssVersion }}">
     @endforeach
     <link rel="stylesheet" href="{{ asset('css/rh-modern.css') }}?v={{ $rhModernCssVersion }}">
 </head>
