@@ -127,6 +127,30 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        api' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/api.log'),
+            'level' => env('LOG_LEVEL', 'info            'days' => 30,
+            'replace_placeholders' => true,
+        ],
+
+         'critical' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/critical.log'),
+            'level' => 'critical',
+            'days' => 7critical',
+            'days' => 90,
+            'replace_placeholders' => true,
+        ],
+
+        'performance' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/performance.log'),
+            'level' => 'info',
+            'days' => 7,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

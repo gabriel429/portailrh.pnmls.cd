@@ -12,6 +12,42 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     /**
+     * @OA\Post(
+     *     path="/login",
+     *     summary="Connexion utilisateur",
+     *     tags={"Authentication"},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"email", "password"},
+     *             @OA\Property(property="email", type="string", format="email", example="admin@pnmls.cd"),
+     *             @OA\Property(property="password", type="string", format="password", example="password"),
+     *             @OA\Property(property="remember", type="boolean", example=true)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Connexion réussie",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Connexion réussie."),
+     *             @OA\Property(property="user", ref="#/components/schemas/Agent")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Identifiants incorrects"
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Compte gelé"
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Session conflict"
+     *     )
+     * )
+     */
+    /**
      * Detect if a user-agent string comes from a mobile device.
      */
     private function isMobile(string $ua): bool
@@ -193,6 +229,21 @@ class AuthController extends Controller
         }
     }
 
+    /**
+     * @OA\Post(
+     *     path="/logout",
+     *     summary="Déconnexion utilisateur",
+     *     tags={"Authentication"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Déconnexion réussie",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Déconnexion réussie.")
+     *         )
+     *     )
+     * )
+     */
     public function logout(Request $request)
     {
         $sessionId = null;
@@ -215,6 +266,19 @@ class AuthController extends Controller
         return response()->json(['message' => 'Deconnexion reussie.']);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/user",
+     *     summary="Obtenir les informations de l'utilisateur connecté",
+     *     tags={"Authentication"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Informations utilisateur",
+     *         @OA\JsonContent(ref="#/components/schemas/Agent")
+     *     )
+     * )
+     */
     public function user(Request $request)
     {
         $user = $request->user();
