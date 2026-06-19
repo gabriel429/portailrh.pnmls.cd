@@ -456,7 +456,7 @@ const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 
 const createPageSubtitle = computed(() => {
   if (createScopeFlags.value.isLocalScope) return 'Assigner une tâche à un agent local de votre ressort.'
-  if (createScopeFlags.value.isProvinceScope) return 'Assigner une tâche à un agent provincial et organiser son suivi.'
+  if (createScopeFlags.value.isProvinceScope) return 'Assigner une tâche à n’importe quel agent du système et organiser son suivi.'
   if (createScopeFlags.value.isSENAScope) return 'Assigner une tâche uniquement aux attachés du SEN, aux directeurs de département et aux SEP suivis par le Secrétariat de direction.'
   if (createScopeFlags.value.isSENScope) return 'Assigner une tâche à un agent du Secrétariat exécutif national.'
   return 'Assigner une tâche à un agent de votre département.'

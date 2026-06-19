@@ -46,6 +46,7 @@ class TacheWorkflowService
         $roles = app(RoleService::class);
 
         return $roles->hasDirecteurOrDafRole($user)
+            || $roles->isProvincialCafManager($user)
             || $roles->isDepartmentManager($user)
             || $user->hasRole('SEN')
             || $user->hasRole('SENA')
@@ -73,7 +74,7 @@ class TacheWorkflowService
         return match ($tache->validation_responsable_role) {
             'directeur' => $this->isDepartmentPrincipal($user)
                 && (int) $agent->departement_id === (int) $taskAgent->departement_id,
-            'sep' => $this->isSepPrincipal($user)
+            'sep' => ($this->isSepPrincipal($user) || $this->isCafPrincipal($user))
                 && (int) $agent->province_id === (int) $taskAgent->province_id,
             'sel' => $this->isSelManager($user)
                 && (int) $agent->province_id === (int) $taskAgent->province_id
@@ -235,7 +236,7 @@ class TacheWorkflowService
             'sep' => $query
                 ->whereHas('agent', fn($q) => $q->where('province_id', $taskAgent->province_id))
                 ->get()
-                ->filter(fn(User $user) => $this->isSepPrincipal($user)),
+                ->filter(fn(User $user) => $this->isSepPrincipal($user) || $this->isCafPrincipal($user)),
             'sel' => $query
                 ->whereHas('agent', fn($q) => $q->where('province_id', $taskAgent->province_id))
                 ->get()
@@ -334,23 +335,8 @@ class TacheWorkflowService
         }
 
         if ($level === 'province') {
-            // ✅ AJUSTEMENT RH PROVINCIAL : Le validateur final doit être :
-            // - Le Secrétaire Exécutif Provincial (SEP) OU
-            // - Le Chef de l'Administration et des Finances (CAF/DAF)
-            // Aucun autre profil ne doit être proposé comme validateur final
             return (int) $candidate->province_id === (int) $targetAgent->province_id
-                && (
-                    $role === 'sep'
-                    || $role === 'caf'
-                    || $role === 'daf'
-                    || str_contains($profile, 'chef') && str_contains($poste, 'administration') && str_contains($poste, 'finances')
-                    || str_contains($profile, 'directeur administratif et financier')
-                    || str_contains($profile, 'daf')
-                    || str_contains($profile, 'caf')
-                    || str_contains($organe, 'cellule administrative et financiere')
-                    || str_contains($poste, 'caf')
-                    || str_contains($fonction, 'caf')
-                );
+                && ($this->isSepAgent($candidate) || $this->isCafAgent($candidate));
         }
 
         if ($level === 'local') {
@@ -381,7 +367,16 @@ class TacheWorkflowService
 
     public function isSepPrincipal(?User $user): bool
     {
-        return (bool) $user && $this->normalize($user->role?->nom_role) === 'sep';
+        return (bool) $user
+            && $user->agent
+            && $this->isSepAgent($user->agent);
+    }
+
+    public function isCafPrincipal(?User $user): bool
+    {
+        return (bool) $user
+            && $user->agent
+            && $this->isCafAgent($user->agent);
     }
 
     public function isSenPrincipal(?User $user): bool
@@ -429,6 +424,40 @@ class TacheWorkflowService
                 || str_contains($poste, 'assistant administratif et financier')
                 || str_contains($fonction, 'rh local')
                 || str_contains($poste, 'rh local')
+            );
+    }
+
+    private function isSepAgent(Agent $agent): bool
+    {
+        $role = $this->normalize($agent->role?->nom_role);
+        $fonction = $this->normalize($agent->fonction);
+        $poste = $this->normalize($agent->poste_actuel);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste);
+
+        return $role === 'sep'
+            || str_contains($profile, 'secretaire executif provincial')
+            || str_contains($profile, '(sep)');
+    }
+
+    private function isCafAgent(Agent $agent): bool
+    {
+        $role = $this->normalize($agent->role?->nom_role);
+        $fonction = $this->normalize($agent->fonction);
+        $poste = $this->normalize($agent->poste_actuel);
+        $organe = $this->normalize($agent->organe);
+        $departmentCode = $this->normalize($agent->departement?->code);
+        $departmentName = $this->normalize($agent->departement?->nom);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste . ' ' . $departmentCode . ' ' . $departmentName . ' ' . $organe);
+
+        return $role === 'caf'
+            || $departmentCode === 'caf'
+            || str_contains($profile, 'caf')
+            || str_contains($profile, 'cellule administrative et financiere')
+            || str_contains($profile, 'chef de cellule administration et finances')
+            || (
+                str_contains($profile, 'chef')
+                && str_contains($profile, 'administration')
+                && str_contains($profile, 'finances')
             );
     }
 

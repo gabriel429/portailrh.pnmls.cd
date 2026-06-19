@@ -122,6 +122,33 @@ class RoleService
         return str_contains($organe, 'provincial');
     }
 
+    public function isProvincialCafManager(?User $user): bool
+    {
+        $agent = $user?->agent;
+        if (!$user || !$agent || !$agent->province_id) {
+            return false;
+        }
+
+        $role = $this->normalize($user->role?->nom_role);
+        $fonction = $this->normalize($agent->fonction);
+        $poste = $this->normalize($agent->poste_actuel);
+        $deptCode = $this->normalize($agent->departement?->code);
+        $deptName = $this->normalize($agent->departement?->nom);
+        $organe = $this->normalize($agent->organe);
+        $profile = trim($role . ' ' . $fonction . ' ' . $poste . ' ' . $deptCode . ' ' . $deptName . ' ' . $organe);
+
+        return $role === 'caf'
+            || $deptCode === 'caf'
+            || str_contains($profile, 'caf')
+            || str_contains($profile, 'cellule administrative et financiere')
+            || str_contains($profile, 'chef de cellule administration et finances')
+            || (
+                str_contains($profile, 'chef')
+                && str_contains($profile, 'administration')
+                && str_contains($profile, 'finances')
+            );
+    }
+
     public function hasTacheManagerRole(?User $user): bool
     {
         if (!$user) {
@@ -131,6 +158,7 @@ class RoleService
         $workflow = app(TacheWorkflowService::class);
 
         return $this->hasDirecteurOrDafRole($user)
+            || $this->isProvincialCafManager($user)
             || $this->isDepartmentManager($user)
             || $user->hasRole('SEN')
             || $user->hasRole('SENA')

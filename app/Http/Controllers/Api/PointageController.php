@@ -13,6 +13,7 @@ use App\Models\Request as RequestModel;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 
 class PointageController extends ApiController
@@ -288,6 +289,12 @@ class PointageController extends ApiController
             if (!$scope->canAccessAgent($user, $agent)) {
                 return response()->json([
                     'message' => 'Accès refusé pour au moins un agent hors de votre périmètre.',
+                ], 403);
+            }
+
+            if ($scope->isProvincialUser($user) && $this->isLocalAttendanceAgent($agent)) {
+                return response()->json([
+                    'message' => 'Pointage refusé : les agents du Secrétariat Exécutif Local ne peuvent pas être pointés au niveau provincial.',
                 ], 403);
             }
 
@@ -752,6 +759,9 @@ class PointageController extends ApiController
 
             if ($isTerritorialStructure) {
                 $agentsQuery = Agent::actifs()->orderInstitutionally();
+                if ($scope->isProvincialUser($request->user())) {
+                    $this->excludeLocalAttendanceAgents($agentsQuery);
+                }
                 $scope->applyAgentScope($agentsQuery, $request->user());
 
                 $agents = $agentsQuery->get(['id', 'nom', 'prenom', 'postnom', 'poste_actuel']);
@@ -936,10 +946,8 @@ class PointageController extends ApiController
             ->with(['departement:id,nom', 'province:id,nom', 'localite:id,nom'])
             ->orderInstitutionally();
 
-        // ✅ AJUSTEMENT RH PROVINCIAL : Exclure les agents SEL (Secrétariat Exécutif Local)
-        // Les agents SEL sont gérés localement et ne doivent pas apparaître dans les pointages provinciaux
         if ($scope->isProvincialUser($request->user())) {
-            $query->where('organe', '!=', 'Secrétariat Exécutif Local');
+            $this->excludeLocalAttendanceAgents($query);
         }
 
         $scope->applyAgentScope($query, $request->user());
@@ -961,6 +969,39 @@ class PointageController extends ApiController
         }
 
         return $query;
+    }
+
+    private function excludeLocalAttendanceAgents(Builder $query): void
+    {
+        $query->whereNull('localite_id');
+
+        foreach (['organe', 'fonction', 'poste_actuel'] as $column) {
+            $query->where(function (Builder $scope) use ($column) {
+                $scope->whereNull($column)
+                    ->orWhere(function (Builder $filled) use ($column) {
+                        $filled
+                            ->whereRaw("LOWER({$column}) NOT LIKE ?", ['%local%'])
+                            ->whereRaw("LOWER({$column}) NOT LIKE ?", ['%(sel)%']);
+                    });
+            });
+        }
+    }
+
+    private function isLocalAttendanceAgent(?Agent $agent): bool
+    {
+        if (!$agent) {
+            return false;
+        }
+
+        $profile = strtolower(trim(implode(' ', array_filter([
+            $agent->organe,
+            $agent->fonction,
+            $agent->poste_actuel,
+        ]))));
+
+        return (bool) $agent->localite_id
+            || str_contains($profile, 'local')
+            || preg_match('/\bsel\b/', $profile) === 1;
     }
 
     private function buildDailyAttendanceExport($agents, array $agentIds, $pointagesByKey, $pointageDates, Carbon $dateDebut, Carbon $dateFin): array
