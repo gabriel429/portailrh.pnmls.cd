@@ -179,6 +179,14 @@ class DemandeWorkflowService
                             $deptId = $user->agent?->departement_id;
                             $departmentIds = $deptId ? $this->departmentScopeIds((int) $deptId) : [];
                             $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $agentQuery->whereIn('departement_id', $departmentIds));
+                        } elseif ($step === 'rh') {
+                            if (!$this->isNationalRhValidator($user)) {
+                                $stepQuery->whereRaw('1 = 0');
+
+                                return;
+                            }
+
+                            $stepQuery->whereHas('agent', fn(Builder $agentQuery) => $this->applyNationalAgentScope($agentQuery));
                         } elseif ($step === 'sen') {
                             $isSenAssistant = $this->isSenAssistant($user);
 
@@ -466,7 +474,7 @@ class DemandeWorkflowService
                 (int) ($validatorAgent?->departement_id ?? 0),
                 (int) ($agent?->departement_id ?? 0)
             ),
-            'rh' => true,
+            'rh' => $this->isNationalWorkflow($request) && $this->isNationalRhValidator($user),
             'caf' => (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
             'aaf' => str_contains((string) ($validatorAgent?->organe ?? ''), 'Local')
                 && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
@@ -544,9 +552,10 @@ class DemandeWorkflowService
                     'Section ressources humaines',
                     'Chef Section RH',
                     'RH National',
-                    'RH Provincial',
                 ]))
-                ->get(),
+                ->whereHas('agent', fn(Builder $agentQuery) => $this->applyNationalAgentScope($agentQuery))
+                ->get()
+                ->filter(fn(User $user) => $this->matchesStepScope($user, $request, 'rh')),
             'caf' => $query
                 ->whereHas('agent', fn($q) => $q->where('province_id', $agent?->province_id))
                 ->get()
@@ -568,6 +577,67 @@ class DemandeWorkflowService
                     : in_array($this->normalizeValue($user->role?->nom_role), ['sen', 'sena'], true)),
             default => collect(),
         };
+    }
+
+    private function isNationalWorkflow(RequestModel $request): bool
+    {
+        $workflowLevel = $request->workflow_level ?: $this->resolveWorkflowLevel($request);
+
+        return in_array($workflowLevel, [
+            'national_with_department',
+            'national_sen_direct',
+            'absence_national_with_department',
+            'absence_national_sen_direct',
+        ], true);
+    }
+
+    private function isNationalRhValidator(User $user): bool
+    {
+        if (!$this->hasStepRole($user, 'rh')) {
+            return false;
+        }
+
+        $role = $this->normalizeValue($user->role?->nom_role);
+        if ($role === 'rh provincial' || !$this->isNationalAgent($user->agent)) {
+            return false;
+        }
+
+        return in_array($role, [
+            'section ressources humaines',
+            'chef section rh',
+            'rh national',
+        ], true) || $this->isAssistantRh($user);
+    }
+
+    private function isNationalAgent(?Agent $agent): bool
+    {
+        if (!$agent || $agent->province_id || $agent->localite_id) {
+            return false;
+        }
+
+        $organe = $this->normalizeValue($agent->organe);
+
+        return $organe === ''
+            || str_contains($organe, 'national')
+            || (!str_contains($organe, 'provincial') && !str_contains($organe, 'local'));
+    }
+
+    private function applyNationalAgentScope(Builder $query): Builder
+    {
+        return $query
+            ->whereNull('province_id')
+            ->whereNull('localite_id')
+            ->where(function (Builder $scope) {
+                $scope
+                    ->whereNull('organe')
+                    ->orWhere('organe', '')
+                    ->orWhere('organe', 'like', '%National%')
+                    ->orWhere(function (Builder $organeScope) {
+                        $organeScope
+                            ->where('organe', 'not like', '%Provincial%')
+                            ->where('organe', 'not like', '%Local%');
+                    });
+            });
     }
 
     private function isSenAssistant(User $user): bool
