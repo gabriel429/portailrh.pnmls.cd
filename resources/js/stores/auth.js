@@ -367,10 +367,11 @@ export const useAuthStore = defineStore('auth', {
                 this.markSessionHint(true)
                 return data
             } catch (error) {
-                const networkFailed = !error.response
                 const cached = this.cachedUser()
+                const status = error.response?.status
+                const sessionRejected = status === 401 || status === 419
 
-                if (networkFailed && cached) {
+                if (cached && !sessionRejected) {
                     this.user = cached
                     this.markSessionHint(true)
                     return cached
