@@ -11,7 +11,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-06-16-pointage-create-link-v1'
+const BUILD_CACHE_VERSION = '2026-08-08-pwa-precache-v2'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 const APP_SW_PATH = '/sw.js'
 
@@ -53,7 +53,6 @@ async function clearBuildCachesOnVersionChange() {
             navigator.serviceWorker.getRegistrations()
                 .then((registrations) => Promise.all(
                     registrations
-                        .filter((registration) => !isCurrentAppServiceWorker(registration))
                         .map((registration) => registration.unregister().catch(() => false))
                 ))
         )
