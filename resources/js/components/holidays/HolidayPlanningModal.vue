@@ -151,7 +151,7 @@
                       <strong>{{ agentName(entry.agent) }}</strong>
                       <small>{{ entry.agent?.fonction || 'Agent' }}</small>
                     </div>
-                    <div>
+                    <div class="planning-agent-field" data-label="Début">
                       <input
                         v-model="entry.date_debut"
                         type="date"
@@ -162,7 +162,7 @@
                         required
                       />
                     </div>
-                    <div>
+                    <div class="planning-agent-field" data-label="Fin">
                       <input
                         v-model="entry.date_fin"
                         type="date"
@@ -643,7 +643,8 @@ watch(() => props.show, (newValue) => {
 }
 
 .planning-agents-table {
-  overflow: hidden;
+  max-height: min(340px, 42dvh);
+  overflow: auto;
   border: 1px solid #dbe4ef;
   border-radius: 8px;
 }
@@ -663,6 +664,9 @@ watch(() => props.show, (newValue) => {
 }
 
 .planning-agent-labels {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   color: #64748b;
   background: #f8fafc;
   font-size: .76rem;
@@ -696,12 +700,37 @@ watch(() => props.show, (newValue) => {
 }
 
 @media (max-width: 767.98px) {
+  .planning-agents-head {
+    align-items: flex-start;
+  }
+
+  .planning-agents-table {
+    max-height: 55dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
   .planning-agent-labels {
     display: none;
   }
 
   .planning-agent-row {
     grid-template-columns: 1fr;
+    gap: .65rem;
+    margin-bottom: .75rem;
+    border: 1px solid #dbe4ef;
+    border-radius: 8px;
+    padding: .85rem;
+  }
+
+  .planning-agent-field::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: .25rem;
+    color: #64748b;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
   }
 
   .planning-agent-error {
@@ -723,18 +752,43 @@ watch(() => props.show, (newValue) => {
 }
 
 .modal-dialog {
-  width: min(860px, calc(100vw - 2rem));
-  max-width: min(860px, calc(100vw - 2rem));
-  margin: 1.25rem auto;
+  width: min(1080px, 100%);
+  max-width: 1080px;
+  height: 100%;
+  margin: 0 auto;
 }
 
 .modal-content {
-  max-height: calc(100dvh - 2.5rem);
+  height: 100%;
+  max-height: 100%;
   overflow: hidden;
 }
 
+.holiday-planning-modal {
+  --planning-modal-nav-offset: 64px;
+  inset: var(--planning-modal-nav-offset) 0 0;
+  width: auto;
+  height: auto;
+  padding: 1rem;
+  overflow: hidden;
+}
+
+.modal-content > form {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .modal-body {
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.modal-header,
+.modal-footer {
+  flex: 0 0 auto;
 }
 
 .form-label.small {
@@ -759,10 +813,33 @@ watch(() => props.show, (newValue) => {
 
 /* Responsive */
 @media (max-width: 768px) {
+  .holiday-planning-modal {
+    --planning-modal-nav-offset: 58px;
+    padding: .5rem;
+  }
+
   .modal-dialog {
-    margin: 0.5rem;
-    width: calc(100% - 1rem);
-    max-width: calc(100% - 1rem);
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .modal-header,
+  .modal-body,
+  .modal-footer {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .modal-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .5rem;
+  }
+
+  .modal-footer .btn {
+    min-width: 0;
+    margin: 0;
   }
 
   .fermeture-item .row {
