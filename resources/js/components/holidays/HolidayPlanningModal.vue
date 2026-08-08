@@ -130,6 +130,63 @@
                 </small>
               </div>
 
+              <div class="col-12">
+                <div class="planning-agents-head">
+                  <div>
+                    <label class="form-label required mb-1">Agents et échéances de congé</label>
+                    <small class="text-muted d-block">Renseignez la période annuelle de chaque agent avant de créer le planning.</small>
+                  </div>
+                  <span class="badge bg-primary">{{ form.entries.length }} agent(s)</span>
+                </div>
+
+                <div v-if="form.entries.length" class="planning-agents-table">
+                  <div class="planning-agent-row planning-agent-labels">
+                    <span>Agent</span>
+                    <span>Début</span>
+                    <span>Fin</span>
+                    <span>Jours ouvrables</span>
+                  </div>
+                  <div v-for="(entry, index) in form.entries" :key="entry.agent_id" class="planning-agent-row">
+                    <div class="planning-agent-name">
+                      <strong>{{ agentName(entry.agent) }}</strong>
+                      <small>{{ entry.agent?.fonction || 'Agent' }}</small>
+                    </div>
+                    <div>
+                      <input
+                        v-model="entry.date_debut"
+                        type="date"
+                        class="form-control form-control-sm"
+                        :class="{ 'is-invalid': entryError(index, 'date_debut') }"
+                        :min="`${form.annee}-01-01`"
+                        :max="`${form.annee}-12-31`"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <input
+                        v-model="entry.date_fin"
+                        type="date"
+                        class="form-control form-control-sm"
+                        :class="{ 'is-invalid': entryError(index, 'date_fin') }"
+                        :min="entry.date_debut || `${form.annee}-01-01`"
+                        :max="`${form.annee}-12-31`"
+                        required
+                      />
+                    </div>
+                    <div class="planning-agent-days" :class="{ invalid: entry.date_debut && entry.date_fin && entryWorkingDays(entry) < 1 }">
+                      {{ entryWorkingDays(entry) }} jour(s)
+                    </div>
+                    <div v-if="entryError(index, 'agent_id') || entryError(index, 'date_debut') || entryError(index, 'date_fin')" class="planning-agent-error">
+                      {{ entryError(index, 'agent_id') || entryError(index, 'date_debut') || entryError(index, 'date_fin') }}
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="alert alert-warning mb-0">
+                  <i class="fas fa-exclamation-triangle me-1"></i>
+                  Aucun agent actif n’est rattaché à votre périmètre. Le planning ne peut pas être créé.
+                </div>
+              </div>
+
               <!-- Périodes de fermeture -->
               <div class="col-12">
                 <label class="form-label">Périodes de fermeture obligatoire</label>
@@ -282,9 +339,17 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  agents: {
+    type: Array,
+    default: () => []
+  },
   scopeInfo: {
     type: Object,
     default: () => ({ is_provincial: false, province_id: null, province_nom: null })
+  },
+  workflow: {
+    type: Object,
+    default: () => ({ responsibility: null })
   }
 })
 
@@ -302,6 +367,7 @@ const form = ref({
   structure_id: '',
   nom_structure: '',
   jours_conge_totaux: 30,
+  entries: [],
   periods_fermeture: [],
   notes: ''
 })
@@ -323,7 +389,9 @@ const isFormValid = computed(() => {
   return form.value.annee &&
          form.value.type_structure &&
          (form.value.structure_id || form.value.nom_structure) &&
-         form.value.jours_conge_totaux > 0
+         form.value.jours_conge_totaux > 0 &&
+         form.value.entries.length > 0 &&
+         form.value.entries.every(entry => entry.date_debut && entry.date_fin && entryWorkingDays(entry) > 0)
 })
 
 // Méthodes
@@ -336,6 +404,65 @@ function getStructureLabel() {
     'local': 'Structure Locale'
   }
   return labels[form.value.type_structure] || 'Structure'
+}
+
+function agentName(agent) {
+  return agent?.nom_complet || [agent?.prenom, agent?.nom, agent?.postnom].filter(Boolean).join(' ') || 'Agent'
+}
+
+function entryError(index, field) {
+  const value = errors.value[`entries.${index}.${field}`]
+  return Array.isArray(value) ? value[0] : value || ''
+}
+
+function entryWorkingDays(entry) {
+  if (!entry.date_debut || !entry.date_fin) return 0
+  const start = new Date(`${entry.date_debut}T00:00:00`)
+  const end = new Date(`${entry.date_fin}T00:00:00`)
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 0
+
+  let days = 0
+  const current = new Date(start)
+  while (current <= end) {
+    if (current.getDay() !== 0 && current.getDay() !== 6) days++
+    current.setDate(current.getDate() + 1)
+  }
+  return days
+}
+
+function resetEntries() {
+  const type = form.value.type_structure
+  const structureId = Number(form.value.structure_id)
+  const scopedAgents = props.agents.filter(agent => {
+    if (!type || !structureId) return true
+    if (type === 'department') return Number(agent.departement_id) === structureId
+    if (type === 'sep' || type === 'local') return Number(agent.province_id) === structureId
+    if (type === 'sen' || type === 'sena') return !agent.province_id
+    return false
+  })
+
+  form.value.entries = scopedAgents.map(agent => ({
+    agent_id: agent.id,
+    agent,
+    date_debut: '',
+    date_fin: '',
+    observation: ''
+  }))
+}
+
+function applyResponsibility() {
+  const responsibility = props.workflow?.responsibility
+  if (!responsibility) return
+
+  form.value.type_structure = responsibility.type
+  form.value.structure_id = responsibility.structure_id
+
+  if (responsibility.type === 'department') {
+    form.value.nom_structure = props.departments.find(item => item.id == responsibility.structure_id)?.nom || responsibility.label
+  } else {
+    const province = props.provinces.find(item => item.id == responsibility.structure_id)
+    form.value.nom_structure = `${responsibility.type === 'local' ? 'SEL' : 'SEP'} ${province?.nom || responsibility.label}`
+  }
 }
 
 function onStructureTypeChange() {
@@ -358,6 +485,8 @@ function onStructureTypeChange() {
     form.value.structure_id = props.scopeInfo.province_id
     form.value.nom_structure = 'SEL ' + props.scopeInfo.province_nom
   }
+
+  resetEntries()
 }
 
 function onProvinceChange() {
@@ -366,6 +495,7 @@ function onProvinceChange() {
   if (prov) {
     form.value.nom_structure = type === 'local' ? 'SEL ' + prov.nom : 'SEP ' + prov.nom
   }
+  resetEntries()
 }
 
 function onStructureChange() {
@@ -375,6 +505,7 @@ function onStructureChange() {
       form.value.nom_structure = dept.nom
     }
   }
+  resetEntries()
 }
 
 function onStructureNameChange() {
@@ -467,9 +598,12 @@ watch(() => props.show, (newValue) => {
       structure_id: '',
       nom_structure: '',
       jours_conge_totaux: 30,
+      entries: [],
       periods_fermeture: [],
       notes: ''
     }
+    resetEntries()
+    applyResponsibility()
     errors.value = {}
   }
 })
@@ -498,6 +632,81 @@ watch(() => props.show, (newValue) => {
 
 .fermeture-item:last-child {
   margin-bottom: 0;
+}
+
+.planning-agents-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: .75rem;
+}
+
+.planning-agents-table {
+  overflow: hidden;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+}
+
+.planning-agent-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) minmax(140px, 1fr) minmax(140px, 1fr) 110px;
+  align-items: center;
+  gap: .75rem;
+  padding: .75rem;
+  background: #fff;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.planning-agent-row:last-child {
+  border-bottom: 0;
+}
+
+.planning-agent-labels {
+  color: #64748b;
+  background: #f8fafc;
+  font-size: .76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.planning-agent-name,
+.planning-agent-name small {
+  display: block;
+  min-width: 0;
+}
+
+.planning-agent-name small {
+  color: #64748b;
+}
+
+.planning-agent-days {
+  color: #166534;
+  font-weight: 800;
+}
+
+.planning-agent-days.invalid,
+.planning-agent-error {
+  color: #b91c1c;
+}
+
+.planning-agent-error {
+  grid-column: 2 / -1;
+  font-size: .78rem;
+}
+
+@media (max-width: 767.98px) {
+  .planning-agent-labels {
+    display: none;
+  }
+
+  .planning-agent-row {
+    grid-template-columns: 1fr;
+  }
+
+  .planning-agent-error {
+    grid-column: 1;
+  }
 }
 
 .planning-preview {

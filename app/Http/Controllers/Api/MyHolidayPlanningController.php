@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agent;
 use App\Models\HolidayPlanning;
 use App\Models\Holiday;
+use App\Services\HolidayPlanningWorkflowService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 
@@ -18,6 +19,7 @@ class MyHolidayPlanningController extends Controller
     {
         $user = $request->user();
         $agent = $user->agent;
+        $canManagePlanning = app(HolidayPlanningWorkflowService::class)->canAccessModule($user);
 
         if (!$agent) {
             return response()->json(['message' => 'Aucun agent associé à ce compte.'], 404);
@@ -31,6 +33,7 @@ class MyHolidayPlanningController extends Controller
                 'planning' => null,
                 'colleagues' => [],
                 'stats' => null,
+                'can_manage_planning' => $canManagePlanning,
                 'message' => 'Votre structure n\'a pas pu être identifiée. Veuillez contacter la Section RH.',
             ]);
         }
@@ -44,6 +47,7 @@ class MyHolidayPlanningController extends Controller
                 'planning' => null,
                 'colleagues' => [],
                 'stats' => null,
+                'can_manage_planning' => $canManagePlanning,
                 'message' => 'Le module congés n\'est pas encore déployé.',
             ]);
         }
@@ -133,6 +137,7 @@ class MyHolidayPlanningController extends Controller
             'stats' => $stats,
             'my_holidays' => $myHolidays,
             'my_interims' => $myInterims,
+            'can_manage_planning' => $canManagePlanning,
             'year' => (int) $year,
         ]);
     }

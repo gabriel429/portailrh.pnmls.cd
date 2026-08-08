@@ -1693,8 +1693,9 @@ watch(statusFilter, (val) => {
 }
 
 .task-modal-overlay {
+  --task-modal-nav-offset: 62px;
   position: fixed;
-  inset: 0;
+  inset: var(--task-modal-nav-offset) 0 0;
   z-index: 1060;
   display: grid;
   place-items: start center;
@@ -1707,7 +1708,7 @@ watch(statusFilter, (val) => {
 .task-modal-dialog {
   position: relative;
   width: min(980px, 100%);
-  max-height: calc(100dvh - 2.5rem);
+  max-height: calc(100dvh - var(--task-modal-nav-offset) - 2.5rem);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1876,7 +1877,7 @@ watch(statusFilter, (val) => {
 
   .task-modal-dialog {
     width: calc(100vw - 1rem);
-    max-height: calc(100dvh - 1rem);
+    max-height: calc(100dvh - var(--task-modal-nav-offset) - 1rem);
     border-radius: 14px;
   }
 

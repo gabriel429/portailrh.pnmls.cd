@@ -18,6 +18,9 @@
                   <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
                 </select>
               </div>
+              <router-link v-if="canManagePlanning" :to="{ name: 'rh.holidays.planning' }" class="btn-rh main">
+                <i class="fas fa-calendar-plus me-1"></i> Gérer le planning
+              </router-link>
               <router-link :to="{ name: 'dashboard' }" class="btn-rh alt">
                 <i class="fas fa-arrow-left me-1"></i> Retour
               </router-link>
@@ -287,6 +290,7 @@ const planning = ref(null)
 const colleagues = ref([])
 const myHolidays = ref([])
 const myInterims = ref([])
+const canManagePlanning = ref(false)
 const stats = ref({ jours_totaux: 0, jours_utilises: 0, jours_restants: 0, taux: 0 })
 
 const years = computed(() => {
@@ -330,6 +334,7 @@ async function loadPlanning() {
     colleagues.value = data.colleagues || []
     myHolidays.value = data.my_holidays || []
     myInterims.value = data.my_interims || []
+    canManagePlanning.value = !!data.can_manage_planning
     if (data.stats) {
       stats.value = data.stats
     }

@@ -48,7 +48,8 @@ class HolidayPlanningWorkflowService
                 'level' => 'national',
                 'type' => 'department',
                 'structure_id' => (int) $agent->departement_id,
-                'label' => str_contains($profile, 'direction') ? 'Direction' : 'Département',
+                'label' => $agent->departement?->nom
+                    ?? (str_contains($profile, 'direction') ? 'Direction' : 'Département'),
             ];
         }
 
@@ -57,7 +58,7 @@ class HolidayPlanningWorkflowService
                 'level' => 'provincial',
                 'type' => 'sep',
                 'structure_id' => (int) $agent->province_id,
-                'label' => 'Province',
+                'label' => $agent->province?->nom ?? 'Province',
             ];
         }
 
@@ -66,7 +67,7 @@ class HolidayPlanningWorkflowService
                 'level' => 'local',
                 'type' => 'local',
                 'structure_id' => (int) $agent->province_id,
-                'label' => 'SEL',
+                'label' => $agent->province?->nom ?? 'SEL',
             ];
         }
 

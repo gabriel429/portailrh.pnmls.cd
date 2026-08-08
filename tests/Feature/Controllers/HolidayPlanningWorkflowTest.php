@@ -19,6 +19,94 @@ class HolidayPlanningWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_initiator_receives_creation_capability_and_scoped_agents(): void
+    {
+        $department = $this->department('SCOPE');
+        $otherDepartment = $this->department('OTHER');
+        $assistant = $this->userWithRole('Assistant de Département', [
+            'departement_id' => $department->id,
+            'fonction' => 'Assistant de Département',
+        ]);
+        $employee = $this->userWithRole('Agent scope', ['departement_id' => $department->id]);
+        $outsideEmployee = $this->userWithRole('Agent outside', ['departement_id' => $otherDepartment->id]);
+
+        Sanctum::actingAs($assistant);
+
+        $response = $this->getJson('/api/holiday-plannings?year=' . now()->year)
+            ->assertOk()
+            ->assertJsonPath('workflow.can_create', true)
+            ->assertJsonPath('workflow.responsibility.type', 'department');
+
+        $agentIds = collect($response->json('agents'))->pluck('id');
+        $this->assertTrue($agentIds->contains($employee->agent->id));
+        $this->assertFalse($agentIds->contains($outsideEmployee->agent->id));
+    }
+
+    public function test_planning_creation_rejects_an_agent_outside_the_structure_without_writing(): void
+    {
+        $department = $this->department('IN');
+        $otherDepartment = $this->department('OUT');
+        $assistant = $this->userWithRole('Assistant de Département', [
+            'departement_id' => $department->id,
+            'fonction' => 'Assistant de Département',
+        ]);
+        $outsideEmployee = $this->userWithRole('Agent outside planning', [
+            'departement_id' => $otherDepartment->id,
+        ]);
+        [$start, $end] = $this->annualPlanningPeriod();
+        $entries = $this->entriesForStructure('department', $department->id, $start, $end);
+        $outsideEntryIndex = count($entries);
+        $entries[] = [
+            'agent_id' => $outsideEmployee->agent->id,
+            'date_debut' => $start->toDateString(),
+            'date_fin' => $end->toDateString(),
+        ];
+
+        Sanctum::actingAs($assistant);
+
+        $this->postJson('/api/holiday-plannings', [
+            'annee' => now()->year,
+            'type_structure' => 'department',
+            'structure_id' => $department->id,
+            'nom_structure' => $department->nom,
+            'jours_conge_totaux' => 30,
+            'entries' => $entries,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors("entries.{$outsideEntryIndex}.agent_id");
+
+        $this->assertDatabaseCount('holiday_plannings', 0);
+        $this->assertDatabaseCount('holidays', 0);
+    }
+
+    public function test_planning_creation_requires_dates_for_every_active_agent_in_the_structure(): void
+    {
+        $department = $this->department('COMPLETE');
+        $assistant = $this->userWithRole('Assistant de Département', [
+            'departement_id' => $department->id,
+            'fonction' => 'Assistant de Département',
+        ]);
+        $this->userWithRole('Agent without dates', ['departement_id' => $department->id]);
+        [$start, $end] = $this->annualPlanningPeriod();
+
+        Sanctum::actingAs($assistant);
+
+        $this->postJson('/api/holiday-plannings', [
+            'annee' => now()->year,
+            'type_structure' => 'department',
+            'structure_id' => $department->id,
+            'nom_structure' => $department->nom,
+            'jours_conge_totaux' => 30,
+            'entries' => [[
+                'agent_id' => $assistant->agent->id,
+                'date_debut' => $start->toDateString(),
+                'date_fin' => $end->toDateString(),
+            ]],
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('entries');
+
+        $this->assertDatabaseCount('holiday_plannings', 0);
+    }
+
     public function test_department_planning_follows_submission_and_validation_workflow(): void
     {
         $department = $this->department('PLAN');
@@ -29,6 +117,11 @@ class HolidayPlanningWorkflowTest extends TestCase
         $director = $this->userWithRole('Directeur de département', [
             'departement_id' => $department->id,
         ]);
+        $employee = $this->userWithRole('Agent', [
+            'departement_id' => $department->id,
+        ]);
+        [$start, $end] = $this->annualPlanningPeriod();
+        $entries = $this->entriesForStructure('department', $department->id, $start, $end);
 
         Sanctum::actingAs($assistant);
         $planningId = $this->postJson('/api/holiday-plannings', [
@@ -37,9 +130,18 @@ class HolidayPlanningWorkflowTest extends TestCase
             'structure_id' => $department->id,
             'nom_structure' => $department->nom,
             'jours_conge_totaux' => 30,
+            'entries' => $entries,
         ])->assertCreated()
             ->assertJsonPath('planning.statut', 'brouillon')
             ->json('planning.id');
+
+        $this->assertDatabaseHas('holidays', [
+            'holiday_planning_id' => $planningId,
+            'agent_id' => $employee->agent->id,
+            'date_debut' => $start->toDateString(),
+            'date_fin' => $end->toDateString(),
+            'statut_demande' => 'en_attente',
+        ]);
 
         $this->postJson("/api/holiday-plannings/{$planningId}/submit")
             ->assertOk()
@@ -267,17 +369,44 @@ class HolidayPlanningWorkflowTest extends TestCase
 
     private function createAndSubmitPlanning(string $type, int $structureId, string $name): int
     {
+        $agentAttributes = in_array($type, ['sep', 'local'], true)
+            ? ['province_id' => $structureId]
+            : ['departement_id' => $structureId];
+        $employee = $this->userWithRole('Agent planning', $agentAttributes);
+        [$start, $end] = $this->annualPlanningPeriod();
         $planningId = $this->postJson('/api/holiday-plannings', [
             'annee' => now()->year,
             'type_structure' => $type,
             'structure_id' => $structureId,
             'nom_structure' => $name,
             'jours_conge_totaux' => 30,
+            'entries' => $this->entriesForStructure($type, $structureId, $start, $end),
         ])->assertCreated()->json('planning.id');
 
         $this->postJson("/api/holiday-plannings/{$planningId}/submit")->assertOk();
 
         return $planningId;
+    }
+
+    private function annualPlanningPeriod(): array
+    {
+        $start = now()->setDate(now()->year, 6, 2)->startOfDay();
+
+        return [$start, $start->copy()->addWeekdays(4)];
+    }
+
+    private function entriesForStructure(string $type, int $structureId, $start, $end): array
+    {
+        $query = Agent::query()->where('statut', 'actif');
+        in_array($type, ['sep', 'local'], true)
+            ? $query->where('province_id', $structureId)
+            : $query->where('departement_id', $structureId);
+
+        return $query->pluck('id')->map(fn ($agentId) => [
+            'agent_id' => $agentId,
+            'date_debut' => $start->toDateString(),
+            'date_fin' => $end->toDateString(),
+        ])->all();
     }
 
     private function userWithRole(string $roleName, array $agentAttributes = []): User

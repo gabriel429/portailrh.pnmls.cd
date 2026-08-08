@@ -393,7 +393,7 @@ const routes = [
         path: '/rh/holidays/planning',
         name: 'rh.holidays.planning',
         component: () => import('@/views/rh/holidays/HolidayPlanningView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
+        meta: { auth: true },
     },
     {
         path: '/rh/holidays/planning/:id/edit',

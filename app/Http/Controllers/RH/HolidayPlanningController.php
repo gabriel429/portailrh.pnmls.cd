@@ -16,6 +16,7 @@ use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use App\Models\User;
 
 class HolidayPlanningController extends Controller
@@ -142,11 +143,17 @@ class HolidayPlanningController extends Controller
         $holidays = $holidaysQuery->orderBy('date_debut', 'desc')
             ->paginate(20);
 
-        // Liste des agents pour le formulaire d'ajout de congé (scoped)
+        $responsibility = $this->workflow()->responsibilityFor($user);
+
+        // Liste des agents à intégrer au planning de la structure de l'initiateur.
         $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id', 'departement_id')
             ->where('statut', 'actif')
             ->orderInstitutionally();
-        if ($provinceId) {
+        if ($responsibility && $responsibility['type'] === 'department') {
+            $agentsQuery->where('departement_id', $responsibility['structure_id']);
+        } elseif ($responsibility && in_array($responsibility['type'], ['sep', 'local'], true)) {
+            $agentsQuery->where('province_id', $responsibility['structure_id']);
+        } elseif ($provinceId) {
             $agentsQuery->where('province_id', $provinceId);
         }
         $agents = $this->entitlementService()->enrichAgents($agentsQuery->get(), (int) $year);
@@ -172,8 +179,14 @@ class HolidayPlanningController extends Controller
                 'province_nom' => $provinceId ? Province::find($provinceId)?->nom : null,
             ],
             'workflow' => [
-                'can_create' => (bool) $user?->agent && !$this->workflow()->isRh($user),
+                'can_create' => $user->isSuperAdmin() || ($responsibility
+                    && $this->workflow()->canInitiate(
+                        $user,
+                        $responsibility['level'],
+                        $responsibility['structure_id'],
+                    )),
                 'user_role' => $user?->role?->nom_role,
+                'responsibility' => $responsibility,
             ],
         ]);
     }
@@ -301,7 +314,12 @@ class HolidayPlanningController extends Controller
             'periods_fermeture' => 'nullable|array',
             'periods_fermeture.*.start' => 'required_with:periods_fermeture|date',
             'periods_fermeture.*.end' => 'required_with:periods_fermeture|date|after_or_equal:periods_fermeture.*.start',
-            'notes' => 'nullable|string|max:1000'
+            'notes' => 'nullable|string|max:1000',
+            'entries' => 'required|array|min:1',
+            'entries.*.agent_id' => 'required|integer|distinct|exists:agents,id',
+            'entries.*.date_debut' => 'required|date',
+            'entries.*.date_fin' => 'required|date|after_or_equal:entries.*.date_debut',
+            'entries.*.observation' => 'nullable|string|max:1000',
         ]);
 
         $validated['niveau_administratif'] = $this->workflow()->levelFor($validated['type_structure']);
@@ -344,12 +362,102 @@ class HolidayPlanningController extends Controller
         $validated['statut'] = HolidayPlanning::STATUT_BROUILLON;
         $validated['valide'] = false;
 
-        $planning = HolidayPlanning::create($validated);
+        $entries = $validated['entries'];
+        unset($validated['entries']);
+
+        $expectedAgentIds = $this->agentsForStructure(
+            $validated['type_structure'],
+            (int) $validated['structure_id'],
+        )->pluck('id')->sort()->values();
+        $submittedAgentIds = collect($entries)->pluck('agent_id')->map(fn ($id) => (int) $id)->sort()->values();
+        $missingAgentIds = $expectedAgentIds->diff($submittedAgentIds);
+        if ($missingAgentIds->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'entries' => 'Une période de congé doit être renseignée pour chaque agent actif de la structure.',
+            ]);
+        }
+
+        foreach ($entries as $index => $entry) {
+            $agent = Agent::findOrFail($entry['agent_id']);
+            if ($agent->statut !== 'actif' || !$this->agentBelongsToStructure($agent, $validated['type_structure'], (int) $validated['structure_id'])) {
+                throw ValidationException::withMessages([
+                    "entries.{$index}.agent_id" => 'Cet agent n’appartient pas à la structure du planning.',
+                ]);
+            }
+
+            $start = Carbon::parse($entry['date_debut']);
+            $end = Carbon::parse($entry['date_fin']);
+            if ($start->year !== (int) $validated['annee'] || $end->year !== (int) $validated['annee']) {
+                throw ValidationException::withMessages([
+                    "entries.{$index}.date_debut" => 'Les dates doivent appartenir à l’année du planning.',
+                ]);
+            }
+
+            $workingDays = Holiday::calculateWorkingDays($start, $end);
+            if ($workingDays < 1 || $workingDays > (int) $validated['jours_conge_totaux']) {
+                throw ValidationException::withMessages([
+                    "entries.{$index}.date_fin" => 'La période doit contenir entre 1 et ' . $validated['jours_conge_totaux'] . ' jours ouvrables.',
+                ]);
+            }
+
+            if (Holiday::hasConflict($agent->id, $start, $end)) {
+                throw ValidationException::withMessages([
+                    "entries.{$index}.date_debut" => 'Cet agent possède déjà un congé approuvé sur cette période.',
+                ]);
+            }
+        }
+
+        $planning = DB::transaction(function () use ($validated, $entries) {
+            $planning = HolidayPlanning::create($validated);
+
+            foreach ($entries as $entry) {
+                $start = Carbon::parse($entry['date_debut']);
+                $end = Carbon::parse($entry['date_fin']);
+
+                Holiday::create([
+                    'agent_id' => $entry['agent_id'],
+                    'holiday_planning_id' => $planning->id,
+                    'date_debut' => $start,
+                    'date_fin' => $end,
+                    'nombre_jours' => Holiday::calculateWorkingDays($start, $end),
+                    'date_retour_prevu' => Holiday::nextWorkingDayAfter($end),
+                    'type_conge' => 'annuel',
+                    'motif' => $entry['observation'] ?? 'Congé annuel planifié',
+                    'observation' => $entry['observation'] ?? null,
+                    'demande_par' => auth()->user()->agent->id,
+                    'statut_demande' => 'en_attente',
+                ]);
+            }
+
+            return $planning;
+        });
 
         return response()->json([
             'message' => 'Planning créé avec succès',
-            'planning' => $planning->load('createdBy')
+            'planning' => $planning->load(['createdBy', 'holidays.agent'])
         ], 201);
+    }
+
+    private function agentBelongsToStructure(Agent $agent, string $type, int $structureId): bool
+    {
+        return match ($type) {
+            'department' => (int) $agent->departement_id === $structureId,
+            'sep', 'local' => (int) $agent->province_id === $structureId,
+            'sen', 'sena' => !$agent->province_id,
+            default => false,
+        };
+    }
+
+    private function agentsForStructure(string $type, int $structureId)
+    {
+        $query = Agent::query()->where('statut', 'actif');
+
+        return match ($type) {
+            'department' => $query->where('departement_id', $structureId),
+            'sep', 'local' => $query->where('province_id', $structureId),
+            'sen', 'sena' => $query->whereNull('province_id'),
+            default => $query->whereRaw('1 = 0'),
+        };
     }
 
     /**

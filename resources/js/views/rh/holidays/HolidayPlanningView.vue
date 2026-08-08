@@ -397,7 +397,7 @@
             </div>
             <h5>Aucun planning créé</h5>
             <p class="text-muted mb-3">Créez un planning pour commencer à gérer les congés</p>
-            <button @click="showCreateModal = true" class="btn btn-primary">
+            <button v-if="workflow.can_create" @click="showCreateModal = true" class="btn btn-primary">
               <i class="fas fa-plus me-1"></i> Créer un planning
             </button>
           </div>
@@ -426,7 +426,9 @@
       :show="showCreateModal"
       :departments="departments"
       :provinces="provinces"
+      :agents="agents"
       :scope-info="scopeInfo"
+      :workflow="workflow"
       @close="showCreateModal = false"
       @created="onPlanningCreated"
     />
