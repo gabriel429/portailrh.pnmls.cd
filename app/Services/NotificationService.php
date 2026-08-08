@@ -79,6 +79,14 @@ class NotificationService
             'icone' => 'fa-calendar-day',
             'couleur' => '#c2410c',
         ],
+        'holiday_planning_required_actor' => [
+            'icone' => 'fa-calendar-exclamation',
+            'couleur' => '#dc2626',
+        ],
+        'holiday_planning_unavailable' => [
+            'icone' => 'fa-calendar-xmark',
+            'couleur' => '#0369a1',
+        ],
     ];
 
     /**

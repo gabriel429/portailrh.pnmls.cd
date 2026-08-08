@@ -16,6 +16,7 @@ class Tache extends Model
         'createur_id',
         'agent_id',
         'assignment_group',
+        'system_key',
         'titre',
         'description',
         'source_type',

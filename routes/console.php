@@ -473,4 +473,7 @@ Artisan::command('mail:sync-replies {--limit= : Nombre max de mails traites}', f
 })->purpose('Lit la boite IMAP des reponses et notifie les expediteurs concernes');
 
 Schedule::command('mail:sync-replies')->everyFiveMinutes();
+Schedule::command('holidays:generate-planning-requirements')
+	->dailyAt('06:30')
+	->withoutOverlapping();
 Schedule::command('holidays:send-departure-alerts')->dailyAt('07:00')->withoutOverlapping();

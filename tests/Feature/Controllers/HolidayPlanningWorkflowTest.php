@@ -6,8 +6,10 @@ use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\HolidayPlanning;
+use App\Models\NotificationPortail;
 use App\Models\Province;
 use App\Models\Role;
+use App\Models\Tache;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -196,6 +198,71 @@ class HolidayPlanningWorkflowTest extends TestCase
             $notificationCount,
             \App\Models\NotificationPortail::where('type', 'holiday_departure_reminder')->count(),
         );
+    }
+
+    public function test_t1_requirement_is_idempotent_and_closes_after_validation(): void
+    {
+        $department = $this->department('DIR');
+        $operationalDepartment = $this->department('OPS');
+        $province = $this->province('T1P');
+        $localProvince = $this->province('T1L');
+        $assistant = $this->userWithRole('Assistant de Direction', [
+            'departement_id' => $department->id,
+            'fonction' => 'Assistant de Direction',
+        ]);
+        $employee = $this->userWithRole('Agent', ['departement_id' => $department->id]);
+        $director = $this->userWithRole('Directeur', ['departement_id' => $department->id]);
+        $departmentAssistant = $this->userWithRole('Assistant de Département', [
+            'departement_id' => $operationalDepartment->id,
+            'fonction' => 'Assistant de Département',
+        ]);
+        $caf = $this->userWithRole('CAF', ['province_id' => $province->id]);
+        $localSupport = $this->userWithRole('Agent', [
+            'province_id' => $localProvince->id,
+            'organe' => 'Secrétariat Exécutif Local',
+            'fonction' => 'Assistant administratif et financier',
+        ]);
+        $scopeKey = 'holiday-planning:' . now()->year . ":department:{$department->id}";
+
+        $this->artisan('holidays:generate-planning-requirements', ['--force' => true])->assertSuccessful();
+        $this->artisan('holidays:generate-planning-requirements', ['--force' => true])->assertSuccessful();
+
+        $this->assertSame(1, Tache::where('system_key', "{$scopeKey}:task:{$assistant->agent->id}")->count());
+        $this->assertDatabaseHas('taches', [
+            'system_key' => 'holiday-planning:' . now()->year . ":department:{$operationalDepartment->id}:task:{$departmentAssistant->agent->id}",
+            'niveau_gestion' => 'departement',
+        ]);
+        $this->assertDatabaseHas('taches', [
+            'system_key' => 'holiday-planning:' . now()->year . ":sep:{$province->id}:task:{$caf->agent->id}",
+            'niveau_gestion' => 'province',
+        ]);
+        $this->assertDatabaseHas('taches', [
+            'system_key' => 'holiday-planning:' . now()->year . ":local:{$localProvince->id}:task:{$localSupport->agent->id}",
+            'niveau_gestion' => 'local',
+        ]);
+        $this->assertDatabaseHas('notifications_portail', [
+            'user_id' => $assistant->id,
+            'type' => 'holiday_planning_required_actor',
+            'context_key' => "{$scopeKey}:actor:{$assistant->agent->id}",
+        ]);
+        $this->assertDatabaseHas('notifications_portail', [
+            'user_id' => $employee->id,
+            'type' => 'holiday_planning_unavailable',
+            'context_key' => "{$scopeKey}:agents",
+        ]);
+
+        Sanctum::actingAs($assistant);
+        $planningId = $this->createAndSubmitPlanning('department', $department->id, $department->nom);
+        Sanctum::actingAs($director);
+        $this->postJson("/api/holiday-plannings/{$planningId}/validate")->assertOk();
+
+        $this->assertDatabaseHas('taches', [
+            'system_key' => "{$scopeKey}:task:{$assistant->agent->id}",
+            'statut' => 'terminee',
+            'pourcentage' => 100,
+            'validation_statut' => 'validee',
+        ]);
+        $this->assertSame(0, NotificationPortail::where('context_key', 'like', "{$scopeKey}:%")->count());
     }
 
     private function createAndSubmitPlanning(string $type, int $structureId, string $name): int

@@ -34,6 +34,45 @@ class HolidayPlanningWorkflowService
         };
     }
 
+    public function responsibilityFor(User $user): ?array
+    {
+        $agent = $user->agent;
+        if (!$agent || $agent->statut !== 'actif') {
+            return null;
+        }
+
+        if ($this->isDepartmentAssistant($user) && $agent->departement_id) {
+            $profile = $this->profile($user);
+
+            return [
+                'level' => 'national',
+                'type' => 'department',
+                'structure_id' => (int) $agent->departement_id,
+                'label' => str_contains($profile, 'direction') ? 'Direction' : 'Département',
+            ];
+        }
+
+        if (app(RoleService::class)->isProvincialCafManager($user) && $agent->province_id) {
+            return [
+                'level' => 'provincial',
+                'type' => 'sep',
+                'structure_id' => (int) $agent->province_id,
+                'label' => 'Province',
+            ];
+        }
+
+        if (app(TacheWorkflowService::class)->isLocalSupport($user) && $agent->province_id) {
+            return [
+                'level' => 'local',
+                'type' => 'local',
+                'structure_id' => (int) $agent->province_id,
+                'label' => 'SEL',
+            ];
+        }
+
+        return null;
+    }
+
     public function canAccessModule(User $user): bool
     {
         return $user->isSuperAdmin()
@@ -103,6 +142,9 @@ class HolidayPlanningWorkflowService
 
         return str_contains($profile, 'assistant de departement')
             || str_contains($profile, 'assistant du departement')
+            || str_contains($profile, 'assistant de direction')
+            || str_contains($profile, 'assistante de direction')
+            || str_contains($profile, 'secretaire de direction')
             || str_contains($profile, 'secretaire de departement');
     }
 

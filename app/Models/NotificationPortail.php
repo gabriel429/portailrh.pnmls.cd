@@ -14,7 +14,7 @@ class NotificationPortail extends Model
     protected $table = 'notifications_portail';
 
     protected $fillable = [
-        'user_id', 'type', 'titre', 'message', 'icone', 'couleur',
+        'user_id', 'type', 'context_key', 'titre', 'message', 'icone', 'couleur',
         'lien', 'emetteur_id', 'lu', 'lu_at',
     ];
 

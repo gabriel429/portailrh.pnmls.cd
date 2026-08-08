@@ -10,6 +10,7 @@ use App\Models\Agent;
 use App\Models\Province;
 use App\Services\HolidayEntitlementService;
 use App\Services\HolidayPlanningWorkflowService;
+use App\Services\HolidayPlanningRequirementService;
 use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
@@ -410,6 +411,10 @@ class HolidayPlanningController extends Controller
         }
 
         $holidayPlanning->validate($request->user()->agent);
+        app(HolidayPlanningRequirementService::class)->closeForPlanning(
+            $holidayPlanning,
+            $request->user()->agent->id,
+        );
         $this->notifyRh($holidayPlanning, $request->user());
 
         return response()->json([
