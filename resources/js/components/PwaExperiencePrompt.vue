@@ -43,9 +43,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
-const APP_SW_PATH = '/build/sw.js'
+const APP_SW_PATH = '/sw.js'
 const DISMISS_KEY = 'epnmls:pwa-prompt-dismissed-until'
 const DISMISS_DURATION = 12 * 60 * 60 * 1000
+const UPDATE_RELOAD_KEY = 'epnmls:pwa-update-reload-at'
 
 const deferredPrompt = ref(null)
 const dismissed = ref(false)
@@ -115,6 +116,17 @@ async function primaryAction() {
 }
 
 function refreshForUpdate() {
+  try {
+    const lastReload = Number(window.sessionStorage.getItem(UPDATE_RELOAD_KEY) || 0)
+    if (Date.now() - lastReload < 15000) {
+      updateReady.value = false
+      return
+    }
+    window.sessionStorage.setItem(UPDATE_RELOAD_KEY, String(Date.now()))
+  } catch (_) {
+    // Continue with the update when sessionStorage is unavailable.
+  }
+
   const waitingWorker = serviceWorkerRegistration?.waiting
 
   if (waitingWorker) {
@@ -216,7 +228,7 @@ function handleControllerChange() {
 
   if (controllerRefreshStarted) {
     controllerReloaded = true
-    window.location.reload()
+    window.setTimeout(() => window.location.reload(), 100)
     return
   }
 
