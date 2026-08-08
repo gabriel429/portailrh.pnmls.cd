@@ -468,7 +468,7 @@ function togglePresence(agentId) {
 
   if (agent.present) {
     if (!agent.heure_arrivee) agent.heure_arrivee = '08:00'
-    if (!agent.heure_depart) agent.heure_depart = '17:00'
+    if (!agent.heure_depart) agent.heure_depart = '16:00'
   } else {
     agent.heure_arrivee = ''
     agent.heure_depart = ''
@@ -492,7 +492,7 @@ function markAllPresent() {
     pointageData.value[agent.id] = {
       present: true,
       heure_arrivee: '08:00',
-      heure_depart: '17:00',
+      heure_depart: '16:00',
       commentaire: '',
       retard_justifie: false
     }
