@@ -676,7 +676,7 @@
                 <i class="fas fa-user-check"></i> {{ presenceFilterTitle(filteredDrillPresenceAgents.length) }}
               </div>
               <div v-if="filteredDrillPresenceAgents.length" class="drill-agent-list">
-                <div v-for="ag in filteredDrillPresenceAgents" :key="ag.id" class="drill-agent-row">
+                <div v-for="ag in filteredDrillPresenceAgents" :key="ag.id" class="drill-agent-row drill-agent-row--presence">
                   <div class="drill-agent-avatar presence">
                     <img v-if="ag.photo" :src="ag.photo" :alt="ag.prenom" @error="e => e.target.style.display='none'">
                     <span v-else>{{ agentInitials(ag) }}</span>
@@ -698,14 +698,18 @@
                     </div>
                     <div class="drill-presence-times">
                       <span :class="{ muted: !ag.heure_entree }">
-                        <i class="fas fa-sign-in-alt"></i>
-                        <strong>Arrivée</strong>
-                        {{ presenceTime(ag.heure_entree) }}
+                        <span class="drill-presence-time-label">
+                          <i class="fas fa-sign-in-alt"></i>
+                          <strong>Arrivée</strong>
+                        </span>
+                        <span class="drill-presence-time-value">{{ presenceTime(ag.heure_entree) }}</span>
                       </span>
                       <span :class="{ muted: !ag.heure_sortie }">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <strong>Départ</strong>
-                        {{ presenceTime(ag.heure_sortie) }}
+                        <span class="drill-presence-time-label">
+                          <i class="fas fa-sign-out-alt"></i>
+                          <strong>Départ</strong>
+                        </span>
+                        <span class="drill-presence-time-value">{{ presenceTime(ag.heure_sortie) }}</span>
                       </span>
                     </div>
                     <div v-if="ag.pointage_observation" class="drill-pointage-note">
@@ -1987,6 +1991,8 @@ button.drill-stat-card { font: inherit; cursor: pointer; }
   padding: .35rem .45rem; border-radius: 8px; border: 1px solid #bae6fd;
   background: #f0f9ff; color: #0c4a6e; font-size: .66rem; font-weight: 800;
 }
+.drill-presence-times .drill-presence-time-label { display: inline-flex; align-items: center; gap: .3rem; min-width: 0; }
+.drill-presence-times .drill-presence-time-value { min-width: 0; overflow-wrap: anywhere; }
 .drill-presence-times i { color: #0ea5e9; font-size: .65rem; flex-shrink: 0; }
 .drill-presence-times strong { color: #64748b; font-size: .58rem; text-transform: uppercase; }
 .drill-presence-times span.muted { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
@@ -2053,6 +2059,32 @@ html.dark .drill-stat-clickable.active { background: #1e3a5f !important; }
   .drill-stat-val { font-size: 1.35rem; }
   .drill-agent-row { flex-wrap: wrap; }
   .drill-agent-meta { width: 100%; padding-left: 50px; }
+}
+@media (max-width: 620px) {
+  .drill-agent-row--presence {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: start;
+  }
+  .drill-agent-row--presence .drill-agent-info,
+  .drill-agent-row--presence .drill-agent-meta {
+    grid-column: 2;
+    width: auto;
+    max-width: none;
+    padding-left: 0;
+  }
+  .drill-agent-row--presence .drill-agent-meta {
+    align-items: flex-start;
+    margin-top: .15rem;
+  }
+  .drill-agent-row--presence .drill-presence-times {
+    gap: .45rem;
+  }
+  .drill-agent-row--presence .drill-presence-times > span {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: .14rem;
+  }
 }
 /* Accueil compact logiciel */
 .dept-hero {
