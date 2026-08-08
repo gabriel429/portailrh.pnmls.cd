@@ -13,26 +13,26 @@ return new class extends Migration
     {
         // Index for agents table
         Schema::table('agents', function (Blueprint $table) {
-            if (!$this->indexExists('agents', 'agents_matricule_index')) {
+            if (Schema::hasColumn('agents', 'matricule') && !$this->indexExists('agents', 'agents_matricule_index')) {
                 $table->index('matricule');
             }
-            if (!$this->indexExists('agents', 'agents_email_index')) {
+            if (Schema::hasColumn('agents', 'email') && !$this->indexExists('agents', 'agents_email_index')) {
                 $table->index('email');
             }
-            if (!$this->indexExists('agents', 'agents_statut_index')) {
+            if (Schema::hasColumn('agents', 'statut') && !$this->indexExists('agents', 'agents_statut_index')) {
                 $table->index('statut');
             }
-            if (!$this->indexExists('agents', 'agents_department_id_index')) {
-                $table->index('department_id');
+            if (Schema::hasColumn('agents', 'departement_id') && !$this->indexExists('agents', 'agents_departement_id_index')) {
+                $table->index('departement_id');
             }
-            if (!$this->indexExists('agents', 'agents_province_id_index')) {
+            if (Schema::hasColumn('agents', 'province_id') && !$this->indexExists('agents', 'agents_province_id_index')) {
                 $table->index('province_id');
             }
-            if (!$this->indexExists('agents', 'agents_created_at_index')) {
+            if (Schema::hasColumn('agents', 'created_at') && !$this->indexExists('agents', 'agents_created_at_index')) {
                 $table->index('created_at');
             }
-            if (!$this->indexExists('agents', 'agents_statut_department_id_index')) {
-                $table->index(['statut', 'department_id']);
+            if (Schema::hasColumn('agents', 'statut') && Schema::hasColumn('agents', 'departement_id') && !$this->indexExists('agents', 'agents_statut_departement_id_index')) {
+                $table->index(['statut', 'departement_id']);
             }
         });
 
@@ -57,14 +57,14 @@ return new class extends Migration
         // Index for pointages
         if (Schema::hasTable('pointages')) {
             Schema::table('pointages', function (Blueprint $table) {
-                if (!$this->indexExists('pointages', 'pointages_agent_id_index')) {
+                if (Schema::hasColumn('pointages', 'agent_id') && !$this->indexExists('pointages', 'pointages_agent_id_index')) {
                     $table->index('agent_id');
                 }
-                if (!$this->indexExists('pointages', 'pointages_date_index')) {
-                    $table->index('date');
+                if (Schema::hasColumn('pointages', 'date_pointage') && !$this->indexExists('pointages', 'pointages_date_pointage_index')) {
+                    $table->index('date_pointage');
                 }
-                if (!$this->indexExists('pointages', 'pointages_agent_id_date_index')) {
-                    $table->index(['agent_id', 'date']);
+                if (Schema::hasColumn('pointages', 'agent_id') && Schema::hasColumn('pointages', 'date_pointage') && !$this->indexExists('pointages', 'pointages_agent_id_date_pointage_index')) {
+                    $table->index(['agent_id', 'date_pointage']);
                 }
             });
         }
@@ -128,10 +128,10 @@ return new class extends Migration
             $this->dropIndexIfExists('agents', 'agents_matricule_index');
             $this->dropIndexIfExists('agents', 'agents_email_index');
             $this->dropIndexIfExists('agents', 'agents_statut_index');
-            $this->dropIndexIfExists('agents', 'agents_department_id_index');
+            $this->dropIndexIfExists('agents', 'agents_departement_id_index');
             $this->dropIndexIfExists('agents', 'agents_province_id_index');
             $this->dropIndexIfExists('agents', 'agents_created_at_index');
-            $this->dropIndexIfExists('agents', 'agents_statut_department_id_index');
+            $this->dropIndexIfExists('agents', 'agents_statut_departement_id_index');
         });
 
         // Drop indices from holidays table
@@ -148,8 +148,8 @@ return new class extends Migration
         if (Schema::hasTable('pointages')) {
             Schema::table('pointages', function (Blueprint $table) {
                 $this->dropIndexIfExists('pointages', 'pointages_agent_id_index');
-                $this->dropIndexIfExists('pointages', 'pointages_date_index');
-                $this->dropIndexIfExists('pointages', 'pointages_agent_id_date_index');
+                $this->dropIndexIfExists('pointages', 'pointages_date_pointage_index');
+                $this->dropIndexIfExists('pointages', 'pointages_agent_id_date_pointage_index');
             });
         }
 
@@ -180,9 +180,8 @@ return new class extends Migration
      */
     private function indexExists($table, $name)
     {
-        $doctrine = Schema::getConnection()->getDoctrineSchemaManager();
-        $indexes = $doctrine->listTableIndexes($table);
-        return array_key_exists($name, $indexes);
+        return collect(Schema::getIndexes($table))
+            ->contains(fn (array $index) => $index['name'] === $name);
     }
 
     /**
