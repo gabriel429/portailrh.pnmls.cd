@@ -9,10 +9,13 @@ use App\Models\Holiday;
 use App\Models\Agent;
 use App\Models\Province;
 use App\Services\HolidayEntitlementService;
+use App\Services\HolidayPlanningWorkflowService;
+use App\Services\NotificationService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use App\Models\User;
 
 class HolidayPlanningController extends Controller
 {
@@ -24,6 +27,11 @@ class HolidayPlanningController extends Controller
     private function entitlementService(): HolidayEntitlementService
     {
         return app(HolidayEntitlementService::class);
+    }
+
+    private function workflow(): HolidayPlanningWorkflowService
+    {
+        return app(HolidayPlanningWorkflowService::class);
     }
 
     /**
@@ -68,6 +76,9 @@ class HolidayPlanningController extends Controller
 
         $scope = $this->scopeService();
         $user = $request->user();
+        if (!$this->workflow()->canAccessModule($user)) {
+            return response()->json(['message' => 'Vous n’avez pas accès à la gestion des plannings de congés.'], 403);
+        }
         $isProvincial = $scope->isProvincialUser($user);
         $provinceId = $isProvincial ? $scope->provinceId($user) : null;
 
@@ -76,6 +87,22 @@ class HolidayPlanningController extends Controller
 
         $this->applyProvinceScope($query, $provinceId);
 
+        if (!$this->workflow()->isRh($user) && !$user->isSuperAdmin()) {
+            $agent = $user->agent;
+            $query->where(function ($scopeQuery) use ($agent) {
+                $scopeQuery->where(function ($department) use ($agent) {
+                    $department->where('niveau_administratif', 'national')
+                        ->where('structure_id', $agent->departement_id ?? 0);
+                })->orWhere(function ($province) use ($agent) {
+                    $province->where('niveau_administratif', 'provincial')
+                        ->where('structure_id', $agent->province_id ?? 0);
+                })->orWhere(function ($local) use ($agent) {
+                    $local->where('niveau_administratif', 'local')
+                        ->whereIn('structure_id', array_filter([$agent->localite_id, $agent->province_id]));
+                });
+            });
+        }
+
         if ($structureType && $structureId) {
             $query->forStructure($structureType, $structureId);
         }
@@ -83,6 +110,8 @@ class HolidayPlanningController extends Controller
         $plannings = $query->orderBy('nom_structure')
             ->orderBy('created_at', 'desc')
             ->paginate(20);
+        $plannings->getCollection()->each(fn (HolidayPlanning $planning) => $planning
+            ->setAttribute('capabilities', $this->workflow()->capabilities($user, $planning)));
 
         // Statistiques globales pour l'année (scoped)
         $statsQuery = HolidayPlanning::forYear($year);
@@ -141,13 +170,17 @@ class HolidayPlanningController extends Controller
                 'province_id' => $provinceId,
                 'province_nom' => $provinceId ? Province::find($provinceId)?->nom : null,
             ],
+            'workflow' => [
+                'can_create' => (bool) $user?->agent && !$this->workflow()->isRh($user),
+                'user_role' => $user?->role?->nom_role,
+            ],
         ]);
     }
 
     /**
      * Affichage détaillé d'un planning
      */
-    public function show(HolidayPlanning $holidayPlanning)
+    public function show(Request $request, HolidayPlanning $holidayPlanning)
     {
         $holidayPlanning->load([
             'createdBy',
@@ -170,7 +203,10 @@ class HolidayPlanningController extends Controller
         ];
 
         return response()->json([
-            'planning' => $holidayPlanning,
+            'planning' => $holidayPlanning->setAttribute(
+                'capabilities',
+                $this->workflow()->capabilities($request->user(), $holidayPlanning),
+            ),
             'stats' => $stats
         ]);
     }
@@ -267,6 +303,14 @@ class HolidayPlanningController extends Controller
             'notes' => 'nullable|string|max:1000'
         ]);
 
+        $validated['niveau_administratif'] = $this->workflow()->levelFor($validated['type_structure']);
+
+        if (!$this->workflow()->canInitiate($request->user(), $validated['niveau_administratif'], (int) $validated['structure_id'])) {
+            return response()->json([
+                'message' => "Votre fonction ne permet pas d'initier ce planning.",
+            ], 403);
+        }
+
         // Valider que structure_id correspond à une vraie entité
         $type = $validated['type_structure'];
         $sid  = $validated['structure_id'];
@@ -296,6 +340,8 @@ class HolidayPlanningController extends Controller
         }
 
         $validated['created_by'] = auth()->user()->agent->id;
+        $validated['statut'] = HolidayPlanning::STATUT_BROUILLON;
+        $validated['valide'] = false;
 
         $planning = HolidayPlanning::create($validated);
 
@@ -310,10 +356,9 @@ class HolidayPlanningController extends Controller
      */
     public function update(Request $request, HolidayPlanning $holidayPlanning)
     {
-        // Vérifier les permissions
-        if ($holidayPlanning->valide && !auth()->user()->agent->hasRole(['RH National', 'SEN'])) {
+        if (!$this->workflow()->canEdit($request->user(), $holidayPlanning)) {
             return response()->json([
-                'message' => 'Impossible de modifier un planning validé'
+                'message' => 'Seul l’initiateur compétent peut modifier un planning encore au brouillon.'
             ], 403);
         }
 
@@ -333,29 +378,71 @@ class HolidayPlanningController extends Controller
         ]);
     }
 
+    public function submit(Request $request, HolidayPlanning $holidayPlanning)
+    {
+        if (!$this->workflow()->canSubmit($request->user(), $holidayPlanning)) {
+            return response()->json(['message' => 'Ce planning ne peut pas être soumis par cet utilisateur.'], 403);
+        }
+
+        $holidayPlanning->submit();
+
+        return response()->json([
+            'message' => 'Planning soumis à l’autorité compétente.',
+            'planning' => $holidayPlanning->fresh(),
+        ]);
+    }
+
     /**
      * Validation d'un planning
      */
-    public function validate(HolidayPlanning $holidayPlanning)
+    public function validate(Request $request, HolidayPlanning $holidayPlanning)
     {
-        if (!auth()->user()->agent->hasRole(['RH National', 'SEN'])) {
+        if (!$this->workflow()->canValidate($request->user(), $holidayPlanning)) {
             return response()->json([
                 'message' => 'Permissions insuffisantes pour valider un planning'
             ], 403);
         }
 
-        if ($holidayPlanning->valide) {
+        if ($holidayPlanning->statut !== HolidayPlanning::STATUT_SOUMIS) {
             return response()->json([
-                'message' => 'Ce planning est déjà validé'
+                'message' => 'Seul un planning soumis peut être validé.'
             ], 422);
         }
 
-        $holidayPlanning->validate(auth()->user()->agent);
+        $holidayPlanning->validate($request->user()->agent);
+        $this->notifyRh($holidayPlanning, $request->user());
 
         return response()->json([
             'message' => 'Planning validé avec succès',
             'planning' => $holidayPlanning->fresh(['validatedBy'])
         ]);
+    }
+
+    private function notifyRh(HolidayPlanning $planning, User $validator): void
+    {
+        $query = User::query()->whereHas('role', function ($roleQuery) {
+            $roleQuery->whereIn('nom_role', [
+                'RH National',
+                'RH Provincial',
+                'Section ressources humaines',
+                'Chef Section RH',
+            ]);
+        });
+
+        if ($planning->niveau_administratif !== 'national') {
+            $query->whereHas('agent', fn ($agentQuery) => $agentQuery
+                ->where('province_id', $planning->structure_id));
+        }
+
+        NotificationService::envoyerMultiple(
+            $query->pluck('id')->all(),
+            'holiday_planning_validated',
+            'Planning de congés validé',
+            "Le planning {$planning->annee} de {$planning->nom_structure} est disponible pour consultation et suivi.",
+            '/rh/holidays/planning',
+            $validator->id,
+            false,
+        );
     }
 
     /**
@@ -568,9 +655,9 @@ class HolidayPlanningController extends Controller
      */
     public function destroy(HolidayPlanning $holidayPlanning)
     {
-        if ($holidayPlanning->valide && !auth()->user()->agent->hasRole(['RH National', 'SEN'])) {
+        if ($holidayPlanning->statut !== HolidayPlanning::STATUT_BROUILLON) {
             return response()->json([
-                'message' => 'Impossible de supprimer un planning validé'
+                'message' => 'Seul un planning au brouillon peut être supprimé.'
             ], 403);
         }
 

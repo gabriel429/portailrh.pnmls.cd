@@ -33,6 +33,7 @@ use App\Http\Controllers\RH\HolidayPlanningController;
 use App\Http\Controllers\RH\HolidayController;
 use App\Http\Controllers\RH\AgentStatusController;
 use App\Http\Controllers\Api\RenforcementController;
+use App\Http\Controllers\RH\HolidayModificationRequestController;
 
 // Public
 Route::get('/', [ApiMetaController::class, 'index']);
@@ -180,6 +181,20 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Demande de congé individuelle (agent pour lui-même)
     Route::post('my-holiday', [\App\Http\Controllers\RH\HolidayController::class, 'storeOwn']);
+    Route::get('holiday-plannings', [HolidayPlanningController::class, 'index']);
+    Route::get('holiday-plannings/calendar', [HolidayPlanningController::class, 'calendar']);
+    Route::get('holiday-plannings/statistiques', [HolidayPlanningController::class, 'statistiques']);
+    Route::get('holiday-plannings/export', [HolidayPlanningController::class, 'export']);
+    Route::post('holiday-plannings', [HolidayPlanningController::class, 'store']);
+    Route::get('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'show']);
+    Route::put('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'update']);
+    Route::post('holiday-plannings/{holidayPlanning}/submit', [HolidayPlanningController::class, 'submit']);
+    Route::post('holiday-plannings/{holidayPlanning}/validate', [HolidayPlanningController::class, 'validate']);
+    Route::delete('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'destroy']);
+    Route::get('holiday-modification-requests', [HolidayModificationRequestController::class, 'index']);
+    Route::post('holidays/{holiday}/modification-requests', [HolidayModificationRequestController::class, 'store']);
+    Route::post('holiday-modification-requests/{holidayModificationRequest}/approve', [HolidayModificationRequestController::class, 'approve']);
+    Route::post('holiday-modification-requests/{holidayModificationRequest}/reject', [HolidayModificationRequestController::class, 'reject']);
 
     // Documents de Travail
     Route::get('documents-travail', [DocumentTravailController::class, 'index']);
@@ -263,17 +278,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Gestion des Congés et Planning
         Route::middleware('not.assistant.rh')->group(function () {
-            // Planning des Congés
-            Route::get('holiday-plannings', [HolidayPlanningController::class, 'index']);
-            Route::get('holiday-plannings/calendar', [HolidayPlanningController::class, 'calendar']);
-            Route::get('holiday-plannings/statistiques', [HolidayPlanningController::class, 'statistiques']);
-            Route::get('holiday-plannings/export', [HolidayPlanningController::class, 'export']);
-            Route::post('holiday-plannings', [HolidayPlanningController::class, 'store']);
-            Route::get('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'show']);
-            Route::put('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'update']);
-            Route::post('holiday-plannings/{holidayPlanning}/validate', [HolidayPlanningController::class, 'validate']);
-            Route::delete('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'destroy']);
-
             // Congés Individuels
             Route::get('holidays', [HolidayController::class, 'index']);
             Route::get('holidays/pending', [HolidayController::class, 'pending']);

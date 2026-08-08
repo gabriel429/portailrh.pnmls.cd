@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Carbon\Carbon;
 
 class Holiday extends Model
@@ -50,6 +51,7 @@ class Holiday extends Model
         'lettre_demande',
         'report_possible',
         'date_retour_prevu',
+        'departure_alert_sent_at',
         'date_retour_effectif',
         'demande_par',
         'approuve_par',
@@ -62,6 +64,7 @@ class Holiday extends Model
         'date_debut' => 'date',
         'date_fin' => 'date',
         'date_retour_prevu' => 'date',
+        'departure_alert_sent_at' => 'datetime',
         'date_retour_effectif' => 'date',
         'nombre_jours' => 'integer',
         'report_possible' => 'boolean',
@@ -78,6 +81,11 @@ class Holiday extends Model
     public function holidayPlanning(): BelongsTo
     {
         return $this->belongsTo(HolidayPlanning::class);
+    }
+
+    public function modificationRequests(): HasMany
+    {
+        return $this->hasMany(HolidayModificationRequest::class);
     }
 
     public function demandePar(): BelongsTo

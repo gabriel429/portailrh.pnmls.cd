@@ -21,10 +21,10 @@
           </div>
           <div class="col-lg-4">
             <div class="hero-tools">
-              <button @click="showAddHolidayModal = true" class="btn-rh me-2">
+              <button v-if="workflow.can_create" @click="showAddHolidayModal = true" class="btn-rh me-2">
                 <i class="fas fa-user-clock me-1"></i> Planifier un congé
               </button>
-              <button @click="showCreateModal = true" class="btn-rh me-2">
+              <button v-if="workflow.can_create" @click="showCreateModal = true" class="btn-rh me-2">
                 <i class="fas fa-plus me-1"></i> Nouveau Planning
               </button>
               <button @click="exportData" class="btn-rh alt" :disabled="loading">
@@ -103,6 +103,22 @@
           </div>
         </div>
       </div>
+
+      <section class="workflow-strip" aria-label="Circuit de validation des congés">
+        <div class="workflow-intro">
+          <span class="workflow-kicker">Circuit actif</span>
+          <strong>Élaborer, soumettre, valider, suivre</strong>
+          <small>Rôle connecté : {{ workflow.user_role || 'Consultation' }}</small>
+        </div>
+        <div v-for="flow in workflowLevels" :key="flow.level" class="workflow-lane">
+          <span class="workflow-level">{{ flow.level }}</span>
+          <div class="workflow-route">
+            <span>{{ flow.initiator }}</span><i class="fas fa-chevron-right"></i>
+            <span>{{ flow.validator }}</span><i class="fas fa-chevron-right"></i>
+            <span>RH</span>
+          </div>
+        </div>
+      </section>
 
       <!-- Statistiques -->
       <div v-if="stats" class="holiday-stat-grid">
@@ -218,8 +234,8 @@
                       </div>
                     </td>
                     <td>
-                      <span class="badge" :class="planning.valide ? 'bg-success' : 'bg-warning'">
-                        {{ planning.valide ? 'Validé' : 'En attente' }}
+                      <span class="status-pill" :class="`status-${planning.statut || (planning.valide ? 'valide' : 'brouillon')}`">
+                        {{ planningStatusLabel(planning) }}
                       </span>
                     </td>
                     <td>
@@ -233,7 +249,16 @@
                           <i class="fas fa-eye"></i>
                         </button>
                         <button
-                          v-if="!planning.valide && canValidate"
+                          v-if="planning.capabilities?.can_submit"
+                          type="button"
+                          class="btn btn-outline-warning"
+                          title="Soumettre à l’autorité compétente"
+                          @click="submitPlanning(planning)"
+                        >
+                          <i class="fas fa-paper-plane"></i>
+                        </button>
+                        <button
+                          v-if="planning.capabilities?.can_validate"
                           type="button"
                           class="btn btn-outline-success"
                           title="Valider le planning"
@@ -242,6 +267,7 @@
                           <i class="fas fa-check"></i>
                         </button>
                         <button
+                          v-if="planning.capabilities?.can_delete"
                           type="button"
                           class="btn btn-outline-danger"
                           title="Supprimer"
@@ -316,11 +342,11 @@
                         <button
                           type="button"
                           class="btn btn-outline-primary"
-                          title="Modifier"
+                          :title="holiday.statut_demande === 'approuve' ? 'Demander une modification' : 'Modifier'"
                           :disabled="!canManageHoliday(holiday)"
                           @click="openHolidayEditor(holiday, 'edit')"
                         >
-                          <i class="fas fa-pen"></i>
+                          <i :class="holiday.statut_demande === 'approuve' ? 'fas fa-file-signature' : 'fas fa-pen'"></i>
                         </button>
                         <button
                           type="button"
@@ -576,6 +602,7 @@ const provinces = ref([])
 const agents = ref([])
 const stats = ref(null)
 const scopeInfo = ref({ is_provincial: false, province_id: null, province_nom: null })
+const workflow = ref({ can_create: false, user_role: '' })
 const viewMode = ref('list')
 const calendarKey = ref(0)
 const statsKey = ref(0)
@@ -617,9 +644,11 @@ const availableYears = computed(() => {
   return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
 })
 
-const canValidate = computed(() => {
-  return auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
-})
+const workflowLevels = [
+  { level: 'National', initiator: 'Assistant Dépt.', validator: 'Directeur' },
+  { level: 'Provincial', initiator: 'CAF', validator: 'SEP' },
+  { level: 'Local', initiator: 'Assistant adm. & fin.', validator: 'SEL' }
+]
 
 const holidayEditWorkingDays = computed(() => {
   return workingDaysBetween(holidayEdit.value.form.date_debut, holidayEdit.value.form.date_fin)
@@ -681,6 +710,7 @@ async function loadPlannings(page = 1) {
     if (response.data.scope) {
       scopeInfo.value = response.data.scope
     }
+    workflow.value = response.data.workflow || workflow.value
 
     if (departments.value.length === 0 && response.data.departments?.length) {
       departments.value = response.data.departments
@@ -782,8 +812,17 @@ async function saveHolidayEdit() {
       payload.interim_assure_par = null
     }
 
-    await client.put(`/holidays/${holiday.id}`, payload)
-    ui.addToast(holidayEdit.value.mode === 'report' ? 'Congé reporté avec succès' : 'Congé modifié avec succès', 'success')
+    if (holiday.statut_demande === 'approuve') {
+      await client.post(`/holidays/${holiday.id}/modification-requests`, {
+        date_debut_proposee: payload.date_debut,
+        date_fin_proposee: payload.date_fin,
+        motif: payload.observation || 'Demande de modification de la période validée'
+      })
+      ui.addToast('Demande de modification transmise pour validation', 'success')
+    } else {
+      await client.put(`/holidays/${holiday.id}`, payload)
+      ui.addToast('Congé modifié avec succès', 'success')
+    }
     holidayEdit.value.saving = false
     closeHolidayEditor()
     refreshHolidayViews()
@@ -877,6 +916,23 @@ async function validatePlanning(planning) {
   } catch (error) {
     ui.addToast('Erreur lors de la validation', 'danger')
   }
+}
+
+async function submitPlanning(planning) {
+  if (!confirm(`Soumettre le planning de ${planning.nom_structure} pour validation ?`)) return
+
+  try {
+    await client.post(`/holiday-plannings/${planning.id}/submit`)
+    ui.addToast('Planning soumis à l’autorité compétente', 'success')
+    loadPlannings()
+  } catch (error) {
+    ui.addToast(error.response?.data?.message || 'Erreur lors de la soumission', 'danger')
+  }
+}
+
+function planningStatusLabel(planning) {
+  const status = planning.statut || (planning.valide ? 'valide' : 'brouillon')
+  return { brouillon: 'Brouillon', soumis: 'À valider', valide: 'Validé' }[status] || status
 }
 
 async function exportData() {
@@ -1021,6 +1077,46 @@ onMounted(() => {
   --holiday-line: #d9e9f7;
   --holiday-ink: #102235;
   --holiday-muted: #64748b;
+}
+
+.workflow-strip {
+  display: grid;
+  grid-template-columns: 1.1fr repeat(3, 1fr);
+  gap: 1px;
+  margin: 0 0 1rem;
+  overflow: hidden;
+  border: 1px solid #cbdbe8;
+  border-radius: 8px;
+  background: #cbdbe8;
+}
+
+.workflow-intro,
+.workflow-lane {
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  background: #fff;
+}
+
+.workflow-intro {
+  display: flex;
+  flex-direction: column;
+  background: #123149;
+  color: #fff;
+}
+
+.workflow-intro small { color: #c5dbea; }
+.workflow-kicker,
+.workflow-level { color: #087f5b; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; }
+.workflow-route { display: flex; align-items: center; gap: 0.45rem; margin-top: 0.35rem; font-size: 0.78rem; color: #334155; }
+.workflow-route i { color: #94a3b8; font-size: 0.6rem; }
+.status-pill { display: inline-flex; padding: 0.3rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.status-brouillon { background: #e2e8f0; color: #334155; }
+.status-soumis { background: #fef3c7; color: #92400e; }
+.status-valide { background: #dcfce7; color: #166534; }
+
+@media (max-width: 992px) {
+  .workflow-strip { grid-template-columns: 1fr; }
+  .workflow-route { justify-content: space-between; }
 }
 
 .holiday-planning-page .rh-list-shell {

@@ -665,6 +665,13 @@ class HolidayController extends Controller
             ], 422);
         }
 
+        if ($holiday->statut_demande === 'approuve') {
+            return response()->json([
+                'message' => 'Une période validée ne peut pas être modifiée directement. Introduisez une demande de modification.',
+                'requires_modification_request' => true,
+            ], 409);
+        }
+
         $user = auth()->user()->agent;
         $scope = app(UserDataScope::class);
         $isRh = $this->canManageHolidayRequests($user, $request->user());

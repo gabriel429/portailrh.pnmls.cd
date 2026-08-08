@@ -115,12 +115,21 @@
                     <div class="d-flex align-items-center gap-2">
                       <span
                         class="badge"
-                        :class="planning?.valide ? 'bg-success' : 'bg-warning'"
+                        :class="planning?.statut === 'valide' ? 'bg-success' : planning?.statut === 'soumis' ? 'bg-warning' : 'bg-secondary'"
                       >
-                        {{ planning?.valide ? 'Validé' : 'En attente de validation' }}
+                        {{ statusLabel }}
                       </span>
                       <button
-                        v-if="!planning?.valide && canValidate"
+                        v-if="canSubmit"
+                        @click="submitPlanning"
+                        class="btn btn-sm btn-warning"
+                        :disabled="submitting"
+                      >
+                        <i class="fas fa-paper-plane me-1"></i>
+                        Soumettre
+                      </button>
+                      <button
+                        v-if="canValidate"
                         @click="validatePlanning"
                         class="btn btn-sm btn-success"
                         :disabled="submitting"
@@ -362,14 +371,19 @@ const editForm = ref({
 
 // Computed
 const canEdit = computed(() => {
-  if (!auth.user?.agent) return false
-  return !props.planning?.valide || auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
+  return Boolean(props.planning?.capabilities?.can_edit)
 })
 
 const canValidate = computed(() => {
-  if (!auth.user?.agent) return false
-  return auth.hasRole(['RH National', 'RH Provincial', 'SEN'])
+  return Boolean(props.planning?.capabilities?.can_validate)
 })
+
+const canSubmit = computed(() => Boolean(props.planning?.capabilities?.can_submit))
+const statusLabel = computed(() => ({
+  brouillon: 'Brouillon modifiable',
+  soumis: 'Soumis à validation',
+  valide: 'Validé et disponible au RH'
+}[props.planning?.statut] || (props.planning?.valide ? 'Validé' : 'Brouillon')))
 
 // Méthodes
 function formatDate(dateStr) {
@@ -476,6 +490,19 @@ async function validatePlanning() {
       error.response?.data?.message || 'Erreur lors de la validation',
       'danger'
     )
+  } finally {
+    submitting.value = false
+  }
+}
+
+async function submitPlanning() {
+  submitting.value = true
+  try {
+    await client.post(`/holiday-plannings/${props.planning.id}/submit`)
+    ui.addToast('Planning soumis à l’autorité compétente', 'success')
+    emit('updated')
+  } catch (error) {
+    ui.addToast(error.response?.data?.message || 'Erreur lors de la soumission', 'danger')
   } finally {
     submitting.value = false
   }

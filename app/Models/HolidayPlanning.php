@@ -8,6 +8,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class HolidayPlanning extends Model
 {
+    public const STATUT_BROUILLON = 'brouillon';
+    public const STATUT_SOUMIS = 'soumis';
+    public const STATUT_VALIDE = 'valide';
+
     const TYPE_STRUCTURES = [
         'department' => 'Département',
         'sen' => 'SEN',
@@ -21,12 +25,15 @@ class HolidayPlanning extends Model
         'type_structure',
         'structure_id',
         'nom_structure',
+        'niveau_administratif',
         'jours_conge_totaux',
         'jours_utilises',
         'periods_fermeture',
         'notes',
+        'statut',
         'valide',
         'created_by',
+        'submitted_at',
         'validated_by',
         'validated_at'
     ];
@@ -37,6 +44,7 @@ class HolidayPlanning extends Model
         'jours_utilises' => 'integer',
         'periods_fermeture' => 'array',
         'valide' => 'boolean',
+        'submitted_at' => 'datetime',
         'validated_at' => 'datetime'
     ];
 
@@ -100,9 +108,18 @@ class HolidayPlanning extends Model
     public function validate(Agent $validator): bool
     {
         return $this->update([
+            'statut' => self::STATUT_VALIDE,
             'valide' => true,
             'validated_by' => $validator->id,
             'validated_at' => now()
+        ]);
+    }
+
+    public function submit(): bool
+    {
+        return $this->update([
+            'statut' => self::STATUT_SOUMIS,
+            'submitted_at' => now(),
         ]);
     }
 

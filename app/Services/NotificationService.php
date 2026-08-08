@@ -71,6 +71,14 @@ class NotificationService
             'icone' => 'fa-chalkboard-teacher',
             'couleur' => '#8b5cf6',
         ],
+        'holiday_planning_validated' => [
+            'icone' => 'fa-calendar-check',
+            'couleur' => '#15803d',
+        ],
+        'holiday_departure_reminder' => [
+            'icone' => 'fa-calendar-day',
+            'couleur' => '#c2410c',
+        ],
     ];
 
     /**
