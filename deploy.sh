@@ -11,6 +11,12 @@ rm -rf build
 mkdir -p build
 cp -a public/build/. build/
 
+# The Hostinger document root is the repository root, so /sw.js must live here.
+echo "Replacing root Service Worker..."
+cp public/sw.js sw.js
+rm -f workbox-*.js
+find public -maxdepth 1 -type f -name 'workbox-*.js' -exec cp {} . \;
+
 # 2. Recreate public image shortcut.
 echo "Creating image symlink..."
 rm -rf images
