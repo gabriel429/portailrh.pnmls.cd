@@ -54,6 +54,33 @@ function requestUrl(config) {
     return String(config?.url || '')
 }
 
+const OFFLINE_QUEUEABLE_CREATIONS = {
+    '/taches': 'tache',
+    '/requests': 'demande',
+    '/holidays': 'conge',
+    '/holiday-plannings': 'conge',
+}
+
+function getQueueableOfflineEntity(config) {
+    if (requestMethod(config) !== 'post') return null
+    return OFFLINE_QUEUEABLE_CREATIONS[requestUrl(config)] || null
+}
+
+function getOfflinePayload(data) {
+    if (data instanceof FormData) {
+        const payload = {}
+
+        for (const [key, value] of data.entries()) {
+            if (value instanceof Blob) return null
+            payload[key] = value
+        }
+
+        return payload
+    }
+
+    return data && typeof data === 'object' ? { ...data } : null
+}
+
 function isBackgroundRequest(config) {
     const url = requestUrl(config)
 
@@ -134,6 +161,7 @@ client.interceptors.request.use(
 
         const isWriteMethod = ['post', 'put', 'patch', 'delete'].includes(config.method)
         const isPointageOperation = config.url.includes('/pointages')
+        const queueableEntity = getQueueableOfflineEntity(config)
         const isDataFetchOperation = config.url.includes('/agents/form-options') ||
                                    config.url.includes('/departments')
 
@@ -161,6 +189,47 @@ client.interceptors.request.use(
 
             } catch (error) {
                 ui.addToast('❌ Erreur sauvegarde locale du pointage', 'danger')
+                return Promise.reject(new Error('Échec sauvegarde offline'))
+            }
+        }
+
+        if (queueableEntity && !navigator.onLine) {
+            const ui = useUiStore()
+            const payload = getOfflinePayload(config.data)
+
+            if (!payload) {
+                ui.addToast('Cette action contient un fichier et nécessite une connexion internet', 'warning', 5000)
+                return Promise.reject(new axios.Cancel('Hors ligne - fichier non synchronisable'))
+            }
+
+            try {
+                const auth = useAuthStore()
+                const queueItem = await offlineStorage.enqueueOperation({
+                    userId: auth.user?.id || payload.created_by,
+                    entity: queueableEntity,
+                    operation: 'create',
+                    payload,
+                    request: {
+                        method: 'post',
+                        url: requestUrl(config),
+                    },
+                })
+
+                ui.addToast('Action sauvegardée localement et synchronisée au retour du réseau', 'success', 4000)
+
+                return resolveFromRequestInterceptor(config, {
+                    data: {
+                        id: queueItem.id,
+                        offline: true,
+                        message: 'Action sauvegardée localement',
+                        tempId: queueItem.id,
+                    },
+                    status: 202,
+                    statusText: 'Accepted (Offline)',
+                })
+            } catch (error) {
+                reportError('Erreur de sauvegarde offline:', error)
+                ui.addToast('Impossible de sauvegarder cette action localement', 'danger')
                 return Promise.reject(new Error('Échec sauvegarde offline'))
             }
         }

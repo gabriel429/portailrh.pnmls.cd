@@ -89,38 +89,40 @@ class SyncService {
         debugLog('🔄 Début synchronisation...')
 
         try {
-            const pending = await offlineStorage.getPendingPointages()
+            const pending = await offlineStorage.getQueueItems({
+                statuses: ['pending', 'retryable_error'],
+            })
 
             if (pending.length === 0) {
-                debugLog('✅ Aucun pointage en attente')
+                debugLog('✅ Aucune opération en attente')
                 return true
             }
 
-            debugLog(`📤 Synchronisation de ${pending.length} pointage(s)`)
+            debugLog(`📤 Synchronisation de ${pending.length} opération(s)`)
 
             let syncedCount = 0
             let errorCount = 0
 
-            for (const pointage of pending) {
+            for (const operation of pending) {
                 try {
-                    await offlineStorage.updatePointageStatus(pointage.id, 'syncing')
-                    await this.syncSinglePointage(pointage)
-                    await offlineStorage.updatePointageStatus(pointage.id, 'synced')
-                    await offlineStorage.removePointageFromQueue(pointage.id)
+                    await offlineStorage.updateQueueStatus(operation.id, 'syncing')
+                    await this.syncQueuedOperation(operation)
+                    await offlineStorage.updateQueueStatus(operation.id, 'synced')
+                    await offlineStorage.removeQueueItem(operation.id)
                     syncedCount++
                 } catch (error) {
                     if (isAuthOrPermissionError(error)) {
-                        await offlineStorage.updatePointageStatus(pointage.id, 'blocked_auth', 'Connexion requise pour synchroniser')
+                        await offlineStorage.updateQueueStatus(operation.id, 'blocked_auth', 'Connexion requise pour synchroniser')
                         this.stopAutoSync()
                         this.notifyUser('Connexion requise pour synchroniser les données en attente', 'warning')
                         return false
                     }
 
-                    const nextStatus = (pointage.attempts || 0) + 1 >= this.maxRetries
+                    const nextStatus = (operation.attempts || 0) + 1 >= this.maxRetries
                         ? 'error'
                         : 'retryable_error'
-                    await offlineStorage.updatePointageStatus(pointage.id, nextStatus, error.message || 'Erreur réseau ou serveur')
-                    reportError(`❌ Échec sync pointage ${pointage.id}:`, error)
+                    await offlineStorage.updateQueueStatus(operation.id, nextStatus, error.message || 'Erreur réseau ou serveur')
+                    reportError(`❌ Échec sync ${operation.entity} ${operation.id}:`, error)
                     errorCount++
                 }
             }
@@ -210,6 +212,24 @@ class SyncService {
         }, { silent: true, skipForbiddenToast: true })
 
         debugLog(`✅ Pointage ${pointage.id} synchronisé avec succès`)
+        return response.data
+    }
+
+    async syncQueuedOperation(operation) {
+        if (operation.entity === 'pointage') {
+            return this.syncSinglePointage(operation)
+        }
+
+        if (operation.operation !== 'create' || operation.request?.method !== 'post' || !operation.request.url) {
+            throw new Error('Opération offline non prise en charge')
+        }
+
+        const response = await client.post(operation.request.url, {
+            ...operation.payload,
+            client_operation_id: operation.client_operation_id,
+        }, { silent: true, skipForbiddenToast: true })
+
+        debugLog(`✅ ${operation.entity} ${operation.id} synchronisé avec succès`)
         return response.data
     }
 
@@ -316,13 +336,13 @@ class SyncService {
      * STATISTIQUES DE SYNCHRONISATION
      */
     async getSyncStats() {
-        const pointages = await offlineStorage.getQueueItems({ entity: 'pointage' })
+        const operations = await offlineStorage.getQueueItems()
 
         const stats = {
-            total: pointages.length,
-            pending: pointages.filter(p => ['pending', 'retryable_error'].includes(p.status)).length,
-            syncing: pointages.filter(p => p.status === 'syncing').length,
-            errors: pointages.filter(p => ['error', 'blocked_auth'].includes(p.status)).length,
+            total: operations.length,
+            pending: operations.filter(operation => ['pending', 'retryable_error'].includes(operation.status)).length,
+            syncing: operations.filter(operation => operation.status === 'syncing').length,
+            errors: operations.filter(operation => ['error', 'blocked_auth'].includes(operation.status)).length,
             isOnline: this.isOnline,
             isSyncing: this.isSyncing,
             autoSyncActive: this.syncInterval !== null

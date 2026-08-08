@@ -202,7 +202,7 @@ class AgentApiTest extends TestCase
         $response = $this->postJson('/api/agents', []);
 
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors([matricule', 'nom', 'prenom']);
+                 ->assertJsonValidationErrors(['matricule', 'nom', 'prenom']);
     }
 
     /**

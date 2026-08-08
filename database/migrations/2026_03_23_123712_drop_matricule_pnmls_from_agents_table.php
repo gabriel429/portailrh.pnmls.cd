@@ -11,8 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('agents', function (Blueprint $table) {
-            $table->dropUnique(['matricule_pnmls']);
+        if (!Schema::hasColumn('agents', 'matricule_pnmls')) {
+            return;
+        }
+
+        $uniqueIndex = collect(Schema::getIndexes('agents'))
+            ->first(fn (array $index) => $index['unique'] && $index['columns'] === ['matricule_pnmls']);
+
+        Schema::table('agents', function (Blueprint $table) use ($uniqueIndex) {
+            if ($uniqueIndex) {
+                $table->dropUnique($uniqueIndex['name']);
+            }
             $table->dropColumn('matricule_pnmls');
         });
     }

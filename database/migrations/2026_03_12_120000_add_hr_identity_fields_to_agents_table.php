@@ -40,7 +40,7 @@ return new class extends Migration
                 $table->unsignedSmallInteger('annee_naissance')->nullable()->after('annee_engagement_programme');
             }
             if (!Schema::hasColumn('agents', 'email_prive')) {
-                $table->string('email_prive')->nullable()->after('email');
+                $table->string('email_prive')->nullable()->after('email_verified_at');
             }
             if (!Schema::hasColumn('agents', 'email_professionnel')) {
                 $table->string('email_professionnel')->nullable()->after('email_prive');

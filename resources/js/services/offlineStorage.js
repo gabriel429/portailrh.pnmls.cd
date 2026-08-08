@@ -269,7 +269,7 @@ class OfflineStorage {
         return queueItem.id
     }
 
-    async enqueueOperation({ userId, entity, operation, entityId = null, payload }) {
+    async enqueueOperation({ userId, entity, operation, entityId = null, payload, request = null }) {
         await this.init()
 
         const id = crypto.randomUUID()
@@ -282,6 +282,7 @@ class OfflineStorage {
             operation,
             entity_id: entityId,
             payload,
+            request,
             ...payload,
             status: 'pending',
             created_at: new Date().toISOString(),
