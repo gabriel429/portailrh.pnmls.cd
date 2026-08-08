@@ -28,6 +28,12 @@ function copyBuildAssets() {
             const workboxFile = fs.readdirSync(path.resolve(__dirname, 'public/build'))
                 .find((file) => /^workbox-.*\.js$/.test(file))
             if (workboxFile) {
+                for (const file of fs.readdirSync(path.resolve(__dirname, 'public'))) {
+                    if (/^workbox-.*\.js$/.test(file)) {
+                        fs.rmSync(path.resolve(__dirname, 'public', file))
+                    }
+                }
+
                 fs.copyFileSync(
                     path.resolve(__dirname, 'public/build', workboxFile),
                     path.resolve(__dirname, 'public', workboxFile)

@@ -30,7 +30,7 @@
   "homepage": "https://github.com/gabriel429/portailrh.pnmls.cd#readme",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^7.2.0",
-    "axios": "^1.13.6",
+    "axios": "^1.19.0",
     "chart.js": "^4.5.1",
     "date-fns": "^4.1.0",
     "jsqr": "^1.4.0",
@@ -40,10 +40,10 @@
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^5.1.4",
-    "laravel-vite-plugin": "^1.0.0",
+    "@vitejs/plugin-vue": "^6.0.8",
+    "laravel-vite-plugin": "^3.1.3",
     "vite": "^8.0.3",
-    "vite-plugin-pwa": "^1.2.0",
-    "workbox-window": "^7.3.0"
+    "vite-plugin-pwa": "^1.3.0",
+    "workbox-window": "^7.4.1"
   }
 }
