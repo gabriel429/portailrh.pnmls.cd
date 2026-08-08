@@ -14,6 +14,8 @@ use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class PointageController extends ApiController
@@ -272,11 +274,13 @@ class PointageController extends ApiController
             'pointages.*.heure_entree' => 'nullable|date_format:H:i',
             'pointages.*.heure_sortie' => 'nullable|date_format:H:i',
             'pointages.*.observations' => 'nullable|string',
+            'pointages.*.client_operation_id' => 'nullable|uuid',
         ]);
 
         $date = $request->date_pointage;
         $created = 0;
         $updated = 0;
+        $operations = [];
         $scope = $this->scopeService();
         $user = $request->user();
 
@@ -285,6 +289,24 @@ class PointageController extends ApiController
             ->keyBy('id');
 
         foreach ($request->pointages as $row) {
+            $clientOperationId = $row['client_operation_id'] ?? null;
+
+            if ($clientOperationId) {
+                $previousOperation = DB::table('offline_sync_operations')
+                    ->where('user_id', $user->id)
+                    ->where('client_operation_id', $clientOperationId)
+                    ->first();
+
+                if ($previousOperation) {
+                    $operations[] = [
+                        'client_operation_id' => $clientOperationId,
+                        'status' => 'duplicate',
+                        'result' => json_decode($previousOperation->result, true),
+                    ];
+                    continue;
+                }
+            }
+
             $agent = $agents->get((int) $row['agent_id']);
             if (!$scope->canAccessAgent($user, $agent)) {
                 return response()->json([
@@ -313,39 +335,120 @@ class PointageController extends ApiController
                 ], 422);
             }
 
-            $existing = Pointage::where('agent_id', $row['agent_id'])
-                ->where('date_pointage', $date)
-                ->first();
+            try {
+                $outcome = DB::transaction(function () use ($clientOperationId, $date, $row, $user) {
+                    if ($clientOperationId) {
+                        $previousOperation = DB::table('offline_sync_operations')
+                            ->where('user_id', $user->id)
+                            ->where('client_operation_id', $clientOperationId)
+                            ->lockForUpdate()
+                            ->first();
 
-            $heureEntree = $row['heure_entree'] ?? ($existing->heure_entree ?? null);
-            $heureSortie = $row['heure_sortie'] ?? ($existing->heure_sortie ?? null);
+                        if ($previousOperation) {
+                            return [
+                                'duplicate' => true,
+                                'result' => json_decode($previousOperation->result, true),
+                            ];
+                        }
+                    }
 
-            $heures = null;
-            if ($heureEntree && $heureSortie) {
-                $entree = Carbon::createFromFormat('H:i', $heureEntree);
-                $sortie = Carbon::createFromFormat('H:i', $heureSortie);
-                $minutes = $entree->diffInMinutes($sortie, false);
-                $heures = $minutes > 0 ? round($minutes / 60, 1) : 0;
+                    $existing = Pointage::where('agent_id', $row['agent_id'])
+                        ->where('date_pointage', $date)
+                        ->lockForUpdate()
+                        ->first();
+
+                    $heureEntree = $row['heure_entree'] ?? ($existing->heure_entree ?? null);
+                    $heureSortie = $row['heure_sortie'] ?? ($existing->heure_sortie ?? null);
+                    $heures = null;
+                    if ($heureEntree && $heureSortie) {
+                        $entree = Carbon::createFromFormat('H:i', $heureEntree);
+                        $sortie = Carbon::createFromFormat('H:i', $heureSortie);
+                        $minutes = $entree->diffInMinutes($sortie, false);
+                        $heures = $minutes > 0 ? round($minutes / 60, 1) : 0;
+                    }
+
+                    if ($existing) {
+                        $existing->update([
+                            'heure_entree' => $heureEntree,
+                            'heure_sortie' => $heureSortie,
+                            'heures_travaillees' => $heures,
+                            'observations' => $row['observations'] ?? $existing->observations,
+                        ]);
+                        $savedPointage = $existing;
+                        $action = 'updated';
+                    } else {
+                        $savedPointage = Pointage::create([
+                            'agent_id' => $row['agent_id'],
+                            'date_pointage' => $date,
+                            'heure_entree' => $heureEntree,
+                            'heure_sortie' => $heureSortie,
+                            'heures_travaillees' => $heures,
+                            'observations' => $row['observations'] ?? null,
+                        ]);
+                        $action = 'created';
+                    }
+
+                    $result = [
+                        'pointage_id' => $savedPointage->id,
+                        'action' => $action,
+                    ];
+
+                    if ($clientOperationId) {
+                        DB::table('offline_sync_operations')->insert([
+                            'user_id' => $user->id,
+                            'client_operation_id' => $clientOperationId,
+                            'entity' => 'pointage',
+                            'operation' => 'create',
+                            'status' => 'accepted',
+                            'result' => json_encode($result),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
+                    return ['duplicate' => false, 'result' => $result];
+                }, 3);
+            } catch (QueryException $exception) {
+                if (!$clientOperationId) {
+                    throw $exception;
+                }
+
+                $previousOperation = DB::table('offline_sync_operations')
+                    ->where('user_id', $user->id)
+                    ->where('client_operation_id', $clientOperationId)
+                    ->first();
+
+                if (!$previousOperation) {
+                    throw $exception;
+                }
+
+                $outcome = [
+                    'duplicate' => true,
+                    'result' => json_decode($previousOperation->result, true),
+                ];
             }
 
-            if ($existing) {
-                $existing->update([
-                    'heure_entree' => $heureEntree,
-                    'heure_sortie' => $heureSortie,
-                    'heures_travaillees' => $heures,
-                    'observations' => $row['observations'] ?? $existing->observations,
-                ]);
-                $updated++;
-            } else {
-                Pointage::create([
-                    'agent_id' => $row['agent_id'],
-                    'date_pointage' => $date,
-                    'heure_entree' => $heureEntree,
-                    'heure_sortie' => $heureSortie,
-                    'heures_travaillees' => $heures,
-                    'observations' => $row['observations'] ?? null,
-                ]);
+            if ($outcome['duplicate']) {
+                $operations[] = [
+                    'client_operation_id' => $clientOperationId,
+                    'status' => 'duplicate',
+                    'result' => $outcome['result'],
+                ];
+                continue;
+            }
+
+            if ($outcome['result']['action'] === 'created') {
                 $created++;
+            } else {
+                $updated++;
+            }
+
+            if ($clientOperationId) {
+                $operations[] = [
+                    'client_operation_id' => $clientOperationId,
+                    'status' => 'accepted',
+                    'result' => $outcome['result'],
+                ];
             }
         }
 
@@ -357,10 +460,12 @@ class PointageController extends ApiController
         return $this->success([
             'created' => $created,
             'updated' => $updated,
+            'operations' => $operations,
         ], [], [
             'message' => $message,
             'created' => $created,
             'updated' => $updated,
+            'operations' => $operations,
         ], $created > 0 ? 201 : 200);
     }
 

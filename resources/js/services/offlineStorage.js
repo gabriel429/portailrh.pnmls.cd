@@ -16,7 +16,7 @@ import { debugLog, reportError } from '@/utils/logger'
 class OfflineStorage {
     constructor() {
         this.dbName = 'PortailRH_OfflineDB'
-        this.dbVersion = 1
+        this.dbVersion = 2
         this.db = null
     }
 
@@ -24,6 +24,8 @@ class OfflineStorage {
      * Initialise la base de données IndexedDB
      */
     async init() {
+        if (this.db) return
+
         return new Promise((resolve, reject) => {
             const request = indexedDB.open(this.dbName, this.dbVersion)
 
@@ -70,6 +72,30 @@ class OfflineStorage {
                 // Store pour les métadonnées de synchronisation
                 if (!db.objectStoreNames.contains('sync_metadata')) {
                     db.createObjectStore('sync_metadata', { keyPath: 'key' })
+                }
+
+                // Données réservées à un compte local, sans mot de passe ni token.
+                if (!db.objectStoreNames.contains('offline_sessions')) {
+                    db.createObjectStore('offline_sessions', { keyPath: 'user_id' })
+                }
+
+                // Les agents affichés par le formulaire de pointage sont isolés par
+                // utilisateur et périmètre afin de ne pas exposer le cache d'un autre compte.
+                if (!db.objectStoreNames.contains('pointage_agents')) {
+                    const pointageAgentStore = db.createObjectStore('pointage_agents', { keyPath: 'cache_key' })
+                    pointageAgentStore.createIndex('user_id', 'user_id', { unique: false })
+                    pointageAgentStore.createIndex('scope_key', 'scope_key', { unique: false })
+                }
+
+                // Queue générique pour les écritures offline. pointage_queue reste lu
+                // pendant la migration afin de ne perdre aucune opération existante.
+                if (!db.objectStoreNames.contains('sync_queue')) {
+                    const syncQueueStore = db.createObjectStore('sync_queue', { keyPath: 'id' })
+                    syncQueueStore.createIndex('user_id', 'user_id', { unique: false })
+                    syncQueueStore.createIndex('status', 'status', { unique: false })
+                    syncQueueStore.createIndex('entity', 'entity', { unique: false })
+                    syncQueueStore.createIndex('created_at', 'created_at', { unique: false })
+                    syncQueueStore.createIndex('client_operation_id', 'client_operation_id', { unique: true })
                 }
 
                 debugLog('🗄️ Tables IndexedDB créées')
@@ -167,27 +193,111 @@ class OfflineStorage {
         })
     }
 
+    async cacheSession(user) {
+        if (!user?.id) return
+        await this.init()
+
+        const transaction = this.db.transaction(['offline_sessions'], 'readwrite')
+        transaction.objectStore('offline_sessions').put({
+            user_id: user.id,
+            user,
+            cached_at: new Date().toISOString(),
+            server_session_status: 'verified',
+        })
+    }
+
+    async getCachedSession(userId) {
+        if (!userId) return null
+        await this.init()
+
+        return new Promise((resolve) => {
+            const request = this.db.transaction(['offline_sessions'], 'readonly')
+                .objectStore('offline_sessions')
+                .get(userId)
+            request.onsuccess = () => resolve(request.result || null)
+            request.onerror = () => resolve(null)
+        })
+    }
+
+    async clearCachedSession(userId) {
+        if (!userId) return
+        await this.init()
+        this.db.transaction(['offline_sessions'], 'readwrite')
+            .objectStore('offline_sessions')
+            .delete(userId)
+    }
+
+    async cachePointageAgents(userId, scopeKey, agents) {
+        if (!userId || !scopeKey || !Array.isArray(agents)) return
+        await this.init()
+
+        const transaction = this.db.transaction(['pointage_agents'], 'readwrite')
+        transaction.objectStore('pointage_agents').put({
+            cache_key: `${userId}:${scopeKey}`,
+            user_id: userId,
+            scope_key: scopeKey,
+            agents,
+            cached_at: new Date().toISOString(),
+        })
+    }
+
+    async getCachedPointageAgents(userId, scopeKey) {
+        if (!userId || !scopeKey) return []
+        await this.init()
+
+        return new Promise((resolve) => {
+            const request = this.db.transaction(['pointage_agents'], 'readonly')
+                .objectStore('pointage_agents')
+                .get(`${userId}:${scopeKey}`)
+            request.onsuccess = () => resolve(request.result?.agents || [])
+            request.onerror = () => resolve([])
+        })
+    }
+
     /**
      * Ajoute un pointage à la queue offline
      */
     async addPointageToQueue(pointageData) {
-        const transaction = this.db.transaction(['pointage_queue'], 'readwrite')
-        const store = transaction.objectStore('pointage_queue')
+        const queueItem = await this.enqueueOperation({
+            userId: pointageData.created_by,
+            entity: 'pointage',
+            operation: 'create',
+            entityId: pointageData.agent_id ? `pointage:${pointageData.date_pointage}:${pointageData.agent_id}` : null,
+            payload: pointageData,
+        })
 
+        return queueItem.id
+    }
+
+    async enqueueOperation({ userId, entity, operation, entityId = null, payload }) {
+        await this.init()
+
+        const id = crypto.randomUUID()
         const queueItem = {
-            ...pointageData,
-            status: 'pending', // pending, syncing, synced, error
+            id,
+            tempId: id,
+            client_operation_id: crypto.randomUUID(),
+            user_id: userId || null,
+            entity,
+            operation,
+            entity_id: entityId,
+            payload,
+            ...payload,
+            status: 'pending',
             created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
             attempts: 0,
             last_error: null,
-            offline_created: true
+            offline_created: true,
         }
 
         return new Promise((resolve, reject) => {
-            const request = store.add(queueItem)
+            const request = this.db.transaction(['sync_queue'], 'readwrite')
+                .objectStore('sync_queue')
+                .add(queueItem)
             request.onsuccess = () => {
-                debugLog('📝 Pointage ajouté à la queue offline:', request.result)
-                resolve(request.result)
+                debugLog('📝 Opération ajoutée à la queue offline:', id)
+                resolve(queueItem)
             }
             request.onerror = () => reject(request.error)
         })
@@ -197,16 +307,25 @@ class OfflineStorage {
      * Récupère tous les pointages en attente de synchronisation
      */
     async getPendingPointages() {
-        const transaction = this.db.transaction(['pointage_queue'], 'readonly')
-        const store = transaction.objectStore('pointage_queue')
-        const index = store.index('status')
+        const pending = await this.getQueueItems({ entity: 'pointage', statuses: ['pending', 'retryable_error'] })
+        debugLog(`⏳ ${pending.length} pointages en attente de synchronisation`)
+        return pending
+    }
+
+    async getQueueItems({ userId = null, entity = null, statuses = null } = {}) {
+        await this.init()
 
         return new Promise((resolve) => {
-            const request = index.getAll('pending')
+            const request = this.db.transaction(['sync_queue'], 'readonly')
+                .objectStore('sync_queue')
+                .getAll()
             request.onsuccess = () => {
-                const pending = request.result || []
-                debugLog(`⏳ ${pending.length} pointages en attente de synchronisation`)
-                resolve(pending)
+                const items = (request.result || []).filter((item) => (
+                    (!userId || item.user_id === userId)
+                    && (!entity || item.entity === entity)
+                    && (!statuses || statuses.includes(item.status))
+                ))
+                resolve(items.sort((left, right) => left.created_at.localeCompare(right.created_at)))
             }
             request.onerror = () => resolve([])
         })
@@ -216,35 +335,45 @@ class OfflineStorage {
      * Met à jour le statut d'un pointage dans la queue
      */
     async updatePointageStatus(tempId, status, error = null) {
-        const transaction = this.db.transaction(['pointage_queue'], 'readwrite')
-        const store = transaction.objectStore('pointage_queue')
+        return this.updateQueueStatus(tempId, status, error)
+    }
 
-        const getRequest = store.get(tempId)
-        getRequest.onsuccess = () => {
-            const item = getRequest.result
-            if (item) {
-                item.status = status
-                item.last_error = error
-                item.attempts = (item.attempts || 0) + (status === 'error' ? 1 : 0)
-                item.updated_at = new Date().toISOString()
+    async updateQueueStatus(id, status, error = null) {
+        await this.init()
 
-                store.put(item)
-                debugLog(`🔄 Pointage ${tempId} mis à jour:`, status)
+        return new Promise((resolve) => {
+            const store = this.db.transaction(['sync_queue'], 'readwrite').objectStore('sync_queue')
+            const getRequest = store.get(id)
+            getRequest.onsuccess = () => {
+                const item = getRequest.result
+                if (item) {
+                    item.status = status
+                    item.last_error = error
+                    item.attempts = (item.attempts || 0) + (['retryable_error', 'error'].includes(status) ? 1 : 0)
+                    item.updated_at = new Date().toISOString()
+                    store.put(item)
+                }
+                resolve(item || null)
             }
-        }
+            getRequest.onerror = () => resolve(null)
+        })
     }
 
     /**
      * Supprime un pointage synchronisé de la queue
      */
     async removePointageFromQueue(tempId) {
-        const transaction = this.db.transaction(['pointage_queue'], 'readwrite')
-        const store = transaction.objectStore('pointage_queue')
+        return this.removeQueueItem(tempId)
+    }
 
+    async removeQueueItem(id) {
+        await this.init()
         return new Promise((resolve) => {
-            const request = store.delete(tempId)
+            const request = this.db.transaction(['sync_queue'], 'readwrite')
+                .objectStore('sync_queue')
+                .delete(id)
             request.onsuccess = () => {
-                debugLog('🗑️ Pointage supprimé de la queue:', tempId)
+                debugLog('🗑️ Opération supprimée de la queue:', id)
                 resolve()
             }
             request.onerror = () => resolve() // Continue même en cas d'erreur
@@ -325,29 +454,37 @@ class OfflineStorage {
      * Nettoyage des anciennes données
      */
     async cleanup(maxAge = 7 * 24 * 60 * 60 * 1000) { // 7 jours par défaut
+        await this.init()
         const cutoff = new Date(Date.now() - maxAge).toISOString()
         let cleaned = 0
 
-        // Nettoyer les pointages synchronisés anciens
-        const transaction = this.db.transaction(['pointage_queue'], 'readwrite')
-        const store = transaction.objectStore('pointage_queue')
+        // La queue historique pointage_queue est conservée pour migration, mais
+        // les opérations créées aujourd'hui vivent dans sync_queue.
+        const transaction = this.db.transaction(['sync_queue'], 'readwrite')
+        const store = transaction.objectStore('sync_queue')
         const index = store.index('created_at')
 
         const range = IDBKeyRange.upperBound(cutoff)
-        const request = index.openCursor(range)
+        await new Promise((resolve, reject) => {
+            const request = index.openCursor(range)
 
-        request.onsuccess = (event) => {
-            const cursor = event.target.result
-            if (cursor) {
-                if (cursor.value.status === 'synced') {
-                    cursor.delete()
-                    cleaned++
+            request.onsuccess = (event) => {
+                const cursor = event.target.result
+                if (cursor) {
+                    if (cursor.value.status === 'synced') {
+                        cursor.delete()
+                        cleaned++
+                    }
+                    cursor.continue()
+                } else {
+                    resolve()
                 }
-                cursor.continue()
-            } else {
-                debugLog(`🧹 ${cleaned} anciens pointages nettoyés`)
             }
-        }
+            request.onerror = () => reject(request.error)
+        })
+
+        debugLog(`🧹 ${cleaned} anciennes opérations synchronisées nettoyées`)
+        return cleaned
     }
 }
 

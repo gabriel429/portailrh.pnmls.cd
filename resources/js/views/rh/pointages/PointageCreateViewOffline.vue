@@ -271,6 +271,7 @@ import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
+import offlineStorage from '@/services/offlineStorage'
 
 // Services offline
 import cacheService from '@/services/cacheService'
@@ -312,6 +313,11 @@ const isTerritorialPointage = computed(() =>
   || currentOrgane.value.includes('local')
 )
 const requiresDepartmentSelection = computed(() => !isTerritorialPointage.value)
+const pointageScopeKey = computed(() => (
+  requiresDepartmentSelection.value
+    ? `department:${selectedDepartment.value}`
+    : 'my-structure'
+))
 
 const pageSubtitle = computed(() => {
   const offlineSuffix = isOffline.value ? ' Les pointages seront synchronisés au retour en ligne.' : ''
@@ -382,20 +388,26 @@ async function loadAgents() {
     let result = []
 
     if (isOffline.value) {
-      if (!requiresDepartmentSelection.value) {
-        ui.addToast('Connectez-vous pour charger les agents de votre structure.', 'warning')
-        result = []
-      } else {
-        result = await client.getAgentsByDepartment(selectedDepartment.value)
-      }
+      result = await offlineStorage.getCachedPointageAgents(
+        auth.user?.id,
+        pointageScopeKey.value
+      )
     } else {
       const response = await client.get('/pointages/agents-by-department', {
           params: {
             department_id: requiresDepartmentSelection.value ? selectedDepartment.value : '',
             date: datePointage.value,
-          }
+        },
+        // navigator.onLine is advisory. Fail quickly so a stale online signal
+        // cannot delay the IndexedDB fallback for the full Axios timeout.
+        timeout: 5000,
         })
       result = response.data?.data || response.data?.agents || []
+      await offlineStorage.cachePointageAgents(
+        auth.user?.id,
+        pointageScopeKey.value,
+        result
+      )
     }
 
     agents.value = result || []
@@ -420,7 +432,28 @@ async function loadAgents() {
 
   } catch (error) {
     console.error('Erreur chargement agents:', error)
-    ui.addToast('Impossible de charger les agents', 'danger')
+    const cachedAgents = await offlineStorage.getCachedPointageAgents(
+      auth.user?.id,
+      pointageScopeKey.value
+    )
+
+    if (cachedAgents.length > 0) {
+      agents.value = cachedAgents
+      agentsLoaded.value = true
+      pointageData.value = {}
+      agents.value.forEach(agent => {
+        pointageData.value[agent.id] = {
+          present: false,
+          heure_arrivee: '',
+          heure_depart: '',
+          commentaire: agent.absence_justifie ? (agent.absence_justifiee_label || 'Absence justifiée') : '',
+          retard_justifie: false,
+        }
+      })
+      ui.addToast(`Données locales : ${cachedAgents.length} agent(s) chargé(s)`, 'info')
+    } else {
+      ui.addToast('Impossible de charger les agents', 'danger')
+    }
   } finally {
     loadingAgents.value = false
   }
@@ -600,6 +633,10 @@ onMounted(async () => {
   initNetworkListener()
   await fetchDepartments()
   updateSyncStats()
+
+  if (isOffline.value && !requiresDepartmentSelection.value) {
+    await loadAgents()
+  }
 
   // Stats périodiques
   const statsInterval = setInterval(updateSyncStats, 10000)

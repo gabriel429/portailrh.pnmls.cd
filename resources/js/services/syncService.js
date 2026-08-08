@@ -77,7 +77,8 @@ class SyncService {
 
     /**
      * SYNCHRONISATION PRINCIPALE
-     * Envoie tous les pointages en attente en un seul appel bulk.
+     * Chaque opération est confirmée individuellement par le serveur avant
+     * d'être retirée de la queue locale.
      */
     async syncAll() {
         if (!this.isOnline || this.isSyncing) {
@@ -95,76 +96,44 @@ class SyncService {
                 return true
             }
 
-            debugLog(`📤 Synchronisation de ${pending.length} pointage(s) en lot`)
+            debugLog(`📤 Synchronisation de ${pending.length} pointage(s)`)
 
-            try {
-                // Regrouper tous les pointages par date et les envoyer en un seul appel bulk
-                const grouped = this.groupPointagesByDate(pending)
-                const bulkPayload = this.buildBulkPayload(grouped)
+            let syncedCount = 0
+            let errorCount = 0
 
-                let syncedCount = 0
-                let errorCount = 0
-
-                for (const payload of bulkPayload) {
-                    try {
-                        const response = await client.post('/pointages', payload, { silent: true, skipForbiddenToast: true })
-                        syncedCount += payload.pointages.length
-                    } catch (err) {
-                        if (isAuthOrPermissionError(err)) {
-                            throw err
-                        }
-
-                        // Fallback : tenter un par un si le lot échoue
-                        for (const pt of payload.pointages) {
-                            try {
-                                await this.syncSinglePointage(pt)
-                                syncedCount++
-                            } catch (singleErr) {
-                                reportError(`❌ Échec sync pointage ${pt.tempId}:`, singleErr)
-                                errorCount++
-                            }
-                        }
+            for (const pointage of pending) {
+                try {
+                    await offlineStorage.updatePointageStatus(pointage.id, 'syncing')
+                    await this.syncSinglePointage(pointage)
+                    await offlineStorage.updatePointageStatus(pointage.id, 'synced')
+                    await offlineStorage.removePointageFromQueue(pointage.id)
+                    syncedCount++
+                } catch (error) {
+                    if (isAuthOrPermissionError(error)) {
+                        await offlineStorage.updatePointageStatus(pointage.id, 'blocked_auth', 'Connexion requise pour synchroniser')
+                        this.stopAutoSync()
+                        this.notifyUser('Connexion requise pour synchroniser les données en attente', 'warning')
+                        return false
                     }
-                }
 
-                // Marquer les succès comme synchronisés
-                if (syncedCount > 0) {
-                    const allTempIds = pending.map(p => p.tempId)
-                    for (const tempId of allTempIds) {
-                        await offlineStorage.updatePointageStatus(tempId, 'synced')
-                    }
-                    // Supprimer de la queue après un délai
-                    setTimeout(async () => {
-                        for (const tempId of allTempIds) {
-                            await offlineStorage.removePointageFromQueue(tempId)
-                        }
-                    }, 5000)
+                    const nextStatus = (pointage.attempts || 0) + 1 >= this.maxRetries
+                        ? 'error'
+                        : 'retryable_error'
+                    await offlineStorage.updatePointageStatus(pointage.id, nextStatus, error.message || 'Erreur réseau ou serveur')
+                    reportError(`❌ Échec sync pointage ${pointage.id}:`, error)
+                    errorCount++
                 }
-
-                // Notification du résultat
-                if (syncedCount > 0) {
-                    this.notifyUser(
-                        `✅ ${syncedCount} pointage(s) synchronisé(s)${errorCount > 0 ? `, ${errorCount} erreur(s)` : ''}`,
-                        errorCount > 0 ? 'warning' : 'success'
-                    )
-                }
-
-                if (errorCount > 0 && syncedCount === 0) {
-                    this.notifyUser(`❌ Impossible de synchroniser ${errorCount} pointage(s)`, 'danger')
-                }
-
-                debugLog(`✅ Synchronisation terminée: ${syncedCount} succès, ${errorCount} erreurs`)
-                return errorCount === 0
-
-            } catch (bulkError) {
-                reportError('❌ Erreur synchronisation bulk:', bulkError)
-                if (isAuthOrPermissionError(bulkError)) {
-                    this.stopAutoSync()
-                    return false
-                }
-                this.notifyUser('Erreur de synchronisation', 'danger')
-                return false
             }
+
+            if (syncedCount > 0 || errorCount > 0) {
+                this.notifyUser(
+                    `Synchronisation terminée : ${syncedCount} réussie(s), ${errorCount} en erreur`,
+                    errorCount > 0 ? 'warning' : 'success'
+                )
+            }
+
+            debugLog(`✅ Synchronisation terminée: ${syncedCount} succès, ${errorCount} erreurs`)
+            return errorCount === 0
 
         } catch (error) {
             reportError('❌ Erreur synchronisation globale:', error)
@@ -228,23 +197,19 @@ class SyncService {
      * Synchronisation d'un pointage individuel (fallback si bulk échoue).
      */
     async syncSinglePointage(pointage) {
-        const { tempId, date_pointage, agent_id, heure_entree, heure_sortie, observations } = pointage
-
-        await offlineStorage.updatePointageStatus(tempId, 'syncing')
-
+        const { date_pointage, agent_id, client_operation_id } = pointage
         const response = await client.post('/pointages', {
             date_pointage: date_pointage,
             pointages: [{
                 agent_id,
-                heure_entree: heure_entree || null,
-                heure_sortie: heure_sortie || null,
-                observations: observations || null,
+                heure_entree: pointage.heure_arrivee || pointage.heure_entree || null,
+                heure_sortie: pointage.heure_depart || pointage.heure_sortie || null,
+                observations: pointage.commentaire || pointage.observations || null,
+                client_operation_id,
             }],
         }, { silent: true, skipForbiddenToast: true })
 
-        await offlineStorage.updatePointageStatus(tempId, 'synced')
-
-        debugLog(`✅ Pointage ${tempId} synchronisé avec succès`)
+        debugLog(`✅ Pointage ${pointage.id} synchronisé avec succès`)
         return response.data
     }
 
@@ -327,15 +292,16 @@ class SyncService {
         }
 
         try {
-            const pending = await offlineStorage.getPendingPointages()
-            const pointage = pending.find(p => p.tempId === tempId)
+            const pointages = await offlineStorage.getQueueItems({ entity: 'pointage' })
+            const pointage = pointages.find(p => p.id === tempId)
 
             if (!pointage) {
                 this.notifyUser('Pointage introuvable', 'warning')
                 return false
             }
 
-            await this.syncPointage(pointage)
+            await offlineStorage.updatePointageStatus(pointage.id, 'pending')
+            await this.syncAll()
             this.notifyUser('Pointage synchronisé avec succès', 'success')
             return true
 
@@ -350,13 +316,13 @@ class SyncService {
      * STATISTIQUES DE SYNCHRONISATION
      */
     async getSyncStats() {
-        const pending = await offlineStorage.getPendingPointages()
+        const pointages = await offlineStorage.getQueueItems({ entity: 'pointage' })
 
         const stats = {
-            total: pending.length,
-            pending: pending.filter(p => p.status === 'pending').length,
-            syncing: pending.filter(p => p.status === 'syncing').length,
-            errors: pending.filter(p => p.status === 'error').length,
+            total: pointages.length,
+            pending: pointages.filter(p => ['pending', 'retryable_error'].includes(p.status)).length,
+            syncing: pointages.filter(p => p.status === 'syncing').length,
+            errors: pointages.filter(p => ['error', 'blocked_auth'].includes(p.status)).length,
             isOnline: this.isOnline,
             isSyncing: this.isSyncing,
             autoSyncActive: this.syncInterval !== null

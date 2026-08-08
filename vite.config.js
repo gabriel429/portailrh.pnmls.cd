@@ -12,16 +12,69 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 function copyBuildAssets() {
     return {
         name: 'copy-build-assets',
+        enforce: 'post',
         closeBundle() {
-            const filesToCopy = ['.htaccess', 'serve-asset.php']
+            const filesToCopy = ['.htaccess', 'serve-asset.php', 'sw.js']
             for (const file of filesToCopy) {
                 const src = path.resolve(__dirname, 'build', file)
-                const dest = path.resolve(__dirname, 'public/build', file)
+                const dest = file === 'sw.js'
+                    ? path.resolve(__dirname, 'public', file)
+                    : path.resolve(__dirname, 'public/build', file)
                 if (fs.existsSync(src)) {
                     fs.copyFileSync(src, dest)
                 }
             }
+
+            const workboxFile = fs.readdirSync(path.resolve(__dirname, 'public/build'))
+                .find((file) => /^workbox-.*\.js$/.test(file))
+            if (workboxFile) {
+                fs.copyFileSync(
+                    path.resolve(__dirname, 'public/build', workboxFile),
+                    path.resolve(__dirname, 'public', workboxFile)
+                )
+            }
         }
+    }
+}
+
+function generateOfflineShell() {
+    return {
+        name: 'generate-offline-shell',
+        closeBundle() {
+            const buildDir = path.resolve(__dirname, 'public/build')
+            const manifestPath = path.join(buildDir, 'manifest.json')
+
+            if (!fs.existsSync(manifestPath)) return
+
+            const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+            const entry = manifest['resources/js/app.js']
+
+            if (!entry?.file) return
+
+            const styles = (entry.css || [])
+                .map((file) => `    <link rel="stylesheet" href="/build/${file}">`)
+                .join('\n')
+
+            const shell = [
+                '<!doctype html>',
+                '<html lang="fr">',
+                '<head>',
+                '    <meta charset="utf-8">',
+                '    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">',
+                '    <meta name="theme-color" content="#006c9f">',
+                '    <title>E-PNMLS</title>',
+                styles,
+                '</head>',
+                '<body>',
+                '    <div id="app"></div>',
+                `    <script type="module" src="/build/${entry.file}"></script>`,
+                '</body>',
+                '</html>',
+                '',
+            ].join('\n')
+
+            fs.writeFileSync(path.join(buildDir, 'offline-shell.html'), shell)
+        },
     }
 }
 
@@ -39,14 +92,19 @@ export default defineConfig({
                 },
             },
         }),
+        generateOfflineShell(),
         VitePWA({
             registerType: 'autoUpdate',
             workbox: {
-                globPatterns: ['**/*.{js,css,woff2,png,jpg,jpeg,svg,webmanifest,json}'],
+                globPatterns: ['**/*.{html,js,css,woff2,png,jpg,jpeg,svg,webmanifest,json}'],
                 cleanupOutdatedCaches: true,
                 skipWaiting: true,
                 clientsClaim: true,
-                navigateFallback: null,
+                navigateFallback: '/build/offline-shell.html',
+                navigateFallbackDenylist: [/^\/api\//, /^\/build\//, /^\/storage\//],
+                modifyURLPrefix: {
+                    '': '/build/',
+                },
                 runtimeCaching: [
                     {
                         urlPattern: ({ request }) => request.mode === 'navigate',

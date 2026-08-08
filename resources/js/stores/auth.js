@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import axios from 'axios'
 import client from '@/api/client'
+import offlineStorage from '@/services/offlineStorage'
 
 const AUTH_USER_CACHE_KEY = 'epnmls_auth_user'
 
@@ -365,6 +366,7 @@ export const useAuthStore = defineStore('auth', {
                 this.user = data
                 this.cacheUser(data)
                 this.markSessionHint(true)
+                offlineStorage.cacheSession(data).catch(() => {})
                 return data
             } catch (error) {
                 const cached = this.cachedUser()
@@ -392,10 +394,12 @@ export const useAuthStore = defineStore('auth', {
             await this.fetchUser({ force: true })
         },
         async logout() {
+            const userId = this.user?.id
             await client.post('/logout')
             this.user = null
             this.cacheUser(null)
             this.markSessionHint(false)
+            offlineStorage.clearCachedSession(userId).catch(() => {})
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' })
             }

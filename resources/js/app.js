@@ -13,7 +13,7 @@ registerRuntimeNoiseFilter()
 
 const BUILD_CACHE_VERSION = '2026-06-16-pointage-create-link-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
-const APP_SW_PATH = '/build/sw.js'
+const APP_SW_PATH = '/sw.js'
 
 function emitPwaRuntimeEvent(name, detail = {}) {
     if (typeof window === 'undefined') return
