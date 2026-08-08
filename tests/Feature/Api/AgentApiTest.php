@@ -5,11 +5,10 @@ namespace Tests\Feature\Api;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Agent;
+use App\Models\Fonction;
 use App\Models\Role;
 use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 
 class AgentApiTest extends TestCase
 {
@@ -24,13 +23,19 @@ class AgentApiTest extends TestCase
 
         // Create RH user
         $this->rhUser = User::factory()->create();
-        $rhRole = Role::firstOrCreate(['name' => 'RH National']);
-        $this->rhUser->roles()->attach($rhRole->id);
+        $rhRole = Role::firstOrCreate(['nom_role' => 'RH National']);
+        $this->rhUser->update(['role_id' => $rhRole->id]);
+        $rhAgent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'role_id' => $rhRole->id,
+            'statut' => 'actif',
+        ]);
+        $this->rhUser->update(['agent_id' => $rhAgent->id]);
 
         // Create normal user
         $this->normalUser = User::factory()->create();
-        $agentRole = Role::firstOrCreate(['name' => 'Agent']);
-        $this->normalUser->roles()->attach($agentRole->id);
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $this->normalUser->update(['role_id' => $agentRole->id]);
     }
 
     /**
@@ -48,16 +53,22 @@ class AgentApiTest extends TestCase
                  ->assertJsonStructure([
                      'data' => [
                          '*' => [
-                             'id',
-                             'matricule',
-                             'nom',
-                             'prenom',
-                             'email',
-                             'telephone'
+                             'label',
+                             'agents' => [
+                                 '*' => [
+                                     'id',
+                                     'matricule_etat',
+                                     'nom',
+                                     'prenom',
+                                     'email_prive',
+                                     'email_professionnel',
+                                     'telephone',
+                                 ],
+                             ],
+                             'pagination',
                          ]
                      ],
-                     'links',
-                     'meta'
+                     'meta' => ['stats', 'pagination'],
                  ]);
     }
 
@@ -79,43 +90,44 @@ class AgentApiTest extends TestCase
     public function test_rh_can_create_agent()
     {
         Sanctum::actingAs($this->rhUser);
-        Storage::fake('public');
+        Fonction::create(['nom' => 'Chargé de test']);
 
         $agentData = [
-            'matricule' => 'PNM-TEST001',
+            'matricule_etat' => 'PNM-TEST001',
             'nom' => 'Test',
             'prenom' => 'Agent',
             'postnom' => 'Creation',
             'sexe' => 'M',
+            'annee_naissance' => 1990,
             'date_naissance' => '1990-01-15',
             'lieu_naissance' => 'Kinshasa',
-            'nationalite' => 'Congolaise',
-            'email' => 'test.agent@pnmls.cd',
+            'email_professionnel' => 'test.agent@pnmls.cd',
             'telephone' => '+243815555555',
             'adresse' => '123 Avenue de la Paix',
-            'photo' => UploadedFile::fake()->image('photo.jpg')
+            'organe' => 'Secrétariat Exécutif National',
+            'fonction' => 'Chargé de test',
+            'niveau_etudes' => 'Licence',
+            'annee_engagement_programme' => 2020,
         ];
 
         $response = $this->postJson('/api/agents', $agentData);
 
         $response->assertStatus(201)
                  ->assertJsonStructure([
-                     'success',
                      'message',
                      'data' => [
                          'id',
-                         'matricule',
+                         'matricule_etat',
                          'nom',
                          'prenom'
-                     ]
+                     ],
+                     'agent',
                  ]);
 
         $this->assertDatabaseHas('agents', [
-            'matricule' => 'PNM-TEST001',
-            'email' => 'test.agent@pnmls.cd'
+            'matricule_etat' => 'PNM-TEST001',
+            'email_professionnel' => 'test.agent@pnmls.cd'
         ]);
-
-        Storage::disk('public')->assertExists('agents/photos');
     }
 
     /**
@@ -124,15 +136,30 @@ class AgentApiTest extends TestCase
     public function test_rh_can_update_agent()
     {
         Sanctum::actingAs($this->rhUser);
+        Fonction::create(['nom' => 'Fonction mise à jour']);
 
         $agent = Agent::factory()->create([
-            'nom' => 'OldName'
+            'nom' => 'OldName',
+            'organe' => 'Secrétariat Exécutif National',
+            'fonction' => 'Fonction mise à jour',
+            'niveau_etudes' => 'Licence',
+            'annee_naissance' => 1990,
+            'annee_engagement_programme' => 2020,
+            'statut' => 'actif',
         ]);
 
         $updateData = [
             'nom' => 'NewName',
             'prenom' => 'UpdatedPrenom',
-            'telephone' => '+243825555555'
+            'telephone' => '+243825555555',
+            'annee_naissance' => 1990,
+            'lieu_naissance' => $agent->lieu_naissance,
+            'sexe' => $agent->sexe,
+            'organe' => $agent->organe,
+            'fonction' => $agent->fonction,
+            'niveau_etudes' => $agent->niveau_etudes,
+            'annee_engagement_programme' => 2020,
+            'statut' => $agent->statut,
         ];
 
         $response = $this->putJson("/api/agents/{$agent->id}", $updateData);
@@ -151,7 +178,10 @@ class AgentApiTest extends TestCase
     {
         Sanctum::actingAs($this->rhUser);
 
-        $agent = Agent::factory()->create();
+        $agent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'statut' => 'actif',
+        ]);
 
         $response = $this->deleteJson("/api/agents/{$agent->id}");
 
@@ -166,15 +196,17 @@ class AgentApiTest extends TestCase
     {
         Sanctum::actingAs($this->rhUser);
 
-        Agent::factory()->create(['nom' => 'Kabamba', 'prenom' => 'Jean']);
-        Agent::factory()->create(['nom' => 'Mutua', 'prenom' => 'Marie']);
-        Agent::factory()->create(['nom' => 'Mbuyi', 'prenom' => 'Pierre']);
+        $scope = ['organe' => 'Secrétariat Exécutif National', 'statut' => 'actif'];
+        Agent::factory()->create([...$scope, 'nom' => 'Kabamba', 'prenom' => 'Jean']);
+        Agent::factory()->create([...$scope, 'nom' => 'Mutua', 'prenom' => 'Marie']);
+        Agent::factory()->create([...$scope, 'nom' => 'Mbuyi', 'prenom' => 'Pierre']);
 
         $response = $this->getJson('/api/agents?search=Kabamba');
 
         $response->assertStatus(200)
                  ->assertJsonCount(1, 'data')
-                 ->assertJsonPath('data.0.nom', 'Kabamba');
+                 ->assertJsonCount(1, 'data.0.agents')
+                 ->assertJsonPath('data.0.agents.0.nom', 'Kabamba');
     }
 
     /**
@@ -202,7 +234,17 @@ class AgentApiTest extends TestCase
         $response = $this->postJson('/api/agents', []);
 
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['matricule', 'nom', 'prenom']);
+                 ->assertJsonValidationErrors([
+                     'nom',
+                     'prenom',
+                     'annee_naissance',
+                     'lieu_naissance',
+                     'sexe',
+                     'organe',
+                     'fonction',
+                     'niveau_etudes',
+                     'annee_engagement_programme',
+                 ]);
     }
 
     /**
@@ -212,17 +254,24 @@ class AgentApiTest extends TestCase
     {
         Sanctum::actingAs($this->rhUser);
 
-        Agent::factory()->create(['matricule' => 'PNM-DUP001']);
+        Fonction::create(['nom' => 'Fonction doublon']);
+        Agent::factory()->create(['matricule_etat' => 'PNM-DUP001']);
 
         $response = $this->postJson('/api/agents', [
-            'matricule' => 'PNM-DUP001',
+            'matricule_etat' => 'PNM-DUP001',
             'nom' => 'Test',
             'prenom' => 'Agent',
-            'sexe' => 'M'
+            'sexe' => 'M',
+            'annee_naissance' => 1990,
+            'lieu_naissance' => 'Kinshasa',
+            'organe' => 'Secrétariat Exécutif National',
+            'fonction' => 'Fonction doublon',
+            'niveau_etudes' => 'Licence',
+            'annee_engagement_programme' => 2020,
         ]);
 
         $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['matricule']);
+                 ->assertJsonValidationErrors(['matricule_etat']);
     }
 
     /**

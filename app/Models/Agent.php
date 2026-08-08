@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Affectation;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use App\Models\Grade;
@@ -15,7 +16,7 @@ use App\Support\RoleNames;
 
 class Agent extends Authenticatable
 {
-    use Syncable;
+    use HasFactory, Syncable;
 
     const NIVEAUX_ETUDES = [
         'PP2',

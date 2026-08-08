@@ -3,11 +3,6 @@
 namespace Database\Factories;
 
 use App\Models\Agent;
-use App\Models\User;
-use App\Models\Department;
-use App\Models\Grade;
-use App\Models\Fonction;
-use App\Models\Province;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -25,34 +20,21 @@ class AgentFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory(),
-            'matricule' => 'PNM-' . str_pad($this->faker->unique()->numberBetween(1, 99999), 6, '0', STR_PAD_LEFT),
+            'matricule_etat' => 'PNM-' . str_pad($this->faker->unique()->numberBetween(1, 99999), 6, '0', STR_PAD_LEFT),
             'nom' => $this->faker->lastName(),
             'prenom' => $this->faker->firstName(),
             'postnom' => $this->faker->optional()->lastName(),
             'sexe' => $this->faker->randomElement(['M', 'F']),
             'date_naissance' => $this->faker->dateTimeBetween('-60 years', '-20 years')->format('Y-m-d'),
             'lieu_naissance' => $this->faker->city(),
-            'nationalite' => 'Congolaise',
-            'etat_civil' => $this->faker->randomElement(['Célibataire', 'Marié(e)', 'Divorcé(e)', 'Veuf(ve)']),
+            'situation_familiale' => $this->faker->randomElement(['célibataire', 'marié', 'divorcé', 'veuf']),
             'nombre_enfants' => $this->faker->numberBetween(0, 6),
-            'email' => $this->faker->unique()->safeEmail(),
+            'email_prive' => $this->faker->unique()->safeEmail(),
             'telephone' => '+243' . $this->faker->numerify('#########'),
             'adresse' => $this->faker->address(),
-            'date_engagement' => $this->faker->dateTimeBetween('-10 years', 'now')->format('Y-m-d'),
-            'date_nomination' => $this->faker->optional()->dateTimeBetween('-5 years', 'now')->format('Y-m-d'),
-            'statut' => $this->faker->randomElement(['Actif', 'Inactif', 'Suspendu']),
-            'department_id' => Department::factory(),
-            'grade_id' => Grade::factory(),
-            'fonction_id' => Fonction::factory(),
-            'province_id' => Province::factory(),
-            'numero_compte' => $this->faker->optional()->bankAccountNumber(),
-            'nom_banque' => $this->faker->optional()->company(),
+            'date_embauche' => $this->faker->dateTimeBetween('-10 years', 'now')->format('Y-m-d'),
+            'statut' => $this->faker->randomElement(['actif', 'suspendu', 'ancien']),
             'photo' => null,
-            'cv' => null,
-            'contrat' => null,
-            'acte_engagement' => null,
-            'lettre_nomination' => null,
         ];
     }
 
@@ -63,7 +45,7 @@ class AgentFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'statut' => 'Actif',
+                'statut' => 'actif',
             ];
         });
     }
@@ -75,7 +57,7 @@ class AgentFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'statut' => 'Inactif',
+                'statut' => 'ancien',
             ];
         });
     }
@@ -87,7 +69,7 @@ class AgentFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'statut' => 'Suspendu',
+                'statut' => 'suspendu',
             ];
         });
     }

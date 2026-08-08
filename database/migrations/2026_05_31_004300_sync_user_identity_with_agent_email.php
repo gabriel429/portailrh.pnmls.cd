@@ -2,24 +2,30 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
+        $columns = [
+            'users.id as user_id',
+            'users.name as user_name',
+            'users.email as user_email',
+            'agents.prenom',
+            'agents.nom',
+            'agents.postnom',
+            'agents.email_professionnel',
+            'agents.email_prive',
+        ];
+
+        if (Schema::hasColumn('agents', 'email')) {
+            $columns[] = 'agents.email';
+        }
+
         $rows = DB::table('users')
             ->join('agents', 'users.agent_id', '=', 'agents.id')
-            ->select([
-                'users.id as user_id',
-                'users.name as user_name',
-                'users.email as user_email',
-                'agents.prenom',
-                'agents.nom',
-                'agents.postnom',
-                'agents.email_professionnel',
-                'agents.email',
-                'agents.email_prive',
-            ])
+            ->select($columns)
             ->orderBy('users.id')
             ->get();
 
@@ -35,7 +41,7 @@ return new class extends Migration
 
             $email = $this->firstValidEmail([
                 $row->email_professionnel,
-                $row->email,
+                $row->email ?? null,
                 $row->email_prive,
             ]);
 

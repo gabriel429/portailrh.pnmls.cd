@@ -221,6 +221,26 @@ trait Syncable
         return $data;
     }
 
+    protected function performDeleteOnModel(): void
+    {
+        if (!static::hasSyncColumns()) {
+            parent::performDeleteOnModel();
+            return;
+        }
+
+        $time = $this->freshTimestamp();
+        $columns = [$this->getDeletedAtColumn() => $this->fromDateTime($time)];
+        $this->{$this->getDeletedAtColumn()} = $time;
+
+        if ($this->usesTimestamps() && $this->getUpdatedAtColumn() !== null) {
+            $columns[$this->getUpdatedAtColumn()] = $this->fromDateTime($time);
+            $this->{$this->getUpdatedAtColumn()} = $time;
+        }
+
+        $this->setKeysForSaveQuery($this->newModelQuery())->update($columns);
+        $this->syncOriginalAttributes(array_keys($columns));
+    }
+
     /**
      * SoftDeletes compatibility — these methods allow the model to act
      * as if it has SoftDeletes when columns exist, without using the trait.
