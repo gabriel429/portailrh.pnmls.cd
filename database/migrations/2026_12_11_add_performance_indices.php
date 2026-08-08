@@ -39,17 +39,17 @@ return new class extends Migration
         // Index for holidays table
         if (Schema::hasTable('holidays')) {
             Schema::table('holidays', function (Blueprint $table) {
-                if (!$this->indexExists('holidays', 'holidays_agent_id_index')) {
+                if (Schema::hasColumn('holidays', 'agent_id') && !$this->indexExists('holidays', 'holidays_agent_id_index')) {
                     $table->index('agent_id');
                 }
-                if (!$this->indexExists('holidays', 'holidays_statut_index')) {
-                    $table->index('statut');
+                if (Schema::hasColumn('holidays', 'statut_demande') && !$this->indexExists('holidays', 'holidays_statut_demande_index')) {
+                    $table->index('statut_demande');
                 }
-                if (!$this->indexExists('holidays', 'holidays_date_debut_date_fin_index')) {
+                if (Schema::hasColumn('holidays', 'date_debut') && Schema::hasColumn('holidays', 'date_fin') && !$this->indexExists('holidays', 'holidays_date_debut_date_fin_index')) {
                     $table->index(['date_debut', 'date_fin']);
                 }
-                if (!$this->indexExists('holidays', 'holidays_agent_id_statut_index')) {
-                    $table->index(['agent_id', 'statut']);
+                if (Schema::hasColumn('holidays', 'agent_id') && Schema::hasColumn('holidays', 'statut_demande') && !$this->indexExists('holidays', 'holidays_agent_id_statut_demande_index')) {
+                    $table->index(['agent_id', 'statut_demande']);
                 }
             });
         }
@@ -72,10 +72,10 @@ return new class extends Migration
         // Index for documents
         if (Schema::hasTable('documents')) {
             Schema::table('documents', function (Blueprint $table) {
-                if (!$this->indexExists('documents', 'documents_agent_id_index')) {
+                if (Schema::hasColumn('documents', 'agent_id') && !$this->indexExists('documents', 'documents_agent_id_index')) {
                     $table->index('agent_id');
                 }
-                if (!$this->indexExists('documents', 'documents_created_at_index')) {
+                if (Schema::hasColumn('documents', 'created_at') && !$this->indexExists('documents', 'documents_created_at_index')) {
                     $table->index('created_at');
                 }
             });
@@ -84,16 +84,16 @@ return new class extends Migration
         // Index for requests
         if (Schema::hasTable('requests')) {
             Schema::table('requests', function (Blueprint $table) {
-                if (!$this->indexExists('requests', 'requests_agent_id_index')) {
+                if (Schema::hasColumn('requests', 'agent_id') && !$this->indexExists('requests', 'requests_agent_id_index')) {
                     $table->index('agent_id');
                 }
-                if (!$this->indexExists('requests', 'requests_type_index')) {
+                if (Schema::hasColumn('requests', 'type') && !$this->indexExists('requests', 'requests_type_index')) {
                     $table->index('type');
                 }
-                if (!$this->indexExists('requests', 'requests_statut_index')) {
+                if (Schema::hasColumn('requests', 'statut') && !$this->indexExists('requests', 'requests_statut_index')) {
                     $table->index('statut');
                 }
-                if (!$this->indexExists('requests', 'requests_agent_id_statut_index')) {
+                if (Schema::hasColumn('requests', 'agent_id') && Schema::hasColumn('requests', 'statut') && !$this->indexExists('requests', 'requests_agent_id_statut_index')) {
                     $table->index(['agent_id', 'statut']);
                 }
             });
@@ -138,9 +138,9 @@ return new class extends Migration
         if (Schema::hasTable('holidays')) {
             Schema::table('holidays', function (Blueprint $table) {
                 $this->dropIndexIfExists('holidays', 'holidays_agent_id_index');
-                $this->dropIndexIfExists('holidays', 'holidays_statut_index');
+                $this->dropIndexIfExists('holidays', 'holidays_statut_demande_index');
                 $this->dropIndexIfExists('holidays', 'holidays_date_debut_date_fin_index');
-                $this->dropIndexIfExists('holidays', 'holidays_agent_id_statut_index');
+                $this->dropIndexIfExists('holidays', 'holidays_agent_id_statut_demande_index');
             });
         }
 
