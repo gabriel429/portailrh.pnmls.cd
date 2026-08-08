@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\TacheAssigned;
+use App\Exceptions\TaskHierarchyException;
 use App\Http\Resources\TacheResource;
 use App\Models\ActivitePlan;
 use App\Models\Tache;
@@ -12,6 +13,7 @@ use App\Models\TaskReport;
 use App\Models\Agent;
 use App\Services\NotificationService;
 use App\Services\RoleService;
+use App\Services\TaskValidationChainResolver;
 use App\Services\TacheWorkflowService;
 use App\Services\UserDataScope;
 use Illuminate\Database\Eloquent\Builder;
@@ -74,7 +76,7 @@ class TacheController extends ApiController
                 : $senAgentIds->all();
             $senTaches   = Tache::query()
                 ->whereIn('agent_id', $senAgentIds)
-                ->with(['agent', 'createur', 'validationResponsable', 'activitePlan', 'documents.agent'])
+                ->with(['agent', 'createur', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get();
             $senResource = TacheResource::collection($senTaches)->resolve();
@@ -93,7 +95,7 @@ class TacheController extends ApiController
                 $agentIds = Agent::where('departement_id', $deptId)->pluck('id');
                 $deptTaches = Tache::query()
                     ->whereIn('agent_id', $agentIds)
-                    ->with(['agent', 'createur', 'validationResponsable', 'activitePlan', 'documents.agent'])
+                    ->with(['agent', 'createur', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent'])
                     ->latest()
                     ->get();
                 $deptResource = TacheResource::collection($deptTaches)->resolve();
@@ -111,7 +113,7 @@ class TacheController extends ApiController
             if ($provinceId) {
                 $provinceTaches = Tache::query()
                     ->whereHas('agent', fn($q) => $q->where('province_id', $provinceId))
-                    ->with(['agent', 'createur', 'validationResponsable', 'activitePlan', 'documents.agent'])
+                    ->with(['agent', 'createur', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent'])
                     ->latest()
                     ->get();
                 $provinceResource = TacheResource::collection($provinceTaches)->resolve();
@@ -154,10 +156,7 @@ class TacheController extends ApiController
 
         $mesTaches = $agent
             ? (clone $mesTachesQuery)
-                ->with('createur')
-                ->with('validationResponsable')
-                ->with('activitePlan')
-                ->with('documents.agent')
+                ->with(['createur', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get()
             : collect();
@@ -165,7 +164,7 @@ class TacheController extends ApiController
         $tachesCreees = collect();
         if ($agent) {
             $tachesCreees = (clone $tachesCreeesQuery)
-                ->with(['agent', 'validationResponsable', 'activitePlan', 'documents.agent'])
+                ->with(['agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get();
         }
@@ -304,7 +303,6 @@ class TacheController extends ApiController
 
         return $this->success([
             'agents'          => $agentsDisponibles,
-            'validators'      => $workflow->availableValidatorsFor($user, $agent)->map(fn($a) => $this->agentOption($a))->values(),
             'current_agent_id'=> $agent->id,
             'can_multi_assign'=> $isSEN,
             'activites_pta'   => $activitesPta,
@@ -312,7 +310,6 @@ class TacheController extends ApiController
             'isSENAScope'     => $isSENA,
             'isProvinceScope' => $isSEP || $isCAFProvincial,
             'isLocalScope'    => $isSEL,
-            'validation_role' => $workflow->determineValidationRole($user),
             'default_source_emetteur' => $this->defaultSourceEmetteurForUser($user, $roles, $workflow),
             'source_emetteurs' => [
                 ['value' => 'directeur', 'label' => 'Directeur'],
@@ -375,7 +372,6 @@ class TacheController extends ApiController
             'agent_id'        => 'nullable|exists:agents,id',
             'agent_ids'       => 'nullable|array',
             'agent_ids.*'     => 'integer|exists:agents,id',
-            'validation_responsable_id' => 'required|exists:agents,id',
             'titre'           => 'required|string|max:255',
             'description'     => 'nullable|string',
             'source_type'     => 'required|in:pta,hors_pta',
@@ -409,7 +405,8 @@ class TacheController extends ApiController
         }
 
         $targetAgents = Agent::whereIn('id', $targetAgentIds)->get()->keyBy('id');
-        $validationAgent = Agent::findOrFail($validated['validation_responsable_id']);
+        $validationChains = collect();
+        $chainResolver = app(TaskValidationChainResolver::class);
         $isSEN = $user->hasRole('SEN');
         $isSENA = $roles->hasSENARole($user);
         $isSENOrSENA = $isSEN || $isSENA;
@@ -427,12 +424,13 @@ class TacheController extends ApiController
                 return response()->json(['message' => 'Vous ne pouvez pas assigner cette tâche à ' . $this->agentDisplayName($targetAgent) . '.'], 403);
             }
 
-            $level = $isSEN ? 'sen' : $workflow->determineManagementLevel($user);
-            $validatorScopeAgent = ($isSEP || $isCAFProvincial) ? $agent : $targetAgent;
-            if (!$workflow->isEligibleValidatorAgent($validationAgent, $level, $validatorScopeAgent)) {
+            try {
+                $validationChains->put($targetAgentId, $chainResolver->resolve($targetAgent));
+            } catch (TaskHierarchyException $exception) {
                 return response()->json([
-                    'message' => 'Le validateur choisi n’est pas autorisé pour ' . $this->agentDisplayName($targetAgent) . '.',
-                    'errors' => ['validation_responsable_id' => ['Choisissez un validateur autorisé pour le niveau hiérarchique de la tâche.']],
+                    'message' => $exception->getMessage(),
+                    'code' => $exception->errorCode,
+                    'errors' => ['agent_id' => [$exception->getMessage()]],
                 ], 422);
             }
         }
@@ -488,7 +486,6 @@ class TacheController extends ApiController
         $validated['pourcentage'] = 0;
         $validated['niveau_gestion'] = $workflow->determineManagementLevel($user);
         $validated['validation_responsable_role'] = $workflow->determineValidationRole($user);
-        $validated['validation_responsable_id'] = $validationAgent->id;
         $validated['validation_statut'] = 'non_requise';
         $validated['assignment_group'] = $targetAgentIds->count() > 1 ? (string) Str::uuid() : null;
         if ($validated['source_type'] !== 'pta') {
@@ -496,11 +493,14 @@ class TacheController extends ApiController
         }
 
         unset($validated['agent_ids']);
-        $createdTaches = DB::transaction(function () use ($targetAgentIds, $validated, $workflow, $agent, $request) {
-            return $targetAgentIds->map(function (int $targetAgentId) use ($validated, $workflow, $agent, $request) {
+        $createdTaches = DB::transaction(function () use ($targetAgentIds, $validationChains, $validated, $workflow, $agent, $request) {
+            return $targetAgentIds->map(function (int $targetAgentId) use ($validationChains, $validated, $workflow, $agent, $request) {
                 $payload = $validated;
                 $payload['agent_id'] = $targetAgentId;
+                $chain = $validationChains->get($targetAgentId);
+                $payload['validation_responsable_id'] = $chain[0]['validator_agent_id'];
                 $tache = Tache::create($payload);
+                $tache->validationSteps()->createMany($chain);
                 $workflow->recordHistory(
                     $tache,
                     $agent,
@@ -530,7 +530,7 @@ class TacheController extends ApiController
         });
 
         $tache = $createdTaches->first();
-        $resource = TacheResource::make($tache->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'documents.agent']));
+        $resource = TacheResource::make($tache->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent']));
 
         return $this->resource($resource, [], [
             'message' => 'Tâche créée avec succès.',
@@ -547,6 +547,7 @@ class TacheController extends ApiController
         $roles = app(RoleService::class);
         $workflow = $this->workflowService();
         $isSEP = $roles->isSepManager($user);
+        $isSEL = $workflow->isSelManager($user) || $workflow->isLocalSupport($user);
         $taskAgent = $tache->agent ?: ($tache->agent_id ? Agent::find($tache->agent_id) : null);
 
         // SEN/SENA : accès à toutes les tâches des agents du SEN (pas besoin d'agent record)
@@ -600,7 +601,7 @@ class TacheController extends ApiController
 
         // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
         if ($isSEN || ($isSENA && $roles->canManageSenaScopedAgent($user, $taskAgent)) || $isAssistant) {
-            $tache->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
+            $tache->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
             $resource = TacheResource::make($tache);
             return $this->resource($resource, [
                 'isCreateur' => $isCreateur,
@@ -641,7 +642,7 @@ class TacheController extends ApiController
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 
-        $tache->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
+        $tache->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
 
         return $this->resource(TacheResource::make($tache), [
             'isCreateur' => $isCreateur,
@@ -781,30 +782,20 @@ class TacheController extends ApiController
                 $workflow->reopenAfterBlocked($tache, $agent, $validated['contenu']);
             }
 
-            $tache->update([
-                'statut' => $validated['statut'],
-                'pourcentage' => $nouveauPourcentage,
-                'validation_statut' => $validated['statut'] === 'terminee' ? 'a_valider' : 'non_requise',
-                'soumise_validation_at' => $validated['statut'] === 'terminee' ? now() : null,
-                'validation_commentaire' => $validated['statut'] === 'terminee' ? $validated['contenu'] : null,
-                'blocked_by' => null,
-                'blocked_at' => null,
-                'blocking_reason' => null,
-            ]);
-
             if ($validated['statut'] === 'terminee') {
-                $workflow->recordHistory(
-                    $tache,
-                    $agent,
-                    'soumission_validation',
-                    'Soumission pour validation',
-                    $ancienStatut,
-                    $validated['statut'],
-                    'non_requise',
-                    'a_valider',
-                    $validated['contenu']
-                );
+                $workflow->submitForValidation($tache, $agent, $validated['contenu']);
             } else {
+                $tache->update([
+                    'statut' => $validated['statut'],
+                    'pourcentage' => $nouveauPourcentage,
+                    'validation_statut' => 'non_requise',
+                    'soumise_validation_at' => null,
+                    'validation_commentaire' => null,
+                    'blocked_by' => null,
+                    'blocked_at' => null,
+                    'blocking_reason' => null,
+                ]);
+
                 $workflow->recordHistory(
                     $tache,
                     $agent,
@@ -858,7 +849,7 @@ class TacheController extends ApiController
             );
         }
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
             'message' => 'Statut mis à jour avec succès.',
@@ -923,7 +914,7 @@ class TacheController extends ApiController
         }
 
         return $this->success([
-            'tache'   => TacheResource::make($tache->fresh(['createur', 'agent', 'validationResponsable', 'activitePlan'])),
+            'tache'   => TacheResource::make($tache->fresh(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan'])),
             'message' => 'Tâche mise à jour avec succès.',
         ]);
     }
@@ -1021,7 +1012,7 @@ class TacheController extends ApiController
             $message
         );
 
-        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
+        $resource = TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']));
 
         return $this->resource($resource, [], [
             'message' => 'Commentaire ajouté.',
@@ -1042,12 +1033,13 @@ class TacheController extends ApiController
             'commentaire' => 'nullable|string|max:1000',
         ]);
 
-        $workflow->validateTask($tache, $agent, $validated['commentaire'] ?? null);
+        $isFinalValidation = $workflow->validateTask($tache, $agent, $validated['commentaire'] ?? null);
+        $actionLabel = $isFinalValidation ? 'Tâche validée' : 'Étape de validation approuvée';
 
         TacheCommentaire::create([
             'tache_id' => $tache->id,
             'agent_id' => $agent->id,
-            'contenu' => $validated['commentaire'] ?: 'Tâche validée.',
+            'contenu' => $validated['commentaire'] ?: $actionLabel . '.',
             'type_commentaire' => 'validation',
             'ancien_statut' => $tache->statut,
             'nouveau_statut' => $tache->statut,
@@ -1056,14 +1048,16 @@ class TacheController extends ApiController
         $this->notifyTacheParticipants(
             $tache,
             $user->id,
-            'Tâche validée',
-            $this->agentDisplayName($agent) . ' a validé la tâche "' . $tache->titre . '".'
+            $actionLabel,
+            $this->agentDisplayName($agent) . ($isFinalValidation
+                ? ' a validé définitivement la tâche "' . $tache->titre . '".'
+                : ' a approuvé une étape de validation de la tâche "' . $tache->titre . '".')
         );
 
         return $this->resource(
-            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
+            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
             [],
-            ['message' => 'Tâche validée avec succès.']
+            ['message' => $isFinalValidation ? 'Tâche validée avec succès.' : 'Étape de validation approuvée avec succès.']
         );
     }
 
@@ -1100,7 +1094,7 @@ class TacheController extends ApiController
         );
 
         return $this->resource(
-            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
+            TacheResource::make($tache->fresh()->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur'])),
             [],
             ['message' => 'Tâche retournée pour correction.']
         );

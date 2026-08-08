@@ -82,6 +82,11 @@ class Tache extends Model
         return $this->hasMany(TacheHistory::class)->latest();
     }
 
+    public function validationSteps(): HasMany
+    {
+        return $this->hasMany(TacheValidationStep::class)->orderBy('step_order');
+    }
+
     public function validateur(): BelongsTo
     {
         return $this->belongsTo(Agent::class, 'validated_by');

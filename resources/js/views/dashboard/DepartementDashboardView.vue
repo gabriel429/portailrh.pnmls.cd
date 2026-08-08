@@ -43,11 +43,11 @@
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="dept-kpi-pill" @click="router.push({ path: '/taches', hash: '#agenda' })">
+          <div class="dept-kpi-pill" @click="router.push({ path: '/taches', hash: '#echeances' })">
             <div class="dept-kpi-pill-icon"><i class="fas fa-calendar-day"></i></div>
             <div>
               <div class="dept-kpi-pill-val">{{ data?.upcoming_deadlines?.length ?? 0 }}</div>
-              <div class="dept-kpi-pill-lbl">Agenda</div>
+              <div class="dept-kpi-pill-lbl">Échéances des tâches</div>
             </div>
             <i class="fas fa-chevron-right dept-kpi-pill-arrow"></i>
           </div>
@@ -343,14 +343,14 @@
         </div>
       </div>
 
-      <!-- ════════ AGENDA — ÉCHÉANCES À VENIR ════════ -->
+      <!-- Échéances des tâches à venir -->
       <div class="dept-section">
         <div class="dept-section-head">
           <div class="dept-section-icon" style="background:#fce7f3;color:#db2777;">
             <i class="fas fa-calendar-day"></i>
           </div>
           <div>
-            <h3 class="dept-section-title">Agenda — Échéances à venir</h3>
+            <h3 class="dept-section-title">Échéances des tâches à venir</h3>
             <p class="dept-section-sub">Tâches avec échéance dans les 7 prochains jours</p>
           </div>
         </div>

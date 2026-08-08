@@ -39,13 +39,13 @@
             <i class="fas fa-search-plus sep-kpi-drill-icon" :title="drillTitle"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="sep-kpi sep-kpi-clickable" @click="router.push({ path: '/taches', hash: '#agenda' })">
+          <div class="sep-kpi sep-kpi-clickable" @click="router.push({ path: '/taches', hash: '#echeances' })">
             <div class="sep-kpi-icon"><i class="fas fa-calendar-day"></i></div>
             <div>
               <div class="sep-kpi-val">{{ data.upcoming_deadlines?.length ?? 0 }}</div>
-              <div class="sep-kpi-lbl">Agenda</div>
+              <div class="sep-kpi-lbl">Échéances des tâches</div>
             </div>
-            <i class="fas fa-arrow-right sep-kpi-drill-icon" title="Voir agenda"></i>
+            <i class="fas fa-arrow-right sep-kpi-drill-icon" title="Voir les échéances des tâches"></i>
           </div>
           <div class="kpi-divider"></div>
           <div class="sep-kpi sep-kpi-clickable" @click="openProvDrilldown('presence')">
@@ -578,7 +578,7 @@
         </div>
         <div class="sep-agenda-strip">
           <div class="sep-agenda-title">
-            <i class="fas fa-calendar-check me-1"></i>Agenda - 7 prochains jours
+            <i class="fas fa-calendar-check me-1"></i>Échéances des tâches - 7 prochains jours
           </div>
           <div v-if="!(data.upcoming_deadlines?.length)" class="sep-agenda-empty">Aucune échéance proche</div>
           <div v-else class="sep-agenda-list">

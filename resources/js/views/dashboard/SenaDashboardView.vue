@@ -131,7 +131,7 @@
               <i class="fas fa-calendar-check"></i>
             </div>
             <div>
-              <h3 class="sena-section-title">Agenda — Échéances à venir</h3>
+              <h3 class="sena-section-title">Échéances des tâches à venir</h3>
               <p class="sena-section-sub">
                 {{ data?.scope_label === 'sena'
                   ? 'Tâches de votre périmètre avec échéance dans les 7 prochains jours'

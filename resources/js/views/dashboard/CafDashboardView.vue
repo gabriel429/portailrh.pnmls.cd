@@ -38,11 +38,11 @@
             <i class="fas fa-search-plus caf-kpi-drill-icon"></i>
           </div>
           <div class="kpi-divider"></div>
-          <div class="caf-kpi caf-kpi-clickable" @click="router.push({ path: '/taches', hash: '#agenda' })">
+          <div class="caf-kpi caf-kpi-clickable" @click="router.push({ path: '/taches', hash: '#echeances' })">
             <div class="caf-kpi-icon"><i class="fas fa-calendar-day"></i></div>
             <div>
               <div class="caf-kpi-val">{{ data.upcoming_deadlines?.length ?? 0 }}</div>
-              <div class="caf-kpi-lbl">Agenda</div>
+              <div class="caf-kpi-lbl">Échéances des tâches</div>
             </div>
             <i class="fas fa-arrow-right caf-kpi-drill-icon"></i>
           </div>

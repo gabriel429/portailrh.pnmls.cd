@@ -58,6 +58,26 @@ class TacheResource extends JsonResource
             'validation_responsable' => $this->whenLoaded('validationResponsable', function () {
                 return $this->validationResponsable ? AgentResource::make($this->validationResponsable)->toArray(request()) : null;
             }),
+            'validation_steps' => $this->whenLoaded('validationSteps', function () use ($request) {
+                return $this->validationSteps->map(function ($step) use ($request) {
+                    return [
+                        'id' => $step->id,
+                        'step_order' => $step->step_order,
+                        'step_code' => $step->step_code,
+                        'structure_type' => $step->structure_type,
+                        'structure_id' => $step->structure_id,
+                        'statut' => $step->statut,
+                        'acted_at' => optional($step->acted_at)?->toIso8601String(),
+                        'commentaire' => $step->commentaire,
+                        'validator' => $step->relationLoaded('validator') && $step->validator
+                            ? AgentResource::make($step->validator)->resolve($request)
+                            : null,
+                        'actor' => $step->relationLoaded('actor') && $step->actor
+                            ? AgentResource::make($step->actor)->resolve($request)
+                            : null,
+                    ];
+                })->values()->all();
+            }),
             'commentaires' => $this->whenLoaded('commentaires', function () use ($request) {
                 return $this->commentaires->map(function ($commentaire) use ($request) {
                     return [

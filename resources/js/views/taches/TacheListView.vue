@@ -56,7 +56,7 @@
         </button>
       </div>
 
-      <div id="agenda" class="dash-panel mt-2">
+      <div id="echeances" class="dash-panel mt-2">
         <header class="panel-head">
           <div>
             <h3 class="panel-title">
@@ -94,7 +94,7 @@
         <div v-if="taskViewMode === 'calendar'" class="task-calendar-view" :aria-busy="loading">
           <div class="task-calendar-toolbar">
             <div>
-              <span class="task-calendar-eyebrow">Agenda des échéances</span>
+              <span class="task-calendar-eyebrow">Échéances des tâches</span>
               <h4>{{ calendarMonthLabel }}</h4>
             </div>
             <div class="task-calendar-actions">
@@ -334,13 +334,8 @@
             </div>
 
             <div class="task-form-wide">
-              <label for="task_validation_responsable_id" class="form-label fw-bold">Validateur final <span class="text-danger">*</span></label>
-              <select id="task_validation_responsable_id" v-model="createForm.validation_responsable_id" class="form-select" required>
-                <option value="">-- Choisir le validateur autorisé --</option>
-                <option v-for="validator in createValidators" :key="validator.id" :value="validator.id">
-                  {{ agentOptionLabel(validator) }}
-                </option>
-              </select>
+              <label for="task_validation_responsable" class="form-label fw-bold">Validateur</label>
+              <input id="task_validation_responsable" class="form-control" value="Déterminé par la hiérarchie de l’agent" readonly>
             </div>
 
             <div>
@@ -432,7 +427,7 @@ const normalizeStatusFilter = (value) => {
   return validStatusFilters.includes(filter) ? filter : 'all'
 }
 const statusFilter = ref(normalizeStatusFilter(route.query.statut))
-const taskViewMode = ref(route.hash === '#agenda' ? 'calendar' : 'list')
+const taskViewMode = ref(['#echeances', '#agenda'].includes(route.hash) ? 'calendar' : 'list')
 const calendarCursor = ref(startOfMonth(new Date()))
 const calendarSelectedDate = ref(toDateKey(new Date()))
 const createModalOpen = ref(false)
@@ -440,7 +435,6 @@ const loadingCreateData = ref(false)
 const submittingCreate = ref(false)
 const createErrors = ref([])
 const createAgents = ref([])
-const createValidators = ref([])
 const createActivitesPta = ref([])
 const createSourceEmetteurs = ref([])
 const createSelectedDocuments = ref([])
@@ -470,7 +464,7 @@ watch(() => route.query.statut, (val) => {
 })
 
 watch(() => route.hash, (hash) => {
-  if (hash === '#agenda') taskViewMode.value = 'calendar'
+  if (['#echeances', '#agenda'].includes(hash)) taskViewMode.value = 'calendar'
 })
 
 watch(() => [route.name, route.query.scope], () => {
@@ -640,7 +634,6 @@ function defaultCreateForm() {
   return {
     agent_id: '',
     agent_ids: [],
-    validation_responsable_id: '',
     titre: '',
     description: '',
     source_type: 'hors_pta',
@@ -673,7 +666,6 @@ async function loadCreateData() {
   try {
     const { data } = await getCreateData()
     createAgents.value = data.data.agents || []
-    createValidators.value = data.data.validators || []
     createActivitesPta.value = data.data.activites_pta || []
     createSourceEmetteurs.value = data.data.source_emetteurs || []
     createForm.value.source_emetteur = data.data.default_source_emetteur || 'directeur'

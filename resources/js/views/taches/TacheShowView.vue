@@ -59,10 +59,13 @@
                   <dt class="text-muted">Source</dt>
                   <dd>{{ sourceEmetteurLabel(tache.source_emetteur) }}</dd>
 
-                  <dt class="text-muted">Validation finale</dt>
+                  <dt class="text-muted">Validateur actuel</dt>
                   <dd>
-                    {{ tache.validation_responsable?.nom_complet || validationRoleLabel }}
-                    <small v-if="tache.validation_responsable?.role?.nom_role" class="text-muted d-block">
+                    {{ activeValidationStep?.validator?.nom_complet || tache.validation_responsable?.nom_complet || validationRoleLabel }}
+                    <small v-if="activeValidationStep" class="text-muted d-block">
+                      {{ validationStepLabel(activeValidationStep.step_code) }}
+                    </small>
+                    <small v-else-if="tache.validation_responsable?.role?.nom_role" class="text-muted d-block">
                       {{ tache.validation_responsable.role.nom_role }}
                     </small>
                   </dd>
@@ -104,6 +107,33 @@
                     </div>
                   </dd>
                 </dl>
+
+                <template v-if="validationSteps.length">
+                  <hr>
+                  <section aria-labelledby="validation-chain-title">
+                    <h6 id="validation-chain-title" class="fw-bold mb-3">Circuit de validation</h6>
+                    <ol class="validation-chain mb-0">
+                      <li v-for="step in validationSteps" :key="step.id || step.step_order" :class="validationStepClass(step.statut)">
+                        <span class="validation-step-marker" aria-hidden="true">
+                          <i :class="validationStepIcon(step.statut)"></i>
+                        </span>
+                        <div class="validation-step-content">
+                          <div class="d-flex align-items-start justify-content-between gap-2 flex-wrap">
+                            <div>
+                              <strong>{{ validationStepLabel(step.step_code) }}</strong>
+                              <span v-if="step.validator?.nom_complet" class="d-block text-muted">{{ step.validator.nom_complet }}</span>
+                            </div>
+                            <span class="validation-step-status">{{ validationStepStatusLabel(step.statut) }}</span>
+                          </div>
+                          <small v-if="step.acted_at" class="text-muted d-block mt-1">
+                            Traité le {{ formatDateTime(step.acted_at) }}<template v-if="step.actor?.nom_complet"> par {{ step.actor.nom_complet }}</template>
+                          </small>
+                          <small v-if="step.commentaire" class="d-block mt-1">{{ step.commentaire }}</small>
+                        </div>
+                      </li>
+                    </ol>
+                  </section>
+                </template>
 
                 <template v-if="tache.description">
                   <hr>
@@ -513,6 +543,15 @@ const histories = computed(() => {
   return [...tache.value.histories].sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 })
 
+const validationSteps = computed(() => {
+  if (!Array.isArray(tache.value?.validation_steps)) return []
+  return [...tache.value.validation_steps].sort((a, b) => a.step_order - b.step_order)
+})
+
+const activeValidationStep = computed(() => {
+  return validationSteps.value.find((step) => step.statut === 'active') || null
+})
+
 const isOverdue = computed(() => {
   if (!tache.value?.date_echeance || tache.value.validation_statut === 'validee') return false
   return new Date(tache.value.date_echeance) < new Date()
@@ -621,7 +660,7 @@ async function handleValidateFinal() {
     const { data } = await validateTask(route.params.id, validationForm.value)
     applyTacheResponse(data)
     validationForm.value.commentaire = ''
-    ui.addToast('Tâche validée avec succès.', 'success')
+    ui.addToast(data?.message || 'Étape de validation approuvée avec succès.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la validation finale.', 'danger')
   } finally {
@@ -754,6 +793,43 @@ function validationLabel(statut) {
     rejetee: 'Rejetéee',
   }
   return map[statut] || 'Non defini'
+}
+
+function validationStepLabel(code) {
+  const map = {
+    cell_manager: 'Chef de Cellule',
+    section_manager: 'Chef de Section',
+    department_director: 'Directeur du département',
+    sen: 'Secrétariat Exécutif National',
+    sep: 'Secrétariat Exécutif Provincial',
+    sel: 'Secrétariat Exécutif Local',
+  }
+  return map[code] || code
+}
+
+function validationStepStatusLabel(statut) {
+  const map = {
+    pending: 'En attente',
+    active: 'À valider',
+    approved: 'Validée',
+    rejected: 'Rejetée',
+    cancelled: 'Annulée',
+  }
+  return map[statut] || statut
+}
+
+function validationStepIcon(statut) {
+  const map = {
+    active: 'fas fa-hourglass-half',
+    approved: 'fas fa-check',
+    rejected: 'fas fa-times',
+    cancelled: 'fas fa-minus',
+  }
+  return map[statut] || 'fas fa-circle'
+}
+
+function validationStepClass(statut) {
+  return `validation-step validation-step-${statut || 'pending'}`
 }
 
 function commentTypeLabel(type) {
@@ -916,6 +992,68 @@ onBeforeUnmount(() => {
   color: #1e293b;
   font-weight: 600;
   overflow-wrap: anywhere;
+}
+
+.validation-chain {
+  display: grid;
+  gap: .75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.validation-step {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr);
+  gap: .75rem;
+  align-items: start;
+}
+
+.validation-step-marker {
+  display: inline-grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  color: #64748b;
+  background: #fff;
+  font-size: .75rem;
+}
+
+.validation-step-content {
+  min-width: 0;
+  padding: .3rem 0 .75rem;
+  border-bottom: 1px solid #e2e8f0;
+  overflow-wrap: anywhere;
+}
+
+.validation-step-status {
+  color: #475569;
+  font-size: .78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.validation-step-active .validation-step-marker {
+  border-color: #d97706;
+  color: #b45309;
+  background: #fffbeb;
+}
+
+.validation-step-approved .validation-step-marker {
+  border-color: #15803d;
+  color: #15803d;
+  background: #f0fdf4;
+}
+
+.validation-step-rejected .validation-step-marker {
+  border-color: #dc2626;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.validation-step-cancelled {
+  opacity: .65;
 }
 
 .dash-panel form .row.g-3,

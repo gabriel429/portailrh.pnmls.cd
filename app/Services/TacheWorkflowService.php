@@ -7,6 +7,7 @@ use App\Models\Tache;
 use App\Models\TacheHistory;
 use App\Models\User;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class TacheWorkflowService
@@ -62,6 +63,15 @@ class TacheWorkflowService
             return false;
         }
 
+        $activeStep = $tache->validationSteps()->where('statut', 'active')->first();
+        if ($activeStep) {
+            return (int) $activeStep->validator_agent_id === (int) $agent->id;
+        }
+
+        if ($tache->validationSteps()->exists()) {
+            return false;
+        }
+
         if ($tache->validation_responsable_id) {
             return (int) $tache->validation_responsable_id === (int) $agent->id;
         }
@@ -99,6 +109,8 @@ class TacheWorkflowService
         $tache->blocking_reason = null;
         $tache->save();
 
+        $this->activateValidationChain($tache);
+
         $this->recordHistory(
             $tache,
             $agent,
@@ -112,35 +124,91 @@ class TacheWorkflowService
         );
     }
 
-    public function validateTask(Tache $tache, Agent $agent, ?string $commentaire = null): void
+    public function validateTask(Tache $tache, Agent $agent, ?string $commentaire = null): bool
     {
-        $oldValidation = $tache->validation_statut;
+        return DB::transaction(function () use ($tache, $agent, $commentaire) {
+            $oldValidation = $tache->validation_statut;
+            $activeStep = $tache->validationSteps()
+                ->where('statut', 'active')
+                ->lockForUpdate()
+                ->first();
 
-        $tache->validation_statut = 'validee';
-        $tache->validation_commentaire = $commentaire;
-        $tache->validated_by = $agent->id;
-        $tache->validated_at = now();
-        $tache->rejected_by = null;
-        $tache->rejected_at = null;
-        $tache->save();
+            if ($activeStep) {
+                $activeStep->update([
+                    'statut' => 'approved',
+                    'acted_by' => $agent->id,
+                    'acted_at' => now(),
+                    'commentaire' => $commentaire,
+                ]);
 
-        $this->recordHistory(
-            $tache,
-            $agent,
-            'validation_finale',
-            'Validation finale',
-            $tache->statut,
-            $tache->statut,
-            $oldValidation,
-            $tache->validation_statut,
-            $commentaire
-        );
+                $nextStep = $tache->validationSteps()
+                    ->where('statut', 'pending')
+                    ->orderBy('step_order')
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($nextStep) {
+                    $nextStep->update(['statut' => 'active']);
+                    $tache->validation_responsable_id = $nextStep->validator_agent_id;
+                    $tache->validation_commentaire = $commentaire;
+                    $tache->save();
+
+                    $this->recordHistory(
+                        $tache,
+                        $agent,
+                        'validation_etape',
+                        'Validation d’une étape',
+                        $tache->statut,
+                        $tache->statut,
+                        $oldValidation,
+                        $tache->validation_statut,
+                        $commentaire,
+                        ['step_code' => $activeStep->step_code, 'next_step_code' => $nextStep->step_code]
+                    );
+
+                    return false;
+                }
+            }
+
+            $tache->validation_statut = 'validee';
+            $tache->validation_commentaire = $commentaire;
+            $tache->validated_by = $agent->id;
+            $tache->validated_at = now();
+            $tache->rejected_by = null;
+            $tache->rejected_at = null;
+            $tache->save();
+
+            $this->recordHistory(
+                $tache,
+                $agent,
+                'validation_finale',
+                'Validation finale',
+                $tache->statut,
+                $tache->statut,
+                $oldValidation,
+                $tache->validation_statut,
+                $commentaire
+            );
+
+            return true;
+        });
     }
 
     public function rejectTask(Tache $tache, Agent $agent, ?string $commentaire = null): void
     {
         $oldStatus = $tache->statut;
         $oldValidation = $tache->validation_statut;
+
+        $activeStep = $tache->validationSteps()->where('statut', 'active')->first();
+        if ($activeStep) {
+            $activeStep->update([
+                'statut' => 'rejected',
+                'acted_by' => $agent->id,
+                'acted_at' => now(),
+                'commentaire' => $commentaire,
+            ]);
+            $tache->validationSteps()->where('statut', 'pending')->update(['statut' => 'cancelled']);
+        }
 
         $tache->statut = 'en_cours';
         $tache->validation_statut = 'rejetee';
@@ -214,6 +282,14 @@ class TacheWorkflowService
 
     public function finalValidators(Tache $tache): Collection
     {
+        $activeStep = $tache->validationSteps()->where('statut', 'active')->first();
+        if ($activeStep) {
+            return User::query()
+                ->with(['role', 'agent.departement'])
+                ->whereHas('agent', fn($query) => $query->whereKey($activeStep->validator_agent_id))
+                ->get();
+        }
+
         if ($tache->validation_responsable_id) {
             return User::query()
                 ->with(['role', 'agent.departement'])
@@ -246,6 +322,28 @@ class TacheWorkflowService
                 ->get(),
             default => collect(),
         };
+    }
+
+    public function activateValidationChain(Tache $tache): void
+    {
+        if (!$tache->validationSteps()->exists()) {
+            return;
+        }
+
+        $tache->validationSteps()->update([
+            'statut' => 'pending',
+            'acted_by' => null,
+            'acted_at' => null,
+            'commentaire' => null,
+        ]);
+
+        $firstStep = $tache->validationSteps()->orderBy('step_order')->first();
+        $firstStep->update(['statut' => 'active']);
+
+        if ((int) $tache->validation_responsable_id !== (int) $firstStep->validator_agent_id) {
+            $tache->validation_responsable_id = $firstStep->validator_agent_id;
+            $tache->save();
+        }
     }
 
     public function recordHistory(
