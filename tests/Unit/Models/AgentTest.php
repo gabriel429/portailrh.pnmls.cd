@@ -6,8 +6,6 @@ use Tests\TestCase;
 use App\Models\Agent;
 use App\Models\User;
 use App\Models\Department;
-use App\Models\Grade;
-use App\Models\Fonction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class AgentTest extends TestCase
@@ -17,18 +15,18 @@ class AgentTest extends TestCase
     /**
      * Test agent creation
      */
-    public function test_can_create_agent()
+    public function test_can_create_agent(): void
     {
         $agent = Agent::factory()->create([
-            'matricule' => 'PNM-TEST001',
+            'matricule_etat' => 'PNM-TEST001',
             'nom' => 'Test',
             'prenom' => 'Agent',
-            'email' => 'test.agent@pnmls.cd'
+            'email_professionnel' => 'test.agent@pnmls.cd',
         ]);
 
         $this->assertDatabaseHas('agents', [
-            'matricule' => 'PNM-TEST001',
-            'email' => 'test.agent@pnmls.cd'
+            'matricule_etat' => 'PNM-TEST001',
+            'email_professionnel' => 'test.agent@pnmls.cd',
         ]);
 
         $this->assertEquals('Test', $agent->nom);
@@ -38,7 +36,7 @@ class AgentTest extends TestCase
     /**
      * Test agent full name accessor
      */
-    public function test_agent_full_name_accessor()
+    public function test_agent_full_name_accessor(): void
     {
         $agent = Agent::factory()->make([
             'nom' => 'Kabamba',
@@ -46,72 +44,68 @@ class AgentTest extends TestCase
             'postnom' => 'Pierre'
         ]);
 
-        $this->assertEquals('Kabamba Jean Pierre', $agent->nom_complet);
+        $this->assertEquals('Jean Kabamba', $agent->nom_complet);
     }
 
     /**
      * Test agent relationships
      */
-    public function test_agent_belongs_to_user()
+    public function test_agent_has_one_user(): void
     {
-        $user = User::factory()->create();
-        $agent = Agent::factory()->create([
-            'user_id' => $user->id
-        ]);
+        $agent = Agent::factory()->create();
+        $user = User::factory()->create(['agent_id' => $agent->id]);
 
         $this->assertInstanceOf(User::class, $agent->user);
-        $this->assertEquals($user->id, $agent->user->id);
+        $this->assertTrue($user->is($agent->user));
     }
 
     /**
      * Test agent department relationship
      */
-    public function test_agent_belongs_to_department()
+    public function test_agent_belongs_to_department(): void
     {
-        $department = \App\Models\Department::factory()->create();
+        $department = Department::create([
+            'code' => 'TEST',
+            'nom' => 'Département test',
+        ]);
         $agent = Agent::factory()->create([
-            'department_id' => $department->id
+            'departement_id' => $department->id,
         ]);
 
-        $this->assertInstanceOf(\App\Models\Department::class, $agent->department);
-        $this->assertEquals($department->id, $agent->department->id);
+        $this->assertInstanceOf(Department::class, $agent->departement);
+        $this->assertTrue($department->is($agent->departement));
     }
 
     /**
      * Test agent active scope
      */
-    public function test_agent_active_scope()
+    public function test_agent_active_scope(): void
     {
-        // Create active agents
-        Agent::factory()->count(3)->create(['statut' => 'Actif']);
-        
-        // Create inactive agents
-        Agent::factory()->count(2)->create(['statut' => 'Inactif']);
+        Agent::factory()->count(3)->create(['statut' => 'actif']);
+        Agent::factory()->count(2)->create(['statut' => 'ancien']);
 
-        $activeAgents = Agent::where('statut', 'Actif')->get();
-        
-        $this->assertCount(3, $activeAgents);
+        $this->assertCount(3, Agent::actifs()->get());
     }
 
     /**
      * Test agent search functionality
      */
-    public function test_agent_search_by_matricule()
+    public function test_agent_search_by_matricule(): void
     {
         $agent = Agent::factory()->create([
-            'matricule' => 'PNM-SEARCH001'
+            'matricule_etat' => 'PNM-SEARCH001',
         ]);
 
-        $found = Agent::where('matricule', 'LIKE', '%SEARCH%')->first();
-        
+        $found = Agent::where('matricule_etat', 'LIKE', '%SEARCH%')->first();
+
         $this->assertNotNull($found);
-        $this->assertEquals('PNM-SEARCH001', $found->matricule);
+        $this->assertEquals('PNM-SEARCH001', $found->matricule_etat);
     }
 
     /**
      * Test agent soft deletes
      */
-    public function test_agent_soft_deletes()
+    public function test_agent_soft_deletes(): void
     {
         $agent = Agent::factory()->create();
         $agentId = $agent->id;
@@ -119,8 +113,7 @@ class AgentTest extends TestCase
         $agent->delete();
 
         $this->assertSoftDeleted('agents', ['id' => $agentId]);
-        
-        // Agent should still exist in trashed
+
         $trashedAgent = Agent::withTrashed()->find($agentId);
         $this->assertNotNull($trashedAgent);
     }

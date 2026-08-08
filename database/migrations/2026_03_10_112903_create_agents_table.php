@@ -27,9 +27,9 @@ return new class extends Migration
             $table->string('telephone')->nullable();
             $table->text('adresse')->nullable();
             $table->string('poste_actuel')->nullable();
-            $table->foreignId('departement_id')->nullable()->constrained();
-            $table->foreignId('province_id')->nullable()->constrained();
-            $table->foreignId('role_id')->nullable()->constrained();
+            $table->unsignedBigInteger('departement_id')->nullable();
+            $table->unsignedBigInteger('province_id')->nullable();
+            $table->unsignedBigInteger('role_id')->nullable();
             $table->date('date_embauche');
             $table->enum('statut', ['actif', 'suspendu', 'ancien'])->default('actif');
             $table->string('remember_token')->nullable();

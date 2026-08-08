@@ -2,195 +2,212 @@
 
 namespace Tests\Feature\Controllers;
 
-use Tests\TestCase;
-use App\Models\Holiday;
+use App\Events\CongeApproved;
+use App\Events\CongeRequested;
 use App\Models\Agent;
+use App\Models\Holiday;
+use App\Models\Role;
 use App\Models\User;
-use\Models\Role;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use LaravelumSanctum;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class HolidayControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected $user;
-    protected $agent;
+    private User $rhUser;
+    private Agent $rhAgent;
+    private Agent $agent;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Create user with RH role
-        $this->user = User::factory()->create();
-        $role = Role::firstOrCreate(['name' => 'RH National']);
-        $this->user->roles()->attach($role->
-        
-        $this->agent = Agent::factory()->create([
-            'user_id' => $this->user->id
+
+        Event::fake([CongeApproved::class, CongeRequested::class]);
+
+        $rhRole = Role::firstOrCreate(['nom_role' => 'RH National']);
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+
+        $this->rhAgent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'role_id' => $rhRole->id,
+            'statut' => 'actif',
         ]);
+        $this->rhUser = User::factory()->create([
+            'agent_id' => $this->rhAgent->id,
+            'role_id' => $rhRole->id,
+        ]);
+        $this->agent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'role_id' => $agentRole->id,
+            'statut' => 'actif',
+        ]);
+
+        Sanctum::actingAs($this->rhUser);
     }
 
-    /**
-     * Test listing holidays
-     */
-    public function test_can_list_holidays()
+    public function test_can_list_holidays(): void
     {
-        Sanctum::actingAs($this->user);
-
         Holiday::factory()->count(5)->create();
 
-        $response = $this->getJson('/api/holidays');
-
-        $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'data' => [
-                         '*' => ['id', 'agent_id', 'date_debut', 'date_fin', 'statut']
-                     ]
-                 ]);
+        $this->getJson('/api/holidays')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => ['id', 'agent_id', 'date_debut', 'date_fin', 'statut_demande'],
+                ],
+                'current_page',
+                'last_page',
+                'per_page',
+                'total',
+            ]);
     }
 
-    holiday request creation
-    */
-    public function test_can_create_holiday_request()
+    public function test_can_create_holiday_request(): void
     {
-        Sanctum::actingAs($this->user);
-        
-        $holidayData = [
-            'agent_id' => $this->agent->id,
-            'date_debut' => now()->addDays(7)->format('Y-m-d'),
-            'date_fin' => now()->addDays(14)->format('Y-m-d'),
-            'type' => 'Congé annuel',
-            'motif' => 'Congé annuel réglementaire'
-        ];
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
 
-        $response = $this->postJson('/api/holidays', $holidayData);
-        
-        $response->assertStatus(201)
-                 ->assertJsonStructure([
-                     'data' => ['id', 'agent_id', 'date_debut', 'date_fin', 'type']
-                 ]);
+        $response = $this->postJson('/api/holidays', [
+            'agent_id' => $this->agent->id,
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'type_conge' => 'annuel',
+            'motif' => 'Congé annuel réglementaire',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('holiday.agent_id', $this->agent->id)
+            ->assertJsonPath('holiday.type_conge', 'annuel')
+            ->assertJsonPath('holiday.statut_demande', 'en_attente');
 
         $this->assertDatabaseHas('holidays', [
             'agent_id' => $this->agent->id,
-            'type' => 'Congé annuel'
+            'type_conge' => 'annuel',
+            'statut_demande' => 'en_attente',
+            'demande_par' => $this->rhAgent->id,
         ]);
     }
 
-    /**
-     * Test approve holiday approval
-     */
-    public function test_can_approve_holiday()
+    public function test_can_approve_holiday(): void
     {
-        Sanctum::actingAs($this->user);
-        
-        $holiday = Holiday::factory()->create([
-            'statut' => 'En attente'
+        $holiday = $this->pendingHoliday();
+
+        $this->postJson("/api/holidays/{$holiday->id}/approve")
+            ->assertOk()
+            ->assertJsonPath('holiday.statut_demande', 'approuve');
+
+        $this->assertDatabaseHas('holidays', [
+            'id' => $holiday->id,
+            'statut_demande' => 'approuve',
+            'approuve_par' => $this->rhAgent->id,
         ]);
-
-        $response = $this->postJson("/api/holidays/{$holiday->id}/approve");
-        
-        $response->assertStatus(200);
-
-        $holiday->refresh();
-        $this->assertEquals('Approuvé', $holiday->statut);
     }
 
-    /**
-     * Test refuse holiday
-     */
-    public function test_can_refuse_holiday()
+    public function test_can_refuse_holiday(): void
     {
-        Sanctum::actingAs($this->user);
-        
-        $holiday = Holiday::factory()->create([
-            'statut' => 'En attente'
-        ]);
+        $holiday = $this->pendingHoliday();
 
-        $response = $this->postJson("/api/holidays/{$holiday->id}/refuse", [
-            'raison' => 'Effectif insuffisant'
-        ]);
-        
-        $response->assertStatus(200);
+        $this->postJson("/api/holidays/{$holiday->id}/refuse", [
+            'motif_refus' => 'Effectif insuffisant',
+        ])->assertOk()
+            ->assertJsonPath('holiday.statut_demande', 'refuse');
 
-        $holiday->refresh();
-        $this->assertEquals('Refusé', $holiday->statut);
+        $this->assertDatabaseHas('holidays', [
+            'id' => $holiday->id,
+            'statut_demande' => 'refuse',
+            'refuse_par' => $this->rhAgent->id,
+            'commentaire_refus' => 'Effectif insuffisant',
+        ]);
     }
 
-    /**
-     * Test holiday validation rules
-     */
-    public function test_holiday_requires_valid_dates()
+    public function test_holiday_requires_valid_dates(): void
     {
-        Sanctum::actingAs($this->user);
-        
-        // date range
-        $holidDataData = [
-holidayData = [
+        $this->postJson('/api/holidays', [
             'agent_id' => $this->agent->id,
-            'date_debut' => now()->formatDays(5)->format('Y-m-d'),
-            'date_fin' => now()->format('Y-m-d'), // Date fin avant date début
-            'type' => 'Congé annuel'
-        ];
-
-        $response = $this->postJson('/api/holidays', $holidayData);
-        
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['date_fin']);
-    }
-Test conflict detection
-     */
-    public function test_detects_holidayapping_holidays()
-    {
-        Sanctum::actingAs($this->user);
-        
-        // Create existing holiday
-        Holiday::factory()->create([
-            'agent_id' => $this->agent->id,
-            'date_debut' => now()->addDays(7)->format('Y-m-d'),
-            'date_fin' => now()->addDays(14)->format('Y-m-d'),
-            'statut' => 'Approuvé'
-        ]);
-
-        // Try to create overlapping holiday
-        $holidData = [
-            'agent_id' => $this->agent->id,
-            'date_debut' => now()->addDays(10)->format('Y-m-d'),
-            'date_fin' => now()->addDays(20)->format('Y-m-d'),
-            'type' => 'Congé annuel'
-        ];
-
-        $response = $this->postJson('/api/holidays', $holidayData);
-        
-        $response->assertStatus(422); // Should detect conflict
+            'date_debut' => now()->addDays(10)->toDateString(),
+            'date_fin' => now()->addDays(5)->toDateString(),
+            'type_conge' => 'annuel',
+            'motif' => 'Dates invalides',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['date_fin']);
     }
 
-    /**
-     * Test agent holiday statistics
-     */
-    public function test_can_get_agent_holiday_statistics()
+    public function test_detects_overlapping_approved_holidays(): void
     {
-        Sanctum::actingAs($this->user);
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
 
-        Holiday::factory()->create([
+        Holiday::factory()->approved()->create([
             'agent_id' => $this->agent->id,
-            'statut' => 'Approuvé',
-            'nombre_jours' => 14
+            'demande_par' => $this->agent->id,
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
         ]);
 
-        Holiday::factory()->create([
+        $this->postJson('/api/holidays', [
             'agent_id' => $this->agent->id,
-            'statut' => 'Refusé',
-            'nombre_jours' => 7
+            'date_debut' => $dateDebut,
+            'date_fin' => Carbon::parse($dateFin)->addDays(3)->toDateString(),
+            'type_conge' => 'annuel',
+            'motif' => 'Demande en conflit',
+        ])->assertUnprocessable()
+            ->assertJsonFragment([
+                'message' => 'Conflit de dates : l\'agent a déjà un congé approuvé sur cette période',
+            ]);
+    }
+
+    public function test_can_get_agent_holiday_statistics(): void
+    {
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
+
+        Holiday::factory()->approved()->create([
+            'agent_id' => $this->agent->id,
+            'demande_par' => $this->agent->id,
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'nombre_jours' => 5,
+            'type_conge' => 'annuel',
+        ]);
+        Holiday::factory()->pending()->create([
+            'agent_id' => $this->agent->id,
+            'demande_par' => $this->agent->id,
+            'date_debut' => Carbon::parse($dateDebut)->addMonth(),
+            'date_fin' => Carbon::parse($dateFin)->addMonth(),
+            'nombre_jours' => 5,
+            'type_conge' => 'annuel',
         ]);
 
-        $response = $this->getJson("/api/agents/{$this->agent->id}/holidays/stats");
-        
-        $response->assertStatus(200)
-                 ->assertJsonStructure([
-                     'total_pris',
-                     'total_restant',
-                     'total_demande',
-                     'annee'
-                 ]);
+        $this->getJson("/api/agents/{$this->agent->id}/holidays/stats")
+            ->assertOk()
+            ->assertJsonPath('total_conges', 2)
+            ->assertJsonPath('conges_approuves', 1)
+            ->assertJsonPath('conges_en_attente', 1)
+            ->assertJsonPath('jours_annuels_utilises', 5)
+            ->assertJsonPath('jours_annuels_en_attente', 5)
+            ->assertJsonPath('jours_restants', 25);
+    }
+
+    private function pendingHoliday(): Holiday
+    {
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
+
+        return Holiday::factory()->pending()->create([
+            'agent_id' => $this->agent->id,
+            'demande_par' => $this->agent->id,
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'nombre_jours' => 5,
+            'type_conge' => 'annuel',
+        ]);
+    }
+
+    private function futureWorkingWeek(): array
+    {
+        $dateDebut = now()->addMonth()->next(Carbon::MONDAY)->startOfDay();
+        $dateFin = $dateDebut->copy()->addDays(4);
+
+        return [$dateDebut->toDateString(), $dateFin->toDateString()];
     }
 }

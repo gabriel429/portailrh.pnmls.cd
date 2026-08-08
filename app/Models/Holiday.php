@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Carbon\Carbon;
 
 class Holiday extends Model
 {
+    use HasFactory;
+
     const TYPES_CONGE = [
         'annuel' => 'Congé annuel',
         'maladie' => 'Congé maladie',
@@ -134,8 +137,14 @@ class Holiday extends Model
 
     public function getDureeReelleAttribute(): ?int
     {
-        if (!$this->date_retour_effectif) return null;
-        return self::calculateWorkingDays($this->date_debut, $this->date_retour_effectif);
+        if (!$this->date_debut || !$this->date_retour_effectif) {
+            return null;
+        }
+
+        return self::calculateWorkingDays(
+            Carbon::parse($this->date_debut),
+            Carbon::parse($this->date_retour_effectif),
+        );
     }
 
     // Scopes

@@ -20,23 +20,19 @@ class HolidayFactory extends Factory
      */
     public function definition(): array
     {
-        $dateDebut = $this->faker->dateTimeBetween('now', '+3 months');
-        $dateFin = $this->faker->dateTimeBetween($dateDebut, '+30 days');
-        $nombreJours = $dateDebut->diff($dateFin)->days + 1;
+        $dateDebut = now()->addDays($this->faker->numberBetween(7, 60))->startOfDay();
+        $dateFin = $dateDebut->copy()->addDays($this->faker->numberBetween(1, 10));
 
         return [
             'agent_id' => Agent::factory(),
-            'type' => $this->faker->randomElement(['Congé annuel', 'Congé maladie', 'Congé maternité', 'Congé paternité', 'Permission exceptionnelle']),
-            'date_debut' => $dateDebut->format('Y-m-d'),
-            'date_fin' => $dateFin->format('Y-m-d'),
-            'nombre_jours' => $nombreJours,
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'nombre_jours' => Holiday::calculateWorkingDays($dateDebut, $dateFin),
+            'date_retour_prevu' => Holiday::nextWorkingDayAfter($dateFin),
+            'type_conge' => $this->faker->randomElement(array_keys(Holiday::TYPES_CONGE)),
             'motif' => $this->faker->sentence(),
-            'statut' => $this->faker->randomElement(['En attente', 'Approuvé', 'Refusé', 'Annulé']),
-            'validated_by' => null,
-            'validated_at' => null,
-            'raison_refus' => null,
-            'date_retour_effectif' => null,
-            'commentaire_retour' => null,
+            'statut_demande' => 'en_attente',
+            'demande_par' => Agent::factory(),
         ];
     }
 
@@ -45,13 +41,13 @@ class HolidayFactory extends Factory
      */
     public function pending(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'statut' => 'En attente',
-                'validated_by' => null,
-                'validated_at' => null,
-            ];
-        });
+        return $this->state(fn() => [
+            'statut_demande' => 'en_attente',
+            'approuve_par' => null,
+            'approuve_le' => null,
+            'refuse_par' => null,
+            'refuse_le' => null,
+        ]);
     }
 
     /**
@@ -59,13 +55,11 @@ class HolidayFactory extends Factory
      */
     public function approved(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'statut' => 'Approuvé',
-                'validated_by' => Agent::factory(),
-                'validated_at' => $this->faker->dateTimeBetween('-7 days', 'now'),
-            ];
-        });
+        return $this->state(fn() => [
+            'statut_demande' => 'approuve',
+            'approuve_par' => Agent::factory(),
+            'approuve_le' => now(),
+        ]);
     }
 
     /**
@@ -73,14 +67,12 @@ class HolidayFactory extends Factory
      */
     public function refused(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'statut' => 'Refusé',
-                'validated_by' => Agent::factory(),
-                'validated_at' => $this->faker->dateTimeBetween('-7 days', 'now'),
-                'raison_refus' => $this->faker->sentence(),
-            ];
-        });
+        return $this->state(fn() => [
+            'statut_demande' => 'refuse',
+            'refuse_par' => Agent::factory(),
+            'refuse_le' => now(),
+            'commentaire_refus' => $this->faker->sentence(),
+        ]);
     }
 
     /**
@@ -88,10 +80,6 @@ class HolidayFactory extends Factory
      */
     public function cancelled(): Factory
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'statut' => 'Annulé',
-            ];
-        });
+        return $this->state(fn() => ['statut_demande' => 'annule']);
     }
 }
