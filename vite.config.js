@@ -14,30 +14,13 @@ function copyBuildAssets() {
         name: 'copy-build-assets',
         enforce: 'post',
         closeBundle() {
-            const filesToCopy = ['.htaccess', 'serve-asset.php', 'sw.js']
+            const filesToCopy = ['.htaccess', 'serve-asset.php']
             for (const file of filesToCopy) {
                 const src = path.resolve(__dirname, 'build', file)
-                const dest = file === 'sw.js'
-                    ? path.resolve(__dirname, 'public', file)
-                    : path.resolve(__dirname, 'public/build', file)
+                const dest = path.resolve(__dirname, 'public/build', file)
                 if (fs.existsSync(src)) {
                     fs.copyFileSync(src, dest)
                 }
-            }
-
-            const workboxFile = fs.readdirSync(path.resolve(__dirname, 'public/build'))
-                .find((file) => /^workbox-.*\.js$/.test(file))
-            if (workboxFile) {
-                for (const file of fs.readdirSync(path.resolve(__dirname, 'public'))) {
-                    if (/^workbox-.*\.js$/.test(file)) {
-                        fs.rmSync(path.resolve(__dirname, 'public', file))
-                    }
-                }
-
-                fs.copyFileSync(
-                    path.resolve(__dirname, 'public/build', workboxFile),
-                    path.resolve(__dirname, 'public', workboxFile)
-                )
             }
         }
     }
@@ -102,7 +85,16 @@ export default defineConfig({
         VitePWA({
             registerType: 'autoUpdate',
             workbox: {
-                globPatterns: ['**/*.{html,js,css,woff2,png,jpg,jpeg,svg,webmanifest,json}'],
+                globPatterns: [
+                    'offline-shell.html',
+                    'registerSW.js',
+                    'manifest.webmanifest',
+                    'assets/app-*.{js,css}',
+                    'assets/ui-*.js',
+                    'assets/runtime-core.esm-bundler-*.js',
+                    'assets/vue-router-*.js',
+                    'assets/axios-*.js',
+                ],
                 cleanupOutdatedCaches: true,
                 skipWaiting: true,
                 clientsClaim: true,

@@ -1,4 +1,4 @@
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -210,6 +210,27 @@ if (!existsSync(sourceDir)) {
 }
 
 patchBuildFallbacks(sourceDir);
+
+const generatedWorker = path.join(sourceDir, 'sw.js');
+if (!existsSync(generatedWorker)) {
+    console.error('Generated Service Worker not found:', generatedWorker);
+    process.exit(1);
+}
+
+cpSync(generatedWorker, path.join(projectRoot, 'public', 'sw.js'));
+
+for (const file of readdirSync(path.join(projectRoot, 'public'))) {
+    if (/^workbox-.*\.js$/.test(file)) {
+        rmSync(path.join(projectRoot, 'public', file));
+    }
+}
+
+for (const file of readdirSync(sourceDir)) {
+    if (/^workbox-.*\.js$/.test(file)) {
+        cpSync(path.join(sourceDir, file), path.join(projectRoot, 'public', file));
+    }
+}
+
 rmSync(targetDir, { recursive: true, force: true });
 mkdirSync(targetDir, { recursive: true });
 cpSync(sourceDir, targetDir, { recursive: true });
