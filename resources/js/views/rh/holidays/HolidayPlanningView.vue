@@ -51,13 +51,12 @@
               <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
             </select>
           </div>
-          <div class="col-md-3" v-if="!scopeInfo.is_provincial">
+          <div class="col-md-3">
             <label class="form-label">Type de Structure</label>
-            <select class="form-select" v-model="filters.structure_type" @change="loadPlannings">
+            <select class="form-select" v-model="filters.structure_type" @change="onStructureTypeChange">
               <option value="">Toutes les structures</option>
-              <option value="department">Départements</option>
-              <option value="sen">SEN</option>
-              <option value="sena">SENA</option>
+              <option v-if="!scopeInfo.is_provincial" value="department">Départements</option>
+              <option v-if="!scopeInfo.is_provincial" value="sen">SEN</option>
               <option value="sep">SEP Provincial</option>
               <option value="local">Structures Locales</option>
             </select>
@@ -69,6 +68,15 @@
               <option value="">Tous les départements</option>
               <option v-for="dept in departments" :key="dept.id" :value="dept.id">
                 {{ dept.nom }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-3" v-if="['sep', 'local'].includes(filters.structure_type)">
+            <label class="form-label">Province</label>
+            <select class="form-select" v-model="filters.structure_id" @change="loadPlannings">
+              <option value="">Toutes les provinces</option>
+              <option v-for="province in provinces" :key="province.id" :value="province.id">
+                {{ province.nom }}
               </option>
             </select>
           </div>
@@ -203,26 +211,26 @@
                 </thead>
                 <tbody>
                   <tr v-for="planning in plannings.data" :key="planning.id">
-                    <td>
+                    <td data-label="Structure">
                       <div class="fw-medium">{{ planning.nom_structure }}</div>
                       <small class="text-muted">ID: {{ planning.id }}</small>
                     </td>
-                    <td>
+                    <td data-label="Type">
                       <span class="badge bg-light text-dark">{{ planning.type_structure_label }}</span>
                     </td>
-                    <td class="text-center fw-medium">{{ planning.annee }}</td>
-                    <td class="text-center">
+                    <td data-label="Année" class="text-center fw-medium">{{ planning.annee }}</td>
+                    <td data-label="Jours autorisés" class="text-center">
                       <span class="badge bg-info">{{ planning.jours_conge_totaux }}j</span>
                     </td>
-                    <td class="text-center">
+                    <td data-label="Jours utilisés" class="text-center">
                       <span class="badge bg-warning">{{ planning.jours_utilises }}j</span>
                     </td>
-                    <td class="text-center">
+                    <td data-label="Jours restants" class="text-center">
                       <span class="badge" :class="planning.jours_restants > 0 ? 'bg-success' : 'bg-danger'">
                         {{ planning.jours_restants }}j
                       </span>
                     </td>
-                    <td class="text-center">
+                    <td data-label="Taux" class="text-center">
                       <div class="progress" style="height: 20px; width: 80px; margin: 0 auto;">
                         <div
                           class="progress-bar"
@@ -233,12 +241,12 @@
                         </div>
                       </div>
                     </td>
-                    <td>
+                    <td data-label="Statut">
                       <span class="status-pill" :class="`status-${planning.statut || (planning.valide ? 'valide' : 'brouillon')}`">
                         {{ planningStatusLabel(planning) }}
                       </span>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                       <div class="btn-group btn-group-sm" role="group">
                         <button
                           type="button"
@@ -316,28 +324,28 @@
                 </thead>
                 <tbody>
                   <tr v-for="holiday in holidays.data" :key="holiday.id">
-                    <td>
+                    <td data-label="Agent">
                       <div class="fw-medium">{{ holiday.agent?.nom_complet || holiday.agent?.nom || '-' }}</div>
                     </td>
-                    <td class="small text-muted">{{ holiday.agent?.fonction || '-' }}</td>
-                    <td>
+                    <td data-label="Fonction" class="small text-muted">{{ holiday.agent?.fonction || '-' }}</td>
+                    <td data-label="Type">
                       <span class="badge" :class="typeCongeClass(holiday.type_conge)">
                         {{ typeCongeLabel(holiday.type_conge) }}
                       </span>
                     </td>
-                    <td>{{ formatDate(holiday.date_debut) }}</td>
-                    <td>{{ formatDate(holiday.date_fin) }}</td>
-                    <td>
+                    <td data-label="Début">{{ formatDate(holiday.date_debut) }}</td>
+                    <td data-label="Fin">{{ formatDate(holiday.date_fin) }}</td>
+                    <td data-label="Durée">
                       <span class="badge bg-info">{{ holiday.nombre_jours }}j</span>
                     </td>
-                    <td>
+                    <td data-label="Statut">
                       <span class="badge" :class="statutClass(holiday.statut_demande)">
                         {{ statutLabel(holiday.statut_demande) }}
                       </span>
                     </td>
-                    <td>{{ holiday.interim_par?.nom_complet || holiday.interim_par?.nom || '-' }}</td>
-                    <td class="small text-muted">{{ holiday.observation || holiday.motif || '-' }}</td>
-                    <td>
+                    <td data-label="Intérim">{{ holiday.interim_par?.nom_complet || holiday.interim_par?.nom || '-' }}</td>
+                    <td data-label="Observation" class="small text-muted">{{ holiday.observation || holiday.motif || '-' }}</td>
+                    <td data-label="Actions">
                       <div class="btn-group btn-group-sm holiday-action-group">
                         <button
                           type="button"
@@ -395,11 +403,23 @@
             <div class="empty-icon">
               <i class="fas fa-calendar-times fa-3x"></i>
             </div>
-            <h5>Aucun planning créé</h5>
-            <p class="text-muted mb-3">Créez un planning pour commencer à gérer les congés</p>
-            <button v-if="workflow.can_create" @click="showCreateModal = true" class="btn btn-primary">
-              <i class="fas fa-plus me-1"></i> Créer un planning
-            </button>
+            <h5>{{ emptyPlanningTitle }}</h5>
+            <p class="text-muted mb-3">{{ emptyPlanningMessage }}</p>
+            <div class="empty-state-actions">
+              <button v-if="workflow.can_create" @click="showCreateModal = true" class="btn btn-primary">
+                <i class="fas fa-plus me-1"></i> Créer un planning
+              </button>
+              <button
+                v-if="canNotifyMissingPlanning"
+                type="button"
+                class="btn btn-outline-primary"
+                :disabled="notifyingMissingPlanning"
+                @click="notifyMissingPlanning"
+              >
+                <i class="fas fa-bell me-1"></i>
+                {{ notifyingMissingPlanning ? 'Envoi en cours...' : 'Notifier les responsables' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -608,6 +628,7 @@ const workflow = ref({ can_create: false, user_role: '' })
 const viewMode = ref('list')
 const calendarKey = ref(0)
 const statsKey = ref(0)
+const notifyingMissingPlanning = ref(false)
 const holidayEdit = ref({
   show: false,
   mode: 'edit',
@@ -644,6 +665,42 @@ const filters = ref({
 const availableYears = computed(() => {
   const currentYear = new Date().getFullYear()
   return Array.from({ length: 5 }, (_, i) => currentYear - 2 + i)
+})
+
+const selectedStructureName = computed(() => {
+  if (filters.value.structure_type === 'department') {
+    return departments.value.find(item => Number(item.id) === Number(filters.value.structure_id))?.nom || ''
+  }
+
+  if (['sep', 'local'].includes(filters.value.structure_type)) {
+    return provinces.value.find(item => Number(item.id) === Number(filters.value.structure_id))?.nom || ''
+  }
+
+  return filters.value.structure_type === 'sen' ? 'SEN' : ''
+})
+
+const canNotifyMissingPlanning = computed(() => {
+  return Boolean(filters.value.structure_type && filters.value.structure_id && selectedStructureName.value)
+})
+
+const emptyPlanningTitle = computed(() => {
+  if (['sep', 'local'].includes(filters.value.structure_type) && selectedStructureName.value) {
+    return `Planning non disponible pour la province ${selectedStructureName.value}`
+  }
+
+  if (filters.value.structure_type === 'department' && selectedStructureName.value) {
+    return `Planning non disponible pour ${selectedStructureName.value}`
+  }
+
+  return 'Aucun planning disponible'
+})
+
+const emptyPlanningMessage = computed(() => {
+  if (canNotifyMissingPlanning.value) {
+    return 'Vous pouvez avertir les responsables afin qu’ils élaborent et fassent valider ce planning.'
+  }
+
+  return 'Sélectionnez une structure précise pour vérifier son planning et, si nécessaire, prévenir ses responsables.'
 })
 
 const workflowLevels = [
@@ -730,6 +787,29 @@ async function loadPlannings(page = 1) {
     ui.addToast('Erreur lors du chargement des plannings', 'danger')
   } finally {
     loading.value = false
+  }
+}
+
+function onStructureTypeChange() {
+  filters.value.structure_id = ''
+  loadPlannings()
+}
+
+async function notifyMissingPlanning() {
+  if (!canNotifyMissingPlanning.value || notifyingMissingPlanning.value) return
+
+  notifyingMissingPlanning.value = true
+  try {
+    const response = await client.post('/holiday-plannings/notify-missing', {
+      year: filters.value.year,
+      structure_type: filters.value.structure_type,
+      structure_id: filters.value.structure_id
+    })
+    ui.addToast(response.data.message, 'success')
+  } catch (error) {
+    ui.addToast(error.response?.data?.message || 'Impossible d’envoyer le rappel', 'danger')
+  } finally {
+    notifyingMissingPlanning.value = false
   }
 }
 
@@ -1079,6 +1159,8 @@ onMounted(() => {
   --holiday-line: #d9e9f7;
   --holiday-ink: #102235;
   --holiday-muted: #64748b;
+  width: 100%;
+  min-width: 0;
 }
 
 .workflow-strip {
@@ -1122,7 +1204,10 @@ onMounted(() => {
 }
 
 .holiday-planning-page .rh-list-shell {
-  width: min(100%, 1360px);
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  margin-inline: 0;
 }
 
 .holiday-planning-page .rh-hero {
@@ -1207,6 +1292,7 @@ onMounted(() => {
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   border: 1px solid #e9ecef;
   min-height: 112px;
+  min-width: 0;
 }
 
 .stat-icon {
@@ -1235,6 +1321,7 @@ onMounted(() => {
 .rh-list-card {
   overflow: hidden;
   padding: 1.25rem;
+  min-width: 0;
 }
 
 .holiday-table-wrap {
@@ -1357,7 +1444,18 @@ onMounted(() => {
   margin-bottom: 0.5rem;
 }
 
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: .75rem;
+}
+
 @media (max-width: 991.98px) {
+  .holiday-planning-page .rh-hero .row > [class*="col-"] {
+    width: 100%;
+  }
+
   .holiday-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1366,6 +1464,167 @@ onMounted(() => {
     justify-content: flex-start;
   }
 
+  .rh-filters-card .row > [class*="col-"] {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+
+  .workflow-intro,
+  .workflow-lane {
+    padding: .75rem .85rem;
+  }
+
+}
+
+@media (max-width: 820px) {
+  .holiday-planning-page {
+    margin-top: .5rem;
+    padding-inline: 0 !important;
+  }
+
+  .holiday-planning-page .rh-hero {
+    padding: 1rem !important;
+  }
+
+  .rh-filters-card {
+    margin-bottom: 1rem;
+    padding: 1rem;
+  }
+
+  .rh-filters-card .row > [class*="col-"] {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .rh-filters-card .btn-group {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .workflow-strip {
+    gap: 0;
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .workflow-lane {
+    border-top: 1px solid #cbdbe8;
+  }
+
+  .workflow-route {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .stat-card {
+    min-height: 92px;
+    padding: 1rem;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    margin-right: .75rem;
+    font-size: 1.15rem;
+  }
+
+  .stat-content h3 {
+    font-size: 1.35rem;
+  }
+
+  .rh-list-card {
+    padding: .75rem;
+  }
+
+  .section-header h4 {
+    font-size: 1rem;
+  }
+
+  .holiday-table-wrap {
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .holiday-table-wrap > .table {
+    display: block;
+    min-width: 0;
+    background: transparent;
+  }
+
+  .holiday-table-wrap thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .holiday-table-wrap tbody,
+  .holiday-table-wrap tr,
+  .holiday-table-wrap td {
+    display: block;
+    width: 100%;
+  }
+
+  .holiday-table-wrap tbody {
+    display: grid;
+    gap: .75rem;
+  }
+
+  .holiday-table-wrap tbody tr {
+    overflow: hidden;
+    border: 1px solid var(--holiday-line);
+    border-radius: 8px;
+    background: #fff;
+  }
+
+  .holiday-table-wrap td,
+  .holiday-table-wrap td:first-child,
+  .holiday-table-wrap td:last-child {
+    display: grid;
+    grid-template-columns: minmax(96px, 38%) minmax(0, 1fr);
+    gap: .75rem;
+    align-items: center;
+    min-width: 0;
+    padding: .65rem .75rem;
+    text-align: left;
+    white-space: normal;
+    border-bottom: 1px solid #edf2f7;
+  }
+
+  .holiday-table-wrap td:last-child {
+    border-bottom: 0;
+  }
+
+  .holiday-table-wrap td::before {
+    content: attr(data-label);
+    color: var(--holiday-muted);
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+
+  .holiday-table-wrap td .progress {
+    margin: 0 !important;
+  }
+
+  .holiday-table-wrap .btn-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: .35rem;
+  }
+
+  .holiday-table-wrap .btn-group > .btn {
+    border-radius: 6px !important;
+  }
 }
 
 @media (max-width: 575.98px) {
@@ -1376,6 +1635,7 @@ onMounted(() => {
 
   .holiday-stat-grid {
     grid-template-columns: 1fr;
+    gap: .75rem;
   }
 
   .holiday-planning-page .hero-tools {

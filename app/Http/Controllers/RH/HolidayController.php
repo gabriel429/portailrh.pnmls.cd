@@ -37,15 +37,9 @@ class HolidayController extends Controller
             'approuvePar'
         ]);
 
-        // Province scoping for RH Provincial
         $scope = app(UserDataScope::class);
         $user = $request->user();
-        if ($scope->isProvincialUser($user)) {
-            $provinceId = $scope->provinceId($user);
-            if ($provinceId) {
-                $query->whereHas('agent', fn($q) => $q->where('province_id', $provinceId));
-            }
-        }
+        $scope->applyHolidayScope($query, $user);
 
         // Filtres
         if ($request->filled('agent_id')) {
@@ -85,14 +79,18 @@ class HolidayController extends Controller
     /**
      * Congés en attente d'approbation
      */
-    public function pending()
+    public function pending(Request $request)
     {
-        $holidays = Holiday::with([
+        $query = Holiday::with([
             'agent.departement',
             'holidayPlanning',
             'demandePar'
         ])
-            ->pending()
+            ->pending();
+
+        app(UserDataScope::class)->applyHolidayScope($query, $request->user());
+
+        $holidays = $query
             ->orderBy('created_at')
             ->get();
 
@@ -104,7 +102,7 @@ class HolidayController extends Controller
      */
     public function show(Request $request, Holiday $holiday)
     {
-        if (!app(UserDataScope::class)->canAccessAgent($request->user(), $holiday->agent, true)) {
+        if (!app(UserDataScope::class)->canAccessHolidayAgent($request->user(), $holiday->agent, true)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas consulter ce congé.'
             ], 403);
@@ -224,7 +222,7 @@ class HolidayController extends Controller
         // Vérifier les conflits de dates
         $agent = Agent::find($validated['agent_id']);
 
-        if (!$scope->canAccessAgent($request->user(), $agent, true)) {
+        if (!$scope->canAccessHolidayAgent($request->user(), $agent, true)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas créer une demande de congé pour cet agent.'
             ], 403);
@@ -363,7 +361,7 @@ class HolidayController extends Controller
             $entryAgent = Agent::find($entry['agent_id']);
             $entryNom = trim(($entryAgent->nom ?? '') . ' ' . ($entryAgent->postnom ?? ''));
 
-            if (!$scope->canAccessAgent($request->user(), $entryAgent, false)) {
+            if (!$scope->canAccessHolidayAgent($request->user(), $entryAgent, false)) {
                 $errors[] = "Accès refusé pour {$entryNom} : agent hors de votre périmètre";
                 continue;
             }
@@ -459,8 +457,12 @@ class HolidayController extends Controller
     /**
      * Approbation d'un congé
      */
-    public function approve(Holiday $holiday)
+    public function approve(Request $request, Holiday $holiday)
     {
+        if (!app(UserDataScope::class)->canAccessHolidayAgent($request->user(), $holiday->agent, false)) {
+            return response()->json(['message' => 'Ce congé est hors de votre périmètre.'], 403);
+        }
+
         if ($holiday->statut_demande !== 'en_attente') {
             return response()->json([
                 'message' => 'Seuls les congés en attente peuvent être approuvés'
@@ -533,6 +535,10 @@ class HolidayController extends Controller
      */
     public function refuse(Request $request, Holiday $holiday)
     {
+        if (!app(UserDataScope::class)->canAccessHolidayAgent($request->user(), $holiday->agent, false)) {
+            return response()->json(['message' => 'Ce congé est hors de votre périmètre.'], 403);
+        }
+
         if ($holiday->statut_demande !== 'en_attente') {
             return response()->json([
                 'message' => 'Seuls les congés en attente peuvent être refusés'
@@ -573,7 +579,7 @@ class HolidayController extends Controller
         $user = auth()->user()->agent;
         $scope = app(UserDataScope::class);
 
-        if (!$user || !$scope->canAccessAgent(request()->user(), $holiday->agent, false)) {
+        if (!$user || !$scope->canAccessHolidayAgent(request()->user(), $holiday->agent, false)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas annuler ce congé.'
             ], 403);
@@ -612,7 +618,7 @@ class HolidayController extends Controller
         $user = auth()->user()->agent;
         $scope = app(UserDataScope::class);
 
-        if (!$user || !$scope->canAccessAgent($request->user(), $holiday->agent, false)) {
+        if (!$user || !$scope->canAccessHolidayAgent($request->user(), $holiday->agent, false)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas enregistrer le retour de cet agent.'
             ], 403);
@@ -676,7 +682,7 @@ class HolidayController extends Controller
         $scope = app(UserDataScope::class);
         $isRh = $this->canManageHolidayRequests($user, $request->user());
 
-        if (!$user || !$scope->canAccessAgent($request->user(), $holiday->agent, false)) {
+        if (!$user || !$scope->canAccessHolidayAgent($request->user(), $holiday->agent, false)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas modifier ce congé.'
             ], 403);
@@ -802,7 +808,7 @@ class HolidayController extends Controller
     {
         $year = $request->get('year', date('Y'));
 
-        if (!app(UserDataScope::class)->canAccessAgent($request->user(), $agent, false)) {
+        if (!app(UserDataScope::class)->canAccessHolidayAgent($request->user(), $agent, false)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas consulter les congés de cet agent.'
             ], 403);
@@ -849,7 +855,7 @@ class HolidayController extends Controller
             ], 403);
         }
 
-        if (!app(UserDataScope::class)->canAccessAgent($request->user(), $agent, false)) {
+        if (!app(UserDataScope::class)->canAccessHolidayAgent($request->user(), $agent, false)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas modifier les jours de congés de cet agent.'
             ], 403);
@@ -890,11 +896,15 @@ class HolidayController extends Controller
     {
         $date = $request->get('date') ? Carbon::parse($request->date) : Carbon::today();
 
-        $holidays = Holiday::with([
+        $query = Holiday::with([
             'agent.departement',
             'holidayPlanning'
         ])
-            ->active($date)
+            ->active($date);
+
+        app(UserDataScope::class)->applyHolidayScope($query, $request->user());
+
+        $holidays = $query
             ->orderBy('date_debut')
             ->get();
 
@@ -906,6 +916,10 @@ class HolidayController extends Controller
      */
     public function checkAvailability(Agent $agent, Request $request)
     {
+        if (!app(UserDataScope::class)->canAccessHolidayAgent($request->user(), $agent, true)) {
+            return response()->json(['message' => 'Cet agent est hors de votre périmètre.'], 403);
+        }
+
         $validated = $request->validate([
             'date_debut' => 'required|date',
             'date_fin' => 'required|date|after_or_equal:date_debut'
@@ -941,7 +955,7 @@ class HolidayController extends Controller
             : $user?->agent;
         $scope = app(UserDataScope::class);
 
-        if (!$requestAgent || !$scope->canAccessAgent($user, $requestAgent, true)) {
+        if (!$requestAgent || !$scope->canAccessHolidayAgent($user, $requestAgent, true)) {
             return response()->json([
                 'message' => 'Vous ne pouvez pas consulter les intérimaires de cet agent.',
             ], 403);

@@ -76,7 +76,7 @@ class HolidayPlanningWorkflowService
 
     public function canAccessModule(User $user): bool
     {
-        return $user->isSuperAdmin()
+        return app(UserDataScope::class)->hasGlobalHolidayAccess($user)
             || $this->isRh($user)
             || $this->isDepartmentAssistant($user)
             || $this->isDepartmentDirector($user)

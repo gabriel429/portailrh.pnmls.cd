@@ -9,6 +9,7 @@ use App\Services\HolidayPlanningWorkflowService;
 use App\Services\NotificationService;
 use App\Services\RoleService;
 use App\Services\TacheWorkflowService;
+use App\Services\UserDataScope;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,8 +21,12 @@ class HolidayModificationRequestController extends Controller
         $agent = $request->user()->agent;
         $query = HolidayModificationRequest::with(['holiday.agent', 'requestedBy', 'reviewedBy'])
             ->latest();
+        $dataScope = app(UserDataScope::class);
+        $query->whereHas('holiday.agent', function ($agentQuery) use ($dataScope, $request) {
+            $dataScope->applyHolidayAgentScope($agentQuery, $request->user());
+        });
 
-        if (!$request->user()->isSuperAdmin()) {
+        if (!$dataScope->hasGlobalHolidayAccess($request->user())) {
             $user = $request->user();
             $roleService = app(RoleService::class);
             $taskWorkflow = app(TacheWorkflowService::class);
@@ -100,7 +105,15 @@ class HolidayModificationRequestController extends Controller
 
     public function approve(Request $request, HolidayModificationRequest $holidayModificationRequest)
     {
-        $holidayModificationRequest->load('holiday.holidayPlanning');
+        $holidayModificationRequest->load('holiday.agent', 'holiday.holidayPlanning');
+        if (!app(UserDataScope::class)->canAccessHolidayAgent(
+            $request->user(),
+            $holidayModificationRequest->holiday->agent,
+            true,
+        )) {
+            return response()->json(['message' => 'Ce congé est hors de votre périmètre.'], 403);
+        }
+
         $planning = $holidayModificationRequest->holiday->holidayPlanning;
 
         if (!$planning || !app(HolidayPlanningWorkflowService::class)->canValidate($request->user(), $planning)) {
@@ -145,7 +158,15 @@ class HolidayModificationRequestController extends Controller
 
     public function reject(Request $request, HolidayModificationRequest $holidayModificationRequest)
     {
-        $holidayModificationRequest->load('holiday.holidayPlanning');
+        $holidayModificationRequest->load('holiday.agent', 'holiday.holidayPlanning');
+        if (!app(UserDataScope::class)->canAccessHolidayAgent(
+            $request->user(),
+            $holidayModificationRequest->holiday->agent,
+            true,
+        )) {
+            return response()->json(['message' => 'Ce congé est hors de votre périmètre.'], 403);
+        }
+
         $planning = $holidayModificationRequest->holiday->holidayPlanning;
 
         if (!$planning || !app(HolidayPlanningWorkflowService::class)->canValidate($request->user(), $planning)) {

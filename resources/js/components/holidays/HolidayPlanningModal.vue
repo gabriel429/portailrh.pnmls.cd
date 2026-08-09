@@ -52,7 +52,6 @@
                   <option value="">Sélectionner un type</option>
                   <option v-if="!scopeInfo.is_provincial" value="department">Département</option>
                   <option v-if="!scopeInfo.is_provincial" value="sen">SEN</option>
-                  <option v-if="!scopeInfo.is_provincial" value="sena">SENA</option>
                   <option value="sep">SEP Provincial</option>
                   <option value="local">Structure Locale</option>
                 </select>
@@ -380,7 +379,7 @@ const availableYears = computed(() => {
 
 const isAutoFilledStructure = computed(() => {
   const type = form.value.type_structure
-  if (type === 'sen' || type === 'sena') return true
+  if (type === 'sen') return true
   if (props.scopeInfo.is_provincial && (type === 'sep' || type === 'local')) return true
   return false
 })
@@ -399,7 +398,6 @@ function getStructureLabel() {
   const labels = {
     'department': 'Département',
     'sen': 'SEN',
-    'sena': 'SENA',
     'sep': 'SEP Provincial',
     'local': 'Structure Locale'
   }
@@ -437,7 +435,7 @@ function resetEntries() {
     if (!type || !structureId) return true
     if (type === 'department') return Number(agent.departement_id) === structureId
     if (type === 'sep' || type === 'local') return Number(agent.province_id) === structureId
-    if (type === 'sen' || type === 'sena') return !agent.province_id
+    if (type === 'sen') return !agent.province_id
     return false
   })
 
@@ -475,9 +473,6 @@ function onStructureTypeChange() {
   if (type === 'sen') {
     form.value.structure_id = 1
     form.value.nom_structure = 'Secrétariat Exécutif National'
-  } else if (type === 'sena') {
-    form.value.structure_id = 1
-    form.value.nom_structure = 'Secrétariat Exécutif National Adjoint'
   } else if (props.scopeInfo.is_provincial && type === 'sep') {
     form.value.structure_id = props.scopeInfo.province_id
     form.value.nom_structure = 'SEP ' + props.scopeInfo.province_nom

@@ -19,6 +19,163 @@ class HolidayPlanningWorkflowTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_department_user_cannot_see_planning_or_calendar_outside_department(): void
+    {
+        $department = $this->department('VISIBLE');
+        $otherDepartment = $this->department('HIDDEN');
+        $assistant = $this->userWithRole('Assistant de Département', [
+            'departement_id' => $department->id,
+            'fonction' => 'Assistant de Département',
+        ]);
+        $insideAgent = $this->userWithRole('Agent visible', ['departement_id' => $department->id]);
+        $outsideAgent = $this->userWithRole('Agent hidden', ['departement_id' => $otherDepartment->id]);
+        $insidePlanning = $this->planning($department, HolidayPlanning::STATUT_VALIDE);
+        $outsidePlanning = $this->planning($otherDepartment, HolidayPlanning::STATUT_VALIDE);
+        $insideHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $insideAgent->agent->id,
+            'holiday_planning_id' => $insidePlanning->id,
+            'date_debut' => today(),
+            'date_fin' => today()->addDay(),
+        ]);
+        Holiday::factory()->pending()->create([
+            'agent_id' => $outsideAgent->agent->id,
+            'holiday_planning_id' => $outsidePlanning->id,
+            'date_debut' => today(),
+            'date_fin' => today()->addDay(),
+        ]);
+        Sanctum::actingAs($assistant);
+
+        $index = $this->getJson('/api/holiday-plannings?year=' . now()->year)->assertOk();
+        $this->assertSame([$insidePlanning->id], collect($index->json('plannings.data'))->pluck('id')->all());
+        $this->assertSame(1, $index->json('stats.total_plannings'));
+
+        $show = $this->getJson("/api/holiday-plannings/{$insidePlanning->id}")
+            ->assertOk()
+            ->assertJsonCount(1, 'planning.holidays');
+        $this->assertSame($insideHoliday->id, $show->json('planning.holidays.0.id'));
+
+        $this->getJson("/api/holiday-plannings/{$outsidePlanning->id}")->assertForbidden();
+
+        $calendar = $this->getJson('/api/holiday-plannings/calendar?year=' . now()->year)->assertOk();
+        $this->assertSame([$insideHoliday->id], collect($calendar->json('events'))->pluck('id')->all());
+    }
+
+    public function test_sen_sees_all_planned_holidays(): void
+    {
+        $department = $this->department('EXEC-VISIBLE');
+        $otherDepartment = $this->department('EXEC-OTHER');
+        $insideAgent = $this->userWithRole('Agent visible', ['departement_id' => $department->id]);
+        $outsideAgent = $this->userWithRole('Agent outside', ['departement_id' => $otherDepartment->id]);
+        $insidePlanning = $this->planning($department, HolidayPlanning::STATUT_VALIDE);
+        $outsidePlanning = $this->planning($otherDepartment, HolidayPlanning::STATUT_VALIDE);
+        $insideHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $insideAgent->agent->id,
+            'holiday_planning_id' => $insidePlanning->id,
+        ]);
+        $outsideHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $outsideAgent->agent->id,
+            'holiday_planning_id' => $outsidePlanning->id,
+        ]);
+
+        foreach (['SEN'] as $role) {
+            Sanctum::actingAs($this->userWithRole($role, [
+                'organe' => 'Secrétariat Exécutif National',
+            ]));
+
+            $response = $this->getJson('/api/holiday-plannings?year=' . now()->year)->assertOk();
+            $this->assertEqualsCanonicalizing(
+                [$insidePlanning->id, $outsidePlanning->id],
+                collect($response->json('plannings.data'))->pluck('id')->all(),
+            );
+            $this->assertEqualsCanonicalizing(
+                [$insideHoliday->id, $outsideHoliday->id],
+                collect($response->json('holidays.data'))->pluck('id')->all(),
+            );
+        }
+    }
+
+    public function test_sep_filter_limits_plannings_statistics_and_holidays_to_selected_province(): void
+    {
+        $visibleProvince = $this->province('FILTER-A');
+        $otherProvince = $this->province('FILTER-B');
+        $visibleAgent = $this->userWithRole('Agent A', ['province_id' => $visibleProvince->id]);
+        $otherAgent = $this->userWithRole('Agent B', ['province_id' => $otherProvince->id]);
+        $creator = Agent::factory()->create();
+        $visiblePlanning = HolidayPlanning::create([
+            'annee' => now()->year,
+            'type_structure' => 'sep',
+            'structure_id' => $visibleProvince->id,
+            'nom_structure' => "SEP {$visibleProvince->nom}",
+            'niveau_administratif' => 'provincial',
+            'jours_conge_totaux' => 30,
+            'jours_utilises' => 5,
+            'statut' => HolidayPlanning::STATUT_VALIDE,
+            'valide' => true,
+            'created_by' => $creator->id,
+        ]);
+        $otherPlanning = HolidayPlanning::create([
+            'annee' => now()->year,
+            'type_structure' => 'sep',
+            'structure_id' => $otherProvince->id,
+            'nom_structure' => "SEP {$otherProvince->nom}",
+            'niveau_administratif' => 'provincial',
+            'jours_conge_totaux' => 30,
+            'jours_utilises' => 7,
+            'statut' => HolidayPlanning::STATUT_VALIDE,
+            'valide' => true,
+            'created_by' => $creator->id,
+        ]);
+        $visibleHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $visibleAgent->agent->id,
+            'holiday_planning_id' => $visiblePlanning->id,
+        ]);
+        Holiday::factory()->pending()->create([
+            'agent_id' => $otherAgent->agent->id,
+            'holiday_planning_id' => $otherPlanning->id,
+        ]);
+        Sanctum::actingAs($this->userWithRole('SEN'));
+
+        $response = $this->getJson('/api/holiday-plannings?year=' . now()->year
+            . '&structure_type=sep&structure_id=' . $visibleProvince->id)->assertOk();
+
+        $this->assertSame([$visiblePlanning->id], collect($response->json('plannings.data'))->pluck('id')->all());
+        $this->assertSame([$visibleHoliday->id], collect($response->json('holidays.data'))->pluck('id')->all());
+        $this->assertSame(1, $response->json('stats.total_plannings'));
+        $this->assertEquals(5, $response->json('stats.total_jours_utilises'));
+    }
+
+    public function test_missing_sep_planning_reminder_notifies_only_caf_and_sep_of_selected_province(): void
+    {
+        $province = $this->province('REMIND-A');
+        $otherProvince = $this->province('REMIND-B');
+        $caf = $this->userWithRole('CAF', [
+            'province_id' => $province->id,
+            'fonction' => 'Chef de Cellule Administration et Finances',
+        ]);
+        $sep = $this->userWithRole('SEP', ['province_id' => $province->id]);
+        $outsideSep = $this->userWithRole('SEP', ['province_id' => $otherProvince->id]);
+        Sanctum::actingAs($this->userWithRole('SEN'));
+
+        $this->postJson('/api/holiday-plannings/notify-missing', [
+            'year' => now()->year,
+            'structure_type' => 'sep',
+            'structure_id' => $province->id,
+        ])->assertOk()->assertJsonPath('recipients_count', 2);
+
+        $this->assertDatabaseHas('notifications_portail', [
+            'user_id' => $caf->id,
+            'type' => 'holiday_planning_required_actor',
+        ]);
+        $this->assertDatabaseHas('notifications_portail', [
+            'user_id' => $sep->id,
+            'type' => 'holiday_planning_required_actor',
+        ]);
+        $this->assertDatabaseMissing('notifications_portail', [
+            'user_id' => $outsideSep->id,
+            'type' => 'holiday_planning_required_actor',
+        ]);
+    }
+
     public function test_initiator_receives_creation_capability_and_scoped_agents(): void
     {
         $department = $this->department('SCOPE');

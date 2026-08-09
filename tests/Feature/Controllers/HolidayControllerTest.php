@@ -8,6 +8,7 @@ use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\HolidayPlanning;
+use App\Models\Province;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -66,6 +67,105 @@ class HolidayControllerTest extends TestCase
                 'per_page',
                 'total',
             ]);
+    }
+
+    public function test_sep_only_sees_holidays_from_own_province(): void
+    {
+        $sepRole = Role::firstOrCreate(['nom_role' => 'SEP']);
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $province = Province::create(['code' => 'P-SCOPE', 'nom' => 'Province Scope']);
+        $otherProvince = Province::create(['code' => 'P-OTHER', 'nom' => 'Province Other']);
+        $sepAgent = Agent::factory()->create([
+            'role_id' => $sepRole->id,
+            'province_id' => $province->id,
+            'organe' => 'Secrétariat Exécutif Provincial',
+            'statut' => 'actif',
+        ]);
+        $sep = User::factory()->create(['agent_id' => $sepAgent->id, 'role_id' => $sepRole->id]);
+        $insideAgent = Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'province_id' => $province->id,
+            'statut' => 'actif',
+        ]);
+        $outsideAgent = Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'province_id' => $otherProvince->id,
+            'statut' => 'actif',
+        ]);
+        $insideHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $insideAgent->id,
+            'date_debut' => today(),
+            'date_fin' => today()->addDay(),
+        ]);
+        $outsideHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $outsideAgent->id,
+            'date_debut' => today(),
+            'date_fin' => today()->addDay(),
+        ]);
+        $insideActiveHoliday = Holiday::factory()->approved()->create([
+            'agent_id' => $insideAgent->id,
+            'date_debut' => today(),
+            'date_fin' => today()->addDay(),
+        ]);
+        Holiday::factory()->approved()->create([
+            'agent_id' => $outsideAgent->id,
+            'date_debut' => today(),
+            'date_fin' => today()->addDay(),
+        ]);
+        Sanctum::actingAs($sep);
+
+        $index = $this->getJson('/api/holidays')->assertOk();
+        $this->assertEqualsCanonicalizing(
+            [$insideHoliday->id, $insideActiveHoliday->id],
+            collect($index->json('data'))->pluck('id')->all(),
+        );
+
+        $pending = $this->getJson('/api/holidays/pending')->assertOk();
+        $this->assertSame([$insideHoliday->id], collect($pending->json())->pluck('id')->all());
+
+        $active = $this->getJson('/api/holidays/active')->assertOk();
+        $this->assertSame([$insideActiveHoliday->id], collect($active->json())->pluck('id')->all());
+
+        $this->getJson("/api/holidays/{$outsideHoliday->id}")->assertForbidden();
+    }
+
+    public function test_sen_sees_all_holidays(): void
+    {
+        $senRole = Role::firstOrCreate(['nom_role' => 'SEN']);
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $department = Department::create(['code' => 'EXEC-A', 'nom' => 'Direction Executive A']);
+        $otherDepartment = Department::create(['code' => 'EXEC-B', 'nom' => 'Direction Executive B']);
+        $insideAgent = Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'departement_id' => $department->id,
+            'statut' => 'actif',
+        ]);
+        $outsideAgent = Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'departement_id' => $otherDepartment->id,
+            'statut' => 'actif',
+        ]);
+        $insideHoliday = Holiday::factory()->create(['agent_id' => $insideAgent->id]);
+        $outsideHoliday = Holiday::factory()->create(['agent_id' => $outsideAgent->id]);
+
+        foreach ([$senRole] as $executiveRole) {
+            $executiveAgent = Agent::factory()->create([
+                'role_id' => $executiveRole->id,
+                'organe' => 'Secrétariat Exécutif National',
+                'statut' => 'actif',
+            ]);
+            $executive = User::factory()->create([
+                'agent_id' => $executiveAgent->id,
+                'role_id' => $executiveRole->id,
+            ]);
+            Sanctum::actingAs($executive);
+
+            $response = $this->getJson('/api/holidays')->assertOk();
+            $this->assertEqualsCanonicalizing(
+                [$insideHoliday->id, $outsideHoliday->id],
+                collect($response->json('data'))->pluck('id')->all(),
+            );
+        }
     }
 
     public function test_interim_candidates_endpoint_only_returns_allowed_agents(): void

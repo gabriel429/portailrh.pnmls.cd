@@ -15,7 +15,6 @@ class HolidayPlanning extends Model
     const TYPE_STRUCTURES = [
         'department' => 'Département',
         'sen' => 'SEN',
-        'sena' => 'SENA',
         'sep' => 'SEP Provincial',
         'local' => 'Structure Locale'
     ];

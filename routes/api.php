@@ -187,6 +187,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('holiday-plannings/statistiques', [HolidayPlanningController::class, 'statistiques']);
     Route::get('holiday-plannings/export', [HolidayPlanningController::class, 'export']);
     Route::post('holiday-plannings', [HolidayPlanningController::class, 'store']);
+    Route::post('holiday-plannings/notify-missing', [HolidayPlanningController::class, 'notifyMissing']);
     Route::get('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'show']);
     Route::put('holiday-plannings/{holidayPlanning}', [HolidayPlanningController::class, 'update']);
     Route::post('holiday-plannings/{holidayPlanning}/submit', [HolidayPlanningController::class, 'submit']);

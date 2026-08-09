@@ -79,6 +79,15 @@ class UserDataScope
         return $roleService->hasDirecteurOrDafRole($user);
     }
 
+    public function hasGlobalHolidayAccess(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return $user->isSuperAdmin() || $user->hasRole(['RH National', 'SEN']);
+    }
+
     public function isProvincialRh(?User $user): bool
     {
         return (bool) $user?->hasRole('RH Provincial');
@@ -232,6 +241,146 @@ class UserDataScope
         }
 
         return $this->applyAgentLocalScope($query, $user?->agent, $table);
+    }
+
+    public function applyHolidayAgentScope($query, ?User $user, string $table = 'agents')
+    {
+        $this->excludeAncienAgents($query, $table);
+
+        if ($this->hasGlobalHolidayAccess($user)) {
+            return $query;
+        }
+
+        $agent = $user?->agent;
+        if (!$agent) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
+            if (!$localiteId) {
+                $organe = trim((string) $agent->organe);
+
+                return $agent->province_id && $organe !== ''
+                    ? $query->where($table . '.province_id', $agent->province_id)
+                        ->where($table . '.organe', $organe)
+                    : $query->where($table . '.id', $agent->id);
+            }
+
+            return $query->where(function ($localScope) use ($table, $localiteId) {
+                $localScope->where($table . '.localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope->where('actif', true)->where('localite_id', $localiteId);
+                    });
+            });
+        }
+
+        if ($this->isProvincialUser($user)) {
+            $provinceId = $this->provinceId($user);
+
+            return $provinceId
+                ? $query->where($table . '.province_id', $provinceId)
+                : $query->whereRaw('1 = 0');
+        }
+
+        if ($agent->departement_id) {
+            return $query->where($table . '.departement_id', $agent->departement_id);
+        }
+
+        if (trim((string) $agent->organe) !== '') {
+            return $query->where($table . '.organe', $agent->organe);
+        }
+
+        if ($agent->province_id) {
+            return $query->where($table . '.province_id', $agent->province_id);
+        }
+
+        return $query->where($table . '.id', $agent->id);
+    }
+
+    public function applyHolidayScope($query, ?User $user)
+    {
+        if ($this->hasGlobalHolidayAccess($user)) {
+            return $query;
+        }
+
+        return $query->whereHas('agent', function ($agentQuery) use ($user) {
+            $this->applyHolidayAgentScope($agentQuery, $user);
+        });
+    }
+
+    public function applyHolidayPlanningScope($query, ?User $user)
+    {
+        if ($this->hasGlobalHolidayAccess($user)) {
+            return $query;
+        }
+
+        $isLocalUser = $this->isLocalUser($user);
+        $provinceId = $this->provinceId($user);
+
+        return $query->where(function ($planningQuery) use ($user, $isLocalUser, $provinceId) {
+            $planningQuery->where('created_by', $user?->agent?->id ?? 0)
+                ->orWhereHas('holidays.agent', function ($agentQuery) use ($user) {
+                    $this->applyHolidayAgentScope($agentQuery, $user);
+                })
+                ->orWhereHas('createdBy', function ($agentQuery) use ($user) {
+                    $this->applyHolidayAgentScope($agentQuery, $user);
+                });
+
+            if ($isLocalUser && $provinceId) {
+                $planningQuery->orWhere(function ($localPlanning) use ($provinceId) {
+                    $localPlanning->where('type_structure', 'local')
+                        ->where('structure_id', $provinceId);
+                });
+            }
+        });
+    }
+
+    public function canAccessHolidayAgent(?User $user, ?Agent $agent, bool $allowOwn = true): bool
+    {
+        if (!$user?->agent || !$agent || $this->isAncienAgent($agent)) {
+            return false;
+        }
+
+        if ($this->hasGlobalHolidayAccess($user)) {
+            return true;
+        }
+
+        if ($allowOwn && (int) $user->agent->id === (int) $agent->id) {
+            return true;
+        }
+
+        if ($this->isLocalUser($user)) {
+            $ownerLocaliteId = $this->localiteId($user);
+            $targetLocaliteId = $this->agentLocaliteId($agent);
+
+            if ($ownerLocaliteId !== null) {
+                return $targetLocaliteId === $ownerLocaliteId;
+            }
+
+            $ownerOrgane = trim((string) $user->agent->organe);
+
+            return $ownerOrgane !== ''
+                && (int) $agent->province_id === (int) $user->agent->province_id
+                && trim((string) $agent->organe) === $ownerOrgane;
+        }
+
+        if ($this->isProvincialUser($user)) {
+            $provinceId = $this->provinceId($user);
+
+            return $provinceId !== null && (int) $agent->province_id === $provinceId;
+        }
+
+        if ($user->agent->departement_id) {
+            return (int) $agent->departement_id === (int) $user->agent->departement_id;
+        }
+
+        if (trim((string) $user->agent->organe) !== '') {
+            return trim((string) $agent->organe) === trim((string) $user->agent->organe);
+        }
+
+        return $user->agent->province_id
+            && (int) $agent->province_id === (int) $user->agent->province_id;
     }
 
     public function canUseAgentAsInterim(?User $user, ?Agent $interimAgent, ?Agent $requestAgent = null): bool
