@@ -92,7 +92,7 @@ RewriteRule ^manifest\.json$ serve-asset.php?file=manifest.json [L,QSA]
         Header set Service-Worker-Allowed "/"
     </FilesMatch>
     # manifest files must not be cached
-    <FilesMatch "(manifest\.json|manifest\.webmanifest)$">
+    <FilesMatch "(manifest\.json|manifest\.webmanifest|offline-assets\.json)$">
         Header set Cache-Control "no-cache, no-store, must-revalidate"
     </FilesMatch>
 

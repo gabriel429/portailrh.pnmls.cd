@@ -11,11 +11,13 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import syncService from '@/services/syncService'
+import offlineAssetPreparation from '@/services/offlineAssetPreparation'
 
 const isPWA = ref(true) // PWA is always available
 const status = ref('online') // offline | online | syncing | synced | error
 const message = ref('Système PWA prêt')
 const syncStats = ref({})
+const offlinePreparation = ref(null)
 let statsInterval = null
 
 const iconClass = computed(() => ({
@@ -27,6 +29,13 @@ const iconClass = computed(() => ({
 }))
 
 const label = computed(() => {
+  if (offlinePreparation.value?.status === 'preparing') {
+    return `Hors ligne ${offlinePreparation.value.percent}%`
+  }
+  if (offlinePreparation.value?.status === 'paused') {
+    return `Hors ligne ${offlinePreparation.value.percent}%`
+  }
+
   switch (status.value) {
     case 'syncing':
       return syncStats.value.total ? `Sync ${syncStats.value.total}` : 'Sync...'
@@ -49,6 +58,18 @@ async function updateStatus() {
     const isOnline = navigator.onLine
     const stats = await syncService.getSyncStats()
     syncStats.value = stats
+
+    if (offlinePreparation.value?.status === 'preparing') {
+      status.value = 'syncing'
+      message.value = `Préparation hors ligne : ${offlinePreparation.value.completed}/${offlinePreparation.value.total} ressources`
+      return
+    }
+
+    if (offlinePreparation.value?.status === 'paused' && !isOnline) {
+      status.value = 'offline'
+      message.value = `Préparation suspendue à ${offlinePreparation.value.percent} %, reprise à la reconnexion`
+      return
+    }
 
     if (!isOnline) {
       status.value = 'offline'
@@ -74,8 +95,29 @@ async function updateStatus() {
   }
 }
 
+function handleOfflinePreparation(event) {
+  offlinePreparation.value = event.detail
+
+  if (event.detail.status === 'preparing') {
+    status.value = 'syncing'
+    message.value = `Préparation hors ligne : ${event.detail.completed}/${event.detail.total} ressources`
+  } else if (event.detail.status === 'paused') {
+    status.value = 'offline'
+    message.value = `Préparation suspendue à ${event.detail.percent} %, reprise à la reconnexion`
+  } else if (event.detail.status === 'ready') {
+    status.value = 'synced'
+    message.value = event.detail.persistent
+      ? 'Application complète disponible hors ligne avec stockage persistant'
+      : 'Application complète disponible hors ligne'
+  } else if (event.detail.status === 'error') {
+    status.value = 'error'
+    message.value = event.detail.error || 'Préparation hors ligne impossible'
+  }
+}
+
 onMounted(() => {
   isPWA.value = 'serviceWorker' in navigator || window.matchMedia?.('(display-mode: standalone)')?.matches
+  offlinePreparation.value = offlineAssetPreparation.getState()
 
   // Mise à jour initiale
   updateStatus()
@@ -83,6 +125,7 @@ onMounted(() => {
   // Écouter les changements de connexion
   window.addEventListener('online', updateStatus)
   window.addEventListener('offline', updateStatus)
+  window.addEventListener('epnmls:offline-preparation', handleOfflinePreparation)
 
   // Mise à jour périodique du statut
   statsInterval = setInterval(updateStatus, 5000) // Toutes les 5 secondes
@@ -91,6 +134,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('online', updateStatus)
   window.removeEventListener('offline', updateStatus)
+  window.removeEventListener('epnmls:offline-preparation', handleOfflinePreparation)
   if (statsInterval) {
     clearInterval(statsInterval)
   }

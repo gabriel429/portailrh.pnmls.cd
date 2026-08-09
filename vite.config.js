@@ -4,6 +4,7 @@ import laravel from 'laravel-vite-plugin'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'path'
 import fs from 'fs'
+import crypto from 'crypto'
 import { fileURLToPath } from 'url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -67,6 +68,39 @@ function generateOfflineShell() {
     }
 }
 
+function generateOfflineAssetsIndex() {
+    return {
+        name: 'generate-offline-assets-index',
+        closeBundle() {
+            const buildDir = path.resolve(__dirname, 'public/build')
+            const assetsDir = path.join(buildDir, 'assets')
+            const manifestPath = path.join(buildDir, 'manifest.json')
+
+            if (!fs.existsSync(assetsDir) || !fs.existsSync(manifestPath)) return
+
+            const assets = fs.readdirSync(assetsDir, { recursive: true, withFileTypes: true })
+                .filter((entry) => entry.isFile())
+                .map((entry) => {
+                    const relativePath = path.relative(assetsDir, path.join(entry.parentPath, entry.name))
+                        .split(path.sep)
+                        .join('/')
+                    return `/build/assets/${relativePath}`
+                })
+                .sort()
+            const version = crypto
+                .createHash('sha256')
+                .update(fs.readFileSync(manifestPath))
+                .digest('hex')
+                .slice(0, 16)
+
+            fs.writeFileSync(
+                path.join(buildDir, 'offline-assets.json'),
+                `${JSON.stringify({ version, assets }, null, 2)}\n`,
+            )
+        },
+    }
+}
+
 export default defineConfig({
     plugins: [
         laravel({
@@ -82,6 +116,7 @@ export default defineConfig({
             },
         }),
         generateOfflineShell(),
+        generateOfflineAssetsIndex(),
         VitePWA({
             registerType: 'autoUpdate',
             workbox: {
@@ -130,7 +165,7 @@ export default defineConfig({
                         options: {
                             cacheName: 'pnmls-build-assets',
                             expiration: {
-                                maxEntries: 80,
+                                maxEntries: 400,
                                 maxAgeSeconds: 30 * 24 * 60 * 60,
                             },
                             cacheableResponse: {

@@ -54,6 +54,45 @@ function requestUrl(config) {
     return String(config?.url || '')
 }
 
+function stableValue(value) {
+    if (Array.isArray(value)) return value.map(stableValue)
+    if (!value || typeof value !== 'object') return value
+
+    return Object.keys(value).sort().reduce((result, key) => {
+        result[key] = stableValue(value[key])
+        return result
+    }, {})
+}
+
+function getApiCacheKey(config) {
+    return JSON.stringify({
+        url: requestUrl(config),
+        params: stableValue(config?.params || {}),
+    })
+}
+
+function isCacheableApiRead(config) {
+    return requestMethod(config) === 'get'
+        && !['blob', 'arraybuffer', 'stream'].includes(config?.responseType)
+}
+
+async function getGenericCachedResponse(config) {
+    if (!isCacheableApiRead(config)) return null
+
+    const auth = useAuthStore()
+    const cached = await offlineStorage.getCachedApiResponse(auth.user?.id, getApiCacheKey(config))
+    if (!cached) return null
+
+    return {
+        data: cached.data,
+        status: 200,
+        statusText: 'OK (Cache hors ligne)',
+        headers: {},
+        fromCache: true,
+        cachedAt: cached.cached_at,
+    }
+}
+
 const OFFLINE_QUEUEABLE_CREATIONS = {
     '/taches': 'tache',
     '/requests': 'demande',
@@ -164,6 +203,13 @@ client.interceptors.request.use(
         const queueableEntity = getQueueableOfflineEntity(config)
         const isDataFetchOperation = config.url.includes('/agents/form-options') ||
                                    config.url.includes('/departments')
+
+        if (!navigator.onLine && isCacheableApiRead(config)) {
+            const cachedResponse = await getGenericCachedResponse(config)
+            if (cachedResponse) {
+                return resolveFromRequestInterceptor(config, cachedResponse)
+            }
+        }
 
         // GESTION OFFLINE POUR LES POINTAGES
         if (isPointageOperation && isWriteMethod && !navigator.onLine) {
@@ -282,6 +328,15 @@ client.interceptors.response.use(
         // MISE EN CACHE AUTOMATIQUE DES DONNÉES
         if (navigator.onLine && !response.fromCache) {
             try {
+                if (isCacheableApiRead(response.config)) {
+                    const auth = useAuthStore()
+                    await offlineStorage.cacheApiResponse(
+                        auth.user?.id,
+                        getApiCacheKey(response.config),
+                        response.data,
+                    )
+                }
+
                 // Cache des départements
                 if (response.config.url.includes('/agents/form-options') && response.data.departments) {
                     await cacheService.cacheDepartments?.(response.data.departments)
@@ -346,6 +401,15 @@ client.interceptors.response.use(
 
         // FALLBACK CACHE EN CAS D'ERREUR RÉSEAU
         if (!navigator.onLine || isTransientNetworkError(error)) {
+            const cachedResponse = await getGenericCachedResponse(error.config)
+            if (cachedResponse) {
+                return {
+                    ...cachedResponse,
+                    config: error.config,
+                    fallback: true,
+                }
+            }
+
             const isDataFetch = error.config.url.includes('/agents/form-options') ||
                                error.config.url.includes('/departments')
 

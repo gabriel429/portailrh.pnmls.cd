@@ -16,7 +16,7 @@ import { debugLog, reportError } from '@/utils/logger'
 class OfflineStorage {
     constructor() {
         this.dbName = 'PortailRH_OfflineDB'
-        this.dbVersion = 2
+        this.dbVersion = 3
         this.db = null
     }
 
@@ -96,6 +96,12 @@ class OfflineStorage {
                     syncQueueStore.createIndex('entity', 'entity', { unique: false })
                     syncQueueStore.createIndex('created_at', 'created_at', { unique: false })
                     syncQueueStore.createIndex('client_operation_id', 'client_operation_id', { unique: true })
+                }
+
+                if (!db.objectStoreNames.contains('api_responses')) {
+                    const apiResponseStore = db.createObjectStore('api_responses', { keyPath: 'cache_key' })
+                    apiResponseStore.createIndex('user_id', 'user_id', { unique: false })
+                    apiResponseStore.createIndex('cached_at', 'cached_at', { unique: false })
                 }
 
                 debugLog('🗄️ Tables IndexedDB créées')
@@ -225,6 +231,57 @@ class OfflineStorage {
         this.db.transaction(['offline_sessions'], 'readwrite')
             .objectStore('offline_sessions')
             .delete(userId)
+    }
+
+    async cacheApiResponse(userId, cacheKey, data) {
+        if (!userId || !cacheKey) return
+        await this.init()
+
+        return new Promise((resolve, reject) => {
+            const request = this.db.transaction(['api_responses'], 'readwrite')
+                .objectStore('api_responses')
+                .put({
+                    cache_key: `${userId}:${cacheKey}`,
+                    user_id: userId,
+                    request_key: cacheKey,
+                    data,
+                    cached_at: new Date().toISOString(),
+                })
+            request.onsuccess = () => resolve()
+            request.onerror = () => reject(request.error)
+        })
+    }
+
+    async getCachedApiResponse(userId, cacheKey) {
+        if (!userId || !cacheKey) return null
+        await this.init()
+
+        return new Promise((resolve) => {
+            const request = this.db.transaction(['api_responses'], 'readonly')
+                .objectStore('api_responses')
+                .get(`${userId}:${cacheKey}`)
+            request.onsuccess = () => resolve(request.result || null)
+            request.onerror = () => resolve(null)
+        })
+    }
+
+    async clearApiResponses(userId) {
+        if (!userId) return
+        await this.init()
+
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction(['api_responses'], 'readwrite')
+            const index = transaction.objectStore('api_responses').index('user_id')
+            const request = index.openKeyCursor(IDBKeyRange.only(userId))
+            request.onsuccess = () => {
+                const cursor = request.result
+                if (!cursor) return
+                transaction.objectStore('api_responses').delete(cursor.primaryKey)
+                cursor.continue()
+            }
+            transaction.oncomplete = () => resolve()
+            transaction.onerror = () => resolve()
+        })
     }
 
     async cachePointageAgents(userId, scopeKey, agents) {

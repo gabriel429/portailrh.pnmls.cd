@@ -4,6 +4,7 @@ import router from './router'
 import App from './App.vue'
 import { debugLog, reportError } from '@/utils/logger'
 import { recoverFromAssetLoadFailure, registerRuntimeNoiseFilter } from '@/utils/runtimeNoiseFilter'
+import offlineAssetPreparation from '@/services/offlineAssetPreparation'
 
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import '../css/app.css'
@@ -132,6 +133,7 @@ async function registerAppServiceWorker() {
         watchServiceWorkerUpdate(registration)
         emitPwaRuntimeEvent('pwa-registration', { registration })
         registration.update?.().catch(() => {})
+        window.setTimeout(() => offlineAssetPreparation.start(), 1500)
         debugLog('PWA: Service worker registered')
     } catch (error) {
         reportError('PWA: Service worker registration failed:', error)
