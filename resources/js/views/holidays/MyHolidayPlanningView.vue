@@ -50,6 +50,14 @@
             <i class="fas fa-calendar-times"></i>
             <h5>Aucun planning pour {{ selectedYear }}</h5>
             <p class="mb-0">Le planning de congés de <strong>{{ structure.nom }}</strong> n'a pas encore été créé pour cette année.</p>
+            <div v-if="referencePlanning" class="alert alert-info text-start mt-3 mb-0">
+              <div class="fw-semibold"><i class="fas fa-compass me-1"></i>Planning de référence défini en amont</div>
+              <div class="mt-1">
+                {{ referencePlanning.nom_structure }} : {{ referencePlanning.jours_conge_totaux }} jours annuels.
+              </div>
+              <div v-if="referencePlanning.notes" class="small mt-1">{{ referencePlanning.notes }}</div>
+              <div class="small mt-2">Ce planning sert de référence. Votre période individuelle doit être attribuée par le responsable de votre structure avant la demande.</div>
+            </div>
           </div>
         </div>
 
@@ -287,6 +295,7 @@ const loading = ref(true)
 const selectedYear = ref(new Date().getFullYear())
 const structure = ref(null)
 const planning = ref(null)
+const referencePlanning = ref(null)
 const colleagues = ref([])
 const myHolidays = ref([])
 const myInterims = ref([])
@@ -331,6 +340,7 @@ async function loadPlanning() {
     })
     structure.value = data.structure
     planning.value = data.planning
+    referencePlanning.value = data.reference_planning || null
     colleagues.value = data.colleagues || []
     myHolidays.value = data.my_holidays || []
     myInterims.value = data.my_interims || []

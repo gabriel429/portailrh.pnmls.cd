@@ -18,6 +18,7 @@ class HolidayEntitlementService
             return HolidayPlanning::where('annee', $year)
                 ->where('type_structure', 'sep')
                 ->where('structure_id', $agent->province_id)
+                ->validated()
                 ->first();
         }
 
@@ -25,12 +26,14 @@ class HolidayEntitlementService
             return HolidayPlanning::where('annee', $year)
                 ->where('type_structure', 'department')
                 ->where('structure_id', $agent->departement_id)
+                ->validated()
                 ->first();
         }
 
         return HolidayPlanning::where('annee', $year)
             ->where('type_structure', 'sen')
             ->where('structure_id', 1)
+            ->validated()
             ->first();
     }
 
@@ -107,7 +110,7 @@ class HolidayEntitlementService
 
     private function planningMaps(int $year): array
     {
-        $plannings = HolidayPlanning::where('annee', $year)->get();
+        $plannings = HolidayPlanning::where('annee', $year)->validated()->get();
 
         return [
             'sep' => $plannings->where('type_structure', 'sep')->keyBy('structure_id'),

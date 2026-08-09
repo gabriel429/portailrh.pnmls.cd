@@ -958,8 +958,53 @@ class HolidayController extends Controller
         $dateDébut = Carbon::parse($validated['date_debut']);
         $dateFin   = Carbon::parse($validated['date_fin']);
 
+        $planning = $this->resolvePlanning($agent, $dateDébut->year);
+        $plannedHoliday = null;
+        if ($validated['type_conge'] === 'annuel') {
+            if (!$planning) {
+                return response()->json([
+                    'message' => 'Aucun planning de congés validé n’est disponible pour votre structure. Consultez le planning de référence défini en amont ou contactez la Section RH.',
+                    'errors' => [
+                        'date_debut' => ['Votre demande annuelle doit correspondre à un planning validé.'],
+                    ],
+                ], 422);
+            }
+
+            $plannedHoliday = Holiday::where('agent_id', $agent->id)
+                ->where('holiday_planning_id', $planning->id)
+                ->where('type_conge', 'annuel')
+                ->where('statut_demande', 'en_attente')
+                ->first();
+
+            if (!$plannedHoliday) {
+                return response()->json([
+                    'message' => 'Aucune période individuelle ne vous a encore été attribuée dans ce planning. Contactez le responsable de votre structure.',
+                    'errors' => [
+                        'date_debut' => ['Une période doit d’abord être définie dans le planning de votre structure.'],
+                    ],
+                ], 422);
+            }
+
+            $suggestedStart = Carbon::parse($plannedHoliday->date_debut);
+            $suggestedEnd = Carbon::parse($plannedHoliday->date_fin);
+            if (!$suggestedStart->isSameDay($dateDébut) || !$suggestedEnd->isSameDay($dateFin)) {
+                return response()->json([
+                    'message' => 'Les dates choisies ne correspondent pas à la période définie dans votre planning.',
+                    'errors' => [
+                        'date_debut' => ['Utilisez la période proposée dans votre planning.'],
+                        'date_fin' => ['Utilisez la période proposée dans votre planning.'],
+                    ],
+                    'suggested_holiday' => [
+                        'id' => $plannedHoliday->id,
+                        'date_debut' => $suggestedStart->toDateString(),
+                        'date_fin' => $suggestedEnd->toDateString(),
+                    ],
+                ], 422);
+            }
+        }
+
         // Conflit de dates
-        if (Holiday::hasConflict($agent->id, $dateDébut, $dateFin)) {
+        if (Holiday::hasConflict($agent->id, $dateDébut, $dateFin, $plannedHoliday?->id)) {
             return response()->json([
                 'message' => 'Conflit de dates : vous avez déjà un congé sur cette période.'
             ], 422);
@@ -986,8 +1031,6 @@ class HolidayController extends Controller
             ], 422);
         }
 
-        // Auto-résolution du planning
-        $planning = $this->resolvePlanning($agent, $dateDébut->year);
         if ($planning) {
             $validated['holiday_planning_id'] = $planning->id;
         }
@@ -1021,13 +1064,22 @@ class HolidayController extends Controller
         $validated['statut_demande']     = 'en_attente';
         $validated['demande_par']        = $agent->id;
 
-        $holiday = Holiday::create($validated);
+        if ($plannedHoliday) {
+            $plannedHoliday->update($validated);
+            $holiday = $plannedHoliday;
+        } else {
+            $holiday = Holiday::create($validated);
+        }
         $holiday->load('agent');
 
+        CongeRequested::dispatch($holiday);
+
         return response()->json([
-            'message' => 'Demande de congé soumise avec succès.',
+            'message' => $plannedHoliday
+                ? 'Période planifiée confirmée avec succès.'
+                : 'Demande de congé soumise avec succès.',
             'holiday' => $holiday,
-        ], 201);
+        ], $plannedHoliday ? 200 : 201);
     }
 
     /**

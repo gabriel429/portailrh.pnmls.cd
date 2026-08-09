@@ -96,6 +96,7 @@ async function getGenericCachedResponse(config) {
 const OFFLINE_QUEUEABLE_CREATIONS = {
     '/taches': 'tache',
     '/requests': 'demande',
+    '/my-holiday': 'conge',
     '/holidays': 'conge',
     '/holiday-plannings': 'conge',
 }

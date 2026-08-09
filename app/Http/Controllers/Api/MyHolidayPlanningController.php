@@ -56,7 +56,17 @@ class MyHolidayPlanningController extends Controller
         $planning = HolidayPlanning::with(['createdBy', 'validatedBy'])
             ->forYear($year)
             ->forStructure($structure['type'], $structure['id'])
+            ->validated()
             ->first();
+
+        $referencePlanning = null;
+        if (!$planning && $structure['type'] !== 'sen') {
+            $referencePlanning = HolidayPlanning::with(['createdBy', 'validatedBy'])
+                ->forYear($year)
+                ->forStructure('sen', 1)
+                ->validated()
+                ->first();
+        }
 
         // Congés approuvés des collègues (même structure, même année)
         $colleagues = [];
@@ -113,7 +123,7 @@ class MyHolidayPlanningController extends Controller
                 ->where('agent_id', $agent->id)
                 ->whereYear('date_debut', $year)
                 ->whereIn('statut_demande', ['en_attente', 'approuve'])
-                ->select(['id', 'agent_id', 'type_conge', 'date_debut', 'date_fin', 'nombre_jours', 'statut_demande', 'observation', 'interim_assure_par', 'holiday_planning_id'])
+                ->select(['id', 'agent_id', 'type_conge', 'date_debut', 'date_fin', 'nombre_jours', 'statut_demande', 'motif', 'observation', 'interim_assure_par', 'holiday_planning_id', 'created_at'])
                 ->orderBy('date_debut')
                 ->get();
         }
@@ -133,6 +143,7 @@ class MyHolidayPlanningController extends Controller
         return response()->json([
             'structure' => $structure,
             'planning' => $planning,
+            'reference_planning' => $referencePlanning,
             'colleagues' => $colleagues,
             'stats' => $stats,
             'my_holidays' => $myHolidays,

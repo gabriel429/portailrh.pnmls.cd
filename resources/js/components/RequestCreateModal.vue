@@ -7,6 +7,9 @@
           <button class="rcm-close" @click="close"><i class="fas fa-times"></i></button>
         </div>
         <div class="rcm-body">
+          <div v-if="submitError" class="alert alert-danger py-2" role="alert">
+            {{ submitError }}
+          </div>
           <form @submit.prevent="handleSubmit" enctype="multipart/form-data">
             <!-- Agent (gestionnaire habilité) -->
             <div v-if="isRH" class="mb-3">
@@ -75,6 +78,27 @@
               <div v-if="errors.type_conge" class="invalid-feedback d-block">{{ errors.type_conge[0] }}</div>
             </div>
 
+            <div v-if="form.type === 'conge' && form.type_conge === 'annuel' && !isRH" class="mb-3">
+              <div v-if="planningLoading" class="alert alert-light py-2 mb-0">
+                <span class="spinner-border spinner-border-sm me-2"></span>Vérification du planning...
+              </div>
+              <div v-else-if="suggestedHoliday" class="alert alert-info py-2 mb-0">
+                <div class="fw-semibold">Période proposée par votre planning</div>
+                <div class="small my-1">Du {{ formatDate(suggestedHoliday.date_debut) }} au {{ formatDate(suggestedHoliday.date_fin) }}</div>
+                <button type="button" class="btn btn-sm btn-outline-primary" @click="applySuggestedHoliday">
+                  <i class="fas fa-calendar-check me-1"></i>Utiliser cette période
+                </button>
+              </div>
+              <div v-else-if="referencePlanning" class="alert alert-warning py-2 mb-0">
+                Le planning de votre structure n’est pas encore disponible. Consultez le planning de référence
+                <strong>{{ referencePlanning.nom_structure }}</strong> défini en amont.
+                <router-link :to="{ name: 'mon-planning-conges' }" class="d-block mt-1">Voir le planning de référence</router-link>
+              </div>
+              <div v-else class="alert alert-warning py-2 mb-0">
+                Aucune période annuelle validée n’est disponible pour votre structure. Contactez la Section RH.
+              </div>
+            </div>
+
             <!-- Intérimaire (congé) -->
             <div v-if="form.type === 'conge'" class="mb-3">
               <label class="rcm-label">
@@ -108,7 +132,7 @@
               <div class="col-6">
                 <label class="rcm-label">
                   <i class="fas fa-calendar-check me-1 text-muted"></i>
-                  Date fin
+                  Date fin <span class="text-danger">*</span>
                 </label>
                 <input
                   type="date" v-model="form.date_fin"
@@ -222,10 +246,14 @@ const agentsInterimaires = computed(() => {
 })
 
 const errors = ref({})
+const submitError = ref('')
 const submitting = ref(false)
 const selectedFile = ref(null)
 const filePreview = ref(null)
 const fileInput = ref(null)
+const planningLoading = ref(false)
+const referencePlanning = ref(null)
+const suggestedHoliday = ref(null)
 
 const typeOptions = [
   { value: 'conge', label: 'Congé', icon: 'fas fa-umbrella-beach' },
@@ -262,6 +290,18 @@ function removeFile() {
   if (fileInput.value) fileInput.value.value = ''
 }
 
+function formatDate(date) {
+  return new Date(`${date}T00:00:00`).toLocaleDateString('fr-FR')
+}
+
+function applySuggestedHoliday() {
+  if (!suggestedHoliday.value) return
+  form.value.date_debut = suggestedHoliday.value.date_debut
+  form.value.date_fin = suggestedHoliday.value.date_fin
+  errors.value.date_debut = null
+  errors.value.date_fin = null
+}
+
 function close() {
   emit('close')
 }
@@ -278,12 +318,16 @@ function resetForm() {
     interim_assure_par: '',
   }
   errors.value = {}
+  submitError.value = ''
   agentsLoadError.value = ''
+  referencePlanning.value = null
+  suggestedHoliday.value = null
   removeFile()
 }
 
 async function handleSubmit() {
   errors.value = {}
+  submitError.value = ''
 
   if (isRH.value && !form.value.agent_id) {
     errors.value = { agent_id: ['Sélectionnez un agent.'] }
@@ -302,7 +346,12 @@ async function handleSubmit() {
       fd.append('motif', form.value.description)
       if (form.value.interim_assure_par) fd.append('interim_assure_par', form.value.interim_assure_par)
       if (selectedFile.value) fd.append('lettre_demande', selectedFile.value)
-      await client.post('/my-holiday', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      const response = await client.post('/my-holiday', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+      if (response.data?.offline) {
+        ui.addToast('Demande de congé enregistrée hors ligne. Elle sera envoyée à la reconnexion.', 'success', 6000)
+      } else {
+        ui.addToast(response.data?.message || 'Demande de congé soumise avec succès.', 'success')
+      }
     } else {
       // Demandes administratives → route requests standard
       const formData = new FormData()
@@ -315,17 +364,27 @@ async function handleSubmit() {
       if (selectedFile.value) formData.append('lettre_demande', selectedFile.value)
       await create(formData)
     }
-    ui.addToast('Demande créée avec succès.', 'success')
+    if (form.value.type !== 'conge' || !shouldUsePersonalHolidayRoute()) {
+      ui.addToast('Demande créée avec succès.', 'success')
+    }
     resetForm()
     emit('created')
     close()
   } catch (err) {
     if (err.response?.status === 422) {
       errors.value = err.response.data.errors || {}
+      if (err.response.data.suggested_holiday) {
+        suggestedHoliday.value = err.response.data.suggested_holiday
+      }
+      if (errors.value.motif && !errors.value.description) {
+        errors.value.description = errors.value.motif
+      }
       const msg = err.response.data.message
-      if (msg && !err.response.data.errors) ui.addToast(msg, 'danger')
+      submitError.value = msg || 'Vérifiez les informations saisies.'
+      ui.addToast(submitError.value, 'danger')
     } else {
-      ui.addToast(err.response?.data?.message || 'Erreur lors de la création.', 'danger')
+      submitError.value = err.response?.data?.message || err.message || 'Erreur lors de la création.'
+      ui.addToast(submitError.value, 'danger')
     }
   } finally {
     submitting.value = false
@@ -377,10 +436,37 @@ async function loadAgents() {
   }
 }
 
+async function loadPersonalPlanning() {
+  if (isRH.value) return
+
+  planningLoading.value = true
+  try {
+    const year = Number(form.value.date_debut?.slice(0, 4)) || new Date().getFullYear()
+    const { data } = await client.get('/mon-planning-conges', { params: { year } })
+    referencePlanning.value = data.reference_planning || null
+    suggestedHoliday.value = (data.my_holidays || []).find(holiday =>
+      holiday.type_conge === 'annuel'
+      && holiday.statut_demande === 'en_attente'
+      && String(holiday.holiday_planning_id || '') === String(data.planning?.id || '')
+    ) || null
+  } catch (err) {
+    referencePlanning.value = null
+    suggestedHoliday.value = null
+  } finally {
+    planningLoading.value = false
+  }
+}
+
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     resetForm()
-    await loadAgents()
+    await Promise.all([loadAgents(), loadPersonalPlanning()])
+  }
+})
+
+watch(() => form.value.date_debut?.slice(0, 4), (year, previousYear) => {
+  if (props.show && form.value.type_conge === 'annuel' && year && year !== previousYear) {
+    loadPersonalPlanning()
   }
 })
 </script>

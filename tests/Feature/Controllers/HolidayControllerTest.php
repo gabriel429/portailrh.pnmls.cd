@@ -5,7 +5,9 @@ namespace Tests\Feature\Controllers;
 use App\Events\CongeApproved;
 use App\Events\CongeRequested;
 use App\Models\Agent;
+use App\Models\Department;
 use App\Models\Holiday;
+use App\Models\HolidayPlanning;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -89,6 +91,122 @@ class HolidayControllerTest extends TestCase
             'statut_demande' => 'en_attente',
             'demande_par' => $this->rhAgent->id,
         ]);
+    }
+
+    public function test_standard_agent_can_create_own_holiday_request(): void
+    {
+        $agentUser = User::factory()->create([
+            'agent_id' => $this->agent->id,
+            'role_id' => $this->agent->role_id,
+        ]);
+        Sanctum::actingAs($agentUser);
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
+        $planning = HolidayPlanning::create([
+            'annee' => Carbon::parse($dateDebut)->year,
+            'type_structure' => 'sen',
+            'structure_id' => 1,
+            'nom_structure' => 'SEN',
+            'jours_conge_totaux' => 30,
+            'statut' => HolidayPlanning::STATUT_VALIDE,
+            'valide' => true,
+            'created_by' => $this->rhAgent->id,
+        ]);
+        $plannedHoliday = Holiday::factory()->pending()->create([
+            'agent_id' => $this->agent->id,
+            'holiday_planning_id' => $planning->id,
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'nombre_jours' => 5,
+            'type_conge' => 'annuel',
+            'motif' => 'Période proposée',
+        ]);
+
+        $this->postJson('/api/my-holiday', [
+            'date_debut' => Carbon::parse($dateDebut)->addWeek()->toDateString(),
+            'date_fin' => Carbon::parse($dateFin)->addWeek()->toDateString(),
+            'type_conge' => 'annuel',
+            'motif' => 'Autre période souhaitée',
+        ])->assertUnprocessable()
+            ->assertJsonPath('suggested_holiday.id', $plannedHoliday->id)
+            ->assertJsonPath('suggested_holiday.date_debut', $dateDebut)
+            ->assertJsonValidationErrors(['date_debut', 'date_fin']);
+
+        $this->postJson('/api/my-holiday', [
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'type_conge' => 'annuel',
+            'motif' => 'Congé annuel réglementaire',
+        ])->assertOk()
+            ->assertJsonPath('holiday.agent_id', $this->agent->id)
+            ->assertJsonPath('holiday.id', $plannedHoliday->id)
+            ->assertJsonPath('holiday.statut_demande', 'en_attente');
+
+        $this->assertDatabaseHas('holidays', [
+            'agent_id' => $this->agent->id,
+            'type_conge' => 'annuel',
+            'statut_demande' => 'en_attente',
+            'demande_par' => $this->agent->id,
+            'motif' => 'Congé annuel réglementaire',
+        ]);
+        $this->assertDatabaseCount('holidays', 1);
+        Event::assertDispatched(
+            CongeRequested::class,
+            fn (CongeRequested $event) => $event->holiday->agent_id === $this->agent->id,
+        );
+    }
+
+    public function test_standard_agent_cannot_request_annual_leave_without_validated_planning(): void
+    {
+        $agentUser = User::factory()->create([
+            'agent_id' => $this->agent->id,
+            'role_id' => $this->agent->role_id,
+        ]);
+        Sanctum::actingAs($agentUser);
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
+
+        $this->postJson('/api/my-holiday', [
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'type_conge' => 'annuel',
+            'motif' => 'Congé sans planning',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('date_debut')
+            ->assertJsonFragment([
+                'message' => 'Aucun planning de congés validé n’est disponible pour votre structure. Consultez le planning de référence défini en amont ou contactez la Section RH.',
+            ]);
+
+        $this->assertDatabaseCount('holidays', 0);
+    }
+
+    public function test_agent_receives_upstream_reference_planning_when_department_planning_is_unavailable(): void
+    {
+        $department = Department::create([
+            'code' => 'REF',
+            'nom' => 'Département sans planning',
+            'description' => 'Département utilisé pour tester le planning de référence.',
+        ]);
+        $this->agent->update(['departement_id' => $department->id]);
+        $agentUser = User::factory()->create([
+            'agent_id' => $this->agent->id,
+            'role_id' => $this->agent->role_id,
+        ]);
+        $referencePlanning = HolidayPlanning::create([
+            'annee' => now()->year,
+            'type_structure' => 'sen',
+            'structure_id' => 1,
+            'nom_structure' => 'Planning SEN de référence',
+            'jours_conge_totaux' => 30,
+            'statut' => HolidayPlanning::STATUT_VALIDE,
+            'valide' => true,
+            'created_by' => $this->rhAgent->id,
+        ]);
+        Sanctum::actingAs($agentUser);
+
+        $this->getJson('/api/mon-planning-conges?year=' . now()->year)
+            ->assertOk()
+            ->assertJsonPath('planning', null)
+            ->assertJsonPath('reference_planning.id', $referencePlanning->id)
+            ->assertJsonPath('reference_planning.nom_structure', 'Planning SEN de référence');
     }
 
     public function test_can_approve_holiday(): void

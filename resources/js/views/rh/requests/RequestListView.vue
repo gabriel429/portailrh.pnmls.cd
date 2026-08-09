@@ -127,6 +127,43 @@
     </div>
 
     <template v-else>
+      <section v-if="!isRH && personalHolidays.length" class="mb-4">
+        <div class="req-section-header">
+          <div class="req-section-title">
+            <i class="fas fa-umbrella-beach text-primary"></i>
+            Mes demandes de congé
+            <span class="req-section-badge">{{ personalHolidays.length }}</span>
+          </div>
+          <router-link :to="{ name: 'mon-planning-conges' }" class="req-back-btn">
+            Voir le planning
+          </router-link>
+        </div>
+        <div class="req-grid">
+          <div v-for="holiday in personalHolidays" :key="`holiday-${holiday.id}`" class="req-card">
+            <div class="req-card-top">
+              <div class="req-card-status-icon" :class="statusIconClass(normalizeHolidayStatus(holiday.statut_demande))">
+                <i :class="statusIcon(normalizeHolidayStatus(holiday.statut_demande))"></i>
+              </div>
+              <div class="req-card-info">
+                <div class="req-card-type-row">
+                  <span class="req-badge-type">{{ holidayTypeLabel(holiday.type_conge) }}</span>
+                  <span :class="statusBadgeClass(normalizeHolidayStatus(holiday.statut_demande))">
+                    {{ statusLabel(normalizeHolidayStatus(holiday.statut_demande)) }}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div class="req-card-dates">
+              <i class="fas fa-calendar-alt me-1"></i>
+              <span>{{ formatDate(holiday.date_debut) }}</span>
+              <i class="fas fa-arrow-right req-date-arrow"></i>
+              <span>{{ formatDate(holiday.date_fin) }}</span>
+            </div>
+            <div v-if="holiday.motif" class="text-muted small mt-2">{{ holiday.motif }}</div>
+          </div>
+        </div>
+      </section>
+
       <!-- Request cards grid -->
       <div v-if="requests.length" class="req-grid" :class="{ 'req-filtering': filtering }">
         <div v-for="req in requests" :key="req.id" class="req-card">
@@ -386,6 +423,7 @@ const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
 const requests = ref([])
+const personalHolidays = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
 const counts = ref({ 'en_attente': 0, 'approuvé': 0, 'rejeté': 0, 'annulé': 0, 'expiré': 0 })
 const filters = ref({ statut: '', type: '' })
@@ -417,7 +455,7 @@ function closeCreateModal() {
 }
 
 async function handleRequestCreated() {
-  await loadRequests(1)
+  await Promise.all([loadRequests(1), loadPersonalHolidays()])
 }
 
 // Deprecated variables (kept for compatibility, not used with new RequestCreateModal component)
@@ -479,6 +517,38 @@ async function loadRequests(page = 1) {
     filtering.value = false
     initialLoadDone.value = true
   }
+}
+
+async function loadPersonalHolidays() {
+  if (isRH.value) return
+
+  try {
+    const { data } = await client.get('/mon-planning-conges', {
+      params: { year: new Date().getFullYear() },
+    })
+    personalHolidays.value = data.my_holidays || []
+  } catch (err) {
+    personalHolidays.value = []
+  }
+}
+
+function normalizeHolidayStatus(status) {
+  return {
+    approuve: 'approuvé',
+    refuse: 'rejeté',
+    annule: 'annulé',
+  }[status] || status
+}
+
+function holidayTypeLabel(type) {
+  return {
+    annuel: 'Congé annuel',
+    maladie: 'Congé maladie',
+    maternite: 'Congé maternité',
+    paternite: 'Congé paternité',
+    urgence: "Congé d'urgence",
+    special: 'Congé spécial',
+  }[type] || 'Congé'
 }
 
 function setStatut(statut) {
@@ -649,6 +719,7 @@ function handleRequestUpdated(updatedRequest) {
 
 onMounted(() => {
   loadRequests()
+  loadPersonalHolidays()
 })
 </script>
 
