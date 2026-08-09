@@ -75,7 +75,9 @@ class HolidayEntitlementService
                 'nom_complet' => trim(($agent->nom ?? '') . ' ' . ($agent->postnom ?? '') . ' ' . ($agent->prenom ?? '')),
                 'fonction' => $agent->fonction,
                 'province_id' => $agent->province_id,
+                'localite_id' => $agent->localite_id,
                 'departement_id' => $agent->departement_id,
+                'is_sen_attache' => $agent->isSenAttache(),
                 'holiday_entitlement' => $this->formatQuota(
                     $agent,
                     $year,

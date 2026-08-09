@@ -154,12 +154,14 @@ class HolidayPlanningController extends Controller
         $responsibility = $this->workflow()->responsibilityFor($user);
 
         // Liste des agents à intégrer au planning de la structure de l'initiateur.
-        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id', 'localite_id', 'departement_id')
+        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'organe', 'province_id', 'localite_id', 'departement_id')
             ->where('statut', 'actif')
             ->orderInstitutionally();
         $scope->applyHolidayAgentScope($agentsQuery, $user);
         if ($responsibility && $responsibility['type'] === 'department') {
             $agentsQuery->where('departement_id', $responsibility['structure_id']);
+        } elseif ($responsibility && $responsibility['type'] === 'sen') {
+            $agentsQuery->senAttaches();
         } elseif ($responsibility && $responsibility['type'] === 'sep') {
             $agentsQuery->where('province_id', $responsibility['structure_id']);
         } elseif ($responsibility && $responsibility['type'] === 'local') {
@@ -210,6 +212,7 @@ class HolidayPlanningController extends Controller
                         $user,
                         $responsibility['level'],
                         $responsibility['structure_id'],
+                        $responsibility['type'],
                     )),
                 'user_role' => $user?->role?->nom_role,
                 'responsibility' => $responsibility,
@@ -337,7 +340,7 @@ class HolidayPlanningController extends Controller
     {
         $validated = $request->validate([
             'annee' => 'required|integer|min:2020|max:2030',
-            'type_structure' => 'required|in:department,sep,local',
+            'type_structure' => 'required|in:department,sen,sep,local',
             'structure_id' => 'required|integer|min:1|max:99999',
             'nom_structure' => 'required|string|max:255',
             'jours_conge_totaux' => 'required|integer|min:1|max:50',
@@ -354,7 +357,12 @@ class HolidayPlanningController extends Controller
 
         $validated['niveau_administratif'] = $this->workflow()->levelFor($validated['type_structure']);
 
-        if (!$this->workflow()->canInitiate($request->user(), $validated['niveau_administratif'], (int) $validated['structure_id'])) {
+        if (!$this->workflow()->canInitiate(
+            $request->user(),
+            $validated['niveau_administratif'],
+            (int) $validated['structure_id'],
+            $validated['type_structure'],
+        )) {
             return response()->json([
                 'message' => "Votre fonction ne permet pas d'initier ce planning.",
             ], 403);
@@ -363,7 +371,11 @@ class HolidayPlanningController extends Controller
         // Valider que structure_id correspond à une vraie entité
         $type = $validated['type_structure'];
         $sid  = $validated['structure_id'];
-        if ($type === 'sep') {
+        if ($type === 'sen') {
+            if ((int) $sid !== 1) {
+                return response()->json(['message' => 'Identifiant invalide pour les Attachés du SEN.'], 422);
+            }
+        } elseif ($type === 'sep') {
             if (!\App\Models\Province::where('id', $sid)->exists()) {
                 return response()->json(['message' => 'Province introuvable (structure_id invalide).'], 422);
             }
@@ -472,6 +484,7 @@ class HolidayPlanningController extends Controller
     {
         return match ($type) {
             'department' => (int) $agent->departement_id === $structureId,
+            'sen' => $structureId === 1 && $agent->isSenAttache(),
             'sep' => (int) $agent->province_id === $structureId,
             'local' => (int) $agent->localite_id === $structureId,
             default => false,
@@ -484,6 +497,7 @@ class HolidayPlanningController extends Controller
 
         return match ($type) {
             'department' => $query->where('departement_id', $structureId),
+            'sen' => $structureId === 1 ? $query->senAttaches() : $query->whereRaw('1 = 0'),
             'sep' => $query->where('province_id', $structureId),
             'local' => $query->where('localite_id', $structureId),
             default => $query->whereRaw('1 = 0'),
@@ -494,7 +508,7 @@ class HolidayPlanningController extends Controller
     {
         $validated = $request->validate([
             'year' => 'required|integer|min:2020|max:2030',
-            'structure_type' => 'required|in:department,sep,local',
+            'structure_type' => 'required|in:department,sen,sep,local',
             'structure_id' => 'required|integer|min:1',
         ]);
 
@@ -540,6 +554,7 @@ class HolidayPlanningController extends Controller
 
         $structureName = match ($type) {
             'department' => Department::find($structureId)?->nom,
+            'sen' => 'Attachés du SEN',
             'local' => Localite::find($structureId)?->nom,
             default => Province::find($structureId)?->nom,
         };

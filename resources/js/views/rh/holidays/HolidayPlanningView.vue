@@ -56,6 +56,7 @@
             <select class="form-select" v-model="filters.structure_type" @change="onStructureTypeChange">
               <option value="">Toutes les structures</option>
               <option v-if="!scopeInfo.is_provincial" value="department">Départements</option>
+              <option v-if="!scopeInfo.is_provincial" value="sen">Attachés du SEN</option>
               <option value="sep">SEP Provincial</option>
               <option value="local">Structures Locales</option>
             </select>
@@ -678,6 +679,10 @@ const availableYears = computed(() => {
 })
 
 const selectedStructureName = computed(() => {
+  if (filters.value.structure_type === 'sen') {
+    return 'Attachés du SEN'
+  }
+
   if (filters.value.structure_type === 'department') {
     return departments.value.find(item => Number(item.id) === Number(filters.value.structure_id))?.nom || ''
   }
@@ -797,7 +802,7 @@ async function loadPlannings(page = 1) {
 }
 
 function onStructureTypeChange() {
-  filters.value.structure_id = ''
+  filters.value.structure_id = filters.value.structure_type === 'sen' ? 1 : ''
   loadPlannings()
 }
 

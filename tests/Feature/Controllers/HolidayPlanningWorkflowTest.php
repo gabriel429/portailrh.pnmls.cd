@@ -117,6 +117,58 @@ class HolidayPlanningWorkflowTest extends TestCase
         $this->assertSame([$locality->id], collect($response->json('localities'))->pluck('id')->all());
     }
 
+    public function test_sena_planning_scope_includes_all_sen_attaches_without_department(): void
+    {
+        $sena = $this->userWithRole('SENA', [
+            'organe' => 'Secrétariat Exécutif National',
+            'departement_id' => null,
+        ]);
+        $sen = $this->userWithRole('SEN', [
+            'organe' => 'Secrétariat Exécutif National',
+            'departement_id' => null,
+        ]);
+        $department = $this->department('SEN-DEPT');
+        $departmentAgent = $this->userWithRole('Agent département', [
+            'organe' => 'Secrétariat Exécutif National',
+            'departement_id' => $department->id,
+        ]);
+        Sanctum::actingAs($sena);
+
+        $response = $this->getJson('/api/holiday-plannings?year=' . now()->year)
+            ->assertOk()
+            ->assertJsonPath('workflow.can_create', true)
+            ->assertJsonPath('workflow.responsibility.type', 'sen')
+            ->assertJsonPath('workflow.responsibility.label', 'Attachés du SEN');
+
+        $agents = collect($response->json('agents'));
+        $this->assertEqualsCanonicalizing(
+            [$sena->agent->id, $sen->agent->id],
+            $agents->pluck('id')->all(),
+        );
+        $this->assertTrue($agents->every(fn (array $agent) => $agent['is_sen_attache'] === true));
+        $this->assertFalse($agents->pluck('id')->contains($departmentAgent->agent->id));
+
+        [$start, $end] = $this->annualPlanningPeriod();
+        $planningId = $this->postJson('/api/holiday-plannings', [
+            'annee' => now()->year,
+            'type_structure' => 'sen',
+            'structure_id' => 1,
+            'nom_structure' => 'Attachés du SEN',
+            'jours_conge_totaux' => 30,
+            'entries' => $agents->map(fn (array $agent) => [
+                'agent_id' => $agent['id'],
+                'date_debut' => $start->toDateString(),
+                'date_fin' => $end->toDateString(),
+            ])->all(),
+        ])->assertCreated()->json('planning.id');
+
+        $this->postJson("/api/holiday-plannings/{$planningId}/submit")->assertOk();
+        Sanctum::actingAs($sen);
+        $this->postJson("/api/holiday-plannings/{$planningId}/validate")
+            ->assertOk()
+            ->assertJsonPath('planning.statut', HolidayPlanning::STATUT_VALIDE);
+    }
+
     public function test_sep_filter_limits_plannings_statistics_and_holidays_to_selected_province(): void
     {
         $visibleProvince = $this->province('FILTER-A');

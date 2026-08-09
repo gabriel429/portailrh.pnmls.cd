@@ -51,6 +51,7 @@
                 >
                   <option value="">Sélectionner un type</option>
                   <option v-if="!scopeInfo.is_provincial" value="department">Département</option>
+                  <option v-if="!scopeInfo.is_provincial" value="sen">Attachés du SEN</option>
                   <option value="sep">SEP Provincial</option>
                   <option value="local">Structure Locale</option>
                 </select>
@@ -397,6 +398,7 @@ const availableYears = computed(() => {
 const isAutoFilledStructure = computed(() => {
   const type = form.value.type_structure
   if (props.scopeInfo.is_provincial && type === 'sep') return true
+  if (type === 'sen') return true
   return false
 })
 
@@ -413,6 +415,7 @@ const isFormValid = computed(() => {
 function getStructureLabel() {
   const labels = {
     'department': 'Département',
+    'sen': 'Attachés du SEN',
     'sep': 'SEP Provincial',
     'local': 'Structure Locale'
   }
@@ -449,6 +452,7 @@ function resetEntries() {
   const scopedAgents = props.agents.filter(agent => {
     if (!type || !structureId) return true
     if (type === 'department') return Number(agent.departement_id) === structureId
+    if (type === 'sen') return agent.is_sen_attache === true
     if (type === 'sep') return Number(agent.province_id) === structureId
     if (type === 'local') return Number(agent.localite_id) === structureId
     return false
@@ -472,6 +476,8 @@ function applyResponsibility() {
 
   if (responsibility.type === 'department') {
     form.value.nom_structure = props.departments.find(item => item.id == responsibility.structure_id)?.nom || responsibility.label
+  } else if (responsibility.type === 'sen') {
+    form.value.nom_structure = 'Attachés du SEN'
   } else if (responsibility.type === 'sep') {
     const province = props.provinces.find(item => item.id == responsibility.structure_id)
     form.value.nom_structure = `SEP ${province?.nom || responsibility.label}`
@@ -487,6 +493,11 @@ function onStructureTypeChange() {
   errors.value = {}
 
   const type = form.value.type_structure
+
+  if (type === 'sen') {
+    form.value.structure_id = 1
+    form.value.nom_structure = 'Attachés du SEN'
+  }
 
   if (props.scopeInfo.is_provincial && type === 'sep') {
     form.value.structure_id = props.scopeInfo.province_id
@@ -616,11 +627,11 @@ watch(() => props.show, (newValue) => {
       periods_fermeture: [],
       notes: ''
     }
-    resetEntries()
     applyResponsibility()
+    resetEntries()
     errors.value = {}
   }
-})
+}, { immediate: true })
 </script>
 
 <style scoped>

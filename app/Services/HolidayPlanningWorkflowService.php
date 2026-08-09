@@ -17,10 +17,14 @@ class HolidayPlanningWorkflowService
         };
     }
 
-    public function canInitiate(User $user, string $level, int $structureId): bool
+    public function canInitiate(User $user, string $level, int $structureId, ?string $structureType = null): bool
     {
         if ($user->isSuperAdmin()) {
             return true;
+        }
+
+        if ($structureType === 'sen' && app(RoleService::class)->hasSENARole($user)) {
+            return $user->agent?->isSenAttache() ?? false;
         }
 
         return match ($level) {
@@ -39,6 +43,15 @@ class HolidayPlanningWorkflowService
         $agent = $user->agent;
         if (!$agent || $agent->statut !== 'actif') {
             return null;
+        }
+
+        if (app(RoleService::class)->hasSENARole($user) && $agent->isSenAttache()) {
+            return [
+                'level' => 'national',
+                'type' => 'sen',
+                'structure_id' => 1,
+                'label' => 'Attachés du SEN',
+            ];
         }
 
         if ($this->isDepartmentAssistant($user) && $agent->departement_id) {
@@ -80,6 +93,7 @@ class HolidayPlanningWorkflowService
             || $this->isRh($user)
             || $this->isDepartmentAssistant($user)
             || $this->isDepartmentDirector($user)
+            || app(RoleService::class)->hasSENARole($user)
             || app(RoleService::class)->isProvincialCafManager($user)
             || app(RoleService::class)->isSepManager($user)
             || app(TacheWorkflowService::class)->isLocalSupport($user)
@@ -102,6 +116,10 @@ class HolidayPlanningWorkflowService
             return true;
         }
 
+        if ($planning->type_structure === 'sen') {
+            return $user->hasRole('SEN');
+        }
+
         return match ($planning->niveau_administratif) {
             'national' => $this->isDepartmentDirector($user)
                 && (int) $user->agent?->departement_id === (int) $planning->structure_id,
@@ -116,7 +134,12 @@ class HolidayPlanningWorkflowService
     public function canEdit(User $user, HolidayPlanning $planning): bool
     {
         return $planning->statut === HolidayPlanning::STATUT_BROUILLON
-            && $this->canInitiate($user, $planning->niveau_administratif, (int) $planning->structure_id);
+            && $this->canInitiate(
+                $user,
+                $planning->niveau_administratif,
+                (int) $planning->structure_id,
+                $planning->type_structure,
+            );
     }
 
     public function canSubmit(User $user, HolidayPlanning $planning): bool

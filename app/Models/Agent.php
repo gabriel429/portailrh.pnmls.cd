@@ -250,6 +250,25 @@ class Agent extends Authenticatable
         return $query->where('statut', 'actif');
     }
 
+    public function scopeSenAttaches($query)
+    {
+        return $query
+            ->whereNull('departement_id')
+            ->where(function ($senQuery) {
+                $senQuery
+                    ->where('organe', 'like', '%National%')
+                    ->orWhere('organe', 'like', '%SEN%');
+            });
+    }
+
+    public function isSenAttache(): bool
+    {
+        $organe = strtolower((string) $this->organe);
+
+        return !$this->departement_id
+            && (str_contains($organe, 'national') || str_contains($organe, 'sen'));
+    }
+
     public function scopeSuspendu($query)
     {
         return $query->where('statut', 'suspendu');

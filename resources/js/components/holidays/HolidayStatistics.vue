@@ -437,7 +437,7 @@ function destroyCharts() {
 function getStructureLabel(type) {
   return {
     department: 'Département',
-    sen: 'SEN',
+    sen: 'Attachés du SEN',
     sep: 'SEP Provincial',
     local: 'Structure locale'
   }[type] || type
