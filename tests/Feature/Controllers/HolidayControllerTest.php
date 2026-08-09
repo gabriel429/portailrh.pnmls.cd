@@ -68,6 +68,84 @@ class HolidayControllerTest extends TestCase
             ]);
     }
 
+    public function test_interim_candidates_endpoint_only_returns_allowed_agents(): void
+    {
+        $directorRole = Role::firstOrCreate(['nom_role' => 'Directeur']);
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $department = Department::create(['code' => 'DIR-A', 'nom' => 'Direction A']);
+        $otherDepartment = Department::create(['code' => 'DIR-B', 'nom' => 'Direction B']);
+        $directorAgent = Agent::factory()->create([
+            'role_id' => $directorRole->id,
+            'fonction' => 'Directeur / Chef de Département',
+            'departement_id' => $department->id,
+            'statut' => 'actif',
+        ]);
+        $director = User::factory()->create([
+            'agent_id' => $directorAgent->id,
+            'role_id' => $directorRole->id,
+        ]);
+        $allowed = Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'fonction' => 'Chef de Section',
+            'departement_id' => $department->id,
+            'statut' => 'actif',
+        ]);
+        Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'fonction' => 'Chargé de programme',
+            'departement_id' => $department->id,
+            'statut' => 'actif',
+        ]);
+        Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'fonction' => 'Chef de Section',
+            'departement_id' => $otherDepartment->id,
+            'statut' => 'actif',
+        ]);
+        Sanctum::actingAs($director);
+
+        $this->getJson('/api/holiday-interim-candidates')
+            ->assertOk()
+            ->assertJsonCount(1, 'agents')
+            ->assertJsonPath('agents.0.id', $allowed->id);
+    }
+
+    public function test_personal_holiday_rejects_a_forged_forbidden_interim(): void
+    {
+        $directorRole = Role::firstOrCreate(['nom_role' => 'Directeur']);
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $department = Department::create(['code' => 'DIR-C', 'nom' => 'Direction C']);
+        $directorAgent = Agent::factory()->create([
+            'role_id' => $directorRole->id,
+            'fonction' => 'Directeur / Chef de Département',
+            'departement_id' => $department->id,
+            'statut' => 'actif',
+        ]);
+        $director = User::factory()->create([
+            'agent_id' => $directorAgent->id,
+            'role_id' => $directorRole->id,
+        ]);
+        $forbidden = Agent::factory()->create([
+            'role_id' => $agentRole->id,
+            'fonction' => 'Chargé de programme',
+            'departement_id' => $department->id,
+            'statut' => 'actif',
+        ]);
+        Sanctum::actingAs($director);
+        [$dateDebut, $dateFin] = $this->futureWorkingWeek();
+
+        $this->postJson('/api/my-holiday', [
+            'date_debut' => $dateDebut,
+            'date_fin' => $dateFin,
+            'type_conge' => 'maladie',
+            'motif' => 'Demande avec identifiant falsifié',
+            'interim_assure_par' => $forbidden->id,
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors('interim_assure_par');
+
+        $this->assertDatabaseCount('holidays', 0);
+    }
+
     public function test_can_create_holiday_request(): void
     {
         [$dateDebut, $dateFin] = $this->futureWorkingWeek();

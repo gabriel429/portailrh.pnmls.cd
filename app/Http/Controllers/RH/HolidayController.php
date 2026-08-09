@@ -929,6 +929,37 @@ class HolidayController extends Controller
         ]);
     }
 
+    public function interimCandidates(Request $request)
+    {
+        $request->validate([
+            'agent_id' => 'nullable|integer|exists:agents,id',
+        ]);
+
+        $user = $request->user();
+        $requestAgent = $request->filled('agent_id')
+            ? Agent::find($request->integer('agent_id'))
+            : $user?->agent;
+        $scope = app(UserDataScope::class);
+
+        if (!$requestAgent || !$scope->canAccessAgent($user, $requestAgent, true)) {
+            return response()->json([
+                'message' => 'Vous ne pouvez pas consulter les intérimaires de cet agent.',
+            ], 403);
+        }
+
+        $agents = $scope->interimCandidates($user, $requestAgent)->map(fn (Agent $agent) => [
+            'id' => $agent->id,
+            'nom' => $agent->nom,
+            'postnom' => $agent->postnom,
+            'prenom' => $agent->prenom,
+            'matricule_etat' => $agent->matricule_etat,
+            'fonction' => $agent->fonction,
+            'poste_actuel' => $agent->poste_actuel,
+        ]);
+
+        return response()->json(['agents' => $agents]);
+    }
+
     /**
      * Demande de congé par l'agent lui-même (accessible à tous les agents authentifiés).
      * Force agent_id = agent du user connecté.
@@ -1016,7 +1047,7 @@ class HolidayController extends Controller
 
             if (!$scope->canUseAgentAsInterim($user, $interim, $agent)) {
                 return response()->json([
-                    'message' => 'L\'intérimaire doit être un agent actif de votre département, de votre province ou de votre périmètre autorisé.',
+                    'message' => 'Cet agent ne respecte pas les règles hiérarchiques et territoriales applicables à votre intérim.',
                     'errors' => [
                         'interim_assure_par' => ['Choisissez un intérimaire autorisé pour cette demande.'],
                     ],

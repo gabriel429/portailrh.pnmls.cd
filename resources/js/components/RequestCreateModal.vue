@@ -111,13 +111,18 @@
               </label>
               <select v-model="form.interim_assure_par"
                       class="form-select form-select-sm"
-                      :class="{ 'is-invalid': errors.interim_assure_par }">
-                <option value="">-- Aucun intérimaire --</option>
-                <option v-for="a in agentsInterimaires" :key="a.id" :value="a.id">
-                  {{ a.prenom }} {{ a.nom }} ({{ a.matricule_etat || 'N/A' }})
+                      :class="{ 'is-invalid': errors.interim_assure_par }"
+                      :disabled="interimCandidatesLoading">
+                <option value="">{{ interimCandidatesLoading ? 'Chargement des intérimaires...' : '-- Aucun intérimaire --' }}</option>
+                <option v-for="a in interimCandidates" :key="a.id" :value="a.id">
+                  {{ a.prenom }} {{ a.nom }} ({{ a.fonction || a.poste_actuel || a.matricule_etat || 'N/A' }})
                 </option>
               </select>
               <div v-if="errors.interim_assure_par" class="invalid-feedback d-block">{{ errors.interim_assure_par[0] }}</div>
+              <div v-else-if="interimCandidatesError" class="text-danger small mt-1">{{ interimCandidatesError }}</div>
+              <div v-else-if="!interimCandidatesLoading && interimCandidates.length === 0" class="text-muted small mt-1">
+                Aucun intérimaire autorisé pour cet agent.
+              </div>
             </div>
 
             <!-- Dates -->
@@ -242,12 +247,9 @@ const form = ref({
 const agents = ref([])
 const agentsLoading = ref(false)
 const agentsLoadError = ref('')
-
-// Liste des agents disponibles comme intérimaire (exclure l'agent courant)
-const agentsInterimaires = computed(() => {
-  const selfId = form.value.agent_id || currentAgent.value?.id
-  return agents.value.filter(a => a.id !== selfId)
-})
+const interimCandidates = ref([])
+const interimCandidatesLoading = ref(false)
+const interimCandidatesError = ref('')
 
 const errors = ref({})
 const submitError = ref('')
@@ -325,6 +327,8 @@ function resetForm() {
   errors.value = {}
   submitError.value = ''
   agentsLoadError.value = ''
+  interimCandidates.value = []
+  interimCandidatesError.value = ''
   referencePlanning.value = null
   planningAvailable.value = false
   suggestedHoliday.value = null
@@ -442,6 +446,28 @@ async function loadAgents() {
   }
 }
 
+async function loadInterimCandidates() {
+  const agentId = form.value.agent_id || currentAgent.value?.id
+  interimCandidates.value = []
+  form.value.interim_assure_par = ''
+  interimCandidatesError.value = ''
+
+  if (!agentId) return
+
+  interimCandidatesLoading.value = true
+  try {
+    const params = isRH.value ? { agent_id: agentId } : {}
+    const { data } = await client.get('/holiday-interim-candidates', { params })
+    interimCandidates.value = Array.isArray(data?.agents) ? data.agents : []
+  } catch (err) {
+    interimCandidatesError.value = err.response?.status === 403
+      ? 'Vous ne pouvez pas choisir un intérimaire pour cet agent.'
+      : 'Impossible de charger les intérimaires autorisés.'
+  } finally {
+    interimCandidatesLoading.value = false
+  }
+}
+
 async function loadPersonalPlanning() {
   if (isRH.value) return
 
@@ -470,6 +496,13 @@ watch(() => props.show, async (newVal) => {
   if (newVal) {
     resetForm()
     await Promise.all([loadAgents(), loadPersonalPlanning()])
+    if (!isRH.value) await loadInterimCandidates()
+  }
+})
+
+watch(() => form.value.agent_id, (agentId, previousAgentId) => {
+  if (props.show && isRH.value && agentId !== previousAgentId) {
+    loadInterimCandidates()
   }
 })
 

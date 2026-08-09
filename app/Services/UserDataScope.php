@@ -254,11 +254,97 @@ class UserDataScope
             return false;
         }
 
-        if ($this->hasInstitutionAuthorityAccess($user)) {
-            return true;
+        $ownerProfile = $this->agentProfileText($ownerAgent);
+        $candidateProfile = $this->agentProfileText($interimAgent);
+
+        if ($this->isSenOrSenaProfile($ownerProfile)) {
+            return $this->isDirectorProfile($candidateProfile);
+        }
+
+        if ($this->isSepProfile($ownerProfile)) {
+            return $this->isChefCelluleProfile($candidateProfile)
+                && $ownerAgent->province_id
+                && (int) $interimAgent->province_id === (int) $ownerAgent->province_id;
+        }
+
+        if ($this->isSelProfile($ownerProfile)) {
+            $ownerLocaliteId = $this->agentLocaliteId($ownerAgent);
+            $candidateLocaliteId = $this->agentLocaliteId($interimAgent);
+
+            return $this->isAssistantProfile($candidateProfile)
+                && $ownerLocaliteId !== null
+                && $candidateLocaliteId === $ownerLocaliteId;
+        }
+
+        if ($this->isDirectorProfile($ownerProfile)) {
+            return $this->isChefSectionProfile($candidateProfile)
+                && $ownerAgent->departement_id
+                && (int) $interimAgent->departement_id === (int) $ownerAgent->departement_id;
         }
 
         return $this->agentsShareLocalScope($ownerAgent, $interimAgent);
+    }
+
+    public function interimCandidates(?User $user, Agent $requestAgent)
+    {
+        return Agent::query()
+            ->with('role:id,nom_role')
+            ->where('statut', 'actif')
+            ->whereKeyNot($requestAgent->id)
+            ->orderBy('nom')
+            ->orderBy('prenom')
+            ->get()
+            ->filter(fn (Agent $candidate) => $this->canUseAgentAsInterim($user, $candidate, $requestAgent))
+            ->values();
+    }
+
+    private function agentProfileText(Agent $agent): string
+    {
+        $agent->loadMissing('role:id,nom_role');
+
+        return trim(implode(' ', array_filter([
+            $this->normalizeText($agent->role?->nom_role),
+            $this->normalizeText($agent->fonction),
+            $this->normalizeText($agent->poste_actuel),
+        ])));
+    }
+
+    private function isSenOrSenaProfile(string $profile): bool
+    {
+        return preg_match('/(^| )(sen|sena)( |$)/', $profile) === 1
+            || str_contains($profile, 'secretaire executif national');
+    }
+
+    private function isSepProfile(string $profile): bool
+    {
+        return preg_match('/(^| )sep( |$)/', $profile) === 1
+            || str_contains($profile, 'secretaire executif provincial');
+    }
+
+    private function isSelProfile(string $profile): bool
+    {
+        return preg_match('/(^| )sel( |$)/', $profile) === 1
+            || str_contains($profile, 'secretaire executif local');
+    }
+
+    private function isDirectorProfile(string $profile): bool
+    {
+        return str_contains($profile, 'directeur');
+    }
+
+    private function isChefSectionProfile(string $profile): bool
+    {
+        return str_contains($profile, 'chef') && str_contains($profile, 'section');
+    }
+
+    private function isChefCelluleProfile(string $profile): bool
+    {
+        return str_contains($profile, 'chef') && str_contains($profile, 'cellule');
+    }
+
+    private function isAssistantProfile(string $profile): bool
+    {
+        return str_contains($profile, 'assistant');
     }
 
     public function isDepartmentManager(?User $user): bool
