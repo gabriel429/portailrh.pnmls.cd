@@ -209,6 +209,37 @@ class HolidayControllerTest extends TestCase
             ->assertJsonPath('reference_planning.nom_structure', 'Planning SEN de référence');
     }
 
+    public function test_agent_sees_unvalidated_department_planning_as_reference(): void
+    {
+        $department = Department::create([
+            'code' => 'DRAFT',
+            'nom' => 'Département avec planning brouillon',
+            'description' => 'Département utilisé pour tester une proposition non validée.',
+        ]);
+        $this->agent->update(['departement_id' => $department->id]);
+        $agentUser = User::factory()->create([
+            'agent_id' => $this->agent->id,
+            'role_id' => $this->agent->role_id,
+        ]);
+        $draftPlanning = HolidayPlanning::create([
+            'annee' => now()->year,
+            'type_structure' => 'department',
+            'structure_id' => $department->id,
+            'nom_structure' => $department->nom,
+            'jours_conge_totaux' => 30,
+            'statut' => HolidayPlanning::STATUT_BROUILLON,
+            'valide' => false,
+            'created_by' => $this->rhAgent->id,
+        ]);
+        Sanctum::actingAs($agentUser);
+
+        $this->getJson('/api/mon-planning-conges?year=' . now()->year)
+            ->assertOk()
+            ->assertJsonPath('planning', null)
+            ->assertJsonPath('reference_planning.id', $draftPlanning->id)
+            ->assertJsonPath('reference_planning.valide', false);
+    }
+
     public function test_can_approve_holiday(): void
     {
         $holiday = $this->pendingHoliday();

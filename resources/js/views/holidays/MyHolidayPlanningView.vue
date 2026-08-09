@@ -55,6 +55,9 @@
               <div class="mt-1">
                 {{ referencePlanning.nom_structure }} : {{ referencePlanning.jours_conge_totaux }} jours annuels.
               </div>
+              <div class="small mt-1">
+                Statut : <strong>{{ referencePlanning.valide ? 'validé' : 'en attente de validation' }}</strong>
+              </div>
               <div v-if="referencePlanning.notes" class="small mt-1">{{ referencePlanning.notes }}</div>
               <div class="small mt-2">Ce planning sert de référence. Votre période individuelle doit être attribuée par le responsable de votre structure avant la demande.</div>
             </div>

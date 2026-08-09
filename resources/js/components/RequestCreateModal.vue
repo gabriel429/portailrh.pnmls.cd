@@ -85,9 +85,13 @@
               <div v-else-if="suggestedHoliday" class="alert alert-info py-2 mb-0">
                 <div class="fw-semibold">Période proposée par votre planning</div>
                 <div class="small my-1">Du {{ formatDate(suggestedHoliday.date_debut) }} au {{ formatDate(suggestedHoliday.date_fin) }}</div>
-                <button type="button" class="btn btn-sm btn-outline-primary" @click="applySuggestedHoliday">
+                <div v-if="!planningAvailable" class="small mb-1">
+                  Cette période est définie en amont, mais le planning doit encore être validé avant votre confirmation.
+                </div>
+                <button v-if="planningAvailable" type="button" class="btn btn-sm btn-outline-primary" @click="applySuggestedHoliday">
                   <i class="fas fa-calendar-check me-1"></i>Utiliser cette période
                 </button>
+                <router-link v-else :to="{ name: 'mon-planning-conges' }" class="d-block mt-1">Voir le planning proposé</router-link>
               </div>
               <div v-else-if="referencePlanning" class="alert alert-warning py-2 mb-0">
                 Le planning de votre structure n’est pas encore disponible. Consultez le planning de référence
@@ -252,6 +256,7 @@ const selectedFile = ref(null)
 const filePreview = ref(null)
 const fileInput = ref(null)
 const planningLoading = ref(false)
+const planningAvailable = ref(false)
 const referencePlanning = ref(null)
 const suggestedHoliday = ref(null)
 
@@ -321,6 +326,7 @@ function resetForm() {
   submitError.value = ''
   agentsLoadError.value = ''
   referencePlanning.value = null
+  planningAvailable.value = false
   suggestedHoliday.value = null
   removeFile()
 }
@@ -443,13 +449,16 @@ async function loadPersonalPlanning() {
   try {
     const year = Number(form.value.date_debut?.slice(0, 4)) || new Date().getFullYear()
     const { data } = await client.get('/mon-planning-conges', { params: { year } })
+    planningAvailable.value = !!data.planning
     referencePlanning.value = data.reference_planning || null
+    const relevantPlanningId = data.planning?.id || data.reference_planning?.id
     suggestedHoliday.value = (data.my_holidays || []).find(holiday =>
       holiday.type_conge === 'annuel'
       && holiday.statut_demande === 'en_attente'
-      && String(holiday.holiday_planning_id || '') === String(data.planning?.id || '')
+      && String(holiday.holiday_planning_id || '') === String(relevantPlanningId || '')
     ) || null
   } catch (err) {
+    planningAvailable.value = false
     referencePlanning.value = null
     suggestedHoliday.value = null
   } finally {

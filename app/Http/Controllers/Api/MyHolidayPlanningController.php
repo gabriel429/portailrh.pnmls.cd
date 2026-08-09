@@ -60,12 +60,21 @@ class MyHolidayPlanningController extends Controller
             ->first();
 
         $referencePlanning = null;
-        if (!$planning && $structure['type'] !== 'sen') {
+        if (!$planning) {
             $referencePlanning = HolidayPlanning::with(['createdBy', 'validatedBy'])
                 ->forYear($year)
-                ->forStructure('sen', 1)
-                ->validated()
+                ->forStructure($structure['type'], $structure['id'])
+                ->latest('id')
                 ->first();
+
+            if (!$referencePlanning && $structure['type'] !== 'sen') {
+                $referencePlanning = HolidayPlanning::with(['createdBy', 'validatedBy'])
+                    ->forYear($year)
+                    ->forStructure('sen', 1)
+                    ->orderByDesc('valide')
+                    ->latest('id')
+                    ->first();
+            }
         }
 
         // Congés approuvés des collègues (même structure, même année)
