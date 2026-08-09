@@ -51,7 +51,6 @@
                 >
                   <option value="">Sélectionner un type</option>
                   <option v-if="!scopeInfo.is_provincial" value="department">Département</option>
-                  <option v-if="!scopeInfo.is_provincial" value="sen">SEN</option>
                   <option value="sep">SEP Provincial</option>
                   <option value="local">Structure Locale</option>
                 </select>
@@ -77,9 +76,9 @@
                     {{ dept.nom }}
                   </option>
                 </select>
-                <!-- SEP / Structure Locale → dropdown de provinces -->
+                <!-- SEP → dropdown de provinces -->
                 <select
-                  v-else-if="form.type_structure === 'sep' || form.type_structure === 'local'"
+                  v-else-if="form.type_structure === 'sep'"
                   class="form-select"
                   v-model="form.structure_id"
                   :class="{ 'is-invalid': errors.structure_id }"
@@ -89,6 +88,20 @@
                   <option value="">Sélectionner une province</option>
                   <option v-for="prov in provinces" :key="prov.id" :value="prov.id">
                     {{ prov.nom }}
+                  </option>
+                </select>
+                <!-- Structure locale -->
+                <select
+                  v-else-if="form.type_structure === 'local'"
+                  class="form-select"
+                  v-model="form.structure_id"
+                  :class="{ 'is-invalid': errors.structure_id }"
+                  @change="onLocalityChange"
+                  required
+                >
+                  <option value="">Sélectionner une structure locale</option>
+                  <option v-for="locality in localities" :key="locality.id" :value="locality.id">
+                    {{ locality.nom }}<template v-if="locality.province?.nom"> — {{ locality.province.nom }}</template>
                   </option>
                 </select>
                 <!-- Autres types (fallback) -->
@@ -338,6 +351,10 @@ const props = defineProps({
     type: Array,
     default: () => []
   },
+  localities: {
+    type: Array,
+    default: () => []
+  },
   agents: {
     type: Array,
     default: () => []
@@ -379,8 +396,7 @@ const availableYears = computed(() => {
 
 const isAutoFilledStructure = computed(() => {
   const type = form.value.type_structure
-  if (type === 'sen') return true
-  if (props.scopeInfo.is_provincial && (type === 'sep' || type === 'local')) return true
+  if (props.scopeInfo.is_provincial && type === 'sep') return true
   return false
 })
 
@@ -397,7 +413,6 @@ const isFormValid = computed(() => {
 function getStructureLabel() {
   const labels = {
     'department': 'Département',
-    'sen': 'SEN',
     'sep': 'SEP Provincial',
     'local': 'Structure Locale'
   }
@@ -434,8 +449,8 @@ function resetEntries() {
   const scopedAgents = props.agents.filter(agent => {
     if (!type || !structureId) return true
     if (type === 'department') return Number(agent.departement_id) === structureId
-    if (type === 'sep' || type === 'local') return Number(agent.province_id) === structureId
-    if (type === 'sen') return !agent.province_id
+    if (type === 'sep') return Number(agent.province_id) === structureId
+    if (type === 'local') return Number(agent.localite_id) === structureId
     return false
   })
 
@@ -457,9 +472,12 @@ function applyResponsibility() {
 
   if (responsibility.type === 'department') {
     form.value.nom_structure = props.departments.find(item => item.id == responsibility.structure_id)?.nom || responsibility.label
-  } else {
+  } else if (responsibility.type === 'sep') {
     const province = props.provinces.find(item => item.id == responsibility.structure_id)
-    form.value.nom_structure = `${responsibility.type === 'local' ? 'SEL' : 'SEP'} ${province?.nom || responsibility.label}`
+    form.value.nom_structure = `SEP ${province?.nom || responsibility.label}`
+  } else {
+    const locality = props.localities.find(item => item.id == responsibility.structure_id)
+    form.value.nom_structure = `SEL ${locality?.nom || responsibility.label}`
   }
 }
 
@@ -470,25 +488,26 @@ function onStructureTypeChange() {
 
   const type = form.value.type_structure
 
-  if (type === 'sen') {
-    form.value.structure_id = 1
-    form.value.nom_structure = 'Secrétariat Exécutif National'
-  } else if (props.scopeInfo.is_provincial && type === 'sep') {
+  if (props.scopeInfo.is_provincial && type === 'sep') {
     form.value.structure_id = props.scopeInfo.province_id
     form.value.nom_structure = 'SEP ' + props.scopeInfo.province_nom
-  } else if (props.scopeInfo.is_provincial && type === 'local') {
-    form.value.structure_id = props.scopeInfo.province_id
-    form.value.nom_structure = 'SEL ' + props.scopeInfo.province_nom
   }
 
   resetEntries()
 }
 
 function onProvinceChange() {
-  const type = form.value.type_structure
   const prov = props.provinces.find(p => p.id == form.value.structure_id)
   if (prov) {
-    form.value.nom_structure = type === 'local' ? 'SEL ' + prov.nom : 'SEP ' + prov.nom
+    form.value.nom_structure = 'SEP ' + prov.nom
+  }
+  resetEntries()
+}
+
+function onLocalityChange() {
+  const locality = props.localities.find(item => item.id == form.value.structure_id)
+  if (locality) {
+    form.value.nom_structure = 'SEL ' + locality.nom
   }
   resetEntries()
 }

@@ -695,8 +695,9 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
 
 /* Holiday planning page: keep critical layout outside lazy-loaded route CSS. */
 .holiday-planning-page .rh-list-shell {
-    width: min(100%, 1360px) !important;
-    max-width: 1360px !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin-inline: 0 !important;
 }
 
 .holiday-planning-page .rh-hero {

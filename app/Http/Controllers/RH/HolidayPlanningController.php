@@ -8,6 +8,7 @@ use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\Agent;
 use App\Models\NotificationPortail;
+use App\Models\Localite;
 use App\Models\Province;
 use App\Services\HolidayEntitlementService;
 use App\Services\HolidayPlanningWorkflowService;
@@ -132,8 +133,7 @@ class HolidayPlanningController extends Controller
         ];
 
         // Liste des structures pour les filtres (scoped)
-        $departments = Department::query()
-            ->operational();
+        $departments = Department::query()->fonctionnel();
         if (!$scope->hasGlobalHolidayAccess($user)) {
             $accessibleAgents = Agent::query();
             $scope->applyHolidayAgentScope($accessibleAgents, $user);
@@ -154,14 +154,16 @@ class HolidayPlanningController extends Controller
         $responsibility = $this->workflow()->responsibilityFor($user);
 
         // Liste des agents à intégrer au planning de la structure de l'initiateur.
-        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id', 'departement_id')
+        $agentsQuery = Agent::select('id', 'nom', 'postnom', 'prenom', 'fonction', 'province_id', 'localite_id', 'departement_id')
             ->where('statut', 'actif')
             ->orderInstitutionally();
         $scope->applyHolidayAgentScope($agentsQuery, $user);
         if ($responsibility && $responsibility['type'] === 'department') {
             $agentsQuery->where('departement_id', $responsibility['structure_id']);
-        } elseif ($responsibility && in_array($responsibility['type'], ['sep', 'local'], true)) {
+        } elseif ($responsibility && $responsibility['type'] === 'sep') {
             $agentsQuery->where('province_id', $responsibility['structure_id']);
+        } elseif ($responsibility && $responsibility['type'] === 'local') {
+            $agentsQuery->where('localite_id', $responsibility['structure_id']);
         } elseif ($provinceId) {
             $agentsQuery->where('province_id', $provinceId);
         }
@@ -178,6 +180,16 @@ class HolidayPlanningController extends Controller
         }
         $provinces = $provincesQuery->get(['id', 'nom']);
 
+        $localitiesQuery = Localite::with('province:id,nom')->orderBy('nom');
+        if (!$scope->hasGlobalHolidayAccess($user)) {
+            $accessibleAgents = Agent::query();
+            $scope->applyHolidayAgentScope($accessibleAgents, $user);
+            $localitiesQuery->whereIn('id', (clone $accessibleAgents)
+                ->whereNotNull('localite_id')
+                ->pluck('localite_id'));
+        }
+        $localities = $localitiesQuery->get(['id', 'code', 'nom', 'province_id']);
+
         return response()->json([
             'plannings' => $plannings,
             'holidays' => $holidays,
@@ -185,6 +197,7 @@ class HolidayPlanningController extends Controller
             'departments' => $departments,
             'agents' => $agents,
             'provinces' => $provinces,
+            'localities' => $localities,
             'year' => $year,
             'scope' => [
                 'is_provincial' => $isProvincial,
@@ -324,7 +337,7 @@ class HolidayPlanningController extends Controller
     {
         $validated = $request->validate([
             'annee' => 'required|integer|min:2020|max:2030',
-            'type_structure' => 'required|in:department,sen,sep,local',
+            'type_structure' => 'required|in:department,sep,local',
             'structure_id' => 'required|integer|min:1|max:99999',
             'nom_structure' => 'required|string|max:255',
             'jours_conge_totaux' => 'required|integer|min:1|max:50',
@@ -350,13 +363,13 @@ class HolidayPlanningController extends Controller
         // Valider que structure_id correspond à une vraie entité
         $type = $validated['type_structure'];
         $sid  = $validated['structure_id'];
-        if ($type === 'sen') {
-            if ($sid !== 1) {
-            return response()->json(['message' => 'structure_id doit être 1 pour le SEN.'], 422);
-            }
-        } elseif (in_array($type, ['sep', 'local'])) {
+        if ($type === 'sep') {
             if (!\App\Models\Province::where('id', $sid)->exists()) {
                 return response()->json(['message' => 'Province introuvable (structure_id invalide).'], 422);
+            }
+        } elseif ($type === 'local') {
+            if (!Localite::where('id', $sid)->exists()) {
+                return response()->json(['message' => 'Structure locale introuvable (structure_id invalide).'], 422);
             }
         } elseif ($type === 'department') {
             if (!\App\Models\Department::where('id', $sid)->exists()) {
@@ -459,8 +472,8 @@ class HolidayPlanningController extends Controller
     {
         return match ($type) {
             'department' => (int) $agent->departement_id === $structureId,
-            'sep', 'local' => (int) $agent->province_id === $structureId,
-            'sen' => !$agent->province_id,
+            'sep' => (int) $agent->province_id === $structureId,
+            'local' => (int) $agent->localite_id === $structureId,
             default => false,
         };
     }
@@ -471,8 +484,8 @@ class HolidayPlanningController extends Controller
 
         return match ($type) {
             'department' => $query->where('departement_id', $structureId),
-            'sep', 'local' => $query->where('province_id', $structureId),
-            'sen' => $query->whereNull('province_id'),
+            'sep' => $query->where('province_id', $structureId),
+            'local' => $query->where('localite_id', $structureId),
             default => $query->whereRaw('1 = 0'),
         };
     }
@@ -481,7 +494,7 @@ class HolidayPlanningController extends Controller
     {
         $validated = $request->validate([
             'year' => 'required|integer|min:2020|max:2030',
-            'structure_type' => 'required|in:department,sen,sep,local',
+            'structure_type' => 'required|in:department,sep,local',
             'structure_id' => 'required|integer|min:1',
         ]);
 
@@ -492,7 +505,8 @@ class HolidayPlanningController extends Controller
         $agent = $user->agent;
         $withinScope = $scope->hasGlobalHolidayAccess($user)
             || ($type === 'department' && (int) $agent?->departement_id === $structureId)
-            || (in_array($type, ['sep', 'local'], true) && (int) $agent?->province_id === $structureId);
+            || ($type === 'sep' && (int) $agent?->province_id === $structureId)
+            || ($type === 'local' && (int) $agent?->localite_id === $structureId);
 
         if (!$withinScope) {
             return response()->json(['message' => 'Cette structure est hors de votre périmètre.'], 403);
@@ -524,9 +538,11 @@ class HolidayPlanningController extends Controller
             return response()->json(['message' => 'Aucun responsable actif n’a été trouvé pour cette structure.'], 422);
         }
 
-        $structureName = $type === 'department'
-            ? Department::find($structureId)?->nom
-            : Province::find($structureId)?->nom;
+        $structureName = match ($type) {
+            'department' => Department::find($structureId)?->nom,
+            'local' => Localite::find($structureId)?->nom,
+            default => Province::find($structureId)?->nom,
+        };
         $structureName ??= "la structure {$structureId}";
         $contextKey = "holiday-planning-reminder:{$validated['year']}:{$type}:{$structureId}";
 
@@ -649,9 +665,12 @@ class HolidayPlanningController extends Controller
             ]);
         });
 
-        if ($planning->niveau_administratif !== 'national') {
+        if ($planning->niveau_administratif === 'provincial') {
             $query->whereHas('agent', fn ($agentQuery) => $agentQuery
                 ->where('province_id', $planning->structure_id));
+        } elseif ($planning->niveau_administratif === 'local') {
+            $query->whereHas('agent', fn ($agentQuery) => $agentQuery
+                ->where('localite_id', $planning->structure_id));
         }
 
         NotificationService::envoyerMultiple(

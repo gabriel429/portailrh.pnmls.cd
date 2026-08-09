@@ -6,6 +6,7 @@ use App\Models\Agent;
 use App\Models\Department;
 use App\Models\Holiday;
 use App\Models\HolidayPlanning;
+use App\Models\Localite;
 use App\Models\NotificationPortail;
 use App\Models\Province;
 use App\Models\Role;
@@ -92,6 +93,28 @@ class HolidayPlanningWorkflowTest extends TestCase
                 collect($response->json('holidays.data'))->pluck('id')->all(),
             );
         }
+    }
+
+    public function test_national_rh_filter_options_only_include_supported_departments_and_real_localities(): void
+    {
+        $supportedDepartment = $this->department('SUPPORTED');
+        $supportedDepartment->update(['pris_en_charge' => true]);
+        $unsupportedDepartment = $this->department('ARCHIVE');
+        $province = $this->province('OPTIONS');
+        $locality = Localite::create([
+            'code' => 'LOC-OPTIONS',
+            'nom' => 'Structure locale test',
+            'type' => 'ville',
+            'province_id' => $province->id,
+        ]);
+        Sanctum::actingAs($this->userWithRole('Section ressources humaines'));
+
+        $response = $this->getJson('/api/holiday-plannings?year=' . now()->year)->assertOk();
+
+        $this->assertSame([$supportedDepartment->id], collect($response->json('departments'))->pluck('id')->all());
+        $this->assertNotContains($unsupportedDepartment->id, collect($response->json('departments'))->pluck('id')->all());
+        $this->assertContains($province->id, collect($response->json('provinces'))->pluck('id')->all());
+        $this->assertSame([$locality->id], collect($response->json('localities'))->pluck('id')->all());
     }
 
     public function test_sep_filter_limits_plannings_statistics_and_holidays_to_selected_province(): void
@@ -350,18 +373,26 @@ class HolidayPlanningWorkflowTest extends TestCase
     public function test_local_planning_follows_support_to_sel_workflow(): void
     {
         $province = $this->province('KCL');
+        $locality = Localite::create([
+            'code' => 'LOC-KCL',
+            'nom' => 'Structure locale KCL',
+            'type' => 'ville',
+            'province_id' => $province->id,
+        ]);
         $support = $this->userWithRole('Agent', [
             'province_id' => $province->id,
+            'localite_id' => $locality->id,
             'organe' => 'Secrétariat Exécutif Local',
             'fonction' => 'Assistant administratif et financier',
         ]);
         $sel = $this->userWithRole('SEL', [
             'province_id' => $province->id,
+            'localite_id' => $locality->id,
             'organe' => 'Secrétariat Exécutif Local',
         ]);
 
         Sanctum::actingAs($support);
-        $planningId = $this->createAndSubmitPlanning('local', $province->id, "Structure locale {$province->nom}");
+        $planningId = $this->createAndSubmitPlanning('local', $locality->id, $locality->nom);
 
         Sanctum::actingAs($sel);
         $this->postJson("/api/holiday-plannings/{$planningId}/validate")
@@ -465,6 +496,12 @@ class HolidayPlanningWorkflowTest extends TestCase
         $operationalDepartment = $this->department('OPS');
         $province = $this->province('T1P');
         $localProvince = $this->province('T1L');
+        $locality = Localite::create([
+            'code' => 'LOC-T1L',
+            'nom' => 'Structure locale T1L',
+            'type' => 'ville',
+            'province_id' => $localProvince->id,
+        ]);
         $assistant = $this->userWithRole('Assistant de Direction', [
             'departement_id' => $department->id,
             'fonction' => 'Assistant de Direction',
@@ -478,6 +515,7 @@ class HolidayPlanningWorkflowTest extends TestCase
         $caf = $this->userWithRole('CAF', ['province_id' => $province->id]);
         $localSupport = $this->userWithRole('Agent', [
             'province_id' => $localProvince->id,
+            'localite_id' => $locality->id,
             'organe' => 'Secrétariat Exécutif Local',
             'fonction' => 'Assistant administratif et financier',
         ]);
@@ -496,7 +534,7 @@ class HolidayPlanningWorkflowTest extends TestCase
             'niveau_gestion' => 'province',
         ]);
         $this->assertDatabaseHas('taches', [
-            'system_key' => 'holiday-planning:' . now()->year . ":local:{$localProvince->id}:task:{$localSupport->agent->id}",
+            'system_key' => 'holiday-planning:' . now()->year . ":local:{$locality->id}:task:{$localSupport->agent->id}",
             'niveau_gestion' => 'local',
         ]);
         $this->assertDatabaseHas('notifications_portail', [
@@ -555,9 +593,11 @@ class HolidayPlanningWorkflowTest extends TestCase
     private function entriesForStructure(string $type, int $structureId, $start, $end): array
     {
         $query = Agent::query()->where('statut', 'actif');
-        in_array($type, ['sep', 'local'], true)
-            ? $query->where('province_id', $structureId)
-            : $query->where('departement_id', $structureId);
+        match ($type) {
+            'sep' => $query->where('province_id', $structureId),
+            'local' => $query->where('localite_id', $structureId),
+            default => $query->where('departement_id', $structureId),
+        };
 
         return $query->pluck('id')->map(fn ($agentId) => [
             'agent_id' => $agentId,

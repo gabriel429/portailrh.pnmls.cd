@@ -85,7 +85,12 @@ class UserDataScope
             return false;
         }
 
-        return $user->isSuperAdmin() || $user->hasRole(['RH National', 'SEN']);
+        return $user->isSuperAdmin() || $user->hasRole([
+            'RH National',
+            'Section ressources humaines',
+            'Chef Section RH',
+            'SEN',
+        ]);
     }
 
     public function isProvincialRh(?User $user): bool
@@ -317,8 +322,9 @@ class UserDataScope
 
         $isLocalUser = $this->isLocalUser($user);
         $provinceId = $this->provinceId($user);
+        $localiteId = $this->localiteId($user);
 
-        return $query->where(function ($planningQuery) use ($user, $isLocalUser, $provinceId) {
+        return $query->where(function ($planningQuery) use ($user, $isLocalUser, $localiteId) {
             $planningQuery->where('created_by', $user?->agent?->id ?? 0)
                 ->orWhereHas('holidays.agent', function ($agentQuery) use ($user) {
                     $this->applyHolidayAgentScope($agentQuery, $user);
@@ -327,10 +333,10 @@ class UserDataScope
                     $this->applyHolidayAgentScope($agentQuery, $user);
                 });
 
-            if ($isLocalUser && $provinceId) {
-                $planningQuery->orWhere(function ($localPlanning) use ($provinceId) {
+            if ($isLocalUser && $localiteId) {
+                $planningQuery->orWhere(function ($localPlanning) use ($localiteId) {
                     $localPlanning->where('type_structure', 'local')
-                        ->where('structure_id', $provinceId);
+                        ->where('structure_id', $localiteId);
                 });
             }
         });

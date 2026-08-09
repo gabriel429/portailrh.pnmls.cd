@@ -62,12 +62,12 @@ class HolidayPlanningWorkflowService
             ];
         }
 
-        if (app(TacheWorkflowService::class)->isLocalSupport($user) && $agent->province_id) {
+        if (app(TacheWorkflowService::class)->isLocalSupport($user) && $agent->localite_id) {
             return [
                 'level' => 'local',
                 'type' => 'local',
-                'structure_id' => (int) $agent->province_id,
-                'label' => $agent->province?->nom ?? 'SEL',
+                'structure_id' => (int) $agent->localite_id,
+                'label' => $agent->localite?->nom ?? 'Structure locale',
             ];
         }
 

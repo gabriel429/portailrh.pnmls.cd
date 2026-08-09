@@ -56,7 +56,6 @@
             <select class="form-select" v-model="filters.structure_type" @change="onStructureTypeChange">
               <option value="">Toutes les structures</option>
               <option v-if="!scopeInfo.is_provincial" value="department">Départements</option>
-              <option v-if="!scopeInfo.is_provincial" value="sen">SEN</option>
               <option value="sep">SEP Provincial</option>
               <option value="local">Structures Locales</option>
             </select>
@@ -71,12 +70,21 @@
               </option>
             </select>
           </div>
-          <div class="col-md-3" v-if="['sep', 'local'].includes(filters.structure_type)">
+          <div class="col-md-3" v-if="filters.structure_type === 'sep'">
             <label class="form-label">Province</label>
             <select class="form-select" v-model="filters.structure_id" @change="loadPlannings">
               <option value="">Toutes les provinces</option>
               <option v-for="province in provinces" :key="province.id" :value="province.id">
                 {{ province.nom }}
+              </option>
+            </select>
+          </div>
+          <div class="col-md-3" v-if="filters.structure_type === 'local'">
+            <label class="form-label">Structure locale</label>
+            <select class="form-select" v-model="filters.structure_id" @change="loadPlannings">
+              <option value="">Toutes les structures locales</option>
+              <option v-for="locality in localities" :key="locality.id" :value="locality.id">
+                {{ locality.nom }}<template v-if="locality.province?.nom"> — {{ locality.province.nom }}</template>
               </option>
             </select>
           </div>
@@ -446,6 +454,7 @@
       :show="showCreateModal"
       :departments="departments"
       :provinces="provinces"
+      :localities="localities"
       :agents="agents"
       :scope-info="scopeInfo"
       :workflow="workflow"
@@ -621,6 +630,7 @@ const plannings = ref({ data: [] })
 const holidays = ref({ data: [] })
 const departments = ref([])
 const provinces = ref([])
+const localities = ref([])
 const agents = ref([])
 const stats = ref(null)
 const scopeInfo = ref({ is_provincial: false, province_id: null, province_nom: null })
@@ -672,11 +682,15 @@ const selectedStructureName = computed(() => {
     return departments.value.find(item => Number(item.id) === Number(filters.value.structure_id))?.nom || ''
   }
 
-  if (['sep', 'local'].includes(filters.value.structure_type)) {
+  if (filters.value.structure_type === 'sep') {
     return provinces.value.find(item => Number(item.id) === Number(filters.value.structure_id))?.nom || ''
   }
 
-  return filters.value.structure_type === 'sen' ? 'SEN' : ''
+  if (filters.value.structure_type === 'local') {
+    return localities.value.find(item => Number(item.id) === Number(filters.value.structure_id))?.nom || ''
+  }
+
+  return ''
 })
 
 const canNotifyMissingPlanning = computed(() => {
@@ -684,8 +698,12 @@ const canNotifyMissingPlanning = computed(() => {
 })
 
 const emptyPlanningTitle = computed(() => {
-  if (['sep', 'local'].includes(filters.value.structure_type) && selectedStructureName.value) {
+  if (filters.value.structure_type === 'sep' && selectedStructureName.value) {
     return `Planning non disponible pour la province ${selectedStructureName.value}`
+  }
+
+  if (filters.value.structure_type === 'local' && selectedStructureName.value) {
+    return `Planning non disponible pour la structure locale ${selectedStructureName.value}`
   }
 
   if (filters.value.structure_type === 'department' && selectedStructureName.value) {
@@ -744,15 +762,6 @@ function workingDaysBetween(startValue, endValue) {
   return days
 }
 
-async function loadDepartments() {
-  try {
-    const response = await client.get('/departments')
-    departments.value = response.data.departments || response.data || []
-  } catch (error) {
-    console.error('Erreur chargement départements:', error)
-  }
-}
-
 async function loadPlannings(page = 1) {
   loading.value = true
   try {
@@ -771,17 +780,14 @@ async function loadPlannings(page = 1) {
     }
     workflow.value = response.data.workflow || workflow.value
 
-    if (departments.value.length === 0 && response.data.departments?.length) {
-      departments.value = response.data.departments
-    }
+    departments.value = response.data.departments || []
 
     if (response.data.agents?.length) {
       agents.value = response.data.agents
     }
 
-    if (response.data.provinces?.length) {
-      provinces.value = response.data.provinces
-    }
+    provinces.value = response.data.provinces || []
+    localities.value = response.data.localities || []
   } catch (error) {
     console.error('Erreur chargement plannings:', error)
     ui.addToast('Erreur lors du chargement des plannings', 'danger')
@@ -1145,7 +1151,6 @@ watch(() => viewMode.value, (newMode) => {
 
 // Initialisation
 onMounted(() => {
-  loadDepartments()
   loadPlannings()
 })
 </script>

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Department;
 use App\Models\HolidayPlanning;
+use App\Models\Localite;
 use App\Models\NotificationPortail;
 use App\Models\Province;
 use App\Models\Tache;
@@ -141,6 +142,8 @@ class HolidayPlanningRequirementService
 
                 if ($type === 'department') {
                     $query->where('departement_id', $structureId);
+                } elseif ($type === 'local') {
+                    $query->where('localite_id', $structureId);
                 } else {
                     $query->where('province_id', $structureId);
                 }
@@ -152,6 +155,10 @@ class HolidayPlanningRequirementService
     {
         if ($type === 'department') {
             return Department::find($structureId)?->nom ?? "la structure {$structureId}";
+        }
+
+        if ($type === 'local') {
+            return Localite::find($structureId)?->nom ?? "la structure locale {$structureId}";
         }
 
         return Province::find($structureId)?->nom ?? "la structure {$structureId}";
