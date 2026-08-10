@@ -31,6 +31,14 @@ class NotificationService
             'icone' => 'fa-times-circle',
             'couleur' => '#ef4444',
         ],
+        'demande_annulee' => [
+            'icone' => 'fa-ban',
+            'couleur' => '#64748b',
+        ],
+        'demande_supprimee' => [
+            'icone' => 'fa-trash-alt',
+            'couleur' => '#dc2626',
+        ],
         'plan_travail' => [
             'icone' => 'fa-calendar-check',
             'couleur' => '#0077B5',

@@ -260,31 +260,7 @@ class RequestController extends ApiController
 
         $demande->update($validated);
 
-        // Notify the agent of the status change
-        $agent = $demande->agent;
-        if ($agent) {
-            $agentUser = User::where('agent_id', $agent->id)->first();
-            if ($agentUser) {
-                $type = match ($validated['statut']) {
-                    'approuvé' => 'demande_approuvee',
-                    'rejeté' => 'demande_rejetee',
-                    default => 'demande_modifiee',
-                };
-                $titre = match ($validated['statut']) {
-                    'approuvé' => 'Demande approuvée',
-                    'rejeté' => 'Demande rejetée',
-                    default => 'Demande mise à jour',
-                };
-                NotificationService::envoyer(
-                    $agentUser->id,
-                    $type,
-                    $titre,
-                    'Votre demande de ' . $demande->type . ' a été ' . $validated['statut'] . '.',
-                    '/requests/' . $demande->id,
-                    $user->id
-                );
-            }
-        }
+        $this->notifyRequestOwner($demande, $user, $validated['statut']);
 
         $resource = RequestResource::make($demande->fresh()->load('agent'));
 
@@ -370,11 +346,37 @@ class RequestController extends ApiController
             }
         }
 
+        $this->notifyRequestOwner($demande->loadMissing('agent'), $user, 'supprimé');
         $demande->delete();
 
         return $this->success(null, [], [
             'message' => 'Demande supprimée avec succès.',
         ]);
+    }
+
+    private function notifyRequestOwner(RequestModel $demande, User $actionBy, string $status): void
+    {
+        $owner = User::where('agent_id', $demande->agent_id)->first();
+        if (!$owner || $owner->is($actionBy)) {
+            return;
+        }
+
+        $notification = match ($status) {
+            'approuvé' => ['demande_approuvee', 'Demande approuvée', 'approuvée', '/requests/' . $demande->id],
+            'rejeté' => ['demande_rejetee', 'Demande rejetée', 'rejetée', '/requests/' . $demande->id],
+            'annulé' => ['demande_annulee', 'Demande annulée', 'annulée', '/requests/' . $demande->id],
+            'supprimé' => ['demande_supprimee', 'Demande supprimée', 'supprimée', '/requests'],
+            default => ['demande_modifiee', 'Demande mise à jour', $status, '/requests/' . $demande->id],
+        };
+
+        NotificationService::envoyer(
+            $owner->id,
+            $notification[0],
+            $notification[1],
+            'Votre demande de ' . $demande->type . ' a été ' . $notification[2] . '.',
+            $notification[3],
+            $actionBy->id,
+        );
     }
 
     private function canCreateForScopedAgent($user, ?UserDataScope $scope = null): bool
