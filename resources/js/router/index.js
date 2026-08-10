@@ -30,6 +30,18 @@ const routes = [
         component: () => import('@/views/forum/ForumView.vue'),
         meta: { auth: true },
     },
+    {
+        path: '/aide/faq',
+        name: 'help.faq',
+        component: () => import('@/views/help/HelpCenterView.vue'),
+        meta: { auth: true },
+    },
+    {
+        path: '/support-technique/:id?',
+        name: 'technical-support',
+        component: () => import('@/views/support/TechnicalSupportView.vue'),
+        meta: { auth: true },
+    },
 
     // Profile
     {

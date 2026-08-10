@@ -51,6 +51,18 @@ class NotificationService
             'icone' => 'fa-envelope',
             'couleur' => '#6366f1',
         ],
+        'technical_support_new' => [
+            'icone' => 'fa-headset',
+            'couleur' => '#dc2626',
+        ],
+        'technical_support_reply' => [
+            'icone' => 'fa-comments',
+            'couleur' => '#0284c7',
+        ],
+        'technical_support_status' => [
+            'icone' => 'fa-screwdriver-wrench',
+            'couleur' => '#16a34a',
+        ],
         'document_travail' => [
             'icone' => 'fa-file-alt',
             'couleur' => '#0891b2',

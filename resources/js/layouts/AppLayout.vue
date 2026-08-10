@@ -266,14 +266,18 @@
               </div>
             </li>
 
+            <li class="nav-item d-lg-none mobile-help-title">Aide</li>
             <li class="nav-item d-lg-none">
               <button class="mobile-theme-toggle" type="button" @click="openUserGuide">
                 <span class="mobile-theme-toggle-icon">
-                  <i class="fas fa-circle-question"></i>
+                  <i class="fas fa-book-open"></i>
                 </span>
                 <span>Guide utilisateur</span>
               </button>
             </li>
+            <li class="nav-item d-lg-none"><router-link class="mobile-theme-toggle" :to="{ name: 'help.faq' }"><span class="mobile-theme-toggle-icon"><i class="fas fa-circle-question"></i></span><span>FAQ</span></router-link></li>
+            <li class="nav-item d-lg-none"><router-link class="mobile-theme-toggle" :to="{ name: 'technical-support', query: { new: '1' } }"><span class="mobile-theme-toggle-icon"><i class="fas fa-comments"></i></span><span>Chat – Nouvelle Technologie</span></router-link></li>
+            <li class="nav-item d-lg-none"><router-link class="mobile-theme-toggle" :to="{ name: 'technical-support' }"><span class="mobile-theme-toggle-icon"><i class="fas fa-clipboard-list"></i></span><span>{{ auth.isAdminNT ? 'Support technique' : 'Mes demandes techniques' }}</span></router-link></li>
 
             <li class="nav-item d-lg-none">
               <button class="mobile-theme-toggle" type="button" @click="ui.toggleDarkMode()">
@@ -284,11 +288,25 @@
               </button>
             </li>
 
-            <li class="nav-item d-none d-lg-flex align-items-center">
-              <button class="help-toggle-btn" type="button" title="Guide utilisateur" @click="openUserGuide">
+            <li class="nav-item dropdown d-none d-lg-flex align-items-center">
+              <button class="help-toggle-btn dropdown-toggle" type="button" title="Centre d'aide" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="fas fa-circle-question"></i>
                 <span>Aide</span>
               </button>
+              <ul class="dropdown-menu dropdown-menu-end help-dropdown">
+                <li><button class="dropdown-item" type="button" @click="openUserGuide"><span class="dd-icon dd-icon-blue"><i class="fas fa-book-open"></i></span> Guide utilisateur</button></li>
+                <li><router-link class="dropdown-item" :to="{ name: 'help.faq' }"><span class="dd-icon dd-icon-slate"><i class="fas fa-circle-question"></i></span> FAQ</router-link></li>
+                <li><router-link class="dropdown-item" :to="{ name: 'technical-support', query: { new: '1' } }"><span class="dd-icon dd-icon-green"><i class="fas fa-comments"></i></span> Chat – Nouvelle Technologie</router-link></li>
+                <li><router-link class="dropdown-item" :to="{ name: 'technical-support' }"><span class="dd-icon dd-icon-teal"><i class="fas fa-clipboard-list"></i></span> {{ auth.isAdminNT ? 'Toutes les demandes' : 'Mes demandes techniques' }}</router-link></li>
+                <template v-if="auth.isAdminNT">
+                  <li><hr class="dropdown-divider"></li>
+                  <li><h6 class="dropdown-header">Support technique</h6></li>
+                  <li><router-link class="dropdown-item" :to="{ name: 'technical-support', query: { status: 'nouveau' } }"><span class="support-menu-dot red"></span> Nouvelles demandes</router-link></li>
+                  <li><router-link class="dropdown-item" :to="{ name: 'technical-support', query: { status: 'en_cours' } }"><span class="support-menu-dot orange"></span> En cours</router-link></li>
+                  <li><router-link class="dropdown-item" :to="{ name: 'technical-support', query: { status: 'resolu' } }"><span class="support-menu-dot green"></span> Résolues</router-link></li>
+                  <li><router-link class="dropdown-item" :to="{ name: 'technical-support' }"><span class="dd-icon dd-icon-blue"><i class="fas fa-chart-column"></i></span> Tableau de bord</router-link></li>
+                </template>
+              </ul>
             </li>
 
             <div class="nav-divider d-none d-lg-block"></div>
@@ -681,6 +699,15 @@ watch([() => auth.isAuthenticated, isImmersiveRoute], ([isAuthenticated, isImmer
 .help-toggle-btn:hover {
   background: rgba(255, 255, 255, .24);
 }
+
+.help-dropdown { width: 280px; }
+.help-dropdown .dropdown-item { display: flex; align-items: center; gap: .65rem; }
+.help-dropdown .dropdown-header { color: #64748b; font-size: .68rem; font-weight: 900; text-transform: uppercase; }
+.support-menu-dot { width: 9px; height: 9px; margin: 0 .65rem 0 .45rem; border-radius: 50%; }
+.support-menu-dot.red { background: #dc2626; }
+.support-menu-dot.orange { background: #d97706; }
+.support-menu-dot.green { background: #059669; }
+.mobile-help-title { padding: .8rem 0 .25rem; color: #64748b; font-size: .68rem; font-weight: 900; text-transform: uppercase; }
 
 .nav-link-button {
   border: 0;

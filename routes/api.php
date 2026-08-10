@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\MailboxController;
 use App\Http\Controllers\Api\UserExperienceController;
 use App\Http\Controllers\Api\JobDescriptionController;
+use App\Http\Controllers\Api\TechnicalSupportController;
 use App\Http\Controllers\Admin\ParametresController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DataQualityController;
@@ -130,6 +131,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('forum/comments/{forumComment}/reaction', [ForumPostController::class, 'reactToComment']);
     Route::delete('forum/{forumPost}', [ForumPostController::class, 'destroy']);
     Route::delete('forum/comments/{forumComment}', [ForumPostController::class, 'destroyComment']);
+
+    // Support technique Nouvelle Technologie
+    Route::get('technical-support/dashboard', [TechnicalSupportController::class, 'dashboard']);
+    Route::get('technical-support', [TechnicalSupportController::class, 'index']);
+    Route::post('technical-support', [TechnicalSupportController::class, 'store']);
+    Route::get('technical-support/{technicalSupportTicket}', [TechnicalSupportController::class, 'show']);
+    Route::post('technical-support/{technicalSupportTicket}/messages', [TechnicalSupportController::class, 'reply']);
+    Route::put('technical-support/{technicalSupportTicket}/status', [TechnicalSupportController::class, 'updateStatus']);
+    Route::get('technical-support/{technicalSupportTicket}/attachment', [TechnicalSupportController::class, 'downloadTicketAttachment']);
+    Route::get('technical-support/messages/{technicalSupportMessage}/attachment', [TechnicalSupportController::class, 'downloadMessageAttachment']);
 
     // Notifications
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
