@@ -109,4 +109,82 @@ function openGuide() {
 .faq-empty { padding: 30px; text-align: center; color: #6b7c8a; }
 @media (max-width: 820px) { .help-shortcuts { grid-template-columns: 1fr; } .faq-heading { align-items: stretch; flex-direction: column; } .faq-search { width: 100%; } }
 @media (max-width: 560px) { .help-center { padding: 14px 10px 40px; } .help-header { min-height: 180px; padding: 26px 22px; } .help-header > i { display: none; } .faq-section { padding: 18px 12px; } }
+
+/* Modern help-center finish */
+.help-center {
+  --help-accent: #0b8f82;
+  --help-ink: #142332;
+  --help-muted: #667b8b;
+  --help-line: #dce6eb;
+  --help-surface: #fff;
+  --help-soft: #f6f9fa;
+  padding-top: 32px;
+  color: var(--help-ink);
+}
+.help-header {
+  min-height: 230px;
+  padding: 44px 50px;
+  background:
+    linear-gradient(112deg, rgba(255, 255, 255, .04) 0 42%, transparent 42%),
+    linear-gradient(135deg, #073b59 0%, #07506a 60%, #08796f 100%);
+  border: 1px solid rgba(255, 255, 255, .12);
+  border-radius: 8px;
+  box-shadow: 0 20px 48px rgba(4, 48, 69, .2);
+}
+.help-header::after { background: linear-gradient(112deg, transparent 58%, rgba(79, 220, 200, .14)); }
+.help-header > i { font-size: 4.7rem; color: #9aeee4; filter: drop-shadow(0 10px 20px rgba(0, 25, 36, .22)); }
+.help-header h1 { font-family: inherit; font-size: 2.65rem; font-weight: 850; letter-spacing: 0; }
+.help-header p { color: rgba(235, 249, 252, .82); font-size: .98rem; line-height: 1.6; }
+.help-eyebrow { color: var(--help-accent); font-size: .7rem; letter-spacing: 0; }
+.help-shortcuts { gap: 16px; margin: 22px 0 38px; }
+.help-shortcut {
+  min-height: 104px;
+  padding: 18px;
+  border-color: var(--help-line);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(18, 53, 69, .055);
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+}
+.help-shortcut:hover { border-color: #9ccfca; transform: translateY(-3px); box-shadow: 0 16px 34px rgba(18, 53, 69, .11); }
+.help-shortcut-icon { width: 50px; height: 50px; border-radius: 8px; font-size: 1.05rem; }
+.help-shortcut strong { font-size: .97rem; font-weight: 800; }
+.help-shortcut small { margin-top: 5px; color: var(--help-muted); line-height: 1.4; }
+.help-shortcut > i { transition: transform .2s ease, color .2s ease; }
+.help-shortcut:hover > i { color: var(--help-accent); transform: translateX(3px); }
+.faq-section { padding: 32px; background: var(--help-soft); border-color: var(--help-line); border-radius: 8px; }
+.faq-heading { margin-bottom: 22px; }
+.faq-heading h2 { font-family: inherit; font-size: 1.65rem; font-weight: 850; }
+.faq-search { min-height: 46px; border-color: #d4e0e6; border-radius: 7px; box-shadow: 0 3px 12px rgba(18, 53, 69, .035); transition: border-color .18s ease, box-shadow .18s ease; }
+.faq-search:focus-within { border-color: var(--help-accent); box-shadow: 0 0 0 3px rgba(11, 143, 130, .12); }
+.faq-search input { height: 44px; color: var(--help-ink); }
+.faq-list { gap: 10px; }
+.faq-list details { border-color: var(--help-line); border-radius: 8px; box-shadow: 0 4px 14px rgba(18, 53, 69, .035); overflow: hidden; transition: border-color .18s ease, box-shadow .18s ease; }
+.faq-list details:hover, .faq-list details[open] { border-color: #b4d7d3; box-shadow: 0 8px 20px rgba(18, 53, 69, .07); }
+.faq-list summary { min-height: 62px; padding: 15px 18px; font-size: .9rem; }
+.faq-list summary i { width: 28px; height: 28px; flex: 0 0 28px; display: grid; place-items: center; color: var(--help-accent); background: #e5f5f2; border-radius: 50%; transition: transform .2s ease, background-color .2s ease; }
+.faq-list details[open] summary i { background: #ccebe6; }
+.faq-list p { padding: 0 18px 19px; color: #536a7a; }
+.help-center :is(button, a, input, summary):focus-visible { outline: 3px solid rgba(14, 165, 233, .28); outline-offset: 2px; }
+
+:global(html.dark .help-center) { --help-ink: #e6eef3; --help-muted: #9fb0bc; --help-line: rgba(255, 255, 255, .1); --help-surface: #172231; --help-soft: #111a27; }
+:global(html.dark .help-shortcut), :global(html.dark .faq-list details), :global(html.dark .faq-search) { color: var(--help-ink); background: var(--help-surface); border-color: var(--help-line); }
+:global(html.dark .faq-section) { background: var(--help-soft); border-color: var(--help-line); }
+:global(html.dark .faq-search input) { color: var(--help-ink); }
+:global(html.dark .faq-list p) { color: #b0c0ca; }
+:global(html.dark .faq-list summary i) { color: #6ed9cd; background: #173b3b; }
+
+@media (max-width: 820px) {
+  .help-header { min-height: 205px; padding: 34px; }
+  .help-header h1 { font-size: 2.1rem; }
+}
+@media (max-width: 560px) {
+  .help-center { padding: 16px 10px 42px; }
+  .help-header { min-height: 188px; padding: 26px 22px; }
+  .help-header h1 { font-size: 1.75rem; }
+  .help-shortcut { min-height: 92px; padding: 15px; }
+  .faq-section { padding: 20px 14px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .help-center *, .help-center *::before, .help-center *::after { transition-duration: .01ms !important; }
+}
 </style>
