@@ -2104,9 +2104,11 @@ function presenceFilterTitle(total = 0) {
   return `${labels[drillPresenceFilter.value] || labels.all} (${total})`
 }
 
-const quickActions = [
+const onlineAgents = computed(() => data.value.online_agents || [])
+
+const quickActions = computed(() => [
   { to: '/rh/communiques/create?from=sen', label: 'Nouveau communiqué', desc: 'Publier un communiqué', icon: 'fa-bullhorn', color: '#0891b2', bg: '#cffafe' },
-  { action: 'onlineAgents', label: 'Agents en ligne', desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
+  { action: 'onlineAgents', label: `Agents en ligne (${onlineAgents.value.length})`, desc: 'Actifs sur 30 minutes', icon: 'fa-user-clock', color: '#16a34a', bg: '#dcfce7' },
   { to: '/rh/agents', label: 'Gestion agents', desc: 'Voir tous les agents', icon: 'fa-users', color: '#0077B5', bg: '#e0f2fe' },
   { to: '/carnet-adresses', label: "Carnet d'adresse", desc: 'Contacts par poste', icon: 'fa-address-book', color: '#2563eb', bg: '#dbeafe' },
   { to: '/mailbox', label: 'Mail', desc: 'Boîte de réception', icon: 'fa-envelope', color: '#0284c7', bg: '#e0f2fe' },
@@ -2114,9 +2116,7 @@ const quickActions = [
   { to: '/plan-travail', label: 'PTA', desc: 'Suivi stratégique annuel', icon: 'fa-tasks', color: '#d97706', bg: '#fef3c7' },
   { to: '/rh/pointages/monthly', label: 'Pointages', desc: 'Rapport mensuel', icon: 'fa-clock', color: '#7c3aed', bg: '#ede9fe' },
   { to: '/requests', label: 'Demandes', desc: 'Gérer les demandes', icon: 'fa-paper-plane', color: '#059669', bg: '#d1fae5' },
-]
-
-const onlineAgents = computed(() => data.value.online_agents || [])
+])
 
 function quickActionComponent(action) {
   return action.action ? 'button' : 'router-link'

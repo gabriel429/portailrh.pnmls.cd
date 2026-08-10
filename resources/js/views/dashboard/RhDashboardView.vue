@@ -1360,6 +1360,13 @@ const quickActions = computed(() => {
   const assistant = auth.isRhOperationalAssistant
 
   return baseQuickActions.map((action) => {
+    if (action.action === 'onlineAgents') {
+      return {
+        ...action,
+        label: `Agents en ligne (${onlineAgents.value.length})`,
+      }
+    }
+
     if (action.to === '/rh/agents') {
       return {
         ...action,
