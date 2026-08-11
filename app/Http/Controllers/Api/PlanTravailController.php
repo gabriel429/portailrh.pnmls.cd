@@ -62,6 +62,7 @@ class PlanTravailController extends ApiController
 
         return (bool) $user
             && !$user->isSuperAdmin()
+            && !$this->isPtaAdminContext()
             && $user->hasRole('SEN');
     }
 
