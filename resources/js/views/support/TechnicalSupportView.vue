@@ -119,10 +119,14 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { createTechnicalTicket, getTechnicalSupportDashboard, getTechnicalTicket, getTechnicalTickets, replyToTechnicalTicket, updateTechnicalTicketStatus } from '@/api/technicalSupport'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 
 const route = useRoute()
 const router = useRouter()
 const ui = useUiStore()
+const ticketListLoad = useLatestRequest()
+const ticketDetailLoad = useLatestRequest()
+const dashboardLoad = useLatestRequest()
 const tickets = ref([])
 const selectedTicket = ref(null)
 const isTechnician = ref(false)
@@ -165,19 +169,56 @@ watch(() => route.query.status, status => {
 })
 
 async function loadTickets() {
+  const request = ticketListLoad.next()
   loadingList.value = true
   try {
     const response = await getTechnicalTickets({ status: filters.status || undefined, priority: filters.priority || undefined, search: filters.search || undefined })
+    if (!request.isCurrent()) return
     tickets.value = response.data.data?.data || []
     isTechnician.value = !!response.data.is_technician
     if (isTechnician.value) await loadDashboard()
-  } catch (error) { ui.addToast(error.response?.data?.message || 'Impossible de charger les demandes.', 'danger') }
-  finally { loadingList.value = false }
+  } catch (error) {
+    if (!request.isCurrent()) return
+    ui.addToast(error.response?.data?.message || 'Impossible de charger les demandes.', 'danger')
+  } finally {
+    request.done()
+    if (request.isCurrent()) loadingList.value = false
+  }
 }
 
-async function loadDashboard() { try { const response = await getTechnicalSupportDashboard(); dashboard.value = response.data.data || {} } catch (_) { dashboard.value = {} } }
-async function openTicket(id) { loadingTicket.value = true; mobileDetail.value = true; try { const response = await getTechnicalTicket(id); selectedTicket.value = response.data.data; isTechnician.value = !!response.data.is_technician } catch (error) { ui.addToast(error.response?.data?.message || 'Demande inaccessible.', 'danger'); mobileDetail.value = false } finally { loadingTicket.value = false } }
-function closeMobileDetail() { mobileDetail.value = false; selectedTicket.value = null; if (route.params.id) router.replace({ name: 'technical-support' }) }
+async function loadDashboard() {
+  const request = dashboardLoad.next()
+  try {
+    const response = await getTechnicalSupportDashboard()
+    if (!request.isCurrent()) return
+    dashboard.value = response.data.data || {}
+  } catch (_) {
+    if (!request.isCurrent()) return
+    dashboard.value = {}
+  } finally {
+    request.done()
+  }
+}
+
+async function openTicket(id) {
+  const request = ticketDetailLoad.next()
+  loadingTicket.value = true
+  mobileDetail.value = true
+  try {
+    const response = await getTechnicalTicket(id)
+    if (!request.isCurrent()) return
+    selectedTicket.value = response.data.data
+    isTechnician.value = !!response.data.is_technician
+  } catch (error) {
+    if (!request.isCurrent()) return
+    ui.addToast(error.response?.data?.message || 'Demande inaccessible.', 'danger')
+    mobileDetail.value = false
+  } finally {
+    request.done()
+    if (request.isCurrent()) loadingTicket.value = false
+  }
+}
+function closeMobileDetail() { ticketDetailLoad.cancel(); mobileDetail.value = false; selectedTicket.value = null; if (route.params.id) router.replace({ name: 'technical-support' }) }
 function openCreate() { errors.value = {}; createOpen.value = true }
 function closeCreate() { createOpen.value = false; router.replace({ query: { ...route.query, new: undefined } }) }
 function resetForm() { Object.assign(form, { subject: '', description: '', module: '', priority: 'normal', file: null }); errors.value = {} }

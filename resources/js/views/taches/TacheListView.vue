@@ -408,12 +408,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { create, getCreateData, list } from '@/api/taches'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const route = useRoute()
 const router = useRouter()
 const ui = useUiStore()
 const auth = useAuthStore()
+const tachesLoad = useLatestRequest()
 const loading = ref(true)
 const mesTaches = ref([])
 const tachesCreees = ref([])
@@ -600,6 +602,7 @@ const emptyStateText = computed(() => {
 })
 
 async function loadTaches() {
+  const request = tachesLoad.next()
   loading.value = true
   try {
     const params = isDeptScope.value
@@ -611,6 +614,7 @@ async function loadTaches() {
           : {}
 
     const { data } = await list(params)
+    if (!request.isCurrent()) return
     mesTaches.value = data.mesTaches || []
     tachesCreees.value = data.tachesCreees || []
     isDirecteur.value = Boolean(data.isDirecteur)
@@ -624,9 +628,13 @@ async function loadTaches() {
     )
     canCreateTaches.value = Boolean(data.canCreateTaches || auth.agent?.id || auth.user?.agent?.id || canManageTaches.value)
   } catch {
+    if (!request.isCurrent()) return
     ui.addToast('Erreur lors du chargement des tâches.', 'danger')
   } finally {
-    loading.value = false
+    request.done()
+    if (request.isCurrent()) {
+      loading.value = false
+    }
   }
 }
 

@@ -40,7 +40,7 @@ const routes = [
         path: '/support-technique/:id?',
         name: 'technical-support',
         component: () => import('@/views/support/TechnicalSupportView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
 
     // Profile
@@ -121,7 +121,7 @@ const routes = [
         path: '/documents',
         name: 'documents.index',
         component: () => import('@/views/documents/DocumentListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
     {
         path: '/documents/create',
@@ -167,7 +167,7 @@ const routes = [
         path: '/signalements',
         name: 'signalements.index',
         component: () => import('@/views/rh/signalements/SignalementListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
     {
         path: '/signalements/create',
@@ -193,13 +193,13 @@ const routes = [
         path: '/taches',
         name: 'taches.index',
         component: () => import('@/views/taches/TacheListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
     {
         path: '/taches/assignees-par-moi',
         name: 'taches.assigned-by-me',
         component: () => import('@/views/taches/TacheListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
     {
         path: '/taches/create',
@@ -219,13 +219,13 @@ const routes = [
         path: '/plan-travail',
         name: 'plan-travail.index',
         component: () => import('@/views/plan-travail/PlanTravailListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
     {
         path: '/adm-pta',
         name: 'adm-pta.index',
         component: () => import('@/views/plan-travail/PlanTravailListView.vue'),
-        meta: { auth: true, ptaAdmin: true },
+        meta: { auth: true, ptaAdmin: true, preserveQueryView: true },
     },
     {
         path: '/plan-travail/create',
@@ -297,7 +297,7 @@ const routes = [
         path: '/rh/agents',
         name: 'rh.agents.index',
         component: () => import('@/views/rh/agents/AgentListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true, allowLocalRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true, allowLocalRH: true, preserveQueryView: true },
     },
     {
         path: '/rh/agents/create',

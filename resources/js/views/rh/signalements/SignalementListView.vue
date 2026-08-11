@@ -262,12 +262,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { list, remove, create, getAgents } from '@/api/signalements'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import SignalementEditModal from '@/components/signalements/SignalementEditModal.vue'
 
 const ui = useUiStore()
 const auth = useAuthStore()
+const signalementLoad = useLatestRequest()
 const loading = ref(true)
 const signalements = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
@@ -292,18 +294,22 @@ const paginationPages = computed(() => {
 })
 
 async function loadSignalements(page = 1) {
+  const request = signalementLoad.next()
   loading.value = true
   try {
     const params = { page }
     if (filters.value.severite) params.severite = filters.value.severite
     if (filters.value.statut) params.statut = filters.value.statut
     const { data } = await list(params)
+    if (!request.isCurrent()) return
     signalements.value = data.data
     meta.value = data.meta
   } catch {
+    if (!request.isCurrent()) return
     ui.addToast('Erreur lors du chargement des signalements.', 'danger')
   } finally {
-    loading.value = false
+    request.done()
+    if (request.isCurrent()) loading.value = false
   }
 }
 

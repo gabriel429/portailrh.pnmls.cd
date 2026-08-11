@@ -774,6 +774,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { list, get, remove, exportCsv, getFormOptions, downloadDossier, updateDelegations } from '@/api/agents'
 import { create as createDocument, viewUrl as documentViewUrl } from '@/api/documents'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import { DOCUMENT_CATEGORY_OPTIONS, normalizeDocumentCategory } from '@/constants/documentCategories'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
@@ -784,6 +785,8 @@ const router = useRouter()
 const route = useRoute()
 const ui = useUiStore()
 const auth = useAuthStore()
+const agentListLoad = useLatestRequest()
+const agentDetailLoad = useLatestRequest()
 
 // State
 const loading = ref(true)
@@ -1015,6 +1018,7 @@ async function goToAgent(agentOrId) {
 
     if (!id) return
 
+    const request = agentDetailLoad.next()
     selectedAgent.value = fallbackAgent ? { ...fallbackAgent } : null
     agentTab.value = 'informations'
     delegationForm.value = defaultDelegationForm()
@@ -1022,6 +1026,7 @@ async function goToAgent(agentOrId) {
     agentModalLoading.value = true
     try {
         const { data } = await get(id)
+        if (!request.isCurrent()) return
         const agent = data.agent || data.data || null
         selectedAgent.value = agent || selectedAgent.value
         delegationForm.value = {
@@ -1029,6 +1034,7 @@ async function goToAgent(agentOrId) {
             ...(agent?.permissions?.agent_management || {}),
         }
     } catch (err) {
+        if (!request.isCurrent()) return
         console.error('Error fetching agent:', err)
         ui.addToast('Détails complets indisponibles, affichage des informations de la liste.', 'warning')
 
@@ -1036,11 +1042,12 @@ async function goToAgent(agentOrId) {
             showAgentModal.value = false
         }
     } finally {
-        agentModalLoading.value = false
+        request.done()
+        if (request.isCurrent()) agentModalLoading.value = false
     }
 }
 
-function closeAgentModal() { showAgentModal.value = false }
+function closeAgentModal() { agentDetailLoad.cancel(); showAgentModal.value = false }
 
 function openFullAgentFiche() {
     if (!selectedAgent.value?.id) return
@@ -1402,6 +1409,7 @@ function onAgentCreated() {
 
 // Fetch agents
 async function fetchAgents() {
+    const request = agentListLoad.next()
     if (!initialLoadDone.value) {
         loading.value = true
     }
@@ -1421,6 +1429,7 @@ async function fetchAgents() {
         if (filterSansAffectation.value) params.sans_affectation = 1
 
         const { data } = await list(params)
+        if (!request.isCurrent()) return
         agentsByOrgane.value = data.agentsByOrgane || []
         stats.value = data.stats || { total: 0, sen: 0, sep: 0, sel: 0 }
         Object.assign(pagination, {
@@ -1434,6 +1443,7 @@ async function fetchAgents() {
         })
         loadError.value = ''
     } catch (err) {
+        if (!request.isCurrent()) return
         console.error('Error fetching agents:', err)
         const networkError = !err.response
         loadError.value = networkError
@@ -1441,9 +1451,12 @@ async function fetchAgents() {
             : (err.response?.data?.message || 'Erreur lors du chargement des agents.')
         ui.addToast(loadError.value, networkError ? 'warning' : 'danger')
     } finally {
-        loading.value = false
-        filtering.value = false
-        initialLoadDone.value = true
+        request.done()
+        if (request.isCurrent()) {
+            loading.value = false
+            filtering.value = false
+            initialLoadDone.value = true
+        }
     }
 }
 

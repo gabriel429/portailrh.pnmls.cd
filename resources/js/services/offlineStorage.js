@@ -13,6 +13,59 @@
 
 import { debugLog, reportError } from '@/utils/logger'
 
+const API_RESPONSE_MAX_AGE = 7 * 24 * 60 * 60 * 1000
+const API_RESPONSE_RETENTION = 30 * 24 * 60 * 60 * 1000
+const QUEUE_DEDUPE_WINDOW = 60 * 1000
+const STUCK_SYNCING_MAX_AGE = 10 * 60 * 1000
+
+function stableValue(value) {
+    if (Array.isArray(value)) return value.map(stableValue)
+    if (!value || typeof value !== 'object') return value
+
+    return Object.keys(value).sort().reduce((result, key) => {
+        if (key === 'client_operation_id') return result
+        result[key] = stableValue(value[key])
+        return result
+    }, {})
+}
+
+function stableStringify(value) {
+    try {
+        return JSON.stringify(stableValue(value))
+    } catch (_) {
+        return String(value ?? '')
+    }
+}
+
+function hashString(value) {
+    let hash = 2166136261
+    for (let index = 0; index < value.length; index++) {
+        hash ^= value.charCodeAt(index)
+        hash = Math.imul(hash, 16777619)
+    }
+    return (hash >>> 0).toString(36)
+}
+
+function localId() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID()
+    }
+
+    return `local-${Date.now()}-${Math.random().toString(36).slice(2)}`
+}
+
+function operationDedupeKey({ userId, entity, operation, entityId, payload, request }) {
+    return [
+        userId || 'guest',
+        entity || 'unknown',
+        operation || 'unknown',
+        entityId || '',
+        request?.method || '',
+        request?.url || '',
+        hashString(stableStringify(payload)),
+    ].join(':')
+}
+
 class OfflineStorage {
     constructor() {
         this.dbName = 'PortailRH_OfflineDB'
@@ -233,10 +286,11 @@ class OfflineStorage {
             .delete(userId)
     }
 
-    async cacheApiResponse(userId, cacheKey, data) {
+    async cacheApiResponse(userId, cacheKey, data, { maxAge = API_RESPONSE_MAX_AGE } = {}) {
         if (!userId || !cacheKey) return
         await this.init()
 
+        const cachedAt = new Date()
         return new Promise((resolve, reject) => {
             const request = this.db.transaction(['api_responses'], 'readwrite')
                 .objectStore('api_responses')
@@ -245,14 +299,15 @@ class OfflineStorage {
                     user_id: userId,
                     request_key: cacheKey,
                     data,
-                    cached_at: new Date().toISOString(),
+                    cached_at: cachedAt.toISOString(),
+                    expires_at: new Date(cachedAt.getTime() + maxAge).toISOString(),
                 })
             request.onsuccess = () => resolve()
             request.onerror = () => reject(request.error)
         })
     }
 
-    async getCachedApiResponse(userId, cacheKey) {
+    async getCachedApiResponse(userId, cacheKey, { maxAge = API_RESPONSE_MAX_AGE, allowStale = true } = {}) {
         if (!userId || !cacheKey) return null
         await this.init()
 
@@ -260,7 +315,22 @@ class OfflineStorage {
             const request = this.db.transaction(['api_responses'], 'readonly')
                 .objectStore('api_responses')
                 .get(`${userId}:${cacheKey}`)
-            request.onsuccess = () => resolve(request.result || null)
+            request.onsuccess = () => {
+                const cached = request.result || null
+                if (!cached) {
+                    resolve(null)
+                    return
+                }
+
+                const cachedAt = new Date(cached.cached_at).getTime()
+                const isStale = Number.isFinite(cachedAt) && maxAge ? Date.now() - cachedAt > maxAge : false
+                if (isStale && !allowStale) {
+                    resolve(null)
+                    return
+                }
+
+                resolve({ ...cached, is_stale: isStale })
+            }
             request.onerror = () => resolve(null)
         })
     }
@@ -326,14 +396,35 @@ class OfflineStorage {
         return queueItem.id
     }
 
+    async findRecentDuplicateOperation(dedupeKey) {
+        if (!dedupeKey) return null
+
+        const cutoff = Date.now() - QUEUE_DEDUPE_WINDOW
+        const items = await this.getQueueItems({ statuses: ['pending', 'retryable_error', 'syncing'] })
+
+        return items.find((item) => {
+            if (item.dedupe_key !== dedupeKey) return false
+            const createdAt = new Date(item.created_at).getTime()
+            return Number.isFinite(createdAt) && createdAt >= cutoff
+        }) || null
+    }
+
     async enqueueOperation({ userId, entity, operation, entityId = null, payload, request = null }) {
         await this.init()
 
-        const id = crypto.randomUUID()
+        const dedupeKey = operationDedupeKey({ userId, entity, operation, entityId, payload, request })
+        const duplicate = await this.findRecentDuplicateOperation(dedupeKey)
+        if (duplicate) {
+            debugLog('♻️ Opération offline déjà en attente, réutilisation:', duplicate.id)
+            return duplicate
+        }
+
+        const id = localId()
         const queueItem = {
             id,
             tempId: id,
-            client_operation_id: crypto.randomUUID(),
+            client_operation_id: payload?.client_operation_id || localId(),
+            dedupe_key: dedupeKey,
             user_id: userId || null,
             entity,
             operation,
@@ -387,6 +478,45 @@ class OfflineStorage {
             }
             request.onerror = () => resolve([])
         })
+    }
+
+    async restoreStuckSyncing(maxAge = STUCK_SYNCING_MAX_AGE) {
+        await this.init()
+
+        const cutoff = Date.now() - maxAge
+        let restored = 0
+
+        await new Promise((resolve) => {
+            const transaction = this.db.transaction(['sync_queue'], 'readwrite')
+            const store = transaction.objectStore('sync_queue')
+            const request = store.getAll()
+
+            request.onsuccess = () => {
+                ;(request.result || []).forEach((item) => {
+                    if (item.status !== 'syncing') return
+
+                    const updatedAt = new Date(item.updated_at || item.created_at).getTime()
+                    if (Number.isFinite(updatedAt) && updatedAt > cutoff) return
+
+                    store.put({
+                        ...item,
+                        status: 'retryable_error',
+                        last_error: 'Synchronisation interrompue, reprise automatique.',
+                        updated_at: new Date().toISOString(),
+                    })
+                    restored++
+                })
+            }
+
+            transaction.oncomplete = () => resolve(restored)
+            transaction.onerror = () => resolve(restored)
+        })
+
+        if (restored > 0) {
+            debugLog(`♻️ ${restored} opération(s) offline reprises après interruption`)
+        }
+
+        return restored
     }
 
     /**
@@ -541,7 +671,29 @@ class OfflineStorage {
             request.onerror = () => reject(request.error)
         })
 
-        debugLog(`🧹 ${cleaned} anciennes opérations synchronisées nettoyées`)
+        let apiCleaned = 0
+        const apiCutoff = new Date(Date.now() - API_RESPONSE_RETENTION).toISOString()
+        const apiTransaction = this.db.transaction(['api_responses'], 'readwrite')
+        const apiStore = apiTransaction.objectStore('api_responses')
+        const apiIndex = apiStore.index('cached_at')
+
+        await new Promise((resolve) => {
+            const request = apiIndex.openCursor(IDBKeyRange.upperBound(apiCutoff))
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result
+                if (cursor) {
+                    cursor.delete()
+                    apiCleaned++
+                    cursor.continue()
+                } else {
+                    resolve()
+                }
+            }
+            request.onerror = () => resolve()
+        })
+
+        debugLog(`🧹 ${cleaned} anciennes opérations synchronisées nettoyées, ${apiCleaned} caches API expirés`)
         return cleaned
     }
 }

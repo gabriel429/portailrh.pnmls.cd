@@ -793,6 +793,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { list, create, get, getCreateData, updateStatut, remove, dashboard as getPtaDashboard } from '@/api/planTravail'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
 
@@ -800,6 +801,9 @@ const ui = useUiStore()
 const router = useRouter()
 const route = useRoute()
 const auth = useAuthStore()
+const planLoad = useLatestRequest()
+const ptaDashboardLoad = useLatestRequest()
+const detailLoad = useLatestRequest()
 const isPlanification = computed(() => auth.isPlanification || auth.isSEN || auth.isAdminNT || auth.isSuperAdmin)
 const isAdminMode = computed(() => route.name === 'adm-pta.index')
 const adminParams = computed(() => isAdminMode.value ? { admin_pta: 1 } : {})
@@ -821,7 +825,6 @@ const isGlobalPta = ref(false)
 const filterDepts = ref([])
 const filterProvinces = ref([])
 const filters = ref({ annee: new Date().getFullYear(), trimestre: '', statut: '', departement_id: '', province_id: '', niveau_administratif: '' })
-let loadPlanRequestId = 0
 
 const trimestres = [
   { value: '', label: 'Tous' },
@@ -886,7 +889,7 @@ const flatActivites = computed(() => {
 })
 
 async function loadPlan() {
-  const requestId = ++loadPlanRequestId
+  const request = planLoad.next()
   if (!initialLoadDone.value) {
     loading.value = true
   }
@@ -901,7 +904,7 @@ async function loadPlan() {
     if (filters.value.province_id) params.province_id = filters.value.province_id
     if (filters.value.niveau_administratif) params.niveau_administratif = filters.value.niveau_administratif
     const { data } = await list(params)
-    if (requestId !== loadPlanRequestId) return
+    if (!request.isCurrent()) return
     groupees.value = data.groupees || {}
     stats.value = data.stats || emptyStats()
     canEdit.value = data.canEdit
@@ -914,7 +917,7 @@ async function loadPlan() {
       loadDashboard()
     }
   } catch (err) {
-    if (requestId !== loadPlanRequestId) return
+    if (!request.isCurrent()) return
     if (err.response?.status === 403) {
       accessDenied.value = true
       accessDeniedMessage.value = err.response?.data?.message || 'Vous ne pouvez consulter que le PTA de votre département.'
@@ -926,7 +929,8 @@ async function loadPlan() {
       ui.addToast('Erreur lors du chargement du plan de travail.', 'danger')
     }
   } finally {
-    if (requestId === loadPlanRequestId) {
+    request.done()
+    if (request.isCurrent()) {
       loading.value = false
       filtering.value = false
       initialLoadDone.value = true
@@ -936,22 +940,27 @@ async function loadPlan() {
 
 async function loadDashboard() {
   if (!isAdminMode.value) {
+    ptaDashboardLoad.cancel()
     dashboardData.value = null
     return
   }
 
+  const request = ptaDashboardLoad.next()
   dashboardLoading.value = true
   try {
     const { data } = await getPtaDashboard({ annee: filters.value.annee, ...adminParams.value })
+    if (!request.isCurrent()) return
     dashboardData.value = data
   } catch (err) {
+    if (!request.isCurrent()) return
     dashboardData.value = null
     if (err.response?.status === 403) {
       ui.addToast('Accès refusé à l’administration PTA.', 'warning')
       router.push({ name: 'plan-travail.index' })
     }
   } finally {
-    dashboardLoading.value = false
+    request.done()
+    if (request.isCurrent()) dashboardLoading.value = false
   }
 }
 
@@ -1397,11 +1406,13 @@ const detailUpdating = ref(false)
 const detailStatutForm = ref({ statut: '', pourcentage: 0, observations: '' })
 
 async function openDetailPopup(id) {
+  const request = detailLoad.next()
   detailOpen.value = true
   detailLoading.value = true
   detailActivite.value = null
   try {
     const { data } = await get(id, adminParams.value)
+    if (!request.isCurrent()) return
     detailActivite.value = data.data
     detailCanEdit.value = data.canEdit
     detailCanUpdateStatut.value = data.canUpdateStatut
@@ -1411,14 +1422,17 @@ async function openDetailPopup(id) {
       observations: data.data.observations || '',
     }
   } catch (err) {
+    if (!request.isCurrent()) return
     ui.addToast('Erreur lors du chargement.', 'danger')
     detailOpen.value = false
   } finally {
-    detailLoading.value = false
+    request.done()
+    if (request.isCurrent()) detailLoading.value = false
   }
 }
 
 function closeDetailPopup() {
+  detailLoad.cancel()
   detailOpen.value = false
   detailActivite.value = null
 }

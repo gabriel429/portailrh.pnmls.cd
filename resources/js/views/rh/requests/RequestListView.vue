@@ -395,6 +395,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { list, get, create, remove } from '@/api/requests'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import RequestEditModal from '@/components/requests/RequestEditModal.vue'
 import RequestCreateModal from '@/components/RequestCreateModal.vue'
@@ -496,7 +497,9 @@ function normalizeRequestItem(req) {
 
 const isRH = computed(() => auth.hasAdminAccess)
 const loading = ref(true)
-const filterLoading = ref(false)
+const requestListLoad = useLatestRequest()
+const requestDetailLoad = useLatestRequest()
+const filterLoading = requestListLoad.pending
 const initialLoadDone = ref(false)
 const requests = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
@@ -506,7 +509,6 @@ const filters = ref({
   type: firstQueryValue(route.query.type) || '',
 })
 const routeSyncing = ref(false)
-let requestLoadToken = 0
 
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
@@ -594,13 +596,11 @@ const emptyStatusMessage = computed(() => {
 })
 
 async function loadRequests(page = 1) {
-  const loadToken = ++requestLoadToken
+  const request = requestListLoad.next()
 
   // Only show full-page spinner on very first load
   if (!initialLoadDone.value) {
     loading.value = true
-  } else {
-    filterLoading.value = true
   }
 
   try {
@@ -613,13 +613,13 @@ async function loadRequests(page = 1) {
     if (normalizedStatus) params.statut = normalizedStatus
     if (filters.value.type) params.type = filters.value.type
     const { data } = await list(params)
-    if (loadToken !== requestLoadToken) return
+    if (!request.isCurrent()) return
 
     requests.value = (data.data || []).map(normalizeRequestItem)
     meta.value = data.meta || meta.value
     if (data.counts) counts.value = normalizeRequestCounts(data.counts)
   } catch (err) {
-    if (loadToken !== requestLoadToken) return
+    if (!request.isCurrent()) return
 
     const status = err.response?.status
     if (filters.value.statut && [400, 404, 422].includes(status)) {
@@ -630,9 +630,9 @@ async function loadRequests(page = 1) {
       ui.addToast(err.response?.data?.message || 'Erreur lors du chargement des demandes.', 'danger')
     }
   } finally {
-    if (loadToken === requestLoadToken) {
+    request.done()
+    if (request.isCurrent()) {
       loading.value = false
-      filterLoading.value = false
       initialLoadDone.value = true
     }
   }
@@ -781,19 +781,23 @@ async function handleDelete() {
 
 // Show detail modal
 async function openDetail(id) {
+  const request = requestDetailLoad.next()
   showDetailModal.value = true
   detailLoading.value = true
   detailRequest.value = null
   try {
     const { data } = await get(id)
+    if (!request.isCurrent()) return
     detailRequest.value = data.data
     detailIsRH.value = data.isRH
     detailIsOwner.value = data.isOwner
   } catch (err) {
+    if (!request.isCurrent()) return
     showDetailModal.value = false
     ui.addToast('Erreur lors du chargement de la demande.', 'danger')
   } finally {
-    detailLoading.value = false
+    request.done()
+    if (request.isCurrent()) detailLoading.value = false
   }
 }
 

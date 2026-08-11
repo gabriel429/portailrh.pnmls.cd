@@ -19,12 +19,16 @@ class SyncService {
         this.isOnline = navigator.onLine
         this.isSyncing = false
         this.syncInterval = null
+        this.syncTimer = null
         this.ui = null
         this.retryDelays = [1000, 2000, 5000, 10000, 30000] // Délais progressifs
         this.maxRetries = 5
 
         this.initNetworkListener()
-        this.startAutoSync()
+        if (this.isOnline) {
+            this.startAutoSync()
+            this.scheduleSync('startup', 1200)
+        }
     }
 
     initNetworkListener() {
@@ -32,15 +36,26 @@ class SyncService {
             this.isOnline = true
             debugLog('🌐 Connexion rétablie - Début synchronisation')
             this.notifyUser('Synchronisation en cours...', 'info')
-
-            // Synchronisation immédiate quand on revient en ligne
-            setTimeout(() => this.syncAll(), 1000)
+            this.startAutoSync()
+            this.scheduleSync('online', 800)
         })
 
         window.addEventListener('offline', () => {
             this.isOnline = false
             this.stopAutoSync()
             debugLog('📱 Mode offline - Synchronisation suspendue')
+        })
+
+        window.addEventListener('visibilitychange', () => {
+            if (!document.hidden && this.isOnline) {
+                this.scheduleSync('visible', 1200)
+            }
+        })
+
+        window.addEventListener('focus', () => {
+            if (this.isOnline) {
+                this.scheduleSync('focus', 1200)
+            }
         })
     }
 
@@ -60,7 +75,7 @@ class SyncService {
         // Synchronisation toutes les 30 secondes en ligne
         this.syncInterval = setInterval(() => {
             if (this.isOnline && !this.isSyncing) {
-                this.syncAll()
+                this.scheduleSync('interval')
             }
         }, 30000)
 
@@ -73,6 +88,24 @@ class SyncService {
             this.syncInterval = null
             debugLog('⏸️ Synchronisation automatique arrêtée')
         }
+
+        if (this.syncTimer) {
+            clearTimeout(this.syncTimer)
+            this.syncTimer = null
+        }
+    }
+
+    scheduleSync(reason = 'auto', delay = 0) {
+        if (!this.isOnline || this.isSyncing) return false
+        if (this.syncTimer) return true
+
+        this.syncTimer = setTimeout(() => {
+            this.syncTimer = null
+            this.syncAll()
+        }, delay)
+
+        debugLog(`⏱️ Synchronisation planifiée (${reason})`)
+        return true
     }
 
     /**
@@ -89,6 +122,7 @@ class SyncService {
         debugLog('🔄 Début synchronisation...')
 
         try {
+            await offlineStorage.restoreStuckSyncing()
             const pending = await offlineStorage.getQueueItems({
                 statuses: ['pending', 'retryable_error'],
             })
@@ -262,7 +296,7 @@ class SyncService {
         // Programmer le retry
         setTimeout(() => {
             if (this.isOnline && !this.isSyncing) {
-                this.syncPointage(pointage)
+                this.syncAll()
             }
         }, nextDelay)
     }
@@ -345,7 +379,8 @@ class SyncService {
             errors: operations.filter(operation => ['error', 'blocked_auth'].includes(operation.status)).length,
             isOnline: this.isOnline,
             isSyncing: this.isSyncing,
-            autoSyncActive: this.syncInterval !== null
+            autoSyncActive: this.syncInterval !== null,
+            syncScheduled: this.syncTimer !== null,
         }
 
         return stats

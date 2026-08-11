@@ -372,6 +372,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { list, get, create, download, remove } from '@/api/documents'
 import { useUiStore } from '@/stores/ui'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import {
   DOCUMENT_CATEGORY_OPTIONS,
   getDocumentCategoryIcon,
@@ -382,6 +383,8 @@ import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const router = useRouter()
 const ui = useUiStore()
+const documentListLoad = useLatestRequest()
+const documentDetailLoad = useLatestRequest()
 
 const loading = ref(false)
 const documents = ref([])
@@ -495,6 +498,7 @@ const visiblePages = computed(() => {
 })
 
 async function fetchDocuments(page = 1) {
+  const request = documentListLoad.next()
   loading.value = true
   try {
     const params = { page }
@@ -502,13 +506,16 @@ async function fetchDocuments(page = 1) {
     if (filters.value.search) params.search = filters.value.search
 
     const { data } = await list(params)
+    if (!request.isCurrent()) return
     documents.value = data.data
     stats.value = data.stats
     meta.value = data.meta
   } catch (err) {
+    if (!request.isCurrent()) return
     ui.addToast('Erreur lors du chargement des documents.', 'danger')
   } finally {
-    loading.value = false
+    request.done()
+    if (request.isCurrent()) loading.value = false
   }
 }
 
@@ -614,18 +621,22 @@ async function doDelete() {
 
 // Detail modal
 async function openDetail(id) {
+  const request = documentDetailLoad.next()
   showDetailModal.value = true
   detailLoading.value = true
   detailDoc.value = null
   try {
     const { data } = await get(id)
+    if (!request.isCurrent()) return
     detailDoc.value = data.document
     detailFileMeta.value = data.file_meta || { size: 0, extension: '', exists: false }
   } catch (err) {
+    if (!request.isCurrent()) return
     showDetailModal.value = false
     ui.addToast('Erreur lors du chargement du document.', 'danger')
   } finally {
-    detailLoading.value = false
+    request.done()
+    if (request.isCurrent()) detailLoading.value = false
   }
 }
 

@@ -22,6 +22,7 @@ let csrfRefreshPromise = null
 let authRedirectInProgress = false
 let lastForbiddenToastAt = 0
 let lastForbiddenToastKey = ''
+const API_CACHE_MAX_AGE = 7 * 24 * 60 * 60 * 1000
 
 function wait(ms) {
     return new Promise(resolve => setTimeout(resolve, ms))
@@ -76,19 +77,26 @@ function isCacheableApiRead(config) {
         && !['blob', 'arraybuffer', 'stream'].includes(config?.responseType)
 }
 
-async function getGenericCachedResponse(config) {
+async function getGenericCachedResponse(config, { allowStale = true } = {}) {
     if (!isCacheableApiRead(config)) return null
 
     const auth = useAuthStore()
-    const cached = await offlineStorage.getCachedApiResponse(auth.user?.id, getApiCacheKey(config))
+    const cached = await offlineStorage.getCachedApiResponse(auth.user?.id, getApiCacheKey(config), {
+        maxAge: API_CACHE_MAX_AGE,
+        allowStale,
+    })
     if (!cached) return null
 
     return {
         data: cached.data,
         status: 200,
         statusText: 'OK (Cache hors ligne)',
-        headers: {},
+        headers: {
+            'X-Offline-Cache': '1',
+            'X-Offline-Stale': cached.is_stale ? '1' : '0',
+        },
         fromCache: true,
+        isStaleCache: Boolean(cached.is_stale),
         cachedAt: cached.cached_at,
     }
 }
@@ -199,14 +207,16 @@ client.interceptors.request.use(
     async config => {
         await initializeOffline()
 
-        const isWriteMethod = ['post', 'put', 'patch', 'delete'].includes(config.method)
-        const isPointageOperation = config.url.includes('/pointages')
+        const method = requestMethod(config)
+        const url = requestUrl(config)
+        const isWriteMethod = ['post', 'put', 'patch', 'delete'].includes(method)
+        const isPointageOperation = url.includes('/pointages')
         const queueableEntity = getQueueableOfflineEntity(config)
-        const isDataFetchOperation = config.url.includes('/agents/form-options') ||
-                                   config.url.includes('/departments')
+        const isDataFetchOperation = url.includes('/agents/form-options') ||
+                                   url.includes('/departments')
 
         if (!navigator.onLine && isCacheableApiRead(config)) {
-            const cachedResponse = await getGenericCachedResponse(config)
+            const cachedResponse = await getGenericCachedResponse(config, { allowStale: true })
             if (cachedResponse) {
                 return resolveFromRequestInterceptor(config, cachedResponse)
             }
@@ -288,10 +298,10 @@ client.interceptors.request.use(
             try {
                 let cachedData = null
 
-                if (config.url.includes('/agents/form-options')) {
+                if (url.includes('/agents/form-options')) {
                     const departments = await cacheService.getDepartments()
                     cachedData = { departments }
-                } else if (config.url.includes('/departments')) {
+                } else if (url.includes('/departments')) {
                     cachedData = await cacheService.getDepartments()
                 }
 
@@ -335,20 +345,22 @@ client.interceptors.response.use(
                         auth.user?.id,
                         getApiCacheKey(response.config),
                         response.data,
+                        { maxAge: API_CACHE_MAX_AGE },
                     )
                 }
 
+                const responseUrl = requestUrl(response.config)
                 // Cache des départements
-                if (response.config.url.includes('/agents/form-options') && response.data.departments) {
+                if (responseUrl.includes('/agents/form-options') && response.data.departments) {
                     await cacheService.cacheDepartments?.(response.data.departments)
                 }
 
-                if (response.config.url.includes('/departments') && Array.isArray(response.data)) {
+                if (responseUrl.includes('/departments') && Array.isArray(response.data)) {
                     await cacheService.cacheDepartments?.(response.data)
                 }
 
                 // Cache des agents par département
-                const deptAgentsMatch = response.config.url.match(/\/departments\/(\d+)\/agents/)
+                const deptAgentsMatch = responseUrl.match(/\/departments\/(\d+)\/agents/)
                 if (deptAgentsMatch && Array.isArray(response.data)) {
                     const departmentId = parseInt(deptAgentsMatch[1])
                     await cacheService.cacheAgents?.(departmentId, response.data)
@@ -402,7 +414,7 @@ client.interceptors.response.use(
 
         // FALLBACK CACHE EN CAS D'ERREUR RÉSEAU
         if (!navigator.onLine || isTransientNetworkError(error)) {
-            const cachedResponse = await getGenericCachedResponse(error.config)
+            const cachedResponse = await getGenericCachedResponse(error.config, { allowStale: true })
             if (cachedResponse) {
                 return {
                     ...cachedResponse,
@@ -411,8 +423,9 @@ client.interceptors.response.use(
                 }
             }
 
-            const isDataFetch = error.config.url.includes('/agents/form-options') ||
-                               error.config.url.includes('/departments')
+            const errorUrl = requestUrl(error.config)
+            const isDataFetch = errorUrl.includes('/agents/form-options') ||
+                               errorUrl.includes('/departments')
 
             if (isDataFetch) {
                 debugLog('🔄 Tentative fallback cache après erreur réseau...')
@@ -422,10 +435,10 @@ client.interceptors.response.use(
                     try {
                         let cachedData = null
 
-                        if (error.config.url.includes('/form-options')) {
+                        if (errorUrl.includes('/form-options')) {
                             const departments = await cacheService.getDepartments()
                             cachedData = { departments }
-                        } else if (error.config.url.includes('/departments')) {
+                        } else if (errorUrl.includes('/departments')) {
                             cachedData = await cacheService.getDepartments()
                         }
 
