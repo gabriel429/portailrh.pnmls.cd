@@ -251,7 +251,7 @@ const routes = [
         path: '/documents-travail',
         name: 'documents-travail.index',
         component: () => import('@/views/documents-travail/DocumentTravailListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
 
     // Absences

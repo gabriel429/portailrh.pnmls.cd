@@ -139,7 +139,12 @@ export default defineConfig({
                 skipWaiting: true,
                 clientsClaim: true,
                 navigateFallback: '/build/offline-shell.html',
-                navigateFallbackDenylist: [/^\/api\//, /^\/build\//, /^\/storage\//],
+                navigateFallbackDenylist: [
+                    /^\/api\//,
+                    /^\/build\//,
+                    /^\/storage\//,
+                    /^\/documents-travail\/[^/]+\/(?:view|download)/,
+                ],
                 modifyURLPrefix: {
                     '': '/build/',
                 },

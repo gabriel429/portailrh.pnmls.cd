@@ -91,10 +91,10 @@
           <div class="dt-card-footer">
             <span class="dt-card-date"><i class="fas fa-clock me-1"></i>{{ formatDate(doc.created_at) }}</span>
             <div class="dt-card-actions">
-              <a :href="`/documents-travail/${doc.id}/view`" class="dt-card-btn dt-card-view" target="_blank" rel="noopener">
+              <button type="button" class="dt-card-btn dt-card-view" @click="openViewer(doc)">
                 <i class="fas fa-eye"></i> Voir
-              </a>
-              <a :href="`/documents-travail/${doc.id}/download`" class="dt-card-btn dt-card-dl">
+              </button>
+              <a :href="documentDownloadUrl(doc)" class="dt-card-btn dt-card-dl">
                 <i class="fas fa-download"></i> Télécharger
               </a>
               <button v-if="canManageDocs" type="button" class="dt-card-btn dt-card-edit" @click="startEdit(doc)">
@@ -207,6 +207,58 @@
         </div>
       </form>
     </div>
+
+    <Teleport to="body">
+      <div v-if="viewerOpen && viewerDoc" class="dt-viewer-overlay" role="dialog" aria-modal="true" @click.self="closeViewer">
+        <section class="dt-viewer-dialog" aria-label="Lecture du document">
+          <header class="dt-viewer-head">
+            <div class="dt-viewer-title">
+              <h3>{{ viewerDoc.titre }}</h3>
+              <p>
+                <span v-if="viewerDoc.categorie">{{ viewerDoc.categorie }}</span>
+                <span v-if="viewerFileType">.{{ viewerFileType.toUpperCase() }}</span>
+              </p>
+            </div>
+            <div class="dt-viewer-actions">
+              <a :href="documentDownloadUrl(viewerDoc)" class="dt-viewer-action">
+                <i class="fas fa-download"></i>
+                <span>Télécharger</span>
+              </a>
+              <button type="button" class="dt-viewer-close" aria-label="Fermer" @click="closeViewer">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </header>
+
+          <div class="dt-viewer-body">
+            <div v-if="viewerLoading" class="dt-viewer-loading">
+              <i class="fas fa-circle-notch fa-spin"></i>
+              Chargement du document...
+            </div>
+
+            <iframe
+              v-if="canPreviewDocument(viewerDoc)"
+              class="dt-viewer-frame"
+              :src="documentViewUrl(viewerDoc)"
+              title="Aperçu du document"
+              @load="onViewerLoaded"
+            ></iframe>
+
+            <div v-else class="dt-viewer-fallback">
+              <div class="dt-viewer-fallback-icon" :class="iconClass(viewerFileType)">
+                <i class="fas" :class="iconName(viewerFileType)"></i>
+              </div>
+              <h4>Prévisualisation indisponible</h4>
+              <p>Ce type de fichier doit être téléchargé pour être lu correctement.</p>
+              <a :href="documentDownloadUrl(viewerDoc)" class="dt-viewer-download">
+                <i class="fas fa-download"></i>
+                Télécharger le document
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -214,11 +266,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import { useLatestRequest } from '@/composables/useLatestRequest'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 
 const ui = useUiStore()
 const auth = useAuthStore()
+const documentsLoad = useLatestRequest()
 const loading = ref(true)
 const filtering = ref(false)
 const initialLoadDone = ref(false)
@@ -235,6 +289,9 @@ const fileInput = ref(null)
 const submitting = ref(false)
 const formError = ref(null)
 const validationErrors = ref({})
+const viewerOpen = ref(false)
+const viewerDoc = ref(null)
+const viewerLoading = ref(false)
 const form = ref({
   titre: '',
   description: '',
@@ -243,6 +300,7 @@ const form = ref({
 })
 
 const canManageDocs = computed(() => auth.canManageDocsTravail)
+const viewerFileType = computed(() => documentFileExtension(viewerDoc.value))
 const currentFileName = computed(() => {
   const value = editingDoc.value?.fichier_nom || editingDoc.value?.fichier || ''
   return value.split(/[\\/]/).pop()
@@ -259,26 +317,36 @@ const paginationPages = computed(() => {
 })
 
 async function loadDocuments(page = 1) {
+  const request = documentsLoad.next()
+
   if (!initialLoadDone.value) {
     loading.value = true
   }
+
   filtering.value = true
   try {
     const params = { page }
     if (categorie.value) params.categorie = categorie.value
     const endpoint = canManageDocs.value ? '/documents-travail/manage' : '/documents-travail'
     const { data } = await client.get(endpoint, { params })
-    documents.value = data.data
-    categories.value = data.categories
-    categoryCounts.value = data.categoryCounts
-    totalDocs.value = data.totalDocs
-    meta.value = data.meta
-  } catch {
-    ui.addToast('Erreur lors du chargement des documents.', 'danger')
+
+    if (!request.isCurrent()) return
+
+    documents.value = data.data || []
+    categories.value = data.categories || []
+    categoryCounts.value = data.categoryCounts || {}
+    totalDocs.value = Number(data.totalDocs || 0)
+    meta.value = data.meta || { current_page: 1, last_page: 1, total: 0, from: null, to: null }
+  } catch (error) {
+    if (!request.isCurrent()) return
+    ui.addToast(error.response?.data?.message || 'Erreur lors du chargement des documents.', 'danger')
   } finally {
-    loading.value = false
-    filtering.value = false
-    initialLoadDone.value = true
+    request.done()
+    if (request.isCurrent()) {
+      loading.value = false
+      filtering.value = false
+      initialLoadDone.value = true
+    }
   }
 }
 
@@ -334,6 +402,42 @@ function closeFormModal() {
 
 function onFileChange(event) {
   selectedFile.value = event.target.files[0] || null
+}
+
+function documentFileExtension(doc) {
+  const extension = (doc?.type_fichier || '').toLowerCase()
+  if (extension) return extension
+
+  const path = doc?.fichier || doc?.fichier_nom || ''
+  return String(path).split('.').pop()?.toLowerCase() || ''
+}
+
+function documentViewUrl(doc) {
+  return `/documents-travail/${doc.id}/view`
+}
+
+function documentDownloadUrl(doc) {
+  return `/documents-travail/${doc.id}/download`
+}
+
+function canPreviewDocument(doc) {
+  return ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'txt'].includes(documentFileExtension(doc))
+}
+
+function openViewer(doc) {
+  viewerDoc.value = doc
+  viewerOpen.value = true
+  viewerLoading.value = canPreviewDocument(doc)
+}
+
+function closeViewer() {
+  viewerOpen.value = false
+  viewerDoc.value = null
+  viewerLoading.value = false
+}
+
+function onViewerLoaded() {
+  viewerLoading.value = false
 }
 
 async function submitDocument() {
@@ -520,6 +624,7 @@ onMounted(() => loadDocuments())
   display: inline-flex; align-items: center; gap: .3rem; padding: .35rem .8rem;
   border-radius: 8px; font-size: .78rem; font-weight: 600; text-decoration: none;
   border: 1px solid transparent; transition: all .2s; white-space: nowrap; cursor: pointer;
+  font-family: inherit;
 }
 .dt-card-view { background: #eff6ff; color: #2563eb; border-color: #bfdbfe; }
 .dt-card-view:hover { background: #2563eb; color: #fff; border-color: #2563eb; }
@@ -580,6 +685,72 @@ onMounted(() => loadDocuments())
 .dt-save-btn { border: 1px solid #0f6f9d; background: #0f6f9d; color: #fff; }
 .dt-save-btn:disabled { opacity: .65; cursor: wait; }
 
+.dt-viewer-overlay {
+  position: fixed; inset: 0; z-index: 10060;
+  display: flex; align-items: flex-start; justify-content: center;
+  background: rgba(15, 23, 42, .62);
+  padding: calc(4.8rem + env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
+}
+.dt-viewer-dialog {
+  box-sizing: border-box;
+  width: min(1100px, calc(100vw - 2rem));
+  height: min(780px, calc(100dvh - 6.2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom)));
+  min-height: 360px;
+  background: #fff; border-radius: 16px; overflow: hidden;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, .34);
+  display: flex; flex-direction: column;
+}
+.dt-viewer-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: .9rem 1rem; border-bottom: 1px solid #e5e7eb; background: #fff;
+}
+.dt-viewer-title { min-width: 0; }
+.dt-viewer-title h3 {
+  margin: 0; color: #0f172a; font-size: .98rem; font-weight: 800;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.dt-viewer-title p {
+  margin: .2rem 0 0; color: #64748b; font-size: .76rem; font-weight: 700;
+  display: flex; align-items: center; gap: .45rem; flex-wrap: wrap;
+}
+.dt-viewer-actions { display: inline-flex; align-items: center; gap: .5rem; flex-shrink: 0; }
+.dt-viewer-action,
+.dt-viewer-download {
+  display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+  border-radius: 9px; border: 1px solid #fed7aa; background: #fff7ed;
+  color: #ea580c; padding: .48rem .75rem; text-decoration: none;
+  font-size: .78rem; font-weight: 800;
+}
+.dt-viewer-action:hover,
+.dt-viewer-download:hover { background: #ea580c; border-color: #ea580c; color: #fff; }
+.dt-viewer-close {
+  width: 38px; height: 38px; flex: 0 0 38px; border-radius: 10px;
+  border: 1px solid #dbe3ed; background: #f8fafc; color: #475569;
+  cursor: pointer;
+}
+.dt-viewer-close:hover { background: #e2e8f0; color: #0f172a; }
+.dt-viewer-body {
+  position: relative; flex: 1; min-height: 0; background: #f8fafc;
+}
+.dt-viewer-frame {
+  display: block; width: 100%; height: 100%; border: 0; background: #fff;
+}
+.dt-viewer-loading {
+  position: absolute; inset: 0; z-index: 2;
+  display: flex; align-items: center; justify-content: center; gap: .55rem;
+  background: rgba(248, 250, 252, .92); color: #475569; font-weight: 800;
+}
+.dt-viewer-fallback {
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; gap: .65rem; padding: 2rem; color: #64748b;
+}
+.dt-viewer-fallback-icon {
+  width: 70px; height: 70px; border-radius: 18px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.7rem;
+}
+.dt-viewer-fallback h4 { margin: .25rem 0 0; color: #0f172a; font-size: 1rem; font-weight: 800; }
+.dt-viewer-fallback p { margin: 0; max-width: 420px; font-size: .86rem; }
+
 /* ── Filtering overlay ── */
 .dt-filtering { opacity: 0.4; pointer-events: none; transition: opacity .2s; }
 .dt-empty-icon {
@@ -607,6 +778,16 @@ onMounted(() => loadDocuments())
   .dt-card-footer { align-items: flex-start; flex-direction: column; }
   .dt-card-actions { width: 100%; justify-content: flex-start; }
   .dt-modal-actions { flex-direction: column-reverse; }
+  .dt-viewer-overlay { padding: calc(4.4rem + env(safe-area-inset-top)) .65rem max(.65rem, env(safe-area-inset-bottom)); }
+  .dt-viewer-dialog {
+    width: calc(100vw - 1.3rem);
+    height: calc(100dvh - 5.3rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    border-radius: 14px;
+  }
+  .dt-viewer-head { align-items: flex-start; padding: .8rem; }
+  .dt-viewer-actions { gap: .35rem; }
+  .dt-viewer-action { width: 38px; height: 38px; padding: 0; }
+  .dt-viewer-action span { display: none; }
 }
 
 @media (max-height: 700px) {
@@ -616,6 +797,12 @@ onMounted(() => loadDocuments())
   }
   .dt-modal {
     max-height: calc(100dvh - 5.15rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+  .dt-viewer-overlay {
+    padding-top: calc(4.2rem + env(safe-area-inset-top));
+  }
+  .dt-viewer-dialog {
+    height: calc(100dvh - 4.95rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
   }
 }
 </style>
