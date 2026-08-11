@@ -237,19 +237,19 @@
             </div>
 
             <iframe
-              v-if="canPreviewDocument(viewerDoc)"
+              v-if="canPreviewDocument(viewerDoc) && viewerPreviewUrl && !viewerError"
               class="dt-viewer-frame"
-              :src="documentViewUrl(viewerDoc)"
+              :src="viewerPreviewUrl"
               title="Aperçu du document"
               @load="onViewerLoaded"
             ></iframe>
 
-            <div v-else class="dt-viewer-fallback">
+            <div v-else-if="!viewerLoading" class="dt-viewer-fallback">
               <div class="dt-viewer-fallback-icon" :class="iconClass(viewerFileType)">
                 <i class="fas" :class="iconName(viewerFileType)"></i>
               </div>
-              <h4>Prévisualisation indisponible</h4>
-              <p>Ce type de fichier doit être téléchargé pour être lu correctement.</p>
+              <h4>{{ viewerError ? 'Lecture indisponible' : 'Prévisualisation indisponible' }}</h4>
+              <p>{{ viewerError || 'Ce type de fichier doit être téléchargé pour être lu correctement.' }}</p>
               <a :href="documentDownloadUrl(viewerDoc)" class="dt-viewer-download">
                 <i class="fas fa-download"></i>
                 Télécharger le document
@@ -263,7 +263,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { useLatestRequest } from '@/composables/useLatestRequest'
@@ -292,6 +292,8 @@ const validationErrors = ref({})
 const viewerOpen = ref(false)
 const viewerDoc = ref(null)
 const viewerLoading = ref(false)
+const viewerPreviewUrl = ref('')
+const viewerError = ref('')
 const form = ref({
   titre: '',
   description: '',
@@ -301,6 +303,8 @@ const form = ref({
 
 const canManageDocs = computed(() => auth.canManageDocsTravail)
 const viewerFileType = computed(() => documentFileExtension(viewerDoc.value))
+
+let viewerRequestId = 0
 const currentFileName = computed(() => {
   const value = editingDoc.value?.fichier_nom || editingDoc.value?.fichier || ''
   return value.split(/[\\/]/).pop()
@@ -424,16 +428,83 @@ function canPreviewDocument(doc) {
   return ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'gif', 'txt'].includes(documentFileExtension(doc))
 }
 
+function mimeTypeFromExtension(extension) {
+  const types = {
+    pdf: 'application/pdf',
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    webp: 'image/webp',
+    gif: 'image/gif',
+    txt: 'text/plain',
+  }
+
+  return types[extension] || 'application/octet-stream'
+}
+
+function revokeViewerPreviewUrl() {
+  if (!viewerPreviewUrl.value) return
+
+  URL.revokeObjectURL(viewerPreviewUrl.value)
+  viewerPreviewUrl.value = ''
+}
+
+async function loadViewerPreview(doc) {
+  if (!canPreviewDocument(doc)) return
+
+  const requestId = ++viewerRequestId
+  viewerLoading.value = true
+  viewerError.value = ''
+  revokeViewerPreviewUrl()
+
+  try {
+    const response = await fetch(documentViewUrl(doc), {
+      credentials: 'include',
+      cache: 'no-store',
+      headers: { Accept: '*/*' },
+    })
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+
+    const blob = await response.blob()
+    if (requestId !== viewerRequestId || viewerDoc.value?.id !== doc.id) return
+
+    const fallbackType = mimeTypeFromExtension(documentFileExtension(doc))
+    const contentType = response.headers.get('content-type') || fallbackType
+    const previewBlob = blob.type === contentType ? blob : blob.slice(0, blob.size, contentType)
+    viewerPreviewUrl.value = URL.createObjectURL(previewBlob)
+  } catch (_) {
+    if (requestId !== viewerRequestId) return
+    viewerError.value = 'Le serveur bloque l\'affichage direct du document. Utilisez le téléchargement si le problème persiste.'
+  } finally {
+    if (requestId === viewerRequestId) {
+      viewerLoading.value = false
+    }
+  }
+}
+
 function openViewer(doc) {
+  viewerRequestId += 1
+  revokeViewerPreviewUrl()
+  viewerError.value = ''
   viewerDoc.value = doc
   viewerOpen.value = true
   viewerLoading.value = canPreviewDocument(doc)
+
+  if (canPreviewDocument(doc)) {
+    loadViewerPreview(doc)
+  }
 }
 
 function closeViewer() {
+  viewerRequestId += 1
+  revokeViewerPreviewUrl()
   viewerOpen.value = false
   viewerDoc.value = null
   viewerLoading.value = false
+  viewerError.value = ''
 }
 
 function onViewerLoaded() {
@@ -519,6 +590,10 @@ function formatDate(dateStr) {
 }
 
 onMounted(() => loadDocuments())
+onBeforeUnmount(() => {
+  viewerRequestId += 1
+  revokeViewerPreviewUrl()
+})
 </script>
 
 <style scoped>
