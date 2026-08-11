@@ -205,6 +205,306 @@ img {
     }
 }
 
+/* ═══════════════════════════════════════════
+   Interface refresh - app-like polish
+   ═══════════════════════════════════════════ */
+:root {
+    --ep-bg: #f4f8fb;
+    --ep-surface: rgba(255, 255, 255, .94);
+    --ep-surface-soft: rgba(248, 251, 253, .88);
+    --ep-border: rgba(148, 163, 184, .24);
+    --ep-border-strong: rgba(14, 165, 233, .34);
+    --ep-text: #0f172a;
+    --ep-muted: #64748b;
+    --ep-primary: #0077B5;
+    --ep-teal: #0f766e;
+    --ep-shadow-sm: 0 8px 24px rgba(15, 35, 58, .07);
+    --ep-shadow-md: 0 14px 36px rgba(15, 35, 58, .12);
+    --ep-focus: 0 0 0 4px rgba(14, 165, 233, .18);
+}
+
+body {
+    background: linear-gradient(180deg, #f7fbff 0%, var(--ep-bg) 46%, #f8fafc 100%) !important;
+    color: var(--ep-text);
+}
+
+#app {
+    min-height: 100dvh;
+}
+
+body :where(.main-content) {
+    padding-bottom: clamp(1.5rem, 3vw, 2.6rem);
+}
+
+body #app :where(
+    .card,
+    .data-card,
+    .rh-card,
+    .stat-card,
+    .info-card,
+    .section-card,
+    .panel,
+    .dash-panel,
+    .dash-action-card,
+    .dash-stat-card,
+    .dash-activity-card,
+    .dash-info-card,
+    .sen-section,
+    .sep-section,
+    .rh-section,
+    .caf-section,
+    .dept-section,
+    .sena-section,
+    .rc-section,
+    .modal-content
+) {
+    border-radius: 8px !important;
+    border-color: var(--ep-border) !important;
+    background:
+        linear-gradient(180deg, var(--ep-surface), var(--ep-surface-soft)) !important;
+    box-shadow: var(--ep-shadow-sm) !important;
+}
+
+body #app :where(
+    .dash-action-card,
+    .dash-stat-card,
+    .dash-activity-card,
+    .dash-info-card,
+    .card,
+    .rh-card,
+    .stat-card,
+    .info-card,
+    .panel
+) {
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease, background .18s ease;
+}
+
+body #app :where(
+    .dash-action-card,
+    .dash-stat-card,
+    .dash-activity-card,
+    .dash-info-card,
+    .card,
+    .rh-card,
+    .stat-card,
+    .info-card,
+    .panel
+):hover {
+    border-color: var(--ep-border-strong) !important;
+    box-shadow: var(--ep-shadow-md) !important;
+    transform: translateY(-1px);
+}
+
+body #app :where(.card-header, .card-footer, .panel-head, .modal-header, .modal-footer) {
+    border-color: rgba(148, 163, 184, .18) !important;
+    background: rgba(248, 251, 253, .74) !important;
+}
+
+body #app :where(.btn, .btn-rh, .hero-btn, .req-hero-btn, .pt-hero-btn, .dash-action-btn, .doc-action-btn, .dept-btn, .action-btn, .page-link) {
+    border-radius: 8px !important;
+    font-weight: 750;
+    letter-spacing: 0;
+    transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+body #app :where(.btn-primary, .btn-info, .btn-rh:not(.alt), .hero-btn, .req-hero-btn, .pt-hero-btn, .dash-action-btn) {
+    background: linear-gradient(135deg, var(--ep-primary), var(--ep-teal)) !important;
+    box-shadow: 0 10px 24px rgba(0, 119, 181, .18) !important;
+}
+
+body #app :where(.btn, .btn-rh, .hero-btn, .req-hero-btn, .pt-hero-btn, .dash-action-btn, .doc-action-btn, .dept-btn, .action-btn, .page-link):focus-visible,
+body #app :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 0 !important;
+    box-shadow: var(--ep-focus) !important;
+}
+
+body #app :where(.form-control, .form-select, .input-group-text, .dum-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    border-radius: 8px !important;
+    border-color: rgba(148, 163, 184, .32) !important;
+    background: rgba(255, 255, 255, .92) !important;
+    color: var(--ep-text) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .72) !important;
+}
+
+body #app :where(.form-control, .form-select, .dum-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus {
+    border-color: var(--ep-primary) !important;
+    box-shadow: var(--ep-focus), inset 0 1px 0 rgba(255, 255, 255, .82) !important;
+}
+
+body #app :where(.table-responsive, .rh-table-wrap, .dept-table-wrap, .ast-table-wrap, .error-table-wrap) {
+    border-radius: 8px !important;
+    border: 1px solid rgba(148, 163, 184, .2) !important;
+    background: rgba(255, 255, 255, .72) !important;
+}
+
+body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) thead th {
+    background: linear-gradient(180deg, #f8fbfd, #eef6fb) !important;
+    color: #24415f !important;
+    border-color: rgba(148, 163, 184, .22) !important;
+}
+
+body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) tbody tr {
+    transition: background .14s ease;
+}
+
+body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) tbody tr:hover {
+    background: rgba(14, 165, 233, .08) !important;
+}
+
+body #app :where(.badge, .status-badge, .hero-status-badge, .nav-badge) {
+    border-radius: 999px !important;
+    font-weight: 850;
+    letter-spacing: 0;
+}
+
+body #app :where(.dropdown-menu, .notif-dropdown, .admin-user-menu) {
+    border-radius: 8px !important;
+    border-color: rgba(148, 163, 184, .22) !important;
+    box-shadow: 0 22px 48px rgba(15, 35, 58, .18) !important;
+}
+
+body #app :where(
+    .dash-hero,
+    .sen-hero,
+    .sep-hero,
+    .rh-hero,
+    .caf-hero,
+    .dept-hero,
+    .sena-hero,
+    .page-hero,
+    .doc-hero,
+    .dt-hero,
+    .notif-hero,
+    .agents-hero,
+    .req-hero,
+    .pt-hero
+) {
+    border-radius: 14px !important;
+    background:
+        linear-gradient(135deg, #09223f 0%, #0f4164 42%, #0077B5 72%, #0f766e 100%) !important;
+    box-shadow: 0 18px 42px rgba(0, 42, 74, .20) !important;
+}
+
+@media (min-width: 992px) {
+    .navbar-main {
+        position: sticky;
+        top: 0;
+        z-index: 1040;
+        border-bottom: 1px solid rgba(255, 255, 255, .22) !important;
+    }
+
+    .navbar-main .container-fluid {
+        max-width: 1920px;
+        margin-inline: auto;
+    }
+
+    .navbar-main .nav-link {
+        border-radius: 8px !important;
+        min-height: 34px;
+    }
+}
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+    transition: opacity .18s ease, transform .18s ease;
+}
+
+.page-fade-enter-from {
+    opacity: 0;
+    transform: translateY(4px);
+}
+
+.page-fade-leave-to {
+    opacity: 0;
+    transform: translateY(-2px);
+}
+
+body #app .admin-sidebar {
+    background: linear-gradient(180deg, #0f2238 0%, #18283e 100%) !important;
+    border-right: 1px solid rgba(255, 255, 255, .08);
+}
+
+body #app .admin-topbar {
+    background: rgba(255, 255, 255, .86) !important;
+    border-bottom-color: rgba(148, 163, 184, .2) !important;
+    box-shadow: 0 10px 30px rgba(15, 35, 58, .06);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+body #app .admin-main {
+    background: linear-gradient(180deg, #f7fbff 0%, #f1f6fa 100%) !important;
+}
+
+body #app .sidebar-link {
+    border-radius: 8px !important;
+    margin: .08rem .55rem;
+}
+
+body #app .sidebar-link.active {
+    background: rgba(14, 165, 233, .18) !important;
+    border-left-color: transparent !important;
+    box-shadow: inset 0 0 0 1px rgba(125, 211, 252, .18);
+}
+
+html.dark {
+    --ep-bg: #0f172a;
+    --ep-surface: rgba(30, 41, 59, .90);
+    --ep-surface-soft: rgba(15, 23, 42, .78);
+    --ep-border: rgba(125, 211, 252, .16);
+    --ep-border-strong: rgba(125, 211, 252, .32);
+    --ep-text: #e2e8f0;
+    --ep-muted: #a8b7cc;
+    --ep-shadow-sm: 0 10px 28px rgba(0, 0, 0, .34);
+    --ep-shadow-md: 0 16px 42px rgba(0, 0, 0, .46);
+}
+
+html.dark body {
+    background: linear-gradient(180deg, #08111f 0%, #0f172a 54%, #111827 100%) !important;
+}
+
+html.dark body #app :where(.card-header, .card-footer, .panel-head, .modal-header, .modal-footer) {
+    background: rgba(15, 23, 42, .52) !important;
+    border-color: rgba(125, 211, 252, .14) !important;
+}
+
+html.dark body #app :where(.form-control, .form-select, .input-group-text, .dum-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+    background: rgba(15, 23, 42, .72) !important;
+    border-color: rgba(125, 211, 252, .18) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) thead th {
+    background: linear-gradient(180deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .74)) !important;
+    color: #dbeafe !important;
+}
+
+html.dark body #app .admin-topbar {
+    background: rgba(15, 23, 42, .86) !important;
+}
+
+html.dark body #app .admin-main {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%) !important;
+}
+
+@media (max-width: 575.98px) {
+    body #app :where(.modal-content, .dropdown-menu, .notif-dropdown, .admin-user-menu) {
+        border-radius: 12px !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body #app :where(.card, .rh-card, .stat-card, .info-card, .panel, .btn, .btn-rh, .hero-btn, .dash-action-card, .dash-stat-card, .dash-activity-card, .dash-info-card),
+    .page-fade-enter-active,
+    .page-fade-leave-active {
+        transition: none !important;
+    }
+
+    body #app :where(.card, .rh-card, .stat-card, .info-card, .panel, .dash-action-card, .dash-stat-card, .dash-activity-card, .dash-info-card):hover {
+        transform: none !important;
+    }
+}
+
 @media (min-width: 992px) {
     body .rh-modern.task-show-view .rh-shell {
         max-width: 1320px !important;
@@ -5907,4 +6207,138 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
         font-size: .64rem !important;
         line-height: 1.12 !important;
     }
+}
+
+/* Final cascade anchor for the app-like refresh. Keep this at the end. */
+body {
+    background: linear-gradient(180deg, #f7fbff 0%, #f4f8fb 46%, #f8fafc 100%) !important;
+}
+
+body #app :where(
+    .card,
+    .data-card,
+    .rh-card,
+    .stat-card,
+    .info-card,
+    .section-card,
+    .panel,
+    .dash-panel,
+    .dash-action-card,
+    .dash-stat-card,
+    .dash-activity-card,
+    .dash-info-card,
+    .sen-section,
+    .sep-section,
+    .rh-section,
+    .caf-section,
+    .dept-section,
+    .sena-section,
+    .rc-section
+) {
+    border-radius: 8px !important;
+    border-color: rgba(148, 163, 184, .24) !important;
+    background: linear-gradient(180deg, rgba(255, 255, 255, .94), rgba(248, 251, 253, .88)) !important;
+    box-shadow: 0 8px 24px rgba(15, 35, 58, .07) !important;
+}
+
+body #app :where(
+    .dash-action-card,
+    .dash-stat-card,
+    .dash-activity-card,
+    .dash-info-card,
+    .card,
+    .rh-card,
+    .stat-card,
+    .info-card,
+    .panel
+):hover {
+    border-color: rgba(14, 165, 233, .34) !important;
+    box-shadow: 0 14px 36px rgba(15, 35, 58, .12) !important;
+    transform: translateY(-1px);
+}
+
+body #app :where(.btn, .btn-rh, .hero-btn, .req-hero-btn, .pt-hero-btn, .dash-action-btn, .doc-action-btn, .dept-btn, .action-btn, .page-link),
+body #app :where(.form-control, .form-select, .input-group-text, .dum-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+body #app :where(.table-responsive, .rh-table-wrap, .dept-table-wrap, .ast-table-wrap, .error-table-wrap),
+body #app :where(.dropdown-menu, .notif-dropdown, .admin-user-menu) {
+    border-radius: 8px !important;
+}
+
+body #app :where(.form-control, .form-select, .dum-input, input:not([type="checkbox"]):not([type="radio"]), select, textarea):focus,
+body #app :where(a, button, input, select, textarea, [tabindex]):focus-visible {
+    outline: 0 !important;
+    box-shadow: 0 0 0 4px rgba(14, 165, 233, .18) !important;
+}
+
+body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) thead th {
+    background: linear-gradient(180deg, #f8fbfd, #eef6fb) !important;
+    color: #24415f !important;
+}
+
+body #app :where(
+    .dash-hero,
+    .sen-hero,
+    .sep-hero,
+    .rh-hero,
+    .caf-hero,
+    .dept-hero,
+    .sena-hero,
+    .page-hero,
+    .doc-hero,
+    .dt-hero,
+    .notif-hero,
+    .agents-hero,
+    .req-hero,
+    .pt-hero
+) {
+    border-radius: 14px !important;
+    background: linear-gradient(135deg, #09223f 0%, #0f4164 42%, #0077B5 72%, #0f766e 100%) !important;
+    box-shadow: 0 18px 42px rgba(0, 42, 74, .20) !important;
+}
+
+body #app .admin-sidebar {
+    background: linear-gradient(180deg, #0f2238 0%, #18283e 100%) !important;
+}
+
+body #app .admin-topbar {
+    background: rgba(255, 255, 255, .86) !important;
+    border-bottom-color: rgba(148, 163, 184, .2) !important;
+    box-shadow: 0 10px 30px rgba(15, 35, 58, .06);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+html.dark body {
+    background: linear-gradient(180deg, #08111f 0%, #0f172a 54%, #111827 100%) !important;
+}
+
+html.dark body #app :where(
+    .card,
+    .data-card,
+    .rh-card,
+    .stat-card,
+    .info-card,
+    .section-card,
+    .panel,
+    .dash-panel,
+    .dash-action-card,
+    .dash-stat-card,
+    .dash-activity-card,
+    .dash-info-card,
+    .sen-section,
+    .sep-section,
+    .rh-section,
+    .caf-section,
+    .dept-section,
+    .sena-section,
+    .rc-section
+) {
+    border-color: rgba(125, 211, 252, .16) !important;
+    background: linear-gradient(180deg, rgba(30, 41, 59, .90), rgba(15, 23, 42, .78)) !important;
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .34) !important;
+}
+
+html.dark body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) thead th {
+    background: linear-gradient(180deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .74)) !important;
+    color: #dbeafe !important;
 }

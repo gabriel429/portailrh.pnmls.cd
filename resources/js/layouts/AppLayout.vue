@@ -424,6 +424,7 @@
     >
       <AppToast />
       <UserExperienceHub v-if="auth.isAuthenticated" />
+      <AppCommandCenter v-if="auth.isAuthenticated && !isImmersiveRoute" />
       <slot />
     </div>
 
@@ -441,6 +442,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { useUiStore } from '@/stores/ui'
 import { getSummary as getTaskSummary } from '@/api/taches'
 import AppToast from '@/components/common/AppToast.vue'
+import AppCommandCenter from '@/components/AppCommandCenter.vue'
 import SyncStatusBar from '@/components/SyncStatusBar.vue'
 import UserExperienceHub from '@/components/UserExperienceHub.vue'
 
