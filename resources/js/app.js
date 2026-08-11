@@ -12,7 +12,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-08-08-pwa-precache-v2'
+const BUILD_CACHE_VERSION = '2026-08-11-agents-refresh-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 const APP_SW_PATH = '/sw.js'
 
