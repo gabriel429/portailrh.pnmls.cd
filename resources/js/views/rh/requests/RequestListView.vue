@@ -127,45 +127,8 @@
     </div>
 
     <template v-else>
-      <section v-if="!isRH && visiblePersonalHolidays.length" class="mb-4">
-        <div class="req-section-header">
-          <div class="req-section-title">
-            <i class="fas fa-umbrella-beach text-primary"></i>
-            Mes demandes de congé
-            <span class="req-section-badge">{{ visiblePersonalHolidays.length }}</span>
-          </div>
-          <router-link :to="{ name: 'mon-planning-conges' }" class="req-back-btn">
-            Voir le planning
-          </router-link>
-        </div>
-        <div class="req-grid">
-          <div v-for="holiday in visiblePersonalHolidays" :key="`holiday-${holiday.id}`" class="req-card">
-            <div class="req-card-top">
-              <div class="req-card-status-icon" :class="statusIconClass(normalizeHolidayStatus(holiday.statut_demande))">
-                <i :class="statusIcon(normalizeHolidayStatus(holiday.statut_demande))"></i>
-              </div>
-              <div class="req-card-info">
-                <div class="req-card-type-row">
-                  <span class="req-badge-type">{{ holidayTypeLabel(holiday.type_conge) }}</span>
-                  <span :class="statusBadgeClass(normalizeHolidayStatus(holiday.statut_demande))">
-                    {{ statusLabel(normalizeHolidayStatus(holiday.statut_demande)) }}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div class="req-card-dates">
-              <i class="fas fa-calendar-alt me-1"></i>
-              <span>{{ formatDate(holiday.date_debut) }}</span>
-              <i class="fas fa-arrow-right req-date-arrow"></i>
-              <span>{{ formatDate(holiday.date_fin) }}</span>
-            </div>
-            <div v-if="holiday.motif" class="text-muted small mt-2">{{ holiday.motif }}</div>
-          </div>
-        </div>
-      </section>
-
       <!-- Request cards grid -->
-      <div v-if="requests.length" class="req-grid" :class="{ 'req-filtering': filtering }">
+      <div v-if="requests.length" class="req-grid">
         <div v-for="req in requests" :key="req.id" class="req-card">
           <div class="req-card-top">
             <div class="req-card-status-icon" :class="statusIconClass(req.statut)">
@@ -249,7 +212,7 @@
       </div>
 
       <!-- Empty state -->
-      <div v-if="!requests.length && !visiblePersonalHolidays.length" class="req-empty">
+      <div v-if="!requests.length" class="req-empty">
         <div class="req-empty-icon"><i class="fas fa-inbox"></i></div>
         <template v-if="filters.statut">
           <h5>{{ emptyStatusTitle }}</h5>
@@ -411,7 +374,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { list, get, create, remove } from '@/api/requests'
-import client from '@/api/client'
 import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import RequestEditModal from '@/components/requests/RequestEditModal.vue'
 import RequestCreateModal from '@/components/RequestCreateModal.vue'
@@ -422,7 +384,6 @@ const route = useRoute()
 const router = useRouter()
 
 const REQUEST_STATUSES = ['en_attente', 'approuvé', 'rejeté', 'annulé', 'expiré']
-const ACTIVE_HOLIDAY_STATUSES = ['en_attente', 'approuvé']
 const STATUS_ALIASES = {
   en_attente: 'en_attente',
   enattente: 'en_attente',
@@ -514,10 +475,8 @@ function normalizeRequestItem(req) {
 
 const isRH = computed(() => auth.hasAdminAccess)
 const loading = ref(true)
-const filtering = ref(false)
 const initialLoadDone = ref(false)
 const requests = ref([])
-const personalHolidays = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
 const counts = ref(normalizeRequestCounts())
 const filters = ref({
@@ -553,7 +512,7 @@ function closeCreateModal() {
 }
 
 async function handleRequestCreated() {
-  await Promise.all([loadRequests(1), loadPersonalHolidays()])
+  await loadRequests(1)
 }
 
 // Deprecated variables (kept for compatibility, not used with new RequestCreateModal component)
@@ -594,27 +553,6 @@ const paginationPages = computed(() => {
   return pages
 })
 
-const visiblePersonalHolidays = computed(() => {
-  const activeHolidays = personalHolidays.value.filter(isActivePersonalHoliday)
-  const normalizedStatus = normalizeRequestStatus(filters.value.statut)
-
-  if (filters.value.type && filters.value.type !== 'conge') {
-    return []
-  }
-
-  if (!normalizedStatus) {
-    return activeHolidays
-  }
-
-  if (!ACTIVE_HOLIDAY_STATUSES.includes(normalizedStatus)) {
-    return []
-  }
-
-  return activeHolidays.filter(
-    (holiday) => normalizeHolidayStatus(holiday.statut_demande) === normalizedStatus
-  )
-})
-
 const emptyStatusTitle = computed(() => {
   const label = statusLabel(filters.value.statut).toLowerCase()
   return `Aucune demande ${label}`
@@ -637,7 +575,6 @@ async function loadRequests(page = 1) {
   if (!initialLoadDone.value) {
     loading.value = true
   }
-  filtering.value = true
   try {
     const params = { page }
     const normalizedStatus = normalizeRequestStatus(filters.value.statut)
@@ -662,45 +599,8 @@ async function loadRequests(page = 1) {
     }
   } finally {
     loading.value = false
-    filtering.value = false
     initialLoadDone.value = true
   }
-}
-
-async function loadPersonalHolidays() {
-  if (isRH.value) return
-
-  try {
-    const { data } = await client.get('/mon-planning-conges', {
-      params: { year: new Date().getFullYear() },
-    })
-    personalHolidays.value = (data.my_holidays || []).filter(isActivePersonalHoliday)
-  } catch (err) {
-    personalHolidays.value = []
-  }
-}
-
-function normalizeHolidayStatus(status) {
-  return normalizeRequestStatus({
-    approuve: 'approuvé',
-    refuse: 'rejeté',
-    annule: 'annulé',
-  }[status] || status)
-}
-
-function isActivePersonalHoliday(holiday) {
-  return ACTIVE_HOLIDAY_STATUSES.includes(normalizeHolidayStatus(holiday?.statut_demande))
-}
-
-function holidayTypeLabel(type) {
-  return {
-    annuel: 'Congé annuel',
-    maladie: 'Congé maladie',
-    maternite: 'Congé maternité',
-    paternite: 'Congé paternité',
-    urgence: "Congé d'urgence",
-    special: 'Congé spécial',
-  }[type] || 'Congé'
 }
 
 async function syncRouteFromFilters() {
@@ -914,7 +814,6 @@ watch(
 
 onMounted(() => {
   loadRequests()
-  loadPersonalHolidays()
 })
 </script>
 
@@ -1403,13 +1302,6 @@ onMounted(() => {
   font-size: 1.5rem;
   margin: 0 auto 1rem;
   color: #d1d5db;
-}
-
-/* ── Filtering overlay ── */
-.req-filtering {
-  opacity: 0.4;
-  pointer-events: none;
-  transition: opacity .2s;
 }
 
 /* ── Detail modal ── */
