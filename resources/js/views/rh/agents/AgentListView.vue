@@ -1684,23 +1684,23 @@ onMounted(() => {
 .search-wrapper {
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.94);
   backdrop-filter: blur(10px);
   border-radius: 8px;
-  border: 1.5px solid rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.58);
   padding: 0.35rem;
   transition: all 0.3s;
 }
 
 .search-wrapper:focus-within {
-  background: rgba(255,255,255,0.25);
-  border-color: rgba(255,255,255,0.4);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  background: #fff;
+  border-color: rgba(125,211,252,0.85);
+  box-shadow: 0 0 0 3px rgba(14,165,233,0.16), 0 4px 20px rgba(0,0,0,0.1);
 }
 
 .search-icon {
   padding: 0 0.75rem;
-  color: rgba(255,255,255,0.86);
+  color: #0f5f88;
   font-size: 1rem;
 }
 
@@ -1708,7 +1708,7 @@ onMounted(() => {
   flex: 1;
   border: none !important;
   background: transparent !important;
-  color: #fff !important;
+  color: #0f172a !important;
   font-size: 0.88rem;
   padding: 0.38rem;
   outline: none;
@@ -1716,14 +1716,14 @@ onMounted(() => {
 }
 
 .search-input::placeholder {
-  color: rgba(255,255,255,0.66) !important;
+  color: #64748b !important;
   opacity: 1;
 }
 
 .search-clear {
-  background: rgba(255,255,255,0.15);
+  background: rgba(14,165,233,0.12);
   border: none;
-  color: #fff;
+  color: #0369a1;
   width: 32px;
   height: 32px;
   border-radius: 8px;
@@ -1736,11 +1736,11 @@ onMounted(() => {
 }
 
 .search-clear:hover {
-  background: rgba(255,255,255,0.25);
+  background: rgba(14,165,233,0.2);
 }
 
 .search-submit {
-  background: rgba(255,255,255,0.2);
+  background: linear-gradient(135deg, #0ea5e9, #0f766e);
   border: none;
   color: #fff;
   padding: 0.5rem 1.1rem;
@@ -1748,10 +1748,11 @@ onMounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.18);
 }
 
 .search-submit:hover {
-  background: rgba(255,255,255,0.3);
+  background: linear-gradient(135deg, #0284c7, #0d9488);
 }
 
 /* Filters Section */
@@ -1763,22 +1764,22 @@ onMounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.94);
   border-radius: 8px;
-  border: 1.5px solid rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.58);
   overflow: hidden;
   transition: all 0.3s;
 }
 
 .filter-group:hover {
-  background: rgba(255,255,255,0.15);
-  border-color: rgba(255,255,255,0.25);
+  background: #fff;
+  border-color: rgba(125,211,252,0.85);
 }
 
 .filter-icon {
   position: absolute;
   left: 1rem;
-  color: rgba(255,255,255,0.82);
+  color: #0f5f88;
   font-size: 0.9rem;
   pointer-events: none;
   z-index: 1;
@@ -1788,7 +1789,7 @@ onMounted(() => {
   flex: 1;
   background-color: transparent !important;
   border: none !important;
-  color: #fff !important;
+  color: #0f172a !important;
   padding: 0.55rem 0.65rem 0.55rem 2.5rem;
   font-size: 0.88rem;
   font-weight: 500;
@@ -1796,7 +1797,7 @@ onMounted(() => {
   outline: none;
   box-shadow: none !important;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23ffffff' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f5f88' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 1rem center !important;
   padding-right: 2.5rem;

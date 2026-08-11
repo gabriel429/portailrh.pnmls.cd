@@ -479,6 +479,64 @@ html.dark body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-tab
     color: #dbeafe !important;
 }
 
+/* Agent list hero controls: keep text and icons readable on light controls. */
+body #app .rh-modern .agents-hero .search-wrapper,
+body #app .rh-modern .agents-hero .filter-group {
+    background: rgba(255, 255, 255, .94) !important;
+    border-color: rgba(255, 255, 255, .58) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), 0 10px 24px rgba(15, 35, 58, .07) !important;
+}
+
+body #app .rh-modern .agents-hero .search-wrapper:focus-within,
+body #app .rh-modern .agents-hero .filter-group:hover,
+body #app .rh-modern .agents-hero .filter-group:focus-within {
+    background: #fff !important;
+    border-color: rgba(125, 211, 252, .85) !important;
+}
+
+body #app .rh-modern .agents-hero .search-icon,
+body #app .rh-modern .agents-hero .filter-icon {
+    color: #0f5f88 !important;
+}
+
+body #app .rh-modern .agents-hero .search-input,
+body #app .rh-modern .agents-hero .filter-select {
+    background-color: transparent !important;
+    border: 0 !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+}
+
+body #app .rh-modern .agents-hero .search-input::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+body #app .rh-modern .agents-hero .search-clear {
+    background: rgba(14, 165, 233, .12) !important;
+    color: #0369a1 !important;
+}
+
+body #app .rh-modern .agents-hero .search-clear:hover {
+    background: rgba(14, 165, 233, .2) !important;
+}
+
+body #app .rh-modern .agents-hero .search-submit {
+    background: linear-gradient(135deg, #0ea5e9, #0f766e) !important;
+    color: #fff !important;
+    box-shadow: 0 8px 18px rgba(15, 118, 110, .18) !important;
+}
+
+body #app .rh-modern .agents-hero .search-submit:hover {
+    background: linear-gradient(135deg, #0284c7, #0d9488) !important;
+}
+
+body #app .rh-modern .agents-hero .filter-select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f5f88' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+}
+
 html.dark body #app .admin-topbar {
     background: rgba(15, 23, 42, .86) !important;
 }
