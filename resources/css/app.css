@@ -479,32 +479,122 @@ html.dark body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-tab
     color: #dbeafe !important;
 }
 
-/* Agent list hero controls: keep text and icons readable on light controls. */
-body #app .rh-modern .agents-hero .search-wrapper,
-body #app .rh-modern .agents-hero .filter-group {
+/* Final page guard: agents list must stay usable even if route CSS is cached late. */
+body #app .rh-modern .agents-hero {
+    padding: 1.25rem 1.5rem !important;
+    margin-bottom: 1.25rem !important;
+    color: #fff !important;
+}
+
+body #app .rh-modern .agents-hero .hero-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: .7rem !important;
+    margin: 0 0 .35rem !important;
+    color: #fff !important;
+    font-size: 1.45rem !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+}
+
+body #app .rh-modern .agents-hero .hero-icon-wrap {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 40px !important;
+    height: 40px !important;
+    flex: 0 0 40px !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, .15) !important;
+    color: #fff !important;
+}
+
+body #app .rh-modern .agents-hero .hero-subtitle {
+    margin: 0 !important;
+    color: rgba(255, 255, 255, .92) !important;
+    font-size: .88rem !important;
+    line-height: 1.35 !important;
+}
+
+body #app .rh-modern .agents-hero .hero-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: .75rem !important;
+}
+
+body #app .rh-modern .agents-hero .hero-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: .5rem !important;
+    min-height: 34px !important;
+    padding: .52rem 1rem !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, .28) !important;
+    color: #fff !important;
+    font-size: .86rem !important;
+    font-weight: 700 !important;
+    line-height: 1.1 !important;
+    white-space: nowrap !important;
+}
+
+body #app .rh-modern .agents-hero .hero-btn.export {
+    background: #0d9488 !important;
+}
+
+body #app .rh-modern .agents-hero .hero-btn.create {
+    background: #10b981 !important;
+}
+
+body #app .rh-modern .agents-hero .search-section form {
+    margin: 0 !important;
+}
+
+body #app .rh-modern .agents-hero .search-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    padding: .35rem !important;
+    border-radius: 8px !important;
+    border: 1.5px solid rgba(255, 255, 255, .58) !important;
     background: rgba(255, 255, 255, .94) !important;
-    border-color: rgba(255, 255, 255, .58) !important;
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), 0 10px 24px rgba(15, 35, 58, .07) !important;
 }
 
-body #app .rh-modern .agents-hero .search-wrapper:focus-within,
-body #app .rh-modern .agents-hero .filter-group:hover,
-body #app .rh-modern .agents-hero .filter-group:focus-within {
+body #app .rh-modern .agents-hero .search-wrapper:focus-within {
     background: #fff !important;
     border-color: rgba(125, 211, 252, .85) !important;
 }
 
-body #app .rh-modern .agents-hero .search-icon,
-body #app .rh-modern .agents-hero .filter-icon {
+body #app .rh-modern .agents-hero .search-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    flex: 0 0 34px !important;
+    padding: 0 !important;
     color: #0f5f88 !important;
+    font-size: 1rem !important;
 }
 
-body #app .rh-modern .agents-hero .search-input,
-body #app .rh-modern .agents-hero .filter-select {
-    background-color: transparent !important;
+body #app .rh-modern .agents-hero .search-input {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 .45rem !important;
     border: 0 !important;
+    background: transparent !important;
     color: #0f172a !important;
     box-shadow: none !important;
+    font-size: .86rem !important;
+    line-height: 32px !important;
 }
 
 body #app .rh-modern .agents-hero .search-input::placeholder {
@@ -512,29 +602,166 @@ body #app .rh-modern .agents-hero .search-input::placeholder {
     opacity: 1 !important;
 }
 
+body #app .rh-modern .agents-hero .search-clear,
+body #app .rh-modern .agents-hero .search-submit {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+
 body #app .rh-modern .agents-hero .search-clear {
+    width: 32px !important;
+    margin-right: .5rem !important;
     background: rgba(14, 165, 233, .12) !important;
     color: #0369a1 !important;
 }
 
-body #app .rh-modern .agents-hero .search-clear:hover {
-    background: rgba(14, 165, 233, .2) !important;
-}
-
 body #app .rh-modern .agents-hero .search-submit {
+    padding: 0 1rem !important;
     background: linear-gradient(135deg, #0ea5e9, #0f766e) !important;
     color: #fff !important;
+    font-size: .84rem !important;
+    font-weight: 700 !important;
     box-shadow: 0 8px 18px rgba(15, 118, 110, .18) !important;
 }
 
-body #app .rh-modern .agents-hero .search-submit:hover {
-    background: linear-gradient(135deg, #0284c7, #0d9488) !important;
+body #app .rh-modern .agents-hero .filters-section .row {
+    row-gap: .6rem !important;
+}
+
+body #app .rh-modern .agents-hero .filter-group {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid rgba(255, 255, 255, .58) !important;
+    background: rgba(255, 255, 255, .94) !important;
+    overflow: hidden !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .76), 0 8px 18px rgba(15, 35, 58, .06) !important;
+}
+
+body #app .rh-modern .agents-hero .filter-icon {
+    position: absolute !important;
+    left: 1rem !important;
+    z-index: 1 !important;
+    color: #0f5f88 !important;
+    font-size: .9rem !important;
+    pointer-events: none !important;
 }
 
 body #app .rh-modern .agents-hero .filter-select {
+    display: block !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 2.5rem 0 2.5rem !important;
+    border: 0 !important;
+    background-color: transparent !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    font-size: .86rem !important;
+    font-weight: 600 !important;
+    line-height: 38px !important;
+    appearance: none !important;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f5f88' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
     background-repeat: no-repeat !important;
     background-position: right 1rem center !important;
+}
+
+body #app .rh-modern .stats-cards {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+    margin-bottom: 1.25rem !important;
+}
+
+body #app .rh-modern .stats-cards .stat-card {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: .9rem !important;
+    min-height: 72px !important;
+    padding: 1rem 1.15rem !important;
+    border: 1px solid rgba(15, 23, 42, .06) !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, .92) !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 20px rgba(15, 35, 58, .08) !important;
+}
+
+body #app .rh-modern .stats-cards .stat-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+    border-radius: 8px !important;
+    color: #fff !important;
+    font-size: 1.05rem !important;
+}
+
+body #app .rh-modern .stats-cards .stat-card.total .stat-icon {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+}
+
+body #app .rh-modern .stats-cards .stat-card.sen .stat-icon {
+    background: linear-gradient(135deg, #0077B5, #005a87) !important;
+}
+
+body #app .rh-modern .stats-cards .stat-card.sep .stat-icon {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+}
+
+body #app .rh-modern .stats-cards .stat-card.sel .stat-icon {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+body #app .rh-modern .stats-cards .stat-value {
+    margin-bottom: .25rem !important;
+    color: #0077B5 !important;
+    font-size: 1.45rem !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+}
+
+body #app .rh-modern .stats-cards .stat-label {
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    letter-spacing: .05em !important;
+    font-size: .7rem !important;
+    font-weight: 700 !important;
+}
+
+@media (max-width: 1024px) {
+    body #app .rh-modern .stats-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    body #app .rh-modern .agents-hero {
+        padding: 1rem !important;
+    }
+
+    body #app .rh-modern .agents-hero .hero-actions {
+        justify-content: flex-start !important;
+    }
+
+    body #app .rh-modern .stats-cards {
+        grid-template-columns: 1fr !important;
+    }
 }
 
 html.dark body #app .admin-topbar {
@@ -6267,7 +6494,7 @@ body :where(.table-responsive > .table, .table-responsive > .data-table, .rh-tab
     }
 }
 
-/* Final cascade anchor for the app-like refresh. Keep this at the end. */
+/* Final cascade anchor for the app-like refresh. Page-specific guards may follow. */
 body {
     background: linear-gradient(180deg, #f7fbff 0%, #f4f8fb 46%, #f8fafc 100%) !important;
 }
@@ -6399,4 +6626,160 @@ html.dark body #app :where(
 html.dark body #app :where(.table, .data-table, .rh-table, .dept-table, .ast-table) thead th {
     background: linear-gradient(180deg, rgba(30, 41, 59, .96), rgba(15, 23, 42, .74)) !important;
     color: #dbeafe !important;
+}
+
+/* Absolute final guard for /rh/agents. */
+body #app .rh-modern .agents-hero .hero-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: .7rem !important;
+    color: #fff !important;
+}
+
+body #app .rh-modern .agents-hero .hero-icon-wrap,
+body #app .rh-modern .stats-cards .stat-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+body #app .rh-modern .agents-hero .hero-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: flex-end !important;
+    gap: .75rem !important;
+}
+
+body #app .rh-modern .agents-hero .search-wrapper {
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    min-height: 42px !important;
+    padding: .35rem !important;
+    border: 1.5px solid rgba(255, 255, 255, .58) !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, .94) !important;
+}
+
+body #app .rh-modern .agents-hero .search-icon,
+body #app .rh-modern .agents-hero .filter-icon {
+    color: #0f5f88 !important;
+}
+
+body #app .rh-modern .agents-hero .search-input {
+    display: block !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 .45rem !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    line-height: 32px !important;
+}
+
+body #app .rh-modern .agents-hero .search-input::placeholder {
+    color: #64748b !important;
+    opacity: 1 !important;
+}
+
+body #app .rh-modern .agents-hero .search-submit {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    flex: 0 0 auto !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 1rem !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    background: linear-gradient(135deg, #0ea5e9, #0f766e) !important;
+    color: #fff !important;
+    font-size: .84rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+}
+
+body #app .rh-modern .agents-hero .filter-group {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    border: 1.5px solid rgba(255, 255, 255, .58) !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, .94) !important;
+    overflow: hidden !important;
+}
+
+body #app .rh-modern .agents-hero .filter-select {
+    display: block !important;
+    width: 100% !important;
+    min-height: 38px !important;
+    height: 38px !important;
+    padding: 0 2.5rem !important;
+    border: 0 !important;
+    background-color: transparent !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    line-height: 38px !important;
+    appearance: none !important;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230f5f88' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
+    background-repeat: no-repeat !important;
+    background-position: right 1rem center !important;
+}
+
+body #app .rh-modern .stats-cards {
+    display: grid !important;
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 1rem !important;
+}
+
+body #app .rh-modern .stats-cards .stat-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: .9rem !important;
+    min-height: 72px !important;
+    padding: 1rem 1.15rem !important;
+}
+
+body #app .rh-modern .stats-cards .stat-icon {
+    width: 42px !important;
+    height: 42px !important;
+    flex: 0 0 42px !important;
+}
+
+body #app .rh-modern .stats-cards .stat-value {
+    color: #0077B5 !important;
+    font-size: 1.45rem !important;
+    line-height: 1 !important;
+    font-weight: 800 !important;
+}
+
+body #app .rh-modern .stats-cards .stat-label {
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    font-size: .7rem !important;
+    font-weight: 700 !important;
+}
+
+@media (max-width: 1024px) {
+    body #app .rh-modern .stats-cards {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 768px) {
+    body #app .rh-modern .agents-hero .hero-actions {
+        justify-content: flex-start !important;
+    }
+
+    body #app .rh-modern .stats-cards {
+        grid-template-columns: 1fr !important;
+    }
 }
