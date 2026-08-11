@@ -210,7 +210,10 @@
                       v-for="agent in organe.agents"
                       :key="agent.id"
                       class="agent-row"
-                      @click="goToAgent(agent.id)"
+                      tabindex="0"
+                      :aria-label="`Ouvrir la fiche de ${agent.nom_complet || `${agent.prenom} ${agent.nom}`}`"
+                      @click="goToAgent(agent)"
+                      @keydown.enter.prevent="goToAgent(agent)"
                     >
                       <td>
                         <div class="agent-cell">
@@ -272,9 +275,14 @@
                         </span>
                       </td>
                       <td class="agent-open-column">
-                        <span class="agent-open-indicator" aria-hidden="true">
+                        <button
+                          type="button"
+                          class="agent-open-indicator"
+                          :aria-label="`Ouvrir la fiche de ${agent.nom_complet || `${agent.prenom} ${agent.nom}`}`"
+                          @click.stop="goToAgent(agent)"
+                        >
                           <i class="fas fa-chevron-right"></i>
-                        </span>
+                        </button>
                       </td>
                     </tr>
                   </tbody>
@@ -1001,22 +1009,32 @@ function sm_truncate(str, length) {
     return str.length > length ? str.substring(0, length) + '...' : str
 }
 
-async function goToAgent(id) {
-    selectedAgent.value = null
+async function goToAgent(agentOrId) {
+    const fallbackAgent = typeof agentOrId === 'object' && agentOrId !== null ? agentOrId : null
+    const id = fallbackAgent?.id || agentOrId
+
+    if (!id) return
+
+    selectedAgent.value = fallbackAgent ? { ...fallbackAgent } : null
     agentTab.value = 'informations'
+    delegationForm.value = defaultDelegationForm()
     showAgentModal.value = true
     agentModalLoading.value = true
     try {
         const { data } = await get(id)
-        selectedAgent.value = data.agent
+        const agent = data.agent || data.data || null
+        selectedAgent.value = agent || selectedAgent.value
         delegationForm.value = {
             ...defaultDelegationForm(),
-            ...(data.agent?.permissions?.agent_management || {}),
+            ...(agent?.permissions?.agent_management || {}),
         }
     } catch (err) {
         console.error('Error fetching agent:', err)
-        ui.addToast('Erreur lors du chargement de l\'agent', 'danger')
-        showAgentModal.value = false
+        ui.addToast('Détails complets indisponibles, affichage des informations de la liste.', 'warning')
+
+        if (!selectedAgent.value) {
+            showAgentModal.value = false
+        }
     } finally {
         agentModalLoading.value = false
     }
@@ -2373,7 +2391,14 @@ onMounted(() => {
   color: #0077B5;
   background: #eef6fb;
   border: 1px solid #dbeafe;
+  padding: 0;
+  cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.agent-row:focus-visible td {
+  outline: 2px solid rgba(0, 119, 181, 0.22);
+  outline-offset: -2px;
 }
 
 .agent-row:hover .agent-open-indicator {

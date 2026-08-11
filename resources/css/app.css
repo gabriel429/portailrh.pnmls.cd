@@ -7293,11 +7293,18 @@ body #app .rh-modern .agent-open-indicator {
     justify-content: center !important;
     width: 30px !important;
     height: 30px !important;
+    padding: 0 !important;
     border: 1px solid #dbeafe !important;
     border-radius: 8px !important;
     background: #eef6fb !important;
     color: #0077B5 !important;
+    cursor: pointer !important;
     transition: all .2s ease !important;
+}
+
+body #app .rh-modern .agent-row:focus-visible td {
+    outline: 2px solid rgba(0, 119, 181, .22) !important;
+    outline-offset: -2px !important;
 }
 
 body #app .rh-modern .agent-row:hover .agent-open-indicator {
