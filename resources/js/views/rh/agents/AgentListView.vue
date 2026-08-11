@@ -202,6 +202,7 @@
                       <th>Matricule</th>
                       <th>Ancienneté</th>
                       <th>Statut</th>
+                      <th class="agent-open-column" aria-label="Ouvrir la fiche"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -268,6 +269,11 @@
                         </span>
                         <span v-else class="status-pill inactive">
                           <i class="fas fa-times-circle"></i> {{ capitalize(agent.statut) }}
+                        </span>
+                      </td>
+                      <td class="agent-open-column">
+                        <span class="agent-open-indicator" aria-hidden="true">
+                          <i class="fas fa-chevron-right"></i>
                         </span>
                       </td>
                     </tr>
@@ -2181,6 +2187,199 @@ onMounted(() => {
 .status-pill.inactive {
   background: #f1f5f9;
   color: #64748b;
+}
+
+/* Agents list polish */
+.agents-card {
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 14px 34px rgba(15, 35, 58, 0.08);
+}
+
+.agents-card:hover {
+  box-shadow: 0 18px 44px rgba(15, 35, 58, 0.12);
+}
+
+.agents-card-header {
+  padding: 1rem 1.15rem;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.organe-badge {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.28), 0 10px 18px rgba(15, 35, 58, 0.12);
+}
+
+.organe-title {
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.organe-count {
+  color: #64748b;
+  font-size: 0.82rem;
+}
+
+.agents-card-body {
+  background: #f6f9fc;
+}
+
+.agents-table-wrapper {
+  padding: 0.65rem;
+  background: #f6f9fc;
+}
+
+.agents-table {
+  min-width: 1060px;
+  border-collapse: separate;
+  border-spacing: 0 0.55rem;
+}
+
+.agents-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 0.35rem 1rem 0.4rem;
+  background: #f6f9fc;
+  border-bottom: 0;
+  color: #6b7a90;
+  font-size: 0.69rem;
+}
+
+.agents-table td {
+  padding: 0.85rem 1rem;
+  background: #fff;
+  border-top: 1px solid rgba(15, 23, 42, 0.07);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.07);
+}
+
+.agent-row td:first-child {
+  border-left: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 8px 0 0 8px;
+}
+
+.agent-row td:last-child {
+  border-right: 1px solid rgba(15, 23, 42, 0.07);
+  border-radius: 0 8px 8px 0;
+}
+
+.agent-row:hover td {
+  background: #f8fcff;
+  border-color: rgba(14, 165, 233, 0.24);
+}
+
+.agent-photo,
+.agent-initials {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  border: 2px solid #fff;
+  box-shadow: 0 8px 18px rgba(15, 35, 58, 0.13);
+}
+
+.agent-photo img {
+  width: 48px;
+  height: 48px;
+}
+
+.agent-initials {
+  background: linear-gradient(135deg, #0077B5, #0f766e);
+}
+
+.agent-name strong {
+  color: #102033;
+  font-size: 0.93rem;
+  font-weight: 800;
+}
+
+.agent-name small {
+  color: #64748b;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contact-info div {
+  color: #334155;
+}
+
+.contact-info i {
+  color: #0077B5;
+}
+
+.poste-label,
+.dept-label,
+.province-label {
+  display: inline-block;
+  max-width: 220px;
+  color: #1e293b;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.matricule-code,
+.anciennete-badge,
+.status-pill {
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.matricule-code {
+  background: #eef6fb;
+  border-color: #dbeafe;
+  color: #0f5f88;
+}
+
+.anciennete-badge {
+  background: #ecfeff;
+  border-color: #bae6fd;
+  color: #0369a1;
+}
+
+.status-pill.active {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+  color: #047857;
+}
+
+.status-pill.suspended {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #c2410c;
+}
+
+.status-pill.inactive {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #64748b;
+}
+
+.agent-open-column {
+  width: 48px;
+  text-align: right;
+}
+
+.agent-open-indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  color: #0077B5;
+  background: #eef6fb;
+  border: 1px solid #dbeafe;
+  transition: all 0.2s ease;
+}
+
+.agent-row:hover .agent-open-indicator {
+  color: #fff;
+  background: #0077B5;
+  border-color: #0077B5;
 }
 
 /* Empty State */
