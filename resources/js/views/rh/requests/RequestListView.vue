@@ -25,7 +25,7 @@
           <!-- Type filter for RH -->
           <div v-if="isRH" class="req-type-filter">
             <label class="req-type-label">Type</label>
-            <select v-model="filters.type" class="req-type-select" @change="loadRequests(1)">
+            <select v-model="filters.type" class="req-type-select" @change="applyFilters(1)">
               <option value="">Tous les types</option>
               <option value="conge">Congé</option>
               <option value="absence">Absence</option>
@@ -252,8 +252,8 @@
       <div v-if="!requests.length" class="req-empty">
         <div class="req-empty-icon"><i class="fas fa-inbox"></i></div>
         <template v-if="filters.statut">
-          <h5>Aucune demande &laquo; {{ statusLabel(filters.statut) }} &raquo;</h5>
-          <p>Il n'y a pas de demandes avec ce statut pour le moment.</p>
+          <h5>{{ emptyStatusTitle }}</h5>
+          <p>{{ emptyStatusMessage }}</p>
           <button class="req-back-btn mt-3" style="display:inline-flex;" @click="setStatut('')">
             <i class="fas fa-arrow-left"></i> Voir toutes les demandes
           </button>
@@ -406,7 +406,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { list, get, create, remove } from '@/api/requests'
@@ -417,6 +418,98 @@ import RequestCreateModal from '@/components/RequestCreateModal.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
+const route = useRoute()
+const router = useRouter()
+
+const REQUEST_STATUSES = ['en_attente', 'approuvé', 'rejeté', 'annulé', 'expiré']
+const STATUS_ALIASES = {
+  en_attente: 'en_attente',
+  enattente: 'en_attente',
+  pending: 'en_attente',
+  approuve: 'approuvé',
+  approuvee: 'approuvé',
+  approuves: 'approuvé',
+  approuvees: 'approuvé',
+  approved: 'approuvé',
+  rejete: 'rejeté',
+  rejetee: 'rejeté',
+  rejetes: 'rejeté',
+  rejetees: 'rejeté',
+  refuse: 'rejeté',
+  refusee: 'rejeté',
+  rejected: 'rejeté',
+  annule: 'annulé',
+  annulee: 'annulé',
+  annules: 'annulé',
+  annulees: 'annulé',
+  cancelled: 'annulé',
+  canceled: 'annulé',
+  expire: 'expiré',
+  expiree: 'expiré',
+  expires: 'expiré',
+  expirees: 'expiré',
+  expired: 'expiré',
+}
+
+function firstQueryValue(value) {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function normalizeRequestStatus(status) {
+  if (!status) return ''
+
+  const key = String(status)
+    .trim()
+    .toLowerCase()
+    .replace(/ã©|ã¨|ãª/g, 'e')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[-\s]+/g, '_')
+    .replace(/[^a-z_]/g, '')
+
+  return STATUS_ALIASES[key] || ''
+}
+
+function emptyRequestCounts() {
+  return REQUEST_STATUSES.reduce((acc, statut) => {
+    acc[statut] = 0
+    return acc
+  }, {})
+}
+
+function normalizeRequestCounts(rawCounts = {}) {
+  const next = emptyRequestCounts()
+  const raw = rawCounts || {}
+  const canonicalKeys = new Set()
+
+  REQUEST_STATUSES.forEach((statut) => {
+    if (Object.prototype.hasOwnProperty.call(raw, statut)) {
+      next[statut] = Number(raw[statut]) || 0
+      canonicalKeys.add(statut)
+    }
+  })
+
+  Object.entries(raw).forEach(([statut, total]) => {
+    const normalized = normalizeRequestStatus(statut)
+    if (normalized && !canonicalKeys.has(normalized) && Object.prototype.hasOwnProperty.call(next, normalized)) {
+      next[normalized] += Number(total) || 0
+    }
+  })
+
+  return {
+    ...next,
+    approuve: next['approuvé'],
+    rejete: next['rejeté'],
+    annule: next['annulé'],
+    expire: next['expiré'],
+  }
+}
+
+function normalizeRequestItem(req) {
+  if (!req) return req
+  const normalizedStatus = normalizeRequestStatus(req.statut)
+  return normalizedStatus ? { ...req, statut: normalizedStatus } : req
+}
 
 const isRH = computed(() => auth.hasAdminAccess)
 const loading = ref(true)
@@ -425,8 +518,12 @@ const initialLoadDone = ref(false)
 const requests = ref([])
 const personalHolidays = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
-const counts = ref({ 'en_attente': 0, 'approuvé': 0, 'rejeté': 0, 'annulé': 0, 'expiré': 0 })
-const filters = ref({ statut: '', type: '' })
+const counts = ref(normalizeRequestCounts())
+const filters = ref({
+  statut: normalizeRequestStatus(firstQueryValue(route.query.statut)) || '',
+  type: firstQueryValue(route.query.type) || '',
+})
+const routeSyncing = ref(false)
 
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
@@ -496,6 +593,23 @@ const paginationPages = computed(() => {
   return pages
 })
 
+const emptyStatusTitle = computed(() => {
+  const label = statusLabel(filters.value.statut).toLowerCase()
+  return `Aucune demande ${label}`
+})
+
+const emptyStatusMessage = computed(() => {
+  const messages = {
+    'rejeté': 'Aucune demande rejetée ne correspond à votre périmètre pour le moment.',
+    'annulé': 'Aucune demande annulée ne correspond à votre périmètre pour le moment.',
+    'approuvé': 'Aucune demande approuvée ne correspond à votre périmètre pour le moment.',
+    en_attente: 'Aucune demande en attente ne nécessite votre action pour le moment.',
+    'expiré': 'Aucune demande expirée ne correspond à votre périmètre pour le moment.',
+  }
+
+  return messages[filters.value.statut] || 'Aucune demande ne correspond à ce statut pour le moment.'
+})
+
 async function loadRequests(page = 1) {
   // Only show full-page spinner on very first load
   if (!initialLoadDone.value) {
@@ -504,14 +618,26 @@ async function loadRequests(page = 1) {
   filtering.value = true
   try {
     const params = { page }
-    if (filters.value.statut) params.statut = filters.value.statut
+    const normalizedStatus = normalizeRequestStatus(filters.value.statut)
+    if (filters.value.statut && !normalizedStatus) {
+      filters.value.statut = ''
+      ui.addToast('Le statut demandé n\'est pas reconnu. Toutes les demandes sont affichées.', 'info')
+    }
+    if (normalizedStatus) params.statut = normalizedStatus
     if (filters.value.type) params.type = filters.value.type
     const { data } = await list(params)
-    requests.value = data.data
-    meta.value = data.meta
-    if (data.counts) counts.value = data.counts
+    requests.value = (data.data || []).map(normalizeRequestItem)
+    meta.value = data.meta || meta.value
+    if (data.counts) counts.value = normalizeRequestCounts(data.counts)
   } catch (err) {
-    ui.addToast('Erreur lors du chargement des demandes.', 'danger')
+    const status = err.response?.status
+    if (filters.value.statut && [400, 404, 422].includes(status)) {
+      requests.value = []
+      meta.value = { current_page: 1, last_page: 1, total: 0, from: null, to: null }
+      ui.addToast(emptyStatusMessage.value, 'info')
+    } else {
+      ui.addToast(err.response?.data?.message || 'Erreur lors du chargement des demandes.', 'danger')
+    }
   } finally {
     loading.value = false
     filtering.value = false
@@ -533,11 +659,11 @@ async function loadPersonalHolidays() {
 }
 
 function normalizeHolidayStatus(status) {
-  return {
+  return normalizeRequestStatus({
     approuve: 'approuvé',
     refuse: 'rejeté',
     annule: 'annulé',
-  }[status] || status
+  }[status] || status)
 }
 
 function holidayTypeLabel(type) {
@@ -551,14 +677,38 @@ function holidayTypeLabel(type) {
   }[type] || 'Congé'
 }
 
+async function syncRouteFromFilters() {
+  const query = { ...route.query }
+
+  if (filters.value.statut) query.statut = filters.value.statut
+  else delete query.statut
+
+  if (filters.value.type) query.type = filters.value.type
+  else delete query.type
+
+  routeSyncing.value = true
+  try {
+    await router.replace({ query })
+  } catch (err) {
+    // Ignore duplicate navigation errors; the reload below still uses current filters.
+  } finally {
+    routeSyncing.value = false
+  }
+}
+
+async function applyFilters(page = 1) {
+  await syncRouteFromFilters()
+  loadRequests(page)
+}
+
 function setStatut(statut) {
-  filters.value.statut = statut
-  loadRequests(1)
+  filters.value.statut = normalizeRequestStatus(statut) || ''
+  applyFilters(1)
 }
 
 function resetFilters() {
   filters.value = { statut: '', type: '' }
-  loadRequests(1)
+  applyFilters(1)
 }
 
 function agentInitials(agent) {
@@ -716,6 +866,25 @@ function handleRequestUpdated(updatedRequest) {
     detailRequest.value = { ...detailRequest.value, ...updatedRequest }
   }
 }
+
+watch(
+  () => [route.query.statut, route.query.type],
+  ([statut, type]) => {
+    if (routeSyncing.value) return
+
+    const nextFilters = {
+      statut: normalizeRequestStatus(firstQueryValue(statut)) || '',
+      type: firstQueryValue(type) || '',
+    }
+
+    if (nextFilters.statut === filters.value.statut && nextFilters.type === filters.value.type) {
+      return
+    }
+
+    filters.value = nextFilters
+    loadRequests(1)
+  }
+)
 
 onMounted(() => {
   loadRequests()

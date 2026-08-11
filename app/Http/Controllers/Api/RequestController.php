@@ -19,6 +19,39 @@ use Illuminate\Validation\Rule;
 
 class RequestController extends ApiController
 {
+    private const REQUEST_STATUSES = ['en_attente', 'approuvé', 'rejeté', 'annulé', 'expiré'];
+
+    private const REQUEST_STATUS_ALIASES = [
+        'en_attente' => 'en_attente',
+        'enattente' => 'en_attente',
+        'pending' => 'en_attente',
+        'approuve' => 'approuvé',
+        'approuvee' => 'approuvé',
+        'approuves' => 'approuvé',
+        'approuvees' => 'approuvé',
+        'approved' => 'approuvé',
+        'rejete' => 'rejeté',
+        'rejetee' => 'rejeté',
+        'rejetes' => 'rejeté',
+        'rejetees' => 'rejeté',
+        'refuse' => 'rejeté',
+        'refusee' => 'rejeté',
+        'refuses' => 'rejeté',
+        'refusees' => 'rejeté',
+        'rejected' => 'rejeté',
+        'annule' => 'annulé',
+        'annulee' => 'annulé',
+        'annules' => 'annulé',
+        'annulees' => 'annulé',
+        'cancelled' => 'annulé',
+        'canceled' => 'annulé',
+        'expire' => 'expiré',
+        'expiree' => 'expiré',
+        'expires' => 'expiré',
+        'expirees' => 'expiré',
+        'expired' => 'expiré',
+    ];
+
     private function scopeService(): UserDataScope
     {
         return app(UserDataScope::class);
@@ -69,17 +102,12 @@ class RequestController extends ApiController
             ->groupBy('statut')
             ->pluck('cnt', 'statut')
             ->toArray();
-        $counts = [
-            'en_attente' => (int) ($statusCounts['en_attente'] ?? 0),
-            'approuvé'   => (int) ($statusCounts['approuvé'] ?? 0),
-            'rejeté'     => (int) ($statusCounts['rejeté'] ?? 0),
-            'annulé'     => (int) ($statusCounts['annulé'] ?? 0),
-            'expiré'     => (int) ($statusCounts['expiré'] ?? 0),
-        ];
+        $counts = $this->requestStatusCounts($statusCounts);
 
         // Filter by statut
         if ($request->filled('statut')) {
-            $query->where('statut', $request->input('statut'));
+            $statut = $this->normalizeRequestStatus((string) $request->input('statut'));
+            $statut ? $query->where('statut', $statut) : $query->whereRaw('1 = 0');
         }
 
         // Filter by type
@@ -254,9 +282,19 @@ class RequestController extends ApiController
         }
 
         $validated = $httpRequest->validate([
-            'statut' => 'required|in:en_attente,approuvé,rejeté,annulé,expiré',
+            'statut' => 'required|string',
             'remarques' => 'nullable|string',
         ]);
+
+        $validated['statut'] = $this->normalizeRequestStatus($validated['statut']);
+        if (!$validated['statut']) {
+            return response()->json([
+                'message' => 'Statut de demande invalide.',
+                'errors' => [
+                    'statut' => ['Le statut sélectionné n\'est pas reconnu.'],
+                ],
+            ], 422);
+        }
 
         $demande->update($validated);
 
@@ -406,6 +444,73 @@ class RequestController extends ApiController
         }
 
         abort(403, 'Vous n\'avez pas accès a cette demande.');
+    }
+
+    private function requestStatusCounts(array $statusCounts): array
+    {
+        $counts = array_fill_keys(self::REQUEST_STATUSES, 0);
+
+        foreach ($statusCounts as $status => $total) {
+            $normalized = $this->normalizeRequestStatus((string) $status);
+            if ($normalized && array_key_exists($normalized, $counts)) {
+                $counts[$normalized] += (int) $total;
+            }
+        }
+
+        return array_merge($counts, [
+            'approuve' => $counts['approuvé'],
+            'rejete' => $counts['rejeté'],
+            'annule' => $counts['annulé'],
+            'expire' => $counts['expiré'],
+        ]);
+    }
+
+    private function normalizeRequestStatus(?string $status): ?string
+    {
+        if ($status === null) {
+            return null;
+        }
+
+        $status = trim($status);
+        if ($status === '') {
+            return null;
+        }
+
+        $key = function_exists('mb_strtolower')
+            ? mb_strtolower($status, 'UTF-8')
+            : strtolower($status);
+
+        $key = str_replace(
+            ['Ã©', 'ã©', 'Ã¨', 'ã¨', 'Ãª', 'ãª'],
+            'e',
+            $key
+        );
+        $key = strtr($key, [
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ä' => 'a', 'ã' => 'a',
+            'ç' => 'c',
+            'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'ö' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u',
+            'À' => 'a', 'Á' => 'a', 'Â' => 'a', 'Ä' => 'a', 'Ã' => 'a',
+            'Ç' => 'c',
+            'È' => 'e', 'É' => 'e', 'Ê' => 'e', 'Ë' => 'e',
+            'Ì' => 'i', 'Í' => 'i', 'Î' => 'i', 'Ï' => 'i',
+            'Ò' => 'o', 'Ó' => 'o', 'Ô' => 'o', 'Ö' => 'o',
+            'Ù' => 'u', 'Ú' => 'u', 'Û' => 'u', 'Ü' => 'u',
+        ]);
+
+        if (function_exists('iconv')) {
+            $ascii = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $key);
+            if ($ascii !== false) {
+                $key = $ascii;
+            }
+        }
+
+        $key = str_replace(['-', ' '], '_', $key);
+        $key = preg_replace('/[^a-z_]/', '', $key) ?: $key;
+
+        return self::REQUEST_STATUS_ALIASES[$key] ?? null;
     }
 
     private function expireOutdatedPendingRequests($query): void
