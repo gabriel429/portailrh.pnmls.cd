@@ -6768,6 +6768,286 @@ body #app .rh-modern .stats-cards .stat-label {
     font-weight: 700 !important;
 }
 
+body #app .rh-modern .agents-card {
+    margin-bottom: 1.5rem !important;
+    border: 1px solid rgba(15, 23, 42, .06) !important;
+    border-radius: 20px !important;
+    background: #fff !important;
+    overflow: hidden !important;
+    box-shadow: 0 4px 20px rgba(15, 35, 58, .08) !important;
+}
+
+body #app .rh-modern .agents-card-header {
+    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 1rem !important;
+    padding: 1.5rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    background: #fff !important;
+}
+
+body #app .rh-modern .agents-card-header::before {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 auto 0 0 !important;
+    width: 4px !important;
+}
+
+body #app .rh-modern .agents-card-header[data-organe="sen"]::before {
+    background: linear-gradient(180deg, #0077B5, #005a87) !important;
+}
+
+body #app .rh-modern .agents-card-header[data-organe="sep"]::before {
+    background: linear-gradient(180deg, #0ea5e9, #0284c7) !important;
+}
+
+body #app .rh-modern .agents-card-header[data-organe="sel"]::before {
+    background: linear-gradient(180deg, #10b981, #059669) !important;
+}
+
+body #app .rh-modern .organe-badge {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 48px !important;
+    height: 48px !important;
+    flex: 0 0 48px !important;
+    border-radius: 14px !important;
+    color: #fff !important;
+    font-size: 1.25rem !important;
+}
+
+body #app .rh-modern .agents-card-header[data-organe="sen"] .organe-badge {
+    background: linear-gradient(135deg, #0077B5, #005a87) !important;
+}
+
+body #app .rh-modern .agents-card-header[data-organe="sep"] .organe-badge {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7) !important;
+}
+
+body #app .rh-modern .agents-card-header[data-organe="sel"] .organe-badge {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+}
+
+body #app .rh-modern .organe-info {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+}
+
+body #app .rh-modern .organe-title {
+    margin: 0 0 .25rem !important;
+    color: #1e293b !important;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+}
+
+body #app .rh-modern .organe-count {
+    margin: 0 !important;
+    color: #64748b !important;
+    font-size: .85rem !important;
+    font-weight: 500 !important;
+}
+
+body #app .rh-modern .agents-card-body {
+    padding: 0 !important;
+    background: #fff !important;
+}
+
+body #app .rh-modern .agents-table-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+}
+
+body #app .rh-modern .agents-table {
+    width: 100% !important;
+    min-width: 980px !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+    background: #fff !important;
+}
+
+body #app .rh-modern .agents-table thead {
+    display: table-header-group !important;
+}
+
+body #app .rh-modern .agents-table tbody {
+    display: table-row-group !important;
+}
+
+body #app .rh-modern .agents-table tr {
+    display: table-row !important;
+}
+
+body #app .rh-modern .agents-table th,
+body #app .rh-modern .agents-table td {
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: left !important;
+}
+
+body #app .rh-modern .agents-table th {
+    padding: 1rem 1.25rem !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    background: #f8fafc !important;
+    color: #64748b !important;
+    font-size: .75rem !important;
+    font-weight: 700 !important;
+    letter-spacing: .05em !important;
+    text-transform: uppercase !important;
+    white-space: nowrap !important;
+}
+
+body #app .rh-modern .agents-table td {
+    padding: 1.25rem !important;
+    border-bottom: 1px solid #f1f5f9 !important;
+    color: #475569 !important;
+    font-size: .9rem !important;
+    line-height: 1.35 !important;
+}
+
+body #app .rh-modern .agent-row {
+    cursor: pointer !important;
+}
+
+body #app .rh-modern .agent-row:hover {
+    background: #f8fafc !important;
+}
+
+body #app .rh-modern .agent-cell {
+    display: flex !important;
+    align-items: center !important;
+    gap: .875rem !important;
+    min-width: 230px !important;
+}
+
+body #app .rh-modern .agent-photo,
+body #app .rh-modern .agent-initials {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 44px !important;
+    height: 44px !important;
+    flex: 0 0 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+}
+
+body #app .rh-modern .agent-photo img {
+    display: block !important;
+    width: 44px !important;
+    height: 44px !important;
+    max-width: 44px !important;
+    max-height: 44px !important;
+    object-fit: cover !important;
+}
+
+body #app .rh-modern .agent-initials {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6) !important;
+    color: #fff !important;
+    font-size: .9rem !important;
+    font-weight: 700 !important;
+}
+
+body #app .rh-modern .agent-name {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: .125rem !important;
+    min-width: 0 !important;
+}
+
+body #app .rh-modern .agent-name strong {
+    color: #1e293b !important;
+    font-size: .95rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+}
+
+body #app .rh-modern .agent-name small {
+    color: #94a3b8 !important;
+    font-size: .8rem !important;
+    line-height: 1.2 !important;
+}
+
+body #app .rh-modern .contact-info {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: .25rem !important;
+}
+
+body #app .rh-modern .contact-info div {
+    display: flex !important;
+    align-items: center !important;
+    gap: .5rem !important;
+    font-size: .85rem !important;
+    line-height: 1.25 !important;
+}
+
+body #app .rh-modern .contact-info i {
+    width: 16px !important;
+    color: #64748b !important;
+    font-size: .75rem !important;
+}
+
+body #app .rh-modern .poste-label,
+body #app .rh-modern .dept-label,
+body #app .rh-modern .province-label {
+    color: #1e293b !important;
+    font-weight: 500 !important;
+}
+
+body #app .rh-modern .matricule-code {
+    display: inline-block !important;
+    padding: .35rem .65rem !important;
+    border-radius: 6px !important;
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    font-family: "Courier New", monospace !important;
+    font-size: .8rem !important;
+    font-weight: 600 !important;
+}
+
+body #app .rh-modern .anciennete-badge {
+    display: inline-block !important;
+    padding: .35rem .75rem !important;
+    border-radius: 8px !important;
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    font-size: .85rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+}
+
+body #app .rh-modern .status-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: .4rem !important;
+    padding: .45rem .9rem !important;
+    border-radius: 10px !important;
+    font-size: .85rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
+}
+
+body #app .rh-modern .status-pill.active {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+body #app .rh-modern .status-pill.suspended {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+}
+
+body #app .rh-modern .status-pill.inactive {
+    background: #f1f5f9 !important;
+    color: #64748b !important;
+}
+
 @media (max-width: 1024px) {
     body #app .rh-modern .stats-cards {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
@@ -6781,5 +7061,24 @@ body #app .rh-modern .stats-cards .stat-label {
 
     body #app .rh-modern .stats-cards {
         grid-template-columns: 1fr !important;
+    }
+
+    body #app .rh-modern .agents-table {
+        min-width: 760px !important;
+    }
+
+    body #app .rh-modern .agents-table th,
+    body #app .rh-modern .agents-table td {
+        padding: .875rem !important;
+        font-size: .85rem !important;
+    }
+
+    body #app .rh-modern .agent-photo,
+    body #app .rh-modern .agent-initials,
+    body #app .rh-modern .agent-photo img {
+        width: 40px !important;
+        height: 40px !important;
+        max-width: 40px !important;
+        max-height: 40px !important;
     }
 }
