@@ -127,19 +127,19 @@
     </div>
 
     <template v-else>
-      <section v-if="!isRH && personalHolidays.length" class="mb-4">
+      <section v-if="!isRH && visiblePersonalHolidays.length" class="mb-4">
         <div class="req-section-header">
           <div class="req-section-title">
             <i class="fas fa-umbrella-beach text-primary"></i>
             Mes demandes de congé
-            <span class="req-section-badge">{{ personalHolidays.length }}</span>
+            <span class="req-section-badge">{{ visiblePersonalHolidays.length }}</span>
           </div>
           <router-link :to="{ name: 'mon-planning-conges' }" class="req-back-btn">
             Voir le planning
           </router-link>
         </div>
         <div class="req-grid">
-          <div v-for="holiday in personalHolidays" :key="`holiday-${holiday.id}`" class="req-card">
+          <div v-for="holiday in visiblePersonalHolidays" :key="`holiday-${holiday.id}`" class="req-card">
             <div class="req-card-top">
               <div class="req-card-status-icon" :class="statusIconClass(normalizeHolidayStatus(holiday.statut_demande))">
                 <i :class="statusIcon(normalizeHolidayStatus(holiday.statut_demande))"></i>
@@ -249,7 +249,7 @@
       </div>
 
       <!-- Empty state -->
-      <div v-if="!requests.length" class="req-empty">
+      <div v-if="!requests.length && !visiblePersonalHolidays.length" class="req-empty">
         <div class="req-empty-icon"><i class="fas fa-inbox"></i></div>
         <template v-if="filters.statut">
           <h5>{{ emptyStatusTitle }}</h5>
@@ -422,6 +422,7 @@ const route = useRoute()
 const router = useRouter()
 
 const REQUEST_STATUSES = ['en_attente', 'approuvé', 'rejeté', 'annulé', 'expiré']
+const ACTIVE_HOLIDAY_STATUSES = ['en_attente', 'approuvé']
 const STATUS_ALIASES = {
   en_attente: 'en_attente',
   enattente: 'en_attente',
@@ -593,6 +594,27 @@ const paginationPages = computed(() => {
   return pages
 })
 
+const visiblePersonalHolidays = computed(() => {
+  const activeHolidays = personalHolidays.value.filter(isActivePersonalHoliday)
+  const normalizedStatus = normalizeRequestStatus(filters.value.statut)
+
+  if (filters.value.type && filters.value.type !== 'conge') {
+    return []
+  }
+
+  if (!normalizedStatus) {
+    return activeHolidays
+  }
+
+  if (!ACTIVE_HOLIDAY_STATUSES.includes(normalizedStatus)) {
+    return []
+  }
+
+  return activeHolidays.filter(
+    (holiday) => normalizeHolidayStatus(holiday.statut_demande) === normalizedStatus
+  )
+})
+
 const emptyStatusTitle = computed(() => {
   const label = statusLabel(filters.value.statut).toLowerCase()
   return `Aucune demande ${label}`
@@ -652,7 +674,7 @@ async function loadPersonalHolidays() {
     const { data } = await client.get('/mon-planning-conges', {
       params: { year: new Date().getFullYear() },
     })
-    personalHolidays.value = data.my_holidays || []
+    personalHolidays.value = (data.my_holidays || []).filter(isActivePersonalHoliday)
   } catch (err) {
     personalHolidays.value = []
   }
@@ -664,6 +686,10 @@ function normalizeHolidayStatus(status) {
     refuse: 'rejeté',
     annule: 'annulé',
   }[status] || status)
+}
+
+function isActivePersonalHoliday(holiday) {
+  return ACTIVE_HOLIDAY_STATUSES.includes(normalizeHolidayStatus(holiday?.statut_demande))
 }
 
 function holidayTypeLabel(type) {
