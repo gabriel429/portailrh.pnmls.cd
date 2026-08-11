@@ -36,7 +36,7 @@
           <button v-for="ticket in tickets" :key="ticket.id" type="button" class="ticket-item" :class="{ active: selectedTicket?.id === ticket.id }" @click="openTicket(ticket.id)">
             <span class="ticket-item-top"><span class="status-dot" :class="ticket.status"></span><strong>#{{ ticket.id }} · {{ ticket.subject }}</strong><time>{{ formatShortDate(ticket.updated_at) }}</time></span>
             <span class="ticket-item-meta"><span>{{ ticket.module }}</span><span class="priority" :class="ticket.priority">{{ priorityLabel(ticket.priority) }}</span><span><i class="far fa-comment"></i> {{ ticket.messages_count }}</span></span>
-            <small v-if="isTechnician">{{ ticket.requester?.name }}</small>
+            <small v-if="isTechnician">{{ ticket.requester?.name }}<span v-if="ticket.requester?.external"> · Externe</span></small>
           </button>
         </div>
       </aside>
@@ -49,7 +49,15 @@
         <template v-else>
           <div class="conversation-head">
             <button class="mobile-back" type="button" aria-label="Retour à la liste" @click="closeMobileDetail"><i class="fas fa-arrow-left"></i></button>
-            <div class="conversation-title"><span>#{{ selectedTicket.id }} · {{ selectedTicket.module }}</span><h2>{{ selectedTicket.subject }}</h2><small>Signalé par {{ selectedTicket.requester?.name }} · {{ formatDate(selectedTicket.created_at) }}</small></div>
+            <div class="conversation-title">
+              <span>#{{ selectedTicket.id }} · {{ selectedTicket.module }}</span>
+              <h2>{{ selectedTicket.subject }}</h2>
+              <small>Signalé par {{ selectedTicket.requester?.name }} · {{ formatDate(selectedTicket.created_at) }}</small>
+              <div v-if="isTechnician && selectedTicket.requester?.external" class="external-contact">
+                <span v-if="selectedTicket.requester.email"><i class="fas fa-envelope"></i>{{ selectedTicket.requester.email }}</span>
+                <span v-if="selectedTicket.requester.phone"><i class="fas fa-phone"></i>{{ selectedTicket.requester.phone }}</span>
+              </div>
+            </div>
             <div class="conversation-controls">
               <span class="status-pill" :class="selectedTicket.status">{{ statusLabel(selectedTicket.status) }}</span>
               <select v-if="isTechnician" v-model="selectedTicket.status" aria-label="Modifier le statut" :disabled="statusUpdating" @change="changeStatus">
@@ -332,6 +340,9 @@ function fileSize(bytes) { if (!bytes) return ''; return bytes >= 1048576 ? `${(
 .priority { border-radius: 999px; }
 .conversation-head { min-height: 78px; padding: 15px 20px; background: rgba(255, 255, 255, .96); border-color: var(--support-line); }
 .conversation-title h2 { margin: 3px 0; font-size: 1.12rem; font-weight: 800; }
+.external-contact { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; }
+.external-contact span { min-width: 0; display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; color: #075e78; background: #e0f2fe; border: 1px solid #bae6fd; border-radius: 5px; font-size: .72rem; font-weight: 800; }
+.external-contact i { color: #0d8fa3; }
 .conversation-scroll { padding: 22px; background: #f6f8fa; }
 .issue-card { padding: 19px; border: 1px solid #dce6eb; border-left: 0; border-radius: 8px; box-shadow: 0 7px 20px rgba(25, 54, 68, .045); }
 .issue-card::before { content: ''; display: block; width: 42px; height: 4px; margin-bottom: 14px; background: var(--support-accent); border-radius: 999px; }

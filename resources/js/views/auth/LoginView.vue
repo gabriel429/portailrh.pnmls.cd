@@ -91,6 +91,11 @@
             <span v-else class="btn-login-icon"><i class="fas fa-arrow-right"></i></span>
             Connexion
           </button>
+
+          <button type="button" class="login-support-button" @click="openSupportModal">
+            <span><i class="fas fa-headset"></i></span>
+            Assistance informatique
+          </button>
         </form>
 
         <div class="login-footer">
@@ -99,6 +104,122 @@
         </div>
       </div>
     </div>
+
+    <div v-if="supportOpen" class="support-request-backdrop" @click.self="closeSupportModal">
+      <form class="support-request-modal" @submit.prevent="handleSupportRequest">
+        <header class="support-request-header">
+          <div>
+            <span>Assistance informatique</span>
+            <h2>Signaler un probl&egrave;me de connexion</h2>
+          </div>
+          <button type="button" class="support-close-button" aria-label="Fermer" @click="closeSupportModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </header>
+
+        <div v-if="supportSent" class="support-success">
+          <span><i class="fas fa-check"></i></span>
+          <strong>Demande envoy&eacute;e</strong>
+          <p>{{ supportMessage }}</p>
+        </div>
+
+        <template v-else>
+          <div v-if="supportErrorMessage" class="support-error">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>{{ supportErrorMessage }}</span>
+          </div>
+
+          <div class="support-form-grid">
+            <label>
+              <span>Nom complet</span>
+              <input
+                v-model.trim="supportForm.requester_name"
+                type="text"
+                maxlength="160"
+                autocomplete="name"
+                required
+                placeholder="Votre nom"
+              >
+              <small v-if="supportErrors.requester_name">{{ supportErrors.requester_name[0] }}</small>
+            </label>
+
+            <label>
+              <span>Email de contact</span>
+              <input
+                v-model.trim="supportForm.requester_email"
+                type="email"
+                maxlength="190"
+                autocomplete="email"
+                required
+                placeholder="vous@email.cd"
+              >
+              <small v-if="supportErrors.requester_email">{{ supportErrors.requester_email[0] }}</small>
+            </label>
+
+            <label>
+              <span>T&eacute;l&eacute;phone</span>
+              <input
+                v-model.trim="supportForm.requester_phone"
+                type="tel"
+                maxlength="60"
+                autocomplete="tel"
+                placeholder="+243 ..."
+              >
+              <small v-if="supportErrors.requester_phone">{{ supportErrors.requester_phone[0] }}</small>
+            </label>
+
+            <label>
+              <span>Type de probl&egrave;me</span>
+              <select v-model="supportForm.subject" required>
+                <option v-for="subject in supportSubjects" :key="subject" :value="subject">{{ subject }}</option>
+              </select>
+              <small v-if="supportErrors.subject">{{ supportErrors.subject[0] }}</small>
+            </label>
+
+            <label class="support-form-full">
+              <span>Description</span>
+              <textarea
+                v-model.trim="supportForm.description"
+                rows="5"
+                maxlength="10000"
+                required
+                placeholder="Expliquez ce qui se passe, le message affich&eacute;, ou depuis quand le probl&egrave;me existe."
+              ></textarea>
+              <small v-if="supportErrors.description">{{ supportErrors.description[0] }}</small>
+            </label>
+
+            <label class="support-upload support-form-full">
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,.doc,.docx,.xls,.xlsx,.txt,.zip"
+                @change="handleSupportFile"
+              >
+              <span class="support-upload-icon"><i class="fas fa-paperclip"></i></span>
+              <span>
+                <strong>{{ supportAttachmentName || 'Joindre une capture ou un document' }}</strong>
+                <small>Facultatif &middot; 10 Mo maximum</small>
+              </span>
+            </label>
+
+            <label class="support-honeypot" aria-hidden="true">
+              <span>Site web</span>
+              <input v-model="supportForm.website" type="text" tabindex="-1" autocomplete="off">
+            </label>
+          </div>
+        </template>
+
+        <footer class="support-request-actions">
+          <button type="button" class="support-secondary-button" :disabled="supportLoading" @click="closeSupportModal">
+            {{ supportSent ? 'Fermer' : 'Annuler' }}
+          </button>
+          <button v-if="!supportSent" type="submit" class="support-primary-button" :disabled="supportLoading">
+            <span v-if="supportLoading" class="spinner-border spinner-border-sm"></span>
+            <i v-else class="fas fa-paper-plane"></i>
+            Envoyer
+          </button>
+        </footer>
+      </form>
+    </div>
   </div>
 </template>
 
@@ -106,6 +227,7 @@
 import { ref, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import client from '@/api/client'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -117,6 +239,29 @@ const loading = ref(false)
 const errorMessage = ref('')
 const errorType = ref('')
 const errors = ref({})
+const supportOpen = ref(false)
+const supportLoading = ref(false)
+const supportSent = ref(false)
+const supportMessage = ref('')
+const supportErrorMessage = ref('')
+const supportErrors = ref({})
+const supportAttachmentName = ref('')
+const supportSubjects = [
+    'Mot de passe oublié',
+    'Compte bloqué',
+    'Email non reconnu',
+    'Problème de connexion',
+    'Autre',
+]
+const supportForm = reactive({
+    requester_name: '',
+    requester_email: '',
+    requester_phone: '',
+    subject: supportSubjects[0],
+    description: '',
+    attachment: null,
+    website: '',
+})
 
 async function handleLogin() {
     loading.value = true
@@ -147,6 +292,79 @@ async function handleLogin() {
         }
     } finally {
         loading.value = false
+    }
+}
+
+function openSupportModal() {
+    supportSent.value = false
+    supportMessage.value = ''
+    supportErrorMessage.value = ''
+    supportErrors.value = {}
+
+    if (form.email && !supportForm.requester_email) {
+        supportForm.requester_email = form.email
+    }
+
+    supportOpen.value = true
+}
+
+function closeSupportModal() {
+    if (supportLoading.value) return
+
+    supportOpen.value = false
+
+    if (supportSent.value) {
+        resetSupportForm()
+    }
+}
+
+function resetSupportForm() {
+    Object.assign(supportForm, {
+        requester_name: '',
+        requester_email: '',
+        requester_phone: '',
+        subject: supportSubjects[0],
+        description: '',
+        attachment: null,
+        website: '',
+    })
+    supportAttachmentName.value = ''
+    supportErrorMessage.value = ''
+    supportErrors.value = {}
+}
+
+function handleSupportFile(event) {
+    const file = event.target.files?.[0] || null
+    supportForm.attachment = file
+    supportAttachmentName.value = file?.name || ''
+}
+
+async function handleSupportRequest() {
+    supportLoading.value = true
+    supportErrorMessage.value = ''
+    supportErrors.value = {}
+
+    const payload = new FormData()
+    payload.append('requester_name', supportForm.requester_name)
+    payload.append('requester_email', supportForm.requester_email)
+    if (supportForm.requester_phone) payload.append('requester_phone', supportForm.requester_phone)
+    payload.append('subject', supportForm.subject)
+    payload.append('description', supportForm.description)
+    payload.append('module', 'Connexion')
+    payload.append('priority', 'normal')
+    if (supportForm.attachment) payload.append('attachment', supportForm.attachment)
+    if (supportForm.website) payload.append('website', supportForm.website)
+
+    try {
+        const response = await client.post('/technical-support/public', payload, { skipForbiddenToast: true })
+        supportMessage.value = response.data?.message || 'Votre demande a été envoyée.'
+        supportSent.value = true
+    } catch (e) {
+        supportErrors.value = e.response?.data?.errors || {}
+        supportErrorMessage.value = e.response?.data?.message
+            || 'Impossible d’envoyer la demande pour le moment.'
+    } finally {
+        supportLoading.value = false
     }
 }
 </script>
@@ -570,6 +788,301 @@ async function handleLogin() {
     font-size: .75rem;
 }
 
+.login-support-button {
+    width: 100%;
+    min-height: 44px;
+    margin-top: .85rem;
+    padding: .68rem .8rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .55rem;
+    color: #075e78;
+    background: rgba(224,242,254,.78);
+    border: 1px solid rgba(14,116,144,.18);
+    border-radius: 8px;
+    font-size: .88rem;
+    font-weight: 800;
+    transition: all .2s ease;
+}
+
+.login-support-button span {
+    width: 26px;
+    height: 26px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: #0d8fa3;
+    border-radius: 50%;
+    box-shadow: 0 6px 14px rgba(13,143,163,.22);
+}
+
+.login-support-button:hover {
+    color: #064e63;
+    background: #e0f7fb;
+    border-color: rgba(13,143,163,.38);
+    transform: translateY(-1px);
+}
+
+/* ── Public support request ── */
+.support-request-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: grid;
+    place-items: center;
+    padding: 18px;
+    background: rgba(6, 24, 38, .68);
+    backdrop-filter: blur(7px);
+    -webkit-backdrop-filter: blur(7px);
+}
+
+.support-request-modal {
+    width: min(680px, 100%);
+    max-height: calc(100dvh - 36px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid rgba(186,230,253,.42);
+    border-radius: 8px;
+    box-shadow: 0 28px 80px rgba(2, 23, 37, .34);
+}
+
+.support-request-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.25rem 1.35rem;
+    color: #fff;
+    background:
+        linear-gradient(135deg, #073f5e, #0d8fa3),
+        radial-gradient(120% 100% at 0% 0%, rgba(255,255,255,.26), transparent 45%);
+    border-bottom: 4px solid #12a594;
+}
+
+.support-request-header span {
+    display: block;
+    margin-bottom: .28rem;
+    color: #a7f3d0;
+    font-size: .72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+}
+
+.support-request-header h2 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 850;
+    line-height: 1.25;
+}
+
+.support-close-button {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.18);
+    border-radius: 8px;
+}
+
+.support-form-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+    padding: 1.35rem;
+    overflow: auto;
+}
+
+.support-form-full {
+    grid-column: 1 / -1;
+}
+
+.support-form-grid label > span,
+.support-form-grid label > small,
+.support-upload strong,
+.support-upload small {
+    display: block;
+}
+
+.support-form-grid label > span {
+    margin-bottom: .4rem;
+    color: #34495a;
+    font-size: .78rem;
+    font-weight: 850;
+}
+
+.support-form-grid input:not([type="file"]),
+.support-form-grid select,
+.support-form-grid textarea {
+    width: 100%;
+    min-height: 44px;
+    padding: .68rem .78rem;
+    color: #142332;
+    background: #fff;
+    border: 1px solid #cbd8df;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color .2s ease, box-shadow .2s ease;
+}
+
+.support-form-grid textarea {
+    resize: vertical;
+    min-height: 118px;
+}
+
+.support-form-grid input:focus,
+.support-form-grid select:focus,
+.support-form-grid textarea:focus {
+    border-color: #0d8fa3;
+    box-shadow: 0 0 0 4px rgba(13,143,163,.12);
+}
+
+.support-form-grid label > small {
+    margin-top: .3rem;
+    color: #b91c1c;
+    font-size: .72rem;
+}
+
+.support-upload {
+    min-height: 78px;
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+    padding: .9rem;
+    background: #f6fafb;
+    border: 1px dashed #8ca9b7;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.support-upload input {
+    display: none;
+}
+
+.support-upload-icon {
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    display: grid;
+    place-items: center;
+    color: #075e78;
+    background: #e0f2fe;
+    border-radius: 8px;
+}
+
+.support-upload strong {
+    max-width: 100%;
+    overflow: hidden;
+    color: #26384b;
+    font-size: .86rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.support-upload small {
+    margin-top: .15rem;
+    color: #718392;
+    font-size: .74rem;
+}
+
+.support-honeypot {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.support-error {
+    margin: 1.1rem 1.35rem 0;
+    padding: .75rem .85rem;
+    display: flex;
+    align-items: flex-start;
+    gap: .55rem;
+    color: #991b1b;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    font-size: .84rem;
+}
+
+.support-success {
+    padding: 2rem 1.35rem 1.45rem;
+    text-align: center;
+}
+
+.support-success > span {
+    width: 54px;
+    height: 54px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto .85rem;
+    color: #fff;
+    background: #0d9c8c;
+    border-radius: 50%;
+    box-shadow: 0 14px 30px rgba(13,156,140,.22);
+}
+
+.support-success strong {
+    display: block;
+    color: #142332;
+    font-size: 1.12rem;
+}
+
+.support-success p {
+    width: min(460px, 100%);
+    margin: .45rem auto 0;
+    color: #66788a;
+    line-height: 1.6;
+}
+
+.support-request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .65rem;
+    padding: 1rem 1.35rem;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+}
+
+.support-primary-button,
+.support-secondary-button {
+    min-height: 40px;
+    padding: 0 .95rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .48rem;
+    border-radius: 8px;
+    font-weight: 850;
+}
+
+.support-primary-button {
+    color: #fff;
+    background: #0d8fa3;
+    border: 1px solid #0d8fa3;
+}
+
+.support-secondary-button {
+    color: #334155;
+    background: #fff;
+    border: 1px solid #cbd5e1;
+}
+
+.support-primary-button:disabled,
+.support-secondary-button:disabled {
+    opacity: .62;
+    cursor: not-allowed;
+}
+
 /* ── Footer ── */
 .login-footer {
     margin-top: 2rem;
@@ -718,6 +1231,43 @@ async function handleLogin() {
         margin-top: .25rem;
     }
 
+    .login-support-button {
+        min-height: 42px;
+        font-size: .84rem;
+    }
+
+    .support-request-backdrop {
+        padding: 10px;
+        align-items: end;
+    }
+
+    .support-request-modal {
+        max-height: calc(100dvh - 20px);
+        border-radius: 8px 8px 0 0;
+    }
+
+    .support-request-header {
+        padding: 1rem;
+    }
+
+    .support-request-header h2 {
+        font-size: 1.05rem;
+    }
+
+    .support-form-grid {
+        grid-template-columns: 1fr;
+        gap: .85rem;
+        padding: 1rem;
+    }
+
+    .support-form-full {
+        grid-column: auto;
+    }
+
+    .support-request-actions {
+        padding: .85rem 1rem;
+    }
+
     .form-options {
         margin-bottom: 1.25rem;
     }
@@ -758,6 +1308,15 @@ async function handleLogin() {
 
     .login-header h2 {
         font-size: 1.15rem;
+    }
+
+    .support-request-actions {
+        flex-direction: column-reverse;
+    }
+
+    .support-primary-button,
+    .support-secondary-button {
+        width: 100%;
     }
 
     .brand-portal {

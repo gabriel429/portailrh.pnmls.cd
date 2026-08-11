@@ -89,6 +89,58 @@ class TechnicalSupportController extends Controller
         ], 201);
     }
 
+    public function storePublic(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'requester_name' => ['required', 'string', 'max:160'],
+            'requester_email' => ['required', 'email', 'max:190'],
+            'requester_phone' => ['nullable', 'string', 'max:60'],
+            'subject' => ['required', 'string', 'max:180'],
+            'description' => ['required', 'string', 'max:10000'],
+            'module' => ['nullable', 'string', 'max:80'],
+            'priority' => ['nullable', Rule::in(TechnicalSupportTicket::PRIORITIES)],
+            'attachment' => ['nullable', 'file', 'max:10240', 'mimes:jpg,jpeg,png,webp,pdf,doc,docx,xls,xlsx,txt,zip'],
+            'website' => ['nullable', 'max:0'],
+        ]);
+
+        $ticket = DB::transaction(function () use ($request, $validated) {
+            $ticket = TechnicalSupportTicket::create([
+                'requester_user_id' => null,
+                'requester_name' => $validated['requester_name'],
+                'requester_email' => $validated['requester_email'],
+                'requester_phone' => $validated['requester_phone'] ?? null,
+                'requester_ip' => $request->ip(),
+                'requester_user_agent' => substr((string) $request->userAgent(), 0, 1000),
+                'subject' => $validated['subject'],
+                'description' => $validated['description'],
+                'module' => $validated['module'] ?? 'Connexion',
+                'priority' => $validated['priority'] ?? 'normal',
+                'status' => 'nouveau',
+            ]);
+
+            if ($request->hasFile('attachment')) {
+                $ticket->update($this->storeAttachment($request->file('attachment'), "technical-support/{$ticket->id}", 'attachment'));
+            }
+
+            return $ticket;
+        });
+
+        NotificationService::envoyerMultiple(
+            $this->technicianUserIds(),
+            'technical_support_new',
+            'Demande d’assistance depuis la connexion',
+            "{$ticket->requester_name} ({$ticket->requester_email}) a signalé un problème de connexion. Objet : {$ticket->subject}. Priorité : ".ucfirst($ticket->priority).'.',
+            "/support-technique/{$ticket->id}",
+            null,
+            false
+        );
+
+        return response()->json([
+            'message' => 'Votre demande a été transmise à l’assistance informatique. Un technicien vous recontactera avec les coordonnées indiquées.',
+            'data' => $this->ticketPayload($ticket->fresh()),
+        ], 201);
+    }
+
     public function show(Request $request, TechnicalSupportTicket $technicalSupportTicket): JsonResponse
     {
         $this->authorizeTicket($request->user(), $technicalSupportTicket);
@@ -160,15 +212,17 @@ class TechnicalSupportController extends Controller
                 ]);
             });
 
-            NotificationService::envoyer(
-                $technicalSupportTicket->requester_user_id,
-                'technical_support_status',
-                'Mise à jour de votre demande technique',
-                "Le statut de « {$technicalSupportTicket->subject} » est maintenant : ".$this->statusLabel($to).'.',
-                "/support-technique/{$technicalSupportTicket->id}",
-                $request->user()->id,
-                false
-            );
+            if ($technicalSupportTicket->requester_user_id) {
+                NotificationService::envoyer(
+                    $technicalSupportTicket->requester_user_id,
+                    'technical_support_status',
+                    'Mise à jour de votre demande technique',
+                    "Le statut de « {$technicalSupportTicket->subject} » est maintenant : ".$this->statusLabel($to).'.',
+                    "/support-technique/{$technicalSupportTicket->id}",
+                    $request->user()->id,
+                    false
+                );
+            }
         }
 
         return response()->json([
@@ -235,7 +289,10 @@ class TechnicalSupportController extends Controller
             $query->where(fn($subQuery) => $subQuery
                 ->where('subject', 'like', "%{$search}%")
                 ->orWhere('description', 'like', "%{$search}%")
-                ->orWhere('module', 'like', "%{$search}%"));
+                ->orWhere('module', 'like', "%{$search}%")
+                ->orWhere('requester_name', 'like', "%{$search}%")
+                ->orWhere('requester_email', 'like', "%{$search}%")
+                ->orWhere('requester_phone', 'like', "%{$search}%"));
         }
     }
 
@@ -261,15 +318,17 @@ class TechnicalSupportController extends Controller
     private function notifyReply(User $sender, TechnicalSupportTicket $ticket): void
     {
         if ($sender->isAdminNT()) {
-            NotificationService::envoyer(
-                $ticket->requester_user_id,
-                'technical_support_reply',
-                'Réponse du support technique',
-                "Un technicien a répondu à votre demande « {$ticket->subject} ».",
-                "/support-technique/{$ticket->id}",
-                $sender->id,
-                false
-            );
+            if ($ticket->requester_user_id) {
+                NotificationService::envoyer(
+                    $ticket->requester_user_id,
+                    'technical_support_reply',
+                    'Réponse du support technique',
+                    "Un technicien a répondu à votre demande « {$ticket->subject} ».",
+                    "/support-technique/{$ticket->id}",
+                    $sender->id,
+                    false
+                );
+            }
             return;
         }
 
@@ -287,6 +346,24 @@ class TechnicalSupportController extends Controller
     private function ticketPayload(TechnicalSupportTicket $ticket, bool $withMessages = false): array
     {
         $requester = $ticket->requester;
+        $requesterPayload = $requester ? [
+            'id' => $requester->id,
+            'name' => $requester->agent
+                ? trim(($requester->agent->prenom ?? '').' '.($requester->agent->nom ?? ''))
+                : $requester->name,
+            'email' => $requester->email,
+            'phone' => null,
+            'photo' => $requester->agent?->photo,
+            'external' => false,
+        ] : [
+            'id' => null,
+            'name' => $ticket->requester_name ?: 'Utilisateur externe',
+            'email' => $ticket->requester_email,
+            'phone' => $ticket->requester_phone,
+            'photo' => null,
+            'external' => true,
+        ];
+
         $payload = [
             'id' => $ticket->id,
             'subject' => $ticket->subject,
@@ -294,13 +371,7 @@ class TechnicalSupportController extends Controller
             'module' => $ticket->module,
             'priority' => $ticket->priority,
             'status' => $ticket->status,
-            'requester' => $requester ? [
-                'id' => $requester->id,
-                'name' => $requester->agent
-                    ? trim(($requester->agent->prenom ?? '').' '.($requester->agent->nom ?? ''))
-                    : $requester->name,
-                'photo' => $requester->agent?->photo,
-            ] : null,
+            'requester' => $requesterPayload,
             'attachment' => $ticket->attachment_path ? [
                 'name' => $ticket->attachment_name,
                 'mime' => $ticket->attachment_mime,

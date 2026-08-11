@@ -16,6 +16,11 @@ class TechnicalSupportTicket extends Model
 
     protected $fillable = [
         'requester_user_id',
+        'requester_name',
+        'requester_email',
+        'requester_phone',
+        'requester_ip',
+        'requester_user_agent',
         'subject',
         'description',
         'module',

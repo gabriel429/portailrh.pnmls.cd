@@ -43,6 +43,8 @@ Route::get('/openapi.json', [ApiMetaController::class, 'openapi']);
 
 Route::post('/login', [\App\Http\Controllers\Api\AuthController::class, 'login'])
     ->middleware('throttle:15,1'); // Max 15 tentatives par minute
+Route::post('/technical-support/public', [TechnicalSupportController::class, 'storePublic'])
+    ->middleware('throttle:5,1');
 
 // --- Mobile API (token-based auth) ---
 Route::prefix('mobile')->group(function () {
