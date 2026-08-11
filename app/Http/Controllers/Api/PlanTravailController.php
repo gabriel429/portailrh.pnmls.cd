@@ -56,6 +56,59 @@ class PlanTravailController extends ApiController
             && $this->isPtaAdminContext();
     }
 
+    private function hasLimitedSenPtaScope(): bool
+    {
+        $user = auth()->user();
+
+        return (bool) $user
+            && !$user->isSuperAdmin()
+            && $user->hasRole('SEN');
+    }
+
+    private function applySenAgentScope(Builder $query): Builder
+    {
+        return $query->where(function (Builder $agentQuery) {
+            $agentQuery
+                ->where('organe', 'like', '%National%')
+                ->orWhere('organe', 'like', '%SEN%');
+        });
+    }
+
+    private function applySenPtaScope(Builder $query): Builder
+    {
+        if (!$this->hasLimitedSenPtaScope()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $senQuery) {
+            $senQuery
+                ->where('niveau_administratif', 'SEN')
+                ->orWhereHas('agents', fn (Builder $agentQuery) => $this->applySenAgentScope($agentQuery));
+        });
+    }
+
+    private function isSenScopedAgent(Agent $agent): bool
+    {
+        $organe = $this->normalizeScopeText($agent->organe);
+
+        return str_contains($organe, 'national') || str_contains($organe, 'sen');
+    }
+
+    private function activityMatchesSenPtaScope(ActivitePlan $activite): bool
+    {
+        if ($activite->niveau_administratif === 'SEN') {
+            return true;
+        }
+
+        if ($activite->relationLoaded('agents')) {
+            return $activite->agents->contains(fn (Agent $agent) => $this->isSenScopedAgent($agent));
+        }
+
+        return $activite->agents()
+            ->where(fn (Builder $agentQuery) => $this->applySenAgentScope($agentQuery))
+            ->exists();
+    }
+
     private function canManagePtaAdminContext(): bool
     {
         $user = auth()->user();
@@ -303,6 +356,10 @@ class PlanTravailController extends ApiController
 
     private function canAccessActivity(ActivitePlan $activite): bool
     {
+        if ($this->hasLimitedSenPtaScope()) {
+            return $this->activityMatchesSenPtaScope($activite);
+        }
+
         $agent = $this->getScopedAgent();
 
         if (!$agent) {
@@ -609,18 +666,21 @@ class PlanTravailController extends ApiController
             ->parAnnee($annee);
 
         $this->applyScopedAccess($query, $agent);
+        $this->applySenPtaScope($query);
+
+        $canUseGlobalFilters = !$agent && !$this->hasLimitedSenPtaScope();
 
         // Extra filters available for planification / global users.
-        if ($departementId && !$agent) {
+        if ($departementId && $canUseGlobalFilters) {
             $query->where('departement_id', (int) $departementId);
         }
-        if ($provinceId && !$agent) {
+        if ($provinceId && $canUseGlobalFilters) {
             $query->where(function (Builder $q) use ($provinceId) {
                 $q->where('province_id', (int) $provinceId)
                   ->orWhereHas('provinces', fn (Builder $r) => $r->where('provinces.id', (int) $provinceId));
             });
         }
-        if ($niveauFilter && !$agent) {
+        if ($niveauFilter && $canUseGlobalFilters) {
             $query->where('niveau_administratif', $niveauFilter);
         }
 
@@ -651,7 +711,7 @@ class PlanTravailController extends ApiController
         $resources = ActivitePlanResource::collection($activites)->resolve();
         $activitesGroupees = collect($resources)->groupBy(fn($a) => $a['trimestre'] ?? 'Annuel')->toArray();
 
-        $isGlobalPta = !$agent;
+        $isGlobalPta = $canUseGlobalFilters;
         $filterOptions = $isGlobalPta ? [
             'departments' => Department::operational()->orderBy('nom')->get(['id', 'nom']),
             'provinces'   => Province::orderBy('nom')->get(['id', 'nom']),
@@ -709,6 +769,7 @@ class PlanTravailController extends ApiController
 
         $annee = (int) $request->input('annee', now()->year);
         $base = ActivitePlan::with('departement', 'agents', 'province', 'provinces')->parAnnee($annee);
+        $this->applySenPtaScope($base);
         $activities = $base->get();
         $today = now()->startOfDay();
 
