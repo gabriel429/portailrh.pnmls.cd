@@ -12,7 +12,7 @@ import '../css/app.css'
 debugLog('PWA: Service Worker enabled')
 registerRuntimeNoiseFilter()
 
-const BUILD_CACHE_VERSION = '2026-08-11-documents-travail-viewer-v1'
+const BUILD_CACHE_VERSION = '2026-08-11-pwa-update-prompt-v1'
 const BUILD_CACHE_KEY = 'pnmls_build_cache_version'
 const APP_SW_PATH = '/sw.js'
 
@@ -22,7 +22,7 @@ function emitPwaRuntimeEvent(name, detail = {}) {
     window.dispatchEvent(new CustomEvent(`epnmls:${name}`, { detail }))
 }
 
-async function clearBuildCachesOnVersionChange() {
+async function rememberBuildVersion() {
     if (typeof window === 'undefined') return false
 
     let currentVersion = null
@@ -36,45 +36,10 @@ async function clearBuildCachesOnVersionChange() {
         return false
     }
 
-    const jobs = []
-
-    if ('caches' in window) {
-        jobs.push(
-            window.caches.keys()
-                .then((keys) => Promise.all(
-                    keys
-                        .filter((key) => /workbox|precache|runtime|vite|pnmls|e-pnmls/i.test(key))
-                        .map((key) => window.caches.delete(key))
-                ))
-        )
-    }
-
-    if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
-        jobs.push(
-            navigator.serviceWorker.getRegistrations()
-                .then((registrations) => Promise.all(
-                    registrations
-                        .map((registration) => registration.unregister().catch(() => false))
-                ))
-        )
-    }
-
     try {
-        await Promise.allSettled(jobs)
         window.localStorage.setItem(BUILD_CACHE_KEY, BUILD_CACHE_VERSION)
     } catch (error) {
-        reportError('PWA: Build cache cleanup failed:', error)
-    }
-
-    try {
-        const reloadKey = `${BUILD_CACHE_KEY}:reloaded:${BUILD_CACHE_VERSION}`
-        if (!window.sessionStorage.getItem(reloadKey)) {
-            window.sessionStorage.setItem(reloadKey, '1')
-            window.location.reload()
-            return true
-        }
-    } catch (_) {
-        return false
+        reportError('PWA: Build version storage failed:', error)
     }
 
     return false
@@ -160,9 +125,7 @@ function watchServiceWorkerUpdate(registration) {
 }
 
 async function prepareRuntimeCaches() {
-    const reloadScheduled = await clearBuildCachesOnVersionChange()
-    if (reloadScheduled) return
-
+    await rememberBuildVersion()
     await clearLegacyServiceWorkers()
     await clearLegacyBuildCaches()
     await registerAppServiceWorker()

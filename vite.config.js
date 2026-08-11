@@ -118,7 +118,7 @@ export default defineConfig({
         generateOfflineShell(),
         generateOfflineAssetsIndex(),
         VitePWA({
-            registerType: 'autoUpdate',
+            registerType: 'prompt',
             workbox: {
                 globPatterns: [
                     'offline-shell.html',
@@ -136,8 +136,8 @@ export default defineConfig({
                     'assets/RequestCreateModal-*.{js,css}',
                 ],
                 cleanupOutdatedCaches: true,
-                skipWaiting: true,
-                clientsClaim: true,
+                skipWaiting: false,
+                clientsClaim: false,
                 navigateFallback: '/build/offline-shell.html',
                 navigateFallbackDenylist: [
                     /^\/api\//,
