@@ -4,6 +4,8 @@ import client from '@/api/client'
 import offlineStorage from '@/services/offlineStorage'
 
 const AUTH_USER_CACHE_KEY = 'epnmls_auth_user'
+const AUTH_REMEMBER_EMAIL_KEY = 'epnmls_remember_email'
+const AUTH_REMEMBER_ENABLED_KEY = 'epnmls_remember_enabled'
 
 function normalizeText(value) {
     return (value ?? '')
@@ -352,6 +354,36 @@ export const useAuthStore = defineStore('auth', {
                 window.localStorage.removeItem('epnmls_auth_hint')
             }
         },
+        rememberedLogin() {
+            if (typeof window === 'undefined') {
+                return { email: '', remember: false }
+            }
+
+            try {
+                const remember = window.localStorage.getItem(AUTH_REMEMBER_ENABLED_KEY) === '1'
+                return {
+                    remember,
+                    email: remember ? (window.localStorage.getItem(AUTH_REMEMBER_EMAIL_KEY) || '') : '',
+                }
+            } catch (_) {
+                return { email: '', remember: false }
+            }
+        },
+        saveRememberPreference(email, remember = false) {
+            if (typeof window === 'undefined') return
+
+            try {
+                if (remember) {
+                    window.localStorage.setItem(AUTH_REMEMBER_ENABLED_KEY, '1')
+                    window.localStorage.setItem(AUTH_REMEMBER_EMAIL_KEY, email)
+                } else {
+                    window.localStorage.removeItem(AUTH_REMEMBER_ENABLED_KEY)
+                    window.localStorage.removeItem(AUTH_REMEMBER_EMAIL_KEY)
+                }
+            } catch (_) {
+                // Ignore storage quota/private-mode failures.
+            }
+        },
         async fetchUser(options = {}) {
             const { force = false } = options
 
@@ -390,6 +422,7 @@ export const useAuthStore = defineStore('auth', {
         async login(email, password, remember = false) {
             await axios.get('/sanctum/csrf-cookie', { withCredentials: true })
             await client.post('/login', { email, password, remember })
+            this.saveRememberPreference(email, remember)
             this.markSessionHint(true)
             await this.fetchUser({ force: true })
         },

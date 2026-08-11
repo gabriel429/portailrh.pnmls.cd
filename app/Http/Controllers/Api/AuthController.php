@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\ExtendRememberedSession;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -104,15 +105,69 @@ class AuthController extends Controller
         return $model;
     }
 
+    private function rememberLifetime(): int
+    {
+        return max(
+            (int) config('session.lifetime', 120),
+            (int) config('session.remember_lifetime', 43200)
+        );
+    }
+
+    private function configureRememberDuration(bool $remember): void
+    {
+        if (!$remember) {
+            return;
+        }
+
+        $minutes = $this->rememberLifetime();
+        config(['session.lifetime' => $minutes]);
+
+        $guard = Auth::guard('web');
+        if (method_exists($guard, 'setRememberDuration')) {
+            $guard->setRememberDuration($minutes);
+        }
+    }
+
+    private function syncRememberPreference(Request $request, bool $remember): void
+    {
+        try {
+            if ($remember) {
+                config(['session.lifetime' => $this->rememberLifetime()]);
+                $request->session()->put(ExtendRememberedSession::SESSION_KEY, true);
+                $request->session()->put(ExtendRememberedSession::SESSION_MARKED_AT_KEY, now()->toIso8601String());
+                return;
+            }
+
+            $request->session()->forget([
+                ExtendRememberedSession::SESSION_KEY,
+                ExtendRememberedSession::SESSION_MARKED_AT_KEY,
+            ]);
+
+            $guard = Auth::guard('web');
+            if (method_exists($guard, 'getRecallerName')) {
+                cookie()->queue(cookie()->forget($guard->getRecallerName()));
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('Remember preference sync failed: ' . $e->getMessage());
+        }
+    }
+
     public function login(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'email' => 'required|email',
                 'password' => 'required|string',
+                'remember' => 'sometimes|boolean',
             ]);
 
-            if (!Auth::attempt($request->only('email', 'password'), $request->boolean('remember'))) {
+            $remember = $request->boolean('remember');
+            $this->configureRememberDuration($remember);
+
+            if (!Auth::attempt([
+                'email' => $validated['email'],
+                'password' => $validated['password'],
+            ], $remember)) {
                 return response()->json(['message' => 'Identifiants incorrects.'], 401);
             }
 
@@ -142,9 +197,12 @@ class AuthController extends Controller
                 } catch (\Throwable $e) {
                 }
 
+                $this->syncRememberPreference($request, $remember);
+
                 return response()->json([
                     'message' => 'Connexion reussie.',
                     'user' => $user,
+                    'remembered' => $remember,
                 ]);
             }
 
@@ -208,6 +266,8 @@ class AuthController extends Controller
                 \Log::warning('Session regenerate failed: ' . $e->getMessage());
             }
 
+            $this->syncRememberPreference($request, $remember);
+
             try {
                 $user->load(['agent', 'role']);
             } catch (\Throwable $e) {
@@ -217,6 +277,7 @@ class AuthController extends Controller
             return response()->json([
                 'message' => 'Connexion reussie.',
                 'user' => $user,
+                'remembered' => $remember,
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             throw $e;
@@ -282,6 +343,18 @@ class AuthController extends Controller
     public function user(Request $request)
     {
         $user = $request->user();
+        $remembered = Auth::guard('web')->viaRemember();
+
+        try {
+            $remembered = $remembered
+                || ($request->hasSession(false) && (bool) $request->session()->get(ExtendRememberedSession::SESSION_KEY, false));
+        } catch (\Throwable $e) {
+        }
+
+        if ($remembered) {
+            $this->syncRememberPreference($request, true);
+        }
+
         $user->load(['agent.departement', 'agent.province', 'role']);
 
         $data = $user->toArray();
@@ -299,6 +372,7 @@ class AuthController extends Controller
             $permissions = $permissions->merge($agentPerms)->unique();
         }
         $data['permissions'] = $permissions->values()->toArray();
+        $data['remembered'] = $remembered;
 
         return response()->json($data);
     }

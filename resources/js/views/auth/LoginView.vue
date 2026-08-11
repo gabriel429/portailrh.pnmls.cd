@@ -80,9 +80,13 @@
           </div>
 
           <div class="form-options">
-            <label class="remember-label">
+            <label class="remember-label" :class="{ checked: form.remember }">
               <input v-model="form.remember" type="checkbox" class="form-check-input">
-              <span>Se souvenir de moi</span>
+              <span class="remember-switch" aria-hidden="true"><i class="fas fa-check"></i></span>
+              <span class="remember-copy">
+                <strong>Rester connect&eacute; sur cet appareil</strong>
+                <small>Appareil personnel uniquement</small>
+              </span>
             </label>
           </div>
 
@@ -224,7 +228,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
@@ -233,7 +237,8 @@ const auth = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 
-const form = reactive({ email: '', password: '', remember: false })
+const rememberedLogin = auth.rememberedLogin()
+const form = reactive({ email: rememberedLogin.email, password: '', remember: rememberedLogin.remember })
 const showPassword = ref(false)
 const loading = ref(false)
 const errorMessage = ref('')
@@ -261,6 +266,16 @@ const supportForm = reactive({
     description: '',
     attachment: null,
     website: '',
+})
+
+onMounted(() => {
+    const remembered = auth.rememberedLogin()
+    if (remembered.remember) {
+        form.remember = true
+        if (!form.email) {
+            form.email = remembered.email
+        }
+    }
 })
 
 async function handleLogin() {
@@ -716,19 +731,107 @@ async function handleSupportRequest() {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    min-height: 48px;
     margin-bottom: 1.5rem;
 }
 
 .remember-label {
     display: flex;
-    align-items: center;
-    gap: .5rem;
+    align-items: flex-start;
+    gap: .7rem;
+    width: 100%;
+    padding: .72rem .8rem;
     font-size: .84rem;
     color: #64748b;
+    background: rgba(248,250,252,.78);
+    border: 1px solid rgba(203,213,225,.85);
+    border-radius: 8px;
     cursor: pointer;
     margin: 0;
+    transition: border-color .2s ease, background .2s ease, box-shadow .2s ease;
 }
 
+.remember-label .form-check-input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.remember-switch {
+    position: relative;
+    width: 42px;
+    height: 24px;
+    flex: 0 0 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 6px;
+    color: transparent;
+    background: #cbd5e1;
+    border-radius: 999px;
+    box-shadow: inset 0 1px 2px rgba(15,23,42,.16);
+    transition: background .2s ease;
+}
+
+.remember-switch::before {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 3px;
+    width: 18px;
+    height: 18px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(15,23,42,.22);
+    transition: transform .2s ease;
+}
+
+.remember-switch i {
+    position: relative;
+    z-index: 1;
+    font-size: .66rem;
+}
+
+.remember-copy {
+    min-width: 0;
+    display: grid;
+    gap: .12rem;
+    line-height: 1.2;
+}
+
+.remember-copy strong {
+    color: #334155;
+    font-size: .84rem;
+    font-weight: 850;
+}
+
+.remember-copy small {
+    color: #7c8b9a;
+    font-size: .72rem;
+}
+
+.remember-label:hover,
+.remember-label.checked {
+    background: #eef9fb;
+    border-color: rgba(13,143,163,.32);
+    box-shadow: 0 8px 20px rgba(13,143,163,.08);
+}
+
+.remember-label.checked .remember-switch {
+    justify-content: flex-start;
+    color: #fff;
+    background: #0d8fa3;
+}
+
+.remember-label.checked .remember-switch::before {
+    transform: translateX(18px);
+}
+
+.remember-label.checked .remember-copy strong {
+    color: #075e78;
+}
+
+/* Compatibility with Bootstrap checkbox styles kept elsewhere. */
 .remember-label .form-check-input {
     margin: 0;
     border-radius: 5px;

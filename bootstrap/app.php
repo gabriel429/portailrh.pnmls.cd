@@ -27,6 +27,12 @@ $app = Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->statefulApi();
+        $middleware->web(append: [
+            \App\Http\Middleware\ExtendRememberedSession::class,
+        ]);
+        $middleware->api(append: [
+            \App\Http\Middleware\ExtendRememberedSession::class,
+        ]);
 
         // Global security middleware
         $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
