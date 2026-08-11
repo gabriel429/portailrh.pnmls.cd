@@ -141,7 +141,7 @@ const routes = [
         path: '/requests',
         name: 'requests.index',
         component: () => import('@/views/rh/requests/RequestListView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, preserveQueryView: true },
     },
     {
         path: '/requests/create',

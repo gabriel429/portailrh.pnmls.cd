@@ -25,7 +25,7 @@
           <!-- Type filter for RH -->
           <div v-if="isRH" class="req-type-filter">
             <label class="req-type-label">Type</label>
-            <select v-model="filters.type" class="req-type-select" @change="applyFilters(1)">
+            <select v-model="filters.type" class="req-type-select" :disabled="filterLoading" @change="applyFilters(1)">
               <option value="">Tous les types</option>
               <option value="conge">Congé</option>
               <option value="absence">Absence</option>
@@ -39,8 +39,10 @@
     <!-- Status filter cards (always visible, like documents page) -->
     <div class="req-filter-grid">
       <button
+        type="button"
         class="req-filter-card req-filter-all"
         :class="{ active: !filters.statut }"
+        :disabled="filterLoading"
         @click="setStatut('')"
       >
         <div class="req-filter-icon"><i class="fas fa-th-large"></i></div>
@@ -50,8 +52,10 @@
         </div>
       </button>
       <button
+        type="button"
         class="req-filter-card req-filter-warning"
         :class="{ active: filters.statut === 'en_attente' }"
+        :disabled="filterLoading"
         @click="setStatut('en_attente')"
       >
         <div class="req-filter-icon"><i class="fas fa-hourglass-half"></i></div>
@@ -61,8 +65,10 @@
         </div>
       </button>
       <button
+        type="button"
         class="req-filter-card req-filter-success"
         :class="{ active: filters.statut === 'approuvé' }"
+        :disabled="filterLoading"
         @click="setStatut('approuvé')"
       >
         <div class="req-filter-icon"><i class="fas fa-check-circle"></i></div>
@@ -72,8 +78,10 @@
         </div>
       </button>
       <button
+        type="button"
         class="req-filter-card req-filter-danger"
         :class="{ active: filters.statut === 'rejeté' }"
+        :disabled="filterLoading"
         @click="setStatut('rejeté')"
       >
         <div class="req-filter-icon"><i class="fas fa-times-circle"></i></div>
@@ -83,8 +91,10 @@
         </div>
       </button>
       <button
+        type="button"
         class="req-filter-card req-filter-secondary"
         :class="{ active: filters.statut === 'annulé' }"
+        :disabled="filterLoading"
         @click="setStatut('annulé')"
       >
         <div class="req-filter-icon"><i class="fas fa-ban"></i></div>
@@ -94,8 +104,10 @@
         </div>
       </button>
       <button
+        type="button"
         class="req-filter-card req-filter-expired"
         :class="{ active: filters.statut === 'expiré' }"
+        :disabled="filterLoading"
         @click="setStatut('expiré')"
       >
         <div class="req-filter-icon"><i class="fas fa-clock-rotate-left"></i></div>
@@ -111,9 +123,12 @@
       <div class="req-section-title">
         <i :class="statusIcon(filters.statut)" :style="{ color: statusColor(filters.statut) }"></i>
         {{ statusLabel(filters.statut) }}
-        <span class="req-section-badge">{{ meta.total }} demande{{ meta.total > 1 ? 's' : '' }}</span>
+        <span class="req-section-badge">
+          <span v-if="filterLoading" class="req-badge-spinner" aria-hidden="true"></span>
+          <template v-else>{{ meta.total }} demande{{ meta.total > 1 ? 's' : '' }}</template>
+        </span>
       </div>
-      <button class="req-back-btn" @click="setStatut('')">
+      <button type="button" class="req-back-btn" :disabled="filterLoading" @click="setStatut('')">
         <i class="fas fa-arrow-left"></i> Tous les statuts
       </button>
     </div>
@@ -127,108 +142,114 @@
     </div>
 
     <template v-else>
-      <!-- Request cards grid -->
-      <div v-if="requests.length" class="req-grid">
-        <div v-for="req in requests" :key="req.id" class="req-card">
-          <div class="req-card-top">
-            <div class="req-card-status-icon" :class="statusIconClass(req.statut)">
-              <i :class="statusIcon(req.statut)"></i>
-            </div>
-            <div class="req-card-info">
-              <div v-if="isRH && req.agent" class="req-card-agent">
-                <span class="req-card-avatar">{{ agentInitials(req.agent) }}</span>
-                <span class="req-card-agent-name">{{ req.agent.prenom }} {{ req.agent.nom }}</span>
+      <div v-if="filterLoading" class="req-content-loading" aria-live="polite" aria-label="Chargement des demandes">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+      </div>
+
+      <template v-else>
+        <!-- Request cards grid -->
+        <div v-if="requests.length" class="req-grid">
+          <div v-for="req in requests" :key="req.id" class="req-card">
+            <div class="req-card-top">
+              <div class="req-card-status-icon" :class="statusIconClass(req.statut)">
+                <i :class="statusIcon(req.statut)"></i>
               </div>
-              <div class="req-card-type-row">
-                <span class="req-badge-type">{{ formatType(req.type) }}</span>
-                <span :class="statusBadgeClass(req.statut)">
-                  <i :class="statusIcon(req.statut)" class="me-1"></i>
-                  {{ statusLabel(req.statut) }}
-                </span>
+              <div class="req-card-info">
+                <div v-if="isRH && req.agent" class="req-card-agent">
+                  <span class="req-card-avatar">{{ agentInitials(req.agent) }}</span>
+                  <span class="req-card-agent-name">{{ req.agent.prenom }} {{ req.agent.nom }}</span>
+                </div>
+                <div class="req-card-type-row">
+                  <span class="req-badge-type">{{ formatType(req.type) }}</span>
+                  <span :class="statusBadgeClass(req.statut)">
+                    <i :class="statusIcon(req.statut)" class="me-1"></i>
+                    {{ statusLabel(req.statut) }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-          <div class="req-card-dates">
-            <i class="fas fa-calendar-alt me-1"></i>
-            <span>{{ formatDate(req.date_debut) }}</span>
-            <template v-if="req.date_fin">
-              <i class="fas fa-arrow-right req-date-arrow"></i>
-              <span>{{ formatDate(req.date_fin) }}</span>
-            </template>
-          </div>
-          <div class="req-card-footer">
-            <span class="req-card-created">
-              <i class="fas fa-clock me-1"></i>{{ formatDateTime(req.created_at) }}
-            </span>
-            <div class="req-card-actions">
-              <button
-                class="req-act-btn req-act-view"
-                title="Détails"
-                @click="openDetail(req.id)"
-              >
-                <i class="fas fa-eye"></i> Voir
-              </button>
-              <button
-                v-if="isRH"
-                class="req-act-btn req-act-edit"
-                title="Modifier"
-                @click="openEditModal(req.id)"
-              >
-                <i class="fas fa-edit"></i> Modifier
-              </button>
-              <button
-                v-if="canDelete(req)"
-                class="req-act-btn req-act-delete"
-                title="Supprimer"
-                @click="confirmDelete(req)"
-              >
-                <i class="fas fa-trash"></i> Supprimer
-              </button>
+            <div class="req-card-dates">
+              <i class="fas fa-calendar-alt me-1"></i>
+              <span>{{ formatDate(req.date_debut) }}</span>
+              <template v-if="req.date_fin">
+                <i class="fas fa-arrow-right req-date-arrow"></i>
+                <span>{{ formatDate(req.date_fin) }}</span>
+              </template>
+            </div>
+            <div class="req-card-footer">
+              <span class="req-card-created">
+                <i class="fas fa-clock me-1"></i>{{ formatDateTime(req.created_at) }}
+              </span>
+              <div class="req-card-actions">
+                <button
+                  class="req-act-btn req-act-view"
+                  title="Détails"
+                  @click="openDetail(req.id)"
+                >
+                  <i class="fas fa-eye"></i> Voir
+                </button>
+                <button
+                  v-if="isRH"
+                  class="req-act-btn req-act-edit"
+                  title="Modifier"
+                  @click="openEditModal(req.id)"
+                >
+                  <i class="fas fa-edit"></i> Modifier
+                </button>
+                <button
+                  v-if="canDelete(req)"
+                  class="req-act-btn req-act-delete"
+                  title="Supprimer"
+                  @click="confirmDelete(req)"
+                >
+                  <i class="fas fa-trash"></i> Supprimer
+                </button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Pagination -->
-      <div v-if="meta.last_page > 1" class="d-flex justify-content-center mt-4">
-        <nav>
-          <ul class="pagination pagination-sm mb-0">
-            <li class="page-item" :class="{ disabled: meta.current_page === 1 }">
-              <button class="page-link" @click="loadRequests(meta.current_page - 1)">&laquo;</button>
-            </li>
-            <li
-              v-for="page in paginationPages"
-              :key="page"
-              class="page-item"
-              :class="{ active: page === meta.current_page }"
-            >
-              <button class="page-link" @click="loadRequests(page)">{{ page }}</button>
-            </li>
-            <li class="page-item" :class="{ disabled: meta.current_page === meta.last_page }">
-              <button class="page-link" @click="loadRequests(meta.current_page + 1)">&raquo;</button>
-            </li>
-          </ul>
-        </nav>
-      </div>
+        <!-- Pagination -->
+        <div v-if="meta.last_page > 1" class="d-flex justify-content-center mt-4">
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              <li class="page-item" :class="{ disabled: meta.current_page === 1 }">
+                <button class="page-link" @click="loadRequests(meta.current_page - 1)">&laquo;</button>
+              </li>
+              <li
+                v-for="page in paginationPages"
+                :key="page"
+                class="page-item"
+                :class="{ active: page === meta.current_page }"
+              >
+                <button class="page-link" @click="loadRequests(page)">{{ page }}</button>
+              </li>
+              <li class="page-item" :class="{ disabled: meta.current_page === meta.last_page }">
+                <button class="page-link" @click="loadRequests(meta.current_page + 1)">&raquo;</button>
+              </li>
+            </ul>
+          </nav>
+        </div>
 
-      <!-- Empty state -->
-      <div v-if="!requests.length" class="req-empty">
-        <div class="req-empty-icon"><i class="fas fa-inbox"></i></div>
-        <template v-if="filters.statut">
-          <h5>{{ emptyStatusTitle }}</h5>
-          <p>{{ emptyStatusMessage }}</p>
-          <button class="req-back-btn mt-3" style="display:inline-flex;" @click="setStatut('')">
-            <i class="fas fa-arrow-left"></i> Voir toutes les demandes
-          </button>
-        </template>
-        <template v-else>
-          <h5>Aucune demande</h5>
-          <p>{{ isRH ? "Il n'y a aucune demande à afficher." : "Vous n'avez pas encore soumis de demande." }}</p>
-          <button class="req-hero-btn mt-3" style="display:inline-flex;" @click="openCreateModal">
-            <i class="fas fa-plus me-1"></i> Créer une demande
-          </button>
-        </template>
-      </div>
+        <!-- Empty state -->
+        <div v-if="!requests.length" class="req-empty">
+          <div class="req-empty-icon"><i class="fas fa-inbox"></i></div>
+          <template v-if="filters.statut">
+            <h5>{{ emptyStatusTitle }}</h5>
+            <p>{{ emptyStatusMessage }}</p>
+            <button type="button" class="req-back-btn mt-3" style="display:inline-flex;" @click="setStatut('')">
+              <i class="fas fa-arrow-left"></i> Voir toutes les demandes
+            </button>
+          </template>
+          <template v-else>
+            <h5>Aucune demande</h5>
+            <p>{{ isRH ? "Il n'y a aucune demande à afficher." : "Vous n'avez pas encore soumis de demande." }}</p>
+            <button class="req-hero-btn mt-3" style="display:inline-flex;" @click="openCreateModal">
+              <i class="fas fa-plus me-1"></i> Créer une demande
+            </button>
+          </template>
+        </div>
+      </template>
     </template>
 
     <!-- Confirm delete modal -->
@@ -475,6 +496,7 @@ function normalizeRequestItem(req) {
 
 const isRH = computed(() => auth.hasAdminAccess)
 const loading = ref(true)
+const filterLoading = ref(false)
 const initialLoadDone = ref(false)
 const requests = ref([])
 const meta = ref({ current_page: 1, last_page: 1, total: 0, from: null, to: null })
@@ -484,6 +506,7 @@ const filters = ref({
   type: firstQueryValue(route.query.type) || '',
 })
 const routeSyncing = ref(false)
+let requestLoadToken = 0
 
 const showDeleteModal = ref(false)
 const deleteTarget = ref(null)
@@ -571,10 +594,15 @@ const emptyStatusMessage = computed(() => {
 })
 
 async function loadRequests(page = 1) {
+  const loadToken = ++requestLoadToken
+
   // Only show full-page spinner on very first load
   if (!initialLoadDone.value) {
     loading.value = true
+  } else {
+    filterLoading.value = true
   }
+
   try {
     const params = { page }
     const normalizedStatus = normalizeRequestStatus(filters.value.statut)
@@ -585,10 +613,14 @@ async function loadRequests(page = 1) {
     if (normalizedStatus) params.statut = normalizedStatus
     if (filters.value.type) params.type = filters.value.type
     const { data } = await list(params)
+    if (loadToken !== requestLoadToken) return
+
     requests.value = (data.data || []).map(normalizeRequestItem)
     meta.value = data.meta || meta.value
     if (data.counts) counts.value = normalizeRequestCounts(data.counts)
   } catch (err) {
+    if (loadToken !== requestLoadToken) return
+
     const status = err.response?.status
     if (filters.value.statut && [400, 404, 422].includes(status)) {
       requests.value = []
@@ -598,8 +630,11 @@ async function loadRequests(page = 1) {
       ui.addToast(err.response?.data?.message || 'Erreur lors du chargement des demandes.', 'danger')
     }
   } finally {
-    loading.value = false
-    initialLoadDone.value = true
+    if (loadToken === requestLoadToken) {
+      loading.value = false
+      filterLoading.value = false
+      initialLoadDone.value = true
+    }
   }
 }
 
@@ -624,11 +659,14 @@ async function syncRouteFromFilters() {
 
 async function applyFilters(page = 1) {
   await syncRouteFromFilters()
-  loadRequests(page)
+  return loadRequests(page)
 }
 
 function setStatut(statut) {
-  filters.value.statut = normalizeRequestStatus(statut) || ''
+  const nextStatus = normalizeRequestStatus(statut) || ''
+  if (nextStatus === filters.value.statut || filterLoading.value) return
+
+  filters.value.statut = nextStatus
   applyFilters(1)
 }
 
@@ -945,12 +983,23 @@ onMounted(() => {
   border-radius: 14px;
   text-decoration: none;
   color: #374151;
-  transition: all .25s;
+  transition: border-color .16s ease, box-shadow .16s ease, color .16s ease, transform .16s ease;
   cursor: pointer;
 }
 .req-filter-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(0, 0, 0, .08);
+}
+.req-filter-card:disabled {
+  cursor: progress;
+  opacity: .88;
+}
+.req-filter-card:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+.req-filter-card.active:disabled {
+  opacity: 1;
 }
 
 /* All card */
@@ -1084,11 +1133,27 @@ onMounted(() => {
   text-decoration: none;
   border: none;
   cursor: pointer;
-  transition: all .2s;
+  transition: background .16s ease, color .16s ease, border-color .16s ease;
 }
 .req-back-btn:hover {
   background: #e5e7eb;
   color: #374151;
+}
+.req-back-btn:disabled {
+  cursor: progress;
+  opacity: .72;
+}
+.req-badge-spinner {
+  width: .8rem;
+  height: .8rem;
+  display: inline-flex;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: reqSpin .65s linear infinite;
+}
+@keyframes reqSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* ── Request cards grid ── */
@@ -1103,7 +1168,7 @@ onMounted(() => {
   border: 1px solid #e5e7eb;
   box-shadow: 0 2px 12px rgba(0, 0, 0, .04);
   overflow: hidden;
-  transition: all .2s;
+  transition: box-shadow .18s ease, transform .18s ease;
   display: flex;
   flex-direction: column;
 }
@@ -1243,7 +1308,7 @@ onMounted(() => {
   border: 1px solid #e2e8f0;
   background: #fff;
   cursor: pointer;
-  transition: all .2s;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
 }
 .req-act-view {
   color: #0077B5;
@@ -1286,6 +1351,19 @@ onMounted(() => {
 }
 
 /* ── Empty state ── */
+.req-content-loading {
+  min-height: 260px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0077B5;
+}
+.req-content-loading .spinner-border {
+  width: 1.35rem;
+  height: 1.35rem;
+  border-width: .16rem;
+}
+
 .req-empty {
   text-align: center;
   padding: 3rem 1rem;

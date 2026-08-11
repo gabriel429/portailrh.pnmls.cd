@@ -43,7 +43,7 @@
   <component v-else :is="layout">
     <router-view v-slot="{ Component }">
       <transition name="page-fade">
-        <component :is="Component" :key="route.fullPath" />
+        <component :is="Component" :key="routeViewKey" />
       </transition>
     </router-view>
   </component>
@@ -79,6 +79,7 @@ const layouts = {
 }
 
 const layout = computed(() => layouts[route.meta.layout || 'app'] || AppLayout)
+const routeViewKey = computed(() => route.meta.preserveQueryView ? route.path : route.fullPath)
 const showWebmailFab = computed(() => (
   auth.isAuthenticated && !['mailbox.index', 'mail.history'].includes(String(route.name || ''))
 ))
