@@ -164,7 +164,7 @@ class SignalementController extends ApiController
             $this->scopeService()->applyAgentScope($query, $user);
         }
 
-        $agents = $query->get(['id', 'nom', 'prenom', 'id_agent', 'matricule_etat'])
+        $agents = $query->get(['id', 'nom', 'prenom', 'matricule_etat'])
             ->map(fn($a) => [
                 'id' => $a->id,
                 'nom' => $a->nom,

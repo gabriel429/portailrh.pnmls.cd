@@ -45,12 +45,27 @@
 
           <div v-if="!form.is_anonymous" class="col-md-6">
             <label for="agent_id" class="form-label">Agent</label>
-            <select v-model="form.agent_id" class="form-select" id="agent_id" required>
-              <option value="">Sélectionner un agent</option>
+            <select
+              v-model="form.agent_id"
+              class="form-select"
+              id="agent_id"
+              :disabled="agentsLoading"
+              required
+            >
+              <option value="">{{ agentsLoading ? 'Chargement des agents...' : 'Sélectionner un agent' }}</option>
               <option v-for="ag in agents" :key="ag.id" :value="ag.id">
                 ({{ ag.matricule_etat || 'N/A' }}) {{ ag.prenom }} {{ ag.nom }}
               </option>
             </select>
+            <div v-if="agentsLoadError" class="text-danger small mt-1">
+              {{ agentsLoadError }}
+              <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" @click="loadAgents">
+                Réessayer
+              </button>
+            </div>
+            <div v-else-if="!agentsLoading && agents.length === 0" class="text-muted small mt-1">
+              Aucun agent disponible dans votre périmètre.
+            </div>
           </div>
 
           <div class="col-md-6">
@@ -101,6 +116,8 @@ const router = useRouter()
 const ui = useUiStore()
 
 const agents = ref([])
+const agentsLoading = ref(false)
+const agentsLoadError = ref('')
 const errors = ref([])
 const submitting = ref(false)
 const form = ref({
@@ -113,11 +130,23 @@ const form = ref({
 })
 
 async function loadAgents() {
+  agentsLoading.value = true
+  agentsLoadError.value = ''
+
   try {
     const { data } = await getAgents()
-    agents.value = data.data
-  } catch {
-    ui.addToast('Erreur lors du chargement des agents.', 'danger')
+    const rawAgents = data?.data ?? data ?? []
+    agents.value = Array.isArray(rawAgents) ? rawAgents : []
+
+    if (!form.value.agent_id && agents.value.length > 0) {
+      form.value.agent_id = agents.value[0].id
+    }
+  } catch (err) {
+    agents.value = []
+    agentsLoadError.value = err.response?.data?.message || 'Erreur lors du chargement des agents.'
+    ui.addToast(agentsLoadError.value, 'danger')
+  } finally {
+    agentsLoading.value = false
   }
 }
 
