@@ -477,6 +477,7 @@ class AgentController extends ApiController
 
         $agent = Agent::create($validated);
         $agent->load(['role', 'province', 'localite', 'departement', 'grade', 'institution']);
+        NotificationService::notifierNouvelAgent($agent, $request->user()?->id);
 
         $resource = AgentResource::make($agent);
 
@@ -762,6 +763,7 @@ class AgentController extends ApiController
         );
 
         $this->authorizeAgentAccess($request, $agent);
+        $assignmentBefore = $agent->only(['organe', 'fonction', 'departement_id', 'province_id', 'localite_id']);
 
         $validated = $request->validate([
             'matricule_etat' => 'nullable|unique:agents,matricule_etat,' . $agent->id,
@@ -870,14 +872,18 @@ class AgentController extends ApiController
         $this->syncLinkedUserIdentity($agent);
         $agent->load(['role', 'province', 'localite', 'departement', 'grade', 'institution']);
 
-        NotificationService::notifierAgent(
-            $agent,
-            'message',
-            'Votre fiche agent a été mise à jour',
-            'Des informations de votre dossier agent ont ete modifiees dans E-PNMLS.',
-            '/profile',
-            $request->user()->id
-        );
+        if ($this->agentAssignmentChanged($assignmentBefore, $agent)) {
+            NotificationService::notifierAffectationAgentDepuisFiche($agent, $request->user()?->id);
+        } else {
+            NotificationService::notifierAgent(
+                $agent,
+                'message',
+                'Votre fiche agent a été mise à jour',
+                'Des informations de votre dossier agent ont ete modifiees dans E-PNMLS.',
+                '/profile',
+                $request->user()?->id
+            );
+        }
 
         $resource = AgentResource::make($agent);
 
@@ -885,6 +891,17 @@ class AgentController extends ApiController
             'message' => 'Agent modifié avec succès',
             'agent' => $resource->resolve(),
         ]);
+    }
+
+    private function agentAssignmentChanged(array $before, Agent $agent): bool
+    {
+        foreach (['organe', 'fonction', 'departement_id', 'province_id', 'localite_id'] as $field) {
+            if ((string) ($before[$field] ?? '') !== (string) ($agent->{$field} ?? '')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function syncLinkedUserIdentity(Agent $agent): void
@@ -1277,6 +1294,8 @@ class AgentController extends ApiController
                 ];
             }
         }
+
+        NotificationService::notifierImportAgents($imported, $request->user()?->id);
 
         return response()->json([
             'message' => $imported > 0

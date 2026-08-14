@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Mail\NotificationMail;
+use App\Models\Affectation;
 use App\Models\Agent;
 use App\Models\NotificationPortail;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 
 class NotificationService
 {
@@ -50,6 +53,10 @@ class NotificationService
         'message' => [
             'icone' => 'fa-envelope',
             'couleur' => '#6366f1',
+        ],
+        'agent' => [
+            'icone' => 'fa-user-plus',
+            'couleur' => '#0f766e',
         ],
         'technical_support_new' => [
             'icone' => 'fa-headset',
@@ -255,6 +262,104 @@ class NotificationService
     }
 
     /**
+     * Notifier la structure cible et le SEN/SENA lors de la creation d'une fiche agent.
+     */
+    public static function notifierNouvelAgent(Agent $agent, ?int $emetteurId = null): void
+    {
+        $agent->loadMissing(['user', 'departement', 'province', 'localite']);
+
+        $structure = self::agentStructureLabel($agent);
+        $message = 'La fiche agent de ' . self::agentDisplayName($agent) . ' a ete creee';
+        if ($structure !== '') {
+            $message .= ' pour ' . $structure;
+        }
+        $message .= '.';
+
+        $userIds = self::recipientIdsForAgentStructure($agent, null, [$agent->user?->id]);
+        self::envoyerMultiple($userIds, 'agent', 'Nouvel agent créé', $message, self::agentLink($agent), $emetteurId);
+
+        self::notifierAgent(
+            $agent,
+            'agent',
+            'Votre fiche agent a été créée',
+            'Votre fiche agent est maintenant disponible dans E-PNMLS.',
+            '/profile',
+            $emetteurId
+        );
+    }
+
+    /**
+     * Notification groupée lors d'un import d'agents.
+     */
+    public static function notifierImportAgents(int $count, ?int $emetteurId = null): void
+    {
+        if ($count < 1) {
+            return;
+        }
+
+        $message = $count === 1
+            ? 'Une nouvelle fiche agent a ete importee dans E-PNMLS.'
+            : $count . ' nouvelles fiches agents ont ete importees dans E-PNMLS.';
+
+        self::envoyerMultiple(
+            self::executiveRecipientIds(),
+            'agent',
+            'Import d\'agents terminé',
+            $message,
+            '/rh/agents',
+            $emetteurId
+        );
+    }
+
+    /**
+     * Notifier une affectation créée ou mise à jour depuis le module affectations.
+     */
+    public static function notifierAffectationAgent(Affectation $affectation, ?int $emetteurId = null, bool $miseAJour = false): void
+    {
+        $affectation->loadMissing([
+            'agent.user',
+            'agent.departement',
+            'agent.province',
+            'agent.localite',
+            'fonction',
+            'department',
+            'section',
+            'cellule',
+            'province',
+            'localite',
+        ]);
+
+        if (!$affectation->agent) {
+            return;
+        }
+
+        self::notifyAssignmentRecipients(
+            $affectation->agent,
+            self::affectationStructureLabel($affectation),
+            $affectation->fonction?->nom,
+            $emetteurId,
+            $miseAJour,
+            $affectation
+        );
+    }
+
+    /**
+     * Notifier une affectation modifiée directement depuis la fiche agent.
+     */
+    public static function notifierAffectationAgentDepuisFiche(Agent $agent, ?int $emetteurId = null): void
+    {
+        $agent->loadMissing(['user', 'departement', 'province', 'localite']);
+
+        self::notifyAssignmentRecipients(
+            $agent,
+            self::agentStructureLabel($agent),
+            $agent->fonction,
+            $emetteurId,
+            true
+        );
+    }
+
+    /**
      * Notifier tous les RH d'un événement
      */
     public static function notifierRH(string $type, string $titre, string $message, ?string $lien = null, ?int $emetteurId = null): void
@@ -319,6 +424,204 @@ class NotificationService
         if (!empty($userIds)) {
             self::envoyerMultipleAvecEmail($userIds, $type, $titre, $message, $lien, $emetteurId);
         }
+    }
+
+    protected static function notifyAssignmentRecipients(
+        Agent $agent,
+        string $structure,
+        ?string $fonction,
+        ?int $emetteurId,
+        bool $miseAJour,
+        ?Affectation $affectation = null
+    ): void {
+        $agent->loadMissing('user');
+
+        $structure = $structure !== '' ? $structure : 'sa structure';
+        $fonction = trim((string) $fonction);
+        $fonction = $fonction !== '' ? $fonction : 'fonction non renseignée';
+        $agentName = self::agentDisplayName($agent);
+
+        $titre = $miseAJour ? 'Affectation agent mise à jour' : 'Nouvelle affectation agent';
+        $message = $agentName . ' a ete affecte(e) a ' . $structure . ' comme ' . $fonction . '.';
+
+        $userIds = self::recipientIdsForAgentStructure($agent, $affectation, [$agent->user?->id]);
+        self::envoyerMultiple($userIds, 'agent', $titre, $message, self::agentLink($agent), $emetteurId);
+
+        self::notifierAgent(
+            $agent,
+            'agent',
+            $miseAJour ? 'Votre affectation a été mise à jour' : 'Nouvelle affectation',
+            'Vous etes affecte(e) a ' . $structure . ' comme ' . $fonction . '.',
+            '/profile',
+            $emetteurId
+        );
+    }
+
+    protected static function recipientIdsForAgentStructure(Agent $agent, ?Affectation $affectation = null, array $excludeUserIds = []): array
+    {
+        $departmentId = $affectation?->department_id ?: $agent->departement_id;
+        $provinceId = $affectation?->province_id ?: $agent->province_id;
+        $localiteId = $affectation?->localite_id ?: $agent->localite_id;
+        $organe = self::organeLabelForAffectation($affectation) ?: $agent->organe;
+
+        $structureUserIds = [];
+        if ($departmentId || $organe) {
+            $structureUserIds = User::query()
+                ->whereHas('agent', function (Builder $query) use ($departmentId, $provinceId, $localiteId, $organe) {
+                    $query->where('statut', 'actif');
+
+                    if ($departmentId) {
+                        $query->where('departement_id', $departmentId);
+                        return;
+                    }
+
+                    self::applyOrganeConstraint($query, (string) $organe);
+
+                    if ($provinceId) {
+                        $query->where('province_id', $provinceId);
+                    }
+
+                    if ($localiteId) {
+                        $query->where('localite_id', $localiteId);
+                    }
+                })
+                ->pluck('id')
+                ->all();
+        }
+
+        $excludeUserIds = array_values(array_unique(array_filter(array_map('intval', $excludeUserIds))));
+
+        return collect($structureUserIds)
+            ->merge(self::executiveRecipientIds())
+            ->map(fn ($id) => (int) $id)
+            ->reject(fn ($id) => in_array($id, $excludeUserIds, true))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    protected static function executiveRecipientIds(): array
+    {
+        return User::query()
+            ->whereHas('role', fn (Builder $query) => $query->whereIn('nom_role', ['SEN', 'SENA']))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    protected static function applyOrganeConstraint(Builder $query, string $organe): void
+    {
+        $normalized = self::normalizeStructureText($organe);
+        $variants = self::organeVariants($normalized, $organe);
+
+        $query->where(function (Builder $scope) use ($normalized, $variants) {
+            $scope->whereIn('organe', $variants);
+
+            if ($normalized === 'sen' || str_contains($normalized, 'national')) {
+                $scope->orWhere('organe', 'like', '%National%')
+                    ->orWhere('organe', 'SEN');
+            } elseif ($normalized === 'sep' || str_contains($normalized, 'provincial')) {
+                $scope->orWhere('organe', 'like', '%Provincial%')
+                    ->orWhere('organe', 'SEP');
+            } elseif ($normalized === 'sel' || str_contains($normalized, 'local')) {
+                $scope->orWhere('organe', 'like', '%Local%')
+                    ->orWhere('organe', 'SEL');
+            }
+        });
+    }
+
+    protected static function organeVariants(string $normalized, string $organe): array
+    {
+        return match (true) {
+            $normalized === 'sen' || str_contains($normalized, 'national') => [
+                'SEN',
+                'Secrétariat Exécutif National',
+                'Secretariat Executif National',
+            ],
+            $normalized === 'sep' || str_contains($normalized, 'provincial') => [
+                'SEP',
+                'Secrétariat Exécutif Provincial',
+                'Secretariat Executif Provincial',
+            ],
+            $normalized === 'sel' || str_contains($normalized, 'local') => [
+                'SEL',
+                'Secrétariat Exécutif Local',
+                'Secretariat Executif Local',
+            ],
+            default => [$organe],
+        };
+    }
+
+    protected static function organeLabelForAffectation(?Affectation $affectation): ?string
+    {
+        if (!$affectation?->niveau_administratif) {
+            return null;
+        }
+
+        return match ($affectation->niveau_administratif) {
+            'SEN' => 'Secrétariat Exécutif National',
+            'SEP' => 'Secrétariat Exécutif Provincial',
+            'SEL' => 'Secrétariat Exécutif Local',
+            default => $affectation->niveau_administratif,
+        };
+    }
+
+    protected static function agentStructureLabel(Agent $agent): string
+    {
+        if ($agent->departement) {
+            return 'le département ' . $agent->departement->nom;
+        }
+
+        return collect([
+            $agent->organe,
+            $agent->province?->nom,
+            $agent->localite?->nom,
+        ])->filter(fn ($value) => trim((string) $value) !== '')->implode(' / ');
+    }
+
+    protected static function affectationStructureLabel(Affectation $affectation): string
+    {
+        if ($affectation->cellule) {
+            return 'la cellule ' . $affectation->cellule->nom;
+        }
+
+        if ($affectation->section) {
+            return 'la section/service ' . $affectation->section->nom;
+        }
+
+        if ($affectation->department) {
+            return 'le département ' . $affectation->department->nom;
+        }
+
+        if ($affectation->localite) {
+            return 'le SEL ' . $affectation->localite->nom;
+        }
+
+        if ($affectation->province) {
+            return 'le SEP ' . $affectation->province->nom;
+        }
+
+        return self::organeLabelForAffectation($affectation) ?? '';
+    }
+
+    protected static function agentDisplayName(Agent $agent): string
+    {
+        return collect([$agent->prenom, $agent->nom, $agent->postnom])
+            ->filter(fn ($value) => trim((string) $value) !== '')
+            ->implode(' ') ?: 'Agent #' . $agent->id;
+    }
+
+    protected static function agentLink(Agent $agent): string
+    {
+        return '/rh/agents/' . $agent->id;
+    }
+
+    protected static function normalizeStructureText(?string $value): string
+    {
+        $value = Str::ascii((string) $value);
+        $value = strtolower(trim($value));
+
+        return preg_replace('/\s+/', ' ', $value) ?? '';
     }
 
     protected static function envoyerEmailProfessionnel(?User $user, string $titre, string $message, ?string $lien = null, ?Agent $agent = null): void

@@ -8,7 +8,7 @@
         <section class="rh-hero">
           <div class="row g-2 align-items-center">
             <div class="col-lg-8">
-              <h1 class="rh-title"><i class="fas fa-edit me-2"></i>Modifier le pointage</h1>
+              <h1 class="rh-title"><i class="fas fa-edit me-2"></i>Corriger le pointage</h1>
               <p class="rh-sub">{{ formatDate(pointage.date_pointage) }} - {{ pointage.agent?.prenom }} {{ pointage.agent?.nom }}</p>
             </div>
             <div class="col-lg-4">
@@ -30,6 +30,11 @@
             </ul>
           </div>
 
+          <div v-if="timeFieldsLocked" class="alert alert-warning py-2">
+            <i class="fas fa-lock me-1"></i>
+            Les heures validees sont verrouillees pour votre profil.
+          </div>
+
           <form @submit.prevent="submitForm" class="row g-3">
             <!-- Read-only fields -->
             <div class="col-md-6">
@@ -48,17 +53,22 @@
             <!-- Editable fields -->
             <div class="col-md-6">
               <label for="heure_entree" class="form-label">Heure d'entree</label>
-              <input type="time" class="form-control" id="heure_entree" v-model="form.heure_entree" @change="calculateHeures">
+              <input type="time" class="form-control" id="heure_entree" v-model="form.heure_entree" @change="calculateHeures" :disabled="!canCorrectTimes">
             </div>
 
             <div class="col-md-6">
               <label for="heure_sortie" class="form-label">Heure de sortie</label>
-              <input type="time" class="form-control" id="heure_sortie" v-model="form.heure_sortie" @change="calculateHeures">
+              <input type="time" class="form-control" id="heure_sortie" v-model="form.heure_sortie" @change="calculateHeures" :disabled="!canCorrectTimes">
             </div>
 
             <div class="col-md-6">
               <label for="heures_travaillees" class="form-label">Heures travaillees</label>
-              <input type="number" step="0.5" class="form-control" id="heures_travaillees" v-model="form.heures_travaillees" placeholder="ex: 8.5">
+              <input type="number" step="0.5" class="form-control" id="heures_travaillees" v-model="form.heures_travaillees" placeholder="ex: 8.5" disabled>
+            </div>
+
+            <div v-if="timesChanged && canCorrectTimes" class="col-12">
+              <label for="motif_correction" class="form-label">Motif de correction <span class="text-danger">*</span></label>
+              <textarea class="form-control" id="motif_correction" v-model="form.motif_correction" rows="3" required></textarea>
             </div>
 
             <div class="col-12">
@@ -90,7 +100,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import * as pointagesApi from '@/api/pointages'
@@ -110,7 +120,23 @@ const form = reactive({
     heure_sortie: '',
     heures_travaillees: '',
     observations: '',
+    motif_correction: '',
 })
+
+const originalTimes = reactive({
+    heure_entree: '',
+    heure_sortie: '',
+})
+
+const canCorrectTimes = computed(() => Boolean(pointage.value?.can_correct_times))
+const timesChanged = computed(() =>
+    form.heure_entree !== originalTimes.heure_entree
+    || form.heure_sortie !== originalTimes.heure_sortie
+)
+const timeFieldsLocked = computed(() =>
+    Boolean(pointage.value?.heure_entree_verrouillee || pointage.value?.heure_sortie_verrouillee)
+    && !canCorrectTimes.value
+)
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'
@@ -152,6 +178,9 @@ async function fetchPointage() {
         form.heure_sortie = extractTime(data.heure_sortie)
         form.heures_travaillees = data.heures_travaillees || ''
         form.observations = data.observations || ''
+        form.motif_correction = ''
+        originalTimes.heure_entree = form.heure_entree
+        originalTimes.heure_sortie = form.heure_sortie
     } catch {
         ui.addToast('Erreur lors du chargement du pointage.', 'danger')
         pointage.value = null
@@ -162,6 +191,17 @@ async function fetchPointage() {
 
 async function submitForm() {
     errors.value = []
+
+    if (timesChanged.value && !canCorrectTimes.value) {
+        errors.value = ['Les heures deja validees ne peuvent etre corrigees que par un profil superieur habilite.']
+        return
+    }
+
+    if (timesChanged.value && !form.motif_correction.trim()) {
+        errors.value = ['Le motif de correction est obligatoire pour modifier une heure validee.']
+        return
+    }
+
     submitting.value = true
 
     try {
@@ -170,6 +210,10 @@ async function submitForm() {
             heure_sortie: form.heure_sortie || null,
             heures_travaillees: form.heures_travaillees ? parseFloat(form.heures_travaillees) : null,
             observations: form.observations || null,
+        }
+
+        if (timesChanged.value) {
+            payload.motif_correction = form.motif_correction.trim()
         }
 
         await pointagesApi.update(pointage.value.id, payload)

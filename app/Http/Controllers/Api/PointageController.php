@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\PointageResource;
+use App\Models\AuditLog;
 use App\Models\Pointage;
 use App\Models\Agent;
 use App\Models\Department;
@@ -10,19 +11,32 @@ use App\Models\Province;
 use App\Models\Holiday;
 use App\Models\AgentStatus;
 use App\Models\Request as RequestModel;
+use App\Models\User;
+use App\Services\PointageLockService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 
 class PointageController extends ApiController
 {
+    private const TIME_FIELD_LABELS = [
+        'heure_entree' => "Heure d'arrivée",
+        'heure_sortie' => 'Heure de départ',
+    ];
+
     private function scopeService(): UserDataScope
     {
         return app(UserDataScope::class);
+    }
+
+    private function lockService(): PointageLockService
+    {
+        return app(PointageLockService::class);
     }
 
     /**
@@ -120,7 +134,15 @@ class PointageController extends ApiController
         });
         $pointageDates = $pointages->groupBy(fn(Pointage $pointage) => $pointage->date_pointage->format('Y-m-d'));
 
-        $rows = $this->buildAttendanceIndexRows($agents, $agentIds, $pointagesByKey, $pointageDates, $dateDebut, $dateFin);
+        $rows = $this->buildAttendanceIndexRows(
+            $agents,
+            $agentIds,
+            $pointagesByKey,
+            $pointageDates,
+            $dateDebut,
+            $dateFin,
+            $request->user()
+        );
 
         $page = max(1, (int) $request->input('page', 1));
         $perPage = max(1, min(100, (int) $request->input('per_page', 15)));
@@ -173,7 +195,7 @@ class PointageController extends ApiController
         return [$dateDebut, $dateFin];
     }
 
-    private function buildAttendanceIndexRows($agents, array $agentIds, $pointagesByKey, $pointageDates, Carbon $dateDebut, Carbon $dateFin): array
+    private function buildAttendanceIndexRows($agents, array $agentIds, $pointagesByKey, $pointageDates, Carbon $dateDebut, Carbon $dateFin, ?User $user): array
     {
         $rows = [];
         $current = $dateFin->copy();
@@ -216,7 +238,9 @@ class PointageController extends ApiController
                     $reason = $pointage?->observations ?: 'Aucun pointage enregistré';
                 }
 
-                $rows[] = [
+                $locks = $this->lockService()->locksPayload($pointage, $user);
+
+                $rows[] = array_merge([
                     'id' => $pointage?->id ?? 'attendance-' . $day . '-' . $agent->id,
                     'row_key' => ($pointage?->id ? 'pointage-' . $pointage->id : 'attendance-' . $day . '-' . $agent->id),
                     'agent_id' => $agent->id,
@@ -236,7 +260,7 @@ class PointageController extends ApiController
                     'agent' => $this->agentListPayload($agent),
                     'created_at' => optional($pointage?->created_at)?->toIso8601String(),
                     'updated_at' => optional($pointage?->updated_at)?->toIso8601String(),
-                ];
+                ], $locks);
             }
 
             $current->subDay();
@@ -274,6 +298,7 @@ class PointageController extends ApiController
             'pointages.*.heure_entree' => 'nullable|date_format:H:i',
             'pointages.*.heure_sortie' => 'nullable|date_format:H:i',
             'pointages.*.observations' => 'nullable|string',
+            'pointages.*.motif_correction' => 'nullable|string|max:1000',
             'pointages.*.client_operation_id' => 'nullable|uuid',
         ]);
 
@@ -336,7 +361,7 @@ class PointageController extends ApiController
             }
 
             try {
-                $outcome = DB::transaction(function () use ($clientOperationId, $date, $row, $user) {
+                $outcome = DB::transaction(function () use ($clientOperationId, $date, $row, $user, $request) {
                     if ($clientOperationId) {
                         $previousOperation = DB::table('offline_sync_operations')
                             ->where('user_id', $user->id)
@@ -357,36 +382,37 @@ class PointageController extends ApiController
                         ->lockForUpdate()
                         ->first();
 
-                    $heureEntree = $row['heure_entree'] ?? ($existing->heure_entree ?? null);
-                    $heureSortie = $row['heure_sortie'] ?? ($existing->heure_sortie ?? null);
-                    $heures = null;
-                    if ($heureEntree && $heureSortie) {
-                        $entree = Carbon::createFromFormat('H:i', $heureEntree);
-                        $sortie = Carbon::createFromFormat('H:i', $heureSortie);
-                        $minutes = $entree->diffInMinutes($sortie, false);
-                        $heures = $minutes > 0 ? round($minutes / 60, 1) : 0;
-                    }
+                    [$timeUpdates, $corrections, $finalTimes] = $this->preparePointageTimeMutation(
+                        $existing,
+                        $row,
+                        $user,
+                        $row['motif_correction'] ?? null,
+                        false
+                    );
+
+                    $heures = $this->calculateWorkedHoursFromTimes(
+                        $finalTimes['heure_entree'],
+                        $finalTimes['heure_sortie']
+                    );
 
                     if ($existing) {
-                        $existing->update([
-                            'heure_entree' => $heureEntree,
-                            'heure_sortie' => $heureSortie,
+                        $existing->update(array_merge($timeUpdates, [
                             'heures_travaillees' => $heures,
                             'observations' => $row['observations'] ?? $existing->observations,
-                        ]);
+                        ]));
                         $savedPointage = $existing;
                         $action = 'updated';
                     } else {
-                        $savedPointage = Pointage::create([
+                        $savedPointage = Pointage::create(array_merge([
                             'agent_id' => $row['agent_id'],
                             'date_pointage' => $date,
-                            'heure_entree' => $heureEntree,
-                            'heure_sortie' => $heureSortie,
                             'heures_travaillees' => $heures,
                             'observations' => $row['observations'] ?? null,
-                        ]);
+                        ], $timeUpdates));
                         $action = 'created';
                     }
+
+                    $this->recordPointageCorrections($savedPointage, $corrections, $request);
 
                     $result = [
                         'pointage_id' => $savedPointage->id,
@@ -503,6 +529,7 @@ class PointageController extends ApiController
             'heure_sortie' => 'nullable|date_format:H:i',
             'heures_travaillees' => 'nullable|numeric',
             'observations' => 'nullable|string',
+            'motif_correction' => 'nullable|string|max:1000',
         ]);
 
         if ((!empty($validated['heure_entree']) || !empty($validated['heure_sortie']))
@@ -515,16 +542,37 @@ class PointageController extends ApiController
             ], 422);
         }
 
-        // Auto-calculate hours if both times are provided
-        if (!empty($validated['heure_entree']) && !empty($validated['heure_sortie'])) {
-            $entree = Carbon::createFromFormat('H:i', $validated['heure_entree']);
-            $sortie = Carbon::createFromFormat('H:i', $validated['heure_sortie']);
-            $minutes = $entree->diffInMinutes($sortie, false);
-            $validated['heures_travaillees'] = $minutes > 0 ? round($minutes / 60, 1) : 0;
-        }
+        $motif = $validated['motif_correction'] ?? null;
+        unset($validated['motif_correction']);
 
-        $pointage->update($validated);
-        $pointage->load('agent');
+        $pointage = DB::transaction(function () use ($pointage, $validated, $request, $motif) {
+            $lockedPointage = Pointage::query()
+                ->whereKey($pointage->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            [$timeUpdates, $corrections, $finalTimes] = $this->preparePointageTimeMutation(
+                $lockedPointage,
+                $validated,
+                $request->user(),
+                $motif,
+                true
+            );
+
+            $lockedPointage->update(array_merge($timeUpdates, [
+                'heures_travaillees' => $this->calculateWorkedHoursFromTimes(
+                    $finalTimes['heure_entree'],
+                    $finalTimes['heure_sortie']
+                ),
+                'observations' => array_key_exists('observations', $validated)
+                    ? $validated['observations']
+                    : $lockedPointage->observations,
+            ]));
+
+            $this->recordPointageCorrections($lockedPointage, $corrections, $request);
+
+            return $lockedPointage->load('agent');
+        }, 3);
 
         $resource = PointageResource::make($pointage);
         $resolved = $resource->resolve();
@@ -543,6 +591,14 @@ class PointageController extends ApiController
     {
         if (!$this->scopeService()->canAccessPointage($request->user(), $pointage)) {
             return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        if (!$this->lockService()->canCorrectTimes($request->user())
+            && ($this->lockService()->fieldLocked($pointage, 'heure_entree')
+                || $this->lockService()->fieldLocked($pointage, 'heure_sortie'))) {
+            return response()->json([
+                'message' => 'Suppression refusée : ce pointage est verrouillé et nécessite un profil supérieur habilité.',
+            ], 403);
         }
 
         $pointage->delete();
@@ -828,10 +884,13 @@ class PointageController extends ApiController
         $departmentId = $request->query('department_id');
         $date = $request->query('date');
 
-        $attachPointageContext = function ($agents) use ($date) {
+        $attachPointageContext = function ($agents) use ($date, $request) {
             if (!$date) {
                 return $agents;
             }
+
+            $lockService = $this->lockService();
+            $user = $request->user();
 
             $pointages = Pointage::where('date_pointage', $date)
                 ->whereIn('agent_id', $agents->pluck('id'))
@@ -839,13 +898,20 @@ class PointageController extends ApiController
                 ->keyBy('agent_id');
 
             $absenceMap = $this->justifiedAbsencesForAgents($agents->pluck('id')->all(), $date);
-            $agents->each(function ($agent) use ($pointages, $absenceMap) {
+            $agents->each(function ($agent) use ($pointages, $absenceMap, $lockService, $user) {
                 $p = $pointages->get($agent->id);
-                $agent->pointage_existant = $p ? [
+                $locks = $lockService->locksPayload($p, $user);
+                $agent->pointage_existant = $p ? array_merge([
+                    'id' => $p->id,
                     'heure_entree' => $p->heure_entree ? Carbon::parse($p->heure_entree)->format('H:i') : null,
                     'heure_sortie' => $p->heure_sortie ? Carbon::parse($p->heure_sortie)->format('H:i') : null,
                     'observations' => $p->observations,
-                ] : null;
+                ], $locks) : null;
+
+                foreach ($locks as $key => $value) {
+                    $agent->{$key} = $value;
+                }
+
                 $absence = $absenceMap[$agent->id] ?? null;
                 $agent->absence_justifiee = $absence !== null;
                 $agent->absence_justifiee_label = $absence['label'] ?? null;
@@ -1352,6 +1418,201 @@ class PointageController extends ApiController
         $parts = array_values(array_unique($parts));
 
         return $parts ? implode(' / ', $parts) : '-';
+    }
+
+    private function preparePointageTimeMutation(?Pointage $existing, array $payload, ?User $user, ?string $motif, bool $nullValuesAreSubmitted): array
+    {
+        $lockService = $this->lockService();
+        $restrictedOperator = $lockService->isRestrictedOperator($user);
+        $canCorrectTimes = $lockService->canCorrectTimes($user);
+
+        $current = [
+            'heure_entree' => $lockService->actualTime($existing, 'heure_entree'),
+            'heure_sortie' => $lockService->actualTime($existing, 'heure_sortie'),
+        ];
+
+        $inputs = [];
+        foreach (array_keys(self::TIME_FIELD_LABELS) as $field) {
+            [$submitted, $value] = $this->submittedPointageTime($payload, $field, $nullValuesAreSubmitted);
+            $inputs[$field] = [
+                'submitted' => $submitted,
+                'value' => $value,
+            ];
+        }
+
+        if ($restrictedOperator
+            && $current['heure_entree'] === null
+            && $current['heure_sortie'] === null
+            && $inputs['heure_sortie']['submitted']
+            && $inputs['heure_sortie']['value'] !== null) {
+            $this->throwPointageValidation(
+                'heure_sortie',
+                "Enregistrez d'abord l'heure d'arrivée. L'heure de départ sera saisie après validation de l'arrivée."
+            );
+        }
+
+        if ($inputs['heure_sortie']['submitted']
+            && $inputs['heure_sortie']['value'] !== null
+            && $current['heure_entree'] === null
+            && !$inputs['heure_entree']['submitted']) {
+            $this->throwPointageValidation(
+                'heure_sortie',
+                "L'heure de départ ne peut pas être enregistrée avant l'heure d'arrivée."
+            );
+        }
+
+        $updates = [];
+        $corrections = [];
+        $final = $current;
+
+        foreach (self::TIME_FIELD_LABELS as $field => $label) {
+            if (!$inputs[$field]['submitted']) {
+                continue;
+            }
+
+            $newValue = $inputs[$field]['value'];
+            $oldValue = $current[$field];
+
+            if ($newValue === $oldValue) {
+                continue;
+            }
+
+            if ($oldValue !== null) {
+                if (!$canCorrectTimes) {
+                    $this->throwPointageValidation(
+                        $field,
+                        "{$label} déjà enregistrée et verrouillée. Toute correction doit être faite par un profil supérieur habilité."
+                    );
+                }
+
+                if (trim((string) $motif) === '') {
+                    $this->throwPointageValidation(
+                        'motif_correction',
+                        "Le motif de correction est obligatoire pour modifier {$label}."
+                    );
+                }
+
+                $corrections[] = [
+                    'champ' => $field,
+                    'libelle' => $label,
+                    'ancienne_valeur' => $oldValue,
+                    'nouvelle_valeur' => $newValue,
+                    'motif' => trim((string) $motif),
+                ];
+            }
+
+            $updates[$field] = $newValue;
+            $final[$field] = $newValue;
+        }
+
+        if ($final['heure_sortie'] !== null && $final['heure_entree'] === null) {
+            $this->throwPointageValidation(
+                'heure_entree',
+                "L'heure d'arrivée doit être enregistrée avant l'heure de départ."
+            );
+        }
+
+        return [$updates, $corrections, $final];
+    }
+
+    private function submittedPointageTime(array $payload, string $field, bool $nullValuesAreSubmitted): array
+    {
+        if (!array_key_exists($field, $payload)) {
+            return [false, null];
+        }
+
+        $value = $this->normalizePointageTime($payload[$field] ?? null);
+
+        if ($value === null && !$nullValuesAreSubmitted) {
+            return [false, null];
+        }
+
+        return [true, $value];
+    }
+
+    private function normalizePointageTime($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($value instanceof \DateTimeInterface) {
+            return Carbon::parse($value)->format('H:i');
+        }
+
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^\d{2}:\d{2}/', $value)) {
+            return substr($value, 0, 5);
+        }
+
+        try {
+            return Carbon::parse($value)->format('H:i');
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function calculateWorkedHoursFromTimes(?string $heureEntree, ?string $heureSortie): ?float
+    {
+        if (!$heureEntree || !$heureSortie) {
+            return null;
+        }
+
+        $minutes = Carbon::createFromFormat('H:i', $heureEntree)
+            ->diffInMinutes(Carbon::createFromFormat('H:i', $heureSortie), false);
+
+        return $minutes > 0 ? round($minutes / 60, 1) : 0;
+    }
+
+    private function recordPointageCorrections(Pointage $pointage, array $corrections, Request $request): void
+    {
+        if ($corrections === []) {
+            return;
+        }
+
+        $user = $request->user();
+        $correctedAt = now()->toIso8601String();
+
+        foreach ($corrections as $correction) {
+            AuditLog::create([
+                'user_id' => $user?->id,
+                'user_name' => $user?->name,
+                'table_name' => 'pointages',
+                'record_id' => $pointage->id,
+                'action' => 'correction_pointage_heure',
+                'donnees_avant' => [
+                    'pointage_id' => $pointage->id,
+                    'agent_id' => $pointage->agent_id,
+                    'date_pointage' => optional($pointage->date_pointage)?->toDateString(),
+                    'champ' => $correction['champ'],
+                    'ancienne_valeur' => $correction['ancienne_valeur'],
+                ],
+                'donnees_apres' => [
+                    'pointage_id' => $pointage->id,
+                    'agent_id' => $pointage->agent_id,
+                    'date_pointage' => optional($pointage->date_pointage)?->toDateString(),
+                    'champ' => $correction['champ'],
+                    'nouvelle_valeur' => $correction['nouvelle_valeur'],
+                    'motif' => $correction['motif'],
+                    'corrige_par_id' => $user?->id,
+                    'corrige_par' => $user?->name,
+                    'corrige_le' => $correctedAt,
+                ],
+                'ip_address' => $request->ip(),
+                'user_agent' => substr((string) $request->userAgent(), 0, 1000),
+            ]);
+        }
+    }
+
+    private function throwPointageValidation(string $field, string $message): void
+    {
+        throw ValidationException::withMessages([
+            $field => [$message],
+        ]);
     }
 
     private function pointageHasPresence(Pointage $pointage): bool

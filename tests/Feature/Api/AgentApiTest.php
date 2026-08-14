@@ -5,6 +5,7 @@ namespace Tests\Feature\Api;
 use Tests\TestCase;
 use App\Models\User;
 use App\Models\Agent;
+use App\Models\Department;
 use App\Models\Fonction;
 use App\Models\Role;
 use Laravel\Sanctum\Sanctum;
@@ -128,6 +129,109 @@ class AgentApiTest extends TestCase
             'matricule_etat' => 'PNM-TEST001',
             'email_professionnel' => 'test.agent@pnmls.cd'
         ]);
+    }
+
+    public function test_agent_creation_notifies_structure_and_sen_sena()
+    {
+        Sanctum::actingAs($this->rhUser);
+
+        $department = Department::create([
+            'code' => 'DNOTIF',
+            'nom' => 'Département Notifications',
+        ]);
+
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $structureUser = User::factory()->create(['role_id' => $agentRole->id]);
+        $structureAgent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'departement_id' => $department->id,
+            'role_id' => $agentRole->id,
+            'statut' => 'actif',
+        ]);
+        $structureUser->update(['agent_id' => $structureAgent->id]);
+
+        $senUser = $this->createUserWithRole('SEN');
+        $senaUser = $this->createUserWithRole('SENA');
+
+        Fonction::create(['nom' => 'Chargé notification']);
+
+        $response = $this->postJson('/api/agents', [
+            'matricule_etat' => 'PNM-NOTIF001',
+            'nom' => 'Notif',
+            'prenom' => 'Creation',
+            'sexe' => 'F',
+            'annee_naissance' => 1991,
+            'lieu_naissance' => 'Kinshasa',
+            'organe' => 'Secrétariat Exécutif National',
+            'fonction' => 'Chargé notification',
+            'departement_id' => $department->id,
+            'niveau_etudes' => 'Licence',
+            'annee_engagement_programme' => 2021,
+        ]);
+
+        $response->assertStatus(201);
+
+        foreach ([$structureUser, $senUser, $senaUser] as $recipient) {
+            $this->assertDatabaseHas('notifications_portail', [
+                'user_id' => $recipient->id,
+                'type' => 'agent',
+                'titre' => 'Nouvel agent créé',
+            ]);
+        }
+    }
+
+    public function test_agent_affectation_notifies_structure_and_sen_sena()
+    {
+        Sanctum::actingAs($this->rhUser);
+
+        $department = Department::create([
+            'code' => 'DAFF',
+            'nom' => 'Département Affectations',
+        ]);
+
+        $agentRole = Role::firstOrCreate(['nom_role' => 'Agent']);
+        $structureUser = User::factory()->create(['role_id' => $agentRole->id]);
+        $structureAgent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'departement_id' => $department->id,
+            'role_id' => $agentRole->id,
+            'statut' => 'actif',
+        ]);
+        $structureUser->update(['agent_id' => $structureAgent->id]);
+
+        $senUser = $this->createUserWithRole('SEN');
+        $senaUser = $this->createUserWithRole('SENA');
+
+        $targetAgent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'statut' => 'actif',
+        ]);
+
+        $fonction = Fonction::create([
+            'nom' => 'Analyste affectation',
+            'niveau_administratif' => 'SEN',
+            'type_poste' => 'departement',
+        ]);
+
+        $response = $this->postJson('/api/affectations', [
+            'agent_id' => $targetAgent->id,
+            'fonction_id' => $fonction->id,
+            'niveau_administratif' => 'SEN',
+            'niveau' => 'departement',
+            'department_id' => $department->id,
+            'date_debut' => now()->toDateString(),
+            'actif' => true,
+        ]);
+
+        $response->assertStatus(201);
+
+        foreach ([$structureUser, $senUser, $senaUser] as $recipient) {
+            $this->assertDatabaseHas('notifications_portail', [
+                'user_id' => $recipient->id,
+                'type' => 'agent',
+                'titre' => 'Nouvelle affectation agent',
+            ]);
+        }
     }
 
     /**
@@ -290,5 +394,20 @@ class AgentApiTest extends TestCase
                      'fonctions',
                      'provinces'
                  ]);
+    }
+
+    private function createUserWithRole(string $roleName): User
+    {
+        $role = Role::firstOrCreate(['nom_role' => $roleName]);
+        $agent = Agent::factory()->create([
+            'organe' => 'Secrétariat Exécutif National',
+            'role_id' => $role->id,
+            'statut' => 'actif',
+        ]);
+
+        return User::factory()->create([
+            'role_id' => $role->id,
+            'agent_id' => $agent->id,
+        ]);
     }
 }

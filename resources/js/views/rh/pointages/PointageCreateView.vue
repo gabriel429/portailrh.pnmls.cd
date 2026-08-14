@@ -55,7 +55,7 @@
             <strong>{{ selectedScopeName }}</strong> &mdash;
             {{ agents.length }} agent(s).
             <span v-if="recordedCount > 0" class="badge bg-success ms-2">{{ recordedCount }} deja pointe(s)</span>
-            <br><small class="text-muted">Les heures existantes sont pre-remplies. Vous pouvez completer les heures de sortie et re-enregistrer.</small>
+            <br><small class="text-muted">Saisie sequentielle : arrivee validee, puis depart. Les heures deja validees sont verrouillees.</small>
           </div>
 
           <!-- Validation errors -->
@@ -87,7 +87,7 @@
                   :class="{ 'row-recorded': agent.pointage_existant, 'row-justified-absence': agent.absence_justifiee }"
                 >
                   <td>
-                    <input type="checkbox" class="form-check-input" v-model="agent.selected" :disabled="agent.absence_justifiee">
+                    <input type="checkbox" class="form-check-input" v-model="agent.selected" :disabled="!agentHasOpenTimeField(agent)">
                   </td>
                   <td>
                     <div class="agent-name">
@@ -102,10 +102,12 @@
                     <div class="agent-poste">{{ agent.poste_actuel || '' }}</div>
                   </td>
                   <td>
-                    <input type="time" class="form-control" v-model="agent.heure_entree" :disabled="agent.absence_justifiee">
+                    <input type="time" class="form-control" v-model="agent.heure_entree" :disabled="!agent.can_edit_heure_entree">
+                    <small v-if="agent.heure_entree_verrouillee" class="lock-note"><i class="fas fa-lock me-1"></i>Verrouillee</small>
                   </td>
                   <td>
-                    <input type="time" class="form-control" v-model="agent.heure_sortie" :disabled="agent.absence_justifiee">
+                    <input type="time" class="form-control" v-model="agent.heure_sortie" :disabled="!agent.can_edit_heure_sortie">
+                    <small v-if="agent.heure_sortie_verrouillee" class="lock-note"><i class="fas fa-lock me-1"></i>Verrouillee</small>
                   </td>
                   <td>
                     <span class="text-muted">{{ calculateHours(agent) }}</span>
@@ -125,7 +127,7 @@
               <i v-else class="fas fa-save me-2"></i>Enregistrer les pointages
             </button>
             <button type="button" class="btn btn-outline-secondary" @click="fillAll">
-              <i class="fas fa-clock me-1"></i> Remplir tout (08:00 - 16:00)
+              <i class="fas fa-clock me-1"></i> Remplir champs ouverts
             </button>
             <button type="button" class="btn btn-outline-danger" @click="clearAll">
               <i class="fas fa-eraser me-1"></i> Tout effacer
@@ -223,24 +225,67 @@ function calculateHours(agent) {
 }
 
 function toggleSelectAll() {
-    agents.value.forEach(a => { a.selected = a.absence_justifiee ? false : selectAll.value })
+    agents.value.forEach(a => { a.selected = agentHasOpenTimeField(a) ? selectAll.value : false })
 }
 
 function fillAll() {
     agents.value.forEach(agent => {
         if (agent.absence_justifiee) return
-        if (!agent.heure_entree) agent.heure_entree = '08:00'
-        if (!agent.heure_sortie) agent.heure_sortie = '16:00'
+        if (agent.can_edit_heure_entree && !agent.heure_entree) agent.heure_entree = '08:00'
+        if (agent.can_edit_heure_sortie && !agent.heure_sortie) agent.heure_sortie = '16:00'
     })
 }
 
 function clearAll() {
     agents.value.forEach(agent => {
         if (agent.absence_justifiee) return
-        agent.heure_entree = ''
-        agent.heure_sortie = ''
+        if (agent.can_edit_heure_entree) agent.heure_entree = ''
+        if (agent.can_edit_heure_sortie) agent.heure_sortie = ''
         agent.observations = ''
     })
+}
+
+function agentHasOpenTimeField(agent) {
+    return !agent.absence_justifiee && (agent.can_edit_heure_entree || agent.can_edit_heure_sortie)
+}
+
+function normalizePointageAgent(agent) {
+    const existing = agent.pointage_existant || {}
+    const hasExistingArrival = Boolean(existing.heure_entree || agent.heure_entree_verrouillee)
+    const canEditArrival = !agent.absence_justifiee && (existing.can_edit_heure_entree ?? agent.can_edit_heure_entree ?? true)
+    const canEditDeparture = !agent.absence_justifiee && (existing.can_edit_heure_sortie ?? agent.can_edit_heure_sortie ?? (hasExistingArrival && !existing.heure_sortie))
+
+    return {
+        ...agent,
+        selected: !agent.absence_justifiee && (canEditArrival || canEditDeparture),
+        heure_entree: agent.absence_justifiee ? '' : (existing.heure_entree || ''),
+        heure_sortie: agent.absence_justifiee ? '' : (existing.heure_sortie || ''),
+        observations: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : (existing.observations || ''),
+        heure_entree_verrouillee: Boolean(existing.heure_entree_verrouillee ?? agent.heure_entree_verrouillee),
+        heure_sortie_verrouillee: Boolean(existing.heure_sortie_verrouillee ?? agent.heure_sortie_verrouillee),
+        can_edit_heure_entree: Boolean(canEditArrival),
+        can_edit_heure_sortie: Boolean(canEditDeparture),
+    }
+}
+
+function buildPointagePayload(agent) {
+    const payload = {
+        agent_id: agent.id,
+        observations: agent.observations || null,
+    }
+    let hasTime = false
+
+    if (agent.can_edit_heure_entree && agent.heure_entree) {
+        payload.heure_entree = agent.heure_entree
+        hasTime = true
+    }
+
+    if (agent.can_edit_heure_sortie && agent.heure_sortie) {
+        payload.heure_sortie = agent.heure_sortie
+        hasTime = true
+    }
+
+    return hasTime ? payload : null
 }
 
 async function loadAgents() {
@@ -265,13 +310,7 @@ async function loadAgents() {
 
       const agentsData = data.data || data.agents || []
 
-      agents.value = agentsData.map(agent => ({
-            ...agent,
-            selected: !agent.absence_justifiee,
-            heure_entree: agent.absence_justifiee ? '' : (agent.pointage_existant?.heure_entree || ''),
-            heure_sortie: agent.absence_justifiee ? '' : (agent.pointage_existant?.heure_sortie || ''),
-            observations: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : (agent.pointage_existant?.observations || ''),
-        }))
+      agents.value = agentsData.map(normalizePointageAgent)
 
         agentsLoaded.value = true
     } catch {
@@ -286,13 +325,8 @@ async function submitPointages() {
 
     // Build pointages array from agents that have times entered
     const pointagesData = agents.value
-        .filter(a => !a.absence_justifiee && (a.heure_entree || a.heure_sortie))
-        .map(a => ({
-            agent_id: a.id,
-            heure_entree: a.heure_entree || null,
-            heure_sortie: a.heure_sortie || null,
-            observations: a.observations || null,
-        }))
+        .map(buildPointagePayload)
+        .filter(Boolean)
 
     if (pointagesData.length === 0) {
         ui.addToast('Aucun pointage à enregistrer. Veuillez saisir au moins une heure.', 'warning')
@@ -339,6 +373,14 @@ onMounted(() => {
 .pointage-table input[type="text"] { min-width: 120px; }
 .agent-name { font-weight: 600; white-space: nowrap; }
 .agent-poste { font-size: 0.85em; color: #6c757d; }
+.lock-note {
+    display: inline-flex;
+    align-items: center;
+    margin-top: 0.25rem;
+    color: #64748b;
+    font-size: 0.75rem;
+    font-weight: 700;
+}
 .row-recorded { background-color: #f0fdf4; }
 .row-justified-absence {
     background-color: #f3f4f6 !important;

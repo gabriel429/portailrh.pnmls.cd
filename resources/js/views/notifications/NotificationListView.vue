@@ -26,6 +26,7 @@
       <button class="notif-action-btn" :class="{ active: filtre === 'plan_travail' }" @click="setFiltre('plan_travail')">Plan de travail</button>
       <button class="notif-action-btn" :class="{ active: filtre === 'tache' }" @click="setFiltre('tache')">Taches</button>
       <button class="notif-action-btn" :class="{ active: filtre === 'document_travail' }" @click="setFiltre('document_travail')">Documents</button>
+      <button class="notif-action-btn" :class="{ active: filtre === 'agent' }" @click="setFiltre('agent')">Agents</button>
       <button v-if="nonLuesCount > 0" class="notif-action-btn mark-all ms-auto" @click="handleMarkAllRead">
         <i class="fas fa-check-double me-1"></i> Tout marquer lu
       </button>
@@ -208,6 +209,7 @@ function typeLabel(type) {
     communique: 'Communique',
     message: 'Message',
     document_travail: 'Document',
+    agent: 'Agent',
   }
   return map[type] || 'Notification'
 }

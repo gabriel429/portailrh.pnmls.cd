@@ -170,7 +170,7 @@
                         :id="`present_${agent.id}`"
                         :checked="pointageData[agent.id]?.present"
                         @change="togglePresence(agent.id)"
-                        :disabled="agent.absence_justifiee"
+                        :disabled="!hasOpenTimeField(agent)"
                       >
                     </div>
                   </td>
@@ -179,16 +179,18 @@
                       type="time"
                       class="form-control form-control-sm"
                       v-model="pointageData[agent.id].heure_arrivee"
-                      :disabled="agent.absence_justifiee || !pointageData[agent.id]?.present"
+                      :disabled="!agent.can_edit_heure_entree || !pointageData[agent.id]?.present"
                     >
+                    <small v-if="agent.heure_entree_verrouillee" class="pointage-lock-note"><i class="fas fa-lock me-1"></i>Verrouillee</small>
                   </td>
                   <td>
                     <input
                       type="time"
                       class="form-control form-control-sm"
                       v-model="pointageData[agent.id].heure_depart"
-                      :disabled="agent.absence_justifiee || !pointageData[agent.id]?.present"
+                      :disabled="!agent.can_edit_heure_sortie || !pointageData[agent.id]?.present"
                     >
+                    <small v-if="agent.heure_sortie_verrouillee" class="pointage-lock-note"><i class="fas fa-lock me-1"></i>Verrouillee</small>
                   </td>
                   <td>
                     <input
@@ -300,7 +302,13 @@ const pointageData = ref({})
 
 // Computed
 const selectedAgents = computed(() =>
-  agents.value.filter(agent => !agent.absence_justifiee && pointageData.value[agent.id]?.present)
+  agents.value.filter(agent => {
+    const data = pointageData.value[agent.id]
+    if (agent.absence_justifiee || !data?.present) return false
+
+    return (agent.can_edit_heure_entree && data.heure_arrivee)
+      || (agent.can_edit_heure_sortie && data.heure_depart)
+  })
 )
 
 const hasUnsavedChanges = computed(() => selectedAgents.value.length > 0)
@@ -375,6 +383,57 @@ async function fetchDepartments() {
   }
 }
 
+function normalizeAgentLocks(agent) {
+  const existing = agent.pointage_existant || {}
+  const hasExistingArrival = Boolean(existing.heure_entree || agent.heure_entree_verrouillee)
+  const canEditArrival = !agent.absence_justifiee && (existing.can_edit_heure_entree ?? agent.can_edit_heure_entree ?? true)
+  const canEditDeparture = !agent.absence_justifiee && (existing.can_edit_heure_sortie ?? agent.can_edit_heure_sortie ?? (hasExistingArrival && !existing.heure_sortie))
+
+  return {
+    ...agent,
+    heure_entree_verrouillee: Boolean(existing.heure_entree_verrouillee ?? agent.heure_entree_verrouillee),
+    heure_sortie_verrouillee: Boolean(existing.heure_sortie_verrouillee ?? agent.heure_sortie_verrouillee),
+    can_edit_heure_entree: Boolean(canEditArrival),
+    can_edit_heure_sortie: Boolean(canEditDeparture),
+  }
+}
+
+function hasOpenTimeField(agent) {
+  return !agent.absence_justifiee && (agent.can_edit_heure_entree || agent.can_edit_heure_sortie)
+}
+
+function initialPointageRow(agent) {
+  const existing = agent.pointage_existant || {}
+
+  return {
+    present: Boolean(existing.heure_entree || existing.heure_sortie),
+    heure_arrivee: agent.absence_justifiee ? '' : (existing.heure_entree || ''),
+    heure_depart: agent.absence_justifiee ? '' : (existing.heure_sortie || ''),
+    commentaire: agent.absence_justifiee
+      ? (agent.absence_justifiee_label || 'Absence justifiée')
+      : (existing.observations || ''),
+    retard_justifie: false,
+  }
+}
+
+function fillOpenDefaults(agent) {
+  const data = pointageData.value[agent.id]
+  if (!data) return
+
+  if (agent.can_edit_heure_entree && !data.heure_arrivee) data.heure_arrivee = '08:00'
+  if (agent.can_edit_heure_sortie && !data.heure_depart) data.heure_depart = '16:00'
+}
+
+function clearOpenFields(agent) {
+  const data = pointageData.value[agent.id]
+  if (!data) return
+
+  if (agent.can_edit_heure_entree) data.heure_arrivee = ''
+  if (agent.can_edit_heure_sortie) data.heure_depart = ''
+  data.commentaire = ''
+  data.retard_justifie = false
+}
+
 // Chargement agents
 async function loadAgents() {
   if (requiresDepartmentSelection.value && selectedDepartment.value === '') {
@@ -410,19 +469,13 @@ async function loadAgents() {
       )
     }
 
-    agents.value = result || []
+    agents.value = (result || []).map(normalizeAgentLocks)
     agentsLoaded.value = true
 
     // Initialiser pointageData
     pointageData.value = {}
     agents.value.forEach(agent => {
-      pointageData.value[agent.id] = {
-        present: false,
-        heure_arrivee: '',
-        heure_depart: '',
-        commentaire: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : '',
-        retard_justifie: false
-      }
+      pointageData.value[agent.id] = initialPointageRow(agent)
     })
 
     const cacheIndicator = isOffline.value ? ' (cache local)' : ''
@@ -438,17 +491,11 @@ async function loadAgents() {
     )
 
     if (cachedAgents.length > 0) {
-      agents.value = cachedAgents
+      agents.value = cachedAgents.map(normalizeAgentLocks)
       agentsLoaded.value = true
       pointageData.value = {}
       agents.value.forEach(agent => {
-        pointageData.value[agent.id] = {
-          present: false,
-          heure_arrivee: '',
-          heure_depart: '',
-          commentaire: agent.absence_justifie ? (agent.absence_justifiee_label || 'Absence justifiée') : '',
-          retard_justifie: false,
-        }
+        pointageData.value[agent.id] = initialPointageRow(agent)
       })
       ui.addToast(`Données locales : ${cachedAgents.length} agent(s) chargé(s)`, 'info')
     } else {
@@ -462,53 +509,33 @@ async function loadAgents() {
 // Actions pointage
 function togglePresence(agentId) {
   const rowAgent = agents.value.find(a => a.id === agentId)
-  if (rowAgent?.absence_justifiee) return
+  if (!rowAgent || !hasOpenTimeField(rowAgent)) return
   const agent = pointageData.value[agentId]
   agent.present = !agent.present
 
   if (agent.present) {
-    if (!agent.heure_arrivee) agent.heure_arrivee = '08:00'
-    if (!agent.heure_depart) agent.heure_depart = '16:00'
+    fillOpenDefaults(rowAgent)
   } else {
-    agent.heure_arrivee = ''
-    agent.heure_depart = ''
-    agent.commentaire = ''
-    agent.retard_justifie = false
+    clearOpenFields(rowAgent)
   }
 }
 
 function markAllPresent() {
   agents.value.forEach(agent => {
     if (agent.absence_justifiee) {
-      pointageData.value[agent.id] = {
-        present: false,
-        heure_arrivee: '',
-        heure_depart: '',
-        commentaire: agent.absence_justifiee_label || 'Absence justifiée',
-        retard_justifie: false
-      }
+      pointageData.value[agent.id] = initialPointageRow(agent)
       return
     }
-    pointageData.value[agent.id] = {
-      present: true,
-      heure_arrivee: '08:00',
-      heure_depart: '16:00',
-      commentaire: '',
-      retard_justifie: false
-    }
+    pointageData.value[agent.id] = initialPointageRow(agent)
+    pointageData.value[agent.id].present = hasOpenTimeField(agent)
+    fillOpenDefaults(agent)
   })
   ui.addToast(`✅ ${agents.value.length} agents marqués présents`, 'success')
 }
 
 function resetForm() {
   agents.value.forEach(agent => {
-    pointageData.value[agent.id] = {
-      present: false,
-      heure_arrivee: '',
-      heure_depart: '',
-      commentaire: agent.absence_justifiee ? (agent.absence_justifiee_label || 'Absence justifiée') : '',
-      retard_justifie: false
-    }
+    pointageData.value[agent.id] = initialPointageRow(agent)
   })
 }
 
@@ -526,8 +553,8 @@ async function savePointages() {
       agent_id: agent.id,
       date_pointage: datePointage.value,
       present: pointageData.value[agent.id].present,
-      heure_arrivee: pointageData.value[agent.id].heure_arrivee || null,
-      heure_depart: pointageData.value[agent.id].heure_depart || null,
+      heure_arrivee: agent.can_edit_heure_entree ? (pointageData.value[agent.id].heure_arrivee || null) : null,
+      heure_depart: agent.can_edit_heure_sortie ? (pointageData.value[agent.id].heure_depart || null) : null,
       commentaire: pointageData.value[agent.id].commentaire || null,
       retard_justifie: pointageData.value[agent.id].retard_justifie,
       department_id: selectedDepartment.value,
@@ -660,6 +687,14 @@ onMounted(async () => {
 }
 .agent-name { font-weight: 600; white-space: nowrap; }
 .agent-poste { font-size: 0.85em; color: #6c757d; }
+.pointage-lock-note {
+  display: inline-flex;
+  align-items: center;
+  margin-top: .2rem;
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 800;
+}
 .table-success { background-color: #f0fdf4; }
 .btn-rh {
   background: linear-gradient(135deg, #0077B5, #005a87);

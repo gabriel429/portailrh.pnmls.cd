@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Services\PointageLockService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -9,7 +10,9 @@ class PointageResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        return [
+        $locks = app(PointageLockService::class)->locksPayload($this->resource, $request->user());
+
+        return array_merge([
             'id' => $this->id,
             'agent_id' => $this->agent_id,
             'date_pointage' => optional($this->date_pointage)?->toDateString(),
@@ -22,6 +25,6 @@ class PointageResource extends JsonResource
             'agent' => $this->whenLoaded('agent', function () use ($request) {
                 return AgentResource::make($this->agent)->resolve($request);
             }),
-        ];
+        ], $locks);
     }
 }

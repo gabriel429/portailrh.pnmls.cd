@@ -124,10 +124,10 @@
                       <router-link :to="{ name: 'rh.pointages.show', params: { id: pointage.id } }" class="btn btn-outline-primary" title="Details">
                         <i class="fas fa-eye"></i>
                       </router-link>
-                      <router-link :to="{ name: 'rh.pointages.edit', params: { id: pointage.id } }" class="btn btn-outline-warning" title="Modifier">
+                      <router-link v-if="pointage.can_correct_times" :to="{ name: 'rh.pointages.edit', params: { id: pointage.id } }" class="btn btn-outline-warning" title="Corriger">
                         <i class="fas fa-edit"></i>
                       </router-link>
-                      <button type="button" class="btn btn-outline-danger" title="Supprimer" @click="confirmDelete(pointage)">
+                      <button v-if="pointage.can_correct_times" type="button" class="btn btn-outline-danger" title="Supprimer" @click="confirmDelete(pointage)">
                         <i class="fas fa-trash"></i>
                       </button>
                     </div>
@@ -223,6 +223,7 @@
               <strong>{{ cm_scopeName }}</strong> — {{ cm_agents.length }} agent(s)
               <span v-if="cm_recordedCount > 0" class="pcm-badge-ok ms-2">{{ cm_recordedCount }} deja pointe(s)</span>
               <span v-if="cm_absenceCount > 0" class="pcm-badge-absence ms-2">{{ cm_absenceCount }} en absence justifiée</span>
+              <small class="pcm-flow-note">Arrivee puis depart. Les heures validees sont verrouillees.</small>
             </div>
 
             <!-- Errors -->
@@ -256,8 +257,14 @@
                         <i class="fas fa-ban me-1"></i>{{ a.absence_justifiee_label || 'Absence justifiée' }}
                       </div>
                     </td>
-                    <td><input type="time" v-model="a.heure_entree" class="pcm-time-input" :disabled="a.absence_justifiee"></td>
-                    <td><input type="time" v-model="a.heure_sortie" class="pcm-time-input" :disabled="a.absence_justifiee"></td>
+                    <td>
+                      <input type="time" v-model="a.heure_entree" class="pcm-time-input" :disabled="!a.can_edit_heure_entree">
+                      <small v-if="a.heure_entree_verrouillee" class="pcm-lock-note"><i class="fas fa-lock me-1"></i>Verrouillee</small>
+                    </td>
+                    <td>
+                      <input type="time" v-model="a.heure_sortie" class="pcm-time-input" :disabled="!a.can_edit_heure_sortie">
+                      <small v-if="a.heure_sortie_verrouillee" class="pcm-lock-note"><i class="fas fa-lock me-1"></i>Verrouillee</small>
+                    </td>
                     <td class="text-muted">{{ cm_calcHours(a) }}</td>
                     <td><input type="text" v-model="a.observations" class="pcm-obs-input" placeholder="..." :disabled="a.absence_justifiee"></td>
                   </tr>
@@ -268,7 +275,7 @@
             <!-- Quick actions -->
             <div class="pcm-quick-actions">
               <button type="button" class="pcm-btn-quick" @click="cm_fillAll">
-                <i class="fas fa-clock me-1"></i> Remplir tout (08:00 - 16:00)
+                <i class="fas fa-clock me-1"></i> Remplir champs ouverts
               </button>
               <button type="button" class="pcm-btn-quick pcm-btn-quick-danger" @click="cm_clearAll">
                 <i class="fas fa-eraser me-1"></i> Effacer
@@ -554,17 +561,55 @@ function cm_calcHours(a) {
     return diff > 0 ? diff.toFixed(1) + 'h' : '-'
 }
 
+function cm_normalizeAgent(a) {
+    const existing = a.pointage_existant || {}
+    const hasExistingArrival = Boolean(existing.heure_entree || a.heure_entree_verrouillee)
+    const canEditArrival = !a.absence_justifiee && (existing.can_edit_heure_entree ?? a.can_edit_heure_entree ?? true)
+    const canEditDeparture = !a.absence_justifiee && (existing.can_edit_heure_sortie ?? a.can_edit_heure_sortie ?? (hasExistingArrival && !existing.heure_sortie))
+
+    return {
+        ...a,
+        heure_entree: a.absence_justifiee ? '' : (existing.heure_entree || ''),
+        heure_sortie: a.absence_justifiee ? '' : (existing.heure_sortie || ''),
+        observations: a.absence_justifiee ? (a.absence_justifiee_label || 'Absence justifiée') : (existing.observations || ''),
+        heure_entree_verrouillee: Boolean(existing.heure_entree_verrouillee ?? a.heure_entree_verrouillee),
+        heure_sortie_verrouillee: Boolean(existing.heure_sortie_verrouillee ?? a.heure_sortie_verrouillee),
+        can_edit_heure_entree: Boolean(canEditArrival),
+        can_edit_heure_sortie: Boolean(canEditDeparture),
+    }
+}
+
+function cm_buildPayload(a) {
+    const payload = {
+        agent_id: a.id,
+        observations: a.observations || null,
+    }
+    let hasTime = false
+
+    if (a.can_edit_heure_entree && a.heure_entree) {
+        payload.heure_entree = a.heure_entree
+        hasTime = true
+    }
+
+    if (a.can_edit_heure_sortie && a.heure_sortie) {
+        payload.heure_sortie = a.heure_sortie
+        hasTime = true
+    }
+
+    return hasTime ? payload : null
+}
+
 function cm_fillAll() {
     cm_agents.value.forEach(a => {
         if (a.absence_justifiee) return
-        if (!a.heure_entree) a.heure_entree = '08:00'
-        if (!a.heure_sortie) a.heure_sortie = '16:00'
+        if (a.can_edit_heure_entree && !a.heure_entree) a.heure_entree = '08:00'
+        if (a.can_edit_heure_sortie && !a.heure_sortie) a.heure_sortie = '16:00'
     })
 }
 function cm_clearAll() {
     cm_agents.value.forEach(a => {
-        a.heure_entree = ''
-        a.heure_sortie = ''
+        if (a.can_edit_heure_entree) a.heure_entree = ''
+        if (a.can_edit_heure_sortie) a.heure_sortie = ''
         a.observations = a.absence_justifiee ? (a.absence_justifiee_label || 'Absence justifiée') : ''
     })
 }
@@ -581,12 +626,7 @@ async function cm_loadAgents() {
             date: cm_date.value,
         })
       const agentsData = data.data || data.agents || []
-      cm_agents.value = agentsData.map(a => ({
-            ...a,
-            heure_entree: a.absence_justifiee ? '' : (a.pointage_existant?.heure_entree || ''),
-            heure_sortie: a.absence_justifiee ? '' : (a.pointage_existant?.heure_sortie || ''),
-            observations: a.absence_justifiee ? (a.absence_justifiee_label || 'Absence justifiée') : (a.pointage_existant?.observations || ''),
-        }))
+      cm_agents.value = agentsData.map(cm_normalizeAgent)
         cm_agentsLoaded.value = true
     } catch {
         ui.addToast('Erreur lors du chargement des agents.', 'danger')
@@ -598,8 +638,8 @@ async function cm_loadAgents() {
 async function cm_submit() {
     cm_errors.value = []
     const pointagesData = cm_agents.value
-        .filter(a => !a.absence_justifiee && (a.heure_entree || a.heure_sortie))
-        .map(a => ({ agent_id: a.id, heure_entree: a.heure_entree || null, heure_sortie: a.heure_sortie || null, observations: a.observations || null }))
+        .map(cm_buildPayload)
+        .filter(Boolean)
     if (pointagesData.length === 0) { ui.addToast('Saisissez au moins une heure.', 'warning'); return }
     cm_submitting.value = true
     try {
@@ -761,6 +801,13 @@ async function cm_submit() {
   background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px;
   padding: .5rem .85rem; font-size: .78rem; color: #1e40af; margin: .75rem 0;
 }
+.pcm-flow-note {
+  display: block;
+  margin-top: .25rem;
+  color: #64748b;
+  font-size: .68rem;
+  font-weight: 700;
+}
 .pcm-badge-ok {
   display: inline-block; padding: 1px 6px; border-radius: 8px;
   font-size: .65rem; font-weight: 700; background: #dcfce7; color: #166534;
@@ -798,6 +845,14 @@ async function cm_submit() {
 .pcm-time-input:disabled,
 .pcm-obs-input:disabled {
   background: #f8fafc; color: #94a3b8; cursor: not-allowed; border-color: #e5e7eb;
+}
+.pcm-lock-note {
+  display: inline-flex;
+  align-items: center;
+  margin-top: .2rem;
+  color: #64748b;
+  font-size: .65rem;
+  font-weight: 800;
 }
 .pcm-obs-input {
   border: 1.5px solid #e2e8f0; border-radius: 8px; padding: .3rem .5rem;

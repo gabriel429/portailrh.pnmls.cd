@@ -13,8 +13,8 @@
             </div>
             <div>
               <div class="hero-tools">
-                <router-link :to="{ name: 'rh.pointages.edit', params: { id: pointage.id } }" class="btn-rh main">
-                  <i class="fas fa-edit me-1"></i> Modifier
+                <router-link v-if="canCorrectTimes" :to="{ name: 'rh.pointages.edit', params: { id: pointage.id } }" class="btn-rh main">
+                  <i class="fas fa-edit me-1"></i> Corriger
                 </router-link>
                 <router-link :to="{ name: 'rh.pointages.index' }" class="btn-rh alt">
                   <i class="fas fa-arrow-left me-1"></i> Retour
@@ -71,9 +71,12 @@
 
             <div class="rh-list-card p-3">
               <h6 class="mb-2"><i class="fas fa-cog me-2"></i>Actions</h6>
-              <button type="button" class="btn btn-danger w-100 btn-sm" @click="confirmDelete">
+              <button v-if="canCorrectTimes" type="button" class="btn btn-danger w-100 btn-sm" @click="confirmDelete">
                 <i class="fas fa-trash me-2"></i>Supprimer
               </button>
+              <p v-else class="text-muted small mb-0">
+                <i class="fas fa-lock me-1"></i>Pointage verrouille pour votre profil.
+              </p>
             </div>
           </div>
         </div>
@@ -102,7 +105,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import * as pointagesApi from '@/api/pointages'
@@ -117,6 +120,7 @@ const loading = ref(true)
 const pointage = ref(null)
 const showDeleteModal = ref(false)
 const deleting = ref(false)
+const canCorrectTimes = computed(() => Boolean(pointage.value?.can_correct_times))
 
 function formatDate(dateStr) {
     if (!dateStr) return 'N/A'

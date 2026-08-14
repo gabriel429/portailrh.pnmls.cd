@@ -1347,6 +1347,8 @@ class ParametresController extends Controller
         });
 
         $this->recordAudit('CREATE', 'affectations', $affectation->id, null, $affectation->toArray());
+        NotificationService::notifierAffectationAgent($affectation, $request->user()?->id);
+
         return response()->json($affectation->load(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite']), 201);
     }
 
@@ -1357,6 +1359,7 @@ class ParametresController extends Controller
         }
 
         $before = $affectation->toArray();
+        $notificationBefore = $affectation->getRawOriginal();
         $validated = $this->validateAffectationPayload($request);
 
         $agent = Agent::find($validated['agent_id']);
@@ -1389,8 +1392,38 @@ class ParametresController extends Controller
             return $affectation;
         });
 
-        $this->recordAudit('UPDATE', 'affectations', $affectation->id, $before, $affectation->fresh()->toArray());
-        return response()->json($affectation->load(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite']));
+        $after = $affectation->fresh();
+        $this->recordAudit('UPDATE', 'affectations', $affectation->id, $before, $after->toArray());
+
+        if ($this->affectationNotificationFieldsChanged($notificationBefore, $after)) {
+            NotificationService::notifierAffectationAgent($after, $request->user()?->id, true);
+        }
+
+        return response()->json($after->load(['agent', 'fonction', 'department', 'section', 'cellule', 'province', 'localite']));
+    }
+
+    private function affectationNotificationFieldsChanged(array $before, Affectation $after): bool
+    {
+        foreach ([
+            'agent_id',
+            'fonction_id',
+            'niveau_administratif',
+            'niveau',
+            'department_id',
+            'section_id',
+            'cellule_id',
+            'province_id',
+            'localite_id',
+            'date_debut',
+            'date_fin',
+            'actif',
+        ] as $field) {
+            if ((string) ($before[$field] ?? '') !== (string) ($after->getRawOriginal($field) ?? '')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function validateAffectationPayload(Request $request): array
