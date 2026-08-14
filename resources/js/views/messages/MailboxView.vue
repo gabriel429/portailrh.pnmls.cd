@@ -669,7 +669,7 @@
                   ref="toInput"
                   v-model.trim="recipientDraft.to"
                   type="text"
-                  placeholder="Nom, poste, groupe ou email"
+                  placeholder="Debut du nom ou email"
                   @focus="activeRecipientField = 'to'"
                   @input="activeRecipientField = 'to'"
                   @keydown.enter.prevent="commitRecipient('to')"
@@ -726,23 +726,10 @@
             </div>
           </div>
 
-          <div class="mailbox-smart-panel">
+          <div v-if="hasRecipientSuggestionQuery" class="mailbox-smart-panel">
             <div class="mailbox-smart-head">
-              <strong>Suggestions intelligentes</strong>
-              <span>{{ loadingContacts ? 'Chargement...' : `${contactOptions.length} contact(s)` }}</span>
-            </div>
-            <div class="mailbox-smart-groups">
-              <button
-                v-for="group in smartGroups"
-                :key="group.key"
-                type="button"
-                :disabled="!group.contacts.length"
-                @click="addGroupRecipients(group)"
-              >
-                <i class="fas" :class="group.icon"></i>
-                <span>{{ group.label }}</span>
-                <b>{{ group.contacts.length }}</b>
-              </button>
+              <strong>Contacts suggeres</strong>
+              <span>{{ loadingContacts ? 'Chargement...' : `${filteredContactSuggestions.length} resultat(s)` }}</span>
             </div>
             <div v-if="filteredContactSuggestions.length" class="mailbox-contact-suggestions">
               <button
@@ -751,12 +738,23 @@
                 type="button"
                 @click="addRecipient(activeRecipientField, contact)"
               >
-                <span class="mailbox-contact-avatar">{{ contactInitial(contact) }}</span>
+                <span class="mailbox-contact-avatar">
+                  <img
+                    v-if="contactPhotoSrc(contact)"
+                    :src="contactPhotoSrc(contact)"
+                    :alt="contact.name"
+                    @error="markContactPhotoFailed(contact)"
+                  >
+                  <span v-else>{{ contactInitial(contact) }}</span>
+                </span>
                 <span>
                   <strong>{{ contact.name }}</strong>
                   <small>{{ contact.email }} - {{ contact.poste || contact.structure || 'Contact' }}</small>
                 </span>
               </button>
+            </div>
+            <div v-else-if="!loadingContacts" class="mailbox-contact-empty">
+              Aucun contact trouve avec ce debut de nom.
             </div>
           </div>
 
@@ -781,7 +779,7 @@
               <i class="fas fa-paperclip"></i>
               Pieces jointes
             </button>
-            <span>5 fichiers max, 10 Mo par fichier</span>
+            <span>Nombre de fichiers libre, 10 Mo par fichier</span>
           </div>
 
           <div v-if="composeForm.attachments.length" class="mailbox-attachment-list">
@@ -840,6 +838,7 @@ const loadingContacts = ref(false)
 const addressBookGroups = ref([])
 const recentRecipients = ref([])
 const activeRecipientField = ref('to')
+const failedContactPhotos = ref(new Set())
 const mobileMenuOpen = ref(false)
 const mobileSearchOpen = ref(false)
 const toInput = ref(null)
@@ -928,6 +927,8 @@ const readActionLabel = computed(() => actionMessages.value.some(message => mess
 const flagActionLabel = computed(() => actionMessages.value.some(message => !message.flagged) ? 'Etoile' : 'Retirer etoile')
 const readerBodyBlocks = computed(() => formatMailBody(selectedMessage.value?.body || ''))
 const signaturePreview = computed(() => parseSignaturePreview(settingsForm.signature))
+const recipientSuggestionQuery = computed(() => normalizeText(recipientDraft[activeRecipientField.value] || ''))
+const hasRecipientSuggestionQuery = computed(() => recipientSuggestionQuery.value.length >= 2)
 const contactOptions = computed(() => {
   const contacts = []
   const seen = new Set()
@@ -942,10 +943,12 @@ const contactOptions = computed(() => {
         id: agent.id,
         name: agent.nom_complet || email,
         email,
+        photo: agent.photo || '',
         poste: agent.poste || group.poste || '',
         structure: agent.structure || '',
         source: 'agent',
         recent: false,
+        nameSearch: normalizeText(agent.nom_complet || email),
         search: normalizeText([
           agent.nom_complet,
           email,
@@ -966,10 +969,12 @@ const contactOptions = computed(() => {
       id: `recent-${email}`,
       name: recipient.name || email,
       email,
+      photo: '',
       poste: recipient.label || 'Destinataire recent',
       structure: 'Mail recent',
       source: 'recent',
       recent: true,
+      nameSearch: normalizeText(recipient.name || email),
       search: normalizeText([
         recipient.name,
         email,
@@ -1022,21 +1027,17 @@ const smartGroups = computed(() => {
 })
 const filteredContactSuggestions = computed(() => {
   const field = activeRecipientField.value
-  const term = normalizeText(recipientDraft[field] || '')
+  const term = recipientSuggestionQuery.value
   const pool = contactOptions.value.filter(contact => !isRecipientSelected(field, contact.email))
   const bySmartOrder = (first, second) => Number(second.recent) - Number(first.recent)
     || (first.name || first.email).localeCompare(second.name || second.email)
 
-  if (!term) {
-    return pool
-      .sort(bySmartOrder)
-      .slice(0, 8)
-  }
+  if (term.length < 2) return []
 
   return pool
-    .filter(contact => contact.search.includes(term))
+    .filter(contact => contactMatchesNamePrefix(contact, term))
     .sort(bySmartOrder)
-    .slice(0, 10)
+    .slice(0, 8)
 })
 
 function hydrateSettingsForm(payload) {
@@ -1557,15 +1558,8 @@ function commitRecipient(field, preferSuggestion = true) {
 
   for (const token of tokens) {
     const normalizedToken = normalizeText(token)
-    const matchedGroup = smartGroups.value.find(group => normalizeText(group.label) === normalizedToken)
-
-    if (matchedGroup) {
-      addGroupRecipients(matchedGroup, field)
-      continue
-    }
-
     const suggestion = preferSuggestion
-      ? filteredContactSuggestions.value.find(contact => contact.search.includes(normalizedToken))
+      ? filteredContactSuggestions.value.find(contact => contactMatchesNamePrefix(contact, normalizedToken))
       : null
 
     if (suggestion && !isEmail(token)) {
@@ -1638,11 +1632,6 @@ function handleAttachmentChange(event) {
   composeError.value = ''
 
   for (const file of files) {
-    if (nextAttachments.length >= 5) {
-      composeError.value = 'Maximum 5 pieces jointes par mail.'
-      break
-    }
-
     if (file.size > 10 * 1024 * 1024) {
       composeError.value = `${file.name} depasse 10 Mo.`
       continue
@@ -1694,6 +1683,53 @@ async function downloadAttachment(attachment) {
 
 function contactInitial(contact) {
   return (contact.name?.charAt(0) || contact.email?.charAt(0) || '@').toUpperCase()
+}
+
+function contactMatchesNamePrefix(contact, term) {
+  if (!term || term.length < 2) return false
+
+  const name = contact.nameSearch || normalizeText(contact.name)
+  if (!name) return false
+  if (name.startsWith(term)) return true
+
+  return name
+    .split(/[\s.'_-]+/)
+    .some(part => part.startsWith(term))
+}
+
+function contactPhotoCandidates(photo) {
+  const value = String(photo || '').trim()
+  if (!value) return []
+  if (/^(https?:)?\/\//i.test(value) || value.startsWith('data:')) return [value]
+
+  const normalized = value.replace(/^\/+/, '')
+  const filename = normalized.split('/').pop()
+  const candidates = []
+
+  if (normalized.includes('/')) {
+    candidates.push(`/${normalized}`)
+    candidates.push(`/storage/${normalized}`)
+  }
+
+  if (filename) {
+    candidates.push(`/uploads/profiles/${filename}`)
+    candidates.push(`/storage/uploads/profiles/${filename}`)
+    candidates.push(`/${filename}`)
+  }
+
+  return [...new Set(candidates)]
+}
+
+function contactPhotoSrc(contact) {
+  return contactPhotoCandidates(contact?.photo)
+    .find(url => !failedContactPhotos.value.has(url)) || ''
+}
+
+function markContactPhotoFailed(contact) {
+  const url = contactPhotoSrc(contact)
+  if (!url) return
+
+  failedContactPhotos.value = new Set([...failedContactPhotos.value, url])
 }
 
 function resetSelection() {
@@ -3150,7 +3186,7 @@ onBeforeUnmount(() => {
 }
 
 .mailbox-compose-form textarea {
-  min-height: 260px;
+  min-height: 220px;
   padding: 12px;
   resize: vertical;
 }
@@ -3362,7 +3398,7 @@ onBeforeUnmount(() => {
 
 .mailbox-compose-drawer {
   display: flex;
-  width: min(900px, calc(100vw - 28px));
+  width: min(860px, calc(100vw - 28px));
   max-height: calc(100dvh - var(--mailbox-compose-top, 76px) - 28px);
   flex-direction: column;
   overflow: hidden;
@@ -3481,19 +3517,20 @@ onBeforeUnmount(() => {
 
 .mailbox-smart-panel {
   display: grid;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid #d7e8ee;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid #cfe1e8;
   border-radius: 8px;
-  background: #fbfdfe;
+  background: #f8fbfc;
 }
 
 .mailbox-smart-head {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   color: #64748b;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
 }
 
 .mailbox-smart-head strong {
@@ -3535,17 +3572,21 @@ onBeforeUnmount(() => {
 
 .mailbox-contact-suggestions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  max-height: 176px;
+  overflow-y: auto;
+  gap: 7px;
+  padding-right: 2px;
+  scrollbar-gutter: stable;
 }
 
 .mailbox-contact-suggestions button {
   display: grid;
-  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-columns: 38px minmax(0, 1fr);
   gap: 8px;
   align-items: center;
-  min-height: 46px;
-  padding: 7px;
+  min-height: 50px;
+  padding: 7px 9px;
   border: 1px solid #e0edf2;
   border-radius: 8px;
   background: #fff;
@@ -3561,13 +3602,27 @@ onBeforeUnmount(() => {
 .mailbox-contact-avatar {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  overflow: hidden;
+  border-radius: 50%;
   color: #fff;
   background: #04769a;
   font-size: 0.82rem;
   font-weight: 900;
+}
+
+.mailbox-contact-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mailbox-contact-avatar span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
 }
 
 .mailbox-contact-suggestions strong,
@@ -3585,6 +3640,18 @@ onBeforeUnmount(() => {
 .mailbox-contact-suggestions small {
   color: #64748b;
   font-size: 0.74rem;
+}
+
+.mailbox-contact-empty {
+  min-height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #cfe1e8;
+  border-radius: 8px;
+  color: #64748b;
+  background: #fff;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .mailbox-attachments {
@@ -3629,7 +3696,11 @@ onBeforeUnmount(() => {
 
 .mailbox-attachment-list {
   display: grid;
+  max-height: 176px;
+  overflow-y: auto;
   gap: 8px;
+  padding-right: 2px;
+  scrollbar-gutter: stable;
 }
 
 .mailbox-attachment-item {

@@ -350,7 +350,7 @@ class MailboxController extends ApiController
             'bcc.*' => ['required', 'email:rfc'],
             'subject' => ['required', 'string', 'max:180'],
             'body' => ['required', 'string', 'max:10000'],
-            'attachments' => ['nullable', 'array', 'max:5'],
+            'attachments' => ['nullable', 'array'],
             'attachments.*' => ['file', 'max:10240'],
         ]);
 
