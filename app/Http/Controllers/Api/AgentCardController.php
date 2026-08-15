@@ -6,6 +6,7 @@ use App\Http\Resources\AgentResource;
 use App\Models\Agent;
 use App\Models\AgentCardSetting;
 use App\Models\AgentIdCard;
+use App\Models\AuditLog;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -124,7 +125,7 @@ class AgentCardController extends ApiController
         ], 201);
     }
 
-    public function verify(string $token): JsonResponse
+    public function verify(Request $request, string $token): JsonResponse
     {
         $token = $this->normalizeToken($token);
 
@@ -138,6 +139,23 @@ class AgentCardController extends ApiController
                 'message' => 'Carte introuvable. Verifiez que la carte a bien ete generee et que le QR code est complet.',
             ], 404);
         }
+
+        // This endpoint is public (badge scanning has no session) and exposes
+        // agent PII — log who consulted it, since there is no auth to attribute it to.
+        AuditLog::create([
+            'user_id' => $request->user()?->id,
+            'user_name' => $request->user()?->name,
+            'table_name' => 'agent_id_cards',
+            'record_id' => $card->id,
+            'action' => 'agent_card_public_verify',
+            'donnees_apres' => [
+                'agent_id' => $card->agent_id,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ],
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
 
         return $this->success([
             'card' => $this->cardPayload($card),

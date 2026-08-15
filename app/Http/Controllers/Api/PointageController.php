@@ -1565,7 +1565,13 @@ class PointageController extends ApiController
         $minutes = Carbon::createFromFormat('H:i', $heureEntree)
             ->diffInMinutes(Carbon::createFromFormat('H:i', $heureSortie), false);
 
-        return $minutes > 0 ? round($minutes / 60, 1) : 0;
+        if ($minutes <= 0) {
+            throw ValidationException::withMessages([
+                'heure_sortie' => ["L'heure de sortie ({$heureSortie}) doit être postérieure à l'heure d'entrée ({$heureEntree})."],
+            ]);
+        }
+
+        return round($minutes / 60, 1);
     }
 
     private function recordPointageCorrections(Pointage $pointage, array $corrections, Request $request): void

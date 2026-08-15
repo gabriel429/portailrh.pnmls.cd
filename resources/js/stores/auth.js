@@ -411,9 +411,18 @@ export const useAuthStore = defineStore('auth', {
                     return cached
                 }
 
+                const staleUserId = this.user?.id ?? cached?.id
                 this.user = null
                 this.cacheUser(null)
                 this.markSessionHint(false)
+
+                if (sessionRejected && staleUserId) {
+                    // The server explicitly invalidated the session (not a
+                    // network blip) — drop the offline session cache too, so
+                    // it doesn't keep reporting this session as "verified".
+                    offlineStorage.clearCachedSession(staleUserId).catch(() => {})
+                }
+
                 return null
             } finally {
                 this.loading = false
@@ -434,6 +443,7 @@ export const useAuthStore = defineStore('auth', {
             this.markSessionHint(false)
             offlineStorage.clearCachedSession(userId).catch(() => {})
             offlineStorage.clearApiResponses(userId).catch(() => {})
+            offlineStorage.clearPointageAgents(userId).catch(() => {})
             if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
                 navigator.serviceWorker.controller.postMessage({ type: 'CLEAR_API_CACHE' })
             }

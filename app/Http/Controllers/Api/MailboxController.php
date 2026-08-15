@@ -365,22 +365,23 @@ class MailboxController extends ApiController
         );
         $htmlBody = $this->mailHtmlBody($mailBody);
 
-        config([
-            'mail.mailers.mailbox' => [
-                'transport' => 'smtp',
-                'host' => $credential->smtp_host ?: $credential->imap_host,
-                'port' => $credential->smtp_port ?: 465,
-                'encryption' => $credential->smtp_encryption === 'none'
-                    ? null
-                    : ($credential->smtp_encryption ?: 'ssl'),
-                'username' => $credential->imap_username,
-                'password' => $credential->imap_password,
-                'timeout' => 30,
-            ],
+        // Built ad-hoc via Mail::build() rather than config(['mail.mailers.mailbox' => ...]):
+        // the latter mutates the shared, process-global config array, which a debug-mode
+        // error page (Ignition/Whoops) can dump — leaking this password in cleartext.
+        $mailboxMailer = Mail::build([
+            'transport' => 'smtp',
+            'host' => $credential->smtp_host ?: $credential->imap_host,
+            'port' => $credential->smtp_port ?: 465,
+            'encryption' => $credential->smtp_encryption === 'none'
+                ? null
+                : ($credential->smtp_encryption ?: 'ssl'),
+            'username' => $credential->imap_username,
+            'password' => $credential->imap_password,
+            'timeout' => 30,
         ]);
 
         try {
-            Mail::mailer('mailbox')->html($htmlBody, function ($message) use ($credential, $validated, $to, $cc, $bcc, $attachments, $senderName) {
+            $mailboxMailer->html($htmlBody, function ($message) use ($credential, $validated, $to, $cc, $bcc, $attachments, $senderName) {
                 $message
                     ->from($credential->email, $senderName)
                     ->to($to->all())

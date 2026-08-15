@@ -782,63 +782,69 @@ class TacheController extends ApiController
             default => 'commentaire',
         };
 
-        $commentaire = TacheCommentaire::create([
-            'tache_id'       => $tache->id,
-            'agent_id'       => $agent->id,
-            'contenu'        => $validated['contenu'],
-            'type_commentaire' => $typeCommentaire,
-            'ancien_statut'  => $ancienStatut,
-            'nouveau_statut' => $validated['statut'],
-        ]);
-
         $nouveauPourcentage = $validated['statut'] === 'terminee'
             ? 100
             : $validated['pourcentage'];
 
-        if ($validated['statut'] === 'bloquee') {
-            $workflow->markBlocked($tache, $agent, $validated['contenu']);
-        } else {
-            if ($ancienStatut === 'bloquee' && $validated['statut'] === 'en_cours') {
-                $workflow->reopenAfterBlocked($tache, $agent, $validated['contenu']);
+        // Commentaire, changement de statut/workflow et document justificatif
+        // doivent réussir ensemble : sans transaction, une erreur de stockage
+        // du document après le changement de statut laisserait par exemple une
+        // tâche "terminée" sans le document pourtant obligatoire.
+        DB::transaction(function () use ($request, $tache, $agent, $workflow, $validated, $ancienStatut, $typeCommentaire, $hasDocument, $nouveauPourcentage) {
+            $commentaire = TacheCommentaire::create([
+                'tache_id'       => $tache->id,
+                'agent_id'       => $agent->id,
+                'contenu'        => $validated['contenu'],
+                'type_commentaire' => $typeCommentaire,
+                'ancien_statut'  => $ancienStatut,
+                'nouveau_statut' => $validated['statut'],
+            ]);
+
+            if ($validated['statut'] === 'bloquee') {
+                $workflow->markBlocked($tache, $agent, $validated['contenu']);
+            } else {
+                if ($ancienStatut === 'bloquee' && $validated['statut'] === 'en_cours') {
+                    $workflow->reopenAfterBlocked($tache, $agent, $validated['contenu']);
+                }
+
+                if ($validated['statut'] === 'terminee') {
+                    $workflow->submitForValidation($tache, $agent, $validated['contenu']);
+                } else {
+                    $tache->update([
+                        'statut' => $validated['statut'],
+                        'pourcentage' => $nouveauPourcentage,
+                        'validation_statut' => 'non_requise',
+                        'soumise_validation_at' => null,
+                        'validation_commentaire' => null,
+                        'blocked_by' => null,
+                        'blocked_at' => null,
+                        'blocking_reason' => null,
+                    ]);
+
+                    $workflow->recordHistory(
+                        $tache,
+                        $agent,
+                        'mise_a_jour_statut',
+                        'Mise a jour du statut',
+                        $ancienStatut,
+                        $validated['statut'],
+                        $tache->validation_statut,
+                        $tache->validation_statut,
+                        $validated['contenu']
+                    );
+                }
             }
 
-            if ($validated['statut'] === 'terminee') {
-                $workflow->submitForValidation($tache, $agent, $validated['contenu']);
-            } else {
-                $tache->update([
-                    'statut' => $validated['statut'],
-                    'pourcentage' => $nouveauPourcentage,
-                    'validation_statut' => 'non_requise',
-                    'soumise_validation_at' => null,
-                    'validation_commentaire' => null,
-                    'blocked_by' => null,
-                    'blocked_at' => null,
-                    'blocking_reason' => null,
-                ]);
-
-                $workflow->recordHistory(
+            if ($hasDocument) {
+                $this->storeDocumentForTache(
                     $tache,
                     $agent,
-                    'mise_a_jour_statut',
-                    'Mise a jour du statut',
-                    $ancienStatut,
-                    $validated['statut'],
-                    $tache->validation_statut,
-                    $tache->validation_statut,
-                    $validated['contenu']
+                    $request->file('document'),
+                    $validated['statut'] === 'terminee' ? 'final' : 'progression',
+                    $commentaire
                 );
             }
-        }
-
-        if ($hasDocument) {
-            $this->storeDocumentForTache(
-                $tache,
-                $agent,
-                $request->file('document'),
-                  $validated['statut'] === 'terminee' ? 'final' : 'progression',
-                  $commentaire
-              );
-          }
+        });
 
         if ($validated['statut'] === 'terminee') {
             $validatorIds = $workflow->finalValidators($tache)->pluck('id')->all();

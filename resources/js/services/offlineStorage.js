@@ -354,6 +354,25 @@ class OfflineStorage {
         })
     }
 
+    async clearPointageAgents(userId) {
+        if (!userId) return
+        await this.init()
+
+        return new Promise((resolve) => {
+            const transaction = this.db.transaction(['pointage_agents'], 'readwrite')
+            const index = transaction.objectStore('pointage_agents').index('user_id')
+            const request = index.openKeyCursor(IDBKeyRange.only(userId))
+            request.onsuccess = () => {
+                const cursor = request.result
+                if (!cursor) return
+                transaction.objectStore('pointage_agents').delete(cursor.primaryKey)
+                cursor.continue()
+            }
+            transaction.oncomplete = () => resolve()
+            transaction.onerror = () => resolve()
+        })
+    }
+
     async cachePointageAgents(userId, scopeKey, agents) {
         if (!userId || !scopeKey || !Array.isArray(agents)) return
         await this.init()
@@ -659,7 +678,10 @@ class OfflineStorage {
             request.onsuccess = (event) => {
                 const cursor = event.target.result
                 if (cursor) {
-                    if (cursor.value.status === 'synced') {
+                    // 'error' / 'blocked_auth' are permanent failures (max
+                    // retries exhausted, or a stale auth/permission block) —
+                    // without this they never left the local queue.
+                    if (['synced', 'error', 'blocked_auth'].includes(cursor.value.status)) {
                         cursor.delete()
                         cleaned++
                     }

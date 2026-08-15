@@ -196,38 +196,47 @@ class TacheWorkflowService
 
     public function rejectTask(Tache $tache, Agent $agent, ?string $commentaire = null): void
     {
-        $oldStatus = $tache->statut;
-        $oldValidation = $tache->validation_statut;
+        DB::transaction(function () use ($tache, $agent, $commentaire) {
+            $oldStatus = $tache->statut;
+            $oldValidation = $tache->validation_statut;
 
-        $activeStep = $tache->validationSteps()->where('statut', 'active')->first();
-        if ($activeStep) {
-            $activeStep->update([
-                'statut' => 'rejected',
-                'acted_by' => $agent->id,
-                'acted_at' => now(),
-                'commentaire' => $commentaire,
-            ]);
-            $tache->validationSteps()->where('statut', 'pending')->update(['statut' => 'cancelled']);
-        }
+            // Lock the active step the same way validateTask() does: without
+            // it, a concurrent validate and reject on the same step could
+            // both succeed, leaving the task in an inconsistent state.
+            $activeStep = $tache->validationSteps()
+                ->where('statut', 'active')
+                ->lockForUpdate()
+                ->first();
 
-        $tache->statut = 'en_cours';
-        $tache->validation_statut = 'rejetee';
-        $tache->validation_commentaire = $commentaire;
-        $tache->rejected_by = $agent->id;
-        $tache->rejected_at = now();
-        $tache->save();
+            if ($activeStep) {
+                $activeStep->update([
+                    'statut' => 'rejected',
+                    'acted_by' => $agent->id,
+                    'acted_at' => now(),
+                    'commentaire' => $commentaire,
+                ]);
+                $tache->validationSteps()->where('statut', 'pending')->update(['statut' => 'cancelled']);
+            }
 
-        $this->recordHistory(
-            $tache,
-            $agent,
-            'rejet_validation',
-            'Rejet de validation',
-            $oldStatus,
-            $tache->statut,
-            $oldValidation,
-            $tache->validation_statut,
-            $commentaire
-        );
+            $tache->statut = 'en_cours';
+            $tache->validation_statut = 'rejetee';
+            $tache->validation_commentaire = $commentaire;
+            $tache->rejected_by = $agent->id;
+            $tache->rejected_at = now();
+            $tache->save();
+
+            $this->recordHistory(
+                $tache,
+                $agent,
+                'rejet_validation',
+                'Rejet de validation',
+                $oldStatus,
+                $tache->statut,
+                $oldValidation,
+                $tache->validation_statut,
+                $commentaire
+            );
+        });
     }
 
     public function markBlocked(Tache $tache, Agent $agent, ?string $commentaire = null): void

@@ -1415,6 +1415,14 @@ class PlanTravailController extends ApiController
             return response()->json(['message' => 'Permission requise : pta.validate.section'], 403);
         }
 
+        if (!$this->canAccessActivity($activitePlan)) {
+            return response()->json(['message' => 'Ce plan de travail est hors de votre périmètre.'], 403);
+        }
+
+        if ($activitePlan->createur_id && $user->agent?->id === $activitePlan->createur_id) {
+            return response()->json(['message' => 'Vous ne pouvez pas valider votre propre plan de travail.'], 403);
+        }
+
         $validated = $request->validate([
             'observations' => 'nullable|string',
         ]);
@@ -1444,6 +1452,14 @@ class PlanTravailController extends ApiController
 
         if (!$user->hasAdminAccess() && !$user->hasPermission('pta.validate.cellule')) {
             return response()->json(['message' => 'Permission requise : pta.validate.cellule'], 403);
+        }
+
+        if (!$this->canAccessActivity($activitePlan)) {
+            return response()->json(['message' => 'Ce plan de travail est hors de votre périmètre.'], 403);
+        }
+
+        if ($activitePlan->createur_id && $user->agent?->id === $activitePlan->createur_id) {
+            return response()->json(['message' => 'Vous ne pouvez pas valider votre propre plan de travail.'], 403);
         }
 
         // Section validation should precede Cellule

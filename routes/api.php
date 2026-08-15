@@ -78,7 +78,7 @@ Route::prefix('mobile')->group(function () {
 
 // Sync status (public, for online detection)
 Route::get('/sync/status', [SyncController::class, 'status']);
-Route::get('/agent-cards/verify/{token}', [AgentCardController::class, 'verify']);
+Route::get('/agent-cards/verify/{token}', [AgentCardController::class, 'verify'])->middleware('throttle:30,1');
 
 // Authenticated (Sanctum SPA cookie auth)
 Route::middleware('auth:sanctum')->group(function () {
@@ -223,14 +223,14 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // Messages
-    Route::post('messages', [MessageController::class, 'store']);
+    Route::post('messages', [MessageController::class, 'store'])->middleware('throttle:20,1');
     Route::get('messages/{message}', [MessageController::class, 'show']);
     Route::get('mail-history', [MessageController::class, 'history']);
     Route::get('mailbox/settings', [MailboxController::class, 'settings']);
     Route::post('mailbox/settings', [MailboxController::class, 'saveSettings']);
     Route::get('mailbox/folders', [MailboxController::class, 'folders']);
     Route::get('mailbox/messages', [MailboxController::class, 'messages']);
-    Route::post('mailbox/send', [MailboxController::class, 'send']);
+    Route::post('mailbox/send', [MailboxController::class, 'send'])->middleware('throttle:20,1');
     Route::get('mailbox/messages/{uid}/attachments/{part}', [MailboxController::class, 'downloadAttachment'])
         ->whereNumber('uid')
         ->where('part', '[0-9.]+');
