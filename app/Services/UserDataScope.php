@@ -720,7 +720,7 @@ class UserDataScope
                 && $agentLocaliteId === $userLocaliteId;
         }
 
-        if ($this->isProvincialUser($user)) {
+        if ($this->isProvincialUser($user) || app(RoleService::class)->isProvincialCafManager($user)) {
             $provinceId = $this->provinceId($user);
 
             return $provinceId !== null && (int) $agent->province_id === $provinceId;
@@ -833,7 +833,7 @@ class UserDataScope
 
     public function enforceAgentPayloadScope(array $validated, ?User $user): array
     {
-        if (!$this->isProvincialUser($user)) {
+        if (!$this->isProvincialUser($user) && !app(RoleService::class)->isProvincialCafManager($user)) {
             return $validated;
         }
 

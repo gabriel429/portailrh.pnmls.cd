@@ -186,6 +186,15 @@ export const useAuthStore = defineStore('auth', {
         isRhOperationalAssistant() {
             return this.isAssistantRH || this.isProvincialOperationalAssistant
         },
+        /**
+         * CAF and SEL can be delegated create/edit/delete-agent rights by RH
+         * National, the same mechanism as Assistant RH — but unlike Assistant
+         * RH they keep their normal dashboard/menu/module access otherwise,
+         * so this stays separate from isRhOperationalAssistant.
+         */
+        isCafOrSelAgentManager() {
+            return this.isCAF || this.isSEL
+        },
         isDirecteur(state) {
             const role = normalizedRole(state)
             return [
@@ -271,13 +280,13 @@ export const useAuthStore = defineStore('auth', {
             ].includes(role)
         },
         canCreateAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isRhOperationalAssistant && this.hasPermission('create_agent'))
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || ((this.isRhOperationalAssistant || this.isCafOrSelAgentManager) && this.hasPermission('create_agent'))
         },
         canEditAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isRhOperationalAssistant && this.hasPermission('edit_agent'))
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || ((this.isRhOperationalAssistant || this.isCafOrSelAgentManager) && this.hasPermission('edit_agent'))
         },
         canDeleteAgents() {
-            return this.isSuperAdmin || this.isSEN || this.isFullRH || (this.isRhOperationalAssistant && this.hasPermission('delete_agent'))
+            return this.isSuperAdmin || this.isSEN || this.isFullRH || ((this.isRhOperationalAssistant || this.isCafOrSelAgentManager) && this.hasPermission('delete_agent'))
         },
         canManageRhAdminModules() {
             return this.isSuperAdmin || this.isSEN || this.isFullRH

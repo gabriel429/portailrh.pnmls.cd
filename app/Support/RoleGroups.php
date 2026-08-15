@@ -36,6 +36,19 @@ class RoleGroups
     public const RH_MOBILE_DASHBOARD = self::RH_MANAGEMENT;
 
     /**
+     * RH_MANAGEMENT plus CAF and SEL, who may only view/create/edit
+     * individual agent records (not exports, dossiers, or the delegation
+     * endpoint itself) — RH National must still grant CAF/SEL the
+     * create_agent/edit_agent delegation before they can write anything,
+     * the same mechanism already used for Assistant RH.
+     */
+    public const AGENT_RECORD_MANAGEMENT = [
+        ...self::RH_MANAGEMENT,
+        'CAF',
+        'SEL',
+    ];
+
+    /**
      * Build a 'role:...' middleware string from a role group.
      *
      * @param  list<string>  $roles

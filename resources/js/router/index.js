@@ -297,19 +297,19 @@ const routes = [
         path: '/rh/agents',
         name: 'rh.agents.index',
         component: () => import('@/views/rh/agents/AgentListView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true, allowLocalRH: true, preserveQueryView: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true, allowLocalRH: true, allowAgentManagerRole: true, preserveQueryView: true },
     },
     {
         path: '/rh/agents/create',
         name: 'rh.agents.create',
         component: () => import('@/views/rh/agents/AgentCreateView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true, assistantPermission: 'create_agent' },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true, allowAgentManagerRole: true, assistantPermission: 'create_agent' },
     },
     {
         path: '/rh/agents/:id',
         name: 'rh.agents.show',
         component: () => import('@/views/rh/agents/AgentShowView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true, allowLocalRH: true },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP', 'Section Nouvelle Technologie', 'Chef Section Nouvelle Technologie', 'Chef de Section Nouvelle Technologie'], allowAssistantRH: true, allowLocalRH: true, allowAgentManagerRole: true },
     },
     {
         path: '/rh/agents/:id/card',
@@ -321,7 +321,7 @@ const routes = [
         path: '/rh/agents/:id/edit',
         name: 'rh.agents.edit',
         component: () => import('@/views/rh/agents/AgentEditView.vue'),
-        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true, assistantPermission: 'edit_agent' },
+        meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN'], allowAssistantRH: true, allowAgentManagerRole: true, assistantPermission: 'edit_agent' },
     },
 
     // RH Pointages
@@ -564,14 +564,15 @@ router.beforeEach(async (to) => {
         const semanticallyAllowed = (allowed.includes('sep') && auth.isSEP)
             || (to.meta.allowAssistantRH && auth.isRhOperationalAssistant)
             || (to.meta.allowLocalRH && (auth.isRhLocal || auth.isSEL))
+            || (to.meta.allowAgentManagerRole && auth.isCafOrSelAgentManager)
 
         if (!allowed.includes(userRole) && !semanticallyAllowed) {
             return { name: 'dashboard' }
         }
     }
 
-    if (auth.isRhOperationalAssistant && to.meta.assistantPermission && !auth.hasPermission(to.meta.assistantPermission)) {
-        return { name: 'rh.dashboard' }
+    if ((auth.isRhOperationalAssistant || auth.isCafOrSelAgentManager) && to.meta.assistantPermission && !auth.hasPermission(to.meta.assistantPermission)) {
+        return { name: auth.isCafOrSelAgentManager ? 'rh.agents.index' : 'rh.dashboard' }
     }
 
     if (to.meta.docsTravail && !auth.canManageDocsTravail) {

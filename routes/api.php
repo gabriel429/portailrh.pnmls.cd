@@ -244,10 +244,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware(RoleGroups::middleware(RoleGroups::RH_MANAGEMENT))->group(function () {
         Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index']);
         Route::get('agents/export', [ApiAgentController::class, 'export']);
-        Route::get('agents/form-options', [ApiAgentController::class, 'formOptions']);
         Route::get('agents/{agent}/dossier/download', [ApiAgentController::class, 'downloadDossier']);
         Route::put('agents/{agent}/delegations', [ApiAgentController::class, 'updateDelegations']);
-        Route::apiResource('agents', ApiAgentController::class);
 
         // Pointages (Attendance) - custom routes BEFORE apiResource
         Route::get('pointages/daily', [\App\Http\Controllers\Api\PointageController::class, 'daily']);
@@ -325,6 +323,14 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('agents/{agent}/statuses/history', [AgentStatusController::class, 'history']);
             Route::get('agents/{agent}/availability', [HolidayController::class, 'checkAvailability']);
         });
+    });
+
+    // Agent records (view/create/edit) - RH management roles plus CAF/SEL,
+    // who still need an explicit create_agent/edit_agent delegation from
+    // RH National (see AgentController) before they can write anything.
+    Route::middleware(RoleGroups::middleware(RoleGroups::AGENT_RECORD_MANAGEMENT))->group(function () {
+        Route::get('agents/form-options', [ApiAgentController::class, 'formOptions']);
+        Route::apiResource('agents', ApiAgentController::class);
     });
 
     // Admin NT (Chef Section Nouvelle Technologie)
@@ -530,10 +536,8 @@ Route::prefix('v1')->as('v1.')->group(function () {
         Route::middleware(RoleGroups::middleware(RoleGroups::RH_MANAGEMENT))->group(function () {
             Route::get('rh/dashboard', [\App\Http\Controllers\Api\RhDashboardController::class, 'index'])->name('rh.dashboard');
             Route::get('agents/export', [ApiAgentController::class, 'export'])->name('agents.export');
-            Route::get('agents/form-options', [ApiAgentController::class, 'formOptions'])->name('agents.form-options');
             Route::get('agents/{agent}/dossier/download', [ApiAgentController::class, 'downloadDossier'])->name('agents.dossier.download');
             Route::put('agents/{agent}/delegations', [ApiAgentController::class, 'updateDelegations'])->name('agents.delegations.update');
-            Route::apiResource('agents', ApiAgentController::class)->names('agents');
 
             Route::get('pointages/daily', [\App\Http\Controllers\Api\PointageController::class, 'daily'])->name('pointages.daily');
             Route::get('pointages/daily/export', [\App\Http\Controllers\Api\PointageController::class, 'exportDaily'])->name('pointages.daily-export');
@@ -551,6 +555,11 @@ Route::prefix('v1')->as('v1.')->group(function () {
                 ->except(['index', 'show'])
                 ->middleware('not.assistant.rh')
                 ->names('communiques');
+        });
+
+        Route::middleware(RoleGroups::middleware(RoleGroups::AGENT_RECORD_MANAGEMENT))->group(function () {
+            Route::get('agents/form-options', [ApiAgentController::class, 'formOptions'])->name('agents.form-options');
+            Route::apiResource('agents', ApiAgentController::class)->names('agents');
         });
     });
 });

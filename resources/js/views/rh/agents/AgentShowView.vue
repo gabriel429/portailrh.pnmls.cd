@@ -596,7 +596,7 @@
 
           <div v-if="canManageAssistantDelegations" class="card border-0 shadow-sm mt-3">
             <div class="card-header bg-light border-bottom">
-              <h5 class="mb-0"><i class="fas fa-key me-2 text-primary"></i>Délégations Assistant RH</h5>
+              <h5 class="mb-0"><i class="fas fa-key me-2 text-primary"></i>Délégations de gestion des agents</h5>
             </div>
             <div class="card-body">
               <div class="form-check mb-2">
@@ -816,7 +816,7 @@ const canManageAgentDocuments = computed(() =>
     Boolean(agent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isRhOperationalAssistant
 )
 const canManageAssistantDelegations = computed(() =>
-    Boolean(agent.value?.permissions?.can_manage_assistant_delegations && agent.value?.permissions?.is_assistant_rh)
+    Boolean(agent.value?.permissions?.can_manage_assistant_delegations && agent.value?.permissions?.is_delegable_agent_manager)
 )
 const canManageAgentCards = computed(() => auth.isAdminNT)
 const canEditAgent = computed(() => auth.canEditAgents)

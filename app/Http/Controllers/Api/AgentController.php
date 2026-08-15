@@ -69,9 +69,20 @@ class AgentController extends ApiController
         return app(RoleService::class)->isAssistantRh($user);
     }
 
+    /**
+     * CAF and SEL can be delegated the same create/edit/delete-agent
+     * permissions as Assistant RH, but only once RH National grants it
+     * explicitly via updateDelegations() — see isDelegatedOperationalAssistant().
+     */
+    private function isCafOrSelRole($user): bool
+    {
+        return (bool) $user?->hasRole('SEL') || app(RoleService::class)->isProvincialCafManager($user);
+    }
+
     private function isDelegatedOperationalAssistant($user): bool
     {
         return $this->isAssistantRh($user)
+            || $this->isCafOrSelRole($user)
             || ((bool) $user?->hasRole('SECOM') && $this->scopeService()->isProvincialSep($user));
     }
 
@@ -84,7 +95,7 @@ class AgentController extends ApiController
 
     private function canManageAssistantRhDelegations($user): bool
     {
-        if (!$user || $this->isAssistantRh($user)) {
+        if (!$user || $this->isAssistantRh($user) || $this->isCafOrSelRole($user)) {
             return false;
         }
 
@@ -508,6 +519,7 @@ class AgentController extends ApiController
             'can_manage_documents' => $this->canManageAgentDocuments(request()->user()),
             'can_manage_assistant_delegations' => $this->canManageAssistantRhDelegations(request()->user()),
             'is_assistant_rh' => app(RoleService::class)->isAssistantRh($agent->user),
+            'is_delegable_agent_manager' => app(RoleService::class)->isAssistantRh($agent->user) || $this->isCafOrSelRole($agent->user),
             'direct' => $directPermissionCodes,
             'agent_management' => [
                 'create_agent' => in_array('create_agent', $directPermissionCodes, true),
@@ -531,8 +543,8 @@ class AgentController extends ApiController
             abort(403, 'Seul le Chef Section RH ou le SEN peut accorder ces delegations.');
         }
 
-        if (!app(RoleService::class)->isAssistantRh($agent->user)) {
-            abort(422, 'Les delegations de modification sont reservees aux assistants RH.');
+        if (!app(RoleService::class)->isAssistantRh($agent->user) && !$this->isCafOrSelRole($agent->user)) {
+            abort(422, 'Les delegations de modification sont reservees aux assistants RH, CAF ou SEL.');
         }
 
         $validated = $request->validate([

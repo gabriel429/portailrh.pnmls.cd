@@ -534,7 +534,7 @@
                 </div>
 
                 <div v-if="sm_canManageAssistantDelegations" class="asm-delegations mt-3">
-                  <div class="asm-section-title"><i class="fas fa-key me-1"></i> Délégations Assistant RH</div>
+                  <div class="asm-section-title"><i class="fas fa-key me-1"></i> Délégations de gestion des agents</div>
                   <div class="asm-delegation-grid">
                     <label class="asm-delegation-check">
                       <input v-model="delegationForm.create_agent" type="checkbox">
@@ -929,7 +929,7 @@ const sm_canManageAgentDocuments = computed(() =>
     Boolean(selectedAgent.value?.permissions?.can_manage_documents) || auth.isSuperAdmin || auth.isRH || auth.isRhOperationalAssistant
 )
 const sm_canManageAssistantDelegations = computed(() =>
-    Boolean(selectedAgent.value?.permissions?.can_manage_assistant_delegations && selectedAgent.value?.permissions?.is_assistant_rh)
+    Boolean(selectedAgent.value?.permissions?.can_manage_assistant_delegations && selectedAgent.value?.permissions?.is_delegable_agent_manager)
 )
 const selectedDocumentCategory = computed(() =>
     DOCUMENT_CATEGORY_OPTIONS.find((category) => category.value === documentUploadForm.value.categories_document_id)
