@@ -47,9 +47,15 @@ test-*.html
 # /public/workbox-*.js
 # /public/manifest.webmanifest
 
-# Dossiers racine = symlinks sur le serveur (deploy.sh), doublons locaux non trackés
+# Dossiers/fichiers racine = copiés depuis public/ sur le serveur par deploy.sh, doublons locaux non trackés
 /build/
 /images/
+/sw.js
+/workbox-*.js
+
+# Logs de debug git (ex: git push -v 2>out 1>err)
+git_push_out.txt
+git_push_err.txt
 
 # Archives de deploiement manuel obsoletes
 build-hostinger.zip
