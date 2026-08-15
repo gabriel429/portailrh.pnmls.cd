@@ -88,7 +88,7 @@
             <!-- File Preview -->
             <div v-if="document.fichier" class="file-preview-section">
               <template v-if="isImage">
-                <img :src="'/' + document.fichier" alt="Document" class="img-fluid rounded" style="max-height: 400px;" />
+                <img :src="document.view_url" alt="Document" class="img-fluid rounded" style="max-height: 400px;" />
               </template>
               <template v-else-if="fileMeta.extension === 'pdf'">
                 <div class="text-center py-4">

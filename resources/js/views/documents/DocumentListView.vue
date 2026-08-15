@@ -253,7 +253,7 @@
             <div v-if="detailDoc.fichier" class="ddm-section">
               <h6 class="ddm-section-title"><i class="fas fa-paperclip me-2"></i>Fichier</h6>
               <div v-if="detailIsImage()" class="ddm-preview">
-                <img :src="'/' + detailDoc.fichier" alt="Document" class="ddm-preview-img" />
+                <img :src="detailDoc.view_url" alt="Document" class="ddm-preview-img" />
               </div>
               <div v-else class="ddm-file">
                 <div :class="['ddm-file-icon', getFileIconClass(detailDoc)]">

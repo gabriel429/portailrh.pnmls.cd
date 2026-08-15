@@ -101,6 +101,11 @@ function generateOfflineAssetsIndex() {
     }
 }
 
+// Session-protected document streams: full-page navigations that must never
+// be written to the shared, unauthenticated Cache Storage (a cached response
+// here would be resurfaced to ANY user of the same browser profile/device).
+const sessionProtectedDocumentPattern = /^\/documents-travail\/[^/]+\/(?:view|download)$/
+
 export default defineConfig({
     plugins: [
         laravel({
@@ -143,14 +148,23 @@ export default defineConfig({
                     /^\/api\//,
                     /^\/build\//,
                     /^\/storage\//,
-                    /^\/documents-travail\/[^/]+\/(?:view|download)/,
+                    sessionProtectedDocumentPattern,
                 ],
                 modifyURLPrefix: {
                     '': '/build/',
                 },
                 runtimeCaching: [
                     {
-                        urlPattern: ({ request }) => request.mode === 'navigate',
+                        // Never cache session-protected document streams: this
+                        // handler backs a shared, unauthenticated Cache Storage,
+                        // so caching one user's document here would let it be
+                        // replayed to a different user of the same device.
+                        // NOTE: workbox-build serializes this function into the
+                        // generated service worker via Function#toString(), so
+                        // it must stay self-contained — it can't close over
+                        // sessionProtectedDocumentPattern from module scope.
+                        urlPattern: ({ request, url }) => request.mode === 'navigate'
+                            && !/^\/documents-travail\/[^/]+\/(?:view|download)$/.test(url.pathname),
                         handler: 'NetworkFirst',
                         options: {
                             cacheName: 'pnmls-pages',

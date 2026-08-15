@@ -9,11 +9,18 @@ use App\Services\NotificationService;
 use App\Services\RoleService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class DocumentController extends ApiController
 {
+    /**
+     * Only these file types may be uploaded as agent documents.
+     * Never allow executable/script extensions (php, phtml, cgi, ...).
+     */
+    private const ALLOWED_DOCUMENT_MIMES = 'pdf,jpg,jpeg,png,doc,docx,xls,xlsx';
+
     private const DOCUMENT_CATEGORY_VALUES = [
         'identite',
         'parcours',
@@ -133,6 +140,74 @@ class DocumentController extends ApiController
     }
 
     /**
+     * Documents uploaded before the private-storage migration live under
+     * public/uploads/documents (web-accessible). New uploads are stored on
+     * the private 'local' disk (storage/app/private), outside the webroot.
+     */
+    private function isLegacyPublicDocumentPath(string $path): bool
+    {
+        return str_starts_with($path, 'uploads/');
+    }
+
+    private function documentFileExists(Document $document): bool
+    {
+        if ($this->isLegacyPublicDocumentPath($document->fichier)) {
+            return file_exists(public_path($document->fichier));
+        }
+
+        return Storage::disk('local')->exists($document->fichier);
+    }
+
+    private function documentFileSize(Document $document): int
+    {
+        if (!$this->documentFileExists($document)) {
+            return 0;
+        }
+
+        if ($this->isLegacyPublicDocumentPath($document->fichier)) {
+            return filesize(public_path($document->fichier));
+        }
+
+        return Storage::disk('local')->size($document->fichier);
+    }
+
+    private function documentFileMime(Document $document): string
+    {
+        if (!$this->documentFileExists($document)) {
+            return 'application/octet-stream';
+        }
+
+        if ($this->isLegacyPublicDocumentPath($document->fichier)) {
+            return mime_content_type(public_path($document->fichier)) ?: 'application/octet-stream';
+        }
+
+        return Storage::disk('local')->mimeType($document->fichier) ?: 'application/octet-stream';
+    }
+
+    private function deleteDocumentFile(Document $document): void
+    {
+        if ($this->isLegacyPublicDocumentPath($document->fichier)) {
+            $path = public_path($document->fichier);
+            if (file_exists($path)) {
+                @unlink($path);
+            }
+
+            return;
+        }
+
+        Storage::disk('local')->delete($document->fichier);
+    }
+
+    private function storeUploadedDocument($file): string
+    {
+        $extension = Str::lower($file->getClientOriginalExtension());
+        $filename = Str::uuid() . '.' . $extension;
+        Storage::disk('local')->putFileAs('documents', $file, $filename);
+
+        return 'documents/' . $filename;
+    }
+
+    /**
      * List paginated documents for the authenticated user's agent.
      */
     public function index(Request $request)
@@ -188,7 +263,7 @@ class DocumentController extends ApiController
         $validated = $request->validate([
             'agent_id'                => 'required|integer|exists:agents,id',
             'nom_document'           => 'required|string|max:255',
-            'fichier'                => 'required|file|max:10240',
+            'fichier'                => 'required|file|max:10240|mimes:' . self::ALLOWED_DOCUMENT_MIMES,
             'categories_document_id' => ['nullable', 'string', Rule::in(self::DOCUMENT_CATEGORY_VALUES)],
             'description'            => 'nullable|string|max:500',
             'notify_by_mail'         => 'nullable|boolean',
@@ -201,15 +276,12 @@ class DocumentController extends ApiController
             return response()->json(['message' => 'Aucun agent associé à ce compte.'], 422);
         }
 
-        $file = $request->file('fichier');
-        $extension = $file->getClientOriginalExtension();
-        $filename = Str::uuid() . '.' . $extension;
-        $file->move(public_path('uploads/documents'), $filename);
+        $storedPath = $this->storeUploadedDocument($request->file('fichier'));
 
         $document = Document::create([
             'agent_id'    => $agent->id,
             'type'        => $this->normalizeDocumentCategory($validated['categories_document_id'] ?? 'identite'),
-            'fichier'     => 'uploads/documents/' . $filename,
+            'fichier'     => $storedPath,
             'description' => ($validated['nom_document'] ?? '')
                            . (!empty($validated['description']) ? ' | ' . $validated['description'] : ''),
             'statut'      => 'valide',
@@ -247,8 +319,8 @@ class DocumentController extends ApiController
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
         // Add file metadata
-        $filePath = public_path($document->fichier);
-        $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
+        $exists = $this->documentFileExists($document);
+        $fileSize = $exists ? $this->documentFileSize($document) : 0;
         $extension = pathinfo($document->fichier, PATHINFO_EXTENSION);
 
         $resource = DocumentResource::make($document);
@@ -257,14 +329,14 @@ class DocumentController extends ApiController
             'file' => [
                 'size' => $fileSize,
                 'extension' => strtolower($extension),
-                'exists' => file_exists($filePath),
+                'exists' => $exists,
             ],
         ], [
             'document' => $resource->resolve(),
             'file_meta' => [
                 'size' => $fileSize,
                 'extension' => strtolower($extension),
-                'exists' => file_exists($filePath),
+                'exists' => $exists,
             ],
         ]);
     }
@@ -283,7 +355,7 @@ class DocumentController extends ApiController
 
         $validated = $request->validate([
             'nom_document' => 'required|string|max:255',
-            'fichier' => 'nullable|file|max:10240',
+            'fichier' => 'nullable|file|max:10240|mimes:' . self::ALLOWED_DOCUMENT_MIMES,
             'categories_document_id' => ['nullable', 'string', Rule::in(self::DOCUMENT_CATEGORY_VALUES)],
             'description' => 'nullable|string|max:500',
             'statut' => 'nullable|string|max:100',
@@ -302,16 +374,8 @@ class DocumentController extends ApiController
         ];
 
         if ($request->hasFile('fichier')) {
-            $oldFilePath = public_path($document->fichier);
-            if (file_exists($oldFilePath)) {
-                @unlink($oldFilePath);
-            }
-
-            $file = $request->file('fichier');
-            $extension = $file->getClientOriginalExtension();
-            $filename = Str::uuid() . '.' . $extension;
-            $file->move(public_path('uploads/documents'), $filename);
-            $data['fichier'] = 'uploads/documents/' . $filename;
+            $this->deleteDocumentFile($document);
+            $data['fichier'] = $this->storeUploadedDocument($request->file('fichier'));
         }
 
         $document->update($data);
@@ -343,13 +407,15 @@ class DocumentController extends ApiController
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
-        $filePath = public_path($document->fichier);
-
-        if (!file_exists($filePath)) {
+        if (!$this->documentFileExists($document)) {
             return response()->json(['message' => 'Fichier introuvable.'], 404);
         }
 
-        return response()->download($filePath);
+        if ($this->isLegacyPublicDocumentPath($document->fichier)) {
+            return response()->download(public_path($document->fichier));
+        }
+
+        return Storage::disk('local')->download($document->fichier);
     }
 
     /**
@@ -363,16 +429,21 @@ class DocumentController extends ApiController
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
-        $filePath = public_path($document->fichier);
-
-        if (!file_exists($filePath)) {
+        if (!$this->documentFileExists($document)) {
             return response()->json(['message' => 'Fichier introuvable.'], 404);
         }
 
-        $filename = basename($filePath);
-        $mimeType = mime_content_type($filePath) ?: 'application/octet-stream';
+        $filename = basename($document->fichier);
+        $mimeType = $this->documentFileMime($document);
 
-        return response()->file($filePath, [
+        if ($this->isLegacyPublicDocumentPath($document->fichier)) {
+            return response()->file(public_path($document->fichier), [
+                'Content-Type' => $mimeType,
+                'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
+            ]);
+        }
+
+        return response(Storage::disk('local')->get($document->fichier), 200, [
             'Content-Type' => $mimeType,
             'Content-Disposition' => 'inline; filename="' . addslashes($filename) . '"',
         ]);
@@ -389,10 +460,7 @@ class DocumentController extends ApiController
             return response()->json(['message' => 'Non autorisé.'], 403);
         }
 
-        $filePath = public_path($document->fichier);
-        if (file_exists($filePath)) {
-            unlink($filePath);
-        }
+        $this->deleteDocumentFile($document);
 
         $document->delete();
 

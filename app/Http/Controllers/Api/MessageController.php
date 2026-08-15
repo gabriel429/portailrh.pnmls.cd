@@ -133,9 +133,11 @@ class MessageController extends ApiController
     {
         $user = $request->user();
 
-        // Ensure the message belongs to this user
+        // Ensure the message belongs to this user. A message always has an
+        // owning agent, so an account with no linked agent can never be the
+        // owner — deny it too, instead of letting a falsy $agent skip the check.
         $agent = $user->agent;
-        if ($agent && $message->agent_id !== $agent->id) {
+        if (!$agent || $message->agent_id !== $agent->id) {
             return response()->json(['message' => 'Accès refusé.'], 403);
         }
 

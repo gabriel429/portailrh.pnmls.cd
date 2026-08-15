@@ -2570,18 +2570,6 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             $q->whereYear('date_debut', $currentYear)
         )->distinct('agent_id')->count('agent_id');
 
-        // ─── DEMANDES DE RENFORCEMENT ─────────────────────────────────────────────
-        $demandesQ       = RequestModel::where('type', 'renforcement_capacites');
-        $demandesPending = (clone $demandesQ)->enAttente()->count();
-        $demandesApproved= (clone $demandesQ)->approuve()->count();
-        $demandesRejected= (clone $demandesQ)->rejete()->count();
-
-        $recentDemandes = (clone $demandesQ)->enAttente()
-            ->with('agent:id,nom,prenom')
-            ->orderByDesc('created_at')
-            ->limit(6)
-            ->get(['id', 'agent_id', 'type', 'description', 'created_at', 'statut']);
-
         // ─── TÂCHES DU CHEF ───────────────────────────────────────────────────────
         $tacheQ    = $agent ? Tache::where('agent_id', $agent->id) : Tache::whereRaw('1=0');
         $tTotal    = (clone $tacheQ)->count();
@@ -2615,12 +2603,6 @@ usort($items, fn($a, $b) => $b['effectifs']['total'] - $a['effectifs']['total'])
             ],
             'recent_formations'  => $recentFormations,
             'formations_a_venir' => $formationsAVenir,
-            'demandes' => [
-                'en_attente' => $demandesPending,
-                'approuve'   => $demandesApproved,
-                'rejete'     => $demandesRejected,
-            ],
-            'recent_demandes' => $recentDemandes,
             'taches' => [
                 'total'    => $tTotal,
                 'nouvelle' => $tNouvelle,

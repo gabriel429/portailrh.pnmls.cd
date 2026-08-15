@@ -24,6 +24,7 @@ class DocumentResource extends JsonResource
             'created_at' => optional($this->created_at)->toISOString(),
             'updated_at' => optional($this->updated_at)->toISOString(),
             'download_url' => url('/api/documents/' . $this->id . '/download'),
+            'view_url' => url('/api/documents/' . $this->id . '/view'),
             'agent' => $this->whenLoaded('agent', fn () => [
                 'id' => $this->agent->id,
                 'id_agent' => $this->agent->id_agent,

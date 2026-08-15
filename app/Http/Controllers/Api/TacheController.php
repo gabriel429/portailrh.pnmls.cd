@@ -12,6 +12,7 @@ use App\Models\TacheDocument;
 use App\Models\TaskReport;
 use App\Models\Agent;
 use App\Services\NotificationService;
+use App\Services\OfflineIdempotencyService;
 use App\Services\RoleService;
 use App\Services\TaskValidationChainResolver;
 use App\Services\TacheWorkflowService;
@@ -382,6 +383,7 @@ class TacheController extends ApiController
             'date_tache'      => 'nullable|date',
             'documents'       => 'nullable|array',
             'documents.*'     => 'file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png',
+            'client_operation_id' => 'nullable|uuid',
         ]);
 
         $agent       = $user->agent;
@@ -493,48 +495,66 @@ class TacheController extends ApiController
         }
 
         unset($validated['agent_ids']);
-        $createdTaches = DB::transaction(function () use ($targetAgentIds, $validationChains, $validated, $workflow, $agent, $request) {
-            return $targetAgentIds->map(function (int $targetAgentId) use ($validationChains, $validated, $workflow, $agent, $request) {
-                $payload = $validated;
-                $payload['agent_id'] = $targetAgentId;
-                $chain = $validationChains->get($targetAgentId);
-                $payload['validation_responsable_id'] = $chain[0]['validator_agent_id'];
-                $tache = Tache::create($payload);
-                $tache->validationSteps()->createMany($chain);
-                $workflow->recordHistory(
-                    $tache,
-                    $agent,
-                    'creation',
-                    'Création de la tâche',
-                    null,
-                    $tache->statut,
-                    null,
-                    $tache->validation_statut,
-                    $validated['description'] ?? null,
-                    [
-                        'priorite' => $tache->priorite,
-                        'niveau_gestion' => $tache->niveau_gestion,
-                        'validation_responsable_role' => $tache->validation_responsable_role,
-                        'validation_responsable_id' => $tache->validation_responsable_id,
-                    ]
-                );
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
 
-                TacheAssigned::dispatch($tache);
+        // Guard against duplicate creation when this request is replayed by
+        // the offline sync queue (same client_operation_id resent after a
+        // lost response or a retry race): see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            $user->id,
+            $clientOperationId,
+            'tache',
+            'create',
+            function () use ($targetAgentIds, $validationChains, $validated, $workflow, $agent, $request) {
+                $createdTaches = DB::transaction(function () use ($targetAgentIds, $validationChains, $validated, $workflow, $agent, $request) {
+                    return $targetAgentIds->map(function (int $targetAgentId) use ($validationChains, $validated, $workflow, $agent, $request) {
+                        $payload = $validated;
+                        $payload['agent_id'] = $targetAgentId;
+                        $chain = $validationChains->get($targetAgentId);
+                        $payload['validation_responsable_id'] = $chain[0]['validator_agent_id'];
+                        $tache = Tache::create($payload);
+                        $tache->validationSteps()->createMany($chain);
+                        $workflow->recordHistory(
+                            $tache,
+                            $agent,
+                            'creation',
+                            'Création de la tâche',
+                            null,
+                            $tache->statut,
+                            null,
+                            $tache->validation_statut,
+                            $validated['description'] ?? null,
+                            [
+                                'priorite' => $tache->priorite,
+                                'niveau_gestion' => $tache->niveau_gestion,
+                                'validation_responsable_role' => $tache->validation_responsable_role,
+                                'validation_responsable_id' => $tache->validation_responsable_id,
+                            ]
+                        );
 
-                foreach ($request->file('documents', []) as $uploadedFile) {
-                    $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
-                }
+                        TacheAssigned::dispatch($tache);
 
-                return $tache;
-            });
-        });
+                        foreach ($request->file('documents', []) as $uploadedFile) {
+                            $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
+                        }
 
-        $tache = $createdTaches->first();
-        $resource = TacheResource::make($tache->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent']));
+                        return $tache;
+                    });
+                });
 
-        return $this->resource($resource, [], [
-            'message' => 'Tâche créée avec succès.',
-        ], 201);
+                $tache = $createdTaches->first();
+                $resource = TacheResource::make($tache->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent']));
+
+                return [
+                    'data' => $resource->resolve(),
+                    'meta' => [],
+                    'message' => 'Tâche créée avec succès.',
+                ];
+            }
+        );
+
+        return response()->json($outcome['result'], $outcome['duplicate'] ? 200 : 201);
     }
 
     /**

@@ -5,6 +5,10 @@
 
     RewriteEngine On
 
+    # Defense in depth: never execute scripts uploaded to public/uploads
+    # (legacy document storage; new uploads no longer live under public/).
+    RewriteRule ^uploads/.*\.(php|phtml|php[0-9]|phar|cgi|pl)$ - [F,L]
+
     # Definitive MIME fix: route build assets through standalone PHP script
     # only when the static built file is not present in public/build/assets.
     RewriteCond %{REQUEST_FILENAME} !-f

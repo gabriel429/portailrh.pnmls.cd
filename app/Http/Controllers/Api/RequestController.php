@@ -10,6 +10,7 @@ use App\Models\Agent;
 use App\Models\User;
 use App\Services\DemandeWorkflowService;
 use App\Services\NotificationService;
+use App\Services\OfflineIdempotencyService;
 use App\Services\UserDataScope;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -139,6 +140,7 @@ class RequestController extends ApiController
             'date_debut' => 'required|date',
             'date_fin' => 'nullable|date|after_or_equal:date_debut',
             'lettre_demande' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+            'client_operation_id' => 'nullable|uuid',
         ];
 
         // Scoped managers can create for any agent they are allowed to access.
@@ -175,34 +177,50 @@ class RequestController extends ApiController
                 ->store('lettres_demandes', 'public');
         }
 
-        $demande = RequestModel::create($validated);
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
 
-        // Initialize the multi-step workflow
-        $this->workflowService()->initializeWorkflow($demande);
+        // Guard against duplicate creation when this request is replayed by
+        // the offline sync queue (same client_operation_id resent after a
+        // lost response or a retry race): see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            $user->id,
+            $clientOperationId,
+            'demande',
+            'create',
+            function () use ($validated, $user) {
+                $demande = RequestModel::create($validated);
 
-        // Fire event for listeners (renforcement routing, etc.)
-        DemandeCreated::dispatch($demande);
+                // Initialize the multi-step workflow
+                $this->workflowService()->initializeWorkflow($demande);
 
-        $agent = Agent::find($validated['agent_id']);
-        $nomAgent = $agent ? $agent->prenom . ' ' . $agent->nom : 'Un agent';
-        if ($demande->current_step) {
-            NotificationService::envoyer(
-                $user->id,
-                'demande',
-                'Demande enregistrée',
-                'Votre demande suit maintenant le circuit de validation ' . ($demande->workflow_level ?? 'standard') . '.',
-                '/requests/' . $demande->id,
-                $user->id
-            );
-            $this->workflowService()->notifyNextStepValidators($demande, $demande->current_step, $user);
-        }
+                // Fire event for listeners (renforcement routing, etc.)
+                DemandeCreated::dispatch($demande);
 
-        $demande->load('agent');
-        $resource = RequestResource::make($demande);
+                if ($demande->current_step) {
+                    NotificationService::envoyer(
+                        $user->id,
+                        'demande',
+                        'Demande enregistrée',
+                        'Votre demande suit maintenant le circuit de validation ' . ($demande->workflow_level ?? 'standard') . '.',
+                        '/requests/' . $demande->id,
+                        $user->id
+                    );
+                    $this->workflowService()->notifyNextStepValidators($demande, $demande->current_step, $user);
+                }
 
-        return $this->resource($resource, [], [
-            'message' => 'Demande créée avec succès.',
-        ], 201);
+                $demande->load('agent');
+                $resource = RequestResource::make($demande);
+
+                return [
+                    'data' => $resource->resolve(),
+                    'meta' => [],
+                    'message' => 'Demande créée avec succès.',
+                ];
+            }
+        );
+
+        return response()->json($outcome['result'], $outcome['duplicate'] ? 200 : 201);
     }
 
     /**
@@ -294,6 +312,30 @@ class RequestController extends ApiController
                     'statut' => ['Le statut sélectionné n\'est pas reconnu.'],
                 ],
             ], 422);
+        }
+
+        // A request still moving through the multi-step validation chain must
+        // go through the workflow engine to approve/reject: DemandeWorkflowService
+        // enforces step order, validator entitlement and self-approval
+        // (see canValidate()). Writing 'statut' directly here would bypass all
+        // of that. Direct writes stay allowed for administrative transitions
+        // outside the chain (cancelling, marking expired) and for requests
+        // that have no active workflow step.
+        if ($demande->current_step && in_array($validated['statut'], ['approuvé', 'rejeté'], true)) {
+            $result = $validated['statut'] === 'approuvé'
+                ? $this->workflowService()->approve($user, $demande)
+                : $this->workflowService()->reject($user, $demande, $validated['remarques'] ?? null);
+
+            if (!$result['success']) {
+                return response()->json(['message' => $result['message']], 403);
+            }
+
+            $demande->refresh()->load('agent');
+
+            return $this->resource(RequestResource::make($demande), [], [
+                'message' => $result['message'],
+                'workflow' => $this->workflowService()->getWorkflowStatus($demande),
+            ]);
         }
 
         $demande->update($validated);

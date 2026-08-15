@@ -12,6 +12,7 @@ use App\Models\AgentHolidayEntitlement;
 use App\Models\AgentStatus;
 use App\Models\Department;
 use App\Services\HolidayEntitlementService;
+use App\Services\OfflineIdempotencyService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -207,7 +208,8 @@ class HolidayController extends Controller
             'observation' => 'nullable|string|max:1000',
             'interim_assure_par' => 'nullable|exists:agents,id',
             'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|mimetypes:application/pdf,image/jpeg,image/png|max:2048',
-            'holiday_planning_id' => 'nullable|exists:holiday_plannings,id'
+            'holiday_planning_id' => 'nullable|exists:holiday_plannings,id',
+            'client_operation_id' => 'nullable|uuid',
         ];
 
         // Pour les demandes normales (pas planning), date doit être dans le futur
@@ -290,41 +292,58 @@ class HolidayController extends Controller
             $validated['motif'] = 'Congé planifié par RH';
         }
 
-        $validated['demande_par'] = auth()->user()->agent->id;
+        $currentAgent = auth()->user()->agent;
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
+
+        $validated['demande_par'] = $currentAgent->id;
         $validated['statut_demande'] = 'en_attente';
 
         // Calculer le nombre de jours ouvrables
         $validated['nombre_jours'] = $nombreJours;
         $validated['date_retour_prevu'] = Holiday::nextWorkingDayAfter($dateFin);
 
-        $holiday = Holiday::create($validated);
+        // Guard against duplicate creation when this request is replayed by
+        // the offline sync queue (same client_operation_id resent after a
+        // lost response or a retry race): see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            auth()->id(),
+            $clientOperationId,
+            'conge',
+            'create',
+            function () use ($validated, $currentAgent, $dateDébut, $dateFin, $isPlanning) {
+                $holiday = Holiday::create($validated);
 
-        // Auto-approuver si RH planifie directement ou si urgence/maladie
-        $isRh = auth()->user()->agent->hasRole(['RH National', 'RH Provincial']);
-        $shouldAutoApprove = $isRh && ($isPlanning || in_array($validated['type_conge'], ['urgence', 'maladie']));
+                // Auto-approuver si RH planifie directement ou si urgence/maladie
+                $isRh = $currentAgent->hasRole(['RH National', 'RH Provincial']);
+                $shouldAutoApprove = $isRh && ($isPlanning || in_array($validated['type_conge'], ['urgence', 'maladie']));
 
-        if ($shouldAutoApprove) {
-            $holiday->approve(auth()->user()->agent);
-            CongeApproved::dispatch($holiday->fresh()); // C6 — notifier l'agent
+                if ($shouldAutoApprove) {
+                    $holiday->approve($currentAgent);
+                    CongeApproved::dispatch($holiday->fresh()); // C6 — notifier l'agent
 
-            AgentStatus::setNewStatus($validated['agent_id'], [
-                'statut' => 'en_conge',
-                'date_debut' => $dateDébut,
-                'date_fin' => $dateFin,
-                'motif' => 'Congé ' . $validated['type_conge'],
-                'created_by' => auth()->user()->agent->id,
-                'approved_by' => auth()->user()->agent->id,
-                'approved_at' => now()
-            ]);
-        }
+                    AgentStatus::setNewStatus($validated['agent_id'], [
+                        'statut' => 'en_conge',
+                        'date_debut' => $dateDébut,
+                        'date_fin' => $dateFin,
+                        'motif' => 'Congé ' . $validated['type_conge'],
+                        'created_by' => $currentAgent->id,
+                        'approved_by' => $currentAgent->id,
+                        'approved_at' => now()
+                    ]);
+                }
 
-        // Fire event for PTA conflict check
-        CongeRequested::dispatch($holiday);
+                // Fire event for PTA conflict check
+                CongeRequested::dispatch($holiday);
 
-        return response()->json([
-            'message' => 'Demande de congé créée avec succès',
-            'holiday' => $holiday->load(['agent', 'demandePar'])
-        ], 201);
+                return [
+                    'message' => 'Demande de congé créée avec succès',
+                    'holiday' => $holiday->load(['agent', 'demandePar'])->toArray(),
+                ];
+            }
+        );
+
+        return response()->json($outcome['result'], $outcome['duplicate'] ? 200 : 201);
     }
 
     /**
@@ -463,71 +482,88 @@ class HolidayController extends Controller
             return response()->json(['message' => 'Ce congé est hors de votre périmètre.'], 403);
         }
 
-        if ($holiday->statut_demande !== 'en_attente') {
-            return response()->json([
-                'message' => 'Seuls les congés en attente peuvent être approuvés'
-            ], 422);
-        }
-
-        // Anti self-approve
         $user = auth()->user()->agent;
         if (!$user) {
             return response()->json(['message' => 'Compte non associé à un agent.'], 422);
         }
 
-        if ($holiday->agent_id === $user->id || $holiday->demande_par === $user->id) {
-            return response()->json([
-                'message' => 'Vous ne pouvez pas approuver votre propre demande de congé.'
-            ], 403);
-        }
+        return DB::transaction(function () use ($holiday, $user) {
+            // Lock this holiday row: without it, two concurrent approvals of
+            // the SAME request could both pass the statut check below.
+            $locked = Holiday::where('id', $holiday->id)->lockForUpdate()->first();
 
-        // Vérifications de permission selon la hiérarchie
-        $canApprove = false;
-
-        if ($user->hasRole(['RH National', 'SEN'])) {
-            $canApprove = true;
-        } elseif ($user->hasRole('RH Provincial')) {
-            // RH Provincial peut approuver uniquement les congés dans sa province
-            $canApprove = $holiday->agent->province_id === $user->province_id;
-        }
-
-        if (!$canApprove) {
-            return response()->json([
-                'message' => 'Permissions insuffisantes pour approuver ce congé'
-            ], 403);
-        }
-
-        // Re-vérification du quota individuel à l'approbation (C3)
-        if ($holiday->type_conge === 'annuel') {
-            $quota = $this->entitlementService()->quotaForAgent($holiday->agent, (int) $holiday->date_debut->year);
-            if ($holiday->nombre_jours > $quota['jours_restants']) {
-                $joursDisponibles = max(0, (int) $quota['jours_restants']);
+            if (!$locked || $locked->statut_demande !== 'en_attente') {
                 return response()->json([
-                    'message' => "Quota individuel dépassé : {$joursDisponibles} jour(s) disponible(s) sur {$quota['jours_autorises']}. Congé demandé : {$holiday->nombre_jours} jour(s)."
+                    'message' => 'Seuls les congés en attente peuvent être approuvés'
                 ], 422);
             }
-        }
 
-        $holiday->approve($user);
+            // Anti self-approve
+            if ($locked->agent_id === $user->id || $locked->demande_par === $user->id) {
+                return response()->json([
+                    'message' => 'Vous ne pouvez pas approuver votre propre demande de congé.'
+                ], 403);
+            }
 
-        // Fire event for PTA conflict re-check and notifications
-        CongeApproved::dispatch($holiday->fresh());
+            // Vérifications de permission selon la hiérarchie
+            $canApprove = false;
 
-        // Créer le statut agent correspondant
-        AgentStatus::setNewStatus($holiday->agent_id, [
-            'statut' => 'en_conge',
-            'date_debut' => $holiday->date_debut,
-            'date_fin' => $holiday->date_fin,
-            'motif' => 'Congé ' . $holiday->type_conge,
-            'created_by' => $user->id,
-            'approved_by' => $user->id,
-            'approved_at' => now()
-        ]);
+            if ($user->hasRole(['RH National', 'SEN'])) {
+                $canApprove = true;
+            } elseif ($user->hasRole('RH Provincial')) {
+                // RH Provincial peut approuver uniquement les congés dans sa province
+                $canApprove = $locked->agent->province_id === $user->province_id;
+            }
 
-        return response()->json([
-            'message' => 'Congé approuvé avec succès',
-            'holiday' => $holiday->fresh(['approuvePar'])
-        ]);
+            if (!$canApprove) {
+                return response()->json([
+                    'message' => 'Permissions insuffisantes pour approuver ce congé'
+                ], 403);
+            }
+
+            // Re-vérification du quota individuel à l'approbation (C3)
+            if ($locked->type_conge === 'annuel') {
+                // Lock every other 'annuel' holiday for this agent/year too:
+                // otherwise two DIFFERENT pending requests for the same agent
+                // could both be approved concurrently and jointly exceed quota,
+                // since each transaction would read jours_restants before the
+                // other commits its increment.
+                Holiday::where('agent_id', $locked->agent_id)
+                    ->whereYear('date_debut', $locked->date_debut->year)
+                    ->where('type_conge', 'annuel')
+                    ->lockForUpdate()
+                    ->get();
+
+                $quota = $this->entitlementService()->quotaForAgent($locked->agent, (int) $locked->date_debut->year);
+                if ($locked->nombre_jours > $quota['jours_restants']) {
+                    $joursDisponibles = max(0, (int) $quota['jours_restants']);
+                    return response()->json([
+                        'message' => "Quota individuel dépassé : {$joursDisponibles} jour(s) disponible(s) sur {$quota['jours_autorises']}. Congé demandé : {$locked->nombre_jours} jour(s)."
+                    ], 422);
+                }
+            }
+
+            $locked->approve($user);
+
+            // Fire event for PTA conflict re-check and notifications
+            CongeApproved::dispatch($locked->fresh());
+
+            // Créer le statut agent correspondant
+            AgentStatus::setNewStatus($locked->agent_id, [
+                'statut' => 'en_conge',
+                'date_debut' => $locked->date_debut,
+                'date_fin' => $locked->date_fin,
+                'motif' => 'Congé ' . $locked->type_conge,
+                'created_by' => $user->id,
+                'approved_by' => $user->id,
+                'approved_at' => now()
+            ]);
+
+            return response()->json([
+                'message' => 'Congé approuvé avec succès',
+                'holiday' => $locked->fresh(['approuvePar'])
+            ]);
+        });
     }
 
     /**
@@ -998,6 +1034,7 @@ class HolidayController extends Controller
             'interim_assure_par' => 'nullable|exists:agents,id',
             'document_medical' => 'nullable|file|mimes:pdf,jpg,jpeg,png|mimetypes:application/pdf,image/jpeg,image/png|max:2048',
             'lettre_demande'     => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png|max:5120',
+            'client_operation_id' => 'nullable|uuid',
         ]);
 
         $dateDébut = Carbon::parse($validated['date_debut']);
@@ -1109,22 +1146,44 @@ class HolidayController extends Controller
         $validated['statut_demande']     = 'en_attente';
         $validated['demande_par']        = $agent->id;
 
-        if ($plannedHoliday) {
-            $plannedHoliday->update($validated);
-            $holiday = $plannedHoliday;
-        } else {
-            $holiday = Holiday::create($validated);
-        }
-        $holiday->load('agent');
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
 
-        CongeRequested::dispatch($holiday);
+        // A retry against an existing planned period just re-confirms the
+        // same row (update, not create) — no duplicate-creation risk there.
+        // The duplicate-creation risk is in the Holiday::create() branch
+        // below, guarded here the same way as the other offline-queueable
+        // creation endpoints: see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            $user->id,
+            $plannedHoliday ? null : $clientOperationId,
+            'conge',
+            'create',
+            function () use ($validated, $plannedHoliday) {
+                if ($plannedHoliday) {
+                    $plannedHoliday->update($validated);
+                    $holiday = $plannedHoliday;
+                } else {
+                    $holiday = Holiday::create($validated);
+                }
+                $holiday->load('agent');
 
-        return response()->json([
-            'message' => $plannedHoliday
-                ? 'Période planifiée confirmée avec succès.'
-                : 'Demande de congé soumise avec succès.',
-            'holiday' => $holiday,
-        ], $plannedHoliday ? 200 : 201);
+                CongeRequested::dispatch($holiday);
+
+                return [
+                    'message' => $plannedHoliday
+                        ? 'Période planifiée confirmée avec succès.'
+                        : 'Demande de congé soumise avec succès.',
+                    'holiday' => $holiday->toArray(),
+                    '_status' => $plannedHoliday ? 200 : 201,
+                ];
+            }
+        );
+
+        $status = $outcome['duplicate'] ? 200 : ($outcome['result']['_status'] ?? 201);
+        unset($outcome['result']['_status']);
+
+        return response()->json($outcome['result'], $status);
     }
 
     /**

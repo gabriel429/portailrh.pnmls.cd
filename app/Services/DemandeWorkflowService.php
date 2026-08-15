@@ -8,6 +8,7 @@ use App\Models\Request as RequestModel;
 use App\Models\RequestValidationHistory;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DemandeWorkflowService
@@ -216,72 +217,82 @@ class DemandeWorkflowService
 
     public function approve(User $user, RequestModel $request): array
     {
-        if (!$this->canValidate($user, $request)) {
-            return ['success' => false, 'message' => 'Vous n etes pas autorise a valider cette etape.'];
-        }
+        return DB::transaction(function () use ($user, $request) {
+            // Re-fetch and lock the row inside the transaction: canValidate()
+            // must see the current statut/current_step, not a copy the caller
+            // may have loaded before a concurrent validation already moved it.
+            $locked = RequestModel::where('id', $request->id)->lockForUpdate()->first();
 
-        $currentStep = $request->current_step;
-        $agent = $user->agent;
+            if (!$locked || !$this->canValidate($user, $locked)) {
+                return ['success' => false, 'message' => 'Vous n etes pas autorise a valider cette etape.'];
+            }
 
-        if (!$agent) {
-            return ['success' => false, 'message' => 'Votre compte n est pas associe a un agent.'];
-        }
+            $agent = $user->agent;
+            if (!$agent) {
+                return ['success' => false, 'message' => 'Votre compte n est pas associe a un agent.'];
+            }
 
-        $request->{"validated_by_{$currentStep}"} = $agent->id;
-        $request->{"validated_at_{$currentStep}"} = now();
+            $currentStep = $locked->current_step;
+            $locked->{"validated_by_{$currentStep}"} = $agent->id;
+            $locked->{"validated_at_{$currentStep}"} = now();
 
-        $nextStep = $this->getNextStep($request, $currentStep);
-        if ($nextStep) {
-            $request->current_step = $nextStep;
-        } else {
-            $request->statut = 'approuvé';
-            $request->current_step = null;
-        }
+            $nextStep = $this->getNextStep($locked, $currentStep);
+            if ($nextStep) {
+                $locked->current_step = $nextStep;
+            } else {
+                $locked->statut = 'approuvé';
+                $locked->current_step = null;
+            }
 
-        $request->save();
+            $locked->save();
 
-        $this->recordHistory($request, $user, $currentStep, 'approved');
-        $this->notifyStepCompleted($request, $currentStep, $user, 'approved');
+            $this->recordHistory($locked, $user, $currentStep, 'approved');
+            $this->notifyStepCompleted($locked, $currentStep, $user, 'approved');
 
-        return [
-            'success' => true,
-            'message' => $nextStep
-                ? 'Etape validee. La demande passe a l etape suivante.'
-                : 'Demande approuvee definitivement.',
-            'next_step' => $nextStep,
-            'statut' => $request->statut,
-        ];
+            return [
+                'success' => true,
+                'message' => $nextStep
+                    ? 'Etape validee. La demande passe a l etape suivante.'
+                    : 'Demande approuvee definitivement.',
+                'next_step' => $nextStep,
+                'statut' => $locked->statut,
+            ];
+        });
     }
 
     public function reject(User $user, RequestModel $request, ?string $remarques = null): array
     {
-        if (!$this->canValidate($user, $request)) {
-            return ['success' => false, 'message' => 'Vous n etes pas autorise a rejeter cette demande.'];
-        }
+        return DB::transaction(function () use ($user, $request, $remarques) {
+            $locked = RequestModel::where('id', $request->id)->lockForUpdate()->first();
 
-        $agent = $user->agent;
-        if (!$agent) {
-            return ['success' => false, 'message' => 'Votre compte n est pas associe a un agent.'];
-        }
+            if (!$locked || !$this->canValidate($user, $locked)) {
+                return ['success' => false, 'message' => 'Vous n etes pas autorise a rejeter cette demande.'];
+            }
 
-        $currentStep = $request->current_step;
-        $request->statut = 'rejeté';
-        $request->{"validated_by_{$currentStep}"} = $agent->id;
-        $request->{"validated_at_{$currentStep}"} = now();
+            $agent = $user->agent;
+            if (!$agent) {
+                return ['success' => false, 'message' => 'Votre compte n est pas associe a un agent.'];
+            }
 
-        if ($remarques) {
-            $request->remarques = $remarques;
-        }
+            $currentStep = $locked->current_step;
+            $locked->statut = 'rejeté';
+            $locked->{"validated_by_{$currentStep}"} = $agent->id;
+            $locked->{"validated_at_{$currentStep}"} = now();
 
-        $request->save();
+            if ($remarques) {
+                $locked->remarques = $remarques;
+            }
 
-        $this->recordHistory($request, $user, $currentStep, 'rejected', $remarques);
-        $this->notifyStepCompleted($request, $currentStep, $user, 'rejected');
+            $locked->save();
 
-        return [
-            'success' => true,
-            'message' => 'Demande rejetee a l etape ' . $this->getStepLabel($currentStep, $request) . '.',
-        ];
+            $this->recordHistory($locked, $user, $currentStep, 'rejected', $remarques);
+            $this->notifyStepCompleted($locked, $currentStep, $user, 'rejected');
+
+            return [
+                'success' => true,
+                'message' => 'Demande rejetee a l etape ' . $this->getStepLabel($currentStep, $locked) . '.',
+            ];
+        });
     }
 
     public function initializeWorkflow(RequestModel $request): void

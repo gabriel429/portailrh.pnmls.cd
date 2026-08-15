@@ -14,6 +14,7 @@ use App\Services\HolidayEntitlementService;
 use App\Services\HolidayPlanningWorkflowService;
 use App\Services\HolidayPlanningRequirementService;
 use App\Services\NotificationService;
+use App\Services\OfflineIdempotencyService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -353,6 +354,7 @@ class HolidayPlanningController extends Controller
             'entries.*.date_debut' => 'required|date',
             'entries.*.date_fin' => 'required|date|after_or_equal:entries.*.date_debut',
             'entries.*.observation' => 'nullable|string|max:1000',
+            'client_operation_id' => 'nullable|uuid',
         ]);
 
         $validated['niveau_administratif'] = $this->workflow()->levelFor($validated['type_structure']);
@@ -449,35 +451,51 @@ class HolidayPlanningController extends Controller
             }
         }
 
-        $planning = DB::transaction(function () use ($validated, $entries) {
-            $planning = HolidayPlanning::create($validated);
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
 
-            foreach ($entries as $entry) {
-                $start = Carbon::parse($entry['date_debut']);
-                $end = Carbon::parse($entry['date_fin']);
+        // Guard against duplicate creation when this request is replayed by
+        // the offline sync queue (same client_operation_id resent after a
+        // lost response or a retry race): see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            $request->user()->id,
+            $clientOperationId,
+            'conge',
+            'create',
+            function () use ($validated, $entries) {
+                $planning = DB::transaction(function () use ($validated, $entries) {
+                    $planning = HolidayPlanning::create($validated);
 
-                Holiday::create([
-                    'agent_id' => $entry['agent_id'],
-                    'holiday_planning_id' => $planning->id,
-                    'date_debut' => $start,
-                    'date_fin' => $end,
-                    'nombre_jours' => Holiday::calculateWorkingDays($start, $end),
-                    'date_retour_prevu' => Holiday::nextWorkingDayAfter($end),
-                    'type_conge' => 'annuel',
-                    'motif' => $entry['observation'] ?? 'Congé annuel planifié',
-                    'observation' => $entry['observation'] ?? null,
-                    'demande_par' => auth()->user()->agent->id,
-                    'statut_demande' => 'en_attente',
-                ]);
+                    foreach ($entries as $entry) {
+                        $start = Carbon::parse($entry['date_debut']);
+                        $end = Carbon::parse($entry['date_fin']);
+
+                        Holiday::create([
+                            'agent_id' => $entry['agent_id'],
+                            'holiday_planning_id' => $planning->id,
+                            'date_debut' => $start,
+                            'date_fin' => $end,
+                            'nombre_jours' => Holiday::calculateWorkingDays($start, $end),
+                            'date_retour_prevu' => Holiday::nextWorkingDayAfter($end),
+                            'type_conge' => 'annuel',
+                            'motif' => $entry['observation'] ?? 'Congé annuel planifié',
+                            'observation' => $entry['observation'] ?? null,
+                            'demande_par' => auth()->user()->agent->id,
+                            'statut_demande' => 'en_attente',
+                        ]);
+                    }
+
+                    return $planning;
+                });
+
+                return [
+                    'message' => 'Planning créé avec succès',
+                    'planning' => $planning->load(['createdBy', 'holidays.agent'])->toArray(),
+                ];
             }
+        );
 
-            return $planning;
-        });
-
-        return response()->json([
-            'message' => 'Planning créé avec succès',
-            'planning' => $planning->load(['createdBy', 'holidays.agent'])
-        ], 201);
+        return response()->json($outcome['result'], $outcome['duplicate'] ? 200 : 201);
     }
 
     private function agentBelongsToStructure(Agent $agent, string $type, int $structureId): bool
