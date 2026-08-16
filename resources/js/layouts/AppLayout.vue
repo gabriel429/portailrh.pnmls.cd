@@ -103,6 +103,12 @@
                 <span class="nav-link-label">Formations</span>
               </router-link>
             </li>
+            <li v-if="showPerformanceLink" class="nav-item">
+              <router-link class="nav-link" active-class="active" :to="{ name: 'performance.dashboard' }" title="Performance des agents">
+                <i class="fas fa-chart-pie nav-icon"></i>
+                <span class="nav-link-label">Performance</span>
+              </router-link>
+            </li>
           </ul>
 
           <div class="mobile-nav-divider d-lg-none"></div>
@@ -195,11 +201,6 @@
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'rh.dashboard' }">
                       <span class="dd-icon dd-icon-teal"><i class="fas fa-chart-line"></i></span> Tableau de bord
-                    </router-link>
-                  </li>
-                  <li v-if="auth.isSEN || auth.isRHNational">
-                    <router-link class="dropdown-item" :to="{ name: 'performance.dashboard' }">
-                      <span class="dd-icon dd-icon-purple"><i class="fas fa-chart-pie"></i></span> Performance des agents
                     </router-link>
                   </li>
                   <li><hr class="dropdown-divider"></li>
@@ -462,6 +463,11 @@ const profilePhotoIndex = ref(0)
 const taskNewCount = ref(0)
 const taskInProgressCount = ref(0)
 
+// Team-scoped performance access: SEN/RH National see everyone, while a
+// department director, SEP, CAF or SEL only ever see their own perimeter
+// (enforced backend-side) — same population already allowed to create an
+// evaluation via RoleService::hasTacheManagerRole().
+const showPerformanceLink = computed(() => auth.isSEN || auth.isRHNational || auth.isDirecteur || auth.isSEP || auth.isCAF || auth.isSEL)
 const showFullRhAdminMenu = computed(() => auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant)
 const showLocalRhAdminMenu = computed(() => (auth.isRhLocal || auth.isSEL) && !showFullRhAdminMenu.value)
 const showAdminNtDivider = computed(() => showFullRhAdminMenu.value || showLocalRhAdminMenu.value)

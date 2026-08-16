@@ -181,9 +181,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::apiResource('evaluations', EvaluationController::class)->except(['edit']);
     Route::post('evaluations/{evaluation}/submit', [EvaluationController::class, 'submit']);
 
+    // Team-scoped, not SEN/RH-National-only: a department director, SEP, CAF
+    // or SEL can view (and evaluate) agents within their own perimeter too —
+    // gated in-controller by the same RoleService::hasTacheManagerRole() check
+    // already used to authorize evaluation creation, then scoped per-agent via
+    // UserDataScope::applyAgentScope().
+    Route::get('performance/dashboard', [PerformanceDashboardController::class, 'index']);
+    Route::get('performance/agents/{agent}', [PerformanceDashboardController::class, 'agentDetail']);
+
     Route::middleware(RoleGroups::middleware(RoleGroups::PERFORMANCE_MANAGEMENT))->group(function () {
-        Route::get('performance/dashboard', [PerformanceDashboardController::class, 'index']);
-        Route::get('performance/agents/{agent}', [PerformanceDashboardController::class, 'agentDetail']);
         Route::post('evaluations/{evaluation}/validate', [EvaluationController::class, 'validateEvaluation']);
         Route::post('evaluations/{evaluation}/reject', [EvaluationController::class, 'reject']);
     });

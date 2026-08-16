@@ -431,13 +431,13 @@ const routes = [
         path: '/performance/dashboard',
         name: 'performance.dashboard',
         component: () => import('@/views/performance/PerformanceDashboardView.vue'),
-        meta: { auth: true, roles: ['SEN', 'RH National'] },
+        meta: { auth: true, roles: ['SEN', 'RH National'], allowTeamManagerRole: true },
     },
     {
         path: '/performance/agents/:id',
         name: 'performance.agents.show',
         component: () => import('@/views/performance/AgentPerformanceDetailView.vue'),
-        meta: { auth: true, roles: ['SEN', 'RH National'] },
+        meta: { auth: true, roles: ['SEN', 'RH National'], allowTeamManagerRole: true },
     },
     {
         path: '/performance/validations',
@@ -603,6 +603,7 @@ router.beforeEach(async (to) => {
             || (to.meta.allowAssistantRH && auth.isRhOperationalAssistant)
             || (to.meta.allowLocalRH && (auth.isRhLocal || auth.isSEL))
             || (to.meta.allowAgentManagerRole && auth.isCafOrSelAgentManager)
+            || (to.meta.allowTeamManagerRole && (auth.isDirecteur || auth.isSEP || auth.isCAF || auth.isSEL))
 
         if (!allowed.includes(userRole) && !semanticallyAllowed) {
             return { name: 'dashboard' }

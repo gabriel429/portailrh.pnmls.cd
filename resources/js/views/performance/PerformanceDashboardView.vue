@@ -6,11 +6,13 @@
           <i class="fas fa-chart-pie"></i>
         </div>
         <div>
-          <h1 class="hero-title">Performance des agents</h1>
-          <p class="hero-subtitle">Vue globale d'évaluation, par organe — SEN &amp; RH National</p>
+          <h1 class="hero-title">{{ auth.isSEN || auth.isRHNational ? 'Performance des agents' : 'Performance de mon équipe' }}</h1>
+          <p class="hero-subtitle">
+            {{ auth.isSEN || auth.isRHNational ? "Vue globale d'évaluation, par organe" : "Évaluation des agents de votre périmètre" }}
+          </p>
         </div>
       </div>
-      <router-link :to="{ name: 'performance.validations' }" class="hero-btn">
+      <router-link v-if="auth.isSEN || auth.isRHNational" :to="{ name: 'performance.validations' }" class="hero-btn">
         <i class="fas fa-clipboard-check"></i> File de validation
       </router-link>
     </div>
@@ -198,10 +200,12 @@ import {
 } from 'chart.js'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
+import { useAuthStore } from '@/stores/auth'
 
 Chart.register(BarController, BarElement, CategoryScale, Legend, LinearScale, Tooltip)
 
 const ui = useUiStore()
+const auth = useAuthStore()
 
 const organeTabs = [
   { code: 'tous', label: 'Tous' },

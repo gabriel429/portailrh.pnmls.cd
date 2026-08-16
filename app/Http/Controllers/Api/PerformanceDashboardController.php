@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Models\Agent;
 use App\Models\Evaluation;
 use App\Services\PerformanceScoreService;
+use App\Services\RoleService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,17 @@ class PerformanceDashboardController extends ApiController
     private function scoreService(): PerformanceScoreService
     {
         return app(PerformanceScoreService::class);
+    }
+
+    /**
+     * Same population allowed to create an evaluation (RoleService::hasTacheManagerRole):
+     * SEN/RH National see every agent, a department director/SEP/CAF/SEL only
+     * ever see their own perimeter — the actual restriction happens via
+     * UserDataScope::applyAgentScope() in baseAgentQuery()/agentDetail().
+     */
+    private function canManageTeamPerformance($user): bool
+    {
+        return app(RoleService::class)->hasTacheManagerRole($user) || (bool) $user?->hasAdminAccess();
     }
 
     private function organeNameFromCode(?string $code): ?string
@@ -104,6 +116,10 @@ class PerformanceDashboardController extends ApiController
 
     public function index(Request $request)
     {
+        if (!$this->canManageTeamPerformance($request->user())) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
         $annee = (int) $request->query('annee', now()->year);
         $trimestre = $request->query('trimestre');
         $trimestre = ($trimestre === null || $trimestre === '' || $trimestre === 'annuel') ? 0 : (int) $trimestre;
@@ -150,8 +166,23 @@ class PerformanceDashboardController extends ApiController
 
     public function agentDetail(Request $request, Agent $agent)
     {
-        if (!$this->scopeService()->canAccessAgent($request->user(), $agent, true)) {
-            return response()->json(['message' => 'Accès refusé.'], 403);
+        $user = $request->user();
+        $isOwnRecord = (int) ($user?->agent?->id ?? 0) === (int) $agent->id;
+
+        if (!$isOwnRecord) {
+            if (!$this->canManageTeamPerformance($user)) {
+                return response()->json(['message' => 'Accès refusé.'], 403);
+            }
+
+            // hasTacheManagerRole() only proves "is some kind of manager" —
+            // still need to confirm THIS agent falls within their own
+            // perimeter (department/province/localité), the same scope
+            // baseAgentQuery() already applies to the list view.
+            $scoped = Agent::query()->whereKey($agent->id);
+            $this->scopeService()->applyAgentScope($scoped, $user);
+            if (!$scoped->exists()) {
+                return response()->json(['message' => 'Accès refusé.'], 403);
+            }
         }
 
         $now = now();
