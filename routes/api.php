@@ -14,6 +14,8 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\RequestController;
 use App\Http\Controllers\Api\TacheController;
+use App\Http\Controllers\Api\EvaluationController;
+use App\Http\Controllers\Api\PerformanceDashboardController;
 use App\Http\Controllers\Api\PlanTravailController;
 use App\Http\Controllers\Api\NotificationController as ApiNotificationController;
 use App\Http\Controllers\Api\SignalementController;
@@ -173,6 +175,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('taches/{tache}/documents/{document}/download', [TacheController::class, 'downloadDocument']);
     Route::post('taches/{tache}/report', [TacheController::class, 'submitReport']);
     Route::get('taches/{tache}/reports', [TacheController::class, 'viewReports']);
+
+    // Performance & Évaluations
+    Route::get('evaluations/criteres', [EvaluationController::class, 'criteres']);
+    Route::apiResource('evaluations', EvaluationController::class)->except(['edit']);
+    Route::post('evaluations/{evaluation}/submit', [EvaluationController::class, 'submit']);
+
+    Route::middleware(RoleGroups::middleware(RoleGroups::PERFORMANCE_MANAGEMENT))->group(function () {
+        Route::get('performance/dashboard', [PerformanceDashboardController::class, 'index']);
+        Route::get('performance/agents/{agent}', [PerformanceDashboardController::class, 'agentDetail']);
+        Route::post('evaluations/{evaluation}/validate', [EvaluationController::class, 'validateEvaluation']);
+        Route::post('evaluations/{evaluation}/reject', [EvaluationController::class, 'reject']);
+    });
 
     // Plan de Travail
     Route::get('plan-travail/dashboard', [PlanTravailController::class, 'dashboard']);

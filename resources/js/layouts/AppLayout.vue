@@ -197,6 +197,11 @@
                       <span class="dd-icon dd-icon-teal"><i class="fas fa-chart-line"></i></span> Tableau de bord
                     </router-link>
                   </li>
+                  <li v-if="auth.isSEN || auth.isRHNational">
+                    <router-link class="dropdown-item" :to="{ name: 'performance.dashboard' }">
+                      <span class="dd-icon dd-icon-purple"><i class="fas fa-chart-pie"></i></span> Performance des agents
+                    </router-link>
+                  </li>
                   <li><hr class="dropdown-divider"></li>
                   <li>
                     <router-link class="dropdown-item" :to="{ name: 'mail.history' }">

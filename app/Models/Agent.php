@@ -228,6 +228,16 @@ class Agent extends Authenticatable
         return $this->hasMany(AgentIdCard::class);
     }
 
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(Evaluation::class, 'agent_id');
+    }
+
+    public function evaluationsRealisees(): HasMany
+    {
+        return $this->hasMany(Evaluation::class, 'evaluateur_id');
+    }
+
     public function activeIdCard(): HasOne
     {
         return $this->hasOne(AgentIdCard::class)

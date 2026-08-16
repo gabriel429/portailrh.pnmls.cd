@@ -658,6 +658,54 @@ class UserDataScope
         });
     }
 
+    public function applyEvaluationScope($query, ?User $user, string $table = 'evaluations')
+    {
+        if ($this->hasGlobalAdminAccess($user)) {
+            return $query;
+        }
+
+        if ($this->isAssistantRh($user)) {
+            return $query;
+        }
+
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
+            if (!$localiteId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->whereHas('agent', function ($agentQuery) use ($localiteId) {
+                $agentQuery->where('localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope->where('actif', true)->where('localite_id', $localiteId);
+                    });
+            });
+        }
+
+        if ($this->isProvincialUser($user)) {
+            $provinceId = $this->provinceId($user);
+
+            return $provinceId
+                ? $query->where($table . '.province_id', $provinceId)
+                : $query->whereRaw('1 = 0');
+        }
+
+        if ($this->isDepartmentManager($user)) {
+            $deptId = $user?->agent?->departement_id;
+
+            return $deptId
+                ? $query->where($table . '.departement_id', $deptId)
+                : $query->whereRaw('1 = 0');
+        }
+
+        // Repli: un agent ne voit que ses propres évaluations.
+        $agentId = $user?->agent?->id;
+
+        return $agentId
+            ? $query->where($table . '.agent_id', $agentId)
+            : $query->whereRaw('1 = 0');
+    }
+
     public function applyAffectationScope($query, ?User $user)
     {
         $query->where(function ($scopeQuery) {

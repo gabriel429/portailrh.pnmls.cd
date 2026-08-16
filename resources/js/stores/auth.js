@@ -123,6 +123,12 @@ export const useAuthStore = defineStore('auth', {
         isSENA(state) {
             return normalizedRole(state) === 'sena'
         },
+        // Deliberately exact-match, unlike the broader isRH (which also
+        // covers RH Provincial, Section ressources humaines, etc.) — needed
+        // to gate the SEN/RH-National-only performance module.
+        isRHNational(state) {
+            return normalizedRole(state) === 'rh national'
+        },
         isPlanification(state) {
             const role = normalizedRole(state)
             return ['chef section planification', 'cellule planification'].includes(role)

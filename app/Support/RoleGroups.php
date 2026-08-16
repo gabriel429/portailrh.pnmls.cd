@@ -49,6 +49,12 @@ class RoleGroups
     ];
 
     /**
+     * The only two roles that see the global agent-performance dashboard and
+     * may validate/reject a submitted evaluation, per explicit product requirement.
+     */
+    public const PERFORMANCE_MANAGEMENT = ['SEN', 'RH National'];
+
+    /**
      * Build a 'role:...' middleware string from a role group.
      *
      * @param  list<string>  $roles

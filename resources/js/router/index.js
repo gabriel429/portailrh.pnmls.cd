@@ -426,6 +426,38 @@ const routes = [
         meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
 
+    // ── Performance des agents (SEN / RH National uniquement) ──
+    {
+        path: '/performance/dashboard',
+        name: 'performance.dashboard',
+        component: () => import('@/views/performance/PerformanceDashboardView.vue'),
+        meta: { auth: true, roles: ['SEN', 'RH National'] },
+    },
+    {
+        path: '/performance/agents/:id',
+        name: 'performance.agents.show',
+        component: () => import('@/views/performance/AgentPerformanceDetailView.vue'),
+        meta: { auth: true, roles: ['SEN', 'RH National'] },
+    },
+    {
+        path: '/performance/validations',
+        name: 'performance.validations',
+        component: () => import('@/views/performance/EvaluationPendingListView.vue'),
+        meta: { auth: true, roles: ['SEN', 'RH National'] },
+    },
+    {
+        path: '/performance/evaluations/create',
+        name: 'performance.evaluations.create',
+        component: () => import('@/views/performance/EvaluationFormView.vue'),
+        meta: { auth: true },
+    },
+    {
+        path: '/performance/evaluations/:id/edit',
+        name: 'performance.evaluations.edit',
+        component: () => import('@/views/performance/EvaluationFormView.vue'),
+        meta: { auth: true },
+    },
+
     // ── Admin Routes ──
     {
         path: '/admin',
