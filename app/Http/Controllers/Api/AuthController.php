@@ -120,6 +120,12 @@ class AuthController extends Controller
             return null;
         }
 
+        \Log::warning('Connexion refusée par la restriction géographique.', [
+            'ip' => $request->ip(),
+            'reason' => $result['reason'],
+            'email' => $request->input('email'),
+        ]);
+
         $message = $result['reason'] === 'vpn'
             ? 'Connexion refusée : les VPN et proxys ne sont pas autorisés sur cette application.'
             : 'Connexion refusée : cette application n\'est accessible qu\'en République Démocratique du Congo.';
