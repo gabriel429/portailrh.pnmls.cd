@@ -11,6 +11,7 @@ use App\Models\Department;
 use App\Models\Province;
 use App\Models\Localite;
 use App\Services\NotificationService;
+use App\Services\OfflineIdempotencyService;
 use App\Services\UserDataScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -1107,11 +1108,15 @@ class PlanTravailController extends ApiController
             'observations'         => 'nullable|string',
             'assigned_agent_ids'   => 'nullable|array',
             'assigned_agent_ids.*' => 'integer|exists:agents,id',
+            'client_operation_id'  => 'nullable|uuid',
         ]);
 
         $hasAssignedAgents = array_key_exists('assigned_agent_ids', $validated);
         $assignedAgentIds = $validated['assigned_agent_ids'] ?? [];
         unset($validated['assigned_agent_ids']);
+
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
 
         $validated = $this->assertAssignedAgentsMatchTarget($validated, $assignedAgentIds);
         $validated = $this->normalizeTrimestreFlags($validated);
@@ -1121,27 +1126,42 @@ class PlanTravailController extends ApiController
 
         $validated['createur_id'] = auth()->user()->agent->id;
 
-        $activite = ActivitePlan::create($validated);
-        $this->syncActiviteProvinces($activite, $provinceIds);
-        if ($hasAssignedAgents) {
-            $activite->agents()->sync($assignedAgentIds);
-        }
-
-        PtaModified::dispatch($activite, 'created');
-
-        NotificationService::notifierTous(
+        // Guard against duplicate creation when this request is replayed by
+        // the offline sync queue (same client_operation_id resent after a
+        // lost response or a retry race): see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            auth()->id(),
+            $clientOperationId,
             'plan_travail',
-            'Nouvelle activité PTA : ' . $activite->titre,
-            'Une nouvelle activité a été ajoutée au Plan de Travail Annuel (' . $activite->annee . ' ' . ($activite->trimestre ?? '') . ').',
-            '/plan-travail/' . $activite->id,
-            auth()->id()
+            'create',
+            function () use ($validated, $provinceIds, $hasAssignedAgents, $assignedAgentIds) {
+                $activite = ActivitePlan::create($validated);
+                $this->syncActiviteProvinces($activite, $provinceIds);
+                if ($hasAssignedAgents) {
+                    $activite->agents()->sync($assignedAgentIds);
+                }
+
+                PtaModified::dispatch($activite, 'created');
+
+                NotificationService::notifierTous(
+                    'plan_travail',
+                    'Nouvelle activité PTA : ' . $activite->titre,
+                    'Une nouvelle activité a été ajoutée au Plan de Travail Annuel (' . $activite->annee . ' ' . ($activite->trimestre ?? '') . ').',
+                    '/plan-travail/' . $activite->id,
+                    auth()->id()
+                );
+
+                $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'provinces', 'localite', 'agents'));
+
+                return [
+                    'data' => $resource->resolve(),
+                    'meta' => [],
+                    'message' => 'Activité créée avec succès.',
+                ];
+            }
         );
 
-        $resource = ActivitePlanResource::make($activite->load('createur', 'departement', 'province', 'provinces', 'localite', 'agents'));
-
-        return $this->resource($resource, [], [
-            'message' => 'Activité créée avec succès.',
-        ], 201);
+        return response()->json($outcome['result'], $outcome['duplicate'] ? 200 : 201);
     }
 
     /**

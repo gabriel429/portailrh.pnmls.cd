@@ -107,6 +107,8 @@ const OFFLINE_QUEUEABLE_CREATIONS = {
     '/my-holiday': 'conge',
     '/holidays': 'conge',
     '/holiday-plannings': 'conge',
+    '/signalements': 'signalement',
+    '/plan-travail': 'plan_travail',
 }
 
 function getQueueableOfflineEntity(config) {
@@ -227,21 +229,60 @@ client.interceptors.request.use(
             const ui = useUiStore()
 
             try {
-                // Sauvegarder le pointage localement
-                const tempId = await offlineStorage.addPointageToQueue(config.data)
+                if (method === 'post') {
+                    // Nouveau pointage
+                    const tempId = await offlineStorage.addPointageToQueue(config.data)
 
-                ui.addToast('📱 Pointage sauvegardé localement (sera synchronisé)', 'success', 4000)
+                    ui.addToast('📱 Pointage sauvegardé localement (sera synchronisé)', 'success', 4000)
 
-                // Simuler une réponse réussie
+                    return resolveFromRequestInterceptor(config, {
+                        data: {
+                            id: tempId,
+                            offline: true,
+                            message: 'Pointage sauvegardé localement',
+                            tempId
+                        },
+                        status: 201,
+                        statusText: 'Created (Offline)',
+                    })
+                }
+
+                // PUT/PATCH (correction) ou DELETE sur un pointage existant :
+                // /pointages/{id}. Sans ce branchement, le même chemin que la
+                // création postait un enregistrement bulk sans agent_id/date
+                // valides à la synchronisation (voir OFFLINE_ARCHITECTURE.md).
+                const idMatch = url.match(/\/pointages\/(\d+)/)
+                const pointageId = idMatch ? idMatch[1] : null
+
+                if (!pointageId) {
+                    ui.addToast('❌ Impossible d\'identifier le pointage à modifier hors ligne', 'danger')
+                    return Promise.reject(new Error('Identifiant de pointage introuvable dans l\'URL'))
+                }
+
+                const auth = useAuthStore()
+                const queueItem = await offlineStorage.enqueueOperation({
+                    userId: auth.user?.id || null,
+                    entity: 'pointage',
+                    operation: method === 'delete' ? 'delete' : 'update',
+                    entityId: pointageId,
+                    payload: method === 'delete' ? {} : (config.data || {}),
+                    request: { method, url },
+                })
+
+                const message = method === 'delete'
+                    ? '📱 Suppression du pointage sauvegardée localement (sera synchronisée)'
+                    : '📱 Modification du pointage sauvegardée localement (sera synchronisée)'
+                ui.addToast(message, 'success', 4000)
+
                 return resolveFromRequestInterceptor(config, {
                     data: {
-                        id: tempId,
+                        id: queueItem.id,
                         offline: true,
-                        message: 'Pointage sauvegardé localement',
-                        tempId
+                        message,
+                        tempId: queueItem.id,
                     },
-                    status: 201,
-                    statusText: 'Created (Offline)',
+                    status: 200,
+                    statusText: 'OK (Offline)',
                 })
 
             } catch (error) {

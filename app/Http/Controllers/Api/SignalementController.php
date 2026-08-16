@@ -6,6 +6,7 @@ use App\Events\SignalementCreated;
 use App\Http\Resources\SignalementResource;
 use App\Models\Signalement;
 use App\Models\Agent;
+use App\Services\OfflineIdempotencyService;
 use App\Services\UserDataScope;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -45,6 +46,7 @@ class SignalementController extends ApiController
      */
     public function store(Request $request): JsonResponse
     {
+        $user = $request->user();
         $isAnonymous = $request->boolean('is_anonymous', false);
 
         $rules = [
@@ -53,6 +55,7 @@ class SignalementController extends ApiController
             'observations' => 'nullable|string',
             'severite' => 'required|in:basse,moyenne,haute',
             'is_anonymous' => 'nullable|boolean',
+            'client_operation_id' => 'nullable|uuid',
         ];
 
         if (!$isAnonymous) {
@@ -74,16 +77,34 @@ class SignalementController extends ApiController
             }
         }
 
-        $signalement = Signalement::create($validated);
+        $clientOperationId = $validated['client_operation_id'] ?? null;
+        unset($validated['client_operation_id']);
 
-        SignalementCreated::dispatch($signalement);
+        // Guard against duplicate creation when this request is replayed by
+        // the offline sync queue (same client_operation_id resent after a
+        // lost response or a retry race): see OfflineIdempotencyService.
+        $outcome = app(OfflineIdempotencyService::class)->once(
+            $user->id,
+            $clientOperationId,
+            'signalement',
+            'create',
+            function () use ($validated) {
+                $signalement = Signalement::create($validated);
 
-        $signalement->load('agent');
-        $resource = SignalementResource::make($signalement);
+                SignalementCreated::dispatch($signalement);
 
-        return $this->resource($resource, [], [
-            'message' => 'Signalement créé avec succès.',
-        ], 201);
+                $signalement->load('agent');
+                $resource = SignalementResource::make($signalement);
+
+                return [
+                    'data' => $resource->resolve(),
+                    'meta' => [],
+                    'message' => 'Signalement créé avec succès.',
+                ];
+            }
+        );
+
+        return response()->json($outcome['result'], $outcome['duplicate'] ? 200 : 201);
     }
 
     /**

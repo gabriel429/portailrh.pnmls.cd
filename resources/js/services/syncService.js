@@ -29,6 +29,11 @@ class SyncService {
             this.startAutoSync()
             this.scheduleSync('startup', 1200)
         }
+
+        // Purge old synced/failed queue entries and expired cached API
+        // responses once per app load — cleanupQueue()/cleanup() existed
+        // but were never actually invoked, so IndexedDB grew unbounded.
+        this.cleanupQueue()
     }
 
     initNetworkListener() {
@@ -251,6 +256,12 @@ class SyncService {
 
     async syncQueuedOperation(operation) {
         if (operation.entity === 'pointage') {
+            if (operation.operation === 'update') {
+                return this.syncPointageUpdate(operation)
+            }
+            if (operation.operation === 'delete') {
+                return this.syncPointageDelete(operation)
+            }
             return this.syncSinglePointage(operation)
         }
 
@@ -264,6 +275,45 @@ class SyncService {
         }, { silent: true, skipForbiddenToast: true })
 
         debugLog(`✅ ${operation.entity} ${operation.id} synchronisé avec succès`)
+        return response.data
+    }
+
+    /**
+     * Synchronisation d'une correction de pointage faite hors ligne
+     * (PUT /pointages/{id}) — distincte de syncSinglePointage, qui ne gère
+     * que la création via l'endpoint bulk.
+     */
+    async syncPointageUpdate(operation) {
+        const pointageId = operation.entity_id
+        if (!pointageId) {
+            throw new Error('Identifiant de pointage manquant pour synchroniser la modification')
+        }
+
+        const response = await client.put(`/pointages/${pointageId}`, operation.payload, {
+            silent: true,
+            skipForbiddenToast: true,
+        })
+
+        debugLog(`✅ Modification du pointage ${pointageId} synchronisée avec succès`)
+        return response.data
+    }
+
+    /**
+     * Synchronisation d'une suppression de pointage faite hors ligne
+     * (DELETE /pointages/{id}).
+     */
+    async syncPointageDelete(operation) {
+        const pointageId = operation.entity_id
+        if (!pointageId) {
+            throw new Error('Identifiant de pointage manquant pour synchroniser la suppression')
+        }
+
+        const response = await client.delete(`/pointages/${pointageId}`, {
+            silent: true,
+            skipForbiddenToast: true,
+        })
+
+        debugLog(`✅ Suppression du pointage ${pointageId} synchronisée avec succès`)
         return response.data
     }
 
@@ -362,6 +412,51 @@ class SyncService {
         } catch (error) {
             reportError(`❌ Erreur retry pointage ${tempId}:`, error)
             this.notifyUser('Échec de la synchronisation', 'danger')
+            return false
+        }
+    }
+
+    /**
+     * Liste détaillée de la file d'attente (tous types d'opérations), pour
+     * un panneau permettant de voir/relancer/annuler chaque élément — pas
+     * seulement le compteur agrégé affiché dans la barre de statut.
+     */
+    async getQueueItemsDetailed() {
+        const items = await offlineStorage.getQueueItems()
+        return items.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    }
+
+    /**
+     * RELANCE MANUELLE D'UNE OPÉRATION (tout type d'entité)
+     */
+    async retryQueueItem(id) {
+        if (!this.isOnline) {
+            this.notifyUser('Connexion requise pour réessayer', 'warning')
+            return false
+        }
+
+        try {
+            await offlineStorage.updateQueueStatus(id, 'pending')
+            await this.syncAll()
+            return true
+        } catch (error) {
+            reportError(`❌ Erreur retry opération ${id}:`, error)
+            this.notifyUser('Échec de la synchronisation', 'danger')
+            return false
+        }
+    }
+
+    /**
+     * ANNULATION MANUELLE D'UNE OPÉRATION (tout type d'entité)
+     */
+    async cancelQueueItem(id) {
+        try {
+            await offlineStorage.removeQueueItem(id)
+            this.notifyUser('Opération supprimée de la file d\'attente', 'info')
+            return true
+        } catch (error) {
+            reportError(`❌ Erreur annulation opération ${id}:`, error)
+            this.notifyUser('Impossible de supprimer cette opération', 'danger')
             return false
         }
     }
