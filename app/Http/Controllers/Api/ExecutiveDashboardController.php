@@ -29,6 +29,7 @@ use App\Models\FormationBeneficiaire;
 use App\Services\AgentPresenceService;
 use App\Services\UserDataScope;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
@@ -707,6 +708,20 @@ class ExecutiveDashboardController extends ApiController
             return response()->json(['message' => 'Accès réservé au SEN.'], 403);
         }
 
+        // This view aggregates dozens of counts/averages across the whole
+        // organization (province/localite breakdowns, PTA, presence...).
+        // None of it is request-specific, so a short cache turns repeated
+        // dashboard loads/refreshes from ~100+ queries into effectively
+        // none, at the cost of up to a minute of staleness.
+        $payload = Cache::remember('executive-dashboard-index', 60, function () {
+            return $this->buildExecutiveDashboardPayload();
+        });
+
+        return $this->success($payload, [], $payload);
+    }
+
+    private function buildExecutiveDashboardPayload(): array
+    {
         $now = Carbon::now();
         $currentYear = $now->year;
         $startOfMonth = $now->copy()->startOfMonth();
@@ -726,13 +741,21 @@ class ExecutiveDashboardController extends ApiController
         $presence = app(AgentPresenceService::class);
         $onlineAgentMap = $presence->onlineMap(Agent::actifs()->pluck('id')->all());
 
+        // Single grouped query instead of 4 COUNT queries per organe.
+        $agentStatutCountsByOrgane = Agent::whereIn('organe', array_values($organes))
+            ->select('organe', 'statut', DB::raw('COUNT(*) as total'))
+            ->groupBy('organe', 'statut')
+            ->get()
+            ->groupBy('organe');
+
         $agentsByOrgane = [];
         foreach ($organes as $code => $nom) {
+            $rows = $agentStatutCountsByOrgane->get($nom, collect());
             $agentsByOrgane[$code] = [
-                'total' => Agent::where('organe', $nom)->count(),
-                'actifs' => Agent::actifs()->where('organe', $nom)->count(),
-                'suspendus' => Agent::suspendu()->where('organe', $nom)->count(),
-                'anciens' => Agent::anciens()->where('organe', $nom)->count(),
+                'total' => (int) $rows->sum('total'),
+                'actifs' => (int) ($rows->firstWhere('statut', 'actif')->total ?? 0),
+                'suspendus' => (int) ($rows->firstWhere('statut', 'suspendu')->total ?? 0),
+                'anciens' => (int) ($rows->firstWhere('statut', 'ancien')->total ?? 0),
             ];
         }
 
@@ -776,27 +799,38 @@ class ExecutiveDashboardController extends ApiController
             $avgMonthlyRate = round(($avgPresent / $totalActiveAgents) * 100, 1);
         }
 
-        // Presence par organe
+        // Presence par organe — one joined+grouped query per metric instead
+        // of 2 queries per organe (today's count, monthly-by-date average).
+        $organeNoms = array_values($organes);
+
+        $todayPresentByOrgane = Pointage::query()
+            ->join('agents', 'agents.id', '=', 'pointages.agent_id')
+            ->whereDate('pointages.date_pointage', $now->toDateString())
+            ->whereNotNull('pointages.heure_entree')
+            ->whereIn('agents.organe', $organeNoms)
+            ->select('agents.organe', DB::raw('COUNT(DISTINCT pointages.agent_id) as present'))
+            ->groupBy('agents.organe')
+            ->pluck('present', 'agents.organe');
+
+        $monthlyByOrganeDate = Pointage::query()
+            ->join('agents', 'agents.id', '=', 'pointages.agent_id')
+            ->whereBetween('pointages.date_pointage', [$startOfMonth->toDateString(), $now->toDateString()])
+            ->whereNotNull('pointages.heure_entree')
+            ->whereIn('agents.organe', $organeNoms)
+            ->select('agents.organe', 'pointages.date_pointage', DB::raw('COUNT(DISTINCT pointages.agent_id) as present'))
+            ->groupBy('agents.organe', 'pointages.date_pointage')
+            ->get()
+            ->groupBy('organe');
+
         $attendanceByOrgane = [];
         foreach ($organes as $code => $nom) {
             $orgActifs = $agentsByOrgane[$code]['actifs'] ?: 1;
-            $orgTodayPresent = Pointage::byDate($now->toDateString())
-                ->whereNotNull('heure_entree')
-                ->whereHas('agent', fn($q) => $q->where('organe', $nom))
-                ->distinct('agent_id')
-                ->count('agent_id');
+            $orgTodayPresent = (int) ($todayPresentByOrgane[$nom] ?? 0);
 
-            $orgMonthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
-                ->whereNotNull('heure_entree')
-                ->whereHas('agent', fn($q) => $q->where('organe', $nom))
-                ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
-                ->groupBy('date_pointage')
-                ->get();
-
-            $orgMonthlyRate = 0;
-            if ($orgMonthly->count() > 0) {
-                $orgMonthlyRate = round(($orgMonthly->avg('present') / $orgActifs) * 100, 1);
-            }
+            $orgMonthlyRows = $monthlyByOrganeDate->get($nom, collect());
+            $orgMonthlyRate = $orgMonthlyRows->isNotEmpty()
+                ? round(($orgMonthlyRows->avg('present') / $orgActifs) * 100, 1)
+                : 0;
 
             $attendanceByOrgane[$code] = [
                 'today_present' => $orgTodayPresent,
@@ -1298,7 +1332,7 @@ class ExecutiveDashboardController extends ApiController
             'recent_online_agents' => $presence->recent($onlineAgentMap),
         ];
 
-        return $this->success($payload, [], $payload);
+        return $payload;
     }
 
     /**
@@ -1661,28 +1695,58 @@ class ExecutiveDashboardController extends ApiController
                 'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
             ])->get();
 
+            // Batched per-province metrics: one query each instead of 4-5
+            // queries per province row (today's presence, monthly average,
+            // PTA total/terminée/moyenne).
+            $provinceIds = $provinces->pluck('id')->all();
+
+            $todayPresentByProvince = Pointage::query()
+                ->join('agents', 'agents.id', '=', 'pointages.agent_id')
+                ->whereDate('pointages.date_pointage', $now->toDateString())
+                ->whereNotNull('pointages.heure_entree')
+                ->where('agents.organe', $nom)
+                ->whereIn('agents.province_id', $provinceIds)
+                ->select('agents.province_id', DB::raw('COUNT(DISTINCT pointages.agent_id) as present'))
+                ->groupBy('agents.province_id')
+                ->pluck('present', 'agents.province_id');
+
+            $monthlyByProvinceDate = Pointage::query()
+                ->join('agents', 'agents.id', '=', 'pointages.agent_id')
+                ->whereBetween('pointages.date_pointage', [$startOfMonth->toDateString(), $now->toDateString()])
+                ->whereNotNull('pointages.heure_entree')
+                ->where('agents.organe', $nom)
+                ->whereIn('agents.province_id', $provinceIds)
+                ->select('agents.province_id', 'pointages.date_pointage', DB::raw('COUNT(DISTINCT pointages.agent_id) as present'))
+                ->groupBy('agents.province_id', 'pointages.date_pointage')
+                ->get()
+                ->groupBy('province_id');
+
+            $ptaByProvince = ActivitePlan::parAnnee($currentYear)
+                ->whereIn('province_id', $provinceIds)
+                ->select(
+                    'province_id',
+                    DB::raw('COUNT(*) as total'),
+                    DB::raw("SUM(CASE WHEN statut = 'terminee' THEN 1 ELSE 0 END) as terminee"),
+                    DB::raw('AVG(pourcentage) as avg_pct')
+                )
+                ->groupBy('province_id')
+                ->get()
+                ->keyBy('province_id');
+
             foreach ($provinces as $prov) {
                 $provActifs = $prov->actifs ?: 1;
 
-                // Présence aujourd'hui
-                $todayPresent = Pointage::byDate($now->toDateString())
-                    ->whereNotNull('heure_entree')
-                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('province_id', $prov->id))
-                    ->distinct('agent_id')->count('agent_id');
+                $todayPresent = (int) ($todayPresentByProvince[$prov->id] ?? 0);
 
-                // Moyenne mensuelle
-                $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
-                    ->whereNotNull('heure_entree')
-                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('province_id', $prov->id))
-                    ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
-                    ->groupBy('date_pointage')->get();
-                $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $provActifs) * 100, 1) : 0;
+                $monthlyRows = $monthlyByProvinceDate->get($prov->id, collect());
+                $monthlyRate = $monthlyRows->isNotEmpty()
+                    ? round(($monthlyRows->avg('present') / $provActifs) * 100, 1)
+                    : 0;
 
-                // PTA
-                $ptaQuery = ActivitePlan::parAnnee($currentYear)->where('province_id', $prov->id);
-                $ptaTotal = (clone $ptaQuery)->count();
-                $ptaTerminee = (clone $ptaQuery)->terminee()->count();
-                $ptaAvg = (clone $ptaQuery)->avg('pourcentage') ?? 0;
+                $ptaRow = $ptaByProvince->get($prov->id);
+                $ptaTotal = (int) ($ptaRow->total ?? 0);
+                $ptaTerminee = (int) ($ptaRow->terminee ?? 0);
+                $ptaAvg = $ptaRow->avg_pct ?? 0;
 
                 $items[] = [
                     'id' => $prov->id,
@@ -1716,27 +1780,58 @@ class ExecutiveDashboardController extends ApiController
                 'agents as suspendus' => fn($q) => $q->where('organe', $nom)->suspendu(),
             ])->get();
 
+            // Same batching as the SEP branch above, keyed by localite_id.
+            $localiteIds = $localites->pluck('id')->all();
+
+            $todayPresentByLocalite = Pointage::query()
+                ->join('agents', 'agents.id', '=', 'pointages.agent_id')
+                ->whereDate('pointages.date_pointage', $now->toDateString())
+                ->whereNotNull('pointages.heure_entree')
+                ->where('agents.organe', $nom)
+                ->whereIn('agents.localite_id', $localiteIds)
+                ->select('agents.localite_id', DB::raw('COUNT(DISTINCT pointages.agent_id) as present'))
+                ->groupBy('agents.localite_id')
+                ->pluck('present', 'agents.localite_id');
+
+            $monthlyByLocaliteDate = Pointage::query()
+                ->join('agents', 'agents.id', '=', 'pointages.agent_id')
+                ->whereBetween('pointages.date_pointage', [$startOfMonth->toDateString(), $now->toDateString()])
+                ->whereNotNull('pointages.heure_entree')
+                ->where('agents.organe', $nom)
+                ->whereIn('agents.localite_id', $localiteIds)
+                ->select('agents.localite_id', 'pointages.date_pointage', DB::raw('COUNT(DISTINCT pointages.agent_id) as present'))
+                ->groupBy('agents.localite_id', 'pointages.date_pointage')
+                ->get()
+                ->groupBy('localite_id');
+
+            $ptaByLocalite = ActivitePlan::parAnnee($currentYear)
+                ->whereIn('localite_id', $localiteIds)
+                ->select(
+                    'localite_id',
+                    DB::raw('COUNT(*) as total'),
+                    DB::raw("SUM(CASE WHEN statut = 'terminee' THEN 1 ELSE 0 END) as terminee"),
+                    DB::raw('AVG(pourcentage) as avg_pct')
+                )
+                ->groupBy('localite_id')
+                ->get()
+                ->keyBy('localite_id');
+
             foreach ($localites as $localite) {
                 if ($localite->total === 0) continue;
 
                 $localiteActifs = $localite->actifs ?: 1;
 
-                $todayPresent = Pointage::byDate($now->toDateString())
-                    ->whereNotNull('heure_entree')
-                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('localite_id', $localite->id))
-                    ->distinct('agent_id')->count('agent_id');
+                $todayPresent = (int) ($todayPresentByLocalite[$localite->id] ?? 0);
 
-                $monthly = Pointage::betweenDates($startOfMonth->toDateString(), $now->toDateString())
-                    ->whereNotNull('heure_entree')
-                    ->whereHas('agent', fn($q) => $q->where('organe', $nom)->where('localite_id', $localite->id))
-                    ->select(DB::raw('COUNT(DISTINCT agent_id) as present, date_pointage'))
-                    ->groupBy('date_pointage')->get();
-                $monthlyRate = $monthly->count() > 0 ? round(($monthly->avg('present') / $localiteActifs) * 100, 1) : 0;
+                $monthlyRows = $monthlyByLocaliteDate->get($localite->id, collect());
+                $monthlyRate = $monthlyRows->isNotEmpty()
+                    ? round(($monthlyRows->avg('present') / $localiteActifs) * 100, 1)
+                    : 0;
 
-                $ptaLocaliteQuery = ActivitePlan::parAnnee($currentYear)->where('localite_id', $localite->id);
-                $ptaLocaliteTotal = (clone $ptaLocaliteQuery)->count();
-                $ptaLocaliteTerminee = (clone $ptaLocaliteQuery)->terminee()->count();
-                $ptaLocaliteAvg = (clone $ptaLocaliteQuery)->avg('pourcentage') ?? 0;
+                $ptaLocaliteRow = $ptaByLocalite->get($localite->id);
+                $ptaLocaliteTotal = (int) ($ptaLocaliteRow->total ?? 0);
+                $ptaLocaliteTerminee = (int) ($ptaLocaliteRow->terminee ?? 0);
+                $ptaLocaliteAvg = $ptaLocaliteRow->avg_pct ?? 0;
 
                 $items[] = [
                     'id' => $localite->id,

@@ -609,14 +609,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, defineAsyncComponent } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import Pagination from '@/components/common/Pagination.vue'
 import HolidayCalendar from '@/components/holidays/HolidayCalendar.vue'
-import HolidayStatistics from '@/components/holidays/HolidayStatistics.vue'
+// Pulls in chart.js — only load it when the "stats" tab is actually opened.
+const HolidayStatistics = defineAsyncComponent(() => import('@/components/holidays/HolidayStatistics.vue'))
 import HolidayPlanningModal from '@/components/holidays/HolidayPlanningModal.vue'
 import HolidayPlanningDetailsModal from '@/components/holidays/HolidayPlanningDetailsModal.vue'
 import AddHolidayModal from '@/components/holidays/AddHolidayModal.vue'

@@ -35,6 +35,13 @@ php artisan view:clear
 echo "Running migrations..."
 php artisan migrate --force
 
+# 4b. Rebuild caches — Hostinger re-parses config/routes/views on every
+# request otherwise, since nothing here persists between PHP-FPM workers.
+echo "Rebuilding caches..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
 # 5. Set permissions without marking tracked assets as executable.
 echo "Setting permissions..."
 find public/build build -type d -exec chmod 755 {} \;

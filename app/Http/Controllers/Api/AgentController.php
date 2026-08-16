@@ -394,6 +394,71 @@ class AgentController extends ApiController
     }
 
     /**
+     * Resize an uploaded profile photo down to a reasonable max dimension
+     * and re-encode as JPEG, instead of storing phone-camera originals
+     * (often several MB) at full resolution. Falls back to storing the
+     * original file if GD can't decode it.
+     */
+    private function resizeAndStoreProfilePhoto(\Illuminate\Http\UploadedFile $file, string $directory): string
+    {
+        $destination = public_path($directory);
+        if (!is_dir($destination)) {
+            mkdir($destination, 0755, true);
+        }
+
+        $sourcePath = $file->getRealPath();
+        $mime = $file->getMimeType();
+
+        $image = match (true) {
+            $mime === 'image/png' => @imagecreatefrompng($sourcePath),
+            $mime === 'image/webp' && function_exists('imagecreatefromwebp') => @imagecreatefromwebp($sourcePath),
+            default => @imagecreatefromjpeg($sourcePath),
+        };
+
+        if (!$image) {
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+            $file->move($destination, $filename);
+
+            return $directory . '/' . $filename;
+        }
+
+        // Phone cameras store rotation in EXIF rather than physically
+        // rotating pixels; GD ignores this, so without correcting it here a
+        // resized photo can come out sideways where the browser previously
+        // auto-rotated the untouched original from EXIF metadata.
+        if ($mime === 'image/jpeg' && function_exists('exif_read_data')) {
+            $exif = @exif_read_data($sourcePath);
+            $orientation = $exif['Orientation'] ?? 1;
+            $image = match ($orientation) {
+                3 => imagerotate($image, 180, 0),
+                6 => imagerotate($image, -90, 0),
+                8 => imagerotate($image, 90, 0),
+                default => $image,
+            };
+        }
+
+        $width = imagesx($image);
+        $height = imagesy($image);
+        $maxDimension = 800;
+
+        if (max($width, $height) > $maxDimension) {
+            $ratio = $maxDimension / max($width, $height);
+            $newWidth = max(1, (int) round($width * $ratio));
+            $newHeight = max(1, (int) round($height * $ratio));
+            $resized = imagecreatetruecolor($newWidth, $newHeight);
+            imagecopyresampled($resized, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+            imagedestroy($image);
+            $image = $resized;
+        }
+
+        $filename = Str::uuid() . '.jpg';
+        imagejpeg($image, $destination . DIRECTORY_SEPARATOR . $filename, 85);
+        imagedestroy($image);
+
+        return $directory . '/' . $filename;
+    }
+
+    /**
      * Store a newly created agent.
      */
     public function store(Request $request): JsonResponse
@@ -480,10 +545,7 @@ class AgentController extends ApiController
 
         // Handle photo upload
         if ($request->hasFile('photo')) {
-            $file = $request->file('photo');
-            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/profiles'), $filename);
-            $validated['photo'] = 'uploads/profiles/' . $filename;
+            $validated['photo'] = $this->resizeAndStoreProfilePhoto($request->file('photo'), 'uploads/profiles');
         }
 
         $agent = Agent::create($validated);
@@ -873,10 +935,7 @@ class AgentController extends ApiController
 
         // Handle photo upload
         if ($request->hasFile('photo')) {
-            $file = $request->file('photo');
-            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('uploads/profiles'), $filename);
-            $validated['photo'] = 'uploads/profiles/' . $filename;
+            $validated['photo'] = $this->resizeAndStoreProfilePhoto($request->file('photo'), 'uploads/profiles');
         }
 
         $agent->update($validated);

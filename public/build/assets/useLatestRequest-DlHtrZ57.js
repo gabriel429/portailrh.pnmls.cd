@@ -1,1 +1,0 @@
-import{B as e,x as t}from"./runtime-core.esm-bundler-DobBXbc1.js";function n(){let n=e(!1),r=0;function i(){let e=++r;return n.value=!0,{token:e,isCurrent:()=>e===r,done:()=>{e===r&&(n.value=!1)}}}function a(){r+=1,n.value=!1}return t(a),{pending:n,next:i,cancel:a,isCurrent:e=>e===r}}export{n as t};

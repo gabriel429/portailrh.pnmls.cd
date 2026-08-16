@@ -6,7 +6,11 @@ import { debugLog, reportError } from '@/utils/logger'
 import { recoverFromAssetLoadFailure, registerRuntimeNoiseFilter } from '@/utils/runtimeNoiseFilter'
 import offlineAssetPreparation from '@/services/offlineAssetPreparation'
 
-import '@fortawesome/fontawesome-free/css/all.min.css'
+// Only the solid weight is used anywhere in the app (verified: no fab/far
+// icon classes) — importing all.min.css also ships brands/regular/light
+// font-face declarations that are never referenced.
+import '@fortawesome/fontawesome-free/css/fontawesome.min.css'
+import '@fortawesome/fontawesome-free/css/solid.min.css'
 import '../css/app.css'
 
 debugLog('PWA: Service Worker enabled')

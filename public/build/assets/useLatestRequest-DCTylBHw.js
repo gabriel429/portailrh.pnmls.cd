@@ -1,0 +1,1 @@
+import{S as e,V as t}from"./runtime-core.esm-bundler-BtJgvkYs.js";function n(){let n=t(!1),r=0;function i(){let e=++r;return n.value=!0,{token:e,isCurrent:()=>e===r,done:()=>{e===r&&(n.value=!1)}}}function a(){r+=1,n.value=!1}return e(a),{pending:n,next:i,cancel:a,isCurrent:e=>e===r}}export{n as t};
