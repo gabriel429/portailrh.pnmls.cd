@@ -40,7 +40,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color:#0ea5e9" role="status"></div>
+      <div class="spinner-border" style="color:#0077B5" role="status"></div>
       <p class="mt-2 text-muted">Chargement des sections...</p>
     </div>
 
@@ -248,7 +248,7 @@ onMounted(() => {
 
 /* ── Hero ── */
 .page-hero {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -256,7 +256,7 @@ onMounted(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(14, 165, 233, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -327,9 +327,9 @@ onMounted(() => {
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #0ea5e9;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -380,7 +380,7 @@ onMounted(() => {
 }
 .section-row:hover {
   background: #fff;
-  border-color: rgba(14, 165, 233, .36);
+  border-color: rgba(0, 119, 181, .36);
   box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
 }
 .section-summary,
@@ -413,7 +413,7 @@ onMounted(() => {
   line-height: 1.35;
 }
 .section-title-block i {
-  color: #0ea5e9;
+  color: #0077B5;
 }
 .section-meta {
   display: flex;
@@ -468,8 +468,8 @@ onMounted(() => {
 
 /* ── Agent Count Badge ── */
 .agent-count-badge {
-  background: #f0f9ff;
-  color: #0284c7;
+  background: rgba(0, 119, 181, .1);
+  color: #005a87;
   font-size: .78rem;
   font-weight: 700;
   padding: 3px 10px;
@@ -497,9 +497,9 @@ onMounted(() => {
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #0ea5e9;
-  color: #0ea5e9;
-  background: #f0f9ff;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -540,14 +540,14 @@ onMounted(() => {
   justify-content: center;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #0ea5e9;
-  border-color: #0ea5e9;
+  background: #0077B5;
+  border-color: #0077B5;
   color: #fff;
 }
 .modern-pagination .page-link:hover {
-  background: #f0f9ff;
-  border-color: #0ea5e9;
-  color: #0ea5e9;
+  background: #e0f2fe;
+  border-color: #0077B5;
+  color: #0077B5;
 }
 .modern-pagination .page-item.disabled .page-link {
   background: #f8fafc;

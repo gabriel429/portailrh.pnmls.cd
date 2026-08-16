@@ -389,7 +389,7 @@ onMounted(() => {
 
 /* ── Hero ───────────────────────────────────────────────── */
 .dl-hero {
-  background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.25rem 1.5rem;
   display: flex;
@@ -397,7 +397,7 @@ onMounted(() => {
   justify-content: space-between;
   gap: 1rem;
   margin-bottom: 1.25rem;
-  box-shadow: 0 8px 28px rgba(124,58,237,.25);
+  box-shadow: 0 8px 28px rgba(0,119,181,.25);
 }
 .dl-hero-left { display: flex; align-items: center; gap: .85rem; }
 .dl-hero-icon {
@@ -450,7 +450,7 @@ onMounted(() => {
   cursor: pointer; transition: all .2s;
 }
 .dl-tab.active {
-  background: #7c3aed; border-color: #7c3aed; color: #fff;
+  background: #0077B5; border-color: #0077B5; color: #fff;
 }
 .dl-search-wrap { position: relative; flex: 1; min-width: 180px; }
 .dl-search-icon {
@@ -462,13 +462,13 @@ onMounted(() => {
   border: 1px solid #e2e8f0; border-radius: 9px;
   font-size: .85rem; transition: border-color .2s;
 }
-.dl-search:focus { border-color: #7c3aed; outline: none; box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+.dl-search:focus { border-color: #0077B5; outline: none; box-shadow: 0 0 0 3px rgba(0,119,181,.1); }
 
 /* ── Loading ────────────────────────────────────────────── */
 .dl-loading { text-align: center; padding: 3rem 1rem; background: #fff; border-radius: 14px; }
 .dl-spinner {
   width: 40px; height: 40px; border: 3px solid #f1f5f9;
-  border-top-color: #7c3aed; border-radius: 50%;
+  border-top-color: #0077B5; border-radius: 50%;
   animation: spin .7s linear infinite; margin: 0 auto .75rem;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -506,7 +506,7 @@ onMounted(() => {
   display: flex; align-items: center; justify-content: center;
   font-size: .7rem; color: #fff; flex-shrink: 0;
 }
-.dl-avatar-active   { background: linear-gradient(135deg,#7c3aed,#6d28d9); }
+.dl-avatar-active   { background: linear-gradient(135deg,#0077B5,#005a87); }
 .dl-avatar-inactive { background: #cbd5e1; }
 .dl-dir-cell  { display: flex; align-items: center; gap: .5rem; }
 .dl-dir-avatar {
@@ -521,7 +521,7 @@ onMounted(() => {
   font-size: .74rem; font-weight: 700;
   padding: 3px 9px; border-radius: 6px;
 }
-.dl-pill-purple { background: rgba(124,58,237,.1); color: #6d28d9; }
+.dl-pill-purple { background: rgba(0,119,181,.1); color: #005a87; }
 .dl-pill-blue   { background: rgba(14,165,233,.1);  color: #0284c7; }
 
 /* ── Switch toggle ──────────────────────────────────────── */
@@ -554,7 +554,7 @@ onMounted(() => {
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; text-decoration: none; transition: all .2s;
 }
-.dl-btn:hover      { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; }
+.dl-btn:hover      { border-color: #0077B5; color: #0077B5; background: #e0f2fe; }
 .dl-btn-danger:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
 
 /* ── Pagination ─────────────────────────────────────────── */
@@ -570,8 +570,8 @@ onMounted(() => {
   color: #64748b; font-size: .8rem; font-weight: 600;
   cursor: pointer; transition: all .2s; padding: 0 .45rem;
 }
-.dl-page-btn:hover        { border-color: #7c3aed; color: #7c3aed; }
-.dl-page-btn-active       { background: #7c3aed; border-color: #7c3aed; color: #fff; }
+.dl-page-btn:hover        { border-color: #0077B5; color: #0077B5; }
+.dl-page-btn-active       { background: #0077B5; border-color: #0077B5; color: #fff; }
 .dl-page-btn:disabled     { opacity: .45; cursor: not-allowed; }
 
 /* ── Mobile cards ───────────────────────────────────────── */
@@ -614,7 +614,7 @@ onMounted(() => {
   font-size: .8rem; font-weight: 600; color: #64748b;
   text-decoration: none; background: #fff; cursor: pointer; transition: all .2s;
 }
-.dl-card-action:hover { border-color: #7c3aed; color: #7c3aed; background: #faf5ff; }
+.dl-card-action:hover { border-color: #0077B5; color: #0077B5; background: #e0f2fe; }
 .dl-card-action-danger:hover { border-color: #ef4444; color: #ef4444; background: #fef2f2; }
 
 /* ── Empty / Responsive visibility ─────────────────────── */

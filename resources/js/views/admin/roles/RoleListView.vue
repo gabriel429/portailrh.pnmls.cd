@@ -39,7 +39,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color:#14b8a6"></div>
+      <div class="spinner-border" style="color:#0077B5"></div>
       <p class="mt-2 text-muted">Chargement...</p>
     </div>
 
@@ -257,7 +257,7 @@ onMounted(() => {
 
 <style scoped>
 .page-hero {
-  background: linear-gradient(135deg, #14b8a6 0%, #0d9488 50%, #115e59 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -265,7 +265,7 @@ onMounted(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(20, 184, 166, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-icon {
@@ -319,9 +319,9 @@ onMounted(() => {
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #14b8a6;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -331,8 +331,8 @@ onMounted(() => {
   color: #94a3b8;
 }
 .count-badge {
-  background: #f0fdfa;
-  color: #0d9488;
+  background: #e0f2fe;
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 4px 12px;
@@ -378,17 +378,17 @@ onMounted(() => {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: #f0fdfa;
+  background: #e0f2fe;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #14b8a6;
+  color: #0077B5;
   font-size: .75rem;
   flex-shrink: 0;
 }
 .agent-count-badge {
-  background: #f0fdfa;
-  color: #0d9488;
+  background: #e0f2fe;
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 3px 10px;
@@ -413,9 +413,9 @@ onMounted(() => {
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #14b8a6;
-  color: #14b8a6;
-  background: #f0fdfa;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -453,8 +453,8 @@ onMounted(() => {
   padding: .35rem .7rem;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #14b8a6;
-  border-color: #14b8a6;
+  background: #0077B5;
+  border-color: #0077B5;
 }
 
 /* ── Mobile Responsive ── */
@@ -516,7 +516,7 @@ onMounted(() => {
   border-radius: 12px;
   border: 1px solid #d9e4ec;
   background: #fff;
-  color: #0f766e;
+  color: #005a87;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -528,9 +528,9 @@ onMounted(() => {
 }
 
 .mobile-action-btn:hover {
-  border-color: #14b8a6;
-  background: #f0fdfa;
-  color: #0f766e;
+  border-color: #0077B5;
+  background: #e0f2fe;
+  color: #005a87;
 }
 
 .mobile-action-btn-danger {

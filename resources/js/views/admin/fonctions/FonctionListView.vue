@@ -49,7 +49,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color:#f43f5e" role="status"></div>
+      <div class="spinner-border" style="color:#0077B5" role="status"></div>
       <p class="mt-2 text-muted">Chargement des fonctions...</p>
     </div>
 
@@ -242,7 +242,7 @@ onMounted(() => {
 
 /* ── Hero ── */
 .page-hero {
-  background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -250,7 +250,7 @@ onMounted(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(244, 63, 94, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -309,9 +309,9 @@ onMounted(() => {
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #f43f5e;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -327,9 +327,9 @@ onMounted(() => {
   font-size: .88rem;
 }
 .filter-select:focus {
-  border-color: #f43f5e;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(244, 63, 94, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .count-badge {
   background: #f1f5f9;
@@ -420,9 +420,9 @@ onMounted(() => {
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #f43f5e;
-  color: #f43f5e;
-  background: #fff1f2;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -463,14 +463,14 @@ onMounted(() => {
   justify-content: center;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #f43f5e;
-  border-color: #f43f5e;
+  background: #0077B5;
+  border-color: #0077B5;
   color: #fff;
 }
 .modern-pagination .page-link:hover {
-  background: #fff1f2;
-  border-color: #f43f5e;
-  color: #f43f5e;
+  background: #e0f2fe;
+  border-color: #0077B5;
+  color: #0077B5;
 }
 .modern-pagination .page-item.disabled .page-link {
   background: #f8fafc;

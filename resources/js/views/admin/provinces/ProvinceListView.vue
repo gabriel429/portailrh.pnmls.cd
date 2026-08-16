@@ -35,7 +35,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-grow" style="width:3rem;height:3rem;color:#d97706;"></div>
+      <div class="spinner-grow" style="width:3rem;height:3rem;color:#0077B5;"></div>
       <p class="mt-3 text-muted fw-semibold">Chargement des provinces...</p>
     </div>
 
@@ -248,7 +248,7 @@ onMounted(() => {
 <style scoped>
 /* Hero */
 .page-hero {
-  background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -256,7 +256,7 @@ onMounted(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(217, 119, 6, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -313,9 +313,9 @@ onMounted(() => {
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #d97706;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(217, 119, 6, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -372,7 +372,7 @@ onMounted(() => {
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: linear-gradient(135deg, #d97706, #b45309);
+  background: linear-gradient(135deg, #0077B5, #005a87);
   color: #fff;
   font-size: .7rem;
   display: flex;
@@ -398,8 +398,8 @@ onMounted(() => {
   border-radius: 6px;
 }
 .count-pill-primary {
-  background: rgba(217, 119, 6, .1);
-  color: #b45309;
+  background: rgba(0, 119, 181, .1);
+  color: #005a87;
 }
 .count-pill-info {
   background: rgba(14, 165, 233, .1);
@@ -423,9 +423,9 @@ onMounted(() => {
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #d97706;
-  color: #d97706;
-  background: #fffbeb;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -452,13 +452,13 @@ onMounted(() => {
   transition: all .2s;
 }
 .modern-pagination .page-link:hover {
-  background: #fffbeb;
-  border-color: #d97706;
-  color: #d97706;
+  background: #e0f2fe;
+  border-color: #0077B5;
+  color: #0077B5;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #d97706;
-  border-color: #d97706;
+  background: #0077B5;
+  border-color: #0077B5;
   color: #fff;
 }
 .modern-pagination .page-item.disabled .page-link {

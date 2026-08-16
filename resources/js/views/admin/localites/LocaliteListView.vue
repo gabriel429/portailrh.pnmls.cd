@@ -39,7 +39,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color:#0d9488"></div>
+      <div class="spinner-border" style="color:#0077B5"></div>
       <p class="mt-2 text-muted">Chargement des localites...</p>
     </div>
 
@@ -245,7 +245,7 @@ onMounted(() => {
 <style scoped>
 /* Hero */
 .page-hero {
-  background: linear-gradient(135deg, #0d9488 0%, #0f766e 50%, #115e59 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -253,7 +253,7 @@ onMounted(() => {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(13, 148, 136, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -312,9 +312,9 @@ onMounted(() => {
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #0d9488;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(13, 148, 136, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -324,8 +324,8 @@ onMounted(() => {
   color: #94a3b8;
 }
 .count-badge {
-  background: #f0fdfa;
-  color: #0f766e;
+  background: #e0f2fe;
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 4px 12px;
@@ -371,11 +371,11 @@ onMounted(() => {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: #f0fdfa;
+  background: #e0f2fe;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0d9488;
+  color: #0077B5;
   font-size: .75rem;
   flex-shrink: 0;
 }
@@ -426,9 +426,9 @@ onMounted(() => {
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #0d9488;
-  color: #0d9488;
-  background: #f0fdfa;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -466,8 +466,8 @@ onMounted(() => {
   padding: .35rem .7rem;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #0d9488;
-  border-color: #0d9488;
+  background: #0077B5;
+  border-color: #0077B5;
 }
 
 /* ── Mobile Responsive ── */

@@ -29,7 +29,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color: #f59e0b;" role="status">
+      <div class="spinner-border" style="color: #0077B5;" role="status">
         <span class="visually-hidden">Chargement...</span>
       </div>
       <p class="text-muted mt-2 mb-0" style="font-size: .88rem;">Chargement des categories...</p>
@@ -165,7 +165,7 @@ onMounted(fetchCategories)
 }
 
 .page-hero {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -173,7 +173,7 @@ onMounted(fetchCategories)
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(245, 158, 11, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 
@@ -259,18 +259,18 @@ onMounted(fetchCategories)
 }
 
 .data-table tbody tr:hover {
-  background: #fffbeb;
+  background: #e0f2fe;
 }
 
 .cat-icon-box {
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: #fffbeb;
+  background: #e0f2fe;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #d97706;
+  color: #0077B5;
   font-size: .85rem;
   flex-shrink: 0;
 }
@@ -283,11 +283,11 @@ onMounted(fetchCategories)
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  background: #fef3c7;
+  background: #bae6fd;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #b45309;
+  color: #005a87;
   font-size: .78rem;
 }
 
@@ -345,9 +345,9 @@ onMounted(fetchCategories)
 }
 
 .action-btn:hover {
-  border-color: #f59e0b;
-  color: #d97706;
-  background: #fffbeb;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 
 .action-btn-danger:hover {

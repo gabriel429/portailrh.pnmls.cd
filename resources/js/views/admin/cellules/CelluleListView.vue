@@ -39,7 +39,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color:#6366f1"></div>
+      <div class="spinner-border" style="color:#0077B5"></div>
       <p class="mt-2 text-muted">Chargement des cellules...</p>
     </div>
 
@@ -220,7 +220,7 @@ onMounted(() => fetchData())
 <style scoped>
 /* Hero */
 .page-hero {
-  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -228,7 +228,7 @@ onMounted(() => fetchData())
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(99, 102, 241, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -287,9 +287,9 @@ onMounted(() => fetchData())
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #6366f1;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -299,8 +299,8 @@ onMounted(() => fetchData())
   color: #94a3b8;
 }
 .count-badge {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: rgba(0, 119, 181, .1);
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 4px 12px;
@@ -346,11 +346,11 @@ onMounted(() => fetchData())
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: #eef2ff;
+  background: rgba(0, 119, 181, .1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #6366f1;
+  color: #0077B5;
   font-size: .75rem;
   flex-shrink: 0;
 }
@@ -365,8 +365,8 @@ onMounted(() => fetchData())
   font-family: monospace;
 }
 .agent-count-badge {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: rgba(0, 119, 181, .1);
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 3px 10px;
@@ -391,9 +391,9 @@ onMounted(() => fetchData())
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #6366f1;
-  color: #6366f1;
-  background: #eef2ff;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -431,8 +431,8 @@ onMounted(() => fetchData())
   padding: .35rem .7rem;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #6366f1;
-  border-color: #6366f1;
+  background: #0077B5;
+  border-color: #0077B5;
 }
 
 /* ── Mobile Responsive ── */

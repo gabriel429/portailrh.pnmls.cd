@@ -43,7 +43,7 @@
 
     <!-- Loading -->
     <div v-if="loading" class="text-center py-5">
-      <div class="spinner-border" style="color: #0ea5e9;" role="status">
+      <div class="spinner-border" style="color: #0077B5;" role="status">
         <span class="visually-hidden">Chargement...</span>
       </div>
       <p class="text-muted mt-2 mb-0" style="font-size: .88rem;">Chargement des documents...</p>
@@ -258,7 +258,7 @@ onMounted(() => fetchDocuments())
 }
 
 .page-hero {
-  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 50%, #0369a1 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -266,7 +266,7 @@ onMounted(() => fetchDocuments())
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(14, 165, 233, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 
@@ -340,9 +340,9 @@ onMounted(() => fetchDocuments())
 }
 
 .search-input:focus {
-  border-color: #0ea5e9;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 
 .search-icon {
@@ -395,11 +395,11 @@ onMounted(() => fetchDocuments())
   width: 34px;
   height: 34px;
   border-radius: 8px;
-  background: #f0f9ff;
+  background: #e0f2fe;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #0ea5e9;
+  color: #0077B5;
   font-size: .85rem;
   flex-shrink: 0;
 }
@@ -410,7 +410,7 @@ onMounted(() => fetchDocuments())
 
 .categorie-badge {
   background: #e0f2fe;
-  color: #0369a1;
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 3px 10px;
@@ -450,9 +450,9 @@ onMounted(() => fetchDocuments())
 }
 
 .action-btn:hover {
-  border-color: #0ea5e9;
-  color: #0ea5e9;
-  background: #f0f9ff;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 
 .action-btn-danger:hover {
@@ -491,14 +491,14 @@ onMounted(() => fetchDocuments())
 }
 
 .modern-pagination .page-item.active .page-link {
-  background: #0ea5e9;
-  border-color: #0ea5e9;
+  background: #0077B5;
+  border-color: #0077B5;
 }
 
 .modern-pagination .page-link:hover {
-  background: #f0f9ff;
-  color: #0ea5e9;
-  border-color: #0ea5e9;
+  background: #e0f2fe;
+  color: #0077B5;
+  border-color: #0077B5;
 }
 
 /* ── Mobile Responsive ── */

@@ -443,7 +443,7 @@ onMounted(async () => {
   align-items: flex-start;
   padding: 1.35rem;
   border-radius: 8px;
-  background: linear-gradient(135deg, #0f766e 0%, #0e7490 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   color: #fff;
 }
 .jd-eyebrow {
@@ -511,7 +511,7 @@ onMounted(async () => {
   display: block;
   font-size: 1.55rem;
   font-weight: 900;
-  color: #0f766e;
+  color: #0077B5;
 }
 .jd-stat small {
   color: #64748b;
@@ -577,8 +577,8 @@ onMounted(async () => {
 .jd-covered-chip {
   border-radius: 999px;
   padding: .45rem .75rem;
-  background: #ecfeff;
-  color: #155e75;
+  background: #e0f2fe;
+  color: #005a87;
   font-size: .82rem;
   font-weight: 700;
 }
@@ -589,7 +589,7 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #cffafe;
+  background: #bae6fd;
 }
 .jd-grid {
   display: grid;
@@ -728,7 +728,7 @@ onMounted(async () => {
 }
 .jd-row-actions button:hover {
   background: #e0f2fe;
-  color: #0369a1;
+  color: #0077B5;
 }
 .jd-row-actions button.danger:hover {
   background: #fee2e2;

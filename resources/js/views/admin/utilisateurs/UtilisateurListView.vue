@@ -45,7 +45,7 @@
     <!-- Loading -->
     <div v-if="loading" class="data-card">
       <div class="text-center py-5">
-        <div class="spinner-border" style="color: #059669;" role="status">
+        <div class="spinner-border" style="color: #0077B5;" role="status">
           <span class="visually-hidden">Chargement...</span>
         </div>
         <p class="text-muted mt-2 mb-0" style="font-size: .88rem;">Chargement des utilisateurs...</p>
@@ -57,7 +57,7 @@
       <div v-if="utilisateurs.length === 0" class="empty-state">
         <i class="fas fa-user-shield"></i>
         <p>Aucun utilisateur trouve.</p>
-        <router-link :to="{ name: 'admin.utilisateurs.create' }" class="btn btn-sm mt-2" style="background: #059669; color: #fff; border-radius: 8px;">
+        <router-link :to="{ name: 'admin.utilisateurs.create' }" class="btn btn-sm mt-2" style="background: #0077B5; color: #fff; border-radius: 8px;">
           <i class="fas fa-plus me-1"></i> Créer un utilisateur
         </router-link>
       </div>
@@ -343,7 +343,7 @@ onMounted(() => fetchUtilisateurs())
 
 /* ── Hero ── */
 .page-hero {
-  background: linear-gradient(135deg, #059669 0%, #047857 50%, #065f46 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -351,7 +351,7 @@ onMounted(() => fetchUtilisateurs())
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(5, 150, 105, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -421,9 +421,9 @@ onMounted(() => fetchUtilisateurs())
   transition: border-color .2s;
 }
 .search-input:focus {
-  border-color: #059669;
+  border-color: #0077B5;
   outline: none;
-  box-shadow: 0 0 0 3px rgba(5, 150, 105, .1);
+  box-shadow: 0 0 0 3px rgba(0, 119, 181, .1);
 }
 .search-icon {
   position: absolute;
@@ -493,13 +493,13 @@ onMounted(() => fetchUtilisateurs())
 
 /* ── Role Badge ── */
 .role-badge {
-  background: #ecfdf5;
-  color: #059669;
+  background: rgba(0, 119, 181, .1);
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 6px;
-  border: 1px solid #d1fae5;
+  border: 1px solid #bae6fd;
 }
 
 /* ── Action Buttons ── */
@@ -519,9 +519,9 @@ onMounted(() => fetchUtilisateurs())
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #059669;
-  color: #059669;
-  background: #ecfdf5;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
@@ -588,13 +588,13 @@ onMounted(() => fetchUtilisateurs())
   padding: .35rem .65rem;
 }
 .modern-pagination .page-link:hover {
-  background: #ecfdf5;
-  border-color: #059669;
-  color: #059669;
+  background: #e0f2fe;
+  border-color: #0077B5;
+  color: #0077B5;
 }
 .modern-pagination .page-item.active .page-link {
-  background: #059669;
-  border-color: #059669;
+  background: #0077B5;
+  border-color: #0077B5;
   color: #fff;
 }
 .modern-pagination .page-item.disabled .page-link {

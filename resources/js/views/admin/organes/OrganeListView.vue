@@ -33,7 +33,7 @@
     <!-- Loading -->
     <div v-if="loading" class="data-card">
       <div class="text-center py-5">
-        <div class="spinner-border" style="color: #8b5cf6;" role="status">
+        <div class="spinner-border" style="color: #0077B5;" role="status">
           <span class="visually-hidden">Chargement...</span>
         </div>
         <p class="text-muted mt-2 mb-0" style="font-size: .88rem;">Chargement des organes...</p>
@@ -45,7 +45,7 @@
       <div v-if="organes.length === 0" class="empty-state">
         <i class="fas fa-sitemap"></i>
         <p>Aucun organe trouve.</p>
-        <router-link :to="{ name: 'admin.organes.create' }" class="btn btn-sm mt-2" style="background: #8b5cf6; color: #fff; border-radius: 8px;">
+        <router-link :to="{ name: 'admin.organes.create' }" class="btn btn-sm mt-2" style="background: #0077B5; color: #fff; border-radius: 8px;">
           <i class="fas fa-plus me-1"></i> Créer un organe
         </router-link>
       </div>
@@ -168,7 +168,7 @@ onMounted(fetchOrganes)
 
 /* ── Hero ── */
 .page-hero {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #0c4a6e 55%, #0077B5 100%);
   border-radius: 16px;
   padding: 1.5rem 2rem;
   display: flex;
@@ -176,7 +176,7 @@ onMounted(fetchOrganes)
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 1rem;
-  box-shadow: 0 8px 32px rgba(139, 92, 246, .25);
+  box-shadow: 0 8px 32px rgba(0, 119, 181, .25);
   margin-bottom: 1.5rem;
 }
 .page-hero-content {
@@ -272,13 +272,13 @@ onMounted(fetchOrganes)
 /* ── Code Badge ── */
 .code-badge {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  background: #f5f3ff;
-  color: #7c3aed;
+  background: rgba(0, 119, 181, .1);
+  color: #005a87;
   font-size: .78rem;
   font-weight: 600;
   padding: 3px 10px;
   border-radius: 6px;
-  border: 1px solid #ede9fe;
+  border: 1px solid #bae6fd;
 }
 
 /* ── Status ── */
@@ -321,9 +321,9 @@ onMounted(fetchOrganes)
   text-decoration: none;
 }
 .action-btn:hover {
-  border-color: #8b5cf6;
-  color: #8b5cf6;
-  background: #f5f3ff;
+  border-color: #0077B5;
+  color: #0077B5;
+  background: #e0f2fe;
 }
 .action-btn-danger:hover {
   border-color: #ef4444;
