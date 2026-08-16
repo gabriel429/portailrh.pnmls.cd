@@ -19,19 +19,22 @@ return new class extends Migration
 
         Schema::create('holiday_modification_requests', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('holiday_id')->constrained('holidays')->cascadeOnDelete();
+            // holidays/agents sont en MyISAM: ->constrained() n'y crée pas de
+            // contrainte réelle et échoue même en ALTER TABLE séparée (err. 1824).
+            $table->unsignedBigInteger('holiday_id');
             $table->date('date_debut_proposee');
             $table->date('date_fin_proposee');
             $table->unsignedInteger('nombre_jours_proposes');
             $table->text('motif');
             $table->string('statut', 20)->default('en_attente');
-            $table->foreignId('requested_by')->constrained('agents')->cascadeOnDelete();
-            $table->foreignId('reviewed_by')->nullable()->constrained('agents')->nullOnDelete();
+            $table->unsignedBigInteger('requested_by');
+            $table->unsignedBigInteger('reviewed_by')->nullable();
             $table->text('decision_comment')->nullable();
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
 
             $table->index(['statut', 'created_at']);
+            $table->index('holiday_id');
         });
 
         Schema::table('holidays', function (Blueprint $table) {

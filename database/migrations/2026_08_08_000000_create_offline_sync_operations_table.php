@@ -10,7 +10,8 @@ return new class extends Migration
     {
         Schema::create('offline_sync_operations', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
+            // users est en MyISAM: ->constrained() n'y crée pas de contrainte réelle.
+            $table->unsignedBigInteger('user_id');
             $table->uuid('client_operation_id');
             $table->string('entity', 100);
             $table->string('operation', 30);
