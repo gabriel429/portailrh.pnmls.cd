@@ -454,6 +454,12 @@ const routes = [
                 meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' },
             },
             {
+                path: 'ip-allowlist',
+                name: 'admin.ip-allowlist',
+                component: () => import('@/views/admin/security/IpAllowlistView.vue'),
+                meta: { auth: true, adminNT: true, superAdmin: true, layout: 'admin' },
+            },
+            {
                 path: 'agents/import',
                 name: 'admin.agents.import',
                 component: () => import('@/views/admin/agents/AgentImportView.vue'),

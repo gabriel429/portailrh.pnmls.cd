@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Middleware\ExtendRememberedSession;
 use App\Models\User;
+use App\Services\GeoRestrictionService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -105,6 +107,26 @@ class AuthController extends Controller
         return $model;
     }
 
+    /**
+     * Best-effort "DRC only, no VPN" login gate — see GeoRestrictionService.
+     * Checked at login only, not on every request, so an established
+     * session/token stays valid regardless of later network changes.
+     */
+    private function denyLoginForGeoRestriction(Request $request): ?JsonResponse
+    {
+        $result = app(GeoRestrictionService::class)->evaluate($request->ip());
+
+        if ($result['allowed']) {
+            return null;
+        }
+
+        $message = $result['reason'] === 'vpn'
+            ? 'Connexion refusée : les VPN et proxys ne sont pas autorisés sur cette application.'
+            : 'Connexion refusée : cette application n\'est accessible qu\'en République Démocratique du Congo.';
+
+        return response()->json(['message' => $message], 403);
+    }
+
     private function rememberLifetime(): int
     {
         return max(
@@ -172,6 +194,17 @@ class AuthController extends Controller
             }
 
             $user = Auth::user();
+
+            if ($geoDenial = $this->denyLoginForGeoRestriction($request)) {
+                Auth::guard('web')->logout();
+                try {
+                    $request->session()->invalidate();
+                    $request->session()->regenerateToken();
+                } catch (\Throwable $e) {
+                }
+
+                return $geoDenial;
+            }
 
             if ($user->is_frozen) {
                 Auth::guard('web')->logout();
@@ -389,6 +422,10 @@ class AuthController extends Controller
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json(['message' => 'Identifiants incorrects.'], 401);
+        }
+
+        if ($geoDenial = $this->denyLoginForGeoRestriction($request)) {
+            return $geoDenial;
         }
 
         if ($user->is_frozen) {

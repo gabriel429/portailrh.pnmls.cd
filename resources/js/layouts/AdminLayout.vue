@@ -149,6 +149,7 @@ const navItems = computed(() => {
         items.push({ route: 'admin.diagnostics', icon: 'fas fa-stethoscope', label: 'Diagnostic données' })
         items.push({ route: 'admin.deployment.index', icon: 'fas fa-rocket', label: 'Déploiement' })
         items.push({ route: 'admin.audit-logs', icon: 'fas fa-shield-alt', label: 'Audit & Modifications' })
+        items.push({ route: 'admin.ip-allowlist', icon: 'fas fa-shield-halved', label: 'Liste blanche IP' })
     }
     return items
 })

@@ -463,6 +463,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('utilisateurs', [ParametresController::class, 'apiSuperAdminUtilisateurs']);
         Route::post('utilisateurs/{user}/freeze', [ParametresController::class, 'apiUtilisateurFreeze']);
         Route::post('utilisateurs/{user}/unfreeze', [ParametresController::class, 'apiUtilisateurUnfreeze']);
+
+        Route::get('ip-allowlist', [\App\Http\Controllers\Admin\IpAllowlistController::class, 'index']);
+        Route::post('ip-allowlist', [\App\Http\Controllers\Admin\IpAllowlistController::class, 'store']);
+        Route::delete('ip-allowlist/{ipAllowlistEntry}', [\App\Http\Controllers\Admin\IpAllowlistController::class, 'destroy']);
     });
 });
 

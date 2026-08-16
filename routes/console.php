@@ -477,3 +477,4 @@ Schedule::command('holidays:generate-planning-requirements')
 	->dailyAt('06:30')
 	->withoutOverlapping();
 Schedule::command('holidays:send-departure-alerts')->dailyAt('07:00')->withoutOverlapping();
+Schedule::command('geo:refresh-ranges')->weekly()->sundays()->at('03:00')->withoutOverlapping();
