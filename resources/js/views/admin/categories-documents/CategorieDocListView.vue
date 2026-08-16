@@ -98,16 +98,29 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      message="Êtes-vous sûr de vouloir supprimer cette catégorie ?"
+      :loading="confirmDeleteLoading"
+      @confirm="confirmDeleteCategorie"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import client from '@/api/client'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const categories = ref([])
 const loading = ref(false)
 const error = ref(null)
+const showConfirmDelete = ref(false)
+const confirmDeleteLoading = ref(false)
+const pendingDeleteCat = ref(null)
 
 async function fetchCategories() {
   loading.value = true
@@ -122,13 +135,24 @@ async function fetchCategories() {
   }
 }
 
-async function deleteCategorie(cat) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette catégorie ?')) return
+function deleteCategorie(cat) {
+  pendingDeleteCat.value = cat
+  showConfirmDelete.value = true
+}
+
+async function confirmDeleteCategorie() {
+  const cat = pendingDeleteCat.value
+  if (!cat) return
+
+  confirmDeleteLoading.value = true
   try {
     await client.delete(`/admin/categories-documents/${cat.id}`)
     categories.value = categories.value.filter(c => c.id !== cat.id)
+    showConfirmDelete.value = false
   } catch (e) {
     error.value = e.response?.data?.message || 'Erreur lors de la suppression.'
+  } finally {
+    confirmDeleteLoading.value = false
   }
 }
 

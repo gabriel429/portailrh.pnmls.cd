@@ -139,14 +139,27 @@
         </ul>
       </nav>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      message="Êtes-vous sûr de vouloir supprimer ce document ?"
+      :loading="confirmLoading"
+      @confirm="confirmDeleteDocument"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const documents = ref([])
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const pendingDeleteDoc = ref(null)
 const loading = ref(false)
 const error = ref(null)
 const search = ref('')
@@ -215,13 +228,24 @@ function goToPage(page) {
   fetchDocuments(page)
 }
 
-async function deleteDocument(doc) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer ce document ?')) return
+function deleteDocument(doc) {
+  pendingDeleteDoc.value = doc
+  showConfirmDelete.value = true
+}
+
+async function confirmDeleteDocument() {
+  const doc = pendingDeleteDoc.value
+  if (!doc) return
+  confirmLoading.value = true
   try {
     await client.delete(`/admin/documents-travail/${doc.id}`)
     fetchDocuments(pagination.value.currentPage)
+    showConfirmDelete.value = false
   } catch (e) {
     error.value = e.response?.data?.message || 'Erreur lors de la suppression.'
+    showConfirmDelete.value = false
+  } finally {
+    confirmLoading.value = false
   }
 }
 

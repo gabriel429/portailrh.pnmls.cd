@@ -75,7 +75,7 @@
               class="forum-icon-btn danger"
               type="button"
               title="Supprimer le sujet"
-              @click="deletePost(post)"
+              @click="askDeletePost(post)"
             >
               <i class="fas fa-trash"></i>
             </button>
@@ -120,7 +120,7 @@
                       class="forum-comment-delete"
                       type="button"
                       title="Supprimer le commentaire"
-                      @click="deleteComment(post, item)"
+                      @click="askDeleteComment(post, item)"
                     >
                       <i class="fas fa-times"></i>
                     </button>
@@ -236,6 +236,15 @@
         </div>
       </div>
     </teleport>
+
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      :title="deleteConfirmTitle"
+      :message="deleteConfirmMessage"
+      :loading="deleteConfirmLoading"
+      @confirm="handleDeleteConfirm"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
@@ -245,6 +254,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import { comment, create, list, markRead, reactToComment, readers, remove, removeComment } from '@/api/forum'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const auth = useAuthStore()
 const ui = useUiStore()
@@ -361,9 +371,39 @@ async function reactToCommentAction(post, item, reaction) {
   }
 }
 
-async function deletePost(post) {
-  if (!window.confirm('Supprimer ce sujet du forum ?')) return
+const showDeleteConfirm = ref(false)
+const deleteConfirmLoading = ref(false)
+const deleteConfirmTitle = ref('Confirmer la suppression')
+const deleteConfirmMessage = ref('')
+let pendingDeleteAction = null
 
+function askDeletePost(post) {
+  deleteConfirmTitle.value = 'Confirmer la suppression'
+  deleteConfirmMessage.value = 'Supprimer ce sujet du forum ?'
+  pendingDeleteAction = () => deletePost(post)
+  showDeleteConfirm.value = true
+}
+
+function askDeleteComment(post, item) {
+  deleteConfirmTitle.value = 'Confirmer la suppression'
+  deleteConfirmMessage.value = 'Supprimer ce commentaire ?'
+  pendingDeleteAction = () => deleteComment(post, item)
+  showDeleteConfirm.value = true
+}
+
+async function handleDeleteConfirm() {
+  if (!pendingDeleteAction) return
+  deleteConfirmLoading.value = true
+  try {
+    await pendingDeleteAction()
+  } finally {
+    deleteConfirmLoading.value = false
+    showDeleteConfirm.value = false
+    pendingDeleteAction = null
+  }
+}
+
+async function deletePost(post) {
   try {
     const { data } = await remove(post.id)
     posts.value = posts.value.filter(item => item.id !== post.id)
@@ -375,8 +415,6 @@ async function deletePost(post) {
 }
 
 async function deleteComment(post, item) {
-  if (!window.confirm('Supprimer ce commentaire ?')) return
-
   try {
     const { data } = await removeComment(item.id)
     post.commentaires = post.commentaires.filter(commentaire => commentaire.id !== item.id)

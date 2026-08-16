@@ -170,6 +170,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+
+const ui = useUiStore()
 
 const logs = ref([])
 const loading = ref(true)
@@ -274,7 +277,7 @@ async function doRevert() {
         revertTarget.value = null
         fetchLogs(pagination.value.current_page)
     } catch (e) {
-        alert(e.response?.data?.message || 'Erreur lors de la restauration.')
+        ui.addToast(e.response?.data?.message || 'Erreur lors de la restauration.', 'danger')
     } finally {
         reverting.value = false
     }

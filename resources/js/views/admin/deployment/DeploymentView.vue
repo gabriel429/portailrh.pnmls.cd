@@ -167,6 +167,14 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmRun"
+      title="Confirmer l'action"
+      message="Executer cette action ?"
+      @confirm="executeAction"
+      @cancel="showConfirmRun = false"
+    />
   </div>
 </template>
 
@@ -174,10 +182,13 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import axios from 'axios'
 import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const ui = useUiStore()
 const running = ref(null)
 const result = ref(null)
+const showConfirmRun = ref(false)
+const pendingAction = ref(null)
 const buildStatus = ref({ status: 'idle', is_running: false, pid: null, log_path: '', log: '', updated_at: null })
 const loadingBuildStatus = ref(false)
 let buildStatusTimer = null
@@ -245,8 +256,14 @@ function formatDateTime(value) {
   })
 }
 
-async function runAction(action) {
-  if (!confirm('Executer cette action ?')) return
+function runAction(action) {
+  pendingAction.value = action
+  showConfirmRun.value = true
+}
+
+async function executeAction() {
+  const action = pendingAction.value
+  showConfirmRun.value = false
   running.value = action
   result.value = null
   try {

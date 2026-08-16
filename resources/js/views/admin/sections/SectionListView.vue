@@ -83,7 +83,7 @@
               <button
                 class="action-btn action-btn-danger"
                 title="Supprimer"
-                @click="destroy(s)"
+                @click="askDestroy(s)"
               >
                 <i class="fas fa-trash-alt"></i>
               </button>
@@ -122,19 +122,35 @@
         </ul>
       </nav>
     </template>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      message="Êtes-vous sûr de vouloir supprimer cette section ?"
+      :loading="confirmLoading"
+      @confirm="confirmDestroy"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
+const ui = useUiStore()
 const sections = ref([])
 const loading = ref(true)
 const error = ref('')
 const search = ref('')
 const currentPage = ref(1)
 const lastPage = ref(1)
+
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const pendingDeleteSection = ref(null)
 
 let debounceTimer = null
 
@@ -189,14 +205,23 @@ function goToPage(page) {
   fetchData()
 }
 
-async function destroy(s) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette section ?')) return
+function askDestroy(s) {
+  pendingDeleteSection.value = s
+  showConfirmDelete.value = true
+}
+
+async function confirmDestroy() {
+  if (!pendingDeleteSection.value) return
+  confirmLoading.value = true
   try {
-    await client.delete('/admin/sections/' + s.id)
+    await client.delete('/admin/sections/' + pendingDeleteSection.value.id)
+    showConfirmDelete.value = false
     await fetchData()
   } catch (e) {
     console.error('Erreur suppression:', e)
-    alert('Erreur lors de la suppression.')
+    ui.addToast('Erreur lors de la suppression.', 'danger')
+  } finally {
+    confirmLoading.value = false
   }
 }
 

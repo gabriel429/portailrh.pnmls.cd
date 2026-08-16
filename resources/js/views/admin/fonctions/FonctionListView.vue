@@ -134,13 +134,28 @@
         </ul>
       </nav>
     </template>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      message="Êtes-vous sûr de vouloir supprimer cette fonction ?"
+      :loading="confirmLoading"
+      @confirm="confirmDestroy"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
+const ui = useUiStore()
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const pendingDeleteFonction = ref(null)
 const loading = ref(true)
 const error = ref('')
 const fonctions = ref([])
@@ -194,14 +209,24 @@ function niveauLabel(n) {
   return map[n] || n || '-'
 }
 
-async function destroy(f) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette fonction ?')) return
+function destroy(f) {
+  pendingDeleteFonction.value = f
+  showConfirmDelete.value = true
+}
+
+async function confirmDestroy() {
+  const f = pendingDeleteFonction.value
+  if (!f) return
+  confirmLoading.value = true
   try {
     await client.delete('/admin/fonctions/' + f.id)
     await fetchData()
+    showConfirmDelete.value = false
   } catch (e) {
     console.error('Erreur suppression:', e)
-    alert('Erreur lors de la suppression.')
+    ui.addToast('Erreur lors de la suppression.', 'danger')
+  } finally {
+    confirmLoading.value = false
   }
 }
 

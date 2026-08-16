@@ -127,12 +127,25 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      :message="pendingDeleteCellule ? `Supprimer la cellule &quot;${pendingDeleteCellule.nom}&quot; ?` : ''"
+      :loading="confirmDeleteLoading"
+      @confirm="confirmDeleteCellule"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+
+const ui = useUiStore()
 
 const loading = ref(true)
 const cellules = ref([])
@@ -140,6 +153,9 @@ const search = ref('')
 const currentPage = ref(1)
 const lastPage = ref(1)
 const total = ref(0)
+const showConfirmDelete = ref(false)
+const confirmDeleteLoading = ref(false)
+const pendingDeleteCellule = ref(null)
 let debounceTimer = null
 
 const pagesArray = computed(() => {
@@ -160,7 +176,7 @@ async function fetchData() {
     total.value = data.total || 0
   } catch (e) {
     console.error(e)
-    alert('Erreur lors du chargement des cellules.')
+    ui.addToast('Erreur lors du chargement des cellules.', 'danger')
   } finally {
     loading.value = false
   }
@@ -177,13 +193,24 @@ function goToPage(p) {
   fetchData()
 }
 
-async function deleteCellule(c) {
-  if (!confirm(`Supprimer la cellule "${c.nom}" ?`)) return
+function deleteCellule(c) {
+  pendingDeleteCellule.value = c
+  showConfirmDelete.value = true
+}
+
+async function confirmDeleteCellule() {
+  const c = pendingDeleteCellule.value
+  if (!c) return
+
+  confirmDeleteLoading.value = true
   try {
     await client.delete(`/admin/cellules/${c.id}`)
+    showConfirmDelete.value = false
     fetchData()
   } catch (e) {
-    alert('Erreur lors de la suppression.')
+    ui.addToast('Erreur lors de la suppression.', 'danger')
+  } finally {
+    confirmDeleteLoading.value = false
   }
 }
 

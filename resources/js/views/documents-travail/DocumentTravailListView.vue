@@ -100,7 +100,7 @@
               <button v-if="canManageDocs" type="button" class="dt-card-btn dt-card-edit" @click="startEdit(doc)">
                 <i class="fas fa-edit"></i> Modifier
               </button>
-              <button v-if="canManageDocs" type="button" class="dt-card-btn dt-card-delete" @click="deleteDocument(doc)">
+              <button v-if="canManageDocs" type="button" class="dt-card-btn dt-card-delete" @click="askDeleteDocument(doc)">
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -259,6 +259,15 @@
         </section>
       </div>
     </Teleport>
+
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="Confirmer la suppression"
+      :message='pendingDeleteDoc ? `Supprimer le document "${pendingDeleteDoc.titre}" ?` : ""'
+      :loading="deleteConfirmLoading"
+      @confirm="confirmDeleteDocument"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
@@ -269,6 +278,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useLatestRequest } from '@/composables/useLatestRequest'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const ui = useUiStore()
 const auth = useAuthStore()
@@ -556,10 +566,21 @@ async function submitDocument() {
   }
 }
 
-async function deleteDocument(doc) {
-  if (!canManageDocs.value) return
-  if (!window.confirm(`Supprimer le document "${doc.titre}" ?`)) return
+const showDeleteConfirm = ref(false)
+const deleteConfirmLoading = ref(false)
+const pendingDeleteDoc = ref(null)
 
+function askDeleteDocument(doc) {
+  if (!canManageDocs.value) return
+  pendingDeleteDoc.value = doc
+  showDeleteConfirm.value = true
+}
+
+async function confirmDeleteDocument() {
+  const doc = pendingDeleteDoc.value
+  if (!doc) return
+
+  deleteConfirmLoading.value = true
   try {
     await client.delete(`/documents-travail/${doc.id}`)
     ui.addToast('Document supprime.', 'success')
@@ -567,8 +588,11 @@ async function deleteDocument(doc) {
       ? meta.value.current_page - 1
       : meta.value.current_page
     await loadDocuments(nextPage)
+    showDeleteConfirm.value = false
   } catch (error) {
     ui.addToast(error.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
+  } finally {
+    deleteConfirmLoading.value = false
   }
 }
 

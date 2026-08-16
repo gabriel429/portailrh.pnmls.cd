@@ -1317,6 +1317,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import client from '@/api/client'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import OnlineAgentsModal from '@/components/dashboard/OnlineAgentsModal.vue'
@@ -1325,6 +1326,7 @@ const router = useRouter()
 const onlineAgentsOpen = ref(false)
 
 const auth = useAuthStore()
+const ui = useUiStore()
 const loading = ref(true)
 const d = ref({})
 
@@ -1584,7 +1586,7 @@ async function validateRequest(id) {
     await client.post(`/requests/${id}/validate`)
     await Promise.all([loadPendingRequests(), reloadDashboard()])
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur lors de la validation.')
+    ui.addToast(e.response?.data?.message || 'Erreur lors de la validation.', 'danger')
   } finally {
     actionLoading.value = null
   }
@@ -1603,7 +1605,7 @@ async function submitReject() {
     rejectTargetId.value = null
     await Promise.all([loadPendingRequests(), reloadDashboard()])
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur lors du rejet.')
+    ui.addToast(e.response?.data?.message || 'Erreur lors du rejet.', 'danger')
   } finally {
     actionLoading.value = null
   }

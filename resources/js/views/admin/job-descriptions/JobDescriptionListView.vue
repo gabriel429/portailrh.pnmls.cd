@@ -221,6 +221,15 @@
         </form>
       </aside>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      :message="confirmMessage"
+      :loading="confirmLoading"
+      @confirm="confirmDeleteJob"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
@@ -228,8 +237,14 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const ui = useUiStore()
+
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const confirmMessage = ref('')
+const pendingDeleteJob = ref(null)
 
 const loading = ref(false)
 const saving = ref(false)
@@ -368,15 +383,24 @@ async function submit() {
   }
 }
 
-async function deleteJob(job) {
-  if (!confirm(`Supprimer la Job Description « ${job.titre} » ?`)) return
+function deleteJob(job) {
+  pendingDeleteJob.value = job
+  confirmMessage.value = `Supprimer la Job Description « ${job.titre} » ?`
+  showConfirmDelete.value = true
+}
+
+async function confirmDeleteJob() {
+  confirmLoading.value = true
   try {
-    const { data } = await client.delete(`/admin/job-descriptions/${job.id}`)
+    const { data } = await client.delete(`/admin/job-descriptions/${pendingDeleteJob.value.id}`)
     ui.addToast(data.message || 'Job Description supprimée.', 'success')
+    showConfirmDelete.value = false
     await fetchOptions()
     await fetchData()
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Suppression impossible.', 'danger')
+  } finally {
+    confirmLoading.value = false
   }
 }
 

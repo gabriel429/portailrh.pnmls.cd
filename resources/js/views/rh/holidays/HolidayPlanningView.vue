@@ -605,6 +605,16 @@
         </div>
       </div>
     </div>
+
+    <!-- Modale de confirmation -->
+    <ConfirmModal
+      :show="showConfirmModal"
+      :title="confirmModalTitle"
+      :message="confirmModalMessage"
+      :loading="confirmModalLoading"
+      @confirm="handleConfirmModal"
+      @cancel="closeConfirmModal"
+    />
   </div>
 </template>
 
@@ -615,6 +625,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import client from '@/api/client'
 import Pagination from '@/components/common/Pagination.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 import HolidayCalendar from '@/components/holidays/HolidayCalendar.vue'
 // Pulls in chart.js — only load it when the "stats" tab is actually opened.
 const HolidayStatistics = defineAsyncComponent(() => import('@/components/holidays/HolidayStatistics.vue'))
@@ -666,6 +677,38 @@ const showCreateModal = ref(false)
 const showDetailsModal = ref(false)
 const showAddHolidayModal = ref(false)
 const selectedPlanning = ref(null)
+
+// Modale de confirmation générique
+const showConfirmModal = ref(false)
+const confirmModalTitle = ref('Confirmation')
+const confirmModalMessage = ref('')
+const confirmModalLoading = ref(false)
+const confirmModalAction = ref(null)
+
+function openConfirmModal(title, message, action) {
+  confirmModalTitle.value = title
+  confirmModalMessage.value = message
+  confirmModalAction.value = action
+  showConfirmModal.value = true
+}
+
+function closeConfirmModal() {
+  if (confirmModalLoading.value) return
+  showConfirmModal.value = false
+  confirmModalAction.value = null
+}
+
+async function handleConfirmModal() {
+  if (!confirmModalAction.value) return
+  confirmModalLoading.value = true
+  try {
+    await confirmModalAction.value()
+  } finally {
+    confirmModalLoading.value = false
+    showConfirmModal.value = false
+    confirmModalAction.value = null
+  }
+}
 
 // Filtres
 const filters = ref({
@@ -969,22 +1012,27 @@ async function saveHolidayReturn() {
   }
 }
 
-async function cancelHoliday(holiday) {
+function cancelHoliday(holiday) {
   if (!canManageHoliday(holiday)) {
     ui.addToast('Vous ne pouvez pas annuler ce congé', 'warning')
     return
   }
+  if (!holiday) return
 
-  if (!holiday || !confirm(`Annuler le congé de ${holiday.agent?.nom_complet || holiday.agent?.nom || 'cet agent'} ?`)) return
-
-  try {
-    await client.post(`/holidays/${holiday.id}/cancel`)
-    ui.addToast('Congé annulé', 'success')
-    refreshHolidayViews()
-  } catch (error) {
-    console.error('Erreur annulation congé:', error)
-    ui.addToast(error.response?.data?.message || 'Erreur lors de l\'annulation', 'danger')
-  }
+  openConfirmModal(
+    'Confirmer l\'annulation',
+    `Annuler le congé de ${holiday.agent?.nom_complet || holiday.agent?.nom || 'cet agent'} ?`,
+    async () => {
+      try {
+        await client.post(`/holidays/${holiday.id}/cancel`)
+        ui.addToast('Congé annulé', 'success')
+        refreshHolidayViews()
+      } catch (error) {
+        console.error('Erreur annulation congé:', error)
+        ui.addToast(error.response?.data?.message || 'Erreur lors de l\'annulation', 'danger')
+      }
+    }
+  )
 }
 
 function refreshHolidayViews() {
@@ -1000,28 +1048,36 @@ function editPlanning(planning) {
   })
 }
 
-async function validatePlanning(planning) {
-  if (!confirm('Êtes-vous sûr de vouloir valider ce planning ?')) return
-
-  try {
-    await client.post(`/holiday-plannings/${planning.id}/validate`)
-    ui.addToast('Planning validé avec succès', 'success')
-    loadPlannings()
-  } catch (error) {
-    ui.addToast('Erreur lors de la validation', 'danger')
-  }
+function validatePlanning(planning) {
+  openConfirmModal(
+    'Confirmer la validation',
+    'Êtes-vous sûr de vouloir valider ce planning ?',
+    async () => {
+      try {
+        await client.post(`/holiday-plannings/${planning.id}/validate`)
+        ui.addToast('Planning validé avec succès', 'success')
+        loadPlannings()
+      } catch (error) {
+        ui.addToast('Erreur lors de la validation', 'danger')
+      }
+    }
+  )
 }
 
-async function submitPlanning(planning) {
-  if (!confirm(`Soumettre le planning de ${planning.nom_structure} pour validation ?`)) return
-
-  try {
-    await client.post(`/holiday-plannings/${planning.id}/submit`)
-    ui.addToast('Planning soumis à l’autorité compétente', 'success')
-    loadPlannings()
-  } catch (error) {
-    ui.addToast(error.response?.data?.message || 'Erreur lors de la soumission', 'danger')
-  }
+function submitPlanning(planning) {
+  openConfirmModal(
+    'Confirmer la soumission',
+    `Soumettre le planning de ${planning.nom_structure} pour validation ?`,
+    async () => {
+      try {
+        await client.post(`/holiday-plannings/${planning.id}/submit`)
+        ui.addToast('Planning soumis à l’autorité compétente', 'success')
+        loadPlannings()
+      } catch (error) {
+        ui.addToast(error.response?.data?.message || 'Erreur lors de la soumission', 'danger')
+      }
+    }
+  )
 }
 
 function planningStatusLabel(planning) {
@@ -1133,17 +1189,21 @@ function statutClass(statut) {
   return classes[statut] || 'bg-secondary'
 }
 
-async function deletePlanning(planning) {
-  if (!confirm(`Êtes-vous sûr de vouloir supprimer le planning de ${planning.nom_structure} ?`)) return
-
-  try {
-    await client.delete(`/holiday-plannings/${planning.id}`)
-    ui.addToast('Planning supprimé avec succès', 'success')
-    loadPlannings()
-  } catch (error) {
-    console.error('Erreur suppression:', error)
-    ui.addToast('Erreur lors de la suppression', 'danger')
-  }
+function deletePlanning(planning) {
+  openConfirmModal(
+    'Confirmer la suppression',
+    `Êtes-vous sûr de vouloir supprimer le planning de ${planning.nom_structure} ?`,
+    async () => {
+      try {
+        await client.delete(`/holiday-plannings/${planning.id}`)
+        ui.addToast('Planning supprimé avec succès', 'success')
+        loadPlannings()
+      } catch (error) {
+        console.error('Erreur suppression:', error)
+        ui.addToast('Erreur lors de la suppression', 'danger')
+      }
+    }
+  )
 }
 
 // Watchers

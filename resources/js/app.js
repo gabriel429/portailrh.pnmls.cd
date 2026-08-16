@@ -11,6 +11,19 @@ import offlineAssetPreparation from '@/services/offlineAssetPreparation'
 // font-face declarations that are never referenced.
 import '@fortawesome/fontawesome-free/css/fontawesome.min.css'
 import '@fortawesome/fontawesome-free/css/solid.min.css'
+
+// app.css's --font-family token names 'Inter' but nothing loaded it, so
+// every browser silently fell back to the system font. Self-hosted (not a
+// CDN link) so it's bundled and cached by the service worker like every
+// other asset, consistent with this being an offline-first PWA. Only the
+// weights actually used across the app.
+import '@fontsource/inter/400.css'
+import '@fontsource/inter/500.css'
+import '@fontsource/inter/600.css'
+import '@fontsource/inter/700.css'
+import '@fontsource/inter/800.css'
+import '@fontsource/inter/900.css'
+
 import '../css/app.css'
 
 debugLog('PWA: Service Worker enabled')

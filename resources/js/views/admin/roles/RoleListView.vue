@@ -78,7 +78,7 @@
               <button
                 class="mobile-action-btn mobile-action-btn-danger"
                 title="Supprimer"
-                @click="deleteRole(role)"
+                @click="askDeleteRole(role)"
               >
                 <i class="fas fa-trash"></i>
                 <span>Supprimer</span>
@@ -123,7 +123,7 @@
                     <button
                       class="action-btn action-btn-danger"
                       title="Supprimer"
-                      @click="deleteRole(role)"
+                      @click="askDeleteRole(role)"
                     >
                       <i class="fas fa-trash"></i>
                     </button>
@@ -158,19 +158,35 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      :message="`Êtes-vous sûr de vouloir supprimer le rôle &quot;${pendingDeleteRole?.nom_role}&quot; ?`"
+      :loading="confirmLoading"
+      @confirm="confirmDeleteRole"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
+const ui = useUiStore()
 const loading = ref(true)
 const roles = ref([])
 const search = ref('')
 const currentPage = ref(1)
 const lastPage = ref(1)
 const total = ref(0)
+
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const pendingDeleteRole = ref(null)
 
 let debounceTimer = null
 
@@ -194,7 +210,7 @@ async function fetchRoles() {
     total.value = data.total || 0
   } catch (e) {
     console.error('Erreur chargement roles:', e)
-    alert('Erreur lors du chargement des roles.')
+    ui.addToast('Erreur lors du chargement des roles.', 'danger')
   } finally {
     loading.value = false
   }
@@ -214,14 +230,23 @@ function goToPage(page) {
   fetchRoles()
 }
 
-async function deleteRole(role) {
-  if (!confirm(`Êtes-vous sûr de vouloir supprimer le rôle "${role.nom_role}" ?`)) return
+function askDeleteRole(role) {
+  pendingDeleteRole.value = role
+  showConfirmDelete.value = true
+}
+
+async function confirmDeleteRole() {
+  if (!pendingDeleteRole.value) return
+  confirmLoading.value = true
   try {
-    await client.delete(`/admin/roles/${role.id}`)
+    await client.delete(`/admin/roles/${pendingDeleteRole.value.id}`)
+    showConfirmDelete.value = false
     fetchRoles()
   } catch (e) {
     console.error('Erreur suppression role:', e)
-    alert('Erreur lors de la suppression du role.')
+    ui.addToast('Erreur lors de la suppression du role.', 'danger')
+  } finally {
+    confirmLoading.value = false
   }
 }
 

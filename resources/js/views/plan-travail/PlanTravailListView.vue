@@ -784,6 +784,16 @@
       @close="closeEditModal"
       @updated="handlePlanTravailUpdated"
     />
+
+    <!-- Delete Confirmation Modal -->
+    <ConfirmModal
+      :show="showConfirmDeleteActivite"
+      title="Confirmer la suppression"
+      message="Supprimer cette activité PTA ? Cette action est irréversible."
+      :loading="confirmDeleteActiviteLoading"
+      @confirm="confirmDeleteActivite"
+      @cancel="showConfirmDeleteActivite = false"
+    />
   </div>
 </template>
 
@@ -796,6 +806,7 @@ import { list, create, get, getCreateData, updateStatut, remove, dashboard as ge
 import { useLatestRequest } from '@/composables/useLatestRequest'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
 import PlanTravailEditModal from '@/components/plan-travail/PlanTravailEditModal.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const ui = useUiStore()
 const router = useRouter()
@@ -822,6 +833,9 @@ const entityDetail = ref(null)
 const activityResultsRef = ref(null)
 const canEdit = ref(false)
 const isGlobalPta = ref(false)
+const showConfirmDeleteActivite = ref(false)
+const confirmDeleteActiviteLoading = ref(false)
+const pendingDeleteActiviteId = ref(null)
 const filterDepts = ref([])
 const filterProvinces = ref([])
 const filters = ref({ annee: new Date().getFullYear(), trimestre: '', statut: '', departement_id: '', province_id: '', niveau_administratif: '' })
@@ -1321,15 +1335,23 @@ function handlePlanTravailUpdated() {
   loadPlan()
 }
 
-async function handleDeleteFromCard(id, evt) {
+function handleDeleteFromCard(id, evt) {
   evt.stopPropagation()
-  if (!confirm('Supprimer cette activité PTA ? Cette action est irréversible.')) return
+  pendingDeleteActiviteId.value = id
+  showConfirmDeleteActivite.value = true
+}
+
+async function confirmDeleteActivite() {
+  confirmDeleteActiviteLoading.value = true
   try {
-    await remove(id, adminParams.value)
+    await remove(pendingDeleteActiviteId.value, adminParams.value)
     ui.addToast('Activité supprimée.', 'success')
+    showConfirmDeleteActivite.value = false
     loadPlan()
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
+  } finally {
+    confirmDeleteActiviteLoading.value = false
   }
 }
 

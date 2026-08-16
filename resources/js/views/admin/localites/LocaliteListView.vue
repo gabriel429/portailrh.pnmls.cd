@@ -138,12 +138,25 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      message="Êtes-vous sûr de vouloir supprimer cette localite ?"
+      :loading="confirmLoading"
+      @confirm="confirmDestroy"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+
+const ui = useUiStore()
 
 const localites = ref([])
 const loading = ref(true)
@@ -152,6 +165,9 @@ const search = ref('')
 const currentPage = ref(1)
 const lastPage = ref(1)
 const total = ref(0)
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const pendingDeleteLocalite = ref(null)
 let debounceTimer = null
 
 const typeLabels = {
@@ -202,14 +218,22 @@ function goToPage(page) {
   fetchData()
 }
 
-async function destroy(l) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cette localite ?')) return
+function destroy(l) {
+  pendingDeleteLocalite.value = l
+  showConfirmDelete.value = true
+}
+
+async function confirmDestroy() {
+  confirmLoading.value = true
   try {
-    await client.delete('/admin/localites/' + l.id)
+    await client.delete('/admin/localites/' + pendingDeleteLocalite.value.id)
+    showConfirmDelete.value = false
     await fetchData()
   } catch (e) {
     console.error('Erreur suppression:', e)
-    alert('Erreur lors de la suppression.')
+    ui.addToast('Erreur lors de la suppression.', 'danger')
+  } finally {
+    confirmLoading.value = false
   }
 }
 

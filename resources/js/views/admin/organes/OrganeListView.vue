@@ -103,16 +103,29 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmDelete"
+      title="Confirmer la suppression"
+      message="Êtes-vous sûr de vouloir supprimer cet organe ?"
+      :loading="confirmLoading"
+      @confirm="confirmDeleteOrgane"
+      @cancel="showConfirmDelete = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import client from '@/api/client'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const organes = ref([])
 const loading = ref(false)
 const error = ref(null)
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const pendingDeleteOrgane = ref(null)
 
 async function fetchOrganes() {
   loading.value = true
@@ -127,13 +140,21 @@ async function fetchOrganes() {
   }
 }
 
-async function deleteOrgane(organe) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cet organe ?')) return
+function deleteOrgane(organe) {
+  pendingDeleteOrgane.value = organe
+  showConfirmDelete.value = true
+}
+
+async function confirmDeleteOrgane() {
+  confirmLoading.value = true
   try {
-    await client.delete(`/admin/organes/${organe.id}`)
-    organes.value = organes.value.filter(o => o.id !== organe.id)
+    await client.delete(`/admin/organes/${pendingDeleteOrgane.value.id}`)
+    organes.value = organes.value.filter(o => o.id !== pendingDeleteOrgane.value.id)
+    showConfirmDelete.value = false
   } catch (e) {
     error.value = e.response?.data?.message || 'Erreur lors de la suppression.'
+  } finally {
+    confirmLoading.value = false
   }
 }
 

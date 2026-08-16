@@ -813,12 +813,22 @@
         </form>
       </section>
     </div>
+
+    <ConfirmModal
+      :show="showDeleteConfirm"
+      title="Confirmer la suppression"
+      :message="`Supprimer ${pendingDeleteLabel} ?`"
+      :loading="deleteConfirmLoading"
+      @confirm="confirmDeleteMessages"
+      @cancel="showDeleteConfirm = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import client from '@/api/client'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const settings = ref(null)
 const loadingSettings = ref(true)
@@ -1411,33 +1421,54 @@ async function deleteActionTargets() {
   await deleteMessages(actionMessages.value)
 }
 
-async function deleteMessages(targets) {
+const showDeleteConfirm = ref(false)
+const deleteConfirmLoading = ref(false)
+const pendingDeleteLabel = ref('')
+const pendingDeleteTargets = ref([])
+
+function deleteMessages(targets) {
   const selectedTargets = targets.filter(Boolean)
   if (!selectedTargets.length || bulkProcessing.value) return
 
-  const label = selectedTargets.length > 1 ? `${selectedTargets.length} mails` : 'ce mail'
-  if (!window.confirm(`Supprimer ${label} ?`)) return
+  pendingDeleteTargets.value = selectedTargets
+  pendingDeleteLabel.value = selectedTargets.length > 1 ? `${selectedTargets.length} mails` : 'ce mail'
+  showDeleteConfirm.value = true
+}
 
-  if (trashFolder.value && activeFolder.value !== trashFolder.value.name) {
-    await moveMessagesTo(trashFolder.value.name, selectedTargets)
+async function confirmDeleteMessages() {
+  const selectedTargets = pendingDeleteTargets.value
+  if (!selectedTargets.length) {
+    showDeleteConfirm.value = false
     return
   }
 
-  bulkProcessing.value = true
-  messagesError.value = ''
+  deleteConfirmLoading.value = true
   try {
-    for (const message of selectedTargets) {
-      await client.delete(`/mailbox/messages/${message.uid}`, {
-        params: { folder: activeFolder.value },
-      })
+    if (trashFolder.value && activeFolder.value !== trashFolder.value.name) {
+      await moveMessagesTo(trashFolder.value.name, selectedTargets)
+      showDeleteConfirm.value = false
+      return
     }
-    clearBulkSelection()
-    await loadFolders()
-    await loadMessages(messages.value.length > selectedTargets.length ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
-  } catch (error) {
-    messagesError.value = firstError(error) || 'Suppression impossible.'
+
+    bulkProcessing.value = true
+    messagesError.value = ''
+    try {
+      for (const message of selectedTargets) {
+        await client.delete(`/mailbox/messages/${message.uid}`, {
+          params: { folder: activeFolder.value },
+        })
+      }
+      clearBulkSelection()
+      await loadFolders()
+      await loadMessages(messages.value.length > selectedTargets.length ? meta.value.current_page : Math.max(meta.value.current_page - 1, 1))
+    } catch (error) {
+      messagesError.value = firstError(error) || 'Suppression impossible.'
+    } finally {
+      bulkProcessing.value = false
+    }
+    showDeleteConfirm.value = false
   } finally {
-    bulkProcessing.value = false
+    deleteConfirmLoading.value = false
   }
 }
 

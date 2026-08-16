@@ -221,6 +221,15 @@
       </div>
     </Transition>
   </Teleport>
+
+  <ConfirmModal
+    :show="showConfirmDelete"
+    title="Confirmer la suppression"
+    :message="pendingDeleteDoc ? `Supprimer le document &quot;${pendingDeleteDoc.titre}&quot; ?` : ''"
+    :loading="confirmDeleteLoading"
+    @confirm="confirmDeleteDocument"
+    @cancel="showConfirmDelete = false"
+  />
 </template>
 
 <script setup>
@@ -228,6 +237,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const OPEN_EVENT = 'epnmls:open-documents-travail'
 
@@ -251,6 +261,9 @@ const formError = ref(null)
 const validationErrors = ref({})
 const selectedFile = ref(null)
 const fileInput = ref(null)
+const showConfirmDelete = ref(false)
+const confirmDeleteLoading = ref(false)
+const pendingDeleteDoc = ref(null)
 let searchTimeout = null
 
 const form = ref({
@@ -426,10 +439,17 @@ async function submitForm() {
   }
 }
 
-async function deleteDocument(doc) {
+function deleteDocument(doc) {
   if (!auth.canManageDocsTravail) return
-  if (!window.confirm(`Supprimer le document "${doc.titre}" ?`)) return
+  pendingDeleteDoc.value = doc
+  showConfirmDelete.value = true
+}
 
+async function confirmDeleteDocument() {
+  const doc = pendingDeleteDoc.value
+  if (!doc) return
+
+  confirmDeleteLoading.value = true
   try {
     await client.delete(`/admin/documents-travail/${doc.id}`)
     ui.addToast('Document supprime.', 'success')
@@ -438,8 +458,11 @@ async function deleteDocument(doc) {
       : meta.value.current_page
     loadedOnce.value = false
     await loadDocuments(nextPage)
+    showConfirmDelete.value = false
   } catch (e) {
     ui.addToast(e.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
+  } finally {
+    confirmDeleteLoading.value = false
   }
 }
 

@@ -329,6 +329,15 @@
         </div>
       </div>
     </div>
+
+    <ConfirmModal
+      :show="showConfirmValidate"
+      title="Confirmer la validation"
+      message="Êtes-vous sûr de vouloir valider ce planning ?"
+      :loading="submitting"
+      @confirm="confirmValidatePlanning"
+      @cancel="showConfirmValidate = false"
+    />
   </div>
 </template>
 
@@ -339,6 +348,7 @@ import { fr } from 'date-fns/locale'
 import client from '@/api/client'
 import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const props = defineProps({
   show: {
@@ -361,6 +371,7 @@ const loading = ref(false)
 const submitting = ref(false)
 const editMode = ref(false)
 const errors = ref({})
+const showConfirmValidate = ref(false)
 
 const editForm = ref({
   nom_structure: '',
@@ -475,14 +486,17 @@ async function saveChanges() {
   }
 }
 
-async function validatePlanning() {
-  if (!confirm('Êtes-vous sûr de vouloir valider ce planning ?')) return
+function validatePlanning() {
+  showConfirmValidate.value = true
+}
 
+async function confirmValidatePlanning() {
   submitting.value = true
 
   try {
     await client.post(`/holiday-plannings/${props.planning.id}/validate`)
     ui.addToast('Planning validé avec succès', 'success')
+    showConfirmValidate.value = false
     emit('updated')
   } catch (error) {
     console.error('Erreur validation planning:', error)

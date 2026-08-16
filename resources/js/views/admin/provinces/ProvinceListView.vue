@@ -163,7 +163,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
 
+const ui = useUiStore()
 const loading = ref(true)
 const provinces = ref([])
 const search = ref('')
@@ -197,7 +199,7 @@ async function fetchProvinces() {
     total.value = data.total || 0
   } catch (e) {
     console.error('Erreur chargement provinces:', e)
-    alert('Erreur lors du chargement des provinces.')
+    ui.addToast('Erreur lors du chargement des provinces.', 'danger')
   } finally {
     loading.value = false
   }
@@ -232,7 +234,7 @@ async function executeDelete() {
     fetchProvinces()
   } catch (e) {
     console.error('Erreur suppression province:', e)
-    alert('Erreur lors de la suppression de la province.')
+    ui.addToast('Erreur lors de la suppression de la province.', 'danger')
   } finally {
     deleting.value = false
   }

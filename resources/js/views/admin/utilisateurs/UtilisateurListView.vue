@@ -115,7 +115,7 @@
                     <button
                       v-if="auth.isSuperAdmin && user.is_frozen"
                       class="action-btn action-btn-success"
-                      @click="toggleFreeze(user)"
+                      @click="askToggleFreeze(user)"
                       title="Degeler le compte"
                     >
                       <i class="fas fa-fire"></i>
@@ -123,7 +123,7 @@
                     <button
                       v-if="auth.isSuperAdmin && !user.is_frozen"
                       class="action-btn action-btn-freeze"
-                      @click="toggleFreeze(user)"
+                      @click="askToggleFreeze(user)"
                       title="Geler le compte"
                     >
                       <i class="fas fa-snowflake"></i>
@@ -137,7 +137,7 @@
                     </router-link>
                     <button
                       class="action-btn action-btn-danger"
-                      @click="deleteUtilisateur(user)"
+                      @click="askDeleteUtilisateur(user)"
                       title="Supprimer"
                     >
                       <i class="fas fa-trash"></i>
@@ -176,6 +176,15 @@
         </ul>
       </nav>
     </div>
+
+    <ConfirmModal
+      :show="showConfirm"
+      :title="confirmTitle"
+      :message="confirmMessage"
+      :loading="confirmLoading"
+      @confirm="handleConfirm"
+      @cancel="handleCancel"
+    />
   </div>
 </template>
 
@@ -183,6 +192,7 @@
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
 import { useAuthStore } from '@/stores/auth'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const auth = useAuthStore()
 
@@ -263,8 +273,45 @@ function goToPage(page) {
   fetchUtilisateurs(page)
 }
 
+const showConfirm = ref(false)
+const confirmLoading = ref(false)
+const confirmTitle = ref('Confirmation')
+const confirmMessage = ref('')
+let pendingAction = null
+
+function askDeleteUtilisateur(user) {
+  confirmTitle.value = 'Confirmer la suppression'
+  confirmMessage.value = 'Êtes-vous sûr de vouloir supprimer cet utilisateur ?'
+  pendingAction = () => deleteUtilisateur(user)
+  showConfirm.value = true
+}
+
+function askToggleFreeze(user) {
+  const action = user.is_frozen ? 'degeler' : 'geler'
+  confirmTitle.value = "Confirmer l'action"
+  confirmMessage.value = `Êtes-vous sûr de vouloir ${action} le compte de ${user.name} ?`
+  pendingAction = () => toggleFreeze(user)
+  showConfirm.value = true
+}
+
+async function handleConfirm() {
+  if (!pendingAction) return
+  confirmLoading.value = true
+  try {
+    await pendingAction()
+  } finally {
+    confirmLoading.value = false
+    showConfirm.value = false
+    pendingAction = null
+  }
+}
+
+function handleCancel() {
+  showConfirm.value = false
+  pendingAction = null
+}
+
 async function deleteUtilisateur(user) {
-  if (!confirm('Êtes-vous sûr de vouloir supprimer cet utilisateur ?')) return
   try {
     await client.delete(`/admin/utilisateurs/${user.id}`)
     fetchUtilisateurs(pagination.value.currentPage)
@@ -275,7 +322,6 @@ async function deleteUtilisateur(user) {
 
 async function toggleFreeze(user) {
   const action = user.is_frozen ? 'degeler' : 'geler'
-  if (!confirm(`Êtes-vous sûr de vouloir ${action} le compte de ${user.name} ?`)) return
   try {
     const endpoint = user.is_frozen
       ? `/superadmin/utilisateurs/${user.id}/unfreeze`

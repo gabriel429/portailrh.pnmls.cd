@@ -256,6 +256,9 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+
+const ui = useUiStore()
 
 const loading      = ref(true)
 const departments  = ref([])
@@ -347,7 +350,7 @@ async function togglePrisEnCharge(dept) {
     countHistoriques.value = totalAll.value - countActifs.value
   } catch (e) {
     console.error('Erreur toggle:', e)
-    alert('Erreur lors de la mise à jour.')
+    ui.addToast('Erreur lors de la mise à jour.', 'danger')
   } finally {
     toggling.value = null
   }
@@ -368,7 +371,7 @@ async function executeDelete() {
     fetchStats()
     fetchDepartments()
   } catch (e) {
-    alert('Erreur lors de la suppression.')
+    ui.addToast('Erreur lors de la suppression.', 'danger')
   } finally {
     deleting.value = false
   }

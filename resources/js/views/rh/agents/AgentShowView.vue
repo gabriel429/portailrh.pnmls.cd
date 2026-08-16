@@ -643,6 +643,16 @@
       @cancel="showDeleteModal = false"
     />
 
+    <!-- Delete Document Confirmation Modal -->
+    <ConfirmModal
+      :show="showDeleteDocumentModal"
+      title="Supprimer le document"
+      :message="deleteDocumentMessage"
+      :loading="deletingDocument"
+      @confirm="confirmDeleteDocument"
+      @cancel="showDeleteDocumentModal = false"
+    />
+
     <!-- Agent Edit Modal -->
     <AgentEditModal
       :show="showEditModal"
@@ -746,6 +756,9 @@ const showEditModal = ref(false)
 const editAgentId = ref(null)
 const showDocumentUploadModal = ref(false)
 const documentUploading = ref(false)
+const showDeleteDocumentModal = ref(false)
+const deletingDocument = ref(false)
+const pendingDeleteDocument = ref(null)
 const dossierDownloading = ref(false)
 const delegationsSaving = ref(false)
 const documentFileInput = ref(null)
@@ -1007,17 +1020,31 @@ function viewAgentDocument(doc) {
     window.open(documentViewUrl(doc.id), '_blank', 'noopener')
 }
 
-async function deleteAgentDocument(doc) {
-    if (!canManageAgentDocuments.value) return
-    if (!confirm(`Supprimer le document "${getDocumentName(doc)}" ?`)) return
+const deleteDocumentMessage = computed(() =>
+    `Supprimer le document "${pendingDeleteDocument.value ? getDocumentName(pendingDeleteDocument.value) : ''}" ?`
+)
 
+function deleteAgentDocument(doc) {
+    if (!canManageAgentDocuments.value) return
+    pendingDeleteDocument.value = doc
+    showDeleteDocumentModal.value = true
+}
+
+async function confirmDeleteDocument() {
+    const doc = pendingDeleteDocument.value
+    if (!doc) return
+
+    deletingDocument.value = true
     try {
         await removeDocument(doc.id)
         ui.addToast('Document supprimé du dossier agent.', 'success')
         await fetchAgent()
         activeTab.value = 'documents'
+        showDeleteDocumentModal.value = false
     } catch (err) {
         ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression du document.', 'danger')
+    } finally {
+        deletingDocument.value = false
     }
 }
 

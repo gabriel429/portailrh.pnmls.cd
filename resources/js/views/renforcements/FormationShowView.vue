@@ -175,11 +175,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import client from '@/api/client'
 
 const route  = useRoute()
 const router = useRouter()
 const auth   = useAuthStore()
+const ui     = useUiStore()
 const loading = ref(true)
 const formation = ref(null)
 const changingStatut = ref(false)
@@ -257,7 +259,7 @@ async function addBeneficiaire(a) {
     agentResults.value = []
     loadFormation()
   } catch (e) {
-    alert(e.response?.data?.message || 'Erreur ajout bénéficiaire')
+    ui.addToast(e.response?.data?.message || 'Erreur ajout bénéficiaire', 'danger')
   }
 }
 

@@ -88,9 +88,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
 
 const router = useRouter()
 const route = useRoute()
+const ui = useUiStore()
 
 const isEdit = computed(() => !!route.params.id)
 const loadingData = ref(false)
@@ -115,7 +117,7 @@ async function loadDepartment() {
     }
   } catch (e) {
     console.error('Erreur chargement département:', e)
-    alert('Erreur lors du chargement du département.')
+    ui.addToast('Erreur lors du chargement du département.', 'danger')
   } finally {
     loadingData.value = false
   }
@@ -136,7 +138,7 @@ async function submit() {
       errors.value = e.response.data.errors || {}
     } else {
       console.error('Erreur sauvegarde département:', e)
-      alert('Erreur lors de la sauvegarde du département.')
+      ui.addToast('Erreur lors de la sauvegarde du département.', 'danger')
     }
   } finally {
     saving.value = false

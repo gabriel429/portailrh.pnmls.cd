@@ -29,6 +29,15 @@
         <p>Aucun grade enregistre.</p>
       </div>
 
+      <ConfirmModal
+        :show="showConfirmDelete"
+        title="Confirmer la suppression"
+        :message="confirmMessage"
+        :loading="confirmLoading"
+        @confirm="confirmDelete"
+        @cancel="showConfirmDelete = false"
+      />
+
       <div v-for="(grades, categorie) in grouped" :key="categorie" class="category-group">
         <!-- Category Header -->
         <div class="category-header">
@@ -100,10 +109,18 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import client from '@/api/client'
+import { useUiStore } from '@/stores/ui'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
+
+const ui = useUiStore()
 
 const loading = ref(true)
 const grouped = ref({})
 const allGrades = ref([])
+const showConfirmDelete = ref(false)
+const confirmLoading = ref(false)
+const confirmMessage = ref('')
+const pendingDeleteGrade = ref(null)
 
 function categorieBadgeClass(cat) {
   switch (cat) {
@@ -133,20 +150,29 @@ async function fetchGrades() {
     }
   } catch (e) {
     console.error('Erreur chargement grades:', e)
-    alert('Erreur lors du chargement des grades.')
+    ui.addToast('Erreur lors du chargement des grades.', 'danger')
   } finally {
     loading.value = false
   }
 }
 
-async function deleteGrade(grade) {
-  if (!confirm(`Êtes-vous sûr de vouloir supprimer le grade "${grade.libelle}" ?`)) return
+function deleteGrade(grade) {
+  pendingDeleteGrade.value = grade
+  confirmMessage.value = `Êtes-vous sûr de vouloir supprimer le grade "${grade.libelle}" ?`
+  showConfirmDelete.value = true
+}
+
+async function confirmDelete() {
+  confirmLoading.value = true
   try {
-    await client.delete(`/admin/grades/${grade.id}`)
+    await client.delete(`/admin/grades/${pendingDeleteGrade.value.id}`)
+    showConfirmDelete.value = false
     fetchGrades()
   } catch (e) {
     console.error('Erreur suppression grade:', e)
-    alert('Erreur lors de la suppression du grade.')
+    ui.addToast('Erreur lors de la suppression du grade.', 'danger')
+  } finally {
+    confirmLoading.value = false
   }
 }
 

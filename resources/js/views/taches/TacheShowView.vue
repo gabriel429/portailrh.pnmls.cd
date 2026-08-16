@@ -471,6 +471,16 @@
           <i class="fas fa-arrow-left me-1"></i> Retour
         </button>
       </div>
+
+      <!-- Delete Confirmation Modal -->
+      <ConfirmModal
+        :show="showConfirmDeleteTache"
+        title="Confirmer la suppression"
+        message="Supprimer cette tâche définitivement ?"
+        :loading="deleting"
+        @confirm="confirmDeleteTache"
+        @cancel="showConfirmDeleteTache = false"
+      />
     </div>
   </div>
 </template>
@@ -482,6 +492,7 @@ import { useUiStore } from '@/stores/ui'
 import { useAuthStore } from '@/stores/auth'
 import { get, updateStatut, addCommentaire, update, destroy, validateTask, rejectTask, submitReport, viewReports } from '@/api/taches'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import ConfirmModal from '@/components/common/ConfirmModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -571,6 +582,7 @@ const canManage = computed(() => canManageTask.value || isCreateur.value)
 const showEditPanel = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
+const showConfirmDeleteTache = ref(false)
 const editForm = ref({ titre: '', description: '', priorite: 'normale', date_echeance: '', date_tache: '', source_emetteur: '' })
 
 function extractTachePayload(responseData) {
@@ -895,15 +907,20 @@ async function handleEdit() {
   }
 }
 
-async function handleDelete() {
-  if (!confirm('Supprimer cette tâche définitivement ?')) return
+function handleDelete() {
+  showConfirmDeleteTache.value = true
+}
+
+async function confirmDeleteTache() {
   deleting.value = true
   try {
     await destroy(route.params.id)
     ui.addToast('Tâche supprimée.', 'success')
+    showConfirmDeleteTache.value = false
     router.push({ name: 'taches.index' })
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la suppression.', 'danger')
+  } finally {
     deleting.value = false
   }
 }
