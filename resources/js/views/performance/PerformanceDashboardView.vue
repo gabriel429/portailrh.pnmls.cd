@@ -241,9 +241,9 @@ let organeChartInstance = null
 
 async function loadFormOptions() {
   try {
-    const response = await client.get('/agents/form-options')
-    provinces.value = response.data.provinces || []
-    departments.value = response.data.departments || []
+    const response = await client.get('/performance/filter-options')
+    provinces.value = response.data.data?.provinces || []
+    departments.value = response.data.data?.departments || []
   } catch (e) {
     // silencieux — les filtres restent utilisables sans les listes
   }

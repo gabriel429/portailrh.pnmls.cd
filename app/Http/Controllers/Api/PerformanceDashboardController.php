@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Agent;
+use App\Models\Department;
 use App\Models\Evaluation;
+use App\Models\Province;
 use App\Services\PerformanceScoreService;
 use App\Services\RoleService;
 use App\Services\UserDataScope;
@@ -161,6 +163,30 @@ class PerformanceDashboardController extends ApiController
                 'per_page' => $paginator->perPage(),
                 'total' => $paginator->total(),
             ],
+        ]);
+    }
+
+    /**
+     * Province/department options for the dashboard filters — kept separate
+     * from /api/agents/form-options, which is gated to RH-management roles
+     * and would 403 for a plain department director. Scoped the same way as
+     * the agent list itself (province-scoped users only see their own).
+     */
+    public function filterOptions(Request $request)
+    {
+        if (!$this->canManageTeamPerformance($request->user())) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
+        $scope = $this->scopeService();
+        $user = $request->user();
+
+        $provinces = $scope->filterProvinces(Province::query(), $user)->orderBy('nom')->get(['id', 'nom']);
+        $departments = $scope->filterDepartments(Department::query(), $user)->orderBy('nom')->get(['id', 'nom', 'province_id']);
+
+        return $this->success([
+            'provinces' => $provinces,
+            'departments' => $departments,
         ]);
     }
 

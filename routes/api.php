@@ -187,6 +187,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // already used to authorize evaluation creation, then scoped per-agent via
     // UserDataScope::applyAgentScope().
     Route::get('performance/dashboard', [PerformanceDashboardController::class, 'index']);
+    Route::get('performance/filter-options', [PerformanceDashboardController::class, 'filterOptions']);
     Route::get('performance/agents/{agent}', [PerformanceDashboardController::class, 'agentDetail']);
 
     Route::middleware(RoleGroups::middleware(RoleGroups::PERFORMANCE_MANAGEMENT))->group(function () {
