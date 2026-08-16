@@ -9,7 +9,7 @@
         <div>
           <h4 class="mb-1 fw-bold text-white">Liste blanche IP</h4>
           <p class="mb-0" style="color:rgba(255,255,255,.65);font-size:.88rem;">
-            Exceptions à la restriction « RDC uniquement, sans VPN »
+            Exceptions à la restriction anti-VPN
           </p>
         </div>
       </div>
@@ -17,8 +17,8 @@
 
     <div class="info-banner">
       <i class="fas fa-circle-info me-2"></i>
-      Les connexions depuis une adresse IP hors République Démocratique du Congo, ou identifiée comme VPN/datacenter,
-      sont refusées à la connexion. Les adresses ci-dessous contournent cette restriction.
+      Les connexions depuis une adresse IP identifiée comme VPN/datacenter sont refusées à la connexion.
+      Les adresses ci-dessous contournent cette restriction.
     </div>
 
     <!-- Add form -->

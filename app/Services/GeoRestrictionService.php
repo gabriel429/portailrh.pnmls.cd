@@ -4,15 +4,17 @@ namespace App\Services;
 
 use App\Models\IpAllowlistEntry;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * Best-effort "DRC only, no VPN" login gate. Free-tier by design: country
- * ranges come from AFRINIC's authoritative delegation records (not a paid
- * GeoIP database), and VPN detection is a community-maintained list of known
- * VPN/datacenter ranges — it will miss unlisted/residential-proxy VPNs, but
- * needs no per-request external API call or paid subscription.
+ * Best-effort "no VPN" login gate — free-tier by design: VPN detection is a
+ * community-maintained list of known VPN/datacenter ranges, not a paid API.
+ * It will miss unlisted/residential-proxy VPNs.
+ *
+ * A country-only restriction (DRC) was tried and dropped: legitimate DRC
+ * users routinely connect through corporate/institutional proxies whose
+ * exit IP is registered abroad (e.g. a Fastly-owned US range), so a strict
+ * "AFRINIC-delegated-to-CD" check produced real false positives.
  *
  * Enforced at login only (see AuthController), not on every request: once a
  * session/token exists it stays valid regardless of network changes, so a
@@ -20,7 +22,6 @@ use Illuminate\Support\Facades\Storage;
  */
 class GeoRestrictionService
 {
-    private const DRC_RANGES_PATH = 'geo/drc_ranges.json';
     private const VPN_RANGES_PATH = 'geo/vpn_ranges.json';
     private const ALLOWLIST_CACHE_KEY = 'geo:allowlist';
     private const RANGES_CACHE_TTL = 3600;
@@ -46,20 +47,6 @@ class GeoRestrictionService
 
         if ($this->ipInRanges($ip, $this->loadRanges(self::VPN_RANGES_PATH, 'geo:vpn_ranges'))) {
             return ['allowed' => false, 'reason' => 'vpn'];
-        }
-
-        $drcRanges = $this->loadRanges(self::DRC_RANGES_PATH, 'geo:drc_ranges');
-        if ($drcRanges === []) {
-            // The refresh command hasn't populated the data yet (fresh
-            // install, or the scheduled fetch failed) — fail open instead
-            // of locking out every single user until someone notices.
-            Log::warning('GeoRestrictionService: DRC ranges are empty, allowing all countries until refreshed.');
-
-            return ['allowed' => true, 'reason' => null];
-        }
-
-        if (!$this->ipInRanges($ip, $drcRanges)) {
-            return ['allowed' => false, 'reason' => 'country'];
         }
 
         return ['allowed' => true, 'reason' => null];
@@ -142,6 +129,5 @@ class GeoRestrictionService
     {
         Cache::forget(self::ALLOWLIST_CACHE_KEY);
         Cache::forget('geo:vpn_ranges');
-        Cache::forget('geo:drc_ranges');
     }
 }

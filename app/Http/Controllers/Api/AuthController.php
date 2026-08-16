@@ -108,9 +108,9 @@ class AuthController extends Controller
     }
 
     /**
-     * Best-effort "DRC only, no VPN" login gate — see GeoRestrictionService.
-     * Checked at login only, not on every request, so an established
-     * session/token stays valid regardless of later network changes.
+     * Best-effort no-VPN login gate — see GeoRestrictionService. Checked at
+     * login only, not on every request, so an established session/token
+     * stays valid regardless of later network changes.
      */
     private function denyLoginForGeoRestriction(Request $request): ?JsonResponse
     {
@@ -120,17 +120,14 @@ class AuthController extends Controller
             return null;
         }
 
-        \Log::warning('Connexion refusée par la restriction géographique.', [
+        \Log::warning('Connexion refusée : VPN/proxy détecté.', [
             'ip' => $request->ip(),
-            'reason' => $result['reason'],
             'email' => $request->input('email'),
         ]);
 
-        $message = $result['reason'] === 'vpn'
-            ? 'Connexion refusée : les VPN et proxys ne sont pas autorisés sur cette application.'
-            : 'Connexion refusée : cette application n\'est accessible qu\'en République Démocratique du Congo.';
-
-        return response()->json(['message' => $message], 403);
+        return response()->json([
+            'message' => 'Connexion refusée : les VPN et proxys ne sont pas autorisés sur cette application.',
+        ], 403);
     }
 
     private function rememberLifetime(): int
