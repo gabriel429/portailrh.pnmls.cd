@@ -76,7 +76,14 @@ class AgentController extends ApiController
      */
     private function isCafOrSelRole($user): bool
     {
-        return (bool) $user?->hasRole('SEL') || app(RoleService::class)->isProvincialCafManager($user);
+        // Direct role match only — matches how route access itself is
+        // granted (RoleGroups::AGENT_RECORD_MANAGEMENT checks the role name
+        // directly). isProvincialCafManager() is a fuzzy heuristic that
+        // returns false whenever the agent's own province_id is empty,
+        // which silently disabled this permission gate for such CAF users
+        // instead of restricting them — the opposite of what a gate should
+        // fail toward.
+        return (bool) $user?->hasRole(['CAF', 'SEL']);
     }
 
     private function isDelegatedOperationalAssistant($user): bool
