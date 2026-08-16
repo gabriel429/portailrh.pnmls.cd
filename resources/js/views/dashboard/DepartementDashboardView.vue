@@ -1277,11 +1277,12 @@ h1.dept-hero-name { font-size: 1.45rem; font-weight: 800; margin: .18rem 0 .3rem
   display: flex; align-items: center; justify-content: center;
   font-size: 1.05rem; flex-shrink: 0;
 }
-.dept-section-title { font-size: 1rem; font-weight: 700; margin: 0; }
-.dept-section-sub { font-size: .8rem; color: #6b7280; margin: 0; }
-.dept-section-link { margin-left: auto; font-size: .8rem; color: #0077B5; text-decoration: none; white-space: nowrap; }
+.dept-section-head > div:not(.dept-section-icon) { min-width: 0; flex: 1 1 auto; }
+.dept-section-title { font-size: 1rem; font-weight: 700; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dept-section-sub { font-size: .8rem; color: #6b7280; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dept-section-link { margin-left: auto; font-size: .8rem; color: #0077B5; text-decoration: none; white-space: nowrap; flex-shrink: 0; }
 .dept-section-link:hover { text-decoration: underline; }
-.dept-section-link-btn { margin-left: auto; font-size: .8rem; color: #0077B5; background: none; border: none; padding: 0; cursor: pointer; white-space: nowrap; font-family: inherit; }
+.dept-section-link-btn { margin-left: auto; font-size: .8rem; color: #0077B5; background: none; border: none; padding: 0; cursor: pointer; white-space: nowrap; font-family: inherit; flex-shrink: 0; }
 .dept-section-link-btn:hover { text-decoration: underline; }
 
 /* ──────────────────────────────────────────────────────────
@@ -1698,6 +1699,28 @@ html.dark .dept-agenda-title { color: #f1f5f9 !important; }
 html.dark .dept-agenda-date-block { background: #3b0764 !important; }
 html.dark .dept-agenda-day, html.dark .dept-agenda-month { color: #e879f9 !important; }
 
+/* Dark mode — additions (gaps left by the block above) */
+html.dark .dept-task-card-alert { background: #2d1515 !important; border-color: #7f1d1d !important; }
+html.dark .dept-task-agent,
+html.dark .dept-task-due { color: var(--dm-text-muted) !important; }
+html.dark .dept-task-priority { background: var(--dm-border) !important; }
+html.dark .dept-prog-pct { color: var(--dm-text) !important; }
+html.dark .dept-agent-avatar { background: var(--dm-bg-card2) !important; }
+html.dark .dept-online-toast {
+  background: var(--dm-bg-card) !important;
+  border-color: rgba(34, 197, 94, .35) !important;
+  color: var(--dm-text) !important;
+  box-shadow: var(--dm-shadow) !important;
+}
+html.dark .dept-online-toast span { color: #86efac !important; }
+html.dark .dept-request-date { color: var(--dm-text-muted) !important; }
+html.dark .dept-btn-outline { background: var(--dm-bg-card2) !important; color: var(--dm-text) !important; }
+html.dark .dept-btn-outline:hover { background: #334155 !important; }
+html.dark .dept-empty,
+html.dark .dept-empty-hint { color: var(--dm-text-muted) !important; }
+html.dark .dept-agenda-row:hover { background: #2d1b42 !important; }
+html.dark .dept-agenda-agent { color: var(--dm-text-muted) !important; }
+
 /* ──────────────────────────────────────────────────────────
    Responsive
 ────────────────────────────────────────────────────────── */
@@ -2042,6 +2065,28 @@ html.dark .drill-presence-bar { background: #334155 !important; border-color: #4
 html.dark .drill-agent-row:hover,
 html.dark .drill-stat-clickable:hover,
 html.dark .drill-stat-clickable.active { background: #1e3a5f !important; }
+
+/* Dark mode — additions (gaps left by the block above) */
+html.dark .drill-section-tab,
+html.dark .drill-loading,
+html.dark .drill-agent-pill { color: var(--dm-text-muted) !important; }
+html.dark .drill-agent-row:hover { border-color: #3b82f6 !important; }
+html.dark .drill-agent-avatar { background: var(--dm-bg-card2) !important; color: #7dd3fc !important; }
+html.dark .drill-presence-times span {
+  background: var(--dm-bg-card2) !important;
+  border-color: var(--dm-border) !important;
+  color: var(--dm-text) !important;
+}
+html.dark .drill-presence-times strong { color: var(--dm-text-muted) !important; }
+html.dark .drill-presence-times span.muted {
+  background: var(--dm-bg-card) !important;
+  border-color: var(--dm-border) !important;
+  color: var(--dm-text-muted) !important;
+}
+html.dark .drill-pointage-note { background: #1e293b !important; border-color: #475569 !important; color: #fbbf24 !important; }
+html.dark .drill-presence-pct { color: var(--dm-text) !important; }
+html.dark .drill-empty { color: var(--dm-text-muted) !important; }
+
 @media (max-width: 620px) {
   .drill-overlay { align-items: flex-end; }
   .drill-panel { width: 100vw; max-width: 100vw; height: 92vh; border-radius: 16px 16px 0 0; }

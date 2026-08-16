@@ -845,12 +845,13 @@ onMounted(async () => {
   width: 38px; height: 38px; border-radius: 10px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center; font-size: .9rem;
 }
-.sena-section-title { font-size: 1rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2; }
-.sena-section-sub { font-size: .7rem; color: #94a3b8; margin: 0; font-weight: 500; }
+.sena-section-header > div:not(.sena-section-icon) { min-width: 0; flex: 1 1 auto; }
+.sena-section-title { font-size: 1rem; font-weight: 800; color: #1e293b; margin: 0; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sena-section-sub { font-size: .7rem; color: #94a3b8; margin: 0; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sena-section-btn {
   display: inline-flex; align-items: center; font-size: .72rem; font-weight: 700;
   color: #0077B5; text-decoration: none; padding: .3rem .7rem;
-  background: #e0f2fe; border-radius: 8px; transition: background .15s; white-space: nowrap;
+  background: #e0f2fe; border-radius: 8px; transition: background .15s; white-space: nowrap; flex-shrink: 0;
 }
 .sena-section-btn:hover { background: #bae6fd; color: #0077B5; }
 .sena-empty { text-align: center; padding: 1.5rem; color: #94a3b8; font-size: .85rem; }
@@ -1076,8 +1077,10 @@ button.sena-drill-stat-card { font: inherit; cursor: pointer; }
   .sena-hero-inner  { flex-direction: column; align-items: flex-start; }
   .sena-hero-kpis   { width: 100%; overflow-x: auto; }
   .sena-section-split { grid-template-columns: 1fr; }
-  .sena-task-right  { display: none; }
+  .sena-task-row    { flex-wrap: wrap; }
+  .sena-task-right  { width: 100%; justify-content: space-between; margin-top: .35rem; }
   .sena-request-steps { display: none; }
+  .sena-presence-stats { flex-wrap: wrap; }
   .sena-drill-panel { width: 100vw; max-width: 100vw; height: 92vh; border-radius: 16px 16px 0 0; }
   .sena-drill-overlay { align-items: flex-end; }
   .sena-drill-body { padding: 1rem; }
@@ -1098,6 +1101,70 @@ button.sena-drill-stat-card { font: inherit; cursor: pointer; }
 .dark .sena-ring-val { color: #4ade80; }
 .dark .sena-pta-big-pct { color: #a78bfa; }
 .dark .sena-hero-kpis { background: rgba(255,255,255,.05); border-color: rgba(255,255,255,.1); }
+.dark .sena-empty { color: var(--dm-text-muted); }
+
+/* ─── Mes tâches ─── */
+.dark .sena-task-overdue { background: rgba(220,38,38,.14) !important; border-color: #dc2626 !important; }
+.dark .sena-task-progress { background: var(--dm-bg-card2); }
+.dark .sena-task-pct { color: var(--dm-text); }
+.dark .sena-task-due { color: var(--dm-text-muted); }
+
+/* ─── Agenda ─── */
+.dark .sena-agenda-urgent { background: rgba(220,38,38,.14) !important; border-color: #dc2626 !important; }
+.dark .sena-agenda-month { color: var(--dm-text-muted); }
+.dark .sena-agenda-agent { color: var(--dm-text-muted); }
+
+/* ─── Demandes ─── */
+.dark .sena-request-agent-name { color: var(--dm-text); }
+.dark .sena-request-type { color: var(--dm-text); }
+.dark .sena-request-date { color: var(--dm-text-muted); }
+
+/* ─── Steps workflow ─── */
+.dark .sena-step-line { background: var(--dm-border); }
+
+/* ─── Présence ─── */
+.dark .sena-ring-lbl { color: var(--dm-text-muted); }
+.dark .sena-presence-item { color: var(--dm-text); }
+
+/* ─── PTA ─── */
+.dark .sena-pta-bar { background: var(--dm-bg-card2); }
+.dark .sena-pta-pct-label { color: var(--dm-text-muted); }
+
+/* ─── Communiqués ─── */
+.dark .sena-communique-titre { color: var(--dm-text); }
+.dark .sena-communique-meta { color: var(--dm-text-muted); }
+
+/* ─── Signalements ─── */
+.dark .sena-signalement-type { color: var(--dm-text); }
+.dark .sena-signalement-date { color: var(--dm-text-muted); }
+
+/* ─── Panneau détail (drill-down) ─── */
+.dark .sena-drill-panel { background: var(--dm-bg); }
+.dark .sena-drill-tabs { border-bottom-color: var(--dm-border); }
+.dark .sena-drill-tab { background: var(--dm-bg-card); border-color: var(--dm-border); color: var(--dm-text-muted); }
+.dark .sena-drill-stat-card {
+  background: var(--dm-bg-card);
+  border-top-color: var(--dm-border);
+  border-right-color: var(--dm-border);
+  border-bottom-color: var(--dm-border);
+}
+.dark .sena-drill-clickable:hover, .dark .sena-drill-clickable.active { background: var(--dm-bg-card2); }
+.dark .sena-drill-stat-val { color: var(--dm-text); }
+.dark .sena-drill-stat-lbl { color: var(--dm-text-muted); }
+.dark .sena-drill-section-title { color: var(--dm-text); }
+.dark .sena-drill-row, .dark .sena-drill-agent-row, .dark .sena-drill-activity { background: var(--dm-bg-card); border-color: var(--dm-border); }
+.dark .sena-drill-row:hover, .dark .sena-drill-agent-row:hover, .dark .sena-drill-activity:hover { background: var(--dm-bg-card2); border-color: rgba(14,165,233,.35); }
+.dark .sena-drill-row-title { color: var(--dm-text); }
+.dark .sena-drill-row-sub { color: var(--dm-text-muted); }
+.dark .sena-drill-progress { background: var(--dm-bg-card2); }
+.dark .sena-drill-presence-times span { background: rgba(14,165,233,.12); border-color: rgba(14,165,233,.3); color: #7dd3fc; }
+.dark .sena-drill-presence-times strong { color: var(--dm-text-muted); }
+.dark .sena-drill-presence-times span.muted { background: var(--dm-bg-card2); border-color: var(--dm-border); color: var(--dm-text-muted); }
+.dark .sena-drill-pointage-note { background: rgba(217,119,6,.15); border-color: rgba(217,119,6,.4); color: #fbbf24; }
+.dark .sena-drill-agent-meta { color: var(--dm-text); }
+.dark .sena-drill-agent-meta small { color: var(--dm-text-muted); }
+.dark .sena-drill-empty { color: var(--dm-text-muted); }
+
 /* Accueil compact logiciel */
 .sena-hero {
   border-radius: 0 0 14px 14px;

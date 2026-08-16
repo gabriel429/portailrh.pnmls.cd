@@ -1028,105 +1028,150 @@ onMounted(loadData)
   display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 14px;
 }
+.dark .caf-online-strip { background: var(--dm-bg-card); border-color: var(--dm-border); }
 .caf-online-title { display: flex; align-items: center; gap: .5rem; font-weight: 800; color: #166534; font-size: .9rem; }
+.dark .caf-online-title { color: var(--dm-text); }
 .caf-online-dot { width: 10px; height: 10px; border-radius: 50%; background: #16a34a; box-shadow: 0 0 0 4px rgba(22, 163, 74, .14); }
 .caf-online-list { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; justify-content: flex-end; }
 .caf-online-chip { padding: .28rem .55rem; border-radius: 999px; background: #fff; color: #14532d; font-size: .75rem; font-weight: 700; border: 1px solid #dcfce7; }
+.dark .caf-online-chip { background: var(--dm-bg-card2); color: var(--dm-text); border-color: var(--dm-border); }
 .caf-section-head { display: flex; align-items: center; gap: .75rem; margin-bottom: 1rem; }
 .caf-section-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
-.caf-section-title { font-size: .95rem; font-weight: 700; color: #1e293b; margin: 0; }
-.caf-section-sub { font-size: .72rem; color: #94a3b8; margin: .1rem 0 0; }
-.caf-section-link { margin-left: auto; font-size: .78rem; color: #0d9488; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: .3rem; }
+.caf-section-head > div:not(.caf-section-icon) { min-width: 0; flex: 1 1 auto; }
+.caf-section-title { font-size: .95rem; font-weight: 700; color: #1e293b; margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dark .caf-section-title { color: var(--dm-text); }
+.caf-section-sub { font-size: .72rem; color: #94a3b8; margin: .1rem 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dark .caf-section-sub { color: var(--dm-text-muted); }
+.caf-section-link { margin-left: auto; font-size: .78rem; color: #0d9488; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: .3rem; flex-shrink: 0; }
 .caf-clickable { cursor: pointer; }
 
 /* ─── PROVINCE CARD ─── */
 .caf-province-card { display: flex; align-items: center; gap: 1rem; background: #fff; border-radius: 14px; padding: 1rem 1.25rem; border-left: 4px solid #0d9488; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.dark .caf-province-card { background: var(--dm-bg-card); box-shadow: var(--dm-shadow); }
 .caf-province-icon { width: 46px; height: 46px; border-radius: 12px; background: #d1fae5; color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+.dark .caf-province-icon { background: var(--dm-bg-card2); }
 .caf-province-name { font-size: 1.05rem; font-weight: 700; color: #1e293b; }
+.dark .caf-province-name { color: var(--dm-text); }
 .caf-province-details { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .3rem; font-size: .78rem; color: #64748b; }
+.dark .caf-province-details { color: var(--dm-text-muted); }
 .caf-province-sep { color: #0d9488; }
 
 /* ─── ACTIONS ─── */
 .caf-actions { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .6rem; }
 .caf-action { display: flex; align-items: center; gap: .75rem; background: #fff; border-radius: 14px; padding: .85rem 1rem; text-decoration: none; color: inherit; border: 1px solid #f1f5f9; transition: all .2s; position: relative; overflow: hidden; width: 100%; text-align: left; font: inherit; cursor: pointer; }
+.dark .caf-action { background: var(--dm-bg-card); border-color: var(--dm-border); }
 .caf-action:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+.dark .caf-action:hover { box-shadow: var(--dm-shadow); }
 .caf-action-glow { position: absolute; top: 0; left: 0; width: 3px; height: 100%; border-radius: 14px 0 0 14px; }
 .caf-action-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: .95rem; flex-shrink: 0; }
 .caf-action-label { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.dark .caf-action-label { color: var(--dm-text); }
 .caf-action-desc { font-size: .68rem; color: #94a3b8; }
+.dark .caf-action-desc { color: var(--dm-text-muted); }
 .caf-action-arrow { margin-left: auto; color: #cbd5e1; font-size: .75rem; }
+.dark .caf-action-arrow { color: var(--dm-text-muted); }
 
 /* ─── METRICS ─── */
 .caf-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
 .caf-metric { background: #fff; border-radius: 14px; padding: .9rem 1rem; border: 1px solid #f1f5f9; transition: all .2s; }
+.dark .caf-metric { background: var(--dm-bg-card); border-color: var(--dm-border); }
 .caf-metric:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.08); }
+.dark .caf-metric:hover { box-shadow: var(--dm-shadow); }
 .caf-metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: .5rem; }
 .caf-metric-icon { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: .88rem; }
 .caf-metric-alert { color: #dc2626; font-size: .85rem; }
 .caf-metric-drill-badge { color: #0d9488; font-size: .75rem; }
 .caf-metric-val { font-size: 1.4rem; font-weight: 800; line-height: 1.1; }
 .caf-metric-lbl { font-size: .68rem; color: #94a3b8; margin-top: .2rem; }
+.dark .caf-metric-lbl { color: var(--dm-text-muted); }
 .caf-metric-bar { height: 4px; background: #f1f5f9; border-radius: 4px; margin-top: .5rem; overflow: hidden; }
+.dark .caf-metric-bar { background: var(--dm-bg-card2); }
 .caf-metric-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
 
 /* ─── DEPARTMENTS ─── */
 .caf-dept-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .75rem; }
 .caf-dept-card { background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1rem; transition: all .2s; cursor: pointer; }
+.dark .caf-dept-card { background: var(--dm-bg-card); border-color: var(--dm-border); }
 .caf-dept-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.1); border-color: #0d9488; }
+.dark .caf-dept-card:hover { box-shadow: var(--dm-shadow); }
 .caf-dept-header { display: flex; align-items: center; gap: .6rem; margin-bottom: .6rem; }
 .caf-dept-badge { width: 32px; height: 32px; border-radius: 8px; background: #d1fae5; color: #0d9488; display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
+.dark .caf-dept-badge { background: var(--dm-bg-card2); }
 .caf-dept-name { font-size: .82rem; font-weight: 700; color: #1e293b; }
+.dark .caf-dept-name { color: var(--dm-text); }
 .caf-dept-code { font-size: .68rem; color: #94a3b8; }
+.dark .caf-dept-code { color: var(--dm-text-muted); }
 .caf-drill-arrow { margin-left: auto; color: #0d9488; font-size: .75rem; }
 .caf-dept-stats { display: flex; gap: 1rem; margin-bottom: .5rem; }
 .caf-dept-stat-val { font-size: 1.1rem; font-weight: 700; color: #1e293b; }
+.dark .caf-dept-stat-val { color: var(--dm-text); }
 .caf-dept-stat-lbl { font-size: .65rem; color: #94a3b8; }
+.dark .caf-dept-stat-lbl { color: var(--dm-text-muted); }
 .caf-dept-bar-wrap { display: flex; align-items: center; gap: .5rem; }
 .caf-dept-bar-bg { flex: 1; height: 5px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.dark .caf-dept-bar-bg { background: var(--dm-bg-card2); }
 .caf-dept-bar-fill { height: 100%; background: #0d9488; border-radius: 4px; transition: width .4s; }
 .caf-dept-bar-pct { font-size: .68rem; color: #94a3b8; min-width: 28px; text-align: right; }
+.dark .caf-dept-bar-pct { color: var(--dm-text-muted); }
 
 /* ─── PRÉSENCE ─── */
 .caf-presence-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: .75rem; }
 .caf-presence-card { background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1rem; text-align: center; }
+.dark .caf-presence-card { background: var(--dm-bg-card); border-color: var(--dm-border); }
 .caf-presence-icon { font-size: 1.3rem; margin-bottom: .3rem; }
 .caf-presence-label { font-size: .72rem; font-weight: 600; color: #64748b; margin-bottom: .4rem; }
+.dark .caf-presence-label { color: var(--dm-text-muted); }
 .caf-presence-rate-big { font-size: 2rem; font-weight: 800; line-height: 1; }
 .caf-presence-sub { font-size: .68rem; color: #94a3b8; margin: .2rem 0; }
+.dark .caf-presence-sub { color: var(--dm-text-muted); }
 .caf-presence-bar-bg { height: 6px; background: #e5e7eb; border-radius: 4px; overflow: hidden; margin: .4rem 0; }
+.dark .caf-presence-bar-bg { background: var(--dm-bg-card2); }
 .caf-presence-bar-fill { height: 100%; border-radius: 4px; transition: width .4s; }
 .caf-presence-monthly { font-size: .68rem; color: #94a3b8; }
+.dark .caf-presence-monthly { color: var(--dm-text-muted); }
 
 /* ─── PTA ─── */
 .caf-plan-layout { display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap; }
 .caf-plan-ring-wrap { position: relative; flex-shrink: 0; }
 .caf-plan-ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
 .caf-plan-ring-val { font-size: 1.4rem; font-weight: 800; color: #1e293b; }
+.dark .caf-plan-ring-val { color: var(--dm-text); }
 .caf-plan-ring-sub { font-size: .62rem; color: #94a3b8; }
+.dark .caf-plan-ring-sub { color: var(--dm-text-muted); }
 .caf-plan-trimesters { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: .5rem; }
 .caf-plan-trimester { display: grid; grid-template-columns: 28px 1fr 38px 38px; align-items: center; gap: .5rem; }
 .caf-plan-trimester-label { font-size: .78rem; font-weight: 700; color: #64748b; }
+.dark .caf-plan-trimester-label { color: var(--dm-text-muted); }
 .caf-plan-trimester-bar-bg { height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden; }
+.dark .caf-plan-trimester-bar-bg { background: var(--dm-bg-card2); }
 .caf-plan-trimester-bar-fill { height: 100%; background: #0d9488; border-radius: 4px; transition: width .4s; }
 .caf-plan-trimester-pct { font-size: .72rem; font-weight: 600; color: #0d9488; text-align: right; }
 .caf-plan-trimester-count { font-size: .68rem; color: #94a3b8; text-align: right; }
+.dark .caf-plan-trimester-count { color: var(--dm-text-muted); }
 
 /* ─── DUO ─── */
 .caf-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
 .caf-duo-block { background: #fff; border-radius: 14px; border: 1px solid #e5e7eb; padding: 1rem; }
+.dark .caf-duo-block { background: var(--dm-bg-card); border-color: var(--dm-border); }
 .caf-req-list { display: flex; flex-direction: column; gap: .4rem; }
 .caf-req-row { display: flex; align-items: center; gap: .6rem; padding: .45rem .5rem; border-radius: 8px; transition: background .15s; }
 .caf-req-row:hover { background: #f8f9fa; }
+.dark .caf-req-row:hover { background: var(--dm-bg-card2); }
 .caf-req-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
 .caf-req-info { flex: 1; min-width: 0; }
 .caf-req-type { font-size: .78rem; font-weight: 600; color: #1e293b; text-transform: capitalize; }
+.dark .caf-req-type { color: var(--dm-text); }
 .caf-req-agent { font-size: .68rem; color: #94a3b8; }
+.dark .caf-req-agent { color: var(--dm-text-muted); }
 .caf-req-date { font-size: .68rem; color: #94a3b8; flex-shrink: 0; }
+.dark .caf-req-date { color: var(--dm-text-muted); }
 .caf-empty-msg { display: flex; align-items: center; justify-content: center; padding: 1.5rem; color: #94a3b8; font-size: .82rem; }
+.dark .caf-empty-msg { color: var(--dm-text-muted); }
 
 /* ─── DRILL-DOWN (harmonisé avec SEN/RH) ─── */
 .drill-overlay { position: fixed; inset: 0; z-index: 9999; background: rgba(15,23,42,.55); backdrop-filter: blur(6px); display: flex; align-items: stretch; justify-content: flex-end; }
 .drill-panel { width: 580px; max-width: 95vw; background: #f8fafc; display: flex; flex-direction: column; box-shadow: -12px 0 48px rgba(0,0,0,.18); overflow: hidden; }
+.dark .drill-panel { background: var(--dm-bg); box-shadow: var(--dm-shadow); }
 .drill-header { padding: 1.5rem 1.8rem; color: #fff; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
 .drill-header-left { display: flex; align-items: center; gap: .8rem; min-width: 0; }
 .drill-header-title { font-size: 1.1rem; font-weight: 800; display: flex; align-items: center; gap: .5rem; }
@@ -1135,26 +1180,39 @@ onMounted(loadData)
 .drill-close:hover { background: rgba(255,255,255,.2); }
 .drill-body { flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; }
 .drill-loading { display: flex; flex-direction: column; align-items: center; gap: 1rem; padding: 3rem; color: #94a3b8; }
+.dark .drill-loading { color: var(--dm-text-muted); }
 .drill-empty { display: flex; flex-direction: column; align-items: center; gap: .6rem; padding: 2rem; color: #94a3b8; font-size: .85rem; }
+.dark .drill-empty { color: var(--dm-text-muted); }
 .drill-empty i { font-size: 1.5rem; }
 .drill-section-tabs { display: flex; gap: .4rem; margin-bottom: 1rem; border-bottom: 1px solid #e5e7eb; padding-bottom: .5rem; }
+.dark .drill-section-tabs { border-bottom-color: var(--dm-border); }
 .drill-section-tab { padding: .4rem .9rem; border-radius: 8px; border: 1px solid #e5e7eb; background: #fff; font-size: .78rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all .2s; }
+.dark .drill-section-tab { background: var(--dm-bg-card2); border-color: var(--dm-border); color: var(--dm-text-muted); }
 .drill-section-tab:hover { border-color: #0d9488; color: #0d9488; }
 .drill-section-tab.active { background: #0d9488; color: #fff; border-color: #0d9488; }
 .drill-dept-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .6rem; margin-bottom: 1rem; }
 .drill-prov-stat-card { background: #fff; border-radius: 12px; border-left: 3px solid; padding: .8rem 1rem; text-align: center; }
+.dark .drill-prov-stat-card { background: var(--dm-bg-card2); }
 .drill-stat-clickable { cursor: pointer; transition: transform .18s ease, box-shadow .18s ease, background .18s ease; }
 .drill-stat-clickable:hover,
 .drill-stat-clickable.active { transform: translateY(-1px); box-shadow: 0 10px 24px rgba(15, 23, 42, .08); background: #f8fafc; }
+.dark .drill-stat-clickable:hover,
+.dark .drill-stat-clickable.active { box-shadow: var(--dm-shadow); background: var(--dm-bg-card); }
 .drill-prov-stat-val { font-size: 1.5rem; font-weight: 800; color: #1e293b; line-height: 1; }
+.dark .drill-prov-stat-val { color: var(--dm-text); }
 .drill-prov-stat-lbl { font-size: .65rem; color: #94a3b8; text-transform: uppercase; font-weight: 600; margin-top: .2rem; }
+.dark .drill-prov-stat-lbl { color: var(--dm-text-muted); }
 .drill-prov-section-title { display: flex; align-items: center; gap: .4rem; font-size: .78rem; font-weight: 700; color: #475569; margin-bottom: .5rem; }
+.dark .drill-prov-section-title { color: var(--dm-text); }
 .drill-prov-agents-table { display: flex; flex-direction: column; gap: .4rem; }
 .drill-prov-agent-row { display: flex; align-items: flex-start; gap: .6rem; padding: .55rem .65rem; border-radius: 8px; background: #fff; border: 1px solid #f1f5f9; }
+.dark .drill-prov-agent-row { background: var(--dm-bg-card2); border-color: var(--dm-border); }
 .drill-prov-agent-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .8rem; flex-shrink: 0; }
 .drill-prov-agent-info { flex: 1; min-width: 0; }
 .drill-prov-agent-name { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; font-size: .82rem; font-weight: 600; color: #1e293b; }
+.dark .drill-prov-agent-name { color: var(--dm-text); }
 .drill-prov-agent-fn { font-size: .68rem; color: #94a3b8; }
+.dark .drill-prov-agent-fn { color: var(--dm-text-muted); }
 .drill-presence-badge { display: inline-flex; align-items: center; gap: .2rem; padding: .12rem .35rem; border-radius: 999px; border: 1px solid transparent; font-size: .6rem; font-weight: 800; text-transform: uppercase; }
 .drill-presence-present { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
 .drill-presence-absent { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
@@ -1164,16 +1222,24 @@ onMounted(loadData)
 .drill-presence-suspendu { background: #f3f4f6; color: #4b5563; border-color: #e5e7eb; }
 .drill-presence-times { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; margin-top: .45rem; }
 .drill-presence-time { display: flex; align-items: center; gap: .25rem; min-width: 0; padding: .35rem .45rem; border-radius: 8px; background: #f0f9ff; border: 1px solid #bae6fd; color: #0f172a; font-size: .68rem; font-weight: 700; }
+.dark .drill-presence-time { background: var(--dm-bg-card2); border-color: var(--dm-border); color: var(--dm-text); }
 .drill-presence-time i { color: #0ea5e9; font-size: .65rem; flex-shrink: 0; }
 .drill-presence-time strong { color: #64748b; font-size: .58rem; text-transform: uppercase; }
+.dark .drill-presence-time strong { color: var(--dm-text-muted); }
 .drill-presence-time.muted { background: #f8fafc; border-color: #e2e8f0; color: #94a3b8; }
+.dark .drill-presence-time.muted { background: var(--dm-bg-card2); border-color: var(--dm-border); color: var(--dm-text-muted); }
 .drill-presence-time.muted i { color: #cbd5e1; }
+.dark .drill-presence-time.muted i { color: var(--dm-text-muted); }
 .drill-prov-agent-meta { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .4rem; font-size: .65rem; color: #64748b; }
+.dark .drill-prov-agent-meta { color: var(--dm-text-muted); }
 .drill-prov-agent-meta span { display: inline-flex; align-items: center; gap: .22rem; }
 .drill-prov-agent-meta i { color: #94a3b8; }
+.dark .drill-prov-agent-meta i { color: var(--dm-text-muted); }
 .drill-prov-agent-note { display: inline-flex; align-items: center; gap: .28rem; margin-top: .35rem; padding: .28rem .45rem; border-radius: 8px; background: #fffbeb; color: #92400e; font-size: .66rem; font-weight: 600; }
+.dark .drill-prov-agent-note { background: var(--dm-bg-card2); color: var(--dm-text); }
 .caf-dept-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: 1rem; }
 .caf-dept-chip { padding: .3rem .7rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 20px; font-size: .75rem; font-weight: 600; color: #475569; cursor: pointer; transition: all .2s; }
+.dark .caf-dept-chip { background: var(--dm-bg-card2); border-color: var(--dm-border); color: var(--dm-text); }
 .caf-dept-chip:hover { background: #d1fae5; border-color: #0d9488; color: #0d9488; }
 
 /* ─── RESPONSIVE ─── */
@@ -1199,6 +1265,7 @@ onMounted(loadData)
 }
 /* Accueil compact logiciel */
 .caf-dashboard { background: #f8fafc; }
+.dark .caf-dashboard { background: var(--dm-bg); }
 .caf-hero {
   border-radius: 14px;
   margin: 0 0 .9rem;
