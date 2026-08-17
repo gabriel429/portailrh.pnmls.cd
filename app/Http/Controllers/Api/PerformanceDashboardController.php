@@ -29,7 +29,7 @@ class PerformanceDashboardController extends ApiController
      * Same population allowed to create an evaluation (RoleService::hasTacheManagerRole):
      * SEN/RH National see every agent, a department director/SEP/CAF/SEL only
      * ever see their own perimeter — the actual restriction happens via
-     * UserDataScope::applyAgentScope() in baseAgentQuery()/agentDetail().
+     * UserDataScope::applyAgentTeamScope() in baseAgentQuery()/agentDetail().
      */
     private function canManageTeamPerformance($user): bool
     {
@@ -86,7 +86,7 @@ class PerformanceDashboardController extends ApiController
     {
         $user = $request->user();
         $query = Agent::query()->actifs();
-        $this->scopeService()->applyAgentScope($query, $user);
+        $this->scopeService()->applyAgentTeamScope($query, $user);
 
         if ($organe = $request->query('organe')) {
             if ($organe !== 'tous') {
@@ -205,7 +205,7 @@ class PerformanceDashboardController extends ApiController
             // perimeter (department/province/localité), the same scope
             // baseAgentQuery() already applies to the list view.
             $scoped = Agent::query()->whereKey($agent->id);
-            $this->scopeService()->applyAgentScope($scoped, $user);
+            $this->scopeService()->applyAgentTeamScope($scoped, $user);
             if (!$scoped->exists()) {
                 return response()->json(['message' => 'Accès refusé.'], 403);
             }

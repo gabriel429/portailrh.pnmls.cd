@@ -117,7 +117,7 @@ class EvaluationController extends ApiController
         ]);
 
         $agentQuery = Agent::query()->whereKey($validated['agent_id']);
-        $this->scopeService()->applyAgentScope($agentQuery, $user);
+        $this->scopeService()->applyAgentTeamScope($agentQuery, $user);
         $agent = $agentQuery->first();
 
         if (!$agent) {

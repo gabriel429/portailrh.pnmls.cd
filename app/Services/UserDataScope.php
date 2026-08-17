@@ -237,6 +237,69 @@ class UserDataScope
         });
     }
 
+    /**
+     * Stricter than applyAgentScope(): for "my team" style views (agent
+     * performance dashboard/evaluation) a department director or CAF must
+     * only see their OWN department, not the whole operational-department
+     * roster applyAgentScope() deliberately allows for the general HR
+     * directory (agents list, exports, messaging...).
+     *
+     * Deliberately does NOT reuse hasGlobalAdminAccess() here: that method
+     * also grants full access to hasDirecteurOrDafRole() — i.e. ANY role
+     * named "Directeur"/"Chef ..." — which is exactly the behavior a plain
+     * department director should NOT get in the performance module (they
+     * must see only their own department). Only the actual national-level
+     * RH/SEN roles get the unrestricted branch here.
+     */
+    public function applyAgentTeamScope($query, ?User $user, string $table = 'agents')
+    {
+        $this->excludeAncienAgents($query, $table);
+
+        if (app(RoleService::class)->isSuperAdmin($user) || (bool) $user?->hasRole([
+            'SEN',
+            'RH National',
+            'Section ressources humaines',
+            'Chef Section RH',
+        ])) {
+            return $query;
+        }
+
+        if ($this->isLocalUser($user)) {
+            $localiteId = $this->localiteId($user);
+            if (!$localiteId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where(function ($localScope) use ($table, $localiteId) {
+                $localScope->where($table . '.localite_id', $localiteId)
+                    ->orWhereHas('affectations', function ($affectationScope) use ($localiteId) {
+                        $affectationScope
+                            ->where('actif', true)
+                            ->where('localite_id', $localiteId);
+                    });
+            });
+        }
+
+        if ($this->isProvincialUser($user) || app(RoleService::class)->isProvincialCafManager($user)) {
+            $provinceId = $this->provinceId($user);
+            if (!$provinceId) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            return $query->where($table . '.province_id', $provinceId);
+        }
+
+        if ($this->isAssistantRh($user)) {
+            return $query;
+        }
+
+        $deptId = $user?->agent?->departement_id;
+
+        return $deptId
+            ? $query->where($table . '.departement_id', $deptId)
+            : $query->whereRaw('1 = 0');
+    }
+
     public function applyContactScope($query, ?User $user, string $table = 'agents')
     {
         $this->excludeAncienAgents($query, $table);
