@@ -13,7 +13,7 @@ return new class extends Migration
         // 1. NOUVEAUX RÔLES
         // ──────────────────────────────────────────────
         $newRoles = [
-            ['nom_role' => 'SENA', 'description' => 'Secrétaire Exécutif National Adjoint'],
+            ['nom_role' => 'Assistant SEN/SENA', 'description' => 'Assistant du Secrétariat Exécutif National / SENA'],
             ['nom_role' => 'Chef Section Renforcement', 'description' => 'Chef de la Section Renforcement des Capacités (DRRC)'],
             ['nom_role' => 'Chef Cellule Renforcement', 'description' => 'Chef de la Cellule Renforcement des Capacités'],
             ['nom_role' => 'Chef Section Planification', 'description' => 'Chef de la Section Planification (PTA)'],
@@ -216,7 +216,7 @@ return new class extends Migration
                 'signalement.report.monthly', 'signalement.report.annual',
                 'renforcement.report.monthly', 'renforcement.report.annual',
             ],
-            'SENA' => [
+            'Assistant SEN/SENA' => [
                 'view_own_profile', 'edit_own_profile', 'view_own_pointages', 'view_own_documents',
                 'create_requests', 'create_signalement',
                 'view_agents', 'view_agent_detail',
@@ -502,7 +502,7 @@ return new class extends Migration
         // Not easily reversible without tracking - leave data in place
 
         // New roles (optional cleanup)
-        $newRoleNames = ['SENA', 'Chef Section Renforcement', 'Chef Cellule Renforcement',
+        $newRoleNames = ['Assistant SEN/SENA', 'Chef Section Renforcement', 'Chef Cellule Renforcement',
                          'Chef Section Planification', 'Cellule Planification', 'Chef Section Juridique'];
         DB::table('roles')->whereIn('nom_role', $newRoleNames)->delete();
     }

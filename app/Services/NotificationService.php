@@ -503,7 +503,11 @@ class NotificationService
     protected static function executiveRecipientIds(): array
     {
         return User::query()
-            ->whereHas('role', fn (Builder $query) => $query->whereIn('nom_role', ['SEN', 'SENA']))
+            ->whereHas('role', fn (Builder $query) => $query->whereIn('nom_role', [
+                'SEN',
+                RoleService::SEN_SENA_ASSISTANT_ROLE,
+                RoleService::LEGACY_SENA_ROLE,
+            ]))
             ->pluck('id')
             ->map(fn ($id) => (int) $id)
             ->all();

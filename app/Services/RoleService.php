@@ -9,6 +9,19 @@ use Illuminate\Support\Str;
 
 class RoleService
 {
+    public const SEN_SENA_ASSISTANT_ROLE = 'Assistant SEN/SENA';
+    public const LEGACY_SENA_ROLE = 'SENA';
+
+    public static function senSenaAssistantRoleNames(): array
+    {
+        return [
+            self::SEN_SENA_ASSISTANT_ROLE,
+            self::LEGACY_SENA_ROLE,
+            'Assistant SENA',
+            'Assistant SEN / SENA',
+        ];
+    }
+
     public function hasRole(User|Agent|null $entity, string|array $roles): bool
     {
         if (!$entity) {
@@ -34,7 +47,7 @@ class RoleService
 
     public function hasSENARole(?User $user): bool
     {
-        return (bool) $user && $user->hasRole('SENA');
+        return (bool) $user && $user->hasRole(self::senSenaAssistantRoleNames());
     }
 
     public function senaScopedAgentsQuery(?User $user): Builder
@@ -161,7 +174,7 @@ class RoleService
             || $this->isProvincialCafManager($user)
             || $this->isDepartmentManager($user)
             || $user->hasRole('SEN')
-            || $user->hasRole('SENA')
+            || $this->hasSENARole($user)
             || $this->isSepManager($user)
             || $workflow->isSelManager($user)
             || $workflow->isLocalSupport($user);
@@ -186,6 +199,10 @@ class RoleService
 
         $role = $this->normalize($user->role?->nom_role);
         if ($this->isAssistantRh($user)) {
+            return false;
+        }
+
+        if ($this->hasSENARole($user)) {
             return false;
         }
 

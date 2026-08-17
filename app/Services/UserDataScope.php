@@ -88,7 +88,8 @@ class UserDataScope
 
         if ($user->hasRole([
             'SEN',
-            'SENA',
+            RoleService::SEN_SENA_ASSISTANT_ROLE,
+            RoleService::LEGACY_SENA_ROLE,
             'RH National',
             'Section ressources humaines',
             'Chef Section RH',
@@ -546,6 +547,7 @@ class UserDataScope
     private function isSenOrSenaProfile(string $profile): bool
     {
         return preg_match('/(^| )(sen|sena)( |$)/', $profile) === 1
+            || str_contains($profile, 'assistant sen/sena')
             || str_contains($profile, 'secretaire executif national');
     }
 

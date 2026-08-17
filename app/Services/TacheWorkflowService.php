@@ -16,8 +16,9 @@ class TacheWorkflowService
     {
         $agent = $user->agent;
         $organe = $this->normalize($agent?->organe);
+        $roles = app(RoleService::class);
 
-        if ($user->hasRole('SEN') || $user->hasRole('SENA') || str_contains($organe, 'national')) {
+        if ($user->hasRole('SEN') || $roles->hasSENARole($user) || str_contains($organe, 'national')) {
             return 'sen';
         }
 
@@ -50,7 +51,7 @@ class TacheWorkflowService
             || $roles->isProvincialCafManager($user)
             || $roles->isDepartmentManager($user)
             || $user->hasRole('SEN')
-            || $user->hasRole('SENA')
+            || $roles->hasSENARole($user)
             || $roles->isSepManager($user)
             || $this->isLocalSupport($user)
             || $this->isSelManager($user);
@@ -433,7 +434,7 @@ class TacheWorkflowService
                 && str_contains($profile, 'chef')
                 && str_contains($profile, 'section');
 
-            return in_array($role, ['sen', 'sena'], true)
+            return in_array($role, ['sen', 'sena', 'assistant sen/sena'], true)
                 || (str_contains($organe, 'national') && (
                     str_contains($role, 'directeur')
                     || str_contains($profile, 'directeur national')

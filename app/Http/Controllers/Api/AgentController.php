@@ -179,7 +179,7 @@ class AgentController extends ApiController
             $text = trim($fonction . ' ' . $poste . ' ' . $role);
 
             $isPrincipalSen = $role === 'sen' || str_contains($text, 'secretaire executif national');
-            $isAdjoint = $role === 'sena' || str_contains($text, 'adjoint');
+            $isAdjoint = in_array($role, ['sena', 'assistant sen/sena'], true) || str_contains($text, 'adjoint');
 
             return $isPrincipalSen && !$isAdjoint;
         });

@@ -121,7 +121,7 @@ export const useAuthStore = defineStore('auth', {
             return normalizedRole(state) === 'sen'
         },
         isSENA(state) {
-            return normalizedRole(state) === 'sena'
+            return ['sena', 'assistant sena', 'assistant sen/sena', 'assistant sen / sena'].includes(normalizedRole(state))
         },
         // Deliberately exact-match, unlike the broader isRH (which also
         // covers RH Provincial, Section ressources humaines, etc.).

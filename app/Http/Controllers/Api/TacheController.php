@@ -314,7 +314,7 @@ class TacheController extends ApiController
                 ['value' => 'directeur', 'label' => 'Directeur'],
                 ['value' => 'assistant_departement', 'label' => 'Assistant / Secrétaire du département'],
                 ['value' => 'sen',       'label' => 'SEN'],
-                ['value' => 'sena',      'label' => 'SENA'],
+                ['value' => 'sena',      'label' => 'Assistant SEN/SENA'],
                 ['value' => 'sep',       'label' => 'SEP'],
                 ['value' => 'secom',     'label' => 'SECOM'],
                 ['value' => 'sel',       'label' => 'SEL'],
@@ -398,9 +398,9 @@ class TacheController extends ApiController
             $agendaSources = ['sen', 'sena', 'directeur', 'sep', 'sel'];
             if (!in_array($validated['source_emetteur'], $agendaSources, true)) {
                 return response()->json([
-                    'message' => 'Un rappel agenda doit provenir du SEN, SENA, Directeur, SEP ou SEL.',
+                    'message' => 'Un rappel agenda doit provenir du SEN, Assistant SEN/SENA, Directeur, SEP ou SEL.',
                     'errors' => [
-                        'source_emetteur' => ['Choisissez SEN, SENA, Directeur, SEP ou SEL pour un rappel agenda.'],
+                        'source_emetteur' => ['Choisissez SEN, Assistant SEN/SENA, Directeur, SEP ou SEL pour un rappel agenda.'],
                     ],
                 ], 422);
             }
@@ -452,9 +452,9 @@ class TacheController extends ApiController
 
             if ($validated['source_type'] === 'agenda' && !$this->isAgendaRecipientAgent($targetAgent)) {
                 return response()->json([
-                    'message' => 'Un rappel agenda ne concerne que le SEN, SENA, Directeur, SEP ou SEL.',
+                    'message' => 'Un rappel agenda ne concerne que le SEN, Assistant SEN/SENA, Directeur, SEP ou SEL.',
                     'errors' => [
-                        'agent_id' => ['Choisissez uniquement un destinataire SEN, SENA, Directeur, SEP ou SEL pour l’agenda.'],
+                        'agent_id' => ['Choisissez uniquement un destinataire SEN, Assistant SEN/SENA, Directeur, SEP ou SEL pour l’agenda.'],
                     ],
                 ], 422);
             }
@@ -1316,8 +1316,8 @@ class TacheController extends ApiController
         $fonction = $this->normalizeProfileText($agent->fonction);
         $poste = $this->normalizeProfileText($agent->poste_actuel);
 
-        if ($role === 'sena' || str_contains($fonction, 'secretaire executif national adjoint') || str_contains($poste, 'secretaire executif national adjoint')) {
-            return 'SENA';
+        if ($role === 'sena' || $role === 'assistant sen/sena' || str_contains($fonction, 'secretaire executif national adjoint') || str_contains($poste, 'secretaire executif national adjoint')) {
+            return 'Assistant SEN/SENA';
         }
 
         if ($role === 'sen' || $fonction === 'secretaire executif national' || $poste === 'secretaire executif national') {

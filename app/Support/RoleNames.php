@@ -37,6 +37,15 @@ class RoleNames
         }
 
         return match ($role) {
+            'sena',
+            'assistant sena',
+            'assistant sen/sena',
+            'assistant sen / sena',
+            'assistant sen - sena',
+            'assistant sen sena',
+            'secretaire du sena',
+            'secretaire sena',
+            'secretaire executif national adjoint' => 'assistant sen/sena',
             'rh',
             'responsable rh',
             'section rh',

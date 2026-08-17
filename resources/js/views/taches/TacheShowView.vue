@@ -442,7 +442,7 @@
                   <option value="directeur">Directeur</option>
                   <option value="assistant_departement">Assistant / Secrétaire du département</option>
                   <option value="sen">SEN</option>
-                  <option value="sena">SENA</option>
+                  <option value="sena">Assistant SEN/SENA</option>
                   <option value="sep">SEP</option>
                   <option value="secom">SECOM</option>
                   <option value="sel">SEL</option>
@@ -899,7 +899,7 @@ function sourceEmetteurLabel(source) {
     directeur: 'Directeur',
     assistant_departement: 'Direction',
     sen: 'SEN',
-    sena: 'SENA',
+    sena: 'Assistant SEN/SENA',
     sep: 'SEP',
     secom: 'SECOM',
     sel: 'SEL',

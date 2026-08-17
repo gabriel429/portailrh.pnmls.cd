@@ -82,7 +82,7 @@
                 <option value="all">Toutes</option>
                 <option value="direction">Direction</option>
                 <option value="sen">SEN</option>
-                <option value="sena">SENA</option>
+                <option value="sena">Assistant SEN/SENA</option>
                 <option value="sep">SEP</option>
                 <option value="secom">SECOM</option>
                 <option value="sel">SEL</option>
@@ -313,7 +313,7 @@
                   <span class="task-create-type-icon"><i class="fas fa-bell"></i></span>
                   <span>
                     <strong>Agenda</strong>
-                    <small>Rappel SEN, SENA, Directeur, SEP ou SEL sans document</small>
+                    <small>Rappel SEN, Assistant SEN/SENA, Directeur, SEP ou SEL sans document</small>
                   </span>
                 </button>
                 <button
@@ -378,7 +378,7 @@
                 </option>
               </select>
               <small v-if="createForm.source_type === 'agenda'" class="text-muted d-block mt-1">
-                L’agenda concerne uniquement SEN, SENA, Directeur, SEP et SEL.
+                L’agenda concerne uniquement SEN, Assistant SEN/SENA, Directeur, SEP et SEL.
               </small>
               <small v-if="createCanMultiAssign" class="text-muted d-block mt-1">Maintenez Ctrl pour choisir plusieurs agents.</small>
             </div>
@@ -683,7 +683,7 @@ const panelTitle = computed(() => {
 const panelSubtitle = computed(() => {
   if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
   if (isSENScope.value) return auth.isSENA
-    ? 'Vue d’ensemble des tâches autorisées dans votre périmètre SENA.'
+    ? 'Vue d’ensemble des tâches autorisées dans votre périmètre Assistant SEN/SENA.'
     : 'Vue d’ensemble des tâches assignées aux agents du SEN.'
   if (isProvinceScope.value) return 'Toutes les tâches assignées aux agents de la province.'
   return showAssignedByMe.value
@@ -693,7 +693,7 @@ const panelSubtitle = computed(() => {
 
 const emptyStateText = computed(() => {
   if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
-  if (isSENScope.value) return auth.isSENA ? 'Aucune tâche dans votre périmètre SENA pour ce filtre.' : 'Aucune tâche SEN pour ce filtre.'
+  if (isSENScope.value) return auth.isSENA ? 'Aucune tâche dans votre périmètre Assistant SEN/SENA pour ce filtre.' : 'Aucune tâche SEN pour ce filtre.'
   if (isProvinceScope.value) return 'Aucune tâche pour ce filtre dans cette province.'
   return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
 })
@@ -844,7 +844,7 @@ async function handleCreateSubmit() {
         : Boolean(createForm.value.agent_id)
 
       if (!hasAgendaTarget) {
-        createErrors.value = ['Sélectionnez un destinataire SEN, SENA, Directeur, SEP ou SEL pour l’agenda.']
+        createErrors.value = ['Sélectionnez un destinataire SEN, Assistant SEN/SENA, Directeur, SEP ou SEL pour l’agenda.']
         return
       }
     }
@@ -1056,7 +1056,7 @@ function sourceEmetteurLabel(source) {
     directeur: 'Direction',
     assistant_departement: 'Direction',
     sen: 'SEN',
-    sena: 'SENA',
+    sena: 'Assistant SEN/SENA',
     sep: 'SEP',
     secom: 'SECOM',
     sel: 'SEL',

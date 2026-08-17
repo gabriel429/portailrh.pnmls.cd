@@ -604,7 +604,7 @@ const senaIsFemme = computed(() => {
 })
 const senaCivility  = computed(() => auth.agent ? (senaIsFemme.value ? 'Mme' : 'M.') : '')
 const senaGreeting  = computed(() => senaIsFemme.value ? 'Bienvenue' : 'Bienvenu')
-const senaFullName  = computed(() => auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'SENA'))
+const senaFullName  = computed(() => auth.agent ? `${auth.agent.prenom || ''} ${auth.agent.nom || ''}`.trim() : (auth.user?.name || 'Assistant SEN/SENA'))
 const senaFonction  = computed(() => auth.agent?.fonction || auth.agent?.poste_actuel || null)
 const senaInitials  = computed(() => {
   const a = auth.agent
