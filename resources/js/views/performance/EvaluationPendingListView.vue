@@ -15,7 +15,7 @@
 
     <div class="data-card">
       <div class="table-responsive">
-        <table class="table data-table">
+        <table class="table data-table pending-table">
           <thead>
             <tr>
               <th>Agent</th>
@@ -168,6 +168,7 @@ onMounted(load)
 }
 .data-table tbody td { padding: .75rem 1rem; border-color: #f1f5f9; vertical-align: middle; font-size: .88rem; }
 .data-table tbody tr:hover { background: #f8fafc; }
+.pending-table { min-width: 760px; margin-bottom: 0; }
 
 .code-badge {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -191,4 +192,51 @@ onMounted(load)
 .reject-modal { background: #fff; border-radius: 14px; padding: 1.25rem; width: min(420px, 92vw); }
 .reject-modal h6 { font-weight: 800; color: #0f172a; margin-bottom: .75rem; }
 .reject-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
+
+@media (max-width: 575.98px) {
+  .evaluation-pending-page { padding: .75rem 0; }
+  .page-hero { align-items: flex-start; padding: 1rem; border-radius: 12px; }
+  .page-hero-content { align-items: flex-start; }
+  .page-hero-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 1.1rem; }
+  .hero-title { font-size: 1.08rem; }
+  .hero-subtitle { font-size: .78rem; }
+  .hero-btn { width: 100%; justify-content: center; }
+  .reject-actions { flex-wrap: wrap; }
+  .reject-actions .btn { flex: 1 1 120px; }
+}
+
+:global(html.dark) .data-card,
+:global(html.dark) .action-btn,
+:global(html.dark) .reject-modal {
+  background: #111827;
+  border-color: rgba(148,163,184,.24);
+}
+
+:global(html.dark) .data-table thead th {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+:global(html.dark) .data-table tbody td,
+:global(html.dark) .reject-modal h6 {
+  color: #e5e7eb;
+}
+
+:global(html.dark) .data-table tbody tr:hover {
+  background: rgba(14,165,233,.12);
+}
+
+:global(html.dark) .code-badge {
+  background: rgba(14,165,233,.16);
+  border-color: rgba(56,189,248,.28);
+  color: #7dd3fc;
+}
+
+:global(html.dark) .action-btn-success:hover {
+  background: rgba(34,197,94,.12);
+}
+
+:global(html.dark) .action-btn-danger:hover {
+  background: rgba(239,68,68,.12);
+}
 </style>

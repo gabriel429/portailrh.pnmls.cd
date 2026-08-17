@@ -38,7 +38,7 @@
           <h6>Historique des évaluations</h6>
         </div>
         <div class="table-responsive">
-          <table class="table data-table">
+          <table class="table data-table performance-detail-table">
             <thead>
               <tr>
                 <th>Période</th>
@@ -66,7 +66,7 @@
                 <td class="text-end">
                   <div class="d-inline-flex gap-1">
                     <router-link
-                      v-if="ev.statut === 'brouillon' || ev.statut === 'rejetee'"
+                      v-if="(ev.statut === 'brouillon' || ev.statut === 'rejetee') && canEditEvaluation(ev)"
                       :to="{ name: 'performance.evaluations.edit', params: { id: ev.id } }"
                       class="action-btn"
                       title="Modifier"
@@ -132,7 +132,7 @@ const evaluations = ref([])
 const rejectTarget = ref(null)
 const rejectMotif = ref('')
 
-const canValidate = computed(() => auth.isSEN || auth.isRHNational)
+const canValidate = computed(() => auth.canValidatePerformance)
 
 async function load() {
   loading.value = true
@@ -178,6 +178,10 @@ function formatScore(value) {
 function formatPercent(value) {
   if (value === null || value === undefined) return '-'
   return `${Number(value).toFixed(1)}%`
+}
+
+function canEditEvaluation(evaluation) {
+  return auth.isSuperAdmin || Number(evaluation?.evaluateur_id) === Number(auth.agent?.id)
 }
 
 async function validate(ev) {
@@ -256,6 +260,7 @@ onMounted(load)
   text-transform: uppercase; letter-spacing: .5px; color: #64748b; padding: .85rem 1rem;
 }
 .data-table tbody td { padding: .75rem 1rem; border-color: #f1f5f9; vertical-align: middle; font-size: .88rem; }
+.performance-detail-table { min-width: 820px; margin-bottom: 0; }
 
 .status-indicator { display: inline-flex; align-items: center; font-size: .85rem; color: #475569; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; }
@@ -283,6 +288,46 @@ onMounted(load)
 .reject-actions { display: flex; justify-content: flex-end; gap: .5rem; margin-top: 1rem; }
 
 @media (max-width: 767.98px) {
+  .agent-perf-detail-page { padding: .75rem 0; }
+  .page-hero { align-items: flex-start; padding: 1rem; border-radius: 12px; }
+  .page-hero-content { align-items: flex-start; }
+  .page-hero-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 1.1rem; }
+  .hero-title { font-size: 1.08rem; }
+  .hero-subtitle { font-size: .78rem; }
+  .hero-btn { width: 100%; justify-content: center; }
   .kpi-grid { grid-template-columns: 1fr; }
+}
+
+:global(html.dark) .data-card,
+:global(html.dark) .kpi-tile,
+:global(html.dark) .action-btn,
+:global(html.dark) .reject-modal {
+  background: #111827;
+  border-color: rgba(148,163,184,.24);
+}
+
+:global(html.dark) .data-table thead th {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+:global(html.dark) .data-table tbody td,
+:global(html.dark) .panel-heading h6,
+:global(html.dark) .kpi-tile strong,
+:global(html.dark) .status-indicator,
+:global(html.dark) .reject-modal h6 {
+  color: #e5e7eb;
+}
+
+:global(html.dark) .kpi-tile span {
+  color: #94a3b8;
+}
+
+:global(html.dark) .action-btn-success:hover {
+  background: rgba(34,197,94,.12);
+}
+
+:global(html.dark) .action-btn-danger:hover {
+  background: rgba(239,68,68,.12);
 }
 </style>

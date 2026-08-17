@@ -252,6 +252,10 @@ class EvaluationController extends ApiController
 
     public function validateEvaluation(Request $request, Evaluation $evaluation)
     {
+        if (!$this->canValidateEvaluation($request->user(), $evaluation)) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
         if ($evaluation->statut !== 'soumise') {
             return response()->json(['message' => 'Seule une évaluation soumise peut être validée.'], 422);
         }
@@ -271,6 +275,10 @@ class EvaluationController extends ApiController
 
     public function reject(Request $request, Evaluation $evaluation)
     {
+        if (!$this->canValidateEvaluation($request->user(), $evaluation)) {
+            return response()->json(['message' => 'Accès refusé.'], 403);
+        }
+
         if ($evaluation->statut !== 'soumise') {
             return response()->json(['message' => 'Seule une évaluation soumise peut être rejetée.'], 422);
         }
@@ -322,7 +330,7 @@ class EvaluationController extends ApiController
 
     private function canAccessEvaluation($user, Evaluation $evaluation): bool
     {
-        if ($this->scopeService()->hasGlobalAdminAccess($user)) {
+        if ($this->scopeService()->hasGlobalPerformanceAccess($user)) {
             return true;
         }
 
@@ -333,7 +341,7 @@ class EvaluationController extends ApiController
 
         return (int) $evaluation->agent_id === (int) $agentId
             || (int) $evaluation->evaluateur_id === (int) $agentId
-            || $this->scopeService()->canAccessAgent($user, $evaluation->agent, false);
+            || $this->scopeService()->canAccessAgentTeamScope($user, $evaluation->agent, false);
     }
 
     private function canEditEvaluation($user, Evaluation $evaluation): bool
@@ -342,10 +350,23 @@ class EvaluationController extends ApiController
             return false;
         }
 
-        if ($user?->hasAdminAccess()) {
+        if ($this->roleService()->isSuperAdmin($user)) {
             return true;
         }
 
         return (int) ($user?->agent?->id ?? 0) === (int) $evaluation->evaluateur_id;
+    }
+
+    private function canValidateEvaluation($user, Evaluation $evaluation): bool
+    {
+        if ($this->roleService()->isSuperAdmin($user)) {
+            return true;
+        }
+
+        if (!(bool) $user?->hasRole(['SEN', 'RH National'])) {
+            return false;
+        }
+
+        return $this->canAccessEvaluation($user, $evaluation);
     }
 }

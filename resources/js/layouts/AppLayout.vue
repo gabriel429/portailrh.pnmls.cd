@@ -463,11 +463,9 @@ const profilePhotoIndex = ref(0)
 const taskNewCount = ref(0)
 const taskInProgressCount = ref(0)
 
-// Team-scoped performance access: SEN/RH National see everyone, while a
-// department director, SEP, CAF or SEL only ever see their own perimeter
-// (enforced backend-side) — same population already allowed to create an
-// evaluation via RoleService::hasTacheManagerRole().
-const showPerformanceLink = computed(() => auth.isSEN || auth.isRHNational || auth.isDirecteur || auth.isSEP || auth.isCAF || auth.isSEL)
+// The API enforces the exact performance perimeter; keep the menu in sync
+// with the same computed capability used by the router guard.
+const showPerformanceLink = computed(() => auth.canManageTeamPerformance)
 const showFullRhAdminMenu = computed(() => auth.isRH || auth.isSEN || auth.isSEP || auth.isRhOperationalAssistant)
 const showLocalRhAdminMenu = computed(() => (auth.isRhLocal || auth.isSEL) && !showFullRhAdminMenu.value)
 const showAdminNtDivider = computed(() => showFullRhAdminMenu.value || showLocalRhAdminMenu.value)

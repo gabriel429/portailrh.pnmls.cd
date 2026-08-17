@@ -25,15 +25,11 @@ class PerformanceDashboardController extends ApiController
         return app(PerformanceScoreService::class);
     }
 
-    /**
-     * Same population allowed to create an evaluation (RoleService::hasTacheManagerRole):
-     * SEN/RH National see every agent, a department director/SEP/CAF/SEL only
-     * ever see their own perimeter — the actual restriction happens via
-     * UserDataScope::applyAgentTeamScope() in baseAgentQuery()/agentDetail().
-     */
     private function canManageTeamPerformance($user): bool
     {
-        return app(RoleService::class)->hasTacheManagerRole($user) || (bool) $user?->hasAdminAccess();
+        return $this->scopeService()->hasGlobalPerformanceAccess($user)
+            || $this->scopeService()->isProvincialRh($user)
+            || app(RoleService::class)->hasTacheManagerRole($user);
     }
 
     private function organeNameFromCode(?string $code): ?string
@@ -273,6 +269,7 @@ class PerformanceDashboardController extends ApiController
             'statut_evaluation_label' => Evaluation::STATUTS[$statut] ?? 'Non évalué',
             'derniere_evaluation_le' => $derniereEvaluationLe,
             'evaluation_id' => $evaluation?->id,
+            'evaluateur_id' => $evaluation?->evaluateur_id,
         ];
     }
 

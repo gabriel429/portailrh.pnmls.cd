@@ -426,36 +426,36 @@ const routes = [
         meta: { auth: true, roles: ['Section ressources humaines', 'RH National', 'RH Provincial', 'SEN', 'SEP'], notAssistantRH: true },
     },
 
-    // ── Performance des agents (SEN / RH National uniquement) ──
+    // ── Performance des agents ──
     {
         path: '/performance/dashboard',
         name: 'performance.dashboard',
         component: () => import('@/views/performance/PerformanceDashboardView.vue'),
-        meta: { auth: true, roles: ['SEN', 'RH National'], allowTeamManagerRole: true },
+        meta: { auth: true, roles: ['SEN', 'RH National', 'RH Nationale'], allowTeamManagerRole: true },
     },
     {
         path: '/performance/agents/:id',
         name: 'performance.agents.show',
         component: () => import('@/views/performance/AgentPerformanceDetailView.vue'),
-        meta: { auth: true, roles: ['SEN', 'RH National'], allowTeamManagerRole: true },
+        meta: { auth: true, roles: ['SEN', 'RH National', 'RH Nationale'], allowTeamManagerRole: true },
     },
     {
         path: '/performance/validations',
         name: 'performance.validations',
         component: () => import('@/views/performance/EvaluationPendingListView.vue'),
-        meta: { auth: true, roles: ['SEN', 'RH National'] },
+        meta: { auth: true, roles: ['SEN', 'RH National', 'RH Nationale'] },
     },
     {
         path: '/performance/evaluations/create',
         name: 'performance.evaluations.create',
         component: () => import('@/views/performance/EvaluationFormView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, roles: ['SEN', 'RH National', 'RH Nationale'], allowTeamManagerRole: true },
     },
     {
         path: '/performance/evaluations/:id/edit',
         name: 'performance.evaluations.edit',
         component: () => import('@/views/performance/EvaluationFormView.vue'),
-        meta: { auth: true },
+        meta: { auth: true, roles: ['SEN', 'RH National', 'RH Nationale'], allowTeamManagerRole: true },
     },
 
     // ── Admin Routes ──
@@ -603,7 +603,7 @@ router.beforeEach(async (to) => {
             || (to.meta.allowAssistantRH && auth.isRhOperationalAssistant)
             || (to.meta.allowLocalRH && (auth.isRhLocal || auth.isSEL))
             || (to.meta.allowAgentManagerRole && auth.isCafOrSelAgentManager)
-            || (to.meta.allowTeamManagerRole && (auth.isDirecteur || auth.isSEP || auth.isCAF || auth.isSEL))
+            || (to.meta.allowTeamManagerRole && auth.canManageTeamPerformance)
 
         if (!allowed.includes(userRole) && !semanticallyAllowed) {
             return { name: 'dashboard' }

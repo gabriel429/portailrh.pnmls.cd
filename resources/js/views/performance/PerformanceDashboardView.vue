@@ -6,21 +6,24 @@
           <i class="fas fa-chart-pie"></i>
         </div>
         <div>
-          <h1 class="hero-title">{{ auth.isSEN || auth.isRHNational ? 'Performance des agents' : 'Performance de mon équipe' }}</h1>
+          <h1 class="hero-title">{{ auth.hasGlobalPerformanceScope ? 'Performance des agents' : 'Performance de mon équipe' }}</h1>
           <p class="hero-subtitle">
-            {{ auth.isSEN || auth.isRHNational ? "Vue globale d'évaluation, par organe" : "Évaluation des agents de votre périmètre" }}
+            {{ auth.hasGlobalPerformanceScope ? "Vue globale d'évaluation, par organe" : "Évaluation des agents de votre périmètre" }}
           </p>
         </div>
       </div>
-      <router-link v-if="auth.isSEN || auth.isRHNational" :to="{ name: 'performance.validations' }" class="hero-btn">
-        <i class="fas fa-clipboard-check"></i> File de validation
-      </router-link>
+      <div class="hero-actions">
+        <span class="scope-badge">{{ scopeBadgeLabel }}</span>
+        <router-link v-if="auth.canValidatePerformance" :to="{ name: 'performance.validations' }" class="hero-btn">
+          <i class="fas fa-clipboard-check"></i> File de validation
+        </router-link>
+      </div>
     </div>
 
     <!-- Onglets par organe -->
-    <div class="stats-tabs" role="tablist">
+    <div v-if="showOrganeTabs" class="stats-tabs" role="tablist">
       <button
-        v-for="tab in organeTabs"
+        v-for="tab in visibleOrganeTabs"
         :key="tab.code"
         type="button"
         :class="{ active: filters.organe === tab.code }"
@@ -37,14 +40,14 @@
           <label>Recherche</label>
           <input v-model="filters.search" type="search" class="form-control" placeholder="Nom, matricule...">
         </div>
-        <div class="filter-field">
+        <div v-if="showProvinceFilter" class="filter-field">
           <label>Province</label>
           <select v-model="filters.province_id" class="form-select">
             <option value="">Toutes</option>
             <option v-for="p in provinces" :key="p.id" :value="p.id">{{ p.nom }}</option>
           </select>
         </div>
-        <div class="filter-field">
+        <div v-if="showDepartmentFilter" class="filter-field">
           <label>Département</label>
           <select v-model="filters.departement_id" class="form-select">
             <option value="">Tous</option>
@@ -93,7 +96,7 @@
       </article>
       <article class="kpi-tile tone-amber">
         <i class="fas fa-hourglass-half"></i>
-        <div><strong>{{ kpis.nb_en_attente_validation ?? 0 }}</strong><span>En attente de validation</span></div>
+        <div><strong>{{ kpis.nb_en_attente_validation ?? 0 }}</strong><span>{{ pendingKpiLabel }}</span></div>
       </article>
       <article class="kpi-tile tone-slate">
         <i class="fas fa-star"></i>
@@ -110,7 +113,7 @@
     </div>
 
     <!-- Comparaison par organe -->
-    <div class="data-card chart-card">
+    <div v-if="showOrganeComparison" class="data-card chart-card">
       <div class="panel-heading">
         <h6>Score global moyen par organe</h6>
       </div>
@@ -122,7 +125,7 @@
     <!-- Tableau des agents -->
     <div class="data-card">
       <div class="table-responsive">
-        <table class="table data-table">
+        <table class="table data-table performance-table">
           <thead>
             <tr>
               <th>Agent</th>
@@ -158,10 +161,18 @@
                     <i class="fas fa-eye"></i>
                   </router-link>
                   <router-link
-                    v-if="row.statut_evaluation === 'non_evalue' || row.statut_evaluation === 'rejetee'"
+                    v-if="row.statut_evaluation === 'non_evalue'"
                     :to="{ name: 'performance.evaluations.create', query: { agent_id: row.id, annee: filters.annee, trimestre: filters.trimestre } }"
                     class="action-btn"
                     title="Évaluer"
+                  >
+                    <i class="fas fa-pen"></i>
+                  </router-link>
+                  <router-link
+                    v-else-if="row.statut_evaluation === 'rejetee' && row.evaluation_id && canEditEvaluation(row)"
+                    :to="{ name: 'performance.evaluations.edit', params: { id: row.evaluation_id } }"
+                    class="action-btn"
+                    title="Reprendre l'évaluation"
                   >
                     <i class="fas fa-pen"></i>
                   </router-link>
@@ -238,6 +249,26 @@ const departments = ref([])
 
 const organeChart = ref(null)
 let organeChartInstance = null
+
+const isProvincialPerformanceProfile = computed(() => auth.isRHProvincial || auth.isSEP || auth.isCAF)
+const isLocalPerformanceProfile = computed(() => auth.isSEL || auth.isRhLocal)
+const showProvinceFilter = computed(() => auth.hasGlobalPerformanceScope)
+const showDepartmentFilter = computed(() => auth.hasGlobalPerformanceScope || isProvincialPerformanceProfile.value)
+const showOrganeComparison = computed(() => auth.hasGlobalPerformanceScope || isProvincialPerformanceProfile.value)
+const visibleOrganeTabs = computed(() => {
+  if (auth.hasGlobalPerformanceScope) return organeTabs
+  if (isProvincialPerformanceProfile.value) return organeTabs.filter(tab => ['tous', 'SEP', 'SEL'].includes(tab.code))
+  if (isLocalPerformanceProfile.value) return organeTabs.filter(tab => ['tous', 'SEL'].includes(tab.code))
+  return []
+})
+const showOrganeTabs = computed(() => visibleOrganeTabs.value.length > 1)
+const pendingKpiLabel = computed(() => auth.canValidatePerformance ? 'En attente de validation' : 'Soumises à validation')
+const scopeBadgeLabel = computed(() => {
+  if (auth.hasGlobalPerformanceScope) return 'Vue nationale'
+  if (isProvincialPerformanceProfile.value) return 'Vue provinciale'
+  if (isLocalPerformanceProfile.value) return 'Vue locale'
+  return 'Vue départementale'
+})
 
 async function loadFormOptions() {
   try {
@@ -317,12 +348,22 @@ function formatPercent(value) {
   return `${Number(value).toFixed(1)}%`
 }
 
+function canEditEvaluation(evaluation) {
+  return auth.isSuperAdmin || Number(evaluation?.evaluateur_id) === Number(auth.agent?.id)
+}
+
 watch(filters, () => {
   page.value = 1
   loadDashboard()
 }, { deep: true })
 
 watch(page, loadDashboard)
+
+watch(visibleOrganeTabs, (tabs) => {
+  if (filters.organe !== 'tous' && !tabs.some(tab => tab.code === filters.organe)) {
+    filters.organe = 'tous'
+  }
+})
 
 onMounted(() => {
   loadFormOptions()
@@ -352,6 +393,11 @@ onUnmounted(() => {
   margin-bottom: 1.25rem;
 }
 .page-hero-content { display: flex; align-items: center; gap: 1rem; }
+.hero-actions { display: inline-flex; align-items: center; gap: .75rem; flex-wrap: wrap; justify-content: flex-end; }
+.scope-badge {
+  color: #e0f2fe; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22);
+  border-radius: 999px; padding: .42rem .8rem; font-size: .78rem; font-weight: 700;
+}
 .page-hero-icon {
   width: 52px; height: 52px; border-radius: 14px;
   background: rgba(255,255,255,.15);
@@ -371,6 +417,7 @@ onUnmounted(() => {
 .stats-tabs {
   display: inline-flex; gap: .35rem; border: 1px solid #cfe6f7;
   border-radius: 10px; background: #f8fbfd; padding: .25rem; margin-bottom: 1rem;
+  max-width: 100%; overflow-x: auto;
 }
 .stats-tabs button {
   border: 0; border-radius: 8px; background: transparent; color: #31516f;
@@ -384,7 +431,7 @@ onUnmounted(() => {
 }
 .filters-card { padding: 1rem 1.25rem; }
 .filters-grid {
-  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .85rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .85rem;
 }
 .filter-field label {
   display: block; font-size: .72rem; font-weight: 700; text-transform: uppercase;
@@ -392,7 +439,7 @@ onUnmounted(() => {
 }
 
 .kpi-grid {
-  display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .85rem; margin-bottom: 1.25rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .85rem; margin-bottom: 1.25rem;
 }
 .kpi-tile {
   display: flex; align-items: center; gap: .85rem; border: 1px solid #e2edf6;
@@ -419,6 +466,7 @@ onUnmounted(() => {
 }
 .data-table tbody td { padding: .75rem 1rem; border-color: #f1f5f9; vertical-align: middle; font-size: .88rem; }
 .data-table tbody tr:hover { background: #f8fafc; }
+.performance-table { min-width: 940px; margin-bottom: 0; }
 
 .code-badge {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
@@ -446,5 +494,54 @@ onUnmounted(() => {
 
 @media (max-width: 991.98px) {
   .filters-grid, .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 575.98px) {
+  .performance-dashboard-page { padding: .75rem 0; }
+  .page-hero { align-items: flex-start; padding: 1rem; border-radius: 12px; }
+  .page-hero-content { align-items: flex-start; }
+  .page-hero-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 1.1rem; }
+  .hero-title { font-size: 1.08rem; }
+  .hero-subtitle { font-size: .78rem; }
+  .hero-actions { width: 100%; justify-content: flex-start; }
+  .hero-btn { width: 100%; justify-content: center; }
+  .filters-grid, .kpi-grid { grid-template-columns: 1fr; }
+  .chart-box { height: 220px; }
+  .pagination-bar { flex-wrap: wrap; }
+}
+
+:global(html.dark) .stats-tabs,
+:global(html.dark) .data-card,
+:global(html.dark) .kpi-tile,
+:global(html.dark) .action-btn {
+  background: #111827;
+  border-color: rgba(148,163,184,.24);
+}
+
+:global(html.dark) .data-table thead th {
+  background: #0f172a;
+  color: #cbd5e1;
+}
+
+:global(html.dark) .data-table tbody td,
+:global(html.dark) .panel-heading h6,
+:global(html.dark) .kpi-tile strong,
+:global(html.dark) .status-indicator {
+  color: #e5e7eb;
+}
+
+:global(html.dark) .data-table tbody tr:hover {
+  background: rgba(14,165,233,.12);
+}
+
+:global(html.dark) .kpi-tile span,
+:global(html.dark) .filter-field label {
+  color: #94a3b8;
+}
+
+:global(html.dark) .code-badge {
+  background: rgba(14,165,233,.16);
+  border-color: rgba(56,189,248,.28);
+  color: #7dd3fc;
 }
 </style>

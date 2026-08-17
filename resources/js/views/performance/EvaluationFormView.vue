@@ -337,7 +337,7 @@ watch(() => form.agent_id, (id) => {
 .critere-row:last-child { border-bottom: 0; padding-bottom: 0; }
 .critere-label strong { display: block; color: #0f172a; }
 .critere-label small { color: #64748b; }
-.critere-note { display: inline-flex; gap: .35rem; }
+.critere-note { display: inline-flex; flex-wrap: wrap; gap: .35rem; }
 .note-btn {
   width: 32px; height: 32px; border-radius: 8px; border: 1px solid #e2e8f0;
   background: #fff; color: #475569; font-weight: 700;
@@ -349,5 +349,53 @@ watch(() => form.agent_id, (id) => {
 @media (max-width: 991.98px) {
   .filters-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .critere-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 575.98px) {
+  .evaluation-form-page { padding: .75rem 0; }
+  .page-hero { align-items: flex-start; padding: 1rem; border-radius: 12px; }
+  .page-hero-content { align-items: flex-start; }
+  .page-hero-icon { width: 44px; height: 44px; border-radius: 12px; font-size: 1.1rem; }
+  .hero-title { font-size: 1.08rem; }
+  .hero-subtitle { font-size: .78rem; }
+  .hero-btn { width: 100%; justify-content: center; }
+  .data-card { padding: 1rem; border-radius: 12px; }
+  .panel-heading { align-items: flex-start; flex-direction: column; gap: .35rem; }
+  .filters-grid { grid-template-columns: 1fr; }
+  .critere-note { width: 100%; }
+  .note-btn { flex: 1 1 38px; min-width: 38px; }
+  .form-actions { flex-direction: column; }
+  .form-actions .btn { width: 100%; }
+}
+
+:global(html.dark) .data-card,
+:global(html.dark) .note-btn {
+  background: #111827;
+  border-color: rgba(148,163,184,.24);
+}
+
+:global(html.dark) .panel-heading h6,
+:global(html.dark) .critere-label strong,
+:global(html.dark) .score-preview {
+  color: #e5e7eb;
+}
+
+:global(html.dark) .critere-label small,
+:global(html.dark) .filter-field label {
+  color: #94a3b8;
+}
+
+:global(html.dark) .critere-row {
+  border-color: rgba(148,163,184,.18);
+}
+
+:global(html.dark) .note-btn {
+  color: #cbd5e1;
+}
+
+:global(html.dark) .note-btn.active {
+  background: #0284c7;
+  border-color: #38bdf8;
+  color: #fff;
 }
 </style>

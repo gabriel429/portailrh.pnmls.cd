@@ -124,10 +124,47 @@ export const useAuthStore = defineStore('auth', {
             return normalizedRole(state) === 'sena'
         },
         // Deliberately exact-match, unlike the broader isRH (which also
-        // covers RH Provincial, Section ressources humaines, etc.) — needed
-        // to gate the SEN/RH-National-only performance module.
+        // covers RH Provincial, Section ressources humaines, etc.).
         isRHNational(state) {
-            return normalizedRole(state) === 'rh national'
+            return ['rh national', 'rh nationale'].includes(normalizedRole(state))
+        },
+        isRHProvincial(state) {
+            return ['rh provincial', 'rh provinciale'].includes(normalizedRole(state))
+        },
+        hasGlobalPerformanceScope(state) {
+            if (state.user?.is_super_admin) return true
+
+            const role = normalizedRole(state)
+
+            return [
+                'sen',
+                'rh national',
+                'rh nationale',
+                'section ressources humaines',
+                'section ressource humaine',
+                'chef section rh',
+                'chef de section rh',
+                'chef section ressources humaines',
+                'chef de section ressources humaines',
+                'chef section ressource humaine',
+                'chef de section ressource humaine',
+            ].includes(role)
+        },
+        canValidatePerformance(state) {
+            return !!state.user?.is_super_admin || this.isSEN || this.isRHNational
+        },
+        canManageTeamPerformance(state) {
+            const role = normalizedRole(state)
+
+            return this.hasGlobalPerformanceScope
+                || this.isSENA
+                || this.isFullRH
+                || this.isSEP
+                || this.isCAF
+                || this.isSEL
+                || this.isRhLocal
+                || this.isDepartement
+                || role === 'daf'
         },
         isPlanification(state) {
             const role = normalizedRole(state)

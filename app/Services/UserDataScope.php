@@ -50,6 +50,27 @@ class UserDataScope
     }
 
     /**
+     * Global access for the agent-performance module only.
+     *
+     * This is intentionally narrower than hasGlobalAdminAccess(): a department
+     * director is an admin in some RH workflows, but performance dashboards and
+     * evaluations must keep that user inside their own team scope.
+     */
+    public function hasGlobalPerformanceAccess(?User $user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        return app(RoleService::class)->isSuperAdmin($user) || (bool) $user->hasRole([
+            'SEN',
+            'RH National',
+            'Section ressources humaines',
+            'Chef Section RH',
+        ]);
+    }
+
+    /**
      * Contacts and interim selections are intentionally stricter than the
      * administrative RH scope: only institutional authorities see everyone.
      */
@@ -255,12 +276,7 @@ class UserDataScope
     {
         $this->excludeAncienAgents($query, $table);
 
-        if (app(RoleService::class)->isSuperAdmin($user) || (bool) $user?->hasRole([
-            'SEN',
-            'RH National',
-            'Section ressources humaines',
-            'Chef Section RH',
-        ])) {
+        if ($this->hasGlobalPerformanceAccess($user)) {
             return $query;
         }
 
@@ -723,11 +739,7 @@ class UserDataScope
 
     public function applyEvaluationScope($query, ?User $user, string $table = 'evaluations')
     {
-        if ($this->hasGlobalAdminAccess($user)) {
-            return $query;
-        }
-
-        if ($this->isAssistantRh($user)) {
+        if ($this->hasGlobalPerformanceAccess($user)) {
             return $query;
         }
 
@@ -745,7 +757,7 @@ class UserDataScope
             });
         }
 
-        if ($this->isProvincialUser($user)) {
+        if ($this->isProvincialUser($user) || app(RoleService::class)->isProvincialCafManager($user)) {
             $provinceId = $this->provinceId($user);
 
             return $provinceId
@@ -765,8 +777,28 @@ class UserDataScope
         $agentId = $user?->agent?->id;
 
         return $agentId
-            ? $query->where($table . '.agent_id', $agentId)
+            ? $query->where(function ($ownEvaluationQuery) use ($table, $agentId) {
+                $ownEvaluationQuery
+                    ->where($table . '.agent_id', $agentId)
+                    ->orWhere($table . '.evaluateur_id', $agentId);
+            })
             : $query->whereRaw('1 = 0');
+    }
+
+    public function canAccessAgentTeamScope(?User $user, ?Agent $agent, bool $allowOwn = true): bool
+    {
+        if (!$agent || $this->isAncienAgent($agent)) {
+            return false;
+        }
+
+        if ($allowOwn && (int) ($user?->agent?->id ?? 0) === (int) $agent->id) {
+            return true;
+        }
+
+        $query = Agent::query()->whereKey($agent->id);
+        $this->applyAgentTeamScope($query, $user);
+
+        return $query->exists();
     }
 
     public function applyAffectationScope($query, ?User $user)
@@ -980,7 +1012,7 @@ class UserDataScope
 
     public function filterDepartments($query, ?User $user)
     {
-        if (!$this->isProvincialUser($user)) {
+        if (!$this->isProvincialUser($user) && !app(RoleService::class)->isProvincialCafManager($user)) {
             return $query->operational();
         }
 
@@ -993,7 +1025,7 @@ class UserDataScope
 
     public function filterProvinces($query, ?User $user)
     {
-        if (!$this->isProvincialUser($user)) {
+        if (!$this->isProvincialUser($user) && !app(RoleService::class)->isProvincialCafManager($user)) {
             return $query;
         }
 

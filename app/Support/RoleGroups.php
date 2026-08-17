@@ -49,8 +49,8 @@ class RoleGroups
     ];
 
     /**
-     * The only two roles that see the global agent-performance dashboard and
-     * may validate/reject a submitted evaluation, per explicit product requirement.
+     * Roles allowed to validate/reject submitted evaluations. The dashboard
+     * itself is broader and team-scoped in PerformanceDashboardController.
      */
     public const PERFORMANCE_MANAGEMENT = ['SEN', 'RH National'];
 
