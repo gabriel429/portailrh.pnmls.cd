@@ -44,6 +44,15 @@
             $pageManifestEntries[] = 'resources/js/views/taches/TacheListView.vue';
         }
 
+        if (request()->is('performance*')) {
+            array_push($pageManifestEntries,
+                'resources/js/views/performance/PerformanceDashboardView.vue',
+                'resources/js/views/performance/AgentPerformanceDetailView.vue',
+                'resources/js/views/performance/EvaluationPendingListView.vue',
+                'resources/js/views/performance/EvaluationFormView.vue',
+            );
+        }
+
         if (! app()->isLocal() && is_file($manifestPath)) {
             $decodedManifest = json_decode((string) file_get_contents($manifestPath), true);
             $manifest = is_array($decodedManifest) ? $decodedManifest : [];
