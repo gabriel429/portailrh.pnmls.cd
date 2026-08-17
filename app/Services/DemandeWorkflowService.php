@@ -494,7 +494,7 @@ class DemandeWorkflowService
                 : in_array($role, ['sep', 'secom'], true) && (int) ($validatorAgent?->province_id ?? 0) === (int) ($agent?->province_id ?? 0),
             'sen' => $request->workflow_level === 'absence_national_sen_direct'
                 ? $this->isSenAssistant($user)
-                : in_array($role, ['sen', 'sena', 'assistant sen/sena'], true),
+                : $role === 'sen',
             default => false,
         };
     }
@@ -538,7 +538,7 @@ class DemandeWorkflowService
             'sep' => in_array($role, ['sep', 'secom', 'sel'], true)
                 || str_contains($fonction, 'secretaire executif local')
                 || str_contains($poste, 'secretaire executif local'),
-            'sen' => in_array($role, ['sen', 'sena', 'assistant sen/sena'], true)
+            'sen' => $role === 'sen'
                 || $this->isSenAssistant($user),
             default => false,
         };
@@ -585,7 +585,7 @@ class DemandeWorkflowService
                 ->get()
                 ->filter(fn(User $user) => $request->workflow_level === 'absence_national_sen_direct'
                     ? $this->isSenAssistant($user)
-                    : in_array($this->normalizeValue($user->role?->nom_role), ['sen', 'sena', 'assistant sen/sena'], true)),
+                    : $this->normalizeValue($user->role?->nom_role) === 'sen'),
             default => collect(),
         };
     }

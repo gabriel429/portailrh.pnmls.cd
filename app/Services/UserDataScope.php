@@ -594,8 +594,18 @@ class UserDataScope
             $this->excludeAncienAgents($agentQuery);
         });
 
+        $roleService = app(RoleService::class);
+
         if ($this->hasGlobalAdminAccess($user)) {
             return $query;
+        }
+
+        if ($roleService->hasSENARole($user)) {
+            $agentIds = $roleService->senaScopedAgentIds($user);
+
+            return $agentIds !== []
+                ? $query->whereIn('agent_id', $agentIds)
+                : $query->whereRaw('1 = 0');
         }
 
         if ($this->isLocalUser($user)) {
@@ -882,8 +892,14 @@ class UserDataScope
             return false;
         }
 
+        $roleService = app(RoleService::class);
+
         if ($this->hasGlobalAdminAccess($user)) {
             return true;
+        }
+
+        if ($roleService->hasSENARole($user)) {
+            return $roleService->canManageSenaScopedAgent($user, $agent);
         }
 
         if ($this->isLocalUser($user)) {

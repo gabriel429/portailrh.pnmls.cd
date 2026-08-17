@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Agent;
+use App\Models\Tache;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
@@ -60,8 +61,9 @@ class RoleService
 
         $senOrgane = Agent::ORGANES[0] ?? 'Secrétariat Exécutif National';
         $sepOrgane = Agent::ORGANES[1] ?? 'Secrétariat Exécutif Provincial';
+        $selOrgane = Agent::ORGANES[2] ?? 'Secrétariat Exécutif Local';
 
-        return $query->where(function (Builder $scope) use ($senOrgane, $sepOrgane) {
+        return $query->where(function (Builder $scope) use ($senOrgane, $sepOrgane, $selOrgane) {
             $scope
                 ->where(function (Builder $directSen) use ($senOrgane) {
                     $directSen
@@ -86,6 +88,18 @@ class RoleService
                     $sep
                         ->where('organe', $sepOrgane)
                         ->whereHas('role', fn (Builder $roleQuery) => $roleQuery->where('nom_role', 'SEP'));
+                })
+                ->orWhere(function (Builder $sel) use ($selOrgane) {
+                    $sel
+                        ->where('organe', $selOrgane)
+                        ->where(function (Builder $profile) {
+                            $profile
+                                ->whereHas('role', fn (Builder $roleQuery) => $roleQuery->where('nom_role', 'SEL'))
+                                ->orWhere('fonction', 'like', '%Secrétaire Exécutif Local%')
+                                ->orWhere('fonction', 'like', '%Secretaire Executif Local%')
+                                ->orWhere('poste_actuel', 'like', '%Secrétaire Exécutif Local%')
+                                ->orWhere('poste_actuel', 'like', '%Secretaire Executif Local%');
+                        });
                 });
         });
     }
@@ -107,6 +121,56 @@ class RoleService
         return $this->senaScopedAgentsQuery($user)
             ->whereKey($targetAgent->id)
             ->exists();
+    }
+
+    public function senaExecutiveAgentIds(): array
+    {
+        return Agent::query()
+            ->whereHas('role', fn (Builder $roleQuery) => $roleQuery->whereIn('nom_role', [
+                'SEN',
+                ...self::senSenaAssistantRoleNames(),
+            ]))
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    public function senaWatchedTachesQuery(?User $user): Builder
+    {
+        $query = Tache::query();
+
+        if (!$this->hasSENARole($user)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $targetAgentIds = $this->senaScopedAgentIds($user);
+        $executiveAgentIds = $this->senaExecutiveAgentIds();
+
+        return $query->where(function (Builder $scope) use ($targetAgentIds, $executiveAgentIds) {
+            if ($targetAgentIds !== []) {
+                $scope->whereIn('agent_id', $targetAgentIds);
+            } else {
+                $scope->whereRaw('1 = 0');
+            }
+
+            if ($executiveAgentIds !== []) {
+                $scope->orWhereIn('createur_id', $executiveAgentIds);
+            }
+        });
+    }
+
+    public function canFollowSenaTask(?User $user, Tache $tache, ?Agent $taskAgent = null): bool
+    {
+        if (!$this->hasSENARole($user)) {
+            return false;
+        }
+
+        $taskAgent ??= $tache->agent ?: ($tache->agent_id ? Agent::find($tache->agent_id) : null);
+        if ($taskAgent && $this->canManageSenaScopedAgent($user, $taskAgent)) {
+            return true;
+        }
+
+        return in_array((int) $tache->createur_id, $this->senaExecutiveAgentIds(), true);
     }
 
     public function isSepManager(?User $user): bool

@@ -38,7 +38,7 @@
             <div class="sena-kpi-pill-icon"><i class="fas fa-tasks"></i></div>
             <div>
               <div class="sena-kpi-pill-val">{{ myTasksEnCours }}</div>
-              <div class="sena-kpi-pill-lbl">Mes tâches</div>
+              <div class="sena-kpi-pill-lbl">{{ isAssistantScope ? 'À suivre' : 'Mes tâches' }}</div>
             </div>
             <i class="fas fa-chevron-right sena-kpi-pill-arrow"></i>
           </div>
@@ -47,7 +47,7 @@
             <div class="sena-kpi-pill-icon"><i class="fas fa-hourglass-half"></i></div>
             <div>
               <div class="sena-kpi-pill-val">{{ data?.pending_requests?.length ?? 0 }}</div>
-              <div class="sena-kpi-pill-lbl">À signer</div>
+              <div class="sena-kpi-pill-lbl">{{ isAssistantScope ? 'À suivre' : 'À signer' }}</div>
             </div>
             <i class="fas fa-chevron-right sena-kpi-pill-arrow"></i>
           </div>
@@ -91,18 +91,18 @@
               <i class="fas fa-tasks"></i>
             </div>
             <div>
-              <h3 class="sena-section-title">Mes tâches</h3>
-              <p class="sena-section-sub">{{ data.my_tasks?.length ?? 0 }} tâche(s) assignée(s)</p>
+              <h3 class="sena-section-title">{{ taskSectionTitle }}</h3>
+              <p class="sena-section-sub">{{ taskSectionSubtitle }}</p>
             </div>
-            <router-link to="/taches" class="sena-section-btn ms-auto">
+            <router-link :to="taskListLink" class="sena-section-btn ms-auto">
               Tout voir <i class="fas fa-arrow-right ms-1"></i>
             </router-link>
           </div>
-          <div v-if="!data.my_tasks?.length" class="sena-empty">
-            <i class="fas fa-check-circle"></i> Aucune tâche en cours.
+          <div v-if="!dashboardTasks.length" class="sena-empty">
+            <i class="fas fa-check-circle"></i> {{ isAssistantScope ? 'Aucune tâche suivie.' : 'Aucune tâche en cours.' }}
           </div>
           <div v-else class="sena-tasks-list">
-            <div v-for="t in data.my_tasks" :key="t.id"
+            <div v-for="t in dashboardTasks" :key="t.id"
               class="sena-task-row"
               :class="isTaskOverdue(t) ? 'sena-task-overdue' : ''">
               <div class="sena-task-left">
@@ -134,7 +134,7 @@
               <h3 class="sena-section-title">Échéances des tâches à venir</h3>
               <p class="sena-section-sub">
                 {{ data?.scope_label === 'sena'
-                  ? 'Tâches de votre périmètre avec échéance dans les 7 prochains jours'
+                  ? 'Tâches suivies avec échéance dans les 7 prochains jours'
                   : 'Tâches SEN avec échéance dans les 7 prochains jours' }}
               </p>
             </div>
@@ -173,15 +173,18 @@
               <i class="fas fa-file-signature"></i>
             </div>
             <div>
-              <h3 class="sena-section-title">Demandes en attente de signature</h3>
-              <p class="sena-section-sub">{{ data.pending_requests?.length ?? 0 }} demande(s) à traiter</p>
+              <h3 class="sena-section-title">{{ isAssistantScope ? 'Demandes à suivre' : 'Demandes en attente de signature' }}</h3>
+              <p class="sena-section-sub">
+                {{ data.pending_requests?.length ?? 0 }}
+                {{ isAssistantScope ? 'demande(s) à suivre pour appuyer le SEN' : 'demande(s) à traiter' }}
+              </p>
             </div>
             <router-link to="/requests" class="sena-section-btn ms-auto">
               Tout voir <i class="fas fa-arrow-right ms-1"></i>
             </router-link>
           </div>
           <div v-if="!data.pending_requests?.length" class="sena-empty">
-            <i class="fas fa-inbox"></i> Aucune demande en attente.
+            <i class="fas fa-inbox"></i> {{ isAssistantScope ? 'Aucune demande à suivre.' : 'Aucune demande en attente.' }}
           </div>
           <div v-else class="sena-requests-list">
             <div v-for="r in data.pending_requests" :key="r.id" class="sena-request-row">
@@ -414,8 +417,8 @@
             <template v-if="senaDrillSection === 'taches'">
               <div class="sena-drill-stat-grid">
                 <div class="sena-drill-stat-card" style="border-color:#0077B5;">
-                  <div class="sena-drill-stat-val">{{ data.my_tasks?.length ?? 0 }}</div>
-                  <div class="sena-drill-stat-lbl">Mes tâches</div>
+                  <div class="sena-drill-stat-val">{{ isAssistantScope ? (data.followed_tasks_count ?? dashboardTasks.length) : dashboardTasks.length }}</div>
+                  <div class="sena-drill-stat-lbl">{{ isAssistantScope ? 'Tâches suivies' : 'Mes tâches' }}</div>
                 </div>
                 <div class="sena-drill-stat-card" style="border-color:#d97706;">
                   <div class="sena-drill-stat-val">{{ myTasksEnCours }}</div>
@@ -433,8 +436,8 @@
               <div class="sena-drill-section-title">
                 <i class="fas fa-list-check"></i> Dernières tâches
               </div>
-              <div v-if="data.my_tasks?.length" class="sena-drill-list">
-                <router-link v-for="t in data.my_tasks" :key="t.id" :to="`/taches/${t.id}`" class="sena-drill-row" @click="closeSenaDrill">
+              <div v-if="dashboardTasks.length" class="sena-drill-list">
+                <router-link v-for="t in dashboardTasks" :key="t.id" :to="`/taches/${t.id}`" class="sena-drill-row" @click="closeSenaDrill">
                   <div class="sena-drill-row-icon" :class="isTaskOverdue(t) ? 'danger' : ''">
                     <i class="fas" :class="isTaskOverdue(t) ? 'fa-exclamation-triangle' : 'fa-tasks'"></i>
                   </div>
@@ -637,11 +640,26 @@ const today = computed(() => new Date().toLocaleDateString('fr-FR', {
 }))
 
 // ─── KPI computed ──────────────────────────────────────────
+const isAssistantScope = computed(() => data.value?.scope_label === 'sena')
+const dashboardTasks = computed(() =>
+  isAssistantScope.value ? (data.value.followed_tasks ?? []) : (data.value.my_tasks ?? [])
+)
+const taskSectionTitle = computed(() => isAssistantScope.value ? 'Tâches suivies' : 'Mes tâches')
+const taskSectionSubtitle = computed(() => isAssistantScope.value
+  ? `${data.value.followed_tasks_count ?? dashboardTasks.value.length} tâche(s) suivie(s) pour la haute hiérarchie`
+  : `${data.value.my_tasks?.length ?? 0} tâche(s) assignée(s)`
+)
+const taskListLink = computed(() => isAssistantScope.value
+  ? { path: '/taches', query: { scope: 'sen' } }
+  : '/taches'
+)
 const myTasksEnCours = computed(() =>
-  (data.value.my_tasks ?? []).filter(t => t.statut !== 'terminee').length
+  dashboardTasks.value.filter(t => t.statut !== 'terminee').length
 )
 const overdueTasksCount = computed(() =>
-  (data.value.my_tasks ?? []).filter(isTaskOverdue).length
+  isAssistantScope.value
+    ? (data.value.followed_tasks_overdue ?? dashboardTasks.value.filter(isTaskOverdue).length)
+    : dashboardTasks.value.filter(isTaskOverdue).length
 )
 const senaAttendanceAgents = computed(() => data.value.attendance_agents ?? [])
 const senaAbsentCount = computed(() =>

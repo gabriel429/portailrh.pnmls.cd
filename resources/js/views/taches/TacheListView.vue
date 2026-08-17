@@ -512,7 +512,7 @@ const showAssignedByMe = computed(() => route.name === 'taches.assigned-by-me')
 const createPageSubtitle = computed(() => {
   if (createScopeFlags.value.isLocalScope) return 'Assigner une tâche à un agent local de votre ressort.'
   if (createScopeFlags.value.isProvinceScope) return 'Assigner une tâche à un agent de la province ou au SEL rattaché.'
-  if (createScopeFlags.value.isSENAScope) return 'Assigner une tâche uniquement aux attachés du SEN, aux directeurs de département et aux SEP suivis par le Secrétariat de direction.'
+  if (createScopeFlags.value.isSENAScope) return 'Assigner une tâche aux attachés du SEN, directeurs, SEP ou SEL suivis par le Secrétariat de direction.'
   if (createScopeFlags.value.isSENScope) return 'Assigner une tâche à un agent du Secrétariat exécutif national.'
   return 'Assigner une tâche à un agent de votre département.'
 })
@@ -665,7 +665,7 @@ const pageTitle = computed(() => {
 const pageSubtitle = computed(() => {
   if (isDeptScope.value) return 'Vue d’ensemble des tâches assignées aux agents du département.'
   if (isSENScope.value) return auth.isSENA
-    ? 'Tâches des attachés du SEN, des directeurs de département et des SEP suivis par le Secrétariat de direction.'
+    ? 'Suivi des tâches de la haute hiérarchie et des tâches émises par le SEN ou l’Assistant SEN/SENA.'
     : 'Toutes les tâches assignées aux agents du Secrétariat exécutif national.'
   if (isProvinceScope.value) return 'Vue provinciale des tâches assignées aux agents de votre province.'
   return showAssignedByMe.value
@@ -683,7 +683,7 @@ const panelTitle = computed(() => {
 const panelSubtitle = computed(() => {
   if (isDeptScope.value) return 'Toutes les tâches assignées aux agents du département.'
   if (isSENScope.value) return auth.isSENA
-    ? 'Vue d’ensemble des tâches autorisées dans votre périmètre Assistant SEN/SENA.'
+    ? 'Vue d’ensemble des tâches suivies pour appuyer la haute hiérarchie.'
     : 'Vue d’ensemble des tâches assignées aux agents du SEN.'
   if (isProvinceScope.value) return 'Toutes les tâches assignées aux agents de la province.'
   return showAssignedByMe.value
@@ -693,7 +693,7 @@ const panelSubtitle = computed(() => {
 
 const emptyStateText = computed(() => {
   if (isDeptScope.value) return 'Aucune tâche pour ce filtre dans ce département.'
-  if (isSENScope.value) return auth.isSENA ? 'Aucune tâche dans votre périmètre Assistant SEN/SENA pour ce filtre.' : 'Aucune tâche SEN pour ce filtre.'
+  if (isSENScope.value) return auth.isSENA ? 'Aucune tâche de haute hiérarchie pour ce filtre.' : 'Aucune tâche SEN pour ce filtre.'
   if (isProvinceScope.value) return 'Aucune tâche pour ce filtre dans cette province.'
   return showAssignedByMe.value ? 'Aucune tâche assignée par vous pour ce filtre.' : 'Aucune tâche assignée pour ce filtre.'
 })

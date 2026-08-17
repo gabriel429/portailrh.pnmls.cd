@@ -130,8 +130,7 @@ class TaskValidationChainResolver
             ->where('actif', true)
             ->where('niveau_administratif', 'SEN')
             ->get()
-            ->filter(fn (Affectation $candidate) => $this->roleIs($candidate, 'sen')
-                || $this->profileContains($candidate, ['secretaire executif national']));
+            ->filter(fn (Affectation $candidate) => $this->isPrincipalSenAssignment($candidate));
 
         return $this->singleCandidateStep($candidates, 'sen', 'sen', null, $target);
     }
@@ -187,6 +186,27 @@ class TaskValidationChainResolver
     private function roleIs(Affectation $assignment, string $role): bool
     {
         return $this->normalize($assignment->agent?->role?->nom_role) === $role;
+    }
+
+    private function isPrincipalSenAssignment(Affectation $assignment): bool
+    {
+        $profile = $this->normalize(implode(' ', [
+            $assignment->agent?->role?->nom_role,
+            $assignment->fonction?->nom,
+            $assignment->agent?->fonction,
+            $assignment->agent?->poste_actuel,
+        ]));
+
+        if (
+            str_contains($profile, 'adjoint')
+            || str_contains($profile, 'assistant sen/sena')
+            || str_contains($profile, 'assistant sena')
+        ) {
+            return false;
+        }
+
+        return $this->roleIs($assignment, 'sen')
+            || str_contains($profile, 'secretaire executif national');
     }
 
     private function profileContains(Affectation $assignment, array $needles): bool

@@ -68,15 +68,15 @@ class TacheController extends ApiController
             ? Tache::query()->parCreateur($agent->id)
             : Tache::query()->whereRaw('1 = 0');
 
-        // Scope SEN : toutes les tâches des agents du SEN (pour SEN/SENA et personnel SEN).
+        // Scope SEN : toutes les tâches des agents du SEN. Pour l'Assistant SEN/SENA,
+        // le suivi inclut aussi les tâches émises par le SEN vers d'autres agents.
         if ($request->input('scope') === 'sen' && ($isSENOrSENA || $isSENStaff)) {
             $senOrgane   = 'Secrétariat Exécutif National';
             $senAgentIds = Agent::where('organe', $senOrgane)->pluck('id');
-            $senAgentIds = $isSENA
-                ? $roles->senaScopedAgentIds($user)
-                : $senAgentIds->all();
-            $senTaches   = Tache::query()
-                ->whereIn('agent_id', $senAgentIds)
+            $senTachesQuery = $isSENA
+                ? $roles->senaWatchedTachesQuery($user)
+                : Tache::query()->whereIn('agent_id', $senAgentIds->all());
+            $senTaches = $senTachesQuery
                 ->with(['agent', 'createur', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'documents.agent'])
                 ->latest()
                 ->get();
@@ -480,7 +480,7 @@ class TacheController extends ApiController
         if ($isSEN) {
         } elseif ($isSENA) {
             if (!$roles->canManageSenaScopedAgent($user, $firstTargetAgent)) {
-                return response()->json(['message' => 'Vous ne pouvez gérer que les attachés du SEN, les directeurs de département et les SEP.'], 403);
+                return response()->json(['message' => 'Vous ne pouvez gérer que les attachés du SEN, les directeurs de département, les SEP et les SEL.'], 403);
             }
         } elseif ($isSEP || $isCAFProvincial) {
             if (!$agent || !$agent->province_id) {
@@ -661,8 +661,8 @@ class TacheController extends ApiController
         $isDeptManager = false;
         $isProvinceManager = false;
 
-        // SEN/SENA ou personnel du SEN : accès garanti à toutes les tâches SEN
-        if ($isSEN || ($isSENA && $roles->canManageSenaScopedAgent($user, $taskAgent)) || $isAssistant) {
+        // SEN/SENA ou personnel d'appui : accès garanti aux tâches du périmètre de suivi.
+        if ($isSEN || ($isSENA && $roles->canFollowSenaTask($user, $tache, $taskAgent)) || ($isAssistant && $isManagerTask)) {
             $tache->load(['createur', 'agent', 'validationResponsable', 'validationSteps.validator', 'validationSteps.actor', 'activitePlan', 'commentaires.agent', 'commentaires.documents.agent', 'documents.agent', 'histories.agent', 'validateur', 'rejecteur', 'bloqueur']);
             $resource = TacheResource::make($tache);
             return $this->resource($resource, [
@@ -1224,7 +1224,7 @@ class TacheController extends ApiController
         }
 
         if ($isSENA) {
-            return $roles->canManageSenaScopedAgent($user, $taskAgent);
+            return $roles->canFollowSenaTask($user, $tache, $taskAgent);
         }
 
         if ($roles->isDepartmentManager($user) && $agent->departement_id) {
@@ -1628,7 +1628,7 @@ class TacheController extends ApiController
             if ($user->hasRole('SEN')) {
                 $query->whereHas('agent', fn($q) => $q->where('organe', 'Secrétariat Exécutif National'));
             } elseif ($roles->hasSENARole($user)) {
-                $query->whereIn('agent_id', $roles->senaScopedAgentIds($user));
+                $query->whereIn('id', $roles->senaWatchedTachesQuery($user)->select('id'));
             } elseif ($roles->isSepManager($user) && $agent->province_id) {
                 $query->whereHas('agent', fn($q) => $q->where('province_id', $agent->province_id));
             } elseif (($workflow->isSelManager($user) || $workflow->isLocalSupport($user)) && $agent->province_id) {

@@ -35,6 +35,9 @@ class SenaDashboardController extends ApiController
         $senActifs   = $isSENA
             ? $roles->senaScopedAgentsQuery($user)->actifs()->count()
             : Agent::where('organe', $senOrgane)->actifs()->count();
+        $followedTasksQuery = $isSENA
+            ? $roles->senaWatchedTachesQuery($user)
+            : Tache::query()->whereIn('agent_id', $senAgentIds);
 
         // ─── Mes tâches (agent connecté) ──────────────────────
         $myAgentId = $user->agent?->id;
@@ -45,8 +48,8 @@ class SenaDashboardController extends ApiController
                 ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at'])
             : collect();
 
-        // ─── Agenda : tâches SEN avec échéance dans 7 jours ──
-        $upcomingDeadlines = Tache::whereIn('agent_id', $senAgentIds)
+        // ─── Agenda : tâches suivies avec échéance dans 7 jours ──
+        $upcomingDeadlines = (clone $followedTasksQuery)
             ->whereNotIn('statut', ['terminee'])
             ->whereNotNull('date_echeance')
             ->whereBetween('date_echeance', [$now->toDateString(), $nextWeek->toDateString()])
@@ -54,6 +57,19 @@ class SenaDashboardController extends ApiController
             ->orderBy('date_echeance')
             ->limit(10)
             ->get(['id', 'agent_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite']);
+
+        $followedTasks = (clone $followedTasksQuery)
+            ->with(['agent:id,nom,prenom', 'createur:id,nom,prenom'])
+            ->orderByDesc('updated_at')
+            ->limit(10)
+            ->get(['id', 'agent_id', 'createur_id', 'titre', 'statut', 'pourcentage', 'date_echeance', 'priorite', 'updated_at']);
+
+        $followedTasksCount = (clone $followedTasksQuery)->count();
+        $followedTasksOverdue = (clone $followedTasksQuery)
+            ->whereNotIn('statut', ['terminee'])
+            ->whereNotNull('date_echeance')
+            ->whereDate('date_echeance', '<', $now->toDateString())
+            ->count();
 
         // ─── Demandes en attente de validation SEN ────────────
         // Demandes dont le statut indique qu'elles attendent la validation SEN
@@ -175,6 +191,9 @@ class SenaDashboardController extends ApiController
             'scope_label'        => $isSENA ? 'sena' : 'sen',
             'managed_agents_count' => $senAgentIds->count(),
             'my_tasks'           => $myTasks,
+            'followed_tasks'      => $followedTasks,
+            'followed_tasks_count' => $followedTasksCount,
+            'followed_tasks_overdue' => $followedTasksOverdue,
             'upcoming_deadlines' => $upcomingDeadlines,
             'pending_requests'   => $pendingRequests,
             'communiques'        => $recentCommuniques,
