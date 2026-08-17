@@ -316,6 +316,7 @@ class TacheController extends ApiController
                 ['value' => 'directeur', 'label' => 'Directeur'],
                 ['value' => 'assistant_departement', 'label' => 'Assistant / Secrétaire du département'],
                 ['value' => 'sen',       'label' => 'SEN'],
+                ['value' => 'sena',      'label' => 'SENA'],
                 ['value' => 'sep',       'label' => 'SEP'],
                 ['value' => 'secom',     'label' => 'SECOM'],
                 ['value' => 'sel',       'label' => 'SEL'],
@@ -331,7 +332,11 @@ class TacheController extends ApiController
             return 'autre';
         }
 
-        if ($user->hasRole('SEN') || $roles->hasSENARole($user)) {
+        if ($roles->hasSENARole($user)) {
+            return 'sena';
+        }
+
+        if ($user->hasRole('SEN')) {
             return 'sen';
         }
 
@@ -375,8 +380,8 @@ class TacheController extends ApiController
             'agent_ids.*'     => 'integer|exists:agents,id',
             'titre'           => 'required|string|max:255',
             'description'     => 'nullable|string',
-            'source_type'     => 'required|in:pta,hors_pta',
-            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,sep,secom,sel,aaf_local,autre',
+            'source_type'     => 'required|in:pta,hors_pta,agenda',
+            'source_emetteur' => 'required|in:directeur,assistant_departement,sen,sena,sep,secom,sel,aaf_local,autre',
             'activite_plan_id'=> 'nullable|required_if:source_type,pta|exists:activite_plans,id',
             'priorite'        => 'required|in:faible,normale,haute,urgente',
             'date_echeance'   => 'nullable|date',
@@ -389,6 +394,27 @@ class TacheController extends ApiController
         $agent       = $user->agent;
         if (!$agent) {
             return response()->json(['message' => 'Vous devez être enregistré comme agent pour créer des tâches.'], 422);
+        }
+
+        if ($validated['source_type'] === 'agenda') {
+            $agendaSources = ['sen', 'sena', 'directeur', 'sep', 'sel'];
+            if (!in_array($validated['source_emetteur'], $agendaSources, true)) {
+                return response()->json([
+                    'message' => 'Un rappel agenda doit provenir du SEN, SENA, Directeur, SEP ou SEL.',
+                    'errors' => [
+                        'source_emetteur' => ['Choisissez SEN, SENA, Directeur, SEP ou SEL pour un rappel agenda.'],
+                    ],
+                ], 422);
+            }
+
+            if ($request->hasFile('documents')) {
+                return response()->json([
+                    'message' => 'Un rappel agenda ne reçoit pas de document joint.',
+                    'errors' => [
+                        'documents' => ['Créez une tâche ou une tâche PTA si vous devez joindre un document.'],
+                    ],
+                ], 422);
+            }
         }
 
         $targetAgentIds = collect($validated['agent_ids'] ?? [])
@@ -535,8 +561,10 @@ class TacheController extends ApiController
 
                         TacheAssigned::dispatch($tache);
 
-                        foreach ($request->file('documents', []) as $uploadedFile) {
-                            $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
+                        if ($validated['source_type'] !== 'agenda') {
+                            foreach ($request->file('documents', []) as $uploadedFile) {
+                                $this->storeDocumentForTache($tache, $agent, $uploadedFile, 'initial');
+                            }
                         }
 
                         return $tache;
@@ -757,17 +785,25 @@ class TacheController extends ApiController
             'document' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx,ppt,pptx,jpg,jpeg,png|mimetypes:application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,image/jpeg,image/png',
         ]);
 
+        $isAgendaReminder = $tache->source_type === 'agenda';
         $pourcentageChanged = (int) $validated['pourcentage'] !== (int) $tache->pourcentage;
         $hasDocument = $request->hasFile('document');
 
-        if ($validated['statut'] === 'terminee' && !$hasDocument) {
+        if ($isAgendaReminder && $hasDocument) {
             return response()->json([
-            'message' => 'Le document final est obligatoire pour terminer la tâche.',
+                'message' => 'Un rappel agenda ne reçoit pas de document justificatif.',
+                'errors' => ['document' => ['Les rappels agenda se clôturent sans pièce jointe.']],
+            ], 422);
+        }
+
+        if (!$isAgendaReminder && $validated['statut'] === 'terminee' && !$hasDocument) {
+            return response()->json([
+                'message' => 'Le document final est obligatoire pour terminer la tâche.',
                 'errors' => ['document' => ['Le document final est obligatoire pour terminer la tâche.']],
             ], 422);
         }
 
-        if ($pourcentageChanged && !$hasDocument) {
+        if (!$isAgendaReminder && $pourcentageChanged && !$hasDocument) {
             return response()->json([
                 'message' => 'Un document justificatif est obligatoire lorsque vous modifiez la progression.',
                 'errors' => ['document' => ['Ajoutez un document justificatif pour modifier la progression.']],
@@ -776,9 +812,9 @@ class TacheController extends ApiController
 
         $ancienStatut = $tache->statut;
 
-        $typeCommentaire = match ($validated['statut']) {
-            'bloquee' => 'blocage',
-            'terminee' => 'validation',
+        $typeCommentaire = match (true) {
+            $validated['statut'] === 'bloquee' => 'blocage',
+            $validated['statut'] === 'terminee' && !$isAgendaReminder => 'validation',
             default => 'commentaire',
         };
 
@@ -790,7 +826,7 @@ class TacheController extends ApiController
         // doivent réussir ensemble : sans transaction, une erreur de stockage
         // du document après le changement de statut laisserait par exemple une
         // tâche "terminée" sans le document pourtant obligatoire.
-        DB::transaction(function () use ($request, $tache, $agent, $workflow, $validated, $ancienStatut, $typeCommentaire, $hasDocument, $nouveauPourcentage) {
+        DB::transaction(function () use ($request, $tache, $agent, $workflow, $validated, $ancienStatut, $typeCommentaire, $hasDocument, $nouveauPourcentage, $isAgendaReminder) {
             $commentaire = TacheCommentaire::create([
                 'tache_id'       => $tache->id,
                 'agent_id'       => $agent->id,
@@ -807,7 +843,7 @@ class TacheController extends ApiController
                     $workflow->reopenAfterBlocked($tache, $agent, $validated['contenu']);
                 }
 
-                if ($validated['statut'] === 'terminee') {
+                if ($validated['statut'] === 'terminee' && !$isAgendaReminder) {
                     $workflow->submitForValidation($tache, $agent, $validated['contenu']);
                 } else {
                     $tache->update([
@@ -846,7 +882,7 @@ class TacheController extends ApiController
             }
         });
 
-        if ($validated['statut'] === 'terminee') {
+        if ($validated['statut'] === 'terminee' && !$isAgendaReminder) {
             $validatorIds = $workflow->finalValidators($tache)->pluck('id')->all();
             if (!empty($validatorIds)) {
                 NotificationService::envoyerMultipleAvecEmail(
@@ -903,7 +939,7 @@ class TacheController extends ApiController
             'priorite'        => 'sometimes|required|in:faible,normale,haute,urgente',
             'date_echeance'   => 'nullable|date',
             'date_tache'      => 'nullable|date',
-            'source_emetteur' => 'sometimes|required|in:directeur,assistant_departement,sen,sep,secom,sel,aaf_local,autre',
+            'source_emetteur' => 'sometimes|required|in:directeur,assistant_departement,sen,sena,sep,secom,sel,aaf_local,autre',
         ]);
 
         $tache->fill($validated);

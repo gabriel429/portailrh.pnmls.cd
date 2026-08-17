@@ -50,7 +50,7 @@
                 <dl class="task-detail-grid mb-0">
                   <dt class="text-muted">Origine</dt>
                   <dd>
-                    {{ tache.source_type === 'pta' ? 'Issue du PTA' : 'Hors PTA' }}
+                    {{ sourceTypeLabel(tache.source_type) }}
                     <template v-if="tache.activite_plan">
                       <br><small class="text-muted">{{ tache.activite_plan.titre }} - {{ tache.activite_plan.annee }}</small>
                     </template>
@@ -219,7 +219,7 @@
                       <label for="pourcentage" class="form-label fw-bold">Progression (%) <span class="text-danger">*</span></label>
                       <input v-model.number="statutForm.pourcentage" type="number" min="0" max="100" class="form-control" id="pourcentage" required>
                     </div>
-                    <div class="col-md-6 status-document-field">
+                    <div v-if="!isAgendaReminder" class="col-md-6 status-document-field">
                       <label for="document_statut" class="form-label fw-bold">Document justificatif</label>
                       <div class="status-file-picker">
                         <input id="document_statut" ref="statusDocumentInput" type="file" class="status-file-native" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png" @change="handleStatusDocumentChange">
@@ -235,11 +235,17 @@
                         </button>
                       </div>
                     </div>
-                    <div class="col-12">
-                      <label for="contenu_statut" class="form-label fw-bold">Commentaire <span class="text-danger">*</span></label>
-                      <textarea v-model="statutForm.contenu" class="form-control" id="contenu_statut" rows="3" required placeholder="Decrivez l avancement, le resultat ou le blocage..."></textarea>
+                    <div v-else class="col-md-6">
+                      <div class="agenda-reminder-status-note">
+                        <i class="fas fa-bell"></i>
+                        <span>Rappel agenda : aucun document justificatif n’est requis.</span>
+                      </div>
                     </div>
                     <div class="col-12">
+                      <label for="contenu_statut" class="form-label fw-bold">Commentaire <span class="text-danger">*</span></label>
+                      <textarea v-model="statutForm.contenu" class="form-control" id="contenu_statut" rows="3" required :placeholder="statusCommentPlaceholder"></textarea>
+                    </div>
+                    <div v-if="!isAgendaReminder" class="col-12">
                       <div class="alert alert-info py-2 mb-0 small">
                         <i class="fas fa-info-circle me-1"></i>
                         Le document est obligatoire si vous soumettez la tâche à validation ou si vous modifiez le pourcentage de progression.
@@ -358,7 +364,7 @@
               </div>
             </div>
 
-            <div class="dash-panel mt-3" v-if="isAssigne || canManage">
+            <div class="dash-panel mt-3" v-if="(isAssigne || canManage) && !isAgendaReminder">
               <header class="panel-head">
                 <div>
                   <h3 class="panel-title"><i class="fas fa-file-signature me-2 text-primary"></i>Rapports d’exécution</h3>
@@ -436,6 +442,7 @@
                   <option value="directeur">Directeur</option>
                   <option value="assistant_departement">Assistant / Secrétaire du département</option>
                   <option value="sen">SEN</option>
+                  <option value="sena">SENA</option>
                   <option value="sep">SEP</option>
                   <option value="secom">SECOM</option>
                   <option value="sel">SEL</option>
@@ -579,6 +586,12 @@ const documentsByType = computed(() => {
 
 const statusDocumentName = computed(() => statusDocument.value?.name || '')
 const canManage = computed(() => canManageTask.value || isCreateur.value)
+const isAgendaReminder = computed(() => tache.value?.source_type === 'agenda')
+const statusCommentPlaceholder = computed(() => (
+  isAgendaReminder.value
+    ? 'Note sur le rappel, confirmation ou précision...'
+    : 'Decrivez l avancement, le resultat ou le blocage...'
+))
 const showEditPanel = ref(false)
 const saving = ref(false)
 const deleting = ref(false)
@@ -611,7 +624,11 @@ async function loadTache() {
   try {
     const { data } = await get(route.params.id)
     applyTacheResponse(data)
-    await loadReports()
+    if (isAgendaReminder.value) {
+      reports.value = []
+    } else {
+      await loadReports()
+    }
   } catch (err) {
     console.error('Erreur chargement tâche', err)
     tache.value = null
@@ -638,12 +655,12 @@ async function handleUpdateStatut() {
     payload.append('statut', statutForm.value.statut)
     payload.append('pourcentage', String(statutForm.value.pourcentage ?? 0))
     payload.append('contenu', statutForm.value.contenu)
-    if (statusDocument.value) payload.append('document', statusDocument.value)
+    if (!isAgendaReminder.value && statusDocument.value) payload.append('document', statusDocument.value)
 
     const { data } = await updateStatut(route.params.id, payload)
     applyTacheResponse(data)
     removeStatusDocument()
-    await loadReports()
+    if (!isAgendaReminder.value) await loadReports()
     ui.addToast('Statut mis à jour avec succès.', 'success')
   } catch (err) {
     ui.addToast(err.response?.data?.message || 'Erreur lors de la mise à jour.', 'danger')
@@ -755,6 +772,16 @@ function reportFileUrl(report) {
 function capitalize(str) {
   if (!str) return ''
   return str.charAt(0).toUpperCase() + str.slice(1)
+}
+
+function sourceTypeLabel(sourceType) {
+  const map = {
+    hors_pta: 'Tâche',
+    agenda: 'Agenda',
+    pta: 'Tâche issue du PTA',
+    formation: 'Formation',
+  }
+  return map[sourceType] || 'Tâche'
 }
 
 function prioriteBadge(priorite) {
@@ -872,6 +899,7 @@ function sourceEmetteurLabel(source) {
     directeur: 'Directeur',
     assistant_departement: 'Direction',
     sen: 'SEN',
+    sena: 'SENA',
     sep: 'SEP',
     secom: 'SECOM',
     sel: 'SEL',
@@ -1257,6 +1285,32 @@ onBeforeUnmount(() => {
 .status-file-clear:hover {
   background: #fee2e2;
   border-color: rgba(220, 38, 38, .42);
+}
+
+.agenda-reminder-status-note {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  padding: .7rem .85rem;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+  border-radius: 12px;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: .86rem;
+  font-weight: 800;
+}
+
+.agenda-reminder-status-note i {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #fef3c7;
 }
 
 :global(html.dark) .task-show-view .dash-panel {

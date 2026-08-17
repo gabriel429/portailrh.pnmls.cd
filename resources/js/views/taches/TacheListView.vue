@@ -82,11 +82,21 @@
                 <option value="all">Toutes</option>
                 <option value="direction">Direction</option>
                 <option value="sen">SEN</option>
+                <option value="sena">SENA</option>
                 <option value="sep">SEP</option>
                 <option value="secom">SECOM</option>
                 <option value="sel">SEL</option>
                 <option value="aaf_local">AAF / RH local</option>
                 <option value="autre">Autre</option>
+              </select>
+            </div>
+            <div class="task-filters">
+              <label for="source-type-filter" class="task-filter-label">Nature</label>
+              <select id="source-type-filter" v-model="sourceTypeFilter" class="form-select form-select-sm task-filter-select">
+                <option value="all">Toutes</option>
+                <option value="hors_pta">Tâche</option>
+                <option value="agenda">Agenda</option>
+                <option value="pta">Tâche PTA</option>
               </select>
             </div>
           </div>
@@ -144,7 +154,7 @@
                     v-for="task in day.tasks.slice(0, 3)"
                     :key="task.id"
                     class="task-calendar-event"
-                    :class="[calendarPriorityClass(task), { overdue: isOverdue(task) }]"
+                    :class="[calendarPriorityClass(task), calendarSourceClass(task), { overdue: isOverdue(task) }]"
                   >
                     {{ task.titre }}
                   </span>
@@ -215,7 +225,7 @@
                     <br v-if="t.description"><small class="text-muted">{{ truncate(t.description, 60) }}</small>
                   </td>
                   <td>
-                    <span class="badge bg-light text-dark border">{{ sourceTypeLabel(t.source_type) }}</span>
+                    <span :class="sourceTypeBadgeClass(t.source_type)">{{ sourceTypeLabel(t.source_type) }}</span>
                     <br><small class="text-muted">{{ sourceEmetteurLabel(t.source_emetteur) }}</small>
                     <template v-if="t.activite_plan">
                       <br><small class="text-muted">{{ t.activite_plan.titre }}</small>
@@ -290,36 +300,49 @@
                   <span class="task-create-type-icon"><i class="fas fa-bolt"></i></span>
                   <span>
                     <strong>Tâche directe</strong>
-                    <small>Action autonome, non liée à l’agenda PTA</small>
+                    <small>Action à exécuter, avec document si nécessaire</small>
                   </span>
                 </button>
                 <button
                   type="button"
                   class="task-create-type-card agenda"
+                  :class="{ active: createForm.source_type === 'agenda' }"
+                  :aria-pressed="createForm.source_type === 'agenda'"
+                  @click="setCreateSourceType('agenda')"
+                >
+                  <span class="task-create-type-icon"><i class="fas fa-bell"></i></span>
+                  <span>
+                    <strong>Agenda</strong>
+                    <small>Rappel SEN, SENA, Directeur, SEP ou SEL sans document</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  class="task-create-type-card pta"
                   :class="{ active: createForm.source_type === 'pta' }"
                   :aria-pressed="createForm.source_type === 'pta'"
                   @click="setCreateSourceType('pta')"
                 >
-                  <span class="task-create-type-icon"><i class="fas fa-calendar-check"></i></span>
+                  <span class="task-create-type-icon"><i class="fas fa-clipboard-list"></i></span>
                   <span>
-                    <strong>Tâche agenda/PTA</strong>
-                    <small>Action rattachée à une activité planifiée</small>
+                    <strong>Tâche du PTA</strong>
+                    <small>Action rattachée à une activité du plan de travail</small>
                   </span>
                 </button>
               </div>
             </div>
 
             <div>
-              <label for="task_source_emetteur" class="form-label fw-bold">Source <span class="text-danger">*</span></label>
+              <label for="task_source_emetteur" class="form-label fw-bold">{{ createSourceLabel }} <span class="text-danger">*</span></label>
               <select id="task_source_emetteur" v-model="createForm.source_emetteur" class="form-select" required>
-                <option v-for="source in createSourceEmetteurs" :key="source.value" :value="source.value">
+                <option v-for="source in availableCreateSourceEmetteurs" :key="source.value" :value="source.value">
                   {{ source.label }}
                 </option>
               </select>
             </div>
 
             <div>
-              <label for="task_date_tache" class="form-label fw-bold">Date de la tâche</label>
+              <label for="task_date_tache" class="form-label fw-bold">{{ createDateLabel }}</label>
               <input id="task_date_tache" v-model="createForm.date_tache" type="date" class="form-control">
             </div>
 
@@ -384,10 +407,10 @@
 
             <div class="task-form-full">
               <label for="task_description" class="form-label fw-bold">Description</label>
-              <textarea id="task_description" v-model="createForm.description" class="form-control" rows="4" placeholder="Détails et instructions pour l'agent..."></textarea>
+              <textarea id="task_description" v-model="createForm.description" class="form-control" rows="4" :placeholder="createDescriptionPlaceholder"></textarea>
             </div>
 
-            <div class="task-form-full">
+            <div v-if="createForm.source_type !== 'agenda'" class="task-form-full">
               <label for="task_documents" class="form-label fw-bold">Documents joints</label>
               <input
                 id="task_documents"
@@ -411,13 +434,20 @@
                 </div>
               </div>
             </div>
+            <div v-else class="task-form-full task-agenda-reminder-note">
+              <i class="fas fa-bell"></i>
+              <div>
+                <strong>Rappel agenda sans pièce jointe</strong>
+                <small>Utilisez le titre, la date et la description pour préciser le rappel à transmettre.</small>
+              </div>
+            </div>
           </div>
 
           <footer class="task-modal-footer">
             <button type="button" class="btn btn-outline-secondary" @click="closeCreateModal">Annuler</button>
             <button type="submit" class="btn btn-primary" :disabled="submittingCreate">
               <span v-if="submittingCreate" class="spinner-border spinner-border-sm me-1"></span>
-              <i v-else class="fas fa-paper-plane me-1"></i> Assigner la tâche
+              <i v-else class="fas fa-paper-plane me-1"></i> {{ createSubmitLabel }}
             </button>
           </footer>
         </form>
@@ -447,6 +477,7 @@ const isDirecteur = ref(false)
 const canManageTaches = ref(false)
 const canCreateTaches = ref(false)
 const sourceFilter = ref('all')
+const sourceTypeFilter = ref('all')
 const validStatusFilters = ['all', 'nouvelle', 'en_cours', 'bloquee', 'terminee', 'en_retard']
 const normalizeStatusFilter = (value) => {
   const filter = Array.isArray(value) ? value[0] : value
@@ -468,6 +499,7 @@ const createDocumentsInput = ref(null)
 const createCanMultiAssign = ref(false)
 const createScopeFlags = ref({ isSENScope: false, isSENAScope: false, isProvinceScope: false, isLocalScope: false })
 const createForm = ref(defaultCreateForm())
+const agendaSourceValues = ['sen', 'sena', 'directeur', 'sep', 'sel']
 
 const isDeptScope = computed(() => route.query.scope === 'departement')
 const isSENScope = computed(() => route.query.scope === 'sen')
@@ -504,7 +536,9 @@ function isOverdue(tache) {
 
 const sourceFilteredTaches = computed(() => {
   const items = showAssignedByMe.value ? tachesCreees.value : mesTaches.value
-  return items.filter((t) => matchesSourceFilter(t.source_emetteur))
+  return items
+    .filter((t) => matchesSourceFilter(t.source_emetteur))
+    .filter((t) => matchesSourceTypeFilter(t.source_type))
 })
 
 const statusTabs = computed(() => {
@@ -580,6 +614,31 @@ const selectedCalendarTasks = computed(() => calendarTasksByDate.value[calendarS
 const selectedCalendarDateLabel = computed(() => {
   const date = parseDateKey(calendarSelectedDate.value)
   return date ? date.toLocaleDateString('fr-FR', { weekday: 'long', day: '2-digit', month: 'long' }) : ''
+})
+
+const availableCreateSourceEmetteurs = computed(() => {
+  if (createForm.value.source_type !== 'agenda') return createSourceEmetteurs.value
+  return createSourceEmetteurs.value.filter((source) => agendaSourceValues.includes(source.value))
+})
+
+const createSourceLabel = computed(() => (
+  createForm.value.source_type === 'agenda' ? 'Émetteur du rappel' : 'Source'
+))
+
+const createDateLabel = computed(() => (
+  createForm.value.source_type === 'agenda' ? 'Date du rappel' : 'Date de la tâche'
+))
+
+const createDescriptionPlaceholder = computed(() => {
+  if (createForm.value.source_type === 'agenda') return 'Message ou rappel à afficher à l’agent...'
+  if (createForm.value.source_type === 'pta') return 'Instructions liées à l’activité PTA...'
+  return "Détails et instructions pour l'agent..."
+})
+
+const createSubmitLabel = computed(() => {
+  if (createForm.value.source_type === 'agenda') return 'Créer le rappel'
+  if (createForm.value.source_type === 'pta') return 'Assigner la tâche PTA'
+  return 'Assigner la tâche'
 })
 
 const pageTitle = computed(() => {
@@ -678,9 +737,22 @@ function defaultCreateForm() {
 }
 
 function setCreateSourceType(type) {
-  if (!['hors_pta', 'pta'].includes(type)) return
+  if (!['hors_pta', 'agenda', 'pta'].includes(type)) return
   createForm.value.source_type = type
   if (type !== 'pta') createForm.value.activite_plan_id = ''
+  if (type === 'agenda') {
+    createSelectedDocuments.value = []
+    if (createDocumentsInput.value) createDocumentsInput.value.value = ''
+    ensureAgendaSourceEmetteur()
+  }
+}
+
+function ensureAgendaSourceEmetteur() {
+  if (createForm.value.source_type !== 'agenda') return
+  if (agendaSourceValues.includes(createForm.value.source_emetteur)) return
+
+  const preferred = agendaSourceValues.find((value) => createSourceEmetteurs.value.some((source) => source.value === value))
+  createForm.value.source_emetteur = preferred || 'directeur'
 }
 
 async function openCreateModal() {
@@ -707,6 +779,7 @@ async function loadCreateData() {
     createActivitesPta.value = data.data.activites_pta || []
     createSourceEmetteurs.value = data.data.source_emetteurs || []
     createForm.value.source_emetteur = data.data.default_source_emetteur || 'directeur'
+    ensureAgendaSourceEmetteur()
     createCanMultiAssign.value = Boolean(data.data.can_multi_assign)
     if (!createCanMultiAssign.value && data.data.current_agent_id && createAgents.value.length === 1) {
       createForm.value.agent_id = data.data.current_agent_id
@@ -744,9 +817,11 @@ async function handleCreateSubmit() {
       if (value !== null && value !== undefined && value !== '') payload.append(key, value)
     })
 
-    createSelectedDocuments.value.forEach((file) => {
-      payload.append('documents[]', file)
-    })
+    if (createForm.value.source_type !== 'agenda') {
+      createSelectedDocuments.value.forEach((file) => {
+        payload.append('documents[]', file)
+      })
+    }
 
     await create(payload)
     ui.addToast('Tâche créée avec succès.', 'success')
@@ -862,6 +937,10 @@ function calendarPriorityClass(task) {
   return `priority-${task.priorite || 'normale'}`
 }
 
+function calendarSourceClass(task) {
+  return `source-${task.source_type || 'hors_pta'}`
+}
+
 function formatFileSize(size) {
   if (!size) return '0 Ko'
   if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} Mo`
@@ -914,7 +993,17 @@ function statutLabel(statut) {
 }
 
 function sourceTypeLabel(sourceType) {
-  return sourceType === 'pta' ? 'PTA' : 'Hors PTA'
+  const map = {
+    hors_pta: 'Tâche',
+    agenda: 'Agenda',
+    pta: 'Tâche PTA',
+    formation: 'Formation',
+  }
+  return map[sourceType] || 'Tâche'
+}
+
+function sourceTypeBadgeClass(sourceType) {
+  return ['source-type-badge', `source-type-${sourceType || 'hors_pta'}`]
 }
 
 function sourceEmetteurLabel(source) {
@@ -922,6 +1011,7 @@ function sourceEmetteurLabel(source) {
     directeur: 'Direction',
     assistant_departement: 'Direction',
     sen: 'SEN',
+    sena: 'SENA',
     sep: 'SEP',
     secom: 'SECOM',
     sel: 'SEL',
@@ -935,6 +1025,11 @@ function matchesSourceFilter(source) {
   if (sourceFilter.value === 'all') return true
   if (sourceFilter.value === 'direction') return ['directeur', 'assistant_departement'].includes(source)
   return source === sourceFilter.value
+}
+
+function matchesSourceTypeFilter(sourceType) {
+  if (sourceTypeFilter.value === 'all') return true
+  return (sourceType || 'hors_pta') === sourceTypeFilter.value
 }
 
 function formatDate(dateStr) {
@@ -1399,6 +1494,16 @@ watch(statusFilter, (val) => {
   color: #166534;
 }
 
+.task-calendar-event.source-agenda {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.task-calendar-event.source-pta {
+  background: #dcfce7;
+  color: #166534;
+}
+
 .task-calendar-event.overdue {
   box-shadow: inset 3px 0 0 #ef4444;
 }
@@ -1845,7 +1950,7 @@ watch(statusFilter, (val) => {
 
 .task-create-type-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: .85rem;
 }
 
@@ -1912,17 +2017,32 @@ watch(statusFilter, (val) => {
 }
 
 .task-create-type-card.agenda .task-create-type-icon {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.task-create-type-card.agenda.active {
+  border-color: #d97706;
+  background: linear-gradient(135deg, #fef3c7 0%, #fff7ed 100%);
+  box-shadow: 0 12px 28px rgba(217, 119, 6, .14);
+}
+
+.task-create-type-card.agenda.active strong {
+  color: #92400e;
+}
+
+.task-create-type-card.pta .task-create-type-icon {
   background: #dcfce7;
   color: #15803d;
 }
 
-.task-create-type-card.agenda.active {
+.task-create-type-card.pta.active {
   border-color: #16a34a;
   background: linear-gradient(135deg, #dcfce7 0%, #f8fafc 100%);
   box-shadow: 0 12px 28px rgba(22, 163, 74, .14);
 }
 
-.task-create-type-card.agenda.active strong {
+.task-create-type-card.pta.active strong {
   color: #166534;
 }
 
@@ -1969,6 +2089,76 @@ watch(statusFilter, (val) => {
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #f8fafc;
+}
+
+.source-type-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: .18rem .55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 999px;
+  background: #f8fafc;
+  color: #334155;
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.source-type-hors_pta {
+  border-color: #bae6fd;
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.source-type-agenda {
+  border-color: #fde68a;
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.source-type-pta {
+  border-color: #bbf7d0;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.source-type-formation {
+  border-color: #ddd6fe;
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+.task-agenda-reminder-note {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  align-items: center;
+  gap: .75rem;
+  padding: .85rem .95rem;
+  border: 1px solid #fde68a;
+  border-left: 4px solid #d97706;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #92400e;
+}
+
+.task-agenda-reminder-note i {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fef3c7;
+}
+
+.task-agenda-reminder-note strong,
+.task-agenda-reminder-note small {
+  display: block;
+  min-width: 0;
+}
+
+.task-agenda-reminder-note small {
+  color: #78350f;
 }
 
 @media (max-width: 767.98px) {
