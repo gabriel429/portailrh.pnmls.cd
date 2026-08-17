@@ -576,15 +576,25 @@
       <div v-if="showCreateModal" class="ptm-overlay" @click.self="closeCreateModal">
         <div class="ptm-dialog">
           <div class="ptm-header">
-            <div class="ptm-header-icon"><i class="fas fa-plus-circle"></i></div>
+            <div class="ptm-header-icon"><i class="fas fa-calendar-plus"></i></div>
             <div>
-              <h4 class="ptm-title">Nouvelle activité</h4>
-              <p class="ptm-subtitle">Ajouter une activité au plan de travail.</p>
+              <h4 class="ptm-title">Nouvelle activité agenda/PTA</h4>
+              <p class="ptm-subtitle">Création dans le plan de travail annuel.</p>
             </div>
             <button class="ptm-close" @click="closeCreateModal"><i class="fas fa-times"></i></button>
           </div>
 
           <form @submit.prevent="handleCreateSubmit" class="ptm-body">
+            <div class="ptm-context-banner">
+              <span class="ptm-context-icon"><i class="fas fa-calendar-alt"></i></span>
+              <span class="ptm-context-copy">
+                <span class="ptm-context-kicker">Agenda/PTA</span>
+                <strong>Activité planifiée</strong>
+                <small>Cette création alimente le plan de travail annuel.</small>
+              </span>
+              <span class="ptm-context-year">{{ createForm.annee || filters.annee }}</span>
+            </div>
+
             <!-- Titre -->
             <div class="ptm-field">
               <label class="ptm-label">Titre <span class="ptm-req">*</span></label>
@@ -1961,6 +1971,70 @@ button.pta-bar-row:hover .pta-bar-label { color: #1d4ed8; }
 
 .ptm-body { padding: 1.25rem 1.5rem; }
 
+.ptm-context-banner {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .8rem;
+  margin-bottom: 1rem;
+  padding: .85rem .95rem;
+  border: 1px solid #bbf7d0;
+  border-left: 4px solid #16a34a;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+}
+
+.ptm-context-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.ptm-context-copy,
+.ptm-context-copy span,
+.ptm-context-copy strong,
+.ptm-context-copy small {
+  display: block;
+  min-width: 0;
+}
+
+.ptm-context-kicker {
+  color: #15803d;
+  font-size: .7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+}
+
+.ptm-context-copy strong {
+  color: #14532d;
+  font-size: .94rem;
+  font-weight: 800;
+}
+
+.ptm-context-copy small {
+  color: #64748b;
+  font-size: .75rem;
+  line-height: 1.25;
+}
+
+.ptm-context-year {
+  justify-self: end;
+  min-width: 62px;
+  padding: .35rem .55rem;
+  border-radius: 8px;
+  background: #166534;
+  color: #fff;
+  font-weight: 800;
+  font-size: .8rem;
+  text-align: center;
+}
+
 .ptm-field { margin-bottom: 1rem; }
 .ptm-label { display: block; font-size: .8rem; font-weight: 600; color: #374151; margin-bottom: .35rem; }
 .ptm-req { color: #ef4444; }
@@ -2009,6 +2083,8 @@ button.pta-bar-row:hover .pta-bar-label { color: #1d4ed8; }
   .ptm-dialog { max-width: 100%; border-radius: 16px; }
   .ptm-header { padding: 1rem 1.1rem; border-radius: 16px 16px 0 0; }
   .ptm-body { padding: 1rem 1.1rem; }
+  .ptm-context-banner { grid-template-columns: 38px minmax(0, 1fr); }
+  .ptm-context-year { grid-column: 2; justify-self: start; }
   .ptm-row { flex-direction: column; gap: 0; }
   .ptm-card-row { flex-direction: column; }
   .ptm-opt-card { text-align: center; }

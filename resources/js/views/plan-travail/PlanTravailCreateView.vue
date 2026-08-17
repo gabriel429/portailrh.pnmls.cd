@@ -5,7 +5,7 @@
         <div class="row g-3 align-items-center">
           <div class="col-lg-8">
             <h1 class="rh-title">
-              <i class="fas fa-plus-circle me-2"></i>Nouvelle activité
+              <i class="fas fa-calendar-plus me-2"></i>Nouvelle activité agenda/PTA
             </h1>
             <p class="rh-sub">Plan de Travail Annuel {{ formData.annee || new Date().getFullYear() }}</p>
           </div>
@@ -25,6 +25,15 @@
 
       <div v-else class="dash-panel mt-3">
         <div class="p-4">
+          <div class="pta-create-context">
+            <span class="pta-create-context-icon"><i class="fas fa-calendar-alt"></i></span>
+            <span class="pta-create-context-copy">
+              <span>Agenda/PTA</span>
+              <strong>Création d’une activité planifiée</strong>
+            </span>
+            <small>{{ form.annee || formData.annee || new Date().getFullYear() }}</small>
+          </div>
+
           <div v-if="errors.length" class="alert alert-danger">
             <ul class="mb-0">
               <li v-for="(err, i) in errors" :key="i">{{ err }}</li>
@@ -412,11 +421,70 @@ onMounted(() => loadFormData())
 </script>
 
 <style scoped>
+.pta-create-context {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: .85rem;
+    margin-bottom: 1.15rem;
+    padding: .9rem 1rem;
+    border: 1px solid #bbf7d0;
+    border-left: 4px solid #16a34a;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+}
+
+.pta-create-context-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.pta-create-context-copy,
+.pta-create-context-copy span,
+.pta-create-context-copy strong {
+    display: block;
+    min-width: 0;
+}
+
+.pta-create-context-copy span {
+    color: #15803d;
+    font-size: .72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0;
+}
+
+.pta-create-context-copy strong {
+    color: #14532d;
+    font-size: .96rem;
+    font-weight: 800;
+}
+
+.pta-create-context small {
+    justify-self: end;
+    min-width: 62px;
+    padding: .35rem .55rem;
+    border-radius: 8px;
+    background: #166534;
+    color: #fff;
+    font-size: .8rem;
+    font-weight: 800;
+    text-align: center;
+}
+
 @media (max-width: 767.98px) {
     .rh-list-card, .dash-panel { border-radius: 12px; padding: 1rem; }
     .card { border-radius: 12px; }
     .card-body { padding: .85rem; }
     .form-label { font-size: .82rem; }
     .btn { font-size: .85rem; }
+    .pta-create-context { grid-template-columns: 38px minmax(0, 1fr); }
+    .pta-create-context small { grid-column: 2; justify-self: start; }
 }
 </style>

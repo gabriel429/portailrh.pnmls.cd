@@ -277,12 +277,36 @@
           </div>
 
           <div class="task-form-grid">
-            <div>
-              <label for="task_source_type" class="form-label fw-bold">Origine <span class="text-danger">*</span></label>
-              <select id="task_source_type" v-model="createForm.source_type" class="form-select" required>
-                <option value="hors_pta">Hors PTA</option>
-                <option value="pta">Issue du PTA</option>
-              </select>
+            <div class="task-form-full">
+              <label class="form-label fw-bold">Type de création <span class="text-danger">*</span></label>
+              <div class="task-create-type-grid" role="group" aria-label="Type de création de tâche">
+                <button
+                  type="button"
+                  class="task-create-type-card direct"
+                  :class="{ active: createForm.source_type === 'hors_pta' }"
+                  :aria-pressed="createForm.source_type === 'hors_pta'"
+                  @click="setCreateSourceType('hors_pta')"
+                >
+                  <span class="task-create-type-icon"><i class="fas fa-bolt"></i></span>
+                  <span>
+                    <strong>Tâche directe</strong>
+                    <small>Action autonome, non liée à l’agenda PTA</small>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  class="task-create-type-card agenda"
+                  :class="{ active: createForm.source_type === 'pta' }"
+                  :aria-pressed="createForm.source_type === 'pta'"
+                  @click="setCreateSourceType('pta')"
+                >
+                  <span class="task-create-type-icon"><i class="fas fa-calendar-check"></i></span>
+                  <span>
+                    <strong>Tâche agenda/PTA</strong>
+                    <small>Action rattachée à une activité planifiée</small>
+                  </span>
+                </button>
+              </div>
             </div>
 
             <div>
@@ -651,6 +675,12 @@ function defaultCreateForm() {
     date_tache: '',
     date_echeance: '',
   }
+}
+
+function setCreateSourceType(type) {
+  if (!['hors_pta', 'pta'].includes(type)) return
+  createForm.value.source_type = type
+  if (type !== 'pta') createForm.value.activite_plan_id = ''
 }
 
 async function openCreateModal() {
@@ -1813,6 +1843,89 @@ watch(statusFilter, (val) => {
   color: #0f172a;
 }
 
+.task-create-type-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .85rem;
+}
+
+.task-create-type-card {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: .75rem;
+  min-height: 78px;
+  padding: .85rem .95rem;
+  border: 1px solid #dbe7ef;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .18s ease, box-shadow .18s ease, background .18s ease, color .18s ease;
+}
+
+.task-create-type-card:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 10px 24px rgba(14, 165, 233, .12);
+}
+
+.task-create-type-card strong,
+.task-create-type-card small {
+  display: block;
+  min-width: 0;
+}
+
+.task-create-type-card strong {
+  font-size: .92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.task-create-type-card small {
+  margin-top: .14rem;
+  color: #64748b;
+  font-size: .76rem;
+  line-height: 1.25;
+}
+
+.task-create-type-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.task-create-type-card.active {
+  border-color: #0284c7;
+  background: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%);
+  box-shadow: 0 12px 28px rgba(2, 132, 199, .16);
+}
+
+.task-create-type-card.active strong {
+  color: #075985;
+}
+
+.task-create-type-card.agenda .task-create-type-icon {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.task-create-type-card.agenda.active {
+  border-color: #16a34a;
+  background: linear-gradient(135deg, #dcfce7 0%, #f8fafc 100%);
+  box-shadow: 0 12px 28px rgba(22, 163, 74, .14);
+}
+
+.task-create-type-card.agenda.active strong {
+  color: #166534;
+}
+
 .task-create-form textarea.form-control {
   min-height: 104px;
   resize: vertical;
@@ -1897,6 +2010,14 @@ watch(statusFilter, (val) => {
 
   .task-form-grid {
     grid-template-columns: 1fr;
+  }
+
+  .task-create-type-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .task-create-type-card {
+    min-height: 72px;
   }
 
   .task-form-wide {
