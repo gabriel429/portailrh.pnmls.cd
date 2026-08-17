@@ -232,6 +232,8 @@ class PerformanceDashboardController extends ApiController
         $evaluation = $agent->evaluations->first();
 
         if ($evaluation) {
+            $tauxCompletion = $evaluation->taux_completion_taches;
+            $tauxAssiduite = $evaluation->taux_assiduite;
             $scoreAuto = $evaluation->score_auto;
             $scoreManuel = $evaluation->score_manuel;
             $scoreGlobal = $evaluation->score_global;
@@ -239,6 +241,8 @@ class PerformanceDashboardController extends ApiController
             $derniereEvaluationLe = $evaluation->updated_at;
         } else {
             $auto = $this->scoreService()->computeAutoScore($agent, $annee, $trimestre);
+            $tauxCompletion = $auto['taux_completion_taches'];
+            $tauxAssiduite = $auto['taux_assiduite'];
             $scoreAuto = $auto['score_auto'];
             $scoreManuel = null;
             $scoreGlobal = null;
@@ -260,6 +264,8 @@ class PerformanceDashboardController extends ApiController
             'structure_label' => $this->structureLabelFromCode($structureCode),
             'province' => $agent->province?->nom,
             'departement' => $agent->departement?->nom,
+            'taux_completion_taches' => $tauxCompletion,
+            'taux_assiduite' => $tauxAssiduite,
             'score_auto' => $scoreAuto,
             'score_manuel' => $scoreManuel,
             'score_global' => $scoreGlobal,

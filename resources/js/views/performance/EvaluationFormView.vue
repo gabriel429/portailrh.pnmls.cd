@@ -23,7 +23,14 @@
         <div class="filters-grid">
           <div class="filter-field">
             <label>Agent</label>
-            <select v-model="form.agent_id" class="form-select" :disabled="!!presetAgentId">
+            <input
+              v-if="presetAgentId"
+              type="text"
+              class="form-control"
+              disabled
+              :value="agent.id ? `${agent.prenom} ${agent.nom} (${agent.matricule_etat || 'sans matricule'})` : 'Chargement...'"
+            >
+            <select v-else v-model="form.agent_id" class="form-select">
               <option value="">Sélectionner...</option>
               <option v-for="a in agentOptions" :key="a.id" :value="a.id">{{ a.prenom }} {{ a.nom }} ({{ a.matricule_etat || 'sans matricule' }})</option>
             </select>

@@ -143,7 +143,7 @@
               </td>
               <td><span class="code-badge">{{ row.structure_code }}</span></td>
               <td>{{ row.departement || row.province || '-' }}</td>
-              <td class="text-end">{{ formatScore(row.score_auto ? row.score_auto : null, true) }}</td>
+              <td class="text-end">{{ formatPercent(row.taux_completion_taches) }}</td>
               <td class="text-end">{{ formatPercent(row.taux_assiduite) }}</td>
               <td class="text-end fw-semibold">{{ formatScore(row.score_global) }}</td>
               <td>
