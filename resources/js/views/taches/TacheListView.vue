@@ -367,22 +367,25 @@
                 required
                 size="6"
               >
-                <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
+                <option v-for="ag in availableCreateAgents" :key="ag.id" :value="ag.id">
                   {{ agentOptionLabel(ag) }}
                 </option>
               </select>
               <select v-else id="task_agent_id" v-model="createForm.agent_id" class="form-select" required>
                 <option value="">-- Choisir un agent --</option>
-                <option v-for="ag in createAgents" :key="ag.id" :value="ag.id">
+                <option v-for="ag in availableCreateAgents" :key="ag.id" :value="ag.id">
                   {{ agentOptionLabel(ag) }}
                 </option>
               </select>
+              <small v-if="createForm.source_type === 'agenda'" class="text-muted d-block mt-1">
+                L’agenda concerne uniquement SEN, SENA, Directeur, SEP et SEL.
+              </small>
               <small v-if="createCanMultiAssign" class="text-muted d-block mt-1">Maintenez Ctrl pour choisir plusieurs agents.</small>
             </div>
 
             <div class="task-form-wide">
               <label for="task_validation_responsable" class="form-label fw-bold">Validateur</label>
-              <input id="task_validation_responsable" class="form-control" value="Déterminé par la hiérarchie de l’agent" readonly>
+              <input id="task_validation_responsable" class="form-control" :value="createValidationValue" readonly>
             </div>
 
             <div>
@@ -621,6 +624,11 @@ const availableCreateSourceEmetteurs = computed(() => {
   return createSourceEmetteurs.value.filter((source) => agendaSourceValues.includes(source.value))
 })
 
+const availableCreateAgents = computed(() => {
+  if (createForm.value.source_type !== 'agenda') return createAgents.value
+  return createAgents.value.filter((agent) => agent.can_receive_agenda)
+})
+
 const createSourceLabel = computed(() => (
   createForm.value.source_type === 'agenda' ? 'Émetteur du rappel' : 'Source'
 ))
@@ -640,6 +648,12 @@ const createSubmitLabel = computed(() => {
   if (createForm.value.source_type === 'pta') return 'Assigner la tâche PTA'
   return 'Assigner la tâche'
 })
+
+const createValidationValue = computed(() => (
+  createForm.value.source_type === 'agenda'
+    ? 'Aucun document ni circuit de validation requis'
+    : 'Déterminé par la hiérarchie de l’agent'
+))
 
 const pageTitle = computed(() => {
   if (isDeptScope.value) return 'Tâches du département'
@@ -744,6 +758,7 @@ function setCreateSourceType(type) {
     createSelectedDocuments.value = []
     if (createDocumentsInput.value) createDocumentsInput.value.value = ''
     ensureAgendaSourceEmetteur()
+    ensureAgendaTargetSelection()
   }
 }
 
@@ -753,6 +768,20 @@ function ensureAgendaSourceEmetteur() {
 
   const preferred = agendaSourceValues.find((value) => createSourceEmetteurs.value.some((source) => source.value === value))
   createForm.value.source_emetteur = preferred || 'directeur'
+}
+
+function ensureAgendaTargetSelection() {
+  if (createForm.value.source_type !== 'agenda') return
+
+  const allowedIds = new Set(availableCreateAgents.value.map((agent) => String(agent.id)))
+  if (createCanMultiAssign.value) {
+    createForm.value.agent_ids = createForm.value.agent_ids.filter((id) => allowedIds.has(String(id)))
+    return
+  }
+
+  if (createForm.value.agent_id && !allowedIds.has(String(createForm.value.agent_id))) {
+    createForm.value.agent_id = ''
+  }
 }
 
 async function openCreateModal() {
@@ -781,6 +810,7 @@ async function loadCreateData() {
     createForm.value.source_emetteur = data.data.default_source_emetteur || 'directeur'
     ensureAgendaSourceEmetteur()
     createCanMultiAssign.value = Boolean(data.data.can_multi_assign)
+    ensureAgendaTargetSelection()
     if (!createCanMultiAssign.value && data.data.current_agent_id && createAgents.value.length === 1) {
       createForm.value.agent_id = data.data.current_agent_id
     }
@@ -807,6 +837,18 @@ async function handleCreateSubmit() {
   createErrors.value = []
   submittingCreate.value = true
   try {
+    if (createForm.value.source_type === 'agenda') {
+      ensureAgendaTargetSelection()
+      const hasAgendaTarget = createCanMultiAssign.value
+        ? createForm.value.agent_ids.length > 0
+        : Boolean(createForm.value.agent_id)
+
+      if (!hasAgendaTarget) {
+        createErrors.value = ['Sélectionnez un destinataire SEN, SENA, Directeur, SEP ou SEL pour l’agenda.']
+        return
+      }
+    }
+
     const payload = new FormData()
     Object.entries(createForm.value).forEach(([key, value]) => {
       if (key === 'activite_plan_id' && createForm.value.source_type !== 'pta') return
@@ -842,7 +884,10 @@ async function handleCreateSubmit() {
 
 function agentOptionLabel(agent) {
   const name = agent.nom_complet || `${agent.prenom || ''} ${agent.nom || ''}`.trim()
-  const meta = [agent.role, agent.matricule].filter(Boolean).join(' · ')
+  const role = createForm.value.source_type === 'agenda' && agent.agenda_profile
+    ? agent.agenda_profile
+    : agent.role
+  const meta = [role, agent.matricule].filter(Boolean).join(' · ')
   return meta ? `${name} (${meta})` : name
 }
 

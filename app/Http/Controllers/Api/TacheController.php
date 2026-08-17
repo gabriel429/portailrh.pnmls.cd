@@ -231,11 +231,10 @@ class TacheController extends ApiController
             $agentsDisponibles = $roles->senaScopedAgentsQuery($user)
                 ->actifs()
                 ->when($agent, fn($q) => $q->where('id', '!=', $agent->id))
+                ->with('role')
                 ->orderInstitutionally()
-                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
-                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
                 ->get()
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
+                ->map(fn($a) => $this->agentOption($a));
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
@@ -264,11 +263,10 @@ class TacheController extends ApiController
                 ->where('province_id', $agent->province_id)
                 ->where('organe', 'Secrétariat Exécutif Local')
                 ->where('id', '!=', $agent->id)
+                ->with('role')
                 ->orderInstitutionally()
-                ->select(['id', 'nom', 'prenom', 'matricule_etat'])
-                ->selectRaw("CONCAT('AGT-', LPAD(id, 4, '0')) as id_agent")
                 ->get()
-                ->map(fn($a) => ['id' => $a->id, 'nom' => $a->nom, 'prenom' => $a->prenom, 'id_agent' => $a->id_agent, 'matricule' => $a->matricule_etat]);
+                ->map(fn($a) => $this->agentOption($a));
 
             $activitesPta = ActivitePlan::query()
                 ->where('annee', now()->year)
@@ -452,6 +450,20 @@ class TacheController extends ApiController
                 return response()->json(['message' => 'Vous ne pouvez pas assigner cette tâche à ' . $this->agentDisplayName($targetAgent) . '.'], 403);
             }
 
+            if ($validated['source_type'] === 'agenda' && !$this->isAgendaRecipientAgent($targetAgent)) {
+                return response()->json([
+                    'message' => 'Un rappel agenda ne concerne que le SEN, SENA, Directeur, SEP ou SEL.',
+                    'errors' => [
+                        'agent_id' => ['Choisissez uniquement un destinataire SEN, SENA, Directeur, SEP ou SEL pour l’agenda.'],
+                    ],
+                ], 422);
+            }
+
+            if ($validated['source_type'] === 'agenda') {
+                $validationChains->put($targetAgentId, []);
+                continue;
+            }
+
             try {
                 $validationChains->put($targetAgentId, $chainResolver->resolve($targetAgent));
             } catch (TaskHierarchyException $exception) {
@@ -538,9 +550,11 @@ class TacheController extends ApiController
                         $payload = $validated;
                         $payload['agent_id'] = $targetAgentId;
                         $chain = $validationChains->get($targetAgentId);
-                        $payload['validation_responsable_id'] = $chain[0]['validator_agent_id'];
+                        $payload['validation_responsable_id'] = $chain[0]['validator_agent_id'] ?? null;
                         $tache = Tache::create($payload);
-                        $tache->validationSteps()->createMany($chain);
+                        if (!empty($chain)) {
+                            $tache->validationSteps()->createMany($chain);
+                        }
                         $workflow->recordHistory(
                             $tache,
                             $agent,
@@ -1284,7 +1298,52 @@ class TacheController extends ApiController
             'role' => $agent->role?->nom_role,
             'fonction' => $agent->fonction,
             'organe' => $agent->organe,
+            'can_receive_agenda' => $this->isAgendaRecipientAgent($agent),
+            'agenda_profile' => $this->agendaRecipientProfile($agent),
         ];
+    }
+
+    protected function isAgendaRecipientAgent(Agent $agent): bool
+    {
+        return $this->agendaRecipientProfile($agent) !== null;
+    }
+
+    protected function agendaRecipientProfile(Agent $agent): ?string
+    {
+        $agent->loadMissing('role');
+
+        $role = $this->normalizeProfileText($agent->role?->nom_role);
+        $fonction = $this->normalizeProfileText($agent->fonction);
+        $poste = $this->normalizeProfileText($agent->poste_actuel);
+
+        if ($role === 'sena' || str_contains($fonction, 'secretaire executif national adjoint') || str_contains($poste, 'secretaire executif national adjoint')) {
+            return 'SENA';
+        }
+
+        if ($role === 'sen' || $fonction === 'secretaire executif national' || $poste === 'secretaire executif national') {
+            return 'SEN';
+        }
+
+        if (
+            str_starts_with($role, 'directeur')
+            || str_starts_with($role, 'directrice')
+            || str_starts_with($fonction, 'directeur')
+            || str_starts_with($fonction, 'directrice')
+            || str_starts_with($poste, 'directeur')
+            || str_starts_with($poste, 'directrice')
+        ) {
+            return 'Directeur';
+        }
+
+        if ($role === 'sep' || str_contains($fonction, 'secretaire executif provincial') || str_contains($poste, 'secretaire executif provincial') || str_contains($fonction, '(sep)') || str_contains($poste, '(sep)')) {
+            return 'SEP';
+        }
+
+        if ($role === 'sel' || str_contains($fonction, 'secretaire executif local') || str_contains($poste, 'secretaire executif local') || str_contains($fonction, '(sel)') || str_contains($poste, '(sel)')) {
+            return 'SEL';
+        }
+
+        return null;
     }
 
     protected function canAssignTacheToAgent($user, Agent $creatorAgent, Agent $targetAgent, RoleService $roles, TacheWorkflowService $workflow): bool
