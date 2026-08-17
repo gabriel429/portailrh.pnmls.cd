@@ -314,6 +314,352 @@
     animation: reveal .68s ease-out;
 }
 
+/* Fallback global pour /taches si le CSS scoped du chunk Vite arrive en retard ou reste en cache ancien. */
+body .rh-modern.taches-modern {
+    width: 100%;
+    max-width: none;
+    padding: 1.5rem 1.5rem 2rem;
+}
+
+body .rh-modern.taches-modern .taches-shell {
+    width: 100%;
+    max-width: none;
+    padding: 0;
+}
+
+body .rh-modern.taches-modern .rh-hero {
+    min-height: 200px;
+    padding: 2rem 2.25rem;
+    border: 1px solid rgba(255, 255, 255, .42);
+    border-radius: 18px;
+    background: linear-gradient(135deg, #087ec0 0%, #3d9a87 100%);
+    box-shadow: 0 18px 38px rgba(2, 93, 128, .18);
+}
+
+body .rh-modern.taches-modern .rh-hero .row {
+    min-height: 132px;
+}
+
+body .rh-modern.taches-modern .rh-title {
+    color: #fff;
+    margin: 0 0 .55rem;
+    font-size: 1.6rem;
+    line-height: 1.15;
+    letter-spacing: 0;
+}
+
+body .rh-modern.taches-modern .rh-sub {
+    max-width: 760px;
+    color: rgba(255, 255, 255, .86);
+    font-weight: 600;
+}
+
+body .rh-modern.taches-modern .hero-tools {
+    justify-content: flex-end;
+    align-items: flex-end;
+    gap: .65rem;
+}
+
+body .rh-modern.taches-modern .hero-tools .btn-rh {
+    border: 1px solid rgba(255, 255, 255, .5);
+    border-radius: 10px;
+    box-shadow: 0 12px 28px rgba(6, 78, 107, .22);
+}
+
+body .rh-modern.taches-modern .tache-status-tabs {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: .85rem;
+    margin-top: 1.5rem !important;
+}
+
+body .rh-modern.taches-modern .tache-tab {
+    min-height: 74px;
+    justify-content: flex-start;
+    gap: .75rem;
+    padding: 1rem;
+    border: 1px solid rgba(148, 163, 184, .28);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .86);
+    color: #334155;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, .08);
+}
+
+body .rh-modern.taches-modern .tache-tab i {
+    width: 40px;
+    height: 40px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    background: #e0f2fe;
+    color: #0277b5;
+}
+
+body .rh-modern.taches-modern .tache-tab-label {
+    flex: 1;
+    text-align: left;
+}
+
+body .rh-modern.taches-modern .tache-tab-count {
+    min-width: 1.55rem;
+    height: 1.55rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: .72rem;
+    font-weight: 800;
+}
+
+body .rh-modern.taches-modern .tache-tab.active {
+    color: #fff;
+    background: linear-gradient(135deg, #0277b5, #0f766e);
+    border-color: #0277b5;
+    box-shadow: 0 16px 36px rgba(0, 119, 181, .25);
+}
+
+body .rh-modern.taches-modern .tache-tab.active i {
+    color: currentColor;
+    background: rgba(255, 255, 255, .22);
+}
+
+body .rh-modern.taches-modern .tache-tab.active .tache-tab-count {
+    color: #075985;
+    background: rgba(255, 255, 255, .9);
+}
+
+body .rh-modern.taches-modern .dash-panel {
+    margin-top: 1.5rem !important;
+    border: 1px solid rgba(148, 163, 184, .25);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .9);
+    box-shadow: 0 16px 38px rgba(15, 23, 42, .08);
+}
+
+body .rh-modern.taches-modern .panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1.1rem 1.25rem;
+}
+
+body .rh-modern.taches-modern .panel-title {
+    margin-bottom: .2rem;
+    color: #334155;
+}
+
+body .rh-modern.taches-modern .task-panel-tools,
+body .rh-modern.taches-modern .task-filters,
+body .rh-modern.taches-modern .task-view-toggle {
+    display: flex;
+    align-items: center;
+}
+
+body .rh-modern.taches-modern .task-panel-tools {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+
+body .rh-modern.taches-modern .task-filters {
+    gap: .6rem;
+}
+
+body .rh-modern.taches-modern .task-filter-label {
+    color: #64748b;
+    font-size: .82rem;
+    font-weight: 700;
+}
+
+body .rh-modern.taches-modern .task-filter-select {
+    min-width: 150px;
+}
+
+body .rh-modern.taches-modern .task-view-toggle {
+    gap: .25rem;
+    padding: .25rem;
+    border: 1px solid #dbe7ef;
+    border-radius: 999px;
+    background: #f8fafc;
+}
+
+body .rh-modern.taches-modern .task-view-toggle button {
+    min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: 0 .85rem;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #475569;
+    font-size: .82rem;
+    font-weight: 800;
+}
+
+body .rh-modern.taches-modern .task-view-toggle button.active {
+    color: #fff;
+    background: linear-gradient(135deg, #0277b5, #0f766e);
+    box-shadow: 0 8px 18px rgba(2, 119, 181, .22);
+}
+
+body .rh-modern.taches-modern .table {
+    margin-bottom: 0;
+}
+
+body .rh-modern.taches-modern .table thead th {
+    background: linear-gradient(135deg, rgba(224, 242, 254, .72), rgba(240, 253, 250, .72));
+    color: #1e3a5f;
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: 0;
+}
+
+body .rh-modern.taches-modern .task-calendar-view {
+    padding: 1.15rem;
+    border-top: 1px solid rgba(226, 232, 240, .78);
+    background: linear-gradient(135deg, rgba(248, 250, 252, .92), rgba(240, 253, 250, .78));
+}
+
+body .rh-modern.taches-modern .task-calendar-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 1rem;
+}
+
+body .rh-modern.taches-modern .task-calendar-board,
+body .rh-modern.taches-modern .task-calendar-detail {
+    border: 1px solid rgba(203, 213, 225, .72);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 14px 30px rgba(15, 23, 42, .06);
+}
+
+body .rh-modern.taches-modern .task-calendar-weekdays,
+body .rh-modern.taches-modern .task-calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+body .rh-modern.taches-modern .task-calendar-day {
+    min-height: 116px;
+    display: flex;
+    flex-direction: column;
+    gap: .32rem;
+    padding: .65rem;
+    border: 1px solid #eef2f7;
+    border-top: 0;
+    border-left: 0;
+    background: #fff;
+}
+
+body .rh-modern.taches-modern .task-modal-overlay {
+    position: fixed;
+    inset: 62px 0 0;
+    z-index: 1060;
+    display: grid;
+    place-items: start center;
+    padding: 1.25rem;
+    overflow-y: auto;
+    background: rgba(15, 23, 42, .52);
+    backdrop-filter: blur(6px);
+}
+
+body .rh-modern.taches-modern .task-modal-dialog {
+    width: min(980px, 100%);
+    max-height: calc(100dvh - 64px - 2.5rem);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid #dbe4ef;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 24px 56px rgba(15, 23, 42, .22);
+}
+
+body .rh-modern.taches-modern .task-modal-header {
+    display: flex;
+    align-items: flex-start;
+    gap: .9rem;
+    padding: 1.1rem 1.35rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #f8fafc;
+}
+
+body .rh-modern.taches-modern .task-create-form {
+    padding: 1.25rem 1.35rem 1.35rem;
+}
+
+body .rh-modern.taches-modern .task-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.1rem;
+}
+
+body .rh-modern.taches-modern .task-form-full,
+body .rh-modern.taches-modern .task-form-wide {
+    grid-column: 1 / -1;
+}
+
+body .rh-modern.taches-modern .task-create-type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .85rem;
+}
+
+body .rh-modern.taches-modern .task-create-type-card {
+    min-height: 78px;
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: .75rem;
+    padding: .85rem .95rem;
+    border: 1px solid #dbe7ef;
+    border-radius: 8px;
+    background: #fff;
+    color: #334155;
+    text-align: left;
+}
+
+body .rh-modern.taches-modern .task-create-type-icon {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+body .rh-modern.taches-modern .task-create-type-card strong,
+body .rh-modern.taches-modern .task-create-type-card small {
+    display: block;
+    min-width: 0;
+}
+
+body .rh-modern.taches-modern .task-create-type-card.active {
+    border-color: #0284c7;
+    background: linear-gradient(135deg, #e0f2fe 0%, #f8fafc 100%);
+    box-shadow: 0 12px 28px rgba(2, 132, 199, .16);
+}
+
+body .rh-modern.taches-modern .task-create-type-card.agenda .task-create-type-icon {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+body .rh-modern.taches-modern .task-create-type-card.agenda.active {
+    border-color: #16a34a;
+    background: linear-gradient(135deg, #dcfce7 0%, #f8fafc 100%);
+    box-shadow: 0 12px 28px rgba(22, 163, 74, .14);
+}
+
 .activity-list,
 .quick-actions,
 .profile-sheet {
@@ -672,6 +1018,54 @@ html.dark body .rh-modern.task-show-view .task-progress-bar {
     .quick-link { padding: .55rem .65rem; font-size: .84rem; }
     .dash-panel { border-radius: 14px; }
     .rh-list-card { border-radius: 14px; }
+    body .rh-modern.taches-modern {
+        padding: 1rem .75rem 1.5rem;
+    }
+    body .rh-modern.taches-modern .rh-hero {
+        min-height: auto;
+        padding: 1.35rem 1rem;
+        border-radius: 14px;
+    }
+    body .rh-modern.taches-modern .rh-hero .row,
+    body .rh-modern.taches-modern .rh-hero .col-lg-4 {
+        min-height: 0;
+        text-align: center;
+    }
+    body .rh-modern.taches-modern .hero-tools,
+    body .rh-modern.taches-modern .task-panel-tools,
+    body .rh-modern.taches-modern .task-filters {
+        justify-content: center;
+        width: 100%;
+    }
+    body .rh-modern.taches-modern .rh-title {
+        font-size: 1.3rem;
+    }
+    body .rh-modern.taches-modern .rh-sub {
+        font-size: .85rem;
+    }
+    body .rh-modern.taches-modern .tache-status-tabs,
+    body .rh-modern.taches-modern .task-form-grid,
+    body .rh-modern.taches-modern .task-create-type-grid,
+    body .rh-modern.taches-modern .task-calendar-layout {
+        grid-template-columns: 1fr;
+    }
+    body .rh-modern.taches-modern .tache-tab {
+        min-height: 54px;
+        padding: .5rem .7rem;
+    }
+    body .rh-modern.taches-modern .task-modal-overlay {
+        padding: .5rem;
+    }
+    body .rh-modern.taches-modern .task-modal-dialog {
+        width: calc(100vw - 1rem);
+        max-height: calc(100dvh - 64px - 1rem);
+        border-radius: 14px;
+    }
+    body .rh-modern.taches-modern .task-modal-header,
+    body .rh-modern.taches-modern .task-create-form {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
 }
 
 @media (max-width: 576px) {
