@@ -169,9 +169,12 @@ async function loadCriteres() {
 async function loadAgentOptions() {
   if (presetAgentId.value || isEdit.value) return
   try {
-    const response = await client.get('/agents', { params: { per_page: 100 } })
-    const grouped = response.data.data || {}
-    agentOptions.value = Object.values(grouped).flatMap(g => g.agents || [])
+    // /agents is RH-management-only and 403s for a plain department
+    // director/SEP/CAF/SEL — reuse the already team-scoped performance
+    // dashboard list instead, which returns the same population they're
+    // allowed to evaluate.
+    const response = await client.get('/performance/dashboard', { params: { per_page: 100 } })
+    agentOptions.value = response.data.data || []
   } catch (e) {
     // liste optionnelle
   }
@@ -180,8 +183,10 @@ async function loadAgentOptions() {
 async function loadAgent(id) {
   if (!id) return
   try {
-    const response = await client.get(`/agents/${id}`)
-    agent.value = response.data.data || response.data
+    // /agents/{id} is RH-management-only and 403s for a plain department
+    // director/SEP/CAF/SEL — use the team-scoped performance endpoint.
+    const response = await client.get(`/performance/agents/${id}`)
+    agent.value = response.data.data?.agent || {}
   } catch (e) {
     // pas bloquant pour le formulaire
   }
