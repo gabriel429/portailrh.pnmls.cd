@@ -289,14 +289,6 @@ Route::middleware('auth:sanctum')->group(function () {
             ->except(['index', 'show'])
             ->middleware('not.assistant.rh');
 
-        // Renforcement des Capacites
-        Route::get('renforcements/report/monthly', [RenforcementController::class, 'reportMonthly']);
-        Route::get('renforcements/report/annual', [RenforcementController::class, 'reportAnnual']);
-        Route::apiResource('renforcements', RenforcementController::class);
-        Route::post('renforcements/{formation}/validate', [RenforcementController::class, 'validate']);
-        Route::post('renforcements/{formation}/beneficiaire', [RenforcementController::class, 'addBeneficiaire']);
-        Route::put('renforcements/{formation}/beneficiaire/{beneficiaire}', [RenforcementController::class, 'updateStatutBeneficiaire']);
-
         // Affectations
         Route::middleware('not.assistant.rh')->group(function () {
             Route::get('affectations', [ParametresController::class, 'apiAffectationsIndex']);
@@ -344,6 +336,17 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('agents/{agent}/statuses/history', [AgentStatusController::class, 'history']);
             Route::get('agents/{agent}/availability', [HolidayController::class, 'checkAvailability']);
         });
+    });
+
+    // Renforcement des Capacites - RH management roles plus the two roles
+    // this module was actually built for (Chef Section/Cellule Renforcement).
+    Route::middleware(RoleGroups::middleware(RoleGroups::RENFORCEMENT_MANAGEMENT))->group(function () {
+        Route::get('renforcements/report/monthly', [RenforcementController::class, 'reportMonthly']);
+        Route::get('renforcements/report/annual', [RenforcementController::class, 'reportAnnual']);
+        Route::apiResource('renforcements', RenforcementController::class);
+        Route::post('renforcements/{formation}/validate', [RenforcementController::class, 'validate']);
+        Route::post('renforcements/{formation}/beneficiaire', [RenforcementController::class, 'addBeneficiaire']);
+        Route::put('renforcements/{formation}/beneficiaire/{beneficiaire}', [RenforcementController::class, 'updateStatutBeneficiaire']);
     });
 
     // Agent records (view/create/edit) - RH management roles plus CAF/SEL,

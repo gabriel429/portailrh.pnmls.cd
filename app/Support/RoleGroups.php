@@ -49,6 +49,21 @@ class RoleGroups
     ];
 
     /**
+     * RH_MANAGEMENT plus the roles the Renforcement des Capacités module was
+     * actually built for (Chef Section/Cellule Renforcement) and Assistant
+     * SEN/SENA, whose seeded permissions (renforcement.view/monitor) require
+     * passing this route-level gate. Route-level access is role-based, but
+     * the finer-grained action checks (plan/validate/monitor/...) stay in
+     * RenforcementController via the permission system.
+     */
+    public const RENFORCEMENT_MANAGEMENT = [
+        ...self::RH_MANAGEMENT,
+        'Chef Section Renforcement',
+        'Chef Cellule Renforcement',
+        'Assistant SEN/SENA',
+    ];
+
+    /**
      * Roles allowed to validate/reject submitted evaluations. The dashboard
      * itself is broader and team-scoped in PerformanceDashboardController.
      */
